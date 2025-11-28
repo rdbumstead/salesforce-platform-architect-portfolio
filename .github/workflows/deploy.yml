@@ -1,0 +1,23 @@
+name: Deploy to Production
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'force-app/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Salesforce CLI
+        run: npm install @salesforce/cli --global
+
+      - name: Authenticate via JWT
+        run: |
+          echo "${{ secrets.SFDX_JWT_KEY }}" > portfolio.key
+          sf org login jwt --client-id ${{ secrets.SFDX_CLIENT_ID }} --jwt-key-file portfolio.key --username ${{ secrets.SFDX_USERNAME }} --alias portfolio --instance-url https://login.salesforce.com
+
+      - name: Deploy Source
+        run: sf project deploy start --target-org portfolio --wait 10
