@@ -3,16 +3,15 @@
     xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
-    
+   
     <description>Security and Best Practice Rules for Portfolio</description>
-
-    <rule ref="category/apex/Security.xml/ApexSOQLInjection" />
-    <rule ref="category/apex/Security.xml/ApexXSSFromURLParam" />
-    <rule ref="category/apex/Security.xml/ApexXSSFromEscapeFalse" />
-    <rule ref="category/apex/Security.xml/ApexSharingViolations" />
-    
-    <rule ref="category/apex/BestPractices.xml/AvoidGlobalModifier" />
-    <rule ref="category/apex/BestPractices.xml/AvoidLogicInTrigger" />
-    <rule ref="category/apex/Design.xml/ExcessivePublicCount" />
-    <rule ref="category/apex/Performance.xml/OperationWithLimitsInLoop" />
+    <rule ref="category/apex/security.xml/ApexSOQLInjection" />
+    <rule ref="category/apex/security.xml/ApexXSSFromURLParam" />
+    <rule ref="category/apex/security.xml/ApexXSSFromEscapeFalse" />
+    <rule ref="category/apex/security.xml/ApexSharingViolations" />
+   
+    <rule ref="category/apex/bestpractices.xml/AvoidGlobalModifier" />
+    <rule ref="category/apex/bestpractices.xml/AvoidLogicInTrigger" />
+    <rule ref="category/apex/design.xml/ExcessivePublicCount" />
+    <rule ref="category/apex/performance.xml/OperationWithLimitsInLoop" />
 </ruleset>
