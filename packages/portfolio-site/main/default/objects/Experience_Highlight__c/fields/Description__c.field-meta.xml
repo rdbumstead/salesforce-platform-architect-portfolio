@@ -6,6 +6,5 @@
     <length>5000</length>
     <type>LongTextArea</type>
     <visibleLines>5</visibleLines>
-    <required>true</required>
     <trackTrending>false</trackTrending>
 </CustomField>
