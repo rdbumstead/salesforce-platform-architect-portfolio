@@ -4,7 +4,8 @@
     <description>The specific accomplishment or responsibility text for the resume.</description>
     <label>Description</label>
     <length>5000</length>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
     <type>LongTextArea</type>
     <visibleLines>5</visibleLines>
-    <trackTrending>false</trackTrending>
 </CustomField>

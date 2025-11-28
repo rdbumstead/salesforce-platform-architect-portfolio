@@ -155,10 +155,9 @@
     <externalSharingModel>ControlledByParent</externalSharingModel>
     <label>Experience Highlight</label>
     <nameField>
-        <displayFormat>EH-{0000}</displayFormat>
         <label>Experience Highlight Name</label>
         <trackHistory>false</trackHistory>
-        <type>AutoNumber</type>
+        <type>Text</type>
     </nameField>
     <pluralLabel>Experience Highlights</pluralLabel>
     <searchLayouts></searchLayouts>

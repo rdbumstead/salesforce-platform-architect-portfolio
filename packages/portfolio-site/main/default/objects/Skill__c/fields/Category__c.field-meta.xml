@@ -21,14 +21,54 @@
                 <label>Backend</label>
             </value>
             <value>
-                <fullName>Declarative</fullName>
-                <default>false</default>
-                <label>Declarative</label>
-            </value>
-            <value>
                 <fullName>Soft Skill</fullName>
                 <default>false</default>
                 <label>Soft Skill</label>
+            </value>
+            <value>
+                <fullName>Cloud</fullName>
+                <default>false</default>
+                <label>Cloud</label>
+            </value>
+            <value>
+                <fullName>Integration</fullName>
+                <default>false</default>
+                <label>Integration</label>
+            </value>
+            <value>
+                <fullName>AI</fullName>
+                <default>false</default>
+                <label>AI</label>
+            </value>
+            <value>
+                <fullName>DevOps</fullName>
+                <default>false</default>
+                <label>DevOps</label>
+            </value>
+            <value>
+                <fullName>Data</fullName>
+                <default>false</default>
+                <label>Data</label>
+            </value>
+            <value>
+                <fullName>Strategy</fullName>
+                <default>false</default>
+                <label>Strategy</label>
+            </value>
+            <value>
+                <fullName>Process Automation</fullName>
+                <default>false</default>
+                <label>Process Automation</label>
+            </value>
+            <value>
+                <fullName>Core Platform</fullName>
+                <default>false</default>
+                <label>Core Platform</label>
+            </value>
+            <value>
+                <fullName>Marketing</fullName>
+                <default>false</default>
+                <label>Marketing</label>
             </value>
         </valueSetDefinition>
     </valueSet>

@@ -5,7 +5,7 @@
     <description>Controls left-to-right grouping order in skill network graph</description>
     <externalId>false</externalId>
     <label>Category Order</label>
-    <precision>2</precision>
+    <precision>3</precision>
     <required>true</required>
     <scale>0</scale>
     <trackHistory>false</trackHistory>
