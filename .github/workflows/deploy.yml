@@ -3,7 +3,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'force-app/**'
+      - 'packages/**'
 
 jobs:
   deploy:

@@ -3,6 +3,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [ main ]
+    paths:
+      - 'packages/**'
 
 jobs:
   validate-and-test:
@@ -22,7 +24,7 @@ jobs:
           sf org login jwt --client-id ${{ secrets.SFDX_CLIENT_ID }} --jwt-key-file portfolio.key --username ${{ secrets.SFDX_USERNAME }} --alias portfolio --instance-url https://login.salesforce.com
 
       - name: Run PMD Static Code Analysis
-        run: sf scanner run --target "force-app" --pmdconfig "ruleset.xml" --format "table" --severity-threshold 1
+        run: sf scanner run --target "packages" --pmdconfig "ruleset.xml" --format "table" --severity-threshold 1
 
       - name: Run Apex Tests
         run: sf apex run test --code-coverage --result-format human --wait 10 --target-org portfolio
