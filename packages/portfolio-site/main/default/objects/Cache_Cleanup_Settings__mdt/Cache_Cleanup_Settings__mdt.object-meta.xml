@@ -3,5 +3,4 @@
     <label>Cache Cleanup Setting</label>
     <pluralLabel>Cache Cleanup Settings</pluralLabel>
     <visibility>Public</visibility>
-    <customMetadataType>true</customMetadataType>
 </CustomObject>

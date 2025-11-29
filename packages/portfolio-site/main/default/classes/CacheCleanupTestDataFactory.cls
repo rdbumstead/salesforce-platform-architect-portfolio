@@ -6,7 +6,6 @@ public class CacheCleanupTestDataFactory {
 
         for (Integer i = 0; i < count; i++) {
             records.add(new Github_Cache__c(
-                Name = 'GitHub Cache ' + i
             ));
         }
         insert records;
@@ -17,7 +16,6 @@ public class CacheCleanupTestDataFactory {
 
         for (Integer i = 0; i < count; i++) {
             records.add(new Jira_Cache__c(
-                Name = 'Jira Cache ' + i
             ));
         }
         insert records;

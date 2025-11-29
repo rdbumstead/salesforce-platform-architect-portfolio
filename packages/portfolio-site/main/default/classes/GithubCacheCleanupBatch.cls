@@ -1,5 +1,5 @@
 public class GithubCacheCleanupBatch
-    implements Database.Batchable<Github_Cache__c>, Database.Stateful {
+    implements Database.Batchable<SObject>, Database.Stateful {  // Changed to SObject
 
     public Database.QueryLocator start(Database.BatchableContext bc) {
 
@@ -14,7 +14,7 @@ public class GithubCacheCleanupBatch
         );
     }
 
-    public void execute(Database.BatchableContext bc, List<Github_Cache__c> scope) {
+    public void execute(Database.BatchableContext bc, List<SObject> scope) {  // Changed to SObject
 
         if (!scope.isEmpty()) {
             delete scope;

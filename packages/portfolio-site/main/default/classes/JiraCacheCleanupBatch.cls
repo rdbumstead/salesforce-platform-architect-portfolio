@@ -1,5 +1,5 @@
 public class JiraCacheCleanupBatch
-    implements Database.Batchable<Jira_Cache__c> {
+    implements Database.Batchable<SObject> {  // Changed to SObject
 
     public Database.QueryLocator start(Database.BatchableContext bc) {
 
@@ -14,7 +14,7 @@ public class JiraCacheCleanupBatch
         );
     }
 
-    public void execute(Database.BatchableContext bc, List<Jira_Cache__c> records) {
+    public void execute(Database.BatchableContext bc, List<SObject> records) {  // Changed to SObject
 
         if (!records.isEmpty()) {
             delete records;

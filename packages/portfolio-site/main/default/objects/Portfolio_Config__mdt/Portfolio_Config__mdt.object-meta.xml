@@ -3,5 +3,4 @@
     <label>Portfolio Config</label>
     <pluralLabel>Portfolio Configs</pluralLabel>
     <visibility>Public</visibility>
-    <customMetadataType>true</customMetadataType>
 </CustomObject>
