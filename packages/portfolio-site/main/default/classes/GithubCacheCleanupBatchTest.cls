@@ -3,13 +3,11 @@ private class GithubCacheCleanupBatchTest {
 
     @IsTest
     static void testGithubBatchDeletesExpiredRecords() {
-        CacheCleanupSettings.testOverrideEnabled = false;
+        CacheCleanupSettings.testOverrideEnabled = true;
 
         CacheCleanupTestDataFactory.createGithubCache(10);
 
-        for (Github_Cache__c rec : [
-            SELECT Id, CreatedDate FROM Github_Cache__c
-        ]) {
+        for (Github_Cache__c rec : [SELECT Id FROM Github_Cache__c]) {
             Test.setCreatedDate(rec.Id, Datetime.now().addHours(-5));
         }
 
@@ -26,7 +24,7 @@ private class GithubCacheCleanupBatchTest {
 
     @IsTest
     static void testGithubBatchWhenDisabled() {
-        CacheCleanupSettings.testOverrideEnabled = true;
+        CacheCleanupSettings.testOverrideEnabled = false;
 
         CacheCleanupTestDataFactory.createGithubCache(10);
 

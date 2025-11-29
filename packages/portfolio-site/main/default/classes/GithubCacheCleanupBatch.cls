@@ -28,6 +28,7 @@ public class GithubCacheCleanupBatch
 
     public void finish(Database.BatchableContext bc) {
 
+        // Intentionally disabled during tests to avoid recursive async execution
         if (!Test.isRunningTest() && CacheCleanupSettings.isEnabled()) {
             CacheCleanupOrchestrator.runJiraCleanup();
         }

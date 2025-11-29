@@ -2,14 +2,12 @@
 private class JiraCacheCleanupBatchTest {
 
     @IsTest
-    static void testJiraBatchDeletesExpiredRecords() {
-        CacheCleanupSettings.testOverrideEnabled = false;
+    static void testDeletesExpiredRecords() {
+        CacheCleanupSettings.testOverrideEnabled = true;
 
         CacheCleanupTestDataFactory.createJiraCache(10);
 
-        for (Jira_Cache__c rec : [
-            SELECT Id, CreatedDate FROM Jira_Cache__c
-        ]) {
+        for (Jira_Cache__c rec : [SELECT Id FROM Jira_Cache__c]) {
             Test.setCreatedDate(rec.Id, Datetime.now().addHours(-1));
         }
 
@@ -20,24 +18,41 @@ private class JiraCacheCleanupBatchTest {
         System.assertEquals(
             0,
             [SELECT COUNT() FROM Jira_Cache__c],
-            'All expired Jira cache records should be deleted.'
+            'All expired Jira records should be deleted.'
         );
     }
 
     @IsTest
-    static void testJiraBatchWhenDisabled() {
-        CacheCleanupSettings.testOverrideEnabled = true;
+    static void testBatchWhenDisabledDoesNothing() {
+        CacheCleanupSettings.testOverrideEnabled = false;
 
-        CacheCleanupTestDataFactory.createJiraCache(10);
+        CacheCleanupTestDataFactory.createJiraCache(6);
 
         Test.startTest();
         Database.executeBatch(new JiraCacheCleanupBatch(), 200);
         Test.stopTest();
 
         System.assertEquals(
-            10,
+            6,
             [SELECT COUNT() FROM Jira_Cache__c],
-            'No Jira cache records should be deleted when cleanup is disabled.'
+            'Records must remain when cleanup is disabled.'
+        );
+    }
+
+    @IsTest
+    static void testBatchWithEmptyScopeIsSafe() {
+        CacheCleanupSettings.testOverrideEnabled = true;
+
+        CacheCleanupTestDataFactory.createJiraCache(5);
+
+        Test.startTest();
+        Database.executeBatch(new JiraCacheCleanupBatch(), 200);
+        Test.stopTest();
+
+        System.assertEquals(
+            5,
+            [SELECT COUNT() FROM Jira_Cache__c],
+            'Recent Jira records should not be deleted.'
         );
     }
 }
