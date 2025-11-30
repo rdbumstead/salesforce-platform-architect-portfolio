@@ -60,7 +60,7 @@ jobs:
             exit 1
           fi
 
-          # 2. Generate config using ECHO (Safe for YAML)
+          # 2. Generate config using RELATIVE path for PMD
           echo "engines:" > code-analyzer.yml
           echo "  pmd:" >> code-analyzer.yml
           echo "    custom_rulesets:" >> code-analyzer.yml
@@ -68,20 +68,19 @@ jobs:
           echo "  eslint:" >> code-analyzer.yml
           echo "    auto_discover_eslint_config: true" >> code-analyzer.yml
 
-          # 3. Debug: show config
+          echo "Generated config:"
           cat code-analyzer.yml
+          echo "Config file location: $(pwd)/code-analyzer.yml"
 
-          # 4. Loop through packages
+          # 3. Loop through packages
           for PACKAGE_DIR in packages/*/main; do
             if [[ -d "$PACKAGE_DIR" ]]; then
               echo "-------------------------------------------"
               echo "Scanning: $PACKAGE_DIR"
               echo "-------------------------------------------"
               
-              # CRITICAL FIX: --workspace "." tells the analyzer to look for 
-              # sfdx-project.json and ruleset.xml in the CURRENT directory (Repo Root),
-              # even though we are targeting a subdirectory.
               sf code-analyzer run \
+                --config-file "$(pwd)/code-analyzer.yml" \
                 --workspace "." \
                 --target "$PACKAGE_DIR" \
                 --severity-threshold 2
