@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mule
+  xmlns:http="http://www.mulesoft.org/schema/mule/http"
+  xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+  xmlns="http://www.mulesoft.org/schema/mule/core"
+  xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="
+           http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+           http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+           http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd"
+>
+
+    <configuration-properties file="properties.yaml" />
+    <configuration defaultErrorHandler-ref="global-error-handler" />
+
+    <http:listener-config name="HTTP_Listener_config">
+        <http:listener-connection host="0.0.0.0" port="${http.port}" />
+    </http:listener-config>
+
+    <salesforce:sfdc-config name="Salesforce_Config">
+        <salesforce:basic-connection
+      username="${sfdc.username}"
+      password="${sfdc.password}"
+      securityToken="${sfdc.token}"
+    />
+    </salesforce:sfdc-config>
+
+	<error-handler name="global-error-handler">
+	    <on-error-continue
+      enableNotifications="false"
+      logException="true"
+      type="ANY"
+    >
+	        <choice>
+	            <when
+          expression='#[
+	                (error.description default "") contains "Invalid query parameter" or
+	                (error.exception is org::mule::runtime::core::api::expression::ExpressionRuntimeException) or
+	                (error.exception is java::lang::IllegalArgumentException)
+	            ]'
+        >
+	                
+	                <set-variable variableName="httpStatus" value="400" />
+	                <set-payload
+            value='#[{ "message": "Bad Request", "details": error.description default "Invalid parameter provided" }]'
+            mimeType="application/json"
+          />
+	            </when>
+	            <otherwise>
+	                <set-variable variableName="httpStatus" value="500" />
+	                <set-payload
+            value='#[{ "message": "Internal Server Error", "details": "An unexpected error occurred" }]'
+            mimeType="application/json"
+          />
+	            </otherwise>
+	        </choice>
+	    </on-error-continue>
+	</error-handler>
+
+</mule>

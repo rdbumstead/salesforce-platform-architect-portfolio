@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="work-experience-json" format="json">
+      <types:shape
+        format="weave"
+        example="examples/work-experience-examples.json"
+      ><![CDATA[%dw 2.0
+
+type work_experience_json = Array<{|  Employee__r: {|    Id: Null,     "type": String,     Name: String  |},   Accomplishments__c: Null,   Currently_Employed__c: String,   Id: String,   "type": String,   Employer__r: {|    Id: Null,     "type": String,     Name: String  |},   End_Date__c: Null,   Name: String,   Start_Date__c: String|}> {"example": "[{\\\"Employee__r\\\":{\\\"Id\\\":null,\\\"type\\\":\\\"Contact\\\",\\\"Name\\\":\\\"Ryan Bumstead\\\"},\\\"Accomplishments__c\\\":null,\\\"Currently_Employed__c\\\":\\\"true\\\",\\\"Id\\\":\\\"a06gK0000087P9xQAE\\\",\\\"type\\\":\\\"Work_Experience__c\\\",\\\"Employer__r\\\":{\\\"Id\\\":null,\\\"type\\\":\\\"Account\\\",\\\"Name\\\":\\\"Creighton University\\\"},\\\"End_Date__c\\\":null,\\\"Name\\\":\\\"CRM Developer\\\",\\\"Start_Date__c\\\":\\\"2025-08-01\\\"},{\\\"Employee__r\\\":{\\\"Id\\\":null,\\\"type\\\":\\\"Contact\\\",\\\"Name\\\":\\\"Ryan Bumstead\\\"},\\\"Accomplishments__c\\\":\\\"<ul><li><span style=\\\\\\\"color: rgb(87, 87, 87);\\\\\\\">Administer Salesforce CRM for 400+ users, ensuring system security, data integrity, and platform performance.<\\/span><\\/li><li><span style=\\\\\\\"color: rgb(87, 87, 87);\\\\\\\">Automated Community Contact and User Creation, saving 10 minutes per pair and achieving a 100% reduction in time for this task.<\\/span><\\/li><li><span style=\\\\\\\"color: rgb(87, 87, 87);\\\\\\\">Integrated Power Automate with Salesforce for on-demand automated creation of Salesforce and Salesforce Platform Users including Permission Set Assignment and Group Membership saving 20 minutes per user and achieving a 90% reduction in time for this task.<\\/span><\\/li><li><span style=\\\\\\\"color: rgb(87, 87, 87);\\\\\\\">Configure and maintain Salesforce Experience Cloud sites to enhance user engagement for over 10,000 users.<\\/span><\\/li><li><span style=\\\\\\\"color: rgb(87, 87, 87);\\\\\\\">Develops and customizes Apex solutions, Flow automations, custom objects, and Lightning Web Components.<\\/span><\\/li><\\/ul>\\\",\\\"Currently_Employed__c\\\":\\\"false\\\",\\\"Id\\\":\\\"a06gK000001PSrlQAG\\\",\\\"type\\\":\\\"Work_Experience__c\\\",\\\"Employer__r\\\":{\\\"Id\\\":null,\\\"type\\\":\\\"Account\\\",\\\"Name\\\":\\\"Creighton University\\\"},\\\"End_Date__c\\\":\\\"2025-08-01\\\",\\\"Name\\\":\\\"Application Administrator\\\",\\\"Start_Date__c\\\":\\\"2021-06-14\\\"}]"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#bfa45789-5007-44c5-83d1-c24e136086a9">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="work-experience-json" />
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

@@ -1,27 +1,22 @@
-name: Validate PR
+name: Validate PR (Scratch Org)
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [main]
     paths:
-      - "packages/shared-modules/**"
-      - "packages/integration-api/**"
-      - "packages/employer-hub-demo/**"
-      - "packages/portfolio-site/**"
+      - "packages/**"
       - "sfdx-project.json"
 
 jobs:
-  validate-and-test:
+  validate-scratch-org:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       # ------------------------------------------------------------------
-      # 1. Setup & LWC Tests
+      # 1. Setup Node and Run LWC Tests
       # ------------------------------------------------------------------
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -36,64 +31,122 @@ jobs:
         run: npm run test:unit
 
       # ------------------------------------------------------------------
-      # 2. Salesforce Setup
+      # 2. Salesforce CLI & Code Analyzer
       # ------------------------------------------------------------------
       - name: Install Salesforce CLI
         run: npm install @salesforce/cli --global
 
-      - name: Install sfdx-git-delta
-        run: echo y | sf plugins install sfdx-git-delta
-
       - name: Install Code Analyzer
-        run: sf plugins install code-analyzer
+        run: sf plugins install @salesforce/plugin-code-analyzer
 
-      - name: Authenticate via JWT
+      - name: Authenticate Dev Hub
         run: |
           echo "${{ secrets.SFDX_JWT_KEY }}" > portfolio.key
           sf org login jwt \
             --client-id ${{ secrets.SFDX_CLIENT_ID }} \
             --jwt-key-file portfolio.key \
             --username ${{ secrets.SFDX_USERNAME }} \
-            --alias portfolio \
-            --instance-url https://login.salesforce.com
+            --set-default-dev-hub \
+            --alias devhub
 
       # ------------------------------------------------------------------
       # 3. Static Analysis
       # ------------------------------------------------------------------
-      - name: Run PMD Static Code Analysis
-        run: sf code-analyzer run --target "packages" --rule-selector pmd:portfoliorules --severity-threshold 1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-      # ------------------------------------------------------------------
-      # 4. Generate Delta (PR Specific Logic)
-      # ------------------------------------------------------------------
-      - name: Generate Delta
+      - name: Resolve valid Salesforce analyzer targets
+        id: resolve-targets
+        shell: bash
         run: |
-          git fetch origin main
-          mkdir -p changed
-          sf sgd source delta \
-            --to "HEAD" \
-            --from "origin/main" \
-            --output changed \
-            --source packages \
-            --generate-delta \
-            --log-level DEBUG
-
-      # ------------------------------------------------------------------
-      # 5. Validation (Dry Run)
-      # ------------------------------------------------------------------
-      - name: Validate Deployment (Dry Run)
-        run: |
-          if [ -s changed/package/package.xml ]; then
-            echo "Validating changes against Production..."
-            
-            sf project deploy start \
-              --manifest changed/package/package.xml \
-              --post-destructive-changes changed/destructiveChanges/destructiveChanges.xml \
-              --target-org portfolio \
-              --dry-run \
-              --test-level RunLocalTests \
-              --wait 20 \
-              --log-level DEBUG
-          else
-            echo "No Salesforce metadata changes detected. Skipping validation."
+          POTENTIAL_TARGETS=$(find packages -type d -path "*/main/default")
+          TARGETS=""
+          for dir in $POTENTIAL_TARGETS; do
+            if [ $(find "$dir" -type f ! -name "jsconfig.json" ! -name ".eslintrc.json" | wc -l) -gt 0 ]; then
+              if [ -z "$TARGETS" ]; then
+                TARGETS="$dir"
+              else
+                TARGETS="$TARGETS,$dir"
+              fi
+            fi
+          done
+          if [ -z "$TARGETS" ]; then
+            echo "No valid main/default directories with scannable files found. Falling back to scanning all packages."
+            TARGETS="packages"
           fi
+          echo "Resolved targets: $TARGETS"
+          echo "targets=$TARGETS" >> $GITHUB_OUTPUT
+
+      - name: Run Salesforce Code Analyzer
+        shell: bash
+        run: |
+          sf code-analyzer run \
+            --target "${{ steps.resolve-targets.outputs.targets }}" \
+            --rule-selector pmd:PortfolioSecurityRules \
+            --severity-threshold 2
+
+      # ------------------------------------------------------------------
+      # 4. Scratch Org Execution
+      # ------------------------------------------------------------------
+      - name: Create Scratch Org
+        run: |
+          sf org create scratch \
+            --target-dev-hub devhub \
+            --definition-file config/project-scratch-def.json \
+            --alias ci-org \
+            --duration-days 1 \
+            --set-default \
+            --no-ancestors \
+            --wait 10
+
+      - name: Deploy Core Metadata
+        run: |
+          sf project deploy start \
+            --source-dir packages/shared-modules/main/default \
+            --source-dir packages/portfolio-site/main/default \
+            --target-org ci-org \
+            --wait 10
+
+      - name: Deploy Configuration Metadata
+        run: |
+          # Count actual .permissionset-meta.xml files (excluding .forceignore'd ones)
+          PERMSET_COUNT=$(find packages/portfolio-site/main/default/permissionsets -name "*.permissionset-meta.xml" 2>/dev/null | wc -l)
+
+          if [ "$PERMSET_COUNT" -gt 0 ]; then
+            echo "Found $PERMSET_COUNT permission set(s) to deploy"
+            sf project deploy start \
+              --source-dir packages/portfolio-site/main/default/permissionsets \
+              --target-org ci-org \
+              --ignore-warnings \
+              --wait 10
+          else
+            echo "No permission sets to deploy, skipping configuration metadata step"
+          fi
+        continue-on-error: true
+
+      - name: Verify Core Deployment
+        run: |
+          echo "=== Deployed Apex Classes ==="
+          sf org list metadata --metadata-type ApexClass --target-org ci-org
+          echo "=== Deployed LWC Components ==="
+          sf org list metadata --metadata-type LightningComponentBundle --target-org ci-org
+
+      # ------------------------------------------------------------------
+      # 5. Quality Gates (Apex Tests)
+      # ------------------------------------------------------------------
+      - name: Run Apex Tests
+        run: |
+          sf apex run test \
+            --target-org ci-org \
+            --code-coverage \
+            --result-format human \
+            --wait 10
+
+      # ------------------------------------------------------------------
+      # 6. Teardown
+      # ------------------------------------------------------------------
+      - name: Delete Scratch Org
+        if: always()
+        run: sf org delete scratch --target-org ci-org --no-prompt || true

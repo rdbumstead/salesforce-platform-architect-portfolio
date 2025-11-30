@@ -1,56 +1,76 @@
-# List files or directories below to ignore them when running force:source:push, force:source:pull, and force:source:status
-# More information: https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_exclude_source.htm
+# ---------------------------------------------------------------------
+# Salesforce DX ForceIgnore
+# List files to ignore when running force:source:push/pull/status
+# ---------------------------------------------------------------------
 
-# -------------------------------
-# LWC configuration files
-# -------------------------------
+# ---------------------------------------------------------------------
+# LWC & Javascript Configuration
+# ---------------------------------------------------------------------
 **/jsconfig.json
 **/.eslintrc.json
 
-# -------------------------------
-# LWC Jest
-# -------------------------------
+# ---------------------------------------------------------------------
+# LWC Testing & Coverage
+# ---------------------------------------------------------------------
 **/__tests__/**
+coverage/
 
-# -------------------------------
+# ---------------------------------------------------------------------
 # MuleSoft / Anypoint Projects
-# -------------------------------
+# ---------------------------------------------------------------------
 **/AnypointStudio/**
+**/src/main/resources/properties.yaml
 **/*.jar
 **/*.zip
 **/.mvn/**
 **/target/**
 **/*.log
 
-# -------------------------------
-# Docs & Non-Metadata
-# -------------------------------
+# ---------------------------------------------------------------------
+# Documentation & Non-Metadata
+# ---------------------------------------------------------------------
 **/docs/**
 **/*.drawio
 **/*.pdf
 **/*.pptx
 
-# -------------------------------
-# Node / Tooling
-# -------------------------------
+# ---------------------------------------------------------------------
+# Node / Tooling / Scripts
+# ---------------------------------------------------------------------
 node_modules/
 scripts/
 npm-debug.log
 yarn-error.log
 
-# -------------------------------
-# OS Artifacts
-# -------------------------------
-.DS_Store
-Thumbs.db
-
-# -------------------------------
-# Scan Reports & Delta Artifacts
-# -------------------------------
+# ---------------------------------------------------------------------
+# CI/CD Artifacts (Scan Results & Delta)
+# ---------------------------------------------------------------------
 scan-results.html
 changed/
 
-# -------------------------------
-# LWC Test Coverage Reports
-# -------------------------------
-coverage/
+# ---------------------------------------------------------------------
+# OS & System Artifacts
+# ---------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# ---------------------------------------------------------------------
+# Org-Specific Metadata (Do Not Track or Deploy)
+# ---------------------------------------------------------------------
+# Standard profiles cannot have certain permissions modified via API
+**/profiles/Admin.profile-meta.xml
+
+# Managed package components (from installed packages, not source-controlled)
+**/permissionsets/sfdcInternalInt__*.permissionset-meta.xml
+**/objects/sfdcInternalInt__*.object-meta.xml
+**/classes/sfdcInternalInt__*.cls*
+**/triggers/sfdcInternalInt__*.trigger*
+**/layouts/sfdcInternalInt__*.layout-meta.xml
+**/customMetadata/sfdcInternalInt__*.md-meta.xml
+
+# Permission sets requiring licenses unavailable in scratch orgs
+**/permissionsets/Contact_Information_Agent_Permissions.permissionset-meta.xml
+
+# Legacy/deprecated permission sets with missing dependencies
+**/permissionsets/Mass_Delete_Admin.permissionset-meta.xml
+**/permissionsets/Portfolio_Admin.permissionset-meta.xml

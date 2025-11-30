@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mule
+  xmlns="http://www.mulesoft.org/schema/mule/core"
+  xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+  xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+  xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+  xmlns:http="http://www.mulesoft.org/schema/mule/http"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd "
+>
+    <apikit:config
+    name="salesforce-sapi-config"
+    api="resource::14130f82-e9e1-4926-b94b-cacb2d88ee28:salesforce-sapi:1.1.1:oas:zip:salesforce-sapi.yaml"
+    outboundHeadersMapName="outboundHeaders"
+    httpStatusVarName="httpStatus"
+  />
+    <flow name="salesforce-sapi-main">
+        <http:listener config-ref="HTTP_Listener_config" path="/api/sfdc/v1/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers
+        ><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers
+        ><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <flow-ref
+      doc:name="set-query-params"
+      doc:id="9149d266-7674-4561-9b72-5ac00e72d26a"
+      name="set-query-params"
+    />
+        <apikit:router config-ref="salesforce-sapi-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload
+            ><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable
+              variableName="httpStatus"
+            >400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload
+            ><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable
+              variableName="httpStatus"
+            >404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload
+            ><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable
+              variableName="httpStatus"
+            >405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload
+            ><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable
+              variableName="httpStatus"
+            >406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload
+            ><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable
+              variableName="httpStatus"
+            >415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload
+            ><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable
+              variableName="httpStatus"
+            >501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="salesforce-sapi-console">
+        <http:listener config-ref="HTTP_Listener_config" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="salesforce-sapi-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload
+            ><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable
+              variableName="httpStatus"
+            >404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\accounts:salesforce-sapi-config">
+        <flow-ref
+      doc:name="get-sfdc-accounts"
+      doc:id="79a72de5-a4ac-46d8-90bf-c06b27ca12fe"
+      name="get-sfdc-accounts"
+    />
+    </flow>
+    <flow name="get:\certifications:salesforce-sapi-config">
+        <flow-ref
+      doc:name="get-sfdc-certifications"
+      doc:id="ffed34b7-df46-4165-ae84-c14fceaaca4d"
+      name="get-sfdc-certifications"
+    />
+    </flow>
+    <flow name="get:\contacts:salesforce-sapi-config">
+        <flow-ref
+      doc:name="get-sfdc-contacts"
+      doc:id="bff88d84-f032-44f8-92f3-dcc99a568910"
+      name="get-sfdc-contacts"
+    />
+    </flow>
+    <flow name="get:\education:salesforce-sapi-config">
+        <flow-ref
+      doc:name="get-sfdc-education"
+      doc:id="fba18fad-a5f4-4e1d-99b1-e43a019c762c"
+      name="get-sfdc-education"
+    />
+    </flow>
+    <flow name="get:\skills:salesforce-sapi-config">
+        <flow-ref
+      doc:name="get-sfdc-skills"
+      doc:id="4fa27c2c-f7d9-4b8d-8213-b5dbd55a6a21"
+      name="get-sfdc-skills"
+    />
+    </flow>
+    <flow name="get:\certification-skills:salesforce-sapi-config">
+		<flow-ref
+      doc:name="get-sfdc-certification-skills"
+      doc:id="12f9b9a2-cbc1-4524-a22a-c3d362f201d6"
+      name="get-sfdc-certification-skills"
+    />
+    </flow>
+    <flow name="get:\experience:salesforce-sapi-config">
+		<flow-ref
+      doc:name="get-sfdc-experience"
+      doc:id="28ef5194-6a9d-4b05-8ac5-fbc9088d0bdb"
+      name="get-sfdc-experience"
+    />
+    </flow>
+    <flow name="get:\experience-highlights:salesforce-sapi-config">
+		<flow-ref
+      doc:name="get-sfdc-experience-highlights"
+      doc:id="1933dc72-5fa5-4742-bf70-65f0e3a8d7b6"
+      name="get-sfdc-experience-highlights"
+    />
+    </flow>
+    <flow name="get:\experience-skills:salesforce-sapi-config">
+		<flow-ref
+      doc:name="get-sfdc-experience-skills"
+      doc:id="93815466-3aea-4d69-b74f-e843035f0861"
+      name="get-sfdc-experience-skills"
+    />
+    </flow>
+    <flow name="get:\portfolio-config:salesforce-sapi-config">
+		<flow-ref
+      doc:name="get-sfdc-portfolio-config"
+      doc:id="58b01ef6-b0cb-4878-b6a1-1aef5870970b"
+      name="get-sfdc-portfolio-config"
+    />
+    </flow>
+    <flow name="get:\project-assets:salesforce-sapi-config">
+		<flow-ref
+      doc:name="get-sfdc-project-assets"
+      doc:id="8406b9e9-8053-4594-b744-5c864ddab1cb"
+      name="get-sfdc-project-assets"
+    />
+    </flow>
+    <flow name="get:\project-skills:salesforce-sapi-config">
+		<flow-ref
+      doc:name="get-sfdc-project-skills"
+      doc:id="bbb527dd-1860-4d28-87ba-a4f71d17282d"
+      name="get-sfdc-project-skills"
+    />
+    </flow>
+    <flow name="get:\projects:salesforce-sapi-config">
+		<flow-ref
+      doc:name="get-sfdc-projects"
+      doc:id="f8a5a7be-2607-4ff6-add2-eb3376ce56a8"
+      name="get-sfdc-projects"
+    />
+    </flow>
+    <flow name="get:\projects\(id):salesforce-sapi-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable
+          variableName="id"
+        >attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger
+      level="INFO"
+      message="get:\projects\(id):salesforce-sapi-config"
+    />
+    </flow>
+    <flow name="get:\testimonials:salesforce-sapi-config">
+		<flow-ref
+      doc:name="get-sfdc-testimonials"
+      doc:id="ebc621b0-2eff-447f-984a-bdf81e5dccef"
+      name="get-sfdc-testimonials"
+    />
+    </flow>
+    <flow name="post:\projects:salesforce-sapi-config">
+        <logger level="INFO" message="post:\projects:salesforce-sapi-config" />
+    </flow>
+    <flow name="post:\projects:application\json:salesforce-sapi-config">
+        <logger
+      level="INFO"
+      message="post:\projects:application\json:salesforce-sapi-config"
+    />
+    </flow>
+</mule>

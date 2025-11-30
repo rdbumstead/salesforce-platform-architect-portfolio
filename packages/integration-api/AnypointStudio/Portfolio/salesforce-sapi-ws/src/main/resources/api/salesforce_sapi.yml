@@ -1,0 +1,993 @@
+openapi: 3.0.0
+info:
+  title: Salesforce System API (SAPI)
+  description: |
+    System API exposing core Salesforce objects.
+
+    ### Architecture & Governance
+    - **Security**: OAuth 2.0 Client Credentials Flow (Zero Trust) applied per operation.
+    - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing.
+    - **Performance**: `Cache-Control` headers explicit (Cache vs No-Store).
+    - **Resilience**: Rate Limits defined with `429` responses and `Retry-After` headers.
+    - **Versioning**: `X-API-Version` header required for contract negotiation.
+  version: 1.1.1
+  contact:
+    name: Ryan Bumstead
+    email: ryan@ryanbumstead.com
+
+servers:
+  - url: https://{domain}/services/apexrest
+    description: Salesforce Experience Cloud Site Endpoint
+    variables:
+      domain:
+        default: rbumstead-dev-ed.develop.my.site.com
+        enum:
+          - rbumstead-dev-ed.develop.my.site.com
+
+security:
+  - OAuth2Prod: [sapi.read]
+  - OAuth2Sandbox: [sapi.read]
+
+components:
+  x-rate-limit:
+    tier: standard
+    requestsPerMinute: 120
+    burst: 20
+
+  securitySchemes:
+    OAuth2Prod:
+      type: oauth2
+      description: Production Environment (login.salesforce.com)
+      flows:
+        clientCredentials:
+          tokenUrl: https://login.salesforce.com/services/oauth2/token
+          scopes:
+            sapi.read: "Read access to System API"
+            sapi.write: "Write access to System API"
+
+    OAuth2Sandbox:
+      type: oauth2
+      description: Sandbox/UAT Environment (test.salesforce.com)
+      flows:
+        clientCredentials:
+          tokenUrl: https://test.salesforce.com/services/oauth2/token
+          scopes:
+            sapi.read: "Read access to System API"
+            sapi.write: "Write access to System API"
+
+  headers:
+    RequestIdResponse:
+      description: "Echoed correlation ID for distributed tracing and observability."
+      schema:
+        type: string
+        format: uuid
+
+    CacheControlResponse:
+      description: "Directives for caching mechanisms in both requests and responses."
+      schema:
+        type: string
+        example: "max-age=300, private"
+
+    NoCacheResponse:
+      description: "Directive to prevent caching of sensitive/dynamic data."
+      schema:
+        type: string
+        example: "no-store, no-cache"
+
+  parameters:
+    apiVersionParam:
+      name: X-API-Version
+      in: header
+      required: true
+      description: "API Contract Version (e.g., v1)."
+      schema:
+        type: string
+        example: "v1"
+
+    requestIdParam:
+      name: X-Request-Id
+      in: header
+      required: true
+      description: "Correlation ID for distributed tracing (Logs/Splunk). Must be UUID."
+      schema:
+        type: string
+        format: uuid
+
+    idempotencyKeyParam:
+      name: X-Idempotency-Key
+      in: header
+      required: false
+      description: "Unique key to prevent duplicate processing (Future Write Ops)."
+      schema:
+        type: string
+        format: uuid
+
+    limitParam:
+      name: limit
+      in: query
+      required: false
+      description: "Maximum number of records to return."
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 200
+
+    offsetParam:
+      name: offset
+      in: query
+      required: false
+      description: "Pagination offset."
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+
+    contactNameParam:
+      name: contactName
+      in: query
+      schema:
+        type: string
+
+    employerNameParam:
+      name: employerName
+      in: query
+      schema:
+        type: string
+
+    currentlyEmployedParam:
+      name: currentlyEmployed
+      in: query
+      schema:
+        type: boolean
+
+    projectIdParam:
+      name: projectId
+      in: query
+      schema:
+        type: string
+
+    experienceIdParam:
+      name: experienceId
+      in: query
+      schema:
+        type: string
+
+    personaParam:
+      name: persona
+      in: query
+      schema:
+        type: string
+        enum: [Admin, Developer, Architect, General]
+
+    statusParam:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum: [Draft, Active, Archived]
+
+    issuerNameParam:
+      name: issuerName
+      in: query
+      schema:
+        type: string
+
+    schoolNameParam:
+      name: schoolName
+      in: query
+      schema:
+        type: string
+
+    accountNameParam:
+      name: accountName
+      in: query
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or schema validation failure.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    Unauthorized:
+      description: Invalid or missing OAuth Access Token.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    Forbidden:
+      description: Insufficient permissions (Scopes).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    NotFound:
+      description: The requested resource ID was not found.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    TooManyRequests:
+      description: API rate limit exceeded.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+        Retry-After:
+          description: Seconds until the rate limit resets.
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    ServerError:
+      description: Internal platform error (Apex/MuleSoft Fault).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      required: [errorCode, message, correlationId]
+      properties:
+        httpStatus:
+          type: integer
+          readOnly: true
+          example: 400
+        errorCode:
+          type: string
+          example: "INVALID_OFFSET"
+        message:
+          type: string
+          example: "Offset cannot be negative."
+        retryable:
+          type: boolean
+          example: false
+        correlationId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    SalesforceRecord:
+      type: object
+      properties:
+        attributes:
+          type: object
+          description: "System attributes (type, url)"
+          additionalProperties: true
+        LastModifiedDate:
+          type: string
+          format: date-time
+          readOnly: true
+        SystemModstamp:
+          type: string
+          format: date-time
+          readOnly: true
+
+    HateoasLinks:
+      type: object
+      properties:
+        _links:
+          type: object
+          description: "HATEOAS navigation links"
+          additionalProperties: true
+
+    Contact:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - $ref: "#/components/schemas/HateoasLinks"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Name: { type: string }
+            Email: { type: string, format: email }
+            Phone: { type: string }
+            Title: { type: string }
+          additionalProperties: true
+
+    Project:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - $ref: "#/components/schemas/HateoasLinks"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Name: { type: string }
+            Challenge__c: { type: string }
+            Solution__c: { type: string }
+            Business_Value__c: { type: string }
+            Status__c:
+              type: string
+              enum: [Draft, Active, Archived]
+            Start_Date__c: { type: string, format: date }
+            End_Date__c: { type: string, format: date }
+            Hero_Image_URL__c: { type: string, format: uri }
+          additionalProperties: true
+
+    Experience:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - $ref: "#/components/schemas/HateoasLinks"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Employer__c: { type: string }
+            Position_Title__c: { type: string }
+            Start_Date__c: { type: string, format: date }
+            End_Date__c: { type: string, format: date }
+            Is_Current_Role__c: { type: boolean, readOnly: true }
+            Accomplishments__c: { type: string }
+          additionalProperties: true
+
+    ExperienceHighlight:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Experience__c: { type: string }
+            Description__c: { type: string }
+            Persona_Tag__c:
+              type: string
+              enum: [Admin, Developer, Architect, General]
+          additionalProperties: true
+
+    ProjectAsset:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Name: { type: string }
+            Project__c: { type: string }
+            Type__c:
+              type: string
+              enum: [Image, Video, Document, Link]
+            External_URL__c: { type: string, format: uri }
+          additionalProperties: true
+
+    Testimonial:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Author_Name__c: { type: string }
+            Relationship_Type__c:
+              type: string
+              enum: [Manager, Peer, Client, Recruiter, Fan]
+            Vibe_Mode__c:
+              type: string
+              enum: [Professional, Casual]
+            Approved__c: { type: boolean }
+            Context__c: { type: string }
+          additionalProperties: true
+
+    ProjectSkill:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Project__c: { type: string }
+            Skill__c: { type: string }
+            Proficiency_Level__c:
+              type: number
+              minimum: 1
+              maximum: 5
+          additionalProperties: true
+
+    ExperienceSkill:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Experience__c: { type: string }
+            Skill__c: { type: string }
+          additionalProperties: true
+
+    CertificationSkill:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Certification__c: { type: string }
+            Skill__c: { type: string }
+          additionalProperties: true
+
+    PortfolioConfig:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            MasterLabel: { type: string, readOnly: true }
+            Owner_Email__c: { type: string, format: email }
+            LinkedIn_URL__c: { type: string, format: uri }
+            GitHub_Profile_URL__c: { type: string, format: uri }
+          additionalProperties: true
+
+    Account:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Name: { type: string }
+          additionalProperties: true
+
+    Skill:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Name: { type: string }
+            Category__c: { type: string }
+          additionalProperties: true
+
+    Certification:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            Name: { type: string }
+            Issuer__c: { type: string }
+          additionalProperties: true
+
+    Education:
+      allOf:
+        - $ref: "#/components/schemas/SalesforceRecord"
+        - type: object
+          properties:
+            Id: { type: string, readOnly: true }
+            School_Name__c: { type: string }
+            Degree__c: { type: string }
+          additionalProperties: true
+
+paths:
+  /contacts:
+    get:
+      tags: [Profile]
+      summary: Get Contact records
+      operationId: getContacts
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/contactNameParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Contact records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/NoCacheResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contact"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+        default: { $ref: "#/components/responses/ServerError" }
+
+  /experience:
+    get:
+      tags: [Profile]
+      summary: Get Experience records
+      operationId: getExperience
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/contactNameParam"
+        - $ref: "#/components/parameters/employerNameParam"
+        - $ref: "#/components/parameters/currentlyEmployedParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Experience records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/NoCacheResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Experience"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /experience-highlights:
+    get:
+      tags: [Profile]
+      summary: Get Experience Highlights
+      description: Fetches resume bullets. Supports Persona filtering for PAPI optimization.
+      operationId: getExperienceHighlights
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/experienceIdParam"
+        - $ref: "#/components/parameters/personaParam"
+      responses:
+        "200":
+          description: Successful retrieval of Experience Highlights.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/NoCacheResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExperienceHighlight"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /projects:
+    get:
+      tags: [Objects]
+      summary: Get Project records
+      operationId: getProjects
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/statusParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Project records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+    post:
+      tags: [Objects]
+      summary: Create Project (Future)
+      operationId: createProject
+      security:
+        - OAuth2Prod: [sapi.write]
+        - OAuth2Sandbox: [sapi.write]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/idempotencyKeyParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Project"
+      responses:
+        "201":
+          description: Project created
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "405":
+          description: Write operations are disabled in the current API version.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+        default: { $ref: "#/components/responses/ServerError" }
+
+  /projects/{id}:
+    get:
+      tags: [Objects]
+      summary: Get Project by ID
+      operationId: getProjectById
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - name: id
+          in: path
+          required: true
+          description: Salesforce Record ID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful retrieval of single Project.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /project-assets:
+    get:
+      tags: [Objects]
+      summary: Get Project Assets
+      operationId: getProjectAssets
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/projectIdParam"
+      responses:
+        "200":
+          description: Successful retrieval of Project Assets.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectAsset"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /testimonials:
+    get:
+      tags: [Objects]
+      summary: Get Testimonials
+      operationId: getTestimonials
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Testimonials.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/NoCacheResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Testimonial"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /portfolio-config:
+    get:
+      tags: [Configuration]
+      summary: Get Portfolio Configuration
+      description: Returns the singleton Global Configuration object.
+      operationId: getPortfolioConfig
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+      responses:
+        "200":
+          description: Successful retrieval of Global Configuration.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioConfig"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /accounts:
+    get:
+      tags: [Objects]
+      summary: Get Account records
+      operationId: getAccounts
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/accountNameParam"
+      responses:
+        "200":
+          description: Successful retrieval of Account records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /skills:
+    get:
+      tags: [Objects]
+      summary: Get Skill records
+      operationId: getSkills
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/contactNameParam"
+      responses:
+        "200":
+          description: Successful retrieval of Skill records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Skill"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /certifications:
+    get:
+      tags: [Objects]
+      summary: Get Certification records
+      operationId: getCertifications
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/contactNameParam"
+        - $ref: "#/components/parameters/issuerNameParam"
+      responses:
+        "200":
+          description: Successful retrieval of Certification records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Certification"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /education:
+    get:
+      tags: [Objects]
+      summary: Get Education records
+      operationId: getEducation
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/contactNameParam"
+        - $ref: "#/components/parameters/schoolNameParam"
+      responses:
+        "200":
+          description: Successful retrieval of Education records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Education"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /project-skills:
+    get:
+      tags: [Junctions]
+      summary: Get Project-Skill Links
+      operationId: getProjectSkills
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/projectIdParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Project-Skill junctions.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectSkill"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /experience-skills:
+    get:
+      tags: [Junctions]
+      summary: Get Experience-Skill Links
+      operationId: getExperienceSkills
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/experienceIdParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Experience-Skill junctions.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExperienceSkill"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /certification-skills:
+    get:
+      tags: [Junctions]
+      summary: Get Certification-Skill Links
+      operationId: getCertificationSkills
+      security:
+        - OAuth2Prod: [sapi.read]
+        - OAuth2Sandbox: [sapi.read]
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - name: certificationId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful retrieval of Certification-Skill junctions.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CertificationSkill"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }

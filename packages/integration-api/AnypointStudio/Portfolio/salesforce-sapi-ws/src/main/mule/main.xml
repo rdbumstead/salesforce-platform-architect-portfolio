@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mule
+  xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+  xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+  xmlns:http="http://www.mulesoft.org/schema/mule/http"
+  xmlns="http://www.mulesoft.org/schema/mule/core"
+  xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+                          http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+                          http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+                          http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd"
+>
+
+    <flow
+    name="get-sfdc-accounts"
+    doc:id="c45aa4fb-f24d-4887-a0b9-471281dd3f5b"
+  >
+        <ee:transform doc:name="Set SOQL Query">
+			<ee:variables>
+				<ee:set-variable resource="queries/accountQuery.dwl" variableName="soqlQuery" />
+			</ee:variables>
+		</ee:transform>
+		<salesforce:query
+      doc:name="Account (Dynamic SOQL)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+		<ee:transform doc:name="To JSON">
+			<ee:message>
+				<ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+
+    <flow
+    name="get-sfdc-certifications"
+    doc:id="25fe5aae-aa1f-4218-9b2d-c9289fe2d845"
+  >
+        <ee:transform doc:name="Set SOQL Query">
+			<ee:variables>
+				<ee:set-variable
+          resource="queries/certificationsQuery.dwl"
+          variableName="soqlQuery"
+        />
+			</ee:variables>
+		</ee:transform>
+        <salesforce:query
+      doc:name="Certification (Dynamic SOQL)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+		<ee:transform doc:name="To JSON">
+			<ee:message>
+				<ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+
+    <flow
+    name="get-sfdc-contacts"
+    doc:id="c9bf1f00-9135-4bde-a57b-da6efa3451e8"
+  >
+        <ee:transform doc:name="Set SOQL Query">
+			<ee:variables>
+				<ee:set-variable resource="queries/contactQuery.dwl" variableName="soqlQuery" />
+			</ee:variables>
+		</ee:transform>
+		<salesforce:query
+      doc:name="Contact (Dynamic SOQL)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+		<ee:transform doc:name="To JSON">
+			<ee:message>
+				<ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+
+    <flow
+    name="get-sfdc-education"
+    doc:id="31da7425-a060-45dd-9880-3b34311405ad"
+  >
+        <ee:transform doc:name="Set SOQL Query">
+			<ee:variables>
+				<ee:set-variable
+          resource="queries/educationQuery.dwl"
+          variableName="soqlQuery"
+        />
+			</ee:variables>
+		</ee:transform>
+        <salesforce:query
+      doc:name="Education (Dynamic SOQL)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+		<ee:transform doc:name="To JSON">
+			<ee:message>
+				<ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+
+    <flow name="get-sfdc-skills" doc:id="6e3d315e-fdee-4eb6-bd33-516e7f940a08">
+        <ee:transform doc:name="Set SOQL Query">
+			<ee:variables>
+				<ee:set-variable resource="queries/skillsQuery.dwl" variableName="soqlQuery" />
+			</ee:variables>
+		</ee:transform>
+        <salesforce:query
+      doc:name="Skills (Dynamic SOQL)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+		<ee:transform doc:name="To JSON">
+			<ee:message>
+				<ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+
+    <flow
+    name="get-sfdc-experience"
+    doc:id="0a73cfdd-34f3-4ea5-ba49-026d2dc921f4"
+  >
+        <ee:transform doc:name="Set SOQL Query">
+			<ee:variables>
+                <ee:set-variable
+          resource="queries/experienceQuery.dwl"
+          variableName="soqlQuery"
+        />
+			</ee:variables>
+		</ee:transform>
+		<salesforce:query
+      doc:name="Experience (Dynamic)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="HTML Clean &amp; JSON">
+			<ee:message>
+				<ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+fun cleanHtml(text) = 
+    if (text == null) null
+    else trim(text replace /<[^>]+>/ with "" replace /&nbsp;/ with " " replace /\r?\n/ with " " replace /\s+/ with " ")
+---
+payload map (item) -> 
+    item update {
+        case acc at .Accomplishments__c -> cleanHtml(acc)
+    }]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+
+    <flow name="get-sfdc-projects">
+        <ee:transform doc:name="Set SOQL Query">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/projectsQuery.dwl"
+          variableName="soqlQuery"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Projects (Dynamic)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="To JSON">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <flow name="get-sfdc-project-assets">
+        <ee:transform doc:name="Set SOQL Query">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/projectAssetsQuery.dwl"
+          variableName="soqlQuery"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Project Assets (Dynamic)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="To JSON">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <flow name="get-sfdc-testimonials">
+        <ee:transform doc:name="Set SOQL Query">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/testimonialsQuery.dwl"
+          variableName="soqlQuery"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Testimonials (Dynamic)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="To JSON">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <flow name="get-sfdc-experience-highlights">
+        <ee:transform doc:name="Set SOQL Query">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/experienceHighlightsQuery.dwl"
+          variableName="soqlQuery"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Highlights (Dynamic)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="To JSON">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <flow name="get-sfdc-portfolio-config">
+        <ee:transform doc:name="Set SOQL Query">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/portfolioConfigQuery.dwl"
+          variableName="soqlQuery"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Config (Dynamic)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="To JSON (Single Object)">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload[0] default {}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <flow name="get-sfdc-project-skills">
+        <ee:transform doc:name="Set SOQL Query">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/projectSkillsQuery.dwl"
+          variableName="soqlQuery"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Project Skills (Dynamic)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="To JSON">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <flow name="get-sfdc-experience-skills">
+        <ee:transform doc:name="Set SOQL Query">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/experienceSkillsQuery.dwl"
+          variableName="soqlQuery"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Experience Skills (Dynamic)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="To JSON">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <flow name="get-sfdc-certification-skills">
+        <ee:transform doc:name="Set SOQL Query">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/certificationSkillsQuery.dwl"
+          variableName="soqlQuery"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Certification Skills (Dynamic)"
+      config-ref="Salesforce_Config"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="To JSON">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <sub-flow name="set-query-params">
+        <set-variable
+      variableName="contactName"
+      value='#[trim(message.attributes.queryParams."contact-name" default "")]'
+      doc:name="contactName"
+    />
+        <set-variable
+      variableName="employerName"
+      value='#[trim(message.attributes.queryParams."employer-name" default "")]'
+      doc:name="employerName"
+    />
+        <set-variable
+      variableName="accountName"
+      value='#[trim(message.attributes.queryParams."account-name" default "")]'
+      doc:name="accountName"
+    />
+        <set-variable
+      variableName="issuerName"
+      value='#[trim(message.attributes.queryParams."issuer" default "")]'
+      doc:name="issuerName"
+    />
+        <set-variable
+      variableName="currentlyEmployed"
+      value='#[trim(message.attributes.queryParams."currently-employed" default "") as Boolean default null]'
+      doc:name="currentlyEmployed"
+    />
+        
+        <set-variable
+      value='#[trim(message.attributes.queryParams."certification-name" default "")]'
+      doc:name="certificationName"
+      doc:id="4e5ae95a-340e-4889-a059-c4d2352dc7bb"
+      variableName="certificationName"
+    />
+		<set-variable
+      variableName="limit"
+      value='#[message.attributes.queryParams."limit" default 50]'
+      doc:name="limit"
+    />
+        <set-variable
+      variableName="offset"
+      value='#[message.attributes.queryParams."offset" default 0]'
+      doc:name="offset"
+    />
+        
+        <set-variable
+      variableName="projectId"
+      value='#[trim(message.attributes.queryParams."projectId" default "")]'
+      doc:name="projectId"
+    />
+        <set-variable
+      variableName="experienceId"
+      value='#[trim(message.attributes.queryParams."experienceId" default "")]'
+      doc:name="experienceId"
+    />
+        <set-variable
+      variableName="certificationId"
+      value='#[trim(message.attributes.queryParams."certificationId" default "")]'
+      doc:name="certificationId"
+    />
+        
+        <set-variable
+      variableName="status"
+      value='#[trim(message.attributes.queryParams."status" default "")]'
+      doc:name="status"
+    />
+        <set-variable
+      variableName="persona"
+      value='#[trim(message.attributes.queryParams."persona" default "")]'
+      doc:name="persona"
+    />
+    </sub-flow>
+</mule>

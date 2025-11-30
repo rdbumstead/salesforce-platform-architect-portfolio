@@ -1,26 +1,23 @@
-public class CacheCleanupOrchestrator {
-
-    public void run() {
-
-        if (!CacheCleanupSettings.isEnabled()) {
-            return;
-        }
-
-        Database.executeBatch(
-            new GithubCacheCleanupBatch(),
-            CacheCleanupSettings.batchSize()
-        );
+public inherited sharing class CacheCleanupOrchestrator {
+  public void run() {
+    if (!CacheCleanupSettings.isEnabled()) {
+      return;
     }
 
-    public static void runJiraCleanup() {
+    Database.executeBatch(
+      new GithubCacheCleanupBatch(),
+      CacheCleanupSettings.batchSize()
+    );
+  }
 
-        if (!CacheCleanupSettings.isEnabled()) {
-            return;
-        }
-
-        Database.executeBatch(
-            new JiraCacheCleanupBatch(),
-            CacheCleanupSettings.batchSize()
-        );
+  public static void runJiraCleanup() {
+    if (!CacheCleanupSettings.isEnabled()) {
+      return;
     }
+
+    Database.executeBatch(
+      new JiraCacheCleanupBatch(),
+      CacheCleanupSettings.batchSize()
+    );
+  }
 }
