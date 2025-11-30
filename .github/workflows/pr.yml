@@ -52,7 +52,7 @@ jobs:
       # ------------------------------------------------------------------
       # 3. Static Analysis
       # ------------------------------------------------------------------
-      - name: Configure and Run Code Analyzer per Package
+      - name: Run Salesforce Code Analyzer
         run: |
           if [[ ! -f "ruleset.xml" ]]; then
             echo "ERROR: ruleset.xml not found"
@@ -66,26 +66,15 @@ jobs:
           echo "  eslint:" >> code-analyzer.yml
           echo "    auto_discover_eslint_config: true" >> code-analyzer.yml
 
+          echo "Generated Config Content:"
           cat code-analyzer.yml
-          echo "Workspace Root: $GITHUB_WORKSPACE"
 
-          for RELATIVE_DIR in packages/*/main; do
-            if [[ -d "$RELATIVE_DIR" ]]; then
-            
-              ABSOLUTE_TARGET="$GITHUB_WORKSPACE/$RELATIVE_DIR"
-              ABSOLUTE_CONFIG="$GITHUB_WORKSPACE/code-analyzer.yml"
-              
-              echo "-------------------------------------------"
-              echo "Scanning: $ABSOLUTE_TARGET"
-              echo "-------------------------------------------"
-              
-              sf code-analyzer run \
-                --workspace "$GITHUB_WORKSPACE" \
-                --config-file "$ABSOLUTE_CONFIG" \
-                --target "$ABSOLUTE_TARGET" \
-                --severity-threshold 2
-            fi
-          done
+          # We explicitly set workspace and target to GITHUB_WORKSPACE
+          # to avoid the "TypeError: undefined" bug with relative paths on Linux.
+          sf code-analyzer run \
+            --workspace "$GITHUB_WORKSPACE" \
+            --target "$GITHUB_WORKSPACE/packages" \
+            --severity-threshold 2
         shell: /usr/bin/bash -e {0}
         continue-on-error: false
 
