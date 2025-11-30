@@ -1,30 +1,99 @@
 name: Validate PR
+
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'packages/**'
+      - "packages/shared-modules/**"
+      - "packages/integration-api/**"
+      - "packages/employer-hub-demo/**"
+      - "packages/portfolio-site/**"
+      - "sfdx-project.json"
 
 jobs:
   validate-and-test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
-     
+        with:
+          fetch-depth: 0
+
+      # ------------------------------------------------------------------
+      # 1. Setup & LWC Tests
+      # ------------------------------------------------------------------
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install NPM Dependencies
+        run: npm ci
+
+      - name: Run LWC Jest Tests
+        run: npm run test:unit
+
+      # ------------------------------------------------------------------
+      # 2. Salesforce Setup
+      # ------------------------------------------------------------------
       - name: Install Salesforce CLI
         run: npm install @salesforce/cli --global
-     
+
+      - name: Install sfdx-git-delta
+        run: echo y | sf plugins install sfdx-git-delta
+
       - name: Install Code Analyzer
         run: sf plugins install code-analyzer
-     
+
       - name: Authenticate via JWT
         run: |
           echo "${{ secrets.SFDX_JWT_KEY }}" > portfolio.key
-          sf org login jwt --client-id ${{ secrets.SFDX_CLIENT_ID }} --jwt-key-file portfolio.key --username ${{ secrets.SFDX_USERNAME }} --alias portfolio --instance-url https://login.salesforce.com
-     
+          sf org login jwt \
+            --client-id ${{ secrets.SFDX_CLIENT_ID }} \
+            --jwt-key-file portfolio.key \
+            --username ${{ secrets.SFDX_USERNAME }} \
+            --alias portfolio \
+            --instance-url https://login.salesforce.com
+
+      # ------------------------------------------------------------------
+      # 3. Static Analysis
+      # ------------------------------------------------------------------
       - name: Run PMD Static Code Analysis
         run: sf code-analyzer run --target "packages" --rule-selector pmd:portfoliorules --severity-threshold 1
-     
-      - name: Run Apex Tests
-        run: sf apex run test --code-coverage --result-format human --wait 10 --target-org portfolio
+
+      # ------------------------------------------------------------------
+      # 4. Generate Delta (PR Specific Logic)
+      # ------------------------------------------------------------------
+      - name: Generate Delta
+        run: |
+          git fetch origin main
+          mkdir -p changed
+          sf sgd source delta \
+            --to "HEAD" \
+            --from "origin/main" \
+            --output changed \
+            --source packages \
+            --generate-delta \
+            --log-level DEBUG
+
+      # ------------------------------------------------------------------
+      # 5. Validation (Dry Run)
+      # ------------------------------------------------------------------
+      - name: Validate Deployment (Dry Run)
+        run: |
+          if [ -s changed/package/package.xml ]; then
+            echo "Validating changes against Production..."
+            
+            sf project deploy start \
+              --manifest changed/package/package.xml \
+              --post-destructive-changes changed/destructiveChanges/destructiveChanges.xml \
+              --target-org portfolio \
+              --dry-run \
+              --test-level RunLocalTests \
+              --wait 20 \
+              --log-level DEBUG
+          else
+            echo "No Salesforce metadata changes detected. Skipping validation."
+          fi

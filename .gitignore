@@ -6,6 +6,7 @@
 .sf/
 **/.sfdx
 **/.sf
+.localdevserver
 
 # Metadata retrieve/deploy temp folders & local auth
 .deploys/
@@ -17,7 +18,6 @@ config/project-scratch-def.json.bak
 
 # Local CLI configuration
 sfdx-config.json
-.localdevserver
 
 # LWC / Apex Language Server typings (auto-generated)
 .vscode/sfdx/
@@ -27,6 +27,12 @@ typings/
 # Code Scanner / PMD Cache
 .pmdCache/
 .scannerwork/
+
+# ---------------------------------------------------------------------
+# Scan Reports & Delta Artifacts
+# ---------------------------------------------------------------------
+scan-results.html
+changed/
 
 # ---------------------------------------------------------------------
 # Node.js / JavaScript / LWC
@@ -39,6 +45,7 @@ node_modules/
 coverage/
 **/coverage/
 junit/
+junit.xml
 test-result/
 **/test-result/
 test-results/
@@ -84,12 +91,11 @@ Desktop.ini
 .LSOverride
 
 # Visual Studio Code
-# Ignore user state, BUT preserve team-shared configs:
 .vscode/*
-!.vscode/settings.json      # Shared Prettier/ESLint rules
-!.vscode/tasks.json         # Shared build tasks
-!.vscode/launch.json        # Shared debug configurations
-!.vscode/extensions.json    # Recommended extensions
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 *.code-workspace
 
 # IntelliJ / WebStorm
@@ -99,7 +105,6 @@ Desktop.ini
 # ---------------------------------------------------------------------
 # Documentation & Binary Artifacts
 # ---------------------------------------------------------------------
-# BEST PRACTICE: Ignore binary/generated documents to prevent repo bloat.
 *.pdf
 *.docx
 *.doc
@@ -120,30 +125,22 @@ Desktop.ini
 # ---------------------------------------------------------------------
 # CI/CD & Build Artifacts
 # ---------------------------------------------------------------------
-# General Build Artifacts
 dist/
 build/
 .tmp/
 .temp/
 .cache/
-
-# GitHub Actions local testing (if using 'act')
 .act/
 .github/workflows/.act/
-
-# Salesforce Deployment Artifacts
 .deploy/
 deploy/deploy-packages/
 
 # ---------------------------------------------------------------------
-# Local Integration Testing & AWS (Phase 8)
+# Local Integration Testing & AWS
 # ---------------------------------------------------------------------
-# Mock API responses & Local Test Data
 **/mocks/responses/*.json.local
 **/test-data/*.local.json
 postman_collection.local.json
-
-# AWS Lambda / Serverless
 .aws-sam/
 samconfig.toml.local
 lambda-layer-*.zip

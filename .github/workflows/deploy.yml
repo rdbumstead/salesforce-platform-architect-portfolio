@@ -1,26 +1,82 @@
 name: Deploy to Production
+
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'packages/employer-hub-demo/**'
-      - 'packages/integration-api/**'
-      - 'packages/portfolio-site/**'
-      - 'packages/shared-modules/**'
-      - 'sfdx-project.json'
+      - "packages/shared-modules/**"
+      - "packages/integration-api/**"
+      - "packages/employer-hub-demo/**"
+      - "packages/portfolio-site/**"
+      - "sfdx-project.json"
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
 
+    steps:
+      # ------------------------------------------------------------------
+      # 1. Checkout Code
+      # ------------------------------------------------------------------
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # ------------------------------------------------------------------
+      # 2. Salesforce Setup
+      # ------------------------------------------------------------------
       - name: Install Salesforce CLI
         run: npm install @salesforce/cli --global
+
+      - name: Install sfdx-git-delta
+        run: echo y | sf plugins install sfdx-git-delta
 
       - name: Authenticate via JWT
         run: |
           echo "${{ secrets.SFDX_JWT_KEY }}" > portfolio.key
-          sf org login jwt --client-id ${{ secrets.SFDX_CLIENT_ID }} --jwt-key-file portfolio.key --username ${{ secrets.SFDX_USERNAME }} --alias portfolio --instance-url https://login.salesforce.com
+          sf org login jwt \
+            --client-id ${{ secrets.SFDX_CLIENT_ID }} \
+            --jwt-key-file portfolio.key \
+            --username ${{ secrets.SFDX_USERNAME }} \
+            --alias portfolio \
+            --instance-url https://login.salesforce.com
 
-      - name: Deploy Source
-        run: sf project deploy start --source-dir packages --target-org portfolio --wait 10
+      # ------------------------------------------------------------------
+      # 3. Generate Delta
+      # ------------------------------------------------------------------
+      - name: Generate Delta
+        run: |
+          mkdir -p changed
+
+          # Handle the edge case of the very first commit/branch creation
+          FROM_SHA="${{ github.event.before }}"
+          if [ "$FROM_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "First push detected. Using empty tree for full delta."
+            FROM_SHA="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+          fi
+
+          sf sgd source delta \
+            --to "HEAD" \
+            --from "$FROM_SHA" \
+            --output changed \
+            --source packages \
+            --generate-delta \
+            --log-level DEBUG
+
+      # ------------------------------------------------------------------
+      # 4. Deploy to Production
+      # ------------------------------------------------------------------
+      - name: Deploy Delta
+        run: |
+          if [ -s changed/package/package.xml ]; then
+            echo "Detected Salesforce metadata changes. Deploying..."
+
+            sf project deploy start \
+              --manifest changed/package/package.xml \
+              --post-destructive-changes changed/destructiveChanges/destructiveChanges.xml \
+              --target-org portfolio \
+              --wait 20 \
+              --log-level DEBUG
+          else
+            echo "No Salesforce metadata changes detected. Skipping deploy."
+          fi
