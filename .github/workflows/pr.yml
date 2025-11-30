@@ -37,7 +37,7 @@ jobs:
         run: npm install @salesforce/cli --global
 
       - name: Install Code Analyzer
-        run: sf plugins install code-analyzer
+        run: sf plugins install @salesforce/plugin-code-analyzer
 
       - name: Authenticate Dev Hub
         run: |
@@ -52,8 +52,18 @@ jobs:
       # ------------------------------------------------------------------
       # 3. Static Analysis
       # ------------------------------------------------------------------
-      - name: Run PMD Static Code Analysis
-        run: sf code-analyzer run --target "packages" --rule-selector pmd:portfoliorules --severity-threshold 3
+      - name: Run Static Code Analysis with Code Analyzer Config
+        run: |
+          export NODE_OPTIONS="--max-old-space-size=4096"
+          sf code-analyzer run \
+            --workspace . \
+            --severity-threshold 3
+        continue-on-error: false
+
+      # Run ESLint separately via npm (more reliable than Code Analyzer)
+      - name: Run ESLint on LWC/Aura
+        run: npm run lint
+        continue-on-error: true
 
       # ------------------------------------------------------------------
       # 4. Scratch Org Execution (Create & Push)

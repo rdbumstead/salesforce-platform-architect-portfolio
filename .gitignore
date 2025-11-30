@@ -52,6 +52,7 @@ assets/portfolio.key
 # ---------------------------------------------------------------------
 # Build Artifacts & Compiled Code
 target/
+**/target/
 *.jar
 *.war
 *.zip
@@ -63,6 +64,7 @@ target/
 .classpath
 .settings/
 .metadata/
+**/META-INF/
 
 # Logs
 *.log
@@ -111,6 +113,9 @@ test-results/
 # ---------------------------------------------------------------------
 # Scanner Reports & Delta Output
 scan-results.html
+results.html
+results.csv
+results.json
 changed/
 
 # Build Artifacts
