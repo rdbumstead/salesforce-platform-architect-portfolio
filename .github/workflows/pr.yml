@@ -71,16 +71,17 @@ jobs:
 
           cat code-analyzer.yml
 
-          for PACKAGE_PATH in packages/*/main; do
-            if [[ -d "$PACKAGE_PATH" ]]; then
+          for PACKAGE_REL_PATH in packages/*/main; do
+            if [[ -d "$PACKAGE_REL_PATH" ]]; then
+              PACKAGE_ABS_PATH="$(realpath "$PACKAGE_REL_PATH")"
               echo "-------------------------------------------"
-              echo "Analyzing package: $PACKAGE_PATH"
+              echo "Analyzing package: $PACKAGE_ABS_PATH"
               echo "-------------------------------------------"
               sf code-analyzer run \
-                --target "$PACKAGE_PATH" \
+                --target "$PACKAGE_ABS_PATH" \
                 --severity-threshold 2
             else
-              echo "Skipping $PACKAGE_PATH – not a directory"
+              echo "Skipping $PACKAGE_REL_PATH – not a directory"
             fi
           done
         shell: /usr/bin/bash -e {0}
@@ -124,4 +125,3 @@ jobs:
       - name: Delete Scratch Org
         if: always()
         run: sf org delete scratch --target-org ci-org --no-prompt || true
-        continue-on-error: true
