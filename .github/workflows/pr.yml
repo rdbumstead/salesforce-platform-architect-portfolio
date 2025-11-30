@@ -69,12 +69,17 @@ jobs:
           echo "Generated Config Content:"
           cat code-analyzer.yml
 
-          # We explicitly set workspace and target to GITHUB_WORKSPACE
-          # to avoid the "TypeError: undefined" bug with relative paths on Linux.
-          sf code-analyzer run \
-            --workspace "$GITHUB_WORKSPACE" \
-            --target "$GITHUB_WORKSPACE/packages" \
-            --severity-threshold 2
+          for PACKAGE_DIR in packages/*/main; do
+            if [[ -d "$PACKAGE_DIR" ]]; then
+              echo "-------------------------------------------"
+              echo "Analyzing package: $PACKAGE_DIR"
+              echo "-------------------------------------------"
+              sf code-analyzer run \
+                --workspace "$GITHUB_WORKSPACE" \
+                --target "$PACKAGE_DIR" \
+                --severity-threshold 2
+            fi
+          done
         shell: /usr/bin/bash -e {0}
         continue-on-error: false
 
