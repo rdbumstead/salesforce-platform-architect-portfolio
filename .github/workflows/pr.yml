@@ -111,11 +111,15 @@ jobs:
 
       - name: Deploy Configuration Metadata
         run: |
-          sf project deploy start \
-            --metadata-dir packages/portfolio-site/main/default/permissionsets \
-            --target-org ci-org \
-            --ignore-warnings \
-            --wait 10
+          if [ -d "packages/portfolio-site/main/default/permissionsets" ] && [ "$(ls -A packages/portfolio-site/main/default/permissionsets)" ]; then
+            sf project deploy start \
+              --metadata-dir packages/portfolio-site/main/default/permissionsets \
+              --target-org ci-org \
+              --ignore-warnings \
+              --wait 10
+          else
+            echo "No permission sets to deploy, skipping configuration metadata step"
+          fi
         continue-on-error: true
 
       - name: Verify Core Deployment
