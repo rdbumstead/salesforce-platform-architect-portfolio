@@ -56,19 +56,39 @@ jobs:
         id: resolve-targets
         shell: bash
         run: |
-          TARGETS=$(find packages -type d -path "*/main/default" | paste -sd, -)
+          POTENTIAL_TARGETS=$(find packages -type d -path "*/main/default")
+          TARGETS=""
+          for dir in $POTENTIAL_TARGETS; do
+            # Check if directory has any files not ignored (e.g., exclude jsconfig.json, .eslintrc.json per .forceignore)
+            if [ $(find "$dir" -type f ! -name "jsconfig.json" ! -name ".eslintrc.json" | wc -l) -gt 0 ]; then
+              if [ -z "$TARGETS" ]; then
+                TARGETS="$dir"
+              else
+                TARGETS="$TARGETS,$dir"
+              fi
+            fi
+          done
           if [ -z "$TARGETS" ]; then
-            echo "No main/default directories found. Falling back to scanning all packages."
+            echo "No valid main/default directories with scannable files found. Falling back to scanning all packages."
             TARGETS="packages"
           fi
           echo "Resolved targets: $TARGETS"
           echo "targets=$TARGETS" >> $GITHUB_OUTPUT
 
-      - name: Debug Directory Structure
+      - name: Debug Directory Structure and CLI Version
         shell: bash
         run: |
           echo "Listing packages directory structure:"
           ls -R packages
+          echo "Salesforce CLI version:"
+          sf version --verbose
+          sf plugins --core
+
+      - name: Reinstall Code Analyzer Plugin
+        shell: bash
+        run: |
+          sf plugins uninstall code-analyzer || true  # Ignore if not installed
+          sf plugins install code-analyzer@latest
 
       - name: Run Salesforce Code Analyzer
         shell: bash
@@ -76,7 +96,8 @@ jobs:
           sf code-analyzer run \
             --target "${{ steps.resolve-targets.outputs.targets }}" \
             --rule-selector pmd:PortfolioSecurityRules \
-            --severity-threshold 2
+            --severity-threshold 2 \
+            --loglevel trace  # For detailed error logs
 
       # ------------------------------------------------------------------
       # 4. Scratch Org Execution
