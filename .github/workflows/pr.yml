@@ -54,34 +54,30 @@ jobs:
       # ------------------------------------------------------------------
       - name: Configure and Run Code Analyzer per Package
         run: |
-          RULESET_PATH="$(realpath ruleset.xml)"
-
-          if [[ ! -f "$RULESET_PATH" ]]; then
-            echo "ERROR: ruleset.xml not found at $RULESET_PATH"
+          if [[ ! -f "ruleset.xml" ]]; then
+            echo "ERROR: ruleset.xml not found"
             exit 1
           fi
-          echo "Using ruleset at: $RULESET_PATH"
 
           echo "engines:" > code-analyzer.yml
           echo "  pmd:" >> code-analyzer.yml
           echo "    custom_rulesets:" >> code-analyzer.yml
-          echo "      - $RULESET_PATH" >> code-analyzer.yml
+          echo "      - ruleset.xml" >> code-analyzer.yml
           echo "  eslint:" >> code-analyzer.yml
           echo "    auto_discover_eslint_config: true" >> code-analyzer.yml
 
           cat code-analyzer.yml
 
-          for PACKAGE_REL_PATH in packages/*/main; do
-            if [[ -d "$PACKAGE_REL_PATH" ]]; then
-              PACKAGE_ABS_PATH="$(realpath "$PACKAGE_REL_PATH")"
+          for PACKAGE_DIR in packages/*/main; do
+            if [[ -d "$PACKAGE_DIR" ]]; then
               echo "-------------------------------------------"
-              echo "Analyzing package: $PACKAGE_ABS_PATH"
+              echo "Scanning: $PACKAGE_DIR"
               echo "-------------------------------------------"
+              
+              # Run scan relative to root (keeps context valid)
               sf code-analyzer run \
-                --target "$PACKAGE_ABS_PATH" \
+                --target "$PACKAGE_DIR" \
                 --severity-threshold 2
-            else
-              echo "Skipping $PACKAGE_REL_PATH – not a directory"
             fi
           done
         shell: /usr/bin/bash -e {0}
