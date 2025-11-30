@@ -52,31 +52,22 @@ jobs:
       # ------------------------------------------------------------------
       # 3. Static Analysis
       # ------------------------------------------------------------------
-      - name: Configure and Run Code Analyzer per Package
+      - name: Run Salesforce Code Analyzer
         run: |
           if [[ ! -f "ruleset.xml" ]]; then
-            echo "ERROR: ruleset.xml not found in repo root"
+            echo "ERROR: ruleset.xml not found"
             exit 1
           fi
 
           printf "engines:\n  pmd:\n    custom_rulesets:\n      - ruleset.xml\n  eslint:\n    auto_discover_eslint_config: true\n" > code-analyzer.yml
 
-          echo "Generated Config Content:"
+          echo "Generated Config:"
           cat code-analyzer.yml
 
-          for PACKAGE_DIR in packages/*/main; do
-            if [[ -d "$PACKAGE_DIR" ]]; then
-              echo "-------------------------------------------"
-              echo "Scanning: $PACKAGE_DIR"
-              echo "-------------------------------------------"
-              
-              sf code-analyzer run \
-                --config-file "code-analyzer.yml" \
-                --target "$PACKAGE_DIR" \
-                --format table \
-                --severity-threshold 2
-            fi
-          done
+          sf code-analyzer run \
+            --target "." \
+            --format table \
+            --severity-threshold 2
         shell: /usr/bin/bash -e {0}
         continue-on-error: false
 
