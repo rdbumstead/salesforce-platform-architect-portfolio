@@ -57,7 +57,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
         run: |
           sf code-analyzer run \
-            --workspace . \
+            --workspace "." \
             --severity-threshold 2
         continue-on-error: false
 
