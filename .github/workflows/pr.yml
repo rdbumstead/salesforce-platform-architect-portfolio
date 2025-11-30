@@ -97,8 +97,7 @@ jobs:
           sf code-analyzer run \
             --target "${{ steps.resolve-targets.outputs.targets }}" \
             --rule-selector pmd:PortfolioSecurityRules \
-            --severity-threshold 2 \
-            --loglevel trace  # For detailed error logs
+            --severity-threshold 2
 
       # ------------------------------------------------------------------
       # 4. Scratch Org Execution
