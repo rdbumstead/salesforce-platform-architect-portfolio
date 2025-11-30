@@ -53,8 +53,6 @@ jobs:
       # 3. Static Analysis
       # ------------------------------------------------------------------
       - name: Run Static Code Analysis
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
         run: sf code-analyzer run --workspace packages --severity-threshold 2
         continue-on-error: false
 
