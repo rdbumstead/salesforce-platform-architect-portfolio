@@ -111,9 +111,13 @@ jobs:
 
       - name: Deploy Configuration Metadata
         run: |
-          if [ -d "packages/portfolio-site/main/default/permissionsets" ] && [ "$(ls -A packages/portfolio-site/main/default/permissionsets)" ]; then
+          # Count actual .permissionset-meta.xml files (excluding .forceignore'd ones)
+          PERMSET_COUNT=$(find packages/portfolio-site/main/default/permissionsets -name "*.permissionset-meta.xml" 2>/dev/null | wc -l)
+
+          if [ "$PERMSET_COUNT" -gt 0 ]; then
+            echo "Found $PERMSET_COUNT permission set(s) to deploy"
             sf project deploy start \
-              --metadata-dir packages/portfolio-site/main/default/permissionsets \
+              --source-dir packages/portfolio-site/main/default/permissionsets \
               --target-org ci-org \
               --ignore-warnings \
               --wait 10
