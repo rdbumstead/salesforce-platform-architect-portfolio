@@ -55,32 +55,25 @@ jobs:
       - name: Configure and Run Code Analyzer per Package
         run: |
           if [[ ! -f "ruleset.xml" ]]; then
-            echo "ERROR: ruleset.xml not found"
+            echo "ERROR: ruleset.xml not found in repo root"
             exit 1
           fi
 
-          echo "engines:" > code-analyzer.yml
-          echo "  pmd:" >> code-analyzer.yml
-          echo "    custom_rulesets:" >> code-analyzer.yml
-          echo "      - $GITHUB_WORKSPACE/ruleset.xml" >> code-analyzer.yml
-          echo "  eslint:" >> code-analyzer.yml
-          echo "    auto_discover_eslint_config: true" >> code-analyzer.yml
+          printf "engines:\n  pmd:\n    custom_rulesets:\n      - ruleset.xml\n  eslint:\n    auto_discover_eslint_config: true\n" > code-analyzer.yml
 
           echo "Generated Config Content:"
           cat code-analyzer.yml
 
           for PACKAGE_DIR in packages/*/main; do
             if [[ -d "$PACKAGE_DIR" ]]; then
-              TARGET_ABS="$GITHUB_WORKSPACE/$PACKAGE_DIR"
-              
               echo "-------------------------------------------"
-              echo "Scanning: $TARGET_ABS"
+              echo "Scanning: $PACKAGE_DIR"
               echo "-------------------------------------------"
               
               sf code-analyzer run \
-                --workspace "$GITHUB_WORKSPACE" \
-                --config-file "$GITHUB_WORKSPACE/code-analyzer.yml" \
-                --target "$TARGET_ABS" \
+                --config-file "code-analyzer.yml" \
+                --target "$PACKAGE_DIR" \
+                --format table \
                 --severity-threshold 2
             fi
           done
