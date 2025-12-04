@@ -34,10 +34,6 @@ graph TD
     Apex -->|SOQL| DB
     Apex -->|Grounding| AI
     Apex -->|REST/Named Creds| External_Services
-    
-    style Client_Layer fill:#f9f9f9,stroke:#333,stroke-dasharray: 5 5
-    style Salesforce_Core fill:#e1f5fe,stroke:#0288d1
-    style External_Services fill:#fff3e0,stroke:#ff9800
 ```
 
 ---
