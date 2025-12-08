@@ -52,7 +52,7 @@ jobs:
       # ------------------------------------------------------------------
       # 3. Static Analysis
       # ------------------------------------------------------------------
-      - name: Set up Node.js
+      - name: Set up Node.js for Scanner
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -61,23 +61,8 @@ jobs:
         id: resolve-targets
         shell: bash
         run: |
-          POTENTIAL_TARGETS=$(find packages -type d -path "*/main/default")
-          TARGETS=""
-          for dir in $POTENTIAL_TARGETS; do
-            if [ $(find "$dir" -type f ! -name "jsconfig.json" ! -name ".eslintrc.json" | wc -l) -gt 0 ]; then
-              if [ -z "$TARGETS" ]; then
-                TARGETS="$dir"
-              else
-                TARGETS="$TARGETS,$dir"
-              fi
-            fi
-          done
-          if [ -z "$TARGETS" ]; then
-            echo "No valid main/default directories with scannable files found. Falling back to scanning all packages."
-            TARGETS="packages"
-          fi
-          echo "Resolved targets: $TARGETS"
-          echo "targets=$TARGETS" >> $GITHUB_OUTPUT
+          # Scanning all packages to catch issues in Phase 2 API code as well
+          echo "targets=packages" >> $GITHUB_OUTPUT
 
       - name: Run Salesforce Code Analyzer
         shell: bash
@@ -101,28 +86,30 @@ jobs:
             --no-ancestors \
             --wait 10
 
-      - name: Deploy Core Metadata
+      - name: Deploy Core Metadata (Phase 1 & 2)
         run: |
           sf project deploy start \
             --source-dir packages/shared-modules/main/default \
+            --source-dir packages/integration-api/main/default \
             --source-dir packages/portfolio-site/main/default \
             --target-org ci-org \
             --wait 10
 
-      - name: Deploy Configuration Metadata
+      - name: Deploy Configuration Metadata (Permission Sets)
         run: |
-          # Count actual .permissionset-meta.xml files (excluding .forceignore'd ones)
-          PERMSET_COUNT=$(find packages/portfolio-site/main/default/permissionsets -name "*.permissionset-meta.xml" 2>/dev/null | wc -l)
+          # Find permission sets across all packages
+          PERMSET_COUNT=$(find packages -name "*.permissionset-meta.xml" 2>/dev/null | wc -l)
 
           if [ "$PERMSET_COUNT" -gt 0 ]; then
             echo "Found $PERMSET_COUNT permission set(s) to deploy"
+            # Deploying specifically the permission sets found in the packages
             sf project deploy start \
-              --source-dir packages/portfolio-site/main/default/permissionsets \
+              --metadata PermissionSet \
               --target-org ci-org \
               --ignore-warnings \
               --wait 10
           else
-            echo "No permission sets to deploy, skipping configuration metadata step"
+            echo "No permission sets to deploy"
           fi
         continue-on-error: true
 
@@ -141,6 +128,7 @@ jobs:
           sf apex run test \
             --target-org ci-org \
             --code-coverage \
+            --coverage-requirement 75 \
             --result-format human \
             --wait 10
 
