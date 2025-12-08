@@ -16,59 +16,30 @@ The high-level data flow demonstrating the multi-cloud, API-led
 strategy.
 
 graph LR
+User((User)) --> LWR[Experience Cloud LWR]
 
-User((User)) \—\> LWR\[Experience Cloud LWR\]
+    %% DOOR 1 – Native Salesforce GraphQL (MVP – Q1 2026)
+    LWR -->|"Native GraphQL\nlightning/uiGraphQLApi"| SF_GQL[Salesforce GraphQL API]
+    SF_GQL --> DB[(Custom Objects)]
 
-%% DOOR 1 — Native Salesforce GraphQL (everyday site — fastest path)
+    %% DOOR 2 – External Polyglot BFF (Phase 8 – Q2 2026)
+    LWR -->|"GraphQL or RESTnx-api-key header"| Lambda["AWS Lambda Polyglot Gatewayn(Function URL)"]
 
-LWR \—\>\|"Native GraphQL
-lightning/uiGraphQLApi"\|
-SF_GQL\[Salesforce GraphQL API\]
+    %% Classic Apex REST path
+    LWR -->|"Apex REST"| Apex[Apex Runtime]
+    Lambda -->|"REST via Named Credentials"| Apex
 
-SF_GQL \—\> DB\[(Custom Objects)\]
+    %% External integrations
+    Apex -->|"REST"| Jira[Jira API]
+    Apex -->|"REST"| GitHub[GitHub API]
 
-%% DOOR 2 — External Polyglot BFF (API Lab, mobile apps, governance
-demo)
+    %% Future extensions
+    Lambda -->|"Serverless"| Resume["Resume Enginen(Future)"]
 
-LWR \—\>\|"GraphQL or REST
-x-api-key header"\| Lambda\["AWS Lambda
-Polyglot Gateway
-(Function URL)"\]
+    %% AI stays on-platform
+    Apex <--> AI[Agentforce]
 
-%% Classic Apex REST path (still used by some components and Lambda)
-
-LWR \—\>\|"Apex REST"\| Apex\[Apex Runtime\]
-
-Lambda \—\>\|"REST via Named Credentials"\| Apex
-
-%% External integrations
-
-Apex \—\>\|"REST"\| Jira\[Jira API\]
-
-Apex \—\>\|"REST"\| GitHub\[GitHub API\]
-
-%% Future extensions
-
-Lambda \—\>\|"Serverless"\| Resume\["Resume Engine
-(Future)"\]
-
-%% AI stays on-platform
-
-Apex \<\—\> AI\[Agentforce\]
-
-%% Styling
-
-style Lambda fill:#FF9900,stroke:#333,color:white
-
-style Apex fill:#00A1E0,stroke:#333,color:white
-
-style LWR fill:#00A1E0,stroke:#333,color:white
-
-style SF_GQL fill:#00A1E0,stroke:#333,color:white
-
-style DB fill:#666,stroke:#666,color:white
-
-%% Optional legend (uncomment if you want it)
+%% Optional legend
 
 %% classDef legend fill:#f9f9f9,stroke:#aaa,stroke-dasharray: 5 5
 
@@ -1498,41 +1469,16 @@ architecture strictly adheres to Free Tier limits.
 
 - DataWeave Queries: /mulesoft/src/main/resources/queries/\\\*.dwl
 
-### **Appendix M: Cross-Cutting Pattern — Dual-Door Integration Strategy (Native vs External GraphQL)**
+### Appendix M: Cross-Cutting Pattern — Dual-Door Integration Strategy
 
-————————————————————————————————————-
-**Feature** **Door 1 — Native Salesforce **Door 2 — AWS Lambda
-GraphQL Polyglot BFF (Function
-(lightning/uiGraphQLApi)** URL)**
-———————— ———————————————- ————————————
-**Timeline** MVP — Q1 2026 Phase 8 — Q2 2026
-(design complete)
-
-**Primary All internal LWC components API Lab "Enterprise
-Consumers** (Skill Graph, Roadmap, Mode", future mobile
-Projects) apps, external consumers
-
-**Technology** lightning/uiGraphQLApi wire Single Lambda Function
-adapter URL + in-function
-governance
-
-**Latency** Lowest possible (LDS + UI Single external
-cache) round-trip
-
-**Caching** Automatic via Lightning Data In-memory or DynamoDB
-Service inside Lambda
-
-**Governance** Platform-managed Full enterprise policies
-(API keys, rate limits,
-analytics)
-
-**Payload Platform-optimized 85—92% reduction vs
-Reduction** parallel REST calls
-
-**Cost** \$0 \$0.00 forever (no API
-Gateway, no VPC)
-
-**Current Planned: MVP — Q1 2026 Fully architected &
-Status** documented — activation
-in Phase 8
-————————————————————————————————————-
+| Feature           | Door 1 — Native Salesforce GraphQL (lightning/uiGraphQLApi) | Door 2 — AWS Lambda Polyglot BFF (Function URL)         |
+| ----------------- | ----------------------------------------------------------- | ------------------------------------------------------- |
+| Timeline          | MVP — Q1 2026 (planned)                                     | Phase 8 — Q2 2026 (design complete)                     |
+| Primary Consumers | All internal LWC components                                 | API Lab “Enterprise Mode”, future mobile apps           |
+| Technology        | lightning/uiGraphQLApi wire adapter                         | Single Lambda Function URL + in-function governance     |
+| Latency           | Lowest possible (LDS + UI cache)                            | Single external round-trip                              |
+| Caching           | Automatic via Lightning Data Service                        | In-memory / DynamoDB                                    |
+| Governance        | Platform-managed                                            | Full enterprise policies (keys, rate limits, analytics) |
+| Payload Reduction | Platform-optimized                                          | 85–92 % vs parallel REST calls                          |
+| Cost              | $0                                                          | $0.00 forever (no API Gateway, no VPC)                  |
+| Current Status    | Planned for MVP launch                                      | Fully architected — activation in Phase 8               |
