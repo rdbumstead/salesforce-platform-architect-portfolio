@@ -19,9 +19,9 @@ jobs:
       # 1. Setup Node and Run LWC Tests
       # ------------------------------------------------------------------
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
           cache: "npm"
 
       - name: Install NPM Dependencies
@@ -52,16 +52,10 @@ jobs:
       # ------------------------------------------------------------------
       # 3. Static Analysis
       # ------------------------------------------------------------------
-      - name: Set up Node.js for Scanner
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
       - name: Resolve valid Salesforce analyzer targets
         id: resolve-targets
         shell: bash
         run: |
-          # Scanning all packages to catch issues in Phase 2 API code as well
           echo "targets=packages" >> $GITHUB_OUTPUT
 
       - name: Run Salesforce Code Analyzer
@@ -73,47 +67,68 @@ jobs:
             --severity-threshold 2
 
       # ------------------------------------------------------------------
-      # 4. Scratch Org Execution
+      # 4. Scratch Org Execution (With Limit Fallback)
       # ------------------------------------------------------------------
-      - name: Create Scratch Org
+      - name: Create Scratch Org or Fallback
+        id: create_org
         run: |
-          sf org create scratch \
+          echo "ORG_TYPE=scratch" >> $GITHUB_ENV
+
+          set +e
+          OUTPUT=$(sf org create scratch \
             --target-dev-hub devhub \
             --definition-file config/project-scratch-def.json \
             --alias ci-org \
             --duration-days 1 \
             --set-default \
             --no-ancestors \
-            --wait 10
+            --wait 30 \
+            --json 2>&1)
+          EXIT_CODE=$?
+          set -e
 
-      - name: Deploy Core Metadata (Phase 1 & 2)
+          if [ $EXIT_CODE -ne 0 ]; then
+            if echo "$OUTPUT" | grep -q "LimitExceeded"; then
+               echo "Scratch Org limit reached. Switching to Dev Hub Validation Mode."
+               echo "ORG_TYPE=fallback" >> $GITHUB_ENV
+            else
+               echo "Error creating scratch org:"
+               echo "$OUTPUT"
+               exit 1
+            fi
+          else
+             echo "Scratch org created successfully."
+          fi
+
+      - name: Deploy Core Metadata (Scratch Only)
+        if: env.ORG_TYPE == 'scratch'
         run: |
           sf project deploy start \
             --source-dir packages/shared-modules/main/default \
             --source-dir packages/integration-api/main/default \
             --source-dir packages/portfolio-site/main/default \
             --target-org ci-org \
-            --wait 10
+            --wait 30
 
-      - name: Deploy Configuration Metadata (Permission Sets)
+      - name: Deploy Configuration Metadata (Scratch Only)
+        if: env.ORG_TYPE == 'scratch'
         run: |
-          # Find permission sets across all packages
           PERMSET_COUNT=$(find packages -name "*.permissionset-meta.xml" 2>/dev/null | wc -l)
 
           if [ "$PERMSET_COUNT" -gt 0 ]; then
             echo "Found $PERMSET_COUNT permission set(s) to deploy"
-            # Deploying specifically the permission sets found in the packages
             sf project deploy start \
               --metadata PermissionSet \
               --target-org ci-org \
               --ignore-warnings \
-              --wait 10
+              --wait 30
           else
             echo "No permission sets to deploy"
           fi
         continue-on-error: true
 
-      - name: Verify Core Deployment
+      - name: Verify Core Deployment (Scratch Only)
+        if: env.ORG_TYPE == 'scratch'
         run: |
           echo "=== Deployed Apex Classes ==="
           sf org list metadata --metadata-type ApexClass --target-org ci-org
@@ -123,32 +138,58 @@ jobs:
       # ------------------------------------------------------------------
       # 5. Quality Gates (Apex Tests)
       # ------------------------------------------------------------------
-      - name: Run Apex Tests
+      - name: Run Apex Tests (Scratch Org Mode)
+        if: env.ORG_TYPE == 'scratch'
         run: |
-          set -e
+          set +e
 
-          # Run Tests & Capture JSON Output
           sf apex run test \
             --target-org ci-org \
             --code-coverage \
-            --result-format json > test-result.json
+            --json \
+            --wait 30 > test-result.json
 
-          # Extract Coverage Percentage (default 0)
+          TEST_EXIT_CODE=$?
+          set -e
+
+          echo "=== Test Results JSON ==="
+          cat test-result.json
+          echo "========================="
+
           COVERAGE=$(jq -r '.result.summary.testRunCoverage // 0' test-result.json)
           COVERAGE_ROUNDED=$(printf "%.0f" "$COVERAGE")
+
           echo "Measured Code Coverage: $COVERAGE_ROUNDED%"
 
-          # Enforce 75% Threshold
           if [ "$COVERAGE_ROUNDED" -lt 75 ]; then
-            echo "FAILURE: Coverage ($COVERAGE_ROUNDED%) is below 75%."
+            echo "FAILURE: Coverage ($COVERAGE_ROUNDED%) is below 75% gate."
             exit 1
-          else
-            echo "SUCCESS: Coverage met."
           fi
+
+          if [ "$TEST_EXIT_CODE" -ne 0 ]; then
+            echo "FAILURE: One or more Apex tests failed."
+            exit $TEST_EXIT_CODE
+          fi
+
+          echo "SUCCESS: Coverage met and tests passed."
+
+      - name: Run Validation Deploy (Fallback Mode)
+        if: env.ORG_TYPE == 'fallback'
+        run: |
+          echo "Running Validation Deployment against Dev Hub (No Scratch Org available)"
+
+          sf project deploy start \
+            --target-org devhub \
+            --source-dir packages/shared-modules/main/default \
+            --source-dir packages/integration-api/main/default \
+            --source-dir packages/portfolio-site/main/default \
+            --dry-run \
+            --test-level RunLocalTests \
+            --wait 30
 
       # ------------------------------------------------------------------
       # 6. Teardown
       # ------------------------------------------------------------------
       - name: Delete Scratch Org
-        if: always()
+        if: always() && env.ORG_TYPE == 'scratch'
         run: sf org delete scratch --target-org ci-org --no-prompt || true
