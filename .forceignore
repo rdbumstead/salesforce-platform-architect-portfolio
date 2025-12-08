@@ -73,4 +73,3 @@ Thumbs.db
 
 # Legacy/deprecated permission sets with missing dependencies
 **/permissionsets/Mass_Delete_Admin.permissionset-meta.xml
-**/permissionsets/Portfolio_Admin.permissionset-meta.xml

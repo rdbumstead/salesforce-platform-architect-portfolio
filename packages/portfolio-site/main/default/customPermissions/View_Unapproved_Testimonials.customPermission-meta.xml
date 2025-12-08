@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Allows the user to view unapproved testimonials and bypass the restriction rule.</description>
+    <label>View Unapproved Testimonials</label>
+</CustomPermission>

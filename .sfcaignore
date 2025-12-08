@@ -7,8 +7,8 @@ packages/integration-api/AnypointStudio/Portfolio/salesforce-sapi-ws/target/**
 # ---------------------------------------------------------------------
 # Exclude all AnypointStudio/Mule files
 # ---------------------------------------------------------------------
-packages/integration-api/AnypointStudio/
-packages/integration-api/AnypointStudio/**
+integration-api/AnypointStudio/**
+/packages/integration-api/AnypointStudio/**
 **/AnypointStudio/**
 
 # ---------------------------------------------------------------------

@@ -1,8 +1,8 @@
 {
-  "name": "salesforce-app",
+  "name": "salesforce-architect-portfolio",
   "private": true,
   "version": "1.0.0",
-  "description": "Salesforce App",
+  "description": "Salesforce Platform Architect Portfolio",
   "scripts": {
     "lint": "eslint **/{aura,lwc}/**/*.js",
     "test": "npm run test:unit",
@@ -15,7 +15,7 @@
     "prepare": "husky || true",
     "precommit": "lint-staged",
     "clean": "rimraf changed",
-    "scan": "sf code-analyzer run --target \".\" --output-file scan-results.html",
+    "scan": "sf code-analyzer run --target packages --output-file scan-results.html",
     "delta": "npm run clean && shx mkdir -p changed && sf sgd source delta --to HEAD --from origin/main --output-dir changed --source-dir packages --generate-delta",
     "validate": "node scripts/validate.js"
   },
