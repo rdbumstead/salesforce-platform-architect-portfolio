@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<RestrictionRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <active>true</active>
+    <description
+  >Prevents Guest Users from seeing unapproved testimonials, regardless of Sharing Rules.</description>
+    <enforcementType>Restrict</enforcementType>
+    <masterLabel>Block_Unapproved_Testimonials</masterLabel>
+    <recordFilter>Approved__c = true</recordFilter>
+    <targetEntity>Testimonial__c</targetEntity>
+    <userCriteria>User.UserType = 'Guest'</userCriteria>
+    <version>1</version>
+</RestrictionRule>
