@@ -125,12 +125,26 @@ jobs:
       # ------------------------------------------------------------------
       - name: Run Apex Tests
         run: |
+          set -e
+
+          # Run Tests & Capture JSON Output
           sf apex run test \
             --target-org ci-org \
             --code-coverage \
-            --coverage-requirement 75 \
-            --result-format human \
-            --wait 10
+            --result-format json > test-result.json
+
+          # Extract Coverage Percentage (default 0)
+          COVERAGE=$(jq -r '.result.summary.testRunCoverage // 0' test-result.json)
+          COVERAGE_ROUNDED=$(printf "%.0f" "$COVERAGE")
+          echo "Measured Code Coverage: $COVERAGE_ROUNDED%"
+
+          # Enforce 75% Threshold
+          if [ "$COVERAGE_ROUNDED" -lt 75 ]; then
+            echo "FAILURE: Coverage ($COVERAGE_ROUNDED%) is below 75%."
+            exit 1
+          else
+            echo "SUCCESS: Coverage met."
+          fi
 
       # ------------------------------------------------------------------
       # 6. Teardown

@@ -29,6 +29,24 @@ typings/
 **/typings/
 
 # ---------------------------------------------------------------------
+# Org-Specific Metadata (Do Not Track or Deploy)
+# ---------------------------------------------------------------------
+
+# Managed package components (from installed packages, not source-controlled)
+**/permissionsets/sfdcInternalInt__*.permissionset-meta.xml
+**/objects/sfdcInternalInt__*.object-meta.xml
+**/classes/sfdcInternalInt__*.cls*
+**/triggers/sfdcInternalInt__*.trigger*
+**/layouts/sfdcInternalInt__*.layout-meta.xml
+**/customMetadata/sfdcInternalInt__*.md-meta.xml
+
+# Permission sets requiring licenses unavailable in scratch orgs
+**/permissionsets/Contact_Information_Agent_Permissions.permissionset-meta.xml
+
+# Legacy/deprecated permission sets with missing dependencies
+**/permissionsets/Mass_Delete_Admin.permissionset-meta.xml
+
+# ---------------------------------------------------------------------
 # Security & Secrets
 # ---------------------------------------------------------------------
 # Environment variables
