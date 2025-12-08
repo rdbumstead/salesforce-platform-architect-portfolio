@@ -269,15 +269,15 @@ The delivery is organized into four parallel execution tracks:
 
 **Phase 5: Intelligence**
 
-- Data360 Setup.
+- Data360 Setup
 
-- Data360 Data Integration.
+- Data360 Data Integration (CRM Connector → Project**c, Experience**c)
 
-<!— —>
+- Agentforce Grounding on Data360 Data Model Objects (DMOs)
 
-- Agentforce Grounding.
+- Prompt Engineering & Mirror Mode configuration
 
-- Prompt Engineering.
+- Triple-fallback AI generation service (Agentforce → Gemini Flash → Local Template)
 
 **Phase 6: Observability & Launch**
 
