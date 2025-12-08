@@ -143,11 +143,12 @@ jobs:
         run: |
           set +e
 
+          # Run Apex tests and capture output
           sf apex run test \
             --target-org ci-org \
             --code-coverage \
             --json \
-            --wait 30 > test-result.json
+            --wait 10 > test-result.json
 
           TEST_EXIT_CODE=$?
           set -e
@@ -156,7 +157,7 @@ jobs:
           cat test-result.json
           echo "========================="
 
-          COVERAGE=$(jq -r '.result.summary.testRunCoverage // 0' test-result.json)
+          COVERAGE=$(jq -r '.result.summary.testRunCoverage // 0' test-result.json | tr -d '%')
           COVERAGE_ROUNDED=$(printf "%.0f" "$COVERAGE")
 
           echo "Measured Code Coverage: $COVERAGE_ROUNDED%"
