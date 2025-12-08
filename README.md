@@ -3,12 +3,17 @@
 [![CI/CD — main](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml)
 [![PR Validation](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml)
 
-**Live Site** → [https://ryanbumstead.com](https://ryanbumstead.com)  
+**Live Site** → [https://ryanbumstead.com](https://ryanbumstead.com) (placeholder page)  
 **Full MVP Launch** → Q1 2026  
 **Phase 8 Multi-Cloud** → Q2 2026
 
 > All architecture documentation is complete.  
 > MVP implementation began December 2025 and ships Q1 2026.
+
+👋 **Quick note for non-Salesforce readers**  
+This is a full enterprise-grade system built on Salesforce (the #1 CRM platform). Think of it as a public web app with real-time data, AI-generated content, and strict DevOps — all running on Salesforce's cloud. The design is finished today; the code is being built now.
+
+📧 **Contact me** → [LinkedIn](https://linkedin.com/in/ryanbumstead) | ryan@ryanbumstead.com
 
 ---
 
