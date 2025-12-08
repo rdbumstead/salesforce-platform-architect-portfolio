@@ -2,11 +2,12 @@
 <RestrictionRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <active>true</active>
     <description
-  >Prevents Guest Users from seeing unapproved testimonials, regardless of Sharing Rules.</description>
+  >Restricts visibility to Approved testimonials for any user who does NOT have the 'View_Unapproved_Testimonials_PS' permission set (e.g., Guest Users).</description>
     <enforcementType>Restrict</enforcementType>
     <masterLabel>Block_Unapproved_Testimonials</masterLabel>
     <recordFilter>Approved__c = true</recordFilter>
     <targetEntity>Testimonial__c</targetEntity>
-    <userCriteria>User.UserType = 'Guest'</userCriteria>
+    <userCriteria
+  >PermissionSetAssignment.PermissionSet.Name != 'View_Unapproved_Testimonials_PS'</userCriteria>
     <version>1</version>
 </RestrictionRule>
