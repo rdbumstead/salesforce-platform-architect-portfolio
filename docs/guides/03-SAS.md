@@ -38,7 +38,7 @@ graph LR
     Lambda -->|Serverless| Resume[Resume Engine Future]
 
     %% AI stays on-platform
-    Apex  AI[Agentforce]
+    Apex <--> AI[Agentforce]
 ```
 
 Architecture Implementation Status (MVP — Q1 2026 Launch)
@@ -113,29 +113,12 @@ graph TD
 
 Why specific technologies were chosen over alternatives.
 
-————————- ———————— ——————— ———————————-
-**Requirement** **Finalist **Selected\*\* **Rejection Reason**
-Options\*\*
-
-**Frontend Aura vs. LWR **LWR** Aura\'s 3-5s LCP
-Framework** violates UX
-requirements for public
-sites.
-
-**Graph Vis.js vs. G6 **AntV G6** Vis.js lacks native
-Visualization** animation API for flow
-lines ("running
-edge").
-
-**API Swagger UI vs. **Redoc** Redoc\'s single-file
-Documentation** Redoc static HTML works
-without Node.js server.
-
-**CI/CD Auth** Username/Pass **JWT** Username/Password is
-vs. JWT fragile and requires
-rotation; JWT is
-headless.
-————————- ———————— ——————— ———————————-
+| Requirement             | Finalist Options      | Selected    | Rejection Reason                                                     |
+| :---------------------- | :-------------------- | :---------- | :------------------------------------------------------------------- |
+| **Frontend Framework**  | Aura vs. LWR          | **LWR**     | Aura's 3-5s LCP violates UX requirements for public sites.           |
+| **Graph Visualization** | Vis.js vs. G6         | **AntV G6** | Vis.js lacks native animation API for flow lines ("running edge").   |
+| **API Documentation**   | Swagger UI vs. Redoc  | **Redoc**   | Redoc's single-file static HTML works without Node.js server.        |
+| **CI/CD Auth**          | Username/Pass vs. JWT | **JWT**     | Username/Password is fragile and requires rotation; JWT is headless. |
 
 ### **1.4 Visual Architecture Standard (C4 Model)**
 
@@ -334,28 +317,15 @@ erDiagram
 The following matrix defines the CRUD and Field Level Security (FLS)
 settings enforced by the Profile and Permission Set structure.
 
-———————————————- —————— ———————- ———————-
-**Object** **Admin **Guest User **Integration
-(System)** (Public)** User (API)**
-
-**Project\_\_c** CRED / Full Read-Only Read-Only
-
-**Experience\_\_c** CRED / Full Read-Only Read-Only
-
-**Experience_Highlight\_\_c** CRED / Full Read-Only Read-Only
-
-**Skill\_\_c** CRED / Full Read-Only Read-Only
-
-**Testimonial\_\_c** CRED / Full **No Access** Read-Only
-(Handled via  
- Apex)
-
-**GitHub_Cache\_\_c** CRED / Full **No Access** No Access
-(System Only)
-
-**Portfolio_Config\_\_mdt** CRED / Full Read-Only (via Read-Only
-App)  
- ———————————————- —————— ———————- ———————-
+| Object                        | Admin (System) | Guest User (Public)              | Integration User (API) |
+| :---------------------------- | :------------- | :------------------------------- | :--------------------- |
+| **Project\_\_c**              | CRED / Full    | Read-Only                        | Read-Only              |
+| **Experience\_\_c**           | CRED / Full    | Read-Only                        | Read-Only              |
+| **Experience_Highlight\_\_c** | CRED / Full    | Read-Only                        | Read-Only              |
+| **Skill\_\_c**                | CRED / Full    | Read-Only                        | Read-Only              |
+| **Testimonial\_\_c**          | CRED / Full    | **No Access** (Handled via Apex) | Read-Only              |
+| **GitHub_Cache\_\_c**         | CRED / Full    | **No Access** (System Only)      | No Access              |
+| **Portfolio_Config\_\_mdt**   | CRED / Full    | Read-Only (via App)              | Read-Only              |
 
 **Note:** Guest User access to Testimonial\_\_c records is strictly
 controlled via the SAPI_Testimonial Apex class which applies the "Vibe
@@ -857,28 +827,12 @@ frameworks.
 
 Ensuring the system fails gracefully during outage events.
 
-————————————————————————————————————————
-**Failure **Detection Method\*\* **User Experience** **Auto-Recovery**
-Scenario**  
- ————————— —————————— —————————— —————————-
-**GitHub API Rate HTTP 429 response Display cached Scheduler retries
-Limit\*\* ^1^ commits with "Last in 15 min ^3^
-Updated: 15m ago"  
- badge ^2^
-
-**G6 Library 404** loadScript() Promise Render static SVG Log error + email
-rejection ^4^ immediately ^5^ admin ^6^
-
-**Jira API Down** 3 consecutive 503 Show "Roadmap Circuit breaker
-errors ^7^ temporarily opens for 30 min
-unavailable" ^9^
-message ^8^
-
-**User-Triggered Chaos_Mode\_\_c = "Simulation Reset via UI Toggle
-Simulation** True (Session Cache) Active" badge or Session End
-appears; API calls  
- mock 500 errors  
- ————————————————————————————————————————
+| Failure Scenario              | Detection Method                       | User Experience                                              | Auto-Recovery                      |
+| :---------------------------- | :------------------------------------- | :----------------------------------------------------------- | :--------------------------------- |
+| **GitHub API Rate Limit**     | HTTP 429 response                      | Display cached commits with "Last Updated: 15m ago" badge    | Scheduler retries in 15 min        |
+| **G6 Library 404**            | `loadScript()` Promise rejection       | Render static SVG immediately                                | Log error + email admin            |
+| **Jira API Down**             | 3 consecutive 503 errors               | Show "Roadmap temporarily unavailable" message               | Circuit breaker opens for 30 min   |
+| **User-Triggered Simulation** | `Chaos_Mode__c = True` (Session Cache) | "Simulation Active" badge appears; API calls mock 500 errors | Reset via UI Toggle or Session End |
 
 ## **9. Observability & Glass Box**
 
@@ -998,236 +952,128 @@ client_secret, Content-Type
 
 Represents an employment period.
 
-————————- ——————————— ————— —————— ——————— ————————-
-**Field Label** **API Name** **Type** **Length** **Required** **Description**
-
-Employer Employer\_\_c Text 255 Yes Company Name.
-
-Position Title Position_Title\_\_c Text 255 Yes Job Title.
-
-Start Date Start_Date\_\_c Date \- Yes Employment start.
-
-End Date End_Date\_\_c Date \- No Employment end
-(Null if
-current).
-
-Is Current Role Is_Current_Role\_\_c Checkbox \- No Logic flag for
-"Present".
-
-Is Remote Is_Remote\_\_c Checkbox \- No Remote work flag.
-
-Accomplishments Accomplishments\_\_c Long Text 32768 No Summary text.
-
-Sort Order Sort_Order\_\_c Number 18,0 No Custom sort
-logic.
-————————- ——————————— ————— —————— ——————— ————————-
+| Field Label         | API Name             | Type      | Length | Required | Description                       |
+| :------------------ | :------------------- | :-------- | :----- | :------- | :-------------------------------- |
+| **Employer**        | `Employer__c`        | Text      | 255    | Yes      | Company Name.                     |
+| **Position Title**  | `Position_Title__c`  | Text      | 255    | Yes      | Job Title.                        |
+| **Start Date**      | `Start_Date__c`      | Date      | -      | Yes      | Employment start.                 |
+| **End Date**        | `End_Date__c`        | Date      | -      | No       | Employment end (Null if current). |
+| **Is Current Role** | `Is_Current_Role__c` | Checkbox  | -      | No       | Logic flag for "Present".         |
+| **Is Remote**       | `Is_Remote__c`       | Checkbox  | -      | No       | Remote work flag.                 |
+| **Accomplishments** | `Accomplishments__c` | Long Text | 32768  | No       | Summary text.                     |
+| **Sort Order**      | `Sort_Order__c`      | Number    | 18,0   | No       | Custom sort logic.                |
 
 #### **D.2 Object: Experience_Highlight\_\_c (Formerly Resume_Highlight\_\_c)**
 
 Granular bullet points for resume generation.
 
-——————- —————————————- ———————- —————— ——————— ————————-
-**Field **API Name\*\* **Type** **Length** **Required** **Description**
-Label\*\*
-
-Name Name Auto Number \- Yes System ID.
-
-Experience Experience\_\_c Master-Detail \- Yes Parent record.
-
-Description Description\_\_c Long Text 5000 Yes The bullet point
-text.
-
-Persona Tag Persona_Tag\_\_c Picklist \- Yes Target audience
-filter.
-
-Admin Sort Admin_Sort_Order\_\_c Number 2,0 No Sort order for
-Admin resume.
-
-Dev Sort Developer_Sort_Order\_\_c Number 2,0 No Sort order for
-Dev resume.
-——————- —————————————- ———————- —————— ——————— ————————-
+| Field Label     | API Name                  | Type          | Length | Required | Description                  |
+| :-------------- | :------------------------ | :------------ | :----- | :------- | :--------------------------- |
+| **Name**        | `Name`                    | Auto Number   | -      | Yes      | System ID.                   |
+| **Experience**  | `Experience__c`           | Master-Detail | -      | Yes      | Parent record.               |
+| **Description** | `Description__c`          | Long Text     | 5000   | Yes      | The bullet point text.       |
+| **Persona Tag** | `Persona_Tag__c`          | Picklist      | -      | Yes      | Target audience filter.      |
+| **Admin Sort**  | `Admin_Sort_Order__c`     | Number        | 2,0    | No       | Sort order for Admin resume. |
+| **Dev Sort**    | `Developer_Sort_Order__c` | Number        | 2,0    | No       | Sort order for Dev resume.   |
 
 #### **D.3 Object: Project\_\_c**
 
 Portfolio case studies.
 
-—————— ——————————- ————— —————— ——————— ————————-
-**Field **API Name\*\* **Type** **Length** **Required** **Description**
-Label\*\*
-
-Project Name Name Text 80 Yes Project Title.
-
-Challenge Challenge\_\_c Rich Text 32k No The "Problem".
-
-Solution Solution\_\_c Rich Text 32k No The "Fix".
-
-Business Business_Value\_\_c Rich Text 32k No The "ROI".
-Value
-
-Status Status\_\_c Picklist \- Yes Project state.
-
-Hero Image Hero_Image_URL\_\_c URL 255 No Main display
-image.
-
-Live URL Live_URL\_\_c URL 255 No Link to demo.
-
-Repository Repository_URL\_\_c URL 255 No Link to code.
-—————— ——————————- ————— —————— ——————— ————————-
+| Field Label        | API Name            | Type      | Length | Required | Description         |
+| :----------------- | :------------------ | :-------- | :----- | :------- | :------------------ |
+| **Project Name**   | `Name`              | Text      | 80     | Yes      | Project Title.      |
+| **Challenge**      | `Challenge__c`      | Rich Text | 32k    | No       | The "Problem".      |
+| **Solution**       | `Solution__c`       | Rich Text | 32k    | No       | The "Fix".          |
+| **Business Value** | `Business_Value__c` | Rich Text | 32k    | No       | The "ROI".          |
+| **Status**         | `Status__c`         | Picklist  | -      | Yes      | Project state.      |
+| **Hero Image**     | `Hero_Image_URL__c` | URL       | 255    | No       | Main display image. |
+| **Live URL**       | `Live_URL__c`       | URL       | 255    | No       | Link to demo.       |
+| **Repository**     | `Repository_URL__c` | URL       | 255    | No       | Link to code.       |
 
 #### **D.4 Object: Testimonial\_\_c**
 
 Social proof records.
 
-——————— ———————————— ————— —————— ——————— ————————-
-**Field **API Name\*\* **Type** **Length** **Required** **Description**
-Label\*\*
-
-Author Name Author_Name\_\_c Text 255 Yes Submitter Name.
-
-Author Title Author_Title\_\_c Text 255 No Submitter Job
-Title.
-
-Relationship Relationship_Type\_\_c Picklist \- Yes Connection type.
-
-Context Context\_\_c Text 255 No Short
-blurb/quote.
-
-Vibe Mode Vibe_Mode\_\_c Picklist \- Yes Display filter.
-
-Approved Approved\_\_c Checkbox \- No Security gate.
-——————— ———————————— ————— —————— ——————— ————————-
+| Field Label      | API Name               | Type     | Length | Required | Description          |
+| :--------------- | :--------------------- | :------- | :----- | :------- | :------------------- |
+| **Author Name**  | `Author_Name__c`       | Text     | 255    | Yes      | Submitter Name.      |
+| **Author Title** | `Author_Title__c`      | Text     | 255    | No       | Submitter Job Title. |
+| **Relationship** | `Relationship_Type__c` | Picklist | -      | Yes      | Connection type.     |
+| **Context**      | `Context__c`           | Text     | 255    | No       | Short blurb/quote.   |
+| **Vibe Mode**    | `Vibe_Mode__c`         | Picklist | -      | Yes      | Display filter.      |
+| **Approved**     | `Approved__c`          | Checkbox | -      | No       | Security gate.       |
 
 #### **D.5 Object: GitHub_Cache\_\_c (Custom Setting)**
 
 Stores transient API responses to avoid rate limits.
 
-————- —————————- ————— —————— ——————— ——————————-
-**Field **API Name\*\* **Type** **Length** **Required** **Description**
-Label\*\*
-
-Name Name Text 80 Yes Cache Key (e.g.,
-\'RecentCommits\').
-
-JSON JSON_Payload\_\_c Long Text 131072 Yes The raw JSON response
-Payload from GitHub.
-————- —————————- ————— —————— ——————— ——————————-
+| Field Label      | API Name          | Type      | Length | Required | Description                        |
+| :--------------- | :---------------- | :-------- | :----- | :------- | :--------------------------------- |
+| **Name**         | `Name`            | Text      | 80     | Yes      | Cache Key (e.g., 'RecentCommits'). |
+| **JSON Payload** | `JSON_Payload__c` | Long Text | 131072 | Yes      | The raw JSON response from GitHub. |
 
 #### **D.6 Object: Portfolio_Config\_\_mdt (Custom Metadata)**
 
 Global configuration settings.
 
-————— ————————————- ————— —————— ——————— ————————-
-**Field **API Name\*\* **Type** **Length** **Required** **Description**
-Label\*\*
-
-Label MasterLabel Text 40 Yes Configuration Set
-Name.
-
-Owner Owner_Email\_\_c Email 80 Yes Contact email.
-Email
-
-LinkedIn LinkedIn_URL\_\_c URL 255 Yes Profile URL.
-
-GitHub GitHub_Profile_URL\_\_c URL 255 Yes Repo URL.
-
-Career Obj Career_Objective\_\_c Text Area 255 No Short bio header.
-————— ————————————- ————— —————— ——————— ————————-
+| Field Label     | API Name                | Type      | Length | Required | Description             |
+| :-------------- | :---------------------- | :-------- | :----- | :------- | :---------------------- |
+| **Label**       | `MasterLabel`           | Text      | 40     | Yes      | Configuration Set Name. |
+| **Owner Email** | `Owner_Email__c`        | Email     | 80     | Yes      | Contact email.          |
+| **LinkedIn**    | `LinkedIn_URL__c`       | URL       | 255    | Yes      | Profile URL.            |
+| **GitHub**      | `GitHub_Profile_URL__c` | URL       | 255    | Yes      | Repo URL.               |
+| **Career Obj**  | `Career_Objective__c`   | Text Area | 255    | No       | Short bio header.       |
 
 #### **D.7 Object: Project_Skill\_\_c (Junction)**
 
 Links Projects to Skills for the G6 Graph.
 
-—————- —————————— ——————————————- ——————— ————————-
-**Field **API Name\*\* **Type** **Required** **Description**
-Label\*\*
-
-Project Project\_\_c Master-Detail(Project\_\_c) Yes Parent Project.
-
-Skill Skill\_\_c Master-Detail(Skill\_\_c) Yes Associated Skill.
-—————- —————————— ——————————————- ——————— ————————-
+| Field Label | API Name     | Type                        | Required | Description       |
+| :---------- | :----------- | :-------------------------- | :------- | :---------------- |
+| **Project** | `Project__c` | Master-Detail(`Project__c`) | Yes      | Parent Project.   |
+| **Skill**   | `Skill__c`   | Master-Detail(`Skill__c`)   | Yes      | Associated Skill. |
 
 #### **D.8 Object: Experience_Skill\_\_c (Junction)**
 
 Links Experience to Skills.
 
-—————— ————————- ———————————————— ——————— ————————-
-**Field **API Name\*\* **Type** **Required** **Description**
-Label\*\*
-
-Experience Experience\_\_c Master-Detail(Experience\_\_c) Yes Parent
-Experience.
-
-Skill Skill\_\_c Master-Detail(Skill\_\_c) Yes Skill
-Demonstrated.
-—————— ————————- ———————————————— ——————— ————————-
+| Field Label    | API Name        | Type                           | Required | Description         |
+| :------------- | :-------------- | :----------------------------- | :------- | :------------------ |
+| **Experience** | `Experience__c` | Master-Detail(`Experience__c`) | Yes      | Parent Experience.  |
+| **Skill**      | `Skill__c`      | Master-Detail(`Skill__c`)      | Yes      | Skill Demonstrated. |
 
 #### **D.9 Object: Skill\_\_c**
 
 Competency library.
 
-——————- ————————— ————— —————— ——————— ————————-
-**Field **API Name\*\* **Type** **Length** **Required** **Description**
-Label\*\*
-
-Skill Name Name Text 80 Yes Display name
-(e.g., "Apex").
-
-Category Category\_\_c Picklist \- Yes "Frontend,
-Backend, Cloud,
-Data."
-
-Icon Name Icon_Name\_\_c Text 100 No SLDS icon
-reference or
-custom SVG.
-
-Proficiency Proficiency\_\_c Number 2,0 No Self-assessed
-skill level 1-5.
-——————- ————————— ————— —————— ——————— ————————-
+| Field Label     | API Name         | Type     | Length | Required | Description                        |
+| :-------------- | :--------------- | :------- | :----- | :------- | :--------------------------------- |
+| **Skill Name**  | `Name`           | Text     | 80     | Yes      | Display name (e.g., "Apex").       |
+| **Category**    | `Category__c`    | Picklist | -      | Yes      | "Frontend, Backend, Cloud, Data."  |
+| **Icon Name**   | `Icon_Name__c`   | Text     | 100    | No       | SLDS icon reference or custom SVG. |
+| **Proficiency** | `Proficiency__c` | Number   | 2,0    | No       | Self-assessed skill level 1-5.     |
 
 #### **D.10 Object: Project_Asset\_\_c**
 
 Media gallery assets.
 
-————— —————————- ———————- —————— ——————— ————————-
-**Field **API Name\*\* **Type** **Length** **Required** **Description**
-Label\*\*
-
-Asset Name Name Text 80 Yes Descriptive
-label.
-
-Project Project\_\_c Master-Detail \- Yes Parent Project.
-
-Type Type\_\_c Picklist \- Yes "Image, Video,
-Document, Link."
-
-External External_URL\_\_c URL 255 Yes CDN or S3
-URL location.
-————— —————————- ———————- —————— ——————— ————————-
+| Field Label      | API Name          | Type          | Length | Required | Description                     |
+| :--------------- | :---------------- | :------------ | :----- | :------- | :------------------------------ |
+| **Asset Name**   | `Name`            | Text          | 80     | Yes      | Descriptive label.              |
+| **Project**      | `Project__c`      | Master-Detail | -      | Yes      | Parent Project.                 |
+| **Type**         | `Type__c`         | Picklist      | -      | Yes      | "Image, Video, Document, Link." |
+| **External URL** | `External_URL__c` | URL           | 255    | Yes      | CDN or S3 location.             |
 
 #### **D.11 Picklist Value Enumeration**
 
-———————————— —————————————- ——————————
-**Field** **Object** **Values**
-
-Persona_Tag\_\_c Experience_Highlight\_\_c Admin, Developer,
-Architect, General
-
-Relationship_Type\_\_c Testimonial\_\_c Manager, Peer,
-Client, Recruiter,
-Fan
-
-Vibe_Mode\_\_c Testimonial\_\_c Professional
-(Clean/Corporate),
-Casual (Fun/Raw)
-
-Status\_\_c Project\_\_c Draft, Active,
-Archived
-
-Pillar\_\_c Project\_\_c Business,
-Consulting,
-Integration, AI,
-DevOps
-———————————— —————————————- ——————————
+| Field                  | Object                    | Values                                           |
+| :--------------------- | :------------------------ | :----------------------------------------------- |
+| `Persona_Tag__c`       | `Experience_Highlight__c` | Admin, Developer, Architect, General             |
+| `Relationship_Type__c` | `Testimonial__c`          | Manager, Peer, Client, Recruiter, Fan            |
+| `Vibe_Mode__c`         | `Testimonial__c`          | Professional (Clean/Corporate), Casual (Fun/Raw) |
+| `Status__c`            | `Project__c`              | Draft, Active, Archived                          |
+| `Pillar__c`            | `Project__c`              | Business, Consulting, Integration, AI, DevOps    |
 
 #### **D.12 Index & Query Optimization**
 
@@ -1383,14 +1229,14 @@ architecture strictly adheres to Free Tier limits.
 
 ### Appendix M: Cross-Cutting Pattern — Dual-Door Integration Strategy
 
-| Feature           | Door 1 — Native Salesforce GraphQL (lightning/uiGraphQLApi) | Door 2 — AWS Lambda Polyglot BFF (Function URL)         |
-| ----------------- | ----------------------------------------------------------- | ------------------------------------------------------- |
-| Timeline          | MVP — Q1 2026 (planned)                                     | Phase 8 — Q2 2026 (design complete)                     |
-| Primary Consumers | All internal LWC components                                 | API Lab “Enterprise Mode”, future mobile apps           |
-| Technology        | lightning/uiGraphQLApi wire adapter                         | Single Lambda Function URL + in-function governance     |
-| Latency           | Lowest possible (LDS + UI cache)                            | Single external round-trip                              |
-| Caching           | Automatic via Lightning Data Service                        | In-memory / DynamoDB                                    |
-| Governance        | Platform-managed                                            | Full enterprise policies (keys, rate limits, analytics) |
-| Payload Reduction | Platform-optimized                                          | 85–92 % vs parallel REST calls                          |
-| Cost              | $0                                                          | $0.00 forever (no API Gateway, no VPC)                  |
-| Current Status    | Planned for MVP launch                                      | Fully architected — activation in Phase 8               |
+| Feature               | Door 1 — Native Salesforce GraphQL (lightning/uiGraphQLApi) | Door 2 — AWS Lambda Polyglot BFF (Function URL)         |
+| :-------------------- | :---------------------------------------------------------- | :------------------------------------------------------ |
+| **Timeline**          | MVP — Q1 2026 (planned)                                     | Phase 8 — Q2 2026 (design complete)                     |
+| **Primary Consumers** | All internal LWC components (Skill Graph, Roadmap)          | API Lab “Enterprise Mode”, future mobile apps           |
+| **Technology**        | lightning/uiGraphQLApi wire adapter                         | Single Lambda Function URL + in-function governance     |
+| **Latency**           | Lowest possible (LDS + UI cache)                            | Single external round-trip                              |
+| **Caching**           | Automatic via Lightning Data Service                        | In-memory or DynamoDB inside Lambda                     |
+| **Governance**        | Platform-managed                                            | Full enterprise policies (keys, rate limits, analytics) |
+| **Payload Reduction** | Platform-optimized                                          | 85–92% reduction vs parallel REST calls                 |
+| **Cost**              | $0                                                          | $0.00 forever (no API Gateway, no VPC)                  |
+| **Current Status**    | Planned for MVP launch                                      | Fully architected & documented — activation in Phase 8  |

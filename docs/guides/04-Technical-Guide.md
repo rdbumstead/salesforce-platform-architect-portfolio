@@ -122,46 +122,32 @@ accessed via Apex, with no client-side access tokens used.
 - **Fallback:** If unavailable, use "Fallback Mode" in Custom Metadata
   to display a static "AI Interaction Preview" video.
 
-- Interface Definition (IAIGenerationService):
-  - public interface IAIGenerationService {
+**Interface Definition (IAIGenerationService):**
 
-> AIResponseWrapper generate(String prompt, String context);
->
-> String getProviderName(); // e.g., \'Agentforce\'
->
-> Boolean isHealthy(); // Circuit Breaker check
->
-> Integer getEstimatedLatencyMs(); // For Glass Box telemetry
->
-> }
+```apex
+public interface IAIGenerationService {
+  AIResponseWrapper generate(String prompt, String context);
+  String getProviderName(); // e.g., 'Agentforce'
+  Boolean isHealthy(); // Circuit Breaker check
+  Integer getEstimatedLatencyMs(); // For Glass Box telemetry
+}
+```
 
 - Standardized Response Object (AIResponseWrapper):
   - public class AIResponseWrapper {
+    @AuraEnabled public String status; // 'success' | 'fallback' | 'error'
+    @AuraEnabled public String provider; // 'agentforce' | 'gemini' | 'local_template'
+    @AuraEnabled public String content;
+    @AuraEnabled public Integer latencyMs;
 
-> \@AuraEnabled public String status; // \'success\' \| \'fallback\' \|
-> \'error\'
->
-> \@AuraEnabled public String provider; // \'agentforce\' \| \'gemini\'
-> \| \'local_template\'
->
-> \@AuraEnabled public String content;
->
-> \@AuraEnabled public Integer latencyMs;
->
-> public AIResponseWrapper(String status, String provider, String
-> content, Integer latencyMs) {
->
-> this.status = status;
->
-> this.provider = provider;
->
-> this.content = content;
->
-> this.latencyMs = latencyMs;
->
-> }
->
-> }
+        public AIResponseWrapper(String status, String provider, String content, Integer latencyMs) {
+            this.status = status;
+            this.provider = provider;
+            this.content = content;
+            this.latencyMs = latencyMs;
+        }
+
+    }
 
 - Gemini Quota Implementation:
   - **Logic:** Check

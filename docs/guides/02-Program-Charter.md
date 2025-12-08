@@ -474,17 +474,17 @@ value.
 
 ### **E.3 Core User Stories**
 
-| ID      | Persona               | I Want To...                     | So That...                                                    |
-| ------- | --------------------- | -------------------------------- | ------------------------------------------------------------- |
-| SPAP-47 | Motion-Sensitive User | Pause animations                 | The site is accessible and I avoid motion sickness triggers   |
-| SPAP-46 | Mobile User           | Have fast loading visuals        | Performance stays high and I don't burn data                  |
-| SPAP-44 | Visitor               | See an animated skill network    | I understand capability relationships visually                |
-| SPAP-40 | Recruiter             | Generate a tailored cover letter | I immediately see candidate fit without reading a generic bio |
-| SPAP-35 | Viewer                | See live roadmap data            | I know the current project status and active work             |
-| SPAP-31 | Recruiter             | See persona-specific bullets     | I see role-relevant accomplishments (Admin vs Architect)      |
-| SPAP-30 | Recruiter             | Download resumes                 | I can store them in my ATS for compliance                     |
-| SPAP-29 | Recruiter             | View a dynamic resume            | I can evaluate relevant experience quickly                    |
-| SPAP-28 | Visitor               | Have guided navigation           | I can complete the 5-minute tour efficiently                  |
-| SPAP-27 | Site Visitor          | See a clear hero banner          | I immediately understand the purpose of the portfolio         |
+### **E.3 Core User Stories**
 
-##
+| ID          | Persona               | I Want To...                     | So That...                                                     |
+| :---------- | :-------------------- | :------------------------------- | :------------------------------------------------------------- |
+| **SPAP-47** | Motion-Sensitive User | Pause animations                 | The site is accessible and I avoid motion sickness triggers.   |
+| **SPAP-46** | Mobile User           | Have fast loading visuals        | Performance stays high and I don't burn data.                  |
+| **SPAP-44** | Visitor               | See an animated skill network    | I understand capability relationships visually.                |
+| **SPAP-40** | Recruiter             | Generate a tailored cover letter | I immediately see candidate fit without reading a generic bio. |
+| **SPAP-35** | Viewer                | See live roadmap data            | I know the current project status and active work.             |
+| **SPAP-31** | Recruiter             | See persona-specific bullets     | I see role-relevant accomplishments (Admin vs Architect).      |
+| **SPAP-30** | Recruiter             | Download resumes                 | I can store them in my ATS for compliance.                     |
+| **SPAP-29** | Recruiter             | View a dynamic resume            | I can evaluate relevant experience quickly.                    |
+| **SPAP-28** | Visitor               | Have guided navigation           | I can complete the 5-minute tour efficiently.                  |
+| **SPAP-27** | Site Visitor          | See a clear hero banner          | I immediately understand the purpose of the portfolio.         |

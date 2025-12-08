@@ -163,25 +163,15 @@ GitHub. The project uses npm scripts to abstract complex CLI commands:
 
 - Alert: Emails Owner_Email\_\_c if Gemini usage \> 1,000 requests.
 
-Java
-
+```apex
 // Check Org Cache for Gemini usage
+Cache.Org orgCache = Cache.Org.getPartition('local.AIMetrics');
+Integer todayCount = (Integer) orgCache.get('GeminiDailyCount_' + System.today().format());
 
-Cache.Org orgCache = Cache.Org.getPartition(\'local.AIMetrics\');
-
-Integer todayCount = (Integer) orgCache.get(\'GeminiDailyCount\_\' +
-System.today().format());
-
-if (todayCount != null && todayCount \> 1000) {
-
-Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
-
-mail.setToAddresses(new String\[\]{
-Portfolio_Config\_\_mdt.getInstance(\'Default\').Owner_Email\_\_c });
-
-mail.setSubject(\'Gemini Quota Alert: \' + todayCount + \' requests
-today\');
-
-Messaging.sendEmail(new Messaging.SingleEmailMessage\[\]{ mail });
-
+if (todayCount != null && todayCount > 1000) {
+    Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+    mail.setToAddresses(new String[]{ Portfolio_Config__mdt.getInstance('Default').Owner_Email__c });
+    mail.setSubject('Gemini Quota Alert: ' + todayCount + ' requests today');
+    Messaging.sendEmail(new Messaging.SingleEmailMessage[]{ mail });
 }
+```
