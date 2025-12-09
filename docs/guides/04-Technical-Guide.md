@@ -1,5 +1,30 @@
 # Technical Guide
 
+**Table of Contents**
+
+- [1. CI/CD & DevOps Implementation](#1-cicd--devops-implementation)
+  - [Authentication](#authentication)
+  - [Security Rotation Policy](#security-rotation-policy)
+  - [Pipeline Strategy: Delta Deployment](#pipeline-strategy-delta-deployment)
+  - [Quality Gates](#quality-gates)
+  - [Rollback Plan](#rollback-plan)
+- [2. Integration Service Implementation](#2-integration-service-implementation)
+  - [2.1 GitHub Integration (Live Feed)](#21-github-integration-live-feed)
+  - [2.2 Jira Integration (Roadmap)](#22-jira-integration-roadmap)
+  - [2.3 Agentforce Integration](#23-agentforce-integration)
+- [3. Frontend (LWR) Component Logic](#3-frontend-lwr-component-logic)
+  - [3.1 c-skill-network (Visualization)](#31-c-skill-network-visualization)
+  - [3.2 c-resume-builder](#32-c-resume-builder)
+  - [3.3 c-testimonial-submit](#33-c-testimonial-submit)
+  - [3.4 Dynamic ERD Visualizer (c-schema-visualizer)](#34-dynamic-erd-visualizer-c-schema-visualizer)
+  - [3.5 Executable Governance (c-smart-docs)](#35-executable-governance-c-smart-docs)
+  - [3.6 c-system-health-footer (Glass Box)](#36-c-system-health-footer-glass-box)
+  - [3.7 Architectural Decision Record: ADR-014 (Deferred Telemetry)](#37-architectural-decision-record-adr-014-deferred-telemetry)
+  - [3.8 Analytics Instrumentation (GA4)](#38-analytics-instrumentation-ga4)
+- [4. Quality Assurance Checklist](#4-quality-assurance-checklist)
+
+---
+
 Project: Salesforce Platform Architect Portfolio
 
 Version: 1.0

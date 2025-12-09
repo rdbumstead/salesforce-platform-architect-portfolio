@@ -1,5 +1,26 @@
 # Program Charter
 
+**Table of Contents**
+
+- [1. Executive Summary](#1-executive-summary)
+  - [1.1 Purpose of This Document](#11-purpose-of-this-document)
+  - [1.2 Strategic Intent: The Value: A Living Enterprise System](#12-strategic-intent-the-value-a-living-enterprise-system)
+  - [1.3 Current vs. Target Architecture Scope](#13-current-vs-target-architecture-scope)
+- [2. Governance Model & Scope](#2-governance-model--scope)
+  - [2.1 Scope Definition](#21-scope-definition)
+  - [2.2 Success Criteria (Definition of Done)](#22-success-criteria-definition-of-done)
+- [3. Program Delivery & Roadmap](#3-program-delivery--roadmap)
+  - [3.1 Program Charter & Workstreams](#31-program-charter--workstreams)
+  - [3.2 Program Milestones](#32-program-milestones)
+  - [3.3 Detailed Phasing](#33-detailed-phasing)
+- [4. Implementation Checklist (Execution Plan)](#4-implementation-checklist-execution-plan)
+- [5. Product Strategy & User Stories](#5-product-strategy--user-stories)
+  - [E.1 Outcome-Driven Product Framework](#e1-outcome-driven-product-framework)
+  - [E.2 Epic Breakdown Example: Resume Builder](#e2-epic-breakdown-example-resume-builder)
+  - [E.3 Core User Stories](#e3-core-user-stories)
+
+---
+
 Project: Salesforce Platform Architect Portfolio
 
 Version: 1.0
