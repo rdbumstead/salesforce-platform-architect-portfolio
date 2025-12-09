@@ -1,5 +1,24 @@
 # Maintenance & Operations Guide
 
+**Table of Contents**
+
+- [1. Security Rotation Policy (CI/CD)](#1-security-rotation-policy-cicd)
+  - [1.1 Rotation Procedure](#11-rotation-procedure)
+- [2. Environment Hygiene (The "Clean Sweep")](#2-environment-hygiene-the-clean-sweep)
+  - [Organization Rules](#organization-rules)
+  - [Emergency Cleanup Protocol](#emergency-cleanup-protocol)
+- [3. DevOps Architecture](#3-devops-architecture)
+  - [Local Development Commands](#local-development-commands)
+  - [Pipeline Triggers](#pipeline-triggers)
+  - [Org Persistence](#org-persistence)
+- [4. Disaster Recovery](#4-disaster-recovery)
+  - [Scenario: Deployment Failure](#scenario-deployment-failure)
+  - [Scenario: GitHub Rate Limit Exhaustion](#scenario-github-rate-limit-exhaustion)
+- [5. Observability & Monitoring](#5-observability--monitoring)
+  - [5.1 Quota Monitoring (Automated)](#51-quota-monitoring-automated)
+
+---
+
 Project: Salesforce Platform Architect Portfolio
 
 Owner: Ryan Bumstead
