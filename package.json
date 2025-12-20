@@ -15,7 +15,7 @@
     "prepare": "husky || true",
     "precommit": "lint-staged",
     "clean": "rimraf changed",
-    "scan": "sf code-analyzer run --target packages --output-file scan-results.html",
+    "scan": "sf code-analyzer run --target packages --output-file scan-results.html --severity-threshold 2",
     "delta": "npm run clean && shx mkdir -p changed && sf sgd source delta --to HEAD --from origin/main --output-dir changed --source-dir packages --generate-delta",
     "validate": "node scripts/validate.js"
   },
