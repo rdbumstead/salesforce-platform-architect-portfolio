@@ -52,19 +52,10 @@ jobs:
       # ------------------------------------------------------------------
       # 3. Static Analysis
       # ------------------------------------------------------------------
-      - name: Resolve valid Salesforce analyzer targets
-        id: resolve-targets
-        shell: bash
-        run: |
-          echo "targets=packages" >> $GITHUB_OUTPUT
 
       - name: Run Salesforce Code Analyzer
         shell: bash
-        run: |
-          sf code-analyzer run \
-            --target "${{ steps.resolve-targets.outputs.targets }}" \
-            --rule-selector pmd:PortfolioSecurityRules \
-            --severity-threshold 2
+        run: npm run scan
 
       # ------------------------------------------------------------------
       # 4. Scratch Org Execution (With Limit Fallback)

@@ -1,6 +1,6 @@
 {
   "packageDirectories": [
-	{
+    {
       "path": "packages/shared-modules",
       "package": "shared-modules",
       "default": false,
@@ -12,21 +12,51 @@
       "package": "integration-api",
       "default": false,
       "versionName": "ver 0.1",
-      "versionNumber": "0.1.0.NEXT"
+      "versionNumber": "0.1.0.NEXT",
+      "dependencies": [
+        {
+          "package": "shared-modules"
+        }
+      ]
     },
     {
-      "path": "packages/employer-hub-demo",
-      "package": "employer-hub-demo",
+      "path": "packages/demos/employer-hub",
+      "package": "employer-hub",
       "default": false,
       "versionName": "ver 0.1",
-      "versionNumber": "0.1.0.NEXT"
+      "versionNumber": "0.1.0.NEXT",
+      "dependencies": [
+        {
+          "package": "shared-modules"
+        }
+      ]
+    },
+    {
+      "path": "packages/demos/nonprofit-literacy",
+      "package": "nonprofit-literacy",
+      "default": false,
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT",
+      "dependencies": [
+        {
+          "package": "shared-modules"
+        }
+      ]
     },
     {
       "path": "packages/portfolio-site",
       "package": "portfolio-site",
       "default": true,
       "versionName": "ver 0.1",
-      "versionNumber": "0.1.0.NEXT"
+      "versionNumber": "0.1.0.NEXT",
+      "dependencies": [
+        {
+          "package": "shared-modules"
+        },
+        {
+          "package": "integration-api"
+        }
+      ]
     }
   ],
   "name": "salesforce-architect-portfolio",

@@ -1,26 +1,26 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<ruleset
-  name="Portfolio Security Rules"
-  xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd"
->
-   
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Portfolio Security Rules"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+
     <description>
         Custom PMD ruleset for Salesforce Architect Portfolio
     </description>
 
-    <!-- Exclude build artifacts and generated files -->
     <exclude-pattern>.*/target/.*</exclude-pattern>
     <exclude-pattern>.*/META-INF/.*</exclude-pattern>
-    <exclude-pattern>.*/AnypointStudio/.*</exclude-pattern>
-    <exclude-pattern>.*/scripts/.*</exclude-pattern>
     <exclude-pattern>.*/node_modules/.*</exclude-pattern>
+    <exclude-pattern>.*/.github/.*</exclude-pattern>
+    <exclude-pattern>.*/scripts/.*</exclude-pattern>
+    
     <exclude-pattern>.*scan-results\.html</exclude-pattern>
     <exclude-pattern>.*results\.html</exclude-pattern>
     <exclude-pattern>.*ruleset\.xml</exclude-pattern>
 
-    <!-- Apex Rules -->
+    <exclude-pattern>.*AnypointStudio.*</exclude-pattern>
+    <exclude-pattern>.*staticresources.*</exclude-pattern>
+
     <rule ref="category/apex/bestpractices.xml" />
     <rule ref="category/apex/codestyle.xml" />
     <rule ref="category/apex/design.xml" />
@@ -29,15 +29,12 @@
     <rule ref="category/apex/performance.xml" />
     <rule ref="category/apex/security.xml" />
 
-    <!-- JavaScript/LWC Rules -->
     <rule ref="category/ecmascript/bestpractices.xml">
-      <!-- Exclude GlobalVariable - produces false positives for LWC @track decorators -->
-      <exclude name="GlobalVariable" />
+        <exclude name="GlobalVariable" />
     </rule>
     <rule ref="category/ecmascript/codestyle.xml" />
     <rule ref="category/ecmascript/errorprone.xml" />
 
-    <!-- XML Rules (for metadata) -->
     <rule ref="category/xml/bestpractices.xml" />
     <rule ref="category/xml/errorprone.xml" />
 </ruleset>
