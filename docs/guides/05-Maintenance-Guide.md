@@ -142,7 +142,7 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 Cache.Org orgCache = Cache.Org.getPartition('local.AIMetrics');
 Integer todayCount = (Integer) orgCache.get('GeminiDailyCount_' + System.today().format());
 
-if (todayCount != null && todayCount > 1000) {
+if (todayCount != null && todayCount > 1200) {
     Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
     mail.setToAddresses(new String[]{ Portfolio_Config__mdt.getInstance('Default').Owner_Email__c });
     mail.setSubject('Gemini Quota Alert: ' + todayCount + ' requests today');

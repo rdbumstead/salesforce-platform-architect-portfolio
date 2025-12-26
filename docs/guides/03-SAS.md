@@ -472,95 +472,195 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 
 ### ADR-001: Experience Cloud (LWR) vs. Aura
 
-- **Decision:** Use LWR (Lightning Web Runtime).
-- **Reason:** Sub-second page loads required for portfolio bounce rate optimization. Aura overhead is unacceptable for a public-facing brochure site.
+- **Status:** Accepted
+- **Context:** Public-facing portfolio site requires high performance to minimize bounce rates.
+- **Decision:** Utilize the Lightning Web Runtime (LWR) framework.
+- **Rationale:** Sub-second page loads are essential; the performance overhead of the Aura framework is unacceptable for this use case.
+- **Implications:** Restricted to Lightning Web Components (LWC) and modern web standards.
 
 ### ADR-002: Custom Objects vs. Standard Objects
 
-- **Decision:** Use Custom Objects for Project\_\_c.
-- **Reason:** Guest User Security policies heavily restrict Standard Object access (e.g., Contact, Case). Custom Objects provide granular CRUD control.
+- **Status:** Accepted
+- **Context:** Salesforce Guest User security policies heavily restrict access to standard objects like Contact or Case.
+- **Decision:** Utilize Custom Objects (e.g., Project\_\_c) for core portfolio data.
+- **Rationale:** Custom objects allow for granular CRUD and Field-Level Security (FLS) control specifically for public guest access.
+- **Implications:** Requires a custom data model to mirror necessary standard object functionality.
 
 ### ADR-003: Apex REST vs. External Service
 
-- **Decision:** Native Apex REST.
-- **Reason:** To simulate middleware endpoints without hosting costs and avoid MuleSoft overhead for a simple portfolio.
+- **Status:** Accepted
+- **Context:** Need for a System API layer without incurring external hosting or middleware licensing costs.
+- **Decision:** Implement Native Apex REST endpoints.
+- **Rationale:** Simulates enterprise middleware patterns while operating entirely within the Salesforce Developer Edition budget.
+- **Implications:** Integration logic is handled on-platform, consuming Apex CPU and Governor limits.
 
 ### ADR-004: Static Resource Code Rendering
 
-- **Decision:** Client-side fetch of Static Resources.
-- **Reason:** To avoid GitHub API rate limits for static code display.
+- **Status:** Accepted
+- **Context:** Requirement to display raw source code without triggering GitHub API rate limits.
+- **Decision:** Perform client-side fetches of code stored in Static Resources.
+- **Rationale:** Decouples code visualization from external API availability and prevents 429 errors during high traffic.
+- **Implications:** Code snippets must be packaged and deployed as part of the Salesforce metadata.
 
 ### ADR-005: Gamified Testimonial UI
 
-- **Decision:** "Vibe-Gated" Sentence Builder pattern.
-- **Reason:** To balance professional verification with personality.
+- **Status:** Accepted
+- **Context:** Need to balance professional verification with the candidate's personal brand personality.
+- **Decision:** Implement a "Vibe-Gated" Sentence Builder (Mad-Libs style) UI.
+- **Rationale:** Ensures structured data entry while providing a unique, engaging experience for visitors.
+- **Implications:** Requires custom LWC logic to handle dynamic sentence fragments and "Vibe" toggles.
 
 ### ADR-006: JWT Bearer Flow for CI/CD
 
-- **Decision:** Headless JWT authentication for GitHub Actions.
-- **Reason:** Enable zero-touch deployment.
+- **Status:** Accepted
+- **Context:** Requirement for a headless, automated deployment pipeline.
+- **Decision:** Implement JWT Bearer Flow authentication for GitHub Actions.
+- **Rationale:** Enables zero-touch, secure deployment without requiring manual credential rotation or login prompts.
+- **Implications:** Requires a 4096-bit RSA certificate and a strictly managed Connected App.
 
 ### ADR-007: GitHub API Server-Side Caching
 
-- **Decision:** Apex Scheduled Job + Custom Metadata cache.
-- **Reason:** Prevent rate-limit exhaustion (60 req/hr unauthenticated) during high traffic events.
+- **Status:** Accepted
+- **Context:** GitHub unauthenticated API limits (60 req/hr) are insufficient for public traffic.
+- **Decision:** Implement Apex-based caching via Scheduled Jobs and Custom Metadata.
+- **Rationale:** Prevents site failure by serving a GitHub_Cache\_\_c record when API limits are exhausted.
+- **Implications:** Commits may appear with a "Last Updated" delay of up to 15 minutes.
 
 ### ADR-008: Jira Integration vs. Agile Accelerator
 
-- **Decision:** Direct Jira REST Integration.
-- **Reason:** Demonstrate ability to connect Salesforce with industry-standard ALM tools and handle external authentication.
+- **Status:** Accepted
+- **Context:** Need to demonstrate proficiency with industry-standard ALM tools.
+- **Decision:** Establish a Direct Jira REST Integration for roadmap visualization.
+- **Rationale:** Proves the ability to handle external authentication (Named Credentials) and complex JSON orchestration.
+- **Implications:** Requires a circuit breaker to handle Jira API service outages.
 
 ### ADR-009: Granular Resume Data Model
 
-- **Decision:** Master-Detail (Experience**c → Experience_Highlight**c) pattern.
-- **Reason:** Enable persona-based content filtering (Admin vs. Architect views).
+- **Status:** Accepted
+- **Context:** The site must generate tailored content for different professional personas (e.g., Admin vs. Architect).
+- **Decision:** Utilize a Master-Detail relationship (Experience**c → Experience_Highlight**c).
+- **Rationale:** Enables persona-based filtering of granular bullet points rather than static text blocks.
+- **Implications:** Requires parent-child query logic to assemble the final resume payload.
 
 ### ADR-010: Visualization Engine (Vis.js vs. AntV G6)
 
-- **Decision:** Selected AntV G6 over Vis.js.
-- **Reason:** G6 supports "running line" animations natively, meeting the aesthetic requirement to mimic IcePanel flows. Vis.js requires complex canvas hacks for similar effects.
-- **Constraint:** Requires enabling Lightning Web Security (LWS) in the Org.
+- **Status:** Accepted
+- **Context:** Requirement for animated, "IcePanel-style" flow lines in the skill network.
+- **Decision:** Select AntV G6 over Vis.js as the visualization engine.
+- **Rationale:** G6 supports native "running line" animations that would require complex canvas hacks in Vis.js.
+- **Implications:** Requires Lightning Web Security (LWS) to be enabled in the org.
 
 ### ADR-011: Context Grounding Strategy (Direct CRM vs. Data Cloud)
 
-- **Decision:** Data Cloud will be used as the Retrieval Augmented Generation (RAG) source and Trusted Context Layer for Agentforce.
-- **Reason:** Grounding directly on CRM data creates tight coupling with the transactional schema. Data Cloud establishes a clear separation of concerns, serving as a dedicated context layer that supports "Hybrid Search" (Vector + Semantic) and allows grounding on unstructured assets like the PDF resume.
-- **Constraint:** Requires a Data Cloud-provisioned environment and manual configuration of Data Streams.
+- **Status:** Accepted
+- **Context:** Need for a Retrieval-Augmented Generation (RAG) source for Agentforce that avoids tight coupling with transactional data.
+- **Decision:** Utilize Data Cloud as the Trusted Context Layer.
+- **Rationale:** Establishes separation of concerns and supports hybrid search (Vector + Semantic) across structured and unstructured data.
+- **Implications:** Requires a provisioned Data Cloud instance and manual configuration of data streams.
 
 ### ADR-012: Guest User Security (Restriction Rules)
 
-- **Decision:** Implemented Restriction Rules on Testimonial\_\_c.
-- **Reason:** Standard Sharing Rules are additive ("Open Up") and prone to accidental leakage if a "View All" rule is created. Restriction Rules enforce a "Block First" policy at the kernel level for unapproved content, adhering to Zero Trust principles.
-- **Constraint:** Operates as a hard filter on record visibility that supersedes standard Sharing Settings; specific to the User criteria (Guest User).
+- **Status:** Accepted
+- **Context:** Standard sharing rules are additive and prone to accidental over-exposure.
+- **Decision:** Implement Restriction Rules on the Testimonial\_\_c object.
+- **Rationale:** Enforces a "Block First" policy for unapproved content at the kernel level, adhering to Zero Trust principles.
+- **Implications:** Operates as a hard filter on record visibility specifically for the Guest User profile.
 
 ### ADR-013: Structured Logging Framework (Nebula Logger)
 
-- **Decision:** Adopt Nebula Logger (Open Source) instead of building a custom logging engine.
-- **Reason:** Uses Platform Events (LogEntryEvent**e) to persist logs even if the Apex transaction rolls back. Provides a single adapter for LWC, Flow, and Apex. Native support for queryable Log**c records enables the "Glass Box" system health dashboard.
-- **Constraint:** Custom objects consume data storage (Mitigation: Strict 2-day retention policy configured in LoggerSettings\_\_c).
+- **Status:** Accepted
+- **Context:** Requirement for persistent logs even during Apex transaction rollbacks.
+- **Decision:** Adopt the Nebula Logger open-source framework.
+- **Rationale:** Uses Platform Events for decoupled log persistence and provides a unified adapter for LWC and Apex.
+- **Implications:** Requires a strict 2-day retention policy to manage storage limits in Developer Edition.
 
 ### ADR-014: Deferred Telemetry Loading (Performance)
 
-- **Decision:** All "System Health" data fetching must be decoupled from the critical rendering path.
-- **Reason:** Real-time telemetry (getting limits via Apex) is valuable for credibility but non-essential for the user journey. Fetching it during initialization risks violating the LCP < 2.5s constraint.
-- **Implementation:** Use requestIdleCallback() to fetch telemetry only after the main UI paints.
+- **Status:** Accepted
+- **Context:** Real-time telemetry fetching during initialization risks violating the LCP < 2.5s performance budget.
+- **Decision:** Implement Deferred Telemetry Loading for the system health dashboard.
+- **Rationale:** Decouples non-essential limit checks from the critical rendering path.
+- **Implications:** Employs requestIdleCallback() to fetch data only after the primary UI has painted.
 
 ### ADR-015: Strategy Pattern for Generative AI
 
-- **Context:** Agentforce in Developer Edition environments is prone to cold-start timeouts and limits.
-- **Decision:** Implement an Apex Interface IAIGenerationService to decouple the UI from the provider.
-- **Implementation:**
-  - AgentforceService.cls: Primary Data Cloud runtime connection.
-  - GeminiService.cls: Secondary API implementation via Named Credential.
-  - LocalTemplateService.cls: Tertiary Fallback (Custom Metadata).
-- **Consequence:** Requires maintaining standardized response wrappers across all providers.
+- **Status:** Accepted
+- **Context:** Agentforce in Developer Edition environments is prone to cold-start timeouts and transactional limits.
+- **Decision:** Implement the Strategy Pattern via the IAIGenerationService Apex interface.
+- **Rationale:** Decouples the UI from the AI provider, allowing seamless failover between Agentforce, Gemini, and Local Templates to ensure zero user "dead ends".
+- **Implications:** Requires maintaining standardized response wrappers across AgentforceService, GeminiService, and LocalTemplateService.
 
-### ADR-016: Cloudflare Worker as Edge AI Proxy (Deferred)
+### ADR-016: Cloudflare Worker as Edge AI Proxy
 
-- **Context:** The V1.0 architecture includes a Triple Fallback Strategy. To further enhance resilience and reduce API costs, an optional edge proxy may be added.
-- **Decision:** A Cloudflare Worker will proxy Gemini requests and provide a caching layer.
-- **Status:** Deferred to V2.0.
-- **Outcome:** Avoids scope creep during V1.0 delivery while documenting the path to multi-cloud edge capabilities.
+- **Status:** Deferred to V2.0
+- **Context:** Opportunity to further enhance resilience and reduce API costs via multi-cloud edge capabilities.
+- **Decision:** Utilize a Cloudflare Worker to proxy Gemini requests and provide an edge caching layer.
+- **Rationale:** Shields Salesforce from external API rate limits and decreases total latency while documenting a path to advanced multi-cloud scaling.
+- **Implications:** Avoids scope creep for the initial MVP launch while establishing a Phase 8 architectural baseline.
+
+### ADR-017: System API Security & Method Constraints
+
+- **Status:** Accepted
+- **Context:** Requirement for strict parity between MuleSoft API Manager policies and Salesforce Apex-based validation for the SAPI v1.2.0 rollout.
+- **Decision:** Implement an explicit API Key model (client_id/client_secret) and a Strict Read-Only (GET-only) design.
+- **Rationale:** Ensures security consistency across all request paths and eliminates write-access risks for public-facing guest endpoints.
+- **Implications:** Credentials validated against Custom Metadata; non-GET methods return a 405 Method Not Allowed status.
+
+### ADR-018: FinOps Constraint – AWS Lambda Function URLs vs. API Gateway
+
+- **Status:** Accepted
+- **Context:** Phase 8 requires an external polyglot gateway while maintaining a "$0.00 forever" guarantee.
+- **Decision:** Utilize AWS Lambda Function URLs instead of Amazon API Gateway.
+- **Rationale:** Standard AWS API Gateway free tiers expire after 12 months, whereas Function URLs are a permanent feature of the Lambda service.
+- **Implications:** Requires moving security logic (API Key validation, rate limiting) inside the Lambda function code.
+
+### ADR-019: Executable Governance – Platform Events for Documentation Logic
+
+- **Status:** Accepted
+- **Context:** Requirement to prove that documentation is a "living" asset rather than static text.
+- **Decision:** Implement Executable Governance via the Governance_Notification\_\_e Platform Event and the c-smart-docs component.
+- **Rationale:** Allows the UI to react in real-time to system state changes (e.g., CI/CD deployment completion), proving the candidate understands event-driven architecture.
+- **Implications:** Requires the implementation of a subscription model in LWC using lightning/empApi.
+
+### ADR-020: Mobile Performance – Static SVG Fallback Strategy
+
+- **Status:** Accepted
+- **Context:** The animated AntV G6 skill graph violates performance budgets (LCP < 2.5s) on low-power mobile devices.
+- **Decision:** Implement a Static SVG Fallback for small viewports.
+- **Rationale:** Prevents heavy canvas rendering on mobile, ensuring the site passes Lighthouse performance audits on 4G networks.
+- **Implications:** Requires FORM_FACTOR detection in the c-skill-network LWC.
+
+### ADR-021: Native GraphQL (Door 1) vs. Apex REST for UI
+
+- **Status:** Accepted
+- **Context:** LWR components require efficient, multi-object data fetching without multiple REST round-trips.
+- **Decision:** Utilize native Salesforce GraphQL (lightning/uiGraphQLApi) for core frontend orchestration.
+- **Rationale:** Provides automatic caching via Lightning Data Service (LDS) and reduces payload size by fetching only essential fields.
+- **Implications:** Requires components to be built with wire adapters.
+
+### ADR-022: Resilience Engineering – Resilience Simulation Toggle
+
+- **Status:** Accepted
+- **Context:** Need to reduce recruiter "Time-to-Trust" by proving the system's resilience under failure.
+- **Decision:** Implement a "Resilience Simulation" toggle (formerly Chaos Mode) within the Glass Box footer.
+- **Rationale:** Allows evaluators to manually force integrations into failure states to observe the "Indefinite Degraded Mode" and circuit breakers in real-time.
+- **Implications:** Requires state management (Session Cache) to track simulation status and mock 500 errors in service classes.
+
+### ADR-023: Client-Side PDF Generation (jsPDF) for MVP
+
+- **Status:** Accepted (Transitionary)
+- **Context:** The Resume Builder requires PDF export, but server-side generation is deferred to Phase 8.
+- **Decision:** Utilize jsPDF (Client-Side) via Static Resource for the MVP.
+- **Rationale:** Enables functional PDF generation without middleware costs or early Lambda complexity.
+- **Implications:** Output fidelity may vary across browsers; must migrate to serverless Node.js in Phase 8.
+
+### ADR-024: Twin API Pattern – Contract-First Parity
+
+- **Status:** Accepted
+- **Context:** To prove enterprise maturity, the Salesforce implementation must match the MuleSoft design artifacts.
+- **Decision:** Enforce the Twin API Pattern using OpenAPI 3.0 as the source of truth.
+- **Rationale:** Ensures the Apex implementation (SAPI) and MuleSoft proxy remain interchangeable, demonstrating "API-Led Connectivity".
+- **Implications:** Schema changes require a corresponding YAML update before implementation.
 
 ## 8. Contingency & Rollback Plans
 
@@ -590,16 +690,16 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **Symptom:** GitHub Commits or Portfolio API returns status 429.
 - **Mitigation:** System automatically serves cached responses from GitHub_Cache\_\_c (Custom Setting) indefinitely until the limit resets.
 
-### 8.4 Degraded Mode Operations
+### 8.4 Resilience Simulation Operations
 
 Ensuring the system fails gracefully during outage events.
 
-| Failure Scenario              | Detection Method                       | User Experience                                              | Auto-Recovery                      |
-| :---------------------------- | :------------------------------------- | :----------------------------------------------------------- | :--------------------------------- |
-| **GitHub API Rate Limit**     | HTTP 429 response                      | Display cached commits with "Last Updated: 15m ago" badge    | Scheduler retries in 15 min        |
-| **G6 Library 404**            | `loadScript()` Promise rejection       | Render static SVG immediately                                | Log error + email admin            |
-| **Jira API Down**             | 3 consecutive 503 errors               | Show "Roadmap temporarily unavailable" message               | Circuit breaker opens for 30 min   |
-| **User-Triggered Simulation** | `Chaos_Mode__c = True` (Session Cache) | "Simulation Active" badge appears; API calls mock 500 errors | Reset via UI Toggle or Session End |
+| Failure Scenario              | Detection Method                                          | User Experience                                              | Auto-Recovery                      |
+| :---------------------------- | :-------------------------------------------------------- | :----------------------------------------------------------- | :--------------------------------- |
+| **GitHub API Rate Limit**     | HTTP 429 response                                         | Display cached commits with "Last Updated: 15m ago" badge    | Scheduler retries in 15 min        |
+| **G6 Library 404**            | `loadScript()` Promise rejection                          | Render static SVG immediately                                | Log error + email admin            |
+| **Jira API Down**             | 3 consecutive 503 errors                                  | Show "Roadmap temporarily unavailable" message               | Circuit breaker opens for 30 min   |
+| **User-Triggered Simulation** | `Resilience_Simulation_Enabled__c = True` (Session Cache) | "Simulation Active" badge appears; API calls mock 500 errors | Reset via UI Toggle or Session End |
 
 ## 9. Observability & Glass Box
 
@@ -636,13 +736,13 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 
 **Base URL:** `https://rbumstead-dev-ed.develop.my.site.com/services/apexrest`
 
-**Version:** 1.1.1
+**Version:** 1.2.0
 
-**Security:** OAuth 2.0 Client Credentials Flow with dual environment support (Production: login.salesforce.com, Sandbox: test.salesforce.com)
+**Security:** System-to-system API Key headers (client_id, client_secret) validated via Salesforce Custom Metadata.
 
 **Key Design Principles:**
 
-- **Zero Trust Architecture:** All endpoints require OAuth 2.0 authentication with scope-based access control (sapi.read, sapi.write)
+- **Zero Trust Architecture:** All endpoints require explicit API Key validation (client_id, client_secret) mapped to Custom Metadata permissions
 - **Distributed Tracing:** Mandatory `X-Request-Id` header (UUID format) in all requests for correlation across log aggregation systems
 - **Contract-First Design:** OpenAPI 3.0 specification defines the interface before implementation
 - **Explicit Caching:** `Cache-Control` headers distinguish between cacheable configuration (`max-age=300`) and dynamic data (`no-store`)
@@ -826,7 +926,7 @@ To ensure security and scalability, the System API was not exposed directly. Acc
 The following policies were configured in API Manager to demonstrate enterprise governance:
 
 1. **Client ID Enforcement**
-   - Policy Type: OAuth 2.0 Client Credentials
+   - Policy Type: Client ID Enforcement (API Key)
    - Requirement: All requests must include valid client_id and client_secret headers
    - Rejection Response: 401 Unauthorized for missing or invalid credentials
 

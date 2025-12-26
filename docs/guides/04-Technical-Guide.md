@@ -209,9 +209,9 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - **Global Tag:** Injected via Experience Builder Head Markup.
 - **Event Strategy:**
   - `page_view`: Automatic (History State Change).
-  - `generate_resume`: Triggered on PDF generation success (tracks conversion).
-  - `api_test_run`: Triggered on REST Callout completion (tracks engagement).
-  - `resilience_simulation_toggled`: Triggered when the Chaos Mode switch is flipped.
+  - `resume_download_pdf`: Triggered on PDF generation success (tracks conversion).
+  - `api_test_executed`: Triggered on REST Callout completion (tracks engagement).
+  - `resilience_test_triggered`: Triggered when the Resilience Simulation switch is flipped.
 
 ## 4. Quality Assurance Checklist
 
@@ -219,7 +219,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - [ ] **Coverage:** Verify Apex tests > 75% coverage.
 - [ ] **Security:** Verify Zero critical warnings from PMD Scanner.
 - [ ] **Accessibility:** Confirm the "Pause Animation" toggle exists and works.
-- [ ] **Degradation Test:** Toggle "Resilience Simulator" (disconnect GitHub). Verify UI seamlessly switches to cached data with a "Data Stale" badge.
+- [ ] **Degradation Test:** Toggle "Resilience Simulation" (disconnect GitHub). Verify UI seamlessly switches to cached data with a "Data Stale" badge.
 - [ ] **Limit Visibility:** Verify "Glass Box" footer accurately reflects Heap Size changes after running a heavy operation.
 - [ ] **Analytics:** Verify api_test_executed event fires in GA4 Real-Time view when using the API Tester.
 - [ ] Verify Skill Graph/Roadmap use lightning/uiGraphQLApi (Network tab shows /graphql call to Salesforce domain)

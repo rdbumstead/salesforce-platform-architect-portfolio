@@ -129,7 +129,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - \> 20% of visitors interact with "API Tester" or "Resume Builder" (verified via Custom Events).
   - api_test_executed: User successfully calls an endpoint in the API Tester.
   - resume_download_pdf: User exports a resume in Creative Mode.
-  - resilience_test_triggered: User toggles the "Chaos Mode" switch.
+  - resilience_test_triggered: User toggles the "Resilience Simulation" switch.
 
 **Reach:**
 
@@ -193,7 +193,7 @@ The delivery is organized into four parallel execution tracks:
 
 - **System Health "Glass Box":** Develop c-system-health-footer with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
 - **Enterprise Logging:** Install and configure Nebula Logger (Unlocked Package); configure storage guardrails (2-day retention).
-- **Resilience Simulation:** Implement "Chaos Mode" toggle to force-test circuit breakers and cached data fallbacks.
+- **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test circuit breakers and cached data fallbacks.
 - **Analytics Instrumentation:** Deploy Google Analytics 4 (GA4) with custom events for API tests and resume downloads.
 - **API Mode Indicator:** Glass Box footer displays "GraphQL Mode: Native (Live)" — prepares UI for Phase 8 toggle.
 - **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration.
@@ -278,7 +278,7 @@ The delivery is organized into four parallel execution tracks:
 - [ ] **Dev:** Install Nebula Logger (Unlocked Pkg) & configure LoggerSettings\_\_c.
 - **Dev:** Build c-system-health-footer LWC (Glass Box) using requestIdleCallback.
 - **Dev:** Implement AnalyticsService.js for unified GA4 event tracking.
-- **Config:** Add "Resilience Simulator" toggle and "Chaos" logic to GitHubService.cls.
+- **Config:** Add "Resilience Simulation" toggle and resilience logic to GitHubService.cls.
 - **QA:** Verify "Glass Box" matches actual Developer Console limits.
 - **QA:** Verify GA4 Real-Time view receives api_test_executed events.
 

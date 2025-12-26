@@ -80,14 +80,14 @@ graph LR
 
 ## Full Architecture Documentation
 
-| Document                                      | Link                                                  |
-| :-------------------------------------------- | :---------------------------------------------------- |
-| 01 – Executive Overview                       | [Read →](docs/guides/01-Executive-Overview.md)        |
-| 02 – Program Charter & Roadmap                | [Read →](docs/guides/02-Program-Charter.md)           |
-| 03 – Systems Architecture Specification (SAS) | [Read →](docs/guides/03-SAS.md)                       |
-| 04 – Technical Implementation Guide           | [Read →](docs/guides/04-Technical-Guide.md)           |
-| 05 – Maintenance & Operations Guide           | [Read →](docs/guides/05-Maintenance-Guide.md)         |
-| 06 – Guardrails & Executable Governance       | [Read →](docs/guides/06-Guardrails-and-Governance.md) |
+| Document                                      | Link                                                             |
+| :-------------------------------------------- | :--------------------------------------------------------------- |
+| 01 – Executive Overview                       | [Read →](docs/guides/01-Executive-Overview.md)                   |
+| 02 – Program Charter & Roadmap                | [Read →](docs/guides/02-Program-Charter.md)                      |
+| 03 – Systems Architecture Specification (SAS) | [Read →](docs/guides/03-SAS.md)                                  |
+| 04 – Technical Implementation Guide           | [Read →](docs/guides/04-Technical-Guide.md)                      |
+| 05 – Maintenance & Operations Guide           | [Read →](docs/guides/05-Maintenance-Guide.md)                    |
+| 06 – Guardrails & Executable Governance       | [Read →](docs/guides/06-Guardrails-and-Executable-Governance.md) |
 
 > **For Non-Salesforce Readers:** Document 06 includes plain-English explanations of Salesforce governor limits, AWS cost optimization patterns, and constraint-based design principles. No prior platform knowledge required.
 
