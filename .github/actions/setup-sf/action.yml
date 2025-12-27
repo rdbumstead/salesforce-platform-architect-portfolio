@@ -1,5 +1,6 @@
 name: "Setup Salesforce and Tools"
-description: "Installs SF CLI, Plugins, and Authenticates"
+description: "Installs Salesforce CLI, required tools, and authenticates via JWT"
+
 inputs:
   jwt_key:
     description: "SFDX JWT Private Key"
@@ -15,13 +16,19 @@ inputs:
     required: false
     default: "false"
   install_code_analyzer:
-    description: "Install @salesforce/plugin-code-analyzer (Heavy)"
+    description: "Install @salesforce/plugin-code-analyzer"
     required: false
     default: "true"
 
 runs:
   using: "composite"
   steps:
+    - name: Install Required System Tools
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq
+
     - name: Install Salesforce CLI
       shell: bash
       run: |
@@ -39,11 +46,17 @@ runs:
       shell: bash
       run: |
         echo "${{ inputs.jwt_key }}" > portfolio.key
-        LOGIN_FLAGS="--client-id ${{ inputs.client_id }} --jwt-key-file portfolio.key --username ${{ inputs.username }} --alias portfolio --instance-url https://login.salesforce.com"
 
-        if [ "${{ inputs.is_dev_hub }}" == "true" ]; then
+        LOGIN_FLAGS="--client-id ${{ inputs.client_id }} \
+                     --jwt-key-file portfolio.key \
+                     --username ${{ inputs.username }} \
+                     --alias portfolio \
+                     --instance-url https://login.salesforce.com"
+
+        if [ "${{ inputs.is_dev_hub }}" = "true" ]; then
           sf org login jwt $LOGIN_FLAGS --set-default-dev-hub
         else
           sf org login jwt $LOGIN_FLAGS
         fi
+
         rm portfolio.key

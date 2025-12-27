@@ -2,16 +2,21 @@ name: Daily Org Heartbeat
 
 on:
   schedule:
+    # Runs daily at 08:00 UTC
     - cron: "0 8 * * *"
   workflow_dispatch:
 
 jobs:
   heartbeat:
+    name: Salesforce Org Heartbeat
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+    timeout-minutes: 10
 
-      - name: Setup Salesforce
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Salesforce CLI
         uses: ./.github/actions/setup-sf
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
@@ -20,10 +25,70 @@ jobs:
           install_code_analyzer: false
 
       - name: Execute Heartbeat Query
-        run: sf data query --query "SELECT Id FROM User LIMIT 1" --target-org portfolio
-
-      - name: Ensure Owner User is Unfrozen
         run: |
-          sed -i "s/___TARGET_USERNAME___/${{ secrets.SFDX_USERNAME }}/g" scripts/unfreeze.apex
+          echo "Running org heartbeat query..."
+          sf data query \
+            --query "SELECT Id FROM User LIMIT 1" \
+            --target-org portfolio
 
-          sf apex run --file scripts/unfreeze.apex --target-org portfolio
+      - name: Check Portfolio Owner Status
+        id: check-freeze
+        continue-on-error: true
+        run: |
+          echo "Checking portfolio owner account status..."
+
+          FROZEN_STATUS=$(sf data query \
+            --query "SELECT IsFrozen FROM UserLogin WHERE UserId IN (SELECT Id FROM User WHERE Username = '${{ secrets.SFDX_USERNAME }}')" \
+            --json \
+            --target-org portfolio \
+            | jq -r '.result.records[0].IsFrozen // "unknown"')
+
+          echo "frozen=$FROZEN_STATUS" >> $GITHUB_OUTPUT
+
+          if [ "$FROZEN_STATUS" = "true" ]; then
+            echo "::warning::Portfolio owner account is FROZEN - attempting recovery"
+          elif [ "$FROZEN_STATUS" = "false" ]; then
+            echo "Portfolio owner account is active"
+          else
+            echo "::warning::Could not determine freeze status"
+          fi
+
+      - name: Attempt to Unfreeze Portfolio Owner
+        if: steps.check-freeze.outputs.frozen == 'true'
+        continue-on-error: true
+        run: |
+          echo "Generating Apex recovery script..."
+
+          cat <<EOF > unfreeze_owner.apex
+          try {
+              String targetUsername = '${{ secrets.SFDX_USERNAME }}';
+              System.debug('Heartbeat recovery for user: ' + targetUsername);
+
+              List<User> users = [SELECT Id FROM User WHERE Username = :targetUsername LIMIT 1];
+
+              if (users.isEmpty()) {
+                  System.debug('WARN: Target user not found.');
+                  return;
+              }
+
+              List<UserLogin> logins = [SELECT Id, IsFrozen FROM UserLogin WHERE UserId = :users[0].Id LIMIT 1];
+              
+              if (!logins.isEmpty()) {
+                  SObject genericUl = (SObject)logins[0];
+                  
+                  if ((Boolean)genericUl.get('IsFrozen')) {
+                      genericUl.put('IsFrozen', false);
+                      update genericUl;
+                      System.debug('SUCCESS: User was unfrozen.');
+                  } else {
+                      System.debug('INFO: User already active.');
+                  }
+              }
+
+          } catch (Exception e) {
+              System.debug('WARNING: Unable to unfreeze user. Error: ' + e.getMessage());
+          }
+          EOF
+
+          echo "Executing Apex recovery..."
+          sf apex run --file unfreeze_owner.apex --target-org portfolio || true
