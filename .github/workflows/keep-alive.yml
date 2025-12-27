@@ -79,8 +79,7 @@ jobs:
           echo "Executing Apex recovery..."
           sf apex run \
             --file unfreeze_owner.apex \
-            --target-org portfolio \
-            --log-level DEBUG
+            --target-org portfolio
 
       - name: Heartbeat Complete
         run: echo "Salesforce org heartbeat completed successfully."
