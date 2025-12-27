@@ -14,6 +14,10 @@ inputs:
     description: "Set as Default Dev Hub"
     required: false
     default: "false"
+  install_code_analyzer:
+    description: "Install @salesforce/plugin-code-analyzer (Heavy)"
+    required: false
+    default: "true"
 
 runs:
   using: "composite"
@@ -26,6 +30,7 @@ runs:
         fi
 
     - name: Install Essential Plugins
+      if: ${{ inputs.install_code_analyzer == 'true' }}
       shell: bash
       run: |
         echo y | sf plugins install sfdx-git-delta @salesforce/plugin-code-analyzer
@@ -35,6 +40,7 @@ runs:
       run: |
         echo "${{ inputs.jwt_key }}" > portfolio.key
         LOGIN_FLAGS="--client-id ${{ inputs.client_id }} --jwt-key-file portfolio.key --username ${{ inputs.username }} --alias portfolio --instance-url https://login.salesforce.com"
+
         if [ "${{ inputs.is_dev_hub }}" == "true" ]; then
           sf org login jwt $LOGIN_FLAGS --set-default-dev-hub
         else

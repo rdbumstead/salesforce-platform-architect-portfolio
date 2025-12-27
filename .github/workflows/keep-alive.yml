@@ -17,6 +17,11 @@ jobs:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
           username: ${{ secrets.SFDX_INTEGRATION_USERNAME }}
+          install_code_analyzer: false
 
       - name: Execute Heartbeat Query
         run: sf data query --query "SELECT Id FROM User LIMIT 1" --target-org portfolio
+
+      - name: Ensure Owner User is Unfrozen
+        run: |
+          sf data update record --sobject UserLogin --where "UserId IN (SELECT Id FROM User WHERE Username = '${{ secrets.SFDX_USERNAME }}')" --values "IsFrozen=false" --target-org portfolio
