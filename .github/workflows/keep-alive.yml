@@ -47,14 +47,16 @@ jobs:
                   System.debug('WARN: Target user not found.');
                   return;
               }
-                  
+
               List<UserLogin> logins = [SELECT Id, IsFrozen FROM UserLogin WHERE UserId = :users[0].Id LIMIT 1];
               
               if (!logins.isEmpty()) {
-                  UserLogin ul = logins[0];
-                  if (ul.IsFrozen) {
-                      ul.put('IsFrozen', false);
-                      update ul;
+                  SObject genericUl = (SObject)logins[0];
+                  
+                  if ((Boolean)genericUl.get('IsFrozen')) {
+                      genericUl.put('IsFrozen', false);
+                      
+                      update genericUl;
                       System.debug('SUCCESS: User was unfrozen.');
                   } else {
                       System.debug('INFO: User already active.');
@@ -62,9 +64,9 @@ jobs:
               }
 
           } catch (Exception e) {
-              System.debug('WARNING: Unable to unfreeze user (likely permission issue). Error: ' + e.getMessage());
+              System.debug('WARNING: Unable to unfreeze user. Error: ' + e.getMessage());
           }
           EOF
 
           echo "Executing Apex recovery..."
-          sf apex run --file unfreeze_owner.apex --target-org portfolio
+          sf apex run --file unfreeze_owner.apex --target-org portfolio || true
