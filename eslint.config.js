@@ -116,5 +116,14 @@ module.exports = [
     rules: {
       ...jestPlugin.configs.recommended.rules
     }
+  },
+
+  {
+    files: ["scripts/**/*.js", "eslint.config.js", "lighthouserc.cjs"],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    }
   }
 ];
