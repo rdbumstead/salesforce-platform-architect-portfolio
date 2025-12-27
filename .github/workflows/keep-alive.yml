@@ -24,4 +24,6 @@ jobs:
 
       - name: Ensure Owner User is Unfrozen
         run: |
-          sf data update record --sobject UserLogin --where "UserId IN (SELECT Id FROM User WHERE Username = '${{ secrets.SFDX_USERNAME }}')" --values "IsFrozen=false" --target-org portfolio
+          sed -i "s/___TARGET_USERNAME___/${{ secrets.SFDX_USERNAME }}/g" scripts/unfreeze.apex
+
+          sf apex run --file scripts/unfreeze.apex --target-org portfolio
