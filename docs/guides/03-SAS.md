@@ -902,8 +902,8 @@ The `/testimonials/feed?mode=professional` endpoint applies business logic:
 
 Complete OpenAPI specifications available in repository:
 
-- `/api-specs/salesforce-sapi.yaml` - System API contract
-- `/api-specs/portfolio-papi.yaml` - Process API contract
+- `packages/integration-api/specs/salesforce-sapi.yaml` - System API contract
+- `packages/integration-api/specs/portfolio-papi.yaml` - Process API contract
 - `/docs/api-examples/` - Postman collection with pre-configured requests
 
 ### Appendix C: MuleSoft Code, Governance, & Proxy Configuration (Reference)
