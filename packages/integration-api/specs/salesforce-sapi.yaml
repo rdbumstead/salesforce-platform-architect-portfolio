@@ -192,17 +192,32 @@ components:
     personaParam:
       name: persona
       in: query
+      description: |
+        Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).
+        Can be a single value or multiple values (comma-separated or repeated parameters).
+
+        Examples:
+        - Single: `?persona=Admin`
+        - Multiple (comma): `?persona=Admin,Developer`
+        - Multiple (repeated): `?persona=Admin&persona=Developer`
       schema:
-        $ref: "#/components/schemas/Persona"
-      description: "Filters records where the target field (Multi-Select Picklist) includes this persona."
+        oneOf:
+          - type: string
+            enum: [Admin, Developer, Architect]
+          - type: array
+            items:
+              type: string
+              enum: [Admin, Developer, Architect]
+      style: form
+      explode: true
+      example: "Admin"
 
     statusParam:
       name: status
       in: query
-      description: Filter by Project Status (Draft, Active, Archived).
+      description: "Filter by Project Status."
       schema:
-        type: string
-        enum: [Draft, Active, Archived]
+        $ref: "#/components/schemas/ProjectStatus"
 
     issuerNameParam:
       name: issuerName
@@ -308,15 +323,20 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
 
-    ServerError:
-      description: Internal platform error (Apex/MuleSoft Fault).
-      headers:
-        X-Request-Id:
-          $ref: "#/components/headers/RequestIdResponse"
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
+  ServerError:
+    description: Internal platform error (Apex/MuleSoft Fault).
+    headers:
+      X-Request-Id:
+        $ref: "#/components/headers/RequestIdResponse"
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/Error"
+          example:
+            httpStatus: 504
+            errorCode: "GATEWAY_TIMEOUT"
+            message: "Upstream Salesforce processing exceeded 10,000ms."
+            correlationId: "123e4567-e89b-12d3-a456-426614174000"
 
   schemas:
     Error:
@@ -356,11 +376,42 @@ components:
           example: "123e4567-e89b-12d3-a456-426614174000"
           description: "Unique ID tracking the request. Matches X-Request-Id."
 
+    # --- Reusable Enums (Modularity) ---
     Persona:
       type: string
       description: "Target audience for content filtering."
       enum: [Admin, Developer, Architect]
       example: "Architect"
+
+    ProjectStatus:
+      type: string
+      description: "Project Lifecycle Status"
+      enum:
+        - "Live – In Production"
+        - "Live – Demo / Reference"
+        - "Active Development"
+        - "On Hold"
+        - "Archived"
+      example: "Active Development"
+
+    AssetType:
+      type: string
+      description: "Asset Type"
+      enum: [Image, Video, Document, Link]
+      example: "Image"
+
+    RelationshipType:
+      type: string
+      description: "Professional Relationship"
+      enum: [Manager, Peer, Client, Recruiter, Fan]
+      example: "Manager"
+
+    VibeMode:
+      type: string
+      description: "Tone/Style Category"
+      enum: [Professional, Casual]
+      example: "Professional"
+    # -----------------------------------
 
     HealthStatus:
       type: object
@@ -503,10 +554,7 @@ components:
             description: "STAR Method: Result"
           }
         status:
-          type: string
-          enum: [Draft, Active, Archived]
-          example: "Active"
-          description: "Project Lifecycle Status"
+          $ref: "#/components/schemas/ProjectStatus"
         dateCompleted:
           {
             type: string,
@@ -714,10 +762,7 @@ components:
             description: "Parent Project Name"
           }
         type:
-          type: string
-          enum: [Image, Video, Document, Link]
-          example: "Image"
-          description: "Asset Type"
+          $ref: "#/components/schemas/AssetType"
         externalUrl:
           {
             type: string,
@@ -770,15 +815,9 @@ components:
             description: "Author Avatar URL"
           }
         relationshipType:
-          type: string
-          enum: [Manager, Peer, Client, Recruiter, Fan]
-          example: "Manager"
-          description: "Professional Relationship"
+          $ref: "#/components/schemas/RelationshipType"
         vibeMode:
-          type: string
-          enum: [Professional, Casual]
-          example: "Professional"
-          description: "Tone/Style Category"
+          $ref: "#/components/schemas/VibeMode"
         context:
           {
             type: string,
@@ -1167,7 +1206,7 @@ paths:
         Current Implementation: Shallow connectivity check (Runtime availability).
         Future Roadmap: Deep dependency check (Salesforce Connectivity, Cache Availability).
       operationId: getHealth
-      security: [] # Public endpoint for Load Balancers
+      security: []
       responses:
         "200":
           description: Service is UP.
@@ -1190,7 +1229,6 @@ paths:
       summary: Get Contact records
       description: Retrieves the primary contact details for the portfolio owner.
       operationId: getContacts
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1240,7 +1278,6 @@ paths:
       summary: Get Experience records
       description: Retrieves professional experience history.
       operationId: getExperience
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1279,7 +1316,6 @@ paths:
       summary: Get Experience Highlights
       description: Fetches resume bullets. Supports Persona filtering for PAPI optimization.
       operationId: getExperienceHighlights
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1341,7 +1377,6 @@ paths:
         Retrieves portfolio projects.
         Example Usage: `/projects?isFeatured=true`
       operationId: getProjects
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1375,7 +1410,7 @@ paths:
                   challenge: "Recruiters and Hiring Managers struggle to verify an architect's hands-on skills through static PDFs."
                   solution: "Built a multi-cloud LWR site with automated CI/CD, strict FinOps limits, and 'Vibe-Gated' logic."
                   businessValue: "Reduces 'Time-to-Trust' for evaluators by proving 'Enterprise Grade' is a mindset."
-                  status: "Active"
+                  status: "Active Development"
                   dateCompleted: "2025-12-01"
                   heroImageUrl: "https://assets.ryanbumstead.com/hero.jpg"
                   liveUrl: "https://rbumstead-dev-ed.develop.my.site.com/portfolio/"
@@ -1397,7 +1432,6 @@ paths:
       summary: Get Project Assets
       description: Retrieves assets (images, links) associated with a project.
       operationId: getProjectAssets
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1435,7 +1469,6 @@ paths:
       summary: Get Testimonials
       description: Retrieves received testimonials. Returns only records where Approved__c = true.
       operationId: getTestimonials
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1471,7 +1504,6 @@ paths:
       summary: Get Portfolio Configuration
       description: Returns the singleton Global Configuration object (Metadata-driven). Not pageable.
       operationId: getPortfolioConfig
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1499,7 +1531,6 @@ paths:
       summary: Get Account records
       description: Retrieves related account/employer records.
       operationId: getAccounts
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1536,7 +1567,6 @@ paths:
       summary: Get Skill records
       description: Retrieves technical skills and proficiency scores.
       operationId: getSkills
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1598,7 +1628,6 @@ paths:
       summary: Get Certification records
       description: Retrieves professional certifications.
       operationId: getCertifications
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1659,7 +1688,6 @@ paths:
       summary: Get Education records
       description: Retrieves educational background.
       operationId: getEducation
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1697,7 +1725,6 @@ paths:
       summary: Get Project-Skill Links
       description: Retrieves junction records linking Projects to Skills.
       operationId: getProjectSkills
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1734,7 +1761,6 @@ paths:
       summary: Get Experience-Skill Links
       description: Retrieves junction records linking Experiences to Skills.
       operationId: getExperienceSkills
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
@@ -1771,7 +1797,6 @@ paths:
       summary: Get Certification-Skill Links
       description: Retrieves junction records linking Certifications to Skills.
       operationId: getCertificationSkills
-      # Security handled by Global Default
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"

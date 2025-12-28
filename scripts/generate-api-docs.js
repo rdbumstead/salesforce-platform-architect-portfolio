@@ -30,8 +30,17 @@ specs.forEach((specFile) => {
     console.log(`Processing: ${specFile} -> ${outputPath}`);
 
     const command = `npx widdershins "${inputPath}" ${WIDDERSHINS_FLAGS} -o "${outputPath}"`;
-
     execSync(command, { stdio: "inherit" });
+
+    let content = fs.readFileSync(outputPath, "utf8");
+
+    content = content.replace(/^---[\s\S]*?---\s*/, "");
+
+    content = content.replace(/<!--\s*Generator:\s*Widdershins.*?-->\s*/i, "");
+
+    content = content.trimStart();
+
+    fs.writeFileSync(outputPath, content);
   } catch (error) {
     console.error(`Error processing ${specFile}:`, error.message);
     process.exit(1);
