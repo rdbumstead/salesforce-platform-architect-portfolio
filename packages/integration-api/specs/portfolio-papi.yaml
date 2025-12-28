@@ -5,35 +5,37 @@ info:
     A Process API (PAPI) responsible for orchestrating, transforming, and filtering data 
     from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
 
-    ### Key Capabilities
-    - Aggregates disparate SAPI objects into a unified "Employment Profile"
-    - Generates ATS-friendly plain text resumes based on specific personas
-    - Applies business logic filtering (e.g., "Vibe Mode") to social proof
-    - Handles SAPI authentication and error handling transparently
+    ### 1. Authentication Strategy
+    - **Frontend → PAPI**: Uses **MuleSoft/Salesforce Client Credentials** (`client_id`, `client_secret`) in headers.
+    - **PAPI → SAPI**: Uses separate internal Client Credentials stored in `configuration.yaml` (or AWS Secrets Manager).
 
-    ### SAPI Version Compatibility
-    - **PAPI Version**: 1.1.0
-    - **Target SAPI Version**: 1.2.0
-    - **Implementation**: All upstream SAPI calls use the header `X-API-Version: v1`.
+    ### 2. Versioning Strategy
+    - **Pattern**: Header-based versioning takes precedence.
+    - **Header**: `X-API-Version: v1` (Required).
+    - **URL**: Version segments removed from base path to align with SAPI ADR.
 
-    ### SAPI Integration & Authentication
-    - **Authentication**: PAPI authenticates to SAPI using OAuth2 Client Credentials (`client_id`, `client_secret`) retrieved securely from **AWS Secrets Manager**.
-    - **Rotation**: Credentials are rotated every 90 days via automated Lambda functions; PAPI refreshes its local cache automatically.
+    ### 3. Rate Limiting & Aggregation Math
+    - **SAPI Limit**: 120 requests/minute.
+    - **PAPI Aggregation**: A single `/profile/full` call triggers ~8 upstream SAPI calls.
+    - **PAPI Limit**: Restricted to **15 requests/minute** (Standard Tier) to prevent cascading rate limit violations on SAPI (15 * 8 = 120).
 
-    ### Caching Strategy
-    - **Aggregation Logic**: The PAPI response adopts the **strictest** cache policy of its upstream dependencies.
-      - If *any* SAPI endpoint returns `no-store` or `private`, the entire PAPI response is marked `no-store`.
-      - Otherwise, it uses the minimum `max-age` found (e.g., min(300, 120) = 120s).
-    - **Static Data** (Skills, Config): Baseline 5 minutes.
-    - **Semi-Static** (Projects): Baseline 2 minutes.
-    - **Invalidation**: All caches invalidated on SAPI 5xx errors.
+    ### 4. Caching Strategy (Aggregation Logic)
+    *Note: PAPI cannot pass SAPI headers verbatim due to mixed sensitivity in aggregated payloads.*
+    - **Rule**: Strictest policy wins.
+      1. If *any* upstream resource is `no-store` (e.g., Contact) → PAPI response is `no-store`.
+      2. If *any* upstream resource is `private` → PAPI response is `private`.
+      3. Otherwise → PAPI response is `public` with the minimum `max-age`.
 
-    ### Error Handling & Resilience
-    - **Graceful Degradation**: If SAPI returns partial data (e.g., Certifications timeout), PAPI returns `200 OK` with an empty array for that section and an `integrityNote`.
-    - **Circuit Breaker**: After 3 consecutive SAPI failures, PAPI returns cached data only.
-    - **Pagination**: Implements recursive fetching for SAPI resources exceeding the default page limit (200 records).
-    - **Tracing**: Correlation IDs (`X-Request-Id`) are propagated to all downstream SAPI calls.
-  version: 1.1.0
+    ### 5. Field Mapping (Transformation Layer)
+    | Object | SAPI Field | PAPI Field | Logic |
+    | :--- | :--- | :--- | :--- |
+    | Contact | `name` | `fullName` | Rename |
+    | Experience | `name` | `role` | Semantic Rename |
+    | Certification | `earnedDate` | `dateEarned` | JS Convention |
+    | Project | `dateCompleted` | `completionDate` | JS Convention |
+    | Project | `heroImageUrl` | `heroImageUrl` | Passthrough |
+
+  version: 1.2.0
   x-mulesoft-layer: process
   contact:
     name: Ryan Bumstead
@@ -44,22 +46,23 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://api.portfolio.ryanbumstead.com/papi/v1
-    description: Production PAPI Host
+  - url: https://api.portfolio.ryanbumstead.com/papi
+    description: Production PAPI Host (Header Versioning)
 
-# Global Rate Limits
+# Global Rate Limits (Aligned to SAPI capacity)
 x-rate-limit:
   description: "PAPI rate limits enforced by API Manager"
   tiers:
     standard:
-      requestsPerMinute: 60
-      description: "General orchestration endpoints (/profile/*)"
+      requestsPerMinute: 15
+      description: "Conservative limit to protect SAPI (1 PAPI req = 8 SAPI reqs)"
     ai:
       requestsPerMinute: 10
-      description: "Expensive Generative AI calls (/ai/generate)"
+      description: "Expensive Generative AI calls"
 
 security:
-  - ApiKeyAuth: []
+  - ClientIdAuth: []
+    ClientSecretAuth: []
 
 tags:
   - name: Orchestration
@@ -68,6 +71,582 @@ tags:
     description: Endpoints that transform SAPI data into new formats
   - name: Logic
     description: Endpoints that apply business rules and filtering
+  - name: Monitoring
+    description: Health checks and observability
+
+components:
+  securitySchemes:
+    ClientIdAuth:
+      type: apiKey
+      in: header
+      name: client_id
+      description: MuleSoft/Salesforce Client ID
+    ClientSecretAuth:
+      type: apiKey
+      in: header
+      name: client_secret
+      description: MuleSoft/Salesforce Client Secret (Standard Enforcement Policy)
+
+  parameters:
+    RequestIdParam:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: Correlation ID propagated to SAPI.
+      schema:
+        type: string
+        format: uuid
+
+    ApiVersionParam:
+      name: X-API-Version
+      in: header
+      required: true
+      description: API Version (e.g., v1).
+      schema:
+        type: string
+        default: v1
+        example: v1
+
+  headers:
+    RequestIdHeader:
+      description: Correlation ID for distributed tracing
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdHeader"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            httpStatus: 400
+            errorCode: "BAD_REQUEST"
+            message: "Invalid persona value."
+            correlationId: "123e4567-e89b-12d3-a456-426614174000"
+            retryable: false
+
+    Unauthorized:
+      description: Invalid Client Credentials
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdHeader"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            httpStatus: 401
+            errorCode: "UNAUTHORIZED"
+            message: "Invalid client_id or client_secret"
+            correlationId: "123e4567-e89b-12d3-a456-426614174000"
+            retryable: false
+
+    InternalServerError:
+      description: Internal PAPI error or SAPI communication failure
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdHeader"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            httpStatus: 500
+            errorCode: "INTERNAL_SERVER_ERROR"
+            message: "Failed to aggregate profile data. Partial SAPI failure."
+            correlationId: "123e4567-e89b-12d3-a456-426614174000"
+            retryable: true
+            details:
+              failedSapiCalls:
+                - endpoint: "/experience-skills"
+                  error: "Connection timeout"
+
+    ServiceUnavailable:
+      description: PAPI or downstream SAPI is unavailable
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdHeader"
+        Retry-After:
+          description: Seconds until service may be available
+          schema:
+            type: integer
+            example: 30
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            httpStatus: 503
+            errorCode: "SERVICE_UNAVAILABLE"
+            message: "Downstream SAPI is currently unavailable"
+            correlationId: "123e4567-e89b-12d3-a456-426614174000"
+            retryable: true
+
+  schemas:
+    # --- Error Schema ---
+    Error:
+      type: object
+      required:
+        - httpStatus
+        - errorCode
+        - message
+        - correlationId
+        - retryable
+      properties:
+        httpStatus:
+          type: integer
+          example: 500
+        errorCode:
+          type: string
+          example: "INTERNAL_SERVER_ERROR"
+        message:
+          type: string
+          example: "An unexpected error occurred"
+        correlationId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        retryable:
+          type: boolean
+          description: Indicates if the client should retry the request
+          example: true
+        details:
+          type: object
+          description: Additional error context (optional)
+          additionalProperties: true
+
+    # --- Health Schema ---
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN, DEGRADED]
+          example: "UP"
+        timestamp:
+          type: string
+          format: date-time
+        dependencies:
+          type: object
+          properties:
+            sapi:
+              type: string
+              example: "not_checked"
+
+    # --- Orchestrated Response Objects ---
+    FullPortfolioPayload:
+      type: object
+      description: The master payload for initial app load
+      required:
+        - config
+        - contactInfo
+        - skills
+        - experience
+        - projects
+        - certifications
+        - education
+        - testimonials
+      properties:
+        config:
+          $ref: "#/components/schemas/PortfolioConfig"
+        contactInfo:
+          $ref: "#/components/schemas/ContactDetail"
+        summary:
+          type: string
+          description: Auto-generated professional summary
+          example: "7+ years of experience as a Salesforce Platform Architect"
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillSummary"
+        experience:
+          type: array
+          items:
+            $ref: "#/components/schemas/EnrichedExperience"
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/EnrichedProject"
+        certifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/EnrichedCertification"
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimpleEducation"
+        testimonials:
+          type: array
+          items:
+            $ref: "#/components/schemas/EnrichedTestimonial"
+        integrityNote:
+          type: string
+          description: "Debug info if partial data returned (e.g. 'Certifications Service Unavailable')"
+          nullable: true
+
+    ProfileSummary:
+      type: object
+      required:
+        - contactInfo
+        - skills
+        - experience
+        - certifications
+        - education
+      properties:
+        contactInfo:
+          $ref: "#/components/schemas/ContactDetail"
+        summary:
+          type: string
+          description: Calculated summary based on experience
+          example: "7+ years of experience as a Salesforce Platform Architect"
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillSummary"
+        experience:
+          type: array
+          items:
+            $ref: "#/components/schemas/EnrichedExperience"
+        certifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/EnrichedCertification"
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimpleEducation"
+
+    EnrichedExperience:
+      type: object
+      description: Work Experience enriched with related Skills and Highlights
+      required:
+        - id
+        - employer
+        - dateRange
+      properties:
+        id:
+          type: string
+          description: Salesforce Record ID (18-char)
+          example: "a025e00000B2O3DAAV"
+        employer:
+          type: string
+          example: "Salesforce"
+        role:
+          type: string
+          example: "Senior Technical Architect"
+          nullable: true
+        dateRange:
+          type: string
+          description: Formatted as "MMM YYYY - MMM YYYY" or "MMM YYYY - Present"
+          example: "Jan 2023 - Present"
+        isCurrent:
+          type: boolean
+          example: true
+          nullable: true
+        isRemote:
+          type: boolean
+          example: true
+          nullable: true
+        skillsUsed:
+          type: array
+          description: Skills derived from ExperienceSkill junction
+          items:
+            type: string
+            example: "LWC"
+        highlights:
+          type: array
+          description: Selected bullet points (filtered by persona if applicable)
+          items:
+            type: string
+            example: "Implemented CI/CD pipelines using GitHub Actions"
+
+    EnrichedProject:
+      type: object
+      description: Project enriched with Skills and Assets
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          example: "a015e00000B2O3DAAV"
+        title:
+          type: string
+          example: "Portfolio Site"
+          nullable: true
+        challenge:
+          type: string
+          example: "Display skills dynamically to recruiters"
+        solution:
+          type: string
+          example: "Built on LWR with SAPI/PAPI architecture"
+        businessValue:
+          type: string
+          example: "Increased interview rate by 40%"
+        status:
+          type: string
+          description: "Project Status (e.g., Live, Archived)"
+          nullable: true
+          example: "Live – In Production"
+        completionDate:
+          type: string
+          format: date
+          description: "Mapped from SAPI dateCompleted"
+          example: "2025-12-01"
+          nullable: true
+        heroImageUrl:
+          type: string
+          format: uri
+          description: URL of the main display image. Matches SAPI field name.
+          example: "https://assets.portfolio.com/hero.png"
+        liveUrl:
+          type: string
+          format: uri
+          example: "https://portfolio.ryanbumstead.com"
+        repositoryUrl:
+          type: string
+          format: uri
+          example: "https://github.com/ryanbumstead/portfolio"
+        technologies:
+          type: array
+          description: Skill names from ProjectSkill junction
+          items:
+            type: string
+            example: "Apex"
+        assets:
+          type: array
+          description: Images, videos, or links related to the project
+          items:
+            type: object
+            required:
+              - type
+              - url
+            properties:
+              type:
+                type: string
+                enum: [Image, Video, Document, Link]
+                example: "Image"
+              url:
+                type: string
+                format: uri
+                example: "https://assets.portfolio.com/diagram.png"
+              caption:
+                type: string
+                example: "System Architecture Diagram"
+
+    EnrichedTestimonial:
+      type: object
+      required:
+        - id
+        - author
+        - quote
+      properties:
+        id:
+          type: string
+          example: "a055e00000B2O3DAAV"
+        author:
+          type: string
+          example: "Jane Doe"
+        title:
+          type: string
+          example: "VP of Engineering"
+        relationship:
+          type: string
+          enum: [Manager, Peer, Client, Recruiter, Fan]
+          example: "Manager"
+        quote:
+          type: string
+          example: "Ryan is a beast at architecture"
+        vibe:
+          type: string
+          enum: [Professional, Casual]
+          example: "Professional"
+        avatarUrl:
+          type: string
+          format: uri
+          example: "https://linkedin.com/in/janedoe/photo"
+
+    # --- Basic DTOs ---
+    PortfolioConfig:
+      type: object
+      required:
+        - ownerEmail
+      properties:
+        ownerEmail:
+          type: string
+          format: email
+          example: "bumsteadryan@gmail.com"
+        ownerPhone:
+          type: string
+          example: "+1 555-0199"
+        linkedInUrl:
+          type: string
+          format: uri
+          example: "https://linkedin.com/in/ryanbumstead"
+        calendlyUrl:
+          type: string
+          format: uri
+          example: "https://calendly.com/ryanbumstead"
+        githubUrl:
+          type: string
+          format: uri
+          example: "https://github.com/ryanbumstead"
+        trailheadUrl:
+          type: string
+          format: uri
+          example: "https://trailblazer.me/id/ryanbumstead"
+        personalWebsiteUrl:
+          type: string
+          format: uri
+          example: "https://ryanbumstead.com"
+        careerObjective:
+          type: string
+          description: Short professional bio/objective
+          example: "Driving digital transformation through architecture."
+
+    ContactDetail:
+      type: object
+      description: Simplified contact information for the header
+      required:
+        - fullName
+        - email
+      properties:
+        id:
+          type: string
+          example: "0035e00000B2O3DAAV"
+        fullName:
+          type: string
+          example: "Ryan Bumstead"
+        email:
+          type: string
+          format: email
+          example: "ryan@ryanbumstead.com"
+        phone:
+          type: string
+          example: "+1 555-0199"
+        title:
+          type: string
+          example: "Platform Architect"
+          nullable: true
+        linkedIn:
+          type: string
+          format: uri
+          example: "https://linkedin.com/in/ryanbumstead"
+        github:
+          type: string
+          format: uri
+          example: "https://github.com/ryanbumstead"
+        trailhead:
+          type: string
+          format: uri
+          example: "https://trailblazer.me/id/ryanbumstead"
+        portfolioUrl:
+          type: string
+          format: uri
+          example: "https://ryanbumstead.com"
+        bio:
+          type: string
+          description: The 'Career Objective' from Salesforce
+          example: "Specializing in API-led connectivity..."
+
+    SkillSummary:
+      type: object
+      description: Lightweight skill object for list views
+      required:
+        - id
+        - name
+        - category
+        - proficiency
+      properties:
+        id:
+          type: string
+          example: "a075e00000B2O3DAAV"
+        name:
+          type: string
+          example: "Apex"
+        displayName:
+          type: string
+          description: Prefer this over 'name' for UI rendering if present
+          example: "Salesforce Apex"
+        category:
+          type: string
+          example: "Backend"
+        proficiency:
+          type: number
+          description: 1-5 score
+          example: 5
+        iconName:
+          type: string
+          description: SLDS Icon reference
+          example: "utility:code"
+        colorHex:
+          type: string
+          description: Brand color for the category
+          example: "#0070d2"
+
+    EnrichedCertification:
+      type: object
+      description: Certification with associated skills
+      required:
+        - id
+        - name
+        - issuer
+        - dateEarned
+      properties:
+        id:
+          type: string
+          example: "a105e00000B2O3DAAV"
+        name:
+          type: string
+          example: "Certified Application Architect"
+        issuer:
+          type: string
+          example: "Salesforce"
+        dateEarned:
+          type: string
+          format: date
+          example: "2024-05-15"
+        skillsUsed:
+          type: array
+          description: Derived from CertificationSkill junction
+          items:
+            type: string
+            example: "Security"
+
+    SimpleEducation:
+      type: object
+      description: Educational background
+      required:
+        - id
+        - school
+        - degree
+        - year
+      properties:
+        id:
+          type: string
+          example: "a115e00000B2O3DAAV"
+        school:
+          type: string
+          example: "Creighton University"
+        degree:
+          type: string
+          example: "B.S. Computer Science"
+        fieldOfStudy:
+          type: string
+          example: "Computer Science"
+        year:
+          type: string
+          description: Graduation Year derived from Graduation Date
+          example: "2018"
+        gpa:
+          type: number
+          nullable: true
+          example: 3.8
 
 paths:
   /health:
@@ -128,10 +707,10 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdHeader"
             Cache-Control:
-              description: "Derived from upstream SAPI resources."
+              description: "Derived from upstream SAPI resources (Contacts = no-store)."
               schema:
                 type: string
-                example: "max-age=120, private"
+                example: "no-store, no-cache"
             X-Data-Integrity:
               description: "Indicates if the payload is complete or has partial missing data."
               schema:
@@ -145,32 +724,47 @@ paths:
               example:
                 config:
                   ownerEmail: "bumsteadryan@gmail.com"
+                  ownerPhone: "+1 555-0199"
                   linkedInUrl: "https://linkedin.com/in/ryanbumstead"
                   calendlyUrl: "https://calendly.com/ryanbumstead"
                   githubUrl: "https://github.com/ryanbumstead"
                   trailheadUrl: "https://trailblazer.me/id/ryanbumstead"
+                  personalWebsiteUrl: "https://ryanbumstead.com"
+                  careerObjective: "Driving digital transformation through architecture."
                 contactInfo:
+                  id: "0035e00000B2O3DAAV"
                   fullName: "Ryan Bumstead"
                   email: "bumsteadryan@gmail.com"
                   phone: "555-0199"
+                  title: "Platform Architect"
                   linkedIn: "https://linkedin.com/in/ryanbumstead"
                   github: "https://github.com/ryanbumstead"
+                  trailhead: "https://trailblazer.me/id/ryanbumstead"
+                  portfolioUrl: "https://ryanbumstead.com"
+                  bio: "Specializing in API-led connectivity..."
                 summary: "7+ Years of Experience as a Salesforce Platform Architect specializing in API-led connectivity and DevOps."
                 skills:
                   - id: "a075e00000B2O3DAAV"
                     name: "Apex"
+                    displayName: "Salesforce Apex"
                     category: "Backend"
                     proficiency: 5
+                    iconName: "utility:code"
+                    colorHex: "#0070d2"
                   - id: "a075e00000B2O3DAAX"
                     name: "LWC"
+                    displayName: "Lightning Web Components"
                     category: "Frontend"
                     proficiency: 5
+                    iconName: "standard:lightning_component"
+                    colorHex: "#00A1E0"
                 experience:
                   - id: "a025e00000B2O3DAAV"
                     employer: "Salesforce"
                     role: "Senior Technical Architect"
                     dateRange: "Jan 2023 - Present"
                     isCurrent: true
+                    isRemote: true
                     skillsUsed:
                       - "Apex"
                       - "LWC"
@@ -185,17 +779,28 @@ paths:
                     solution: "Built on LWR with SAPI/PAPI architecture"
                     businessValue: "Increased interview rate by 40%"
                     status: "Live – In Production"
+                    completionDate: "2025-12-01"
                     heroImageUrl: "https://assets.portfolio.com/hero.png"
+                    liveUrl: "https://portfolio.ryanbumstead.com"
+                    repositoryUrl: "https://github.com/ryanbumstead/portfolio"
                     technologies:
                       - "LWR"
                       - "Apex"
                     assets: []
-                certifications: []
+                certifications:
+                  - id: "a105e00000B2O3DAAV"
+                    name: "Certified Application Architect"
+                    issuer: "Salesforce"
+                    dateEarned: "2024-05-15"
+                    skillsUsed:
+                      - "Security"
                 education:
                   - id: "a115e00000B2O3DAAV"
                     school: "Creighton University"
                     degree: "B.S. Computer Science"
+                    fieldOfStudy: "Computer Science"
                     year: "2018"
+                    gpa: 3.8
                 testimonials:
                   - id: "a055e00000B2O3DAAV"
                     author: "Jane Doe"
@@ -203,7 +808,8 @@ paths:
                     relationship: "Manager"
                     quote: "Ryan is a beast at architecture."
                     vibe: "Professional"
-                integrityNote: "Partial data: Certifications service unavailable."
+                    avatarUrl: "https://linkedin.com/in/janedoe/photo"
+                integrityNote: "Complete"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -281,10 +887,13 @@ paths:
         - Applies 80-character line wrapping
 
         **Persona Filtering**:
-        - `admin`: Shows System Admin highlights only
-        - `developer`: Shows Development highlights only
-        - `architect`: Shows Architecture/Design highlights only
-        - `general`: Shows all highlights (no persona filter)
+        - `Admin`: System Admin highlights only
+        - `Developer`: Development highlights only
+        - `Architect`: Architecture/Design highlights only
+
+        **SAPI Mapping**:
+        - PAPI persona values are passed directly to SAPI `/experience-highlights?persona={value}`
+        - If persona is omitted, all highlights are returned (no filtering)
       operationId: generateResume
       parameters:
         - $ref: "#/components/parameters/RequestIdParam"
@@ -292,11 +901,13 @@ paths:
         - name: persona
           in: query
           required: false
-          description: The target audience for the resume
+          description: |
+            Target audience for the resume. Omit for all highlights.
+
+            **Note**: This value is passed directly to SAPI's persona filter.
           schema:
             type: string
-            enum: [Admin, Developer, Architect, general]
-            default: general
+            enum: [Admin, Developer, Architect]
       responses:
         "200":
           description: A JSON object containing the formatted resume text
@@ -406,8 +1017,8 @@ paths:
         - `GET /testimonials?limit=200` (returns only `Approved__c = true`)
 
         **Filtering Logic**:
-        - `professional`: Only shows `Relationship_Type__c IN ('Manager', 'Client')` AND `Vibe_Mode__c = 'Professional'`
-        - `casual`: Shows all approved testimonials including `Vibe_Mode__c = 'Casual'`
+        - `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.
+        - `casual`: Returns all approved testimonials, regardless of relationship type or vibe (includes 'Casual' vibe and 'Fan' relationships).
 
         **Use Case**: About page testimonials section
       operationId: getTestimonialFeed
@@ -605,7 +1216,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 httpStatus: 429
                 errorCode: "RATE_LIMIT_EXCEEDED"
@@ -619,581 +1230,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 httpStatus: 503
                 errorCode: "ALL_PROVIDERS_UNAVAILABLE"
                 message: "All AI providers currently unavailable"
                 correlationId: "123e4567-e89b-12d3-a456-426614174000"
                 retryable: true
-
-components:
-  securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
-      description: |
-        API Key for authenticating to PAPI. 
-        PAPI internally manages SAPI credentials (`client_id`, `client_secret`).
-
-  parameters:
-    RequestIdParam:
-      name: X-Request-Id
-      in: header
-      required: false
-      description: |
-        Optional correlation ID. If not provided, PAPI will generate one.
-        This ID is propagated to all downstream SAPI calls.
-      schema:
-        type: string
-        format: uuid
-
-    ApiVersionParam:
-      name: X-API-Version
-      in: header
-      required: false
-      description: PAPI version. Defaults to v1 if not specified.
-      schema:
-        type: string
-        default: v1
-        example: v1
-
-  headers:
-    RequestIdHeader:
-      description: Correlation ID for distributed tracing
-      schema:
-        type: string
-        format: uuid
-
-  responses:
-    BadRequest:
-      description: Invalid request parameters
-      headers:
-        X-Request-Id:
-          $ref: "#/components/headers/RequestIdHeader"
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            httpStatus: 400
-            errorCode: "BAD_REQUEST"
-            message: "Invalid persona value."
-            correlationId: "123e4567-e89b-12d3-a456-426614174000"
-            retryable: false
-
-    Unauthorized:
-      description: Missing or invalid API key
-      headers:
-        X-Request-Id:
-          $ref: "#/components/headers/RequestIdHeader"
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            httpStatus: 401
-            errorCode: "UNAUTHORIZED"
-            message: "Invalid or missing X-API-Key header"
-            correlationId: "123e4567-e89b-12d3-a456-426614174000"
-            retryable: false
-
-    InternalServerError:
-      description: Internal PAPI error or SAPI communication failure
-      headers:
-        X-Request-Id:
-          $ref: "#/components/headers/RequestIdHeader"
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            httpStatus: 500
-            errorCode: "INTERNAL_SERVER_ERROR"
-            message: "Failed to aggregate profile data. Partial SAPI failure."
-            correlationId: "123e4567-e89b-12d3-a456-426614174000"
-            retryable: true
-            details:
-              failedSapiCalls:
-                - endpoint: "/experience-skills"
-                  error: "Connection timeout"
-
-    ServiceUnavailable:
-      description: PAPI or downstream SAPI is unavailable
-      headers:
-        X-Request-Id:
-          $ref: "#/components/headers/RequestIdHeader"
-        Retry-After:
-          description: Seconds until service may be available
-          schema:
-            type: integer
-            example: 30
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            httpStatus: 503
-            errorCode: "SERVICE_UNAVAILABLE"
-            message: "Downstream SAPI is currently unavailable"
-            correlationId: "123e4567-e89b-12d3-a456-426614174000"
-            retryable: true
-
-  schemas:
-    # --- Error Schema ---
-    ErrorResponse:
-      type: object
-      required:
-        - httpStatus
-        - errorCode
-        - message
-        - correlationId
-        - retryable
-      properties:
-        httpStatus:
-          type: integer
-          example: 500
-        errorCode:
-          type: string
-          example: "INTERNAL_SERVER_ERROR"
-        message:
-          type: string
-          example: "An unexpected error occurred"
-        correlationId:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174000"
-        retryable:
-          type: boolean
-          description: Indicates if the client should retry the request
-          example: true
-        details:
-          type: object
-          description: Additional error context (optional)
-          additionalProperties: true
-
-    # --- Health Schema ---
-    HealthStatus:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [UP, DOWN, DEGRADED]
-          example: "UP"
-        timestamp:
-          type: string
-          format: date-time
-        dependencies:
-          type: object
-          properties:
-            sapi:
-              type: string
-              example: "not_checked"
-
-    # --- Orchestrated Response Objects ---
-    FullPortfolioPayload:
-      type: object
-      description: The master payload for initial app load
-      required:
-        - config
-        - contactInfo
-        - skills
-        - experience
-        - projects
-        - certifications
-        - education
-        - testimonials
-      properties:
-        config:
-          $ref: "#/components/schemas/PortfolioConfig"
-        contactInfo:
-          $ref: "#/components/schemas/ContactDetail"
-        summary:
-          type: string
-          description: Auto-generated professional summary
-          example: "7+ years of experience as a Salesforce Platform Architect"
-        skills:
-          type: array
-          items:
-            $ref: "#/components/schemas/SkillSummary"
-        experience:
-          type: array
-          items:
-            $ref: "#/components/schemas/EnrichedExperience"
-        projects:
-          type: array
-          items:
-            $ref: "#/components/schemas/EnrichedProject"
-        certifications:
-          type: array
-          items:
-            $ref: "#/components/schemas/EnrichedCertification"
-        education:
-          type: array
-          items:
-            $ref: "#/components/schemas/SimpleEducation"
-        testimonials:
-          type: array
-          items:
-            $ref: "#/components/schemas/EnrichedTestimonial"
-        integrityNote:
-          type: string
-          description: "Debug info if partial data returned (e.g. 'Certifications Service Unavailable')"
-          nullable: true
-
-    ProfileSummary:
-      type: object
-      required:
-        - contactInfo
-        - skills
-        - experience
-        - certifications
-        - education
-      properties:
-        contactInfo:
-          $ref: "#/components/schemas/ContactDetail"
-        summary:
-          type: string
-          description: Calculated summary based on experience
-          example: "7+ years of experience as a Salesforce Platform Architect"
-        skills:
-          type: array
-          items:
-            $ref: "#/components/schemas/SkillSummary"
-        experience:
-          type: array
-          items:
-            $ref: "#/components/schemas/EnrichedExperience"
-        certifications:
-          type: array
-          items:
-            $ref: "#/components/schemas/EnrichedCertification"
-        education:
-          type: array
-          items:
-            $ref: "#/components/schemas/SimpleEducation"
-
-    EnrichedExperience:
-      type: object
-      description: Work Experience enriched with related Skills and Highlights
-      required:
-        - id
-        - employer
-        - role
-        - dateRange
-        - isCurrent
-      properties:
-        id:
-          type: string
-          description: Salesforce Record ID (18-char)
-          example: "a025e00000B2O3DAAV"
-        employer:
-          type: string
-          example: "Salesforce"
-        role:
-          type: string
-          example: "Senior Technical Architect"
-        dateRange:
-          type: string
-          description: Formatted as "MMM YYYY - MMM YYYY" or "MMM YYYY - Present"
-          example: "Jan 2023 - Present"
-        isCurrent:
-          type: boolean
-          example: true
-        isRemote:
-          type: boolean
-          example: true
-        skillsUsed:
-          type: array
-          description: Skills derived from ExperienceSkill junction
-          items:
-            type: string
-            example: "LWC"
-        highlights:
-          type: array
-          description: Selected bullet points (filtered by persona if applicable)
-          items:
-            type: string
-            example: "Implemented CI/CD pipelines using GitHub Actions"
-
-    EnrichedProject:
-      type: object
-      description: Project enriched with Skills and Assets
-      required:
-        - id
-        - title
-        - status
-      properties:
-        id:
-          type: string
-          example: "a015e00000B2O3DAAV"
-        title:
-          type: string
-          example: "Portfolio Site"
-        challenge:
-          type: string
-          example: "Display skills dynamically to recruiters"
-        solution:
-          type: string
-          example: "Built on LWR with SAPI/PAPI architecture"
-        businessValue:
-          type: string
-          example: "Increased interview rate by 40%"
-        status:
-          type: string
-          enum:
-            - "Live – In Production"
-            - "Live – Demo / Reference"
-            - "Active Development"
-            - "On Hold"
-            - "Archived"
-          example: "Live – In Production"
-        heroImageUrl:
-          type: string
-          format: uri
-          description: URL of the main display image. Matches SAPI field name.
-          example: "https://assets.portfolio.com/hero.png"
-        liveUrl:
-          type: string
-          format: uri
-          example: "https://portfolio.ryanbumstead.com"
-        repositoryUrl:
-          type: string
-          format: uri
-          example: "https://github.com/ryanbumstead/portfolio"
-        technologies:
-          type: array
-          description: Skill names from ProjectSkill junction
-          items:
-            type: string
-            example: "Apex"
-        assets:
-          type: array
-          description: Images, videos, or links related to the project
-          items:
-            type: object
-            required:
-              - type
-              - url
-            properties:
-              type:
-                type: string
-                enum: [Image, Video, Document, Link]
-                example: "Image"
-              url:
-                type: string
-                format: uri
-                example: "https://assets.portfolio.com/diagram.png"
-              caption:
-                type: string
-                example: "System Architecture Diagram"
-
-    EnrichedTestimonial:
-      type: object
-      required:
-        - id
-        - author
-        - quote
-      properties:
-        id:
-          type: string
-          example: "a055e00000B2O3DAAV"
-        author:
-          type: string
-          example: "Jane Doe"
-        title:
-          type: string
-          example: "VP of Engineering"
-        relationship:
-          type: string
-          enum: [Manager, Peer, Client, Recruiter, Fan]
-          example: "Manager"
-        quote:
-          type: string
-          example: "Ryan is a beast at architecture"
-        vibe:
-          type: string
-          enum: [Professional, Casual]
-          example: "Professional"
-        avatarUrl:
-          type: string
-          format: uri
-          example: "https://linkedin.com/in/janedoe/photo"
-
-    # --- Basic DTOs ---
-    PortfolioConfig:
-      type: object
-      required:
-        - ownerEmail
-      properties:
-        ownerEmail:
-          type: string
-          format: email
-          example: "bumsteadryan@gmail.com"
-        ownerPhone:
-          type: string
-          example: "+1 555-0199"
-        linkedInUrl:
-          type: string
-          format: uri
-          example: "https://linkedin.com/in/ryanbumstead"
-        calendlyUrl:
-          type: string
-          format: uri
-          example: "https://calendly.com/ryanbumstead"
-        githubUrl:
-          type: string
-          format: uri
-          example: "https://github.com/ryanbumstead"
-        trailheadUrl:
-          type: string
-          format: uri
-          example: "https://trailblazer.me/id/ryanbumstead"
-        personalWebsiteUrl:
-          type: string
-          format: uri
-          example: "https://ryanbumstead.com"
-        careerObjective:
-          type: string
-          description: Short professional bio/objective
-          example: "Driving digital transformation through architecture."
-
-    ContactDetail:
-      type: object
-      description: Simplified contact information for the header
-      required:
-        - fullName
-        - email
-        - title
-      properties:
-        id:
-          type: string
-          example: "0035e00000B2O3DAAV"
-        fullName:
-          type: string
-          example: "Ryan Bumstead"
-        email:
-          type: string
-          format: email
-          example: "ryan@ryanbumstead.com"
-        phone:
-          type: string
-          example: "+1 555-0199"
-        title:
-          type: string
-          example: "Platform Architect"
-        linkedIn:
-          type: string
-          format: uri
-          example: "https://linkedin.com/in/ryanbumstead"
-        github:
-          type: string
-          format: uri
-          example: "https://github.com/ryanbumstead"
-        trailhead:
-          type: string
-          format: uri
-          example: "https://trailblazer.me/id/ryanbumstead"
-        portfolioUrl:
-          type: string
-          format: uri
-          example: "https://ryanbumstead.com"
-        bio:
-          type: string
-          description: The 'Career Objective' from Salesforce
-          example: "Specializing in API-led connectivity..."
-
-    SkillSummary:
-      type: object
-      description: Lightweight skill object for list views
-      required:
-        - id
-        - name
-        - category
-        - proficiency
-      properties:
-        id:
-          type: string
-          example: "a075e00000B2O3DAAV"
-        name:
-          type: string
-          example: "Apex"
-        displayName:
-          type: string
-          description: Prefer this over 'name' for UI rendering if present
-          example: "Salesforce Apex"
-        category:
-          type: string
-          example: "Backend"
-        proficiency:
-          type: number
-          description: 1-5 score
-          example: 5
-        iconName:
-          type: string
-          description: SLDS Icon reference
-          example: "utility:code"
-        colorHex:
-          type: string
-          description: Brand color for the category
-          example: "#0070d2"
-
-    EnrichedCertification:
-      type: object
-      description: Certification with associated skills
-      required:
-        - id
-        - name
-        - issuer
-        - dateEarned
-      properties:
-        id:
-          type: string
-          example: "a105e00000B2O3DAAV"
-        name:
-          type: string
-          example: "Certified Application Architect"
-        issuer:
-          type: string
-          example: "Salesforce"
-        dateEarned:
-          type: string
-          format: date
-          example: "2024-05-15"
-        skillsUsed:
-          type: array
-          description: Derived from CertificationSkill junction
-          items:
-            type: string
-            example: "Security"
-
-    SimpleEducation:
-      type: object
-      description: Educational background
-      required:
-        - id
-        - school
-        - degree
-        - year
-      properties:
-        id:
-          type: string
-          example: "a115e00000B2O3DAAV"
-        school:
-          type: string
-          example: "Creighton University"
-        degree:
-          type: string
-          example: "B.S. Computer Science"
-        fieldOfStudy:
-          type: string
-          example: "Computer Science"
-        year:
-          type: string
-          description: Graduation Year derived from Graduation Date
-          example: "2018"
-        gpa:
-          type: number
-          nullable: true
-          example: 3.8

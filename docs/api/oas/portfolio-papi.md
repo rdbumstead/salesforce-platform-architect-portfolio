@@ -1,55 +1,60 @@
-<h1 id="portfolio-process-api-papi-">Portfolio Process API (PAPI) v1.1.0</h1>
+<h1 id="portfolio-process-api-papi-">Portfolio Process API (PAPI) v1.2.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
 A Process API (PAPI) responsible for orchestrating, transforming, and filtering data
 from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
 
-### Key Capabilities
+### 1. Authentication Strategy
 
-- Aggregates disparate SAPI objects into a unified "Employment Profile"
-- Generates ATS-friendly plain text resumes based on specific personas
-- Applies business logic filtering (e.g., "Vibe Mode") to social proof
-- Handles SAPI authentication and error handling transparently
+- **Frontend → PAPI**: Uses **MuleSoft/Salesforce Client Credentials** (`client_id`, `client_secret`) in headers.
+- **PAPI → SAPI**: Uses separate internal Client Credentials stored in `configuration.yaml` (or AWS Secrets Manager).
 
-### SAPI Version Compatibility
+### 2. Versioning Strategy
 
-- **PAPI Version**: 1.1.0
-- **Target SAPI Version**: 1.2.0
-- **Implementation**: All upstream SAPI calls use the header `X-API-Version: v1`.
+- **Pattern**: Header-based versioning takes precedence.
+- **Header**: `X-API-Version: v1` (Required).
+- **URL**: Version segments removed from base path to align with SAPI ADR.
 
-### SAPI Integration & Authentication
+### 3. Rate Limiting & Aggregation Math
 
-- **Authentication**: PAPI authenticates to SAPI using OAuth2 Client Credentials (`client_id`, `client_secret`) retrieved securely from **AWS Secrets Manager**.
-- **Rotation**: Credentials are rotated every 90 days via automated Lambda functions; PAPI refreshes its local cache automatically.
+- **SAPI Limit**: 120 requests/minute.
+- **PAPI Aggregation**: A single `/profile/full` call triggers ~8 upstream SAPI calls.
+- **PAPI Limit**: Restricted to **15 requests/minute** (Standard Tier) to prevent cascading rate limit violations on SAPI (15 \* 8 = 120).
 
-### Caching Strategy
+### 4. Caching Strategy (Aggregation Logic)
 
-- **Aggregation Logic**: The PAPI response adopts the **strictest** cache policy of its upstream dependencies.
-  - If _any_ SAPI endpoint returns `no-store` or `private`, the entire PAPI response is marked `no-store`.
-  - Otherwise, it uses the minimum `max-age` found (e.g., min(300, 120) = 120s).
-- **Static Data** (Skills, Config): Baseline 5 minutes.
-- **Semi-Static** (Projects): Baseline 2 minutes.
-- **Invalidation**: All caches invalidated on SAPI 5xx errors.
+_Note: PAPI cannot pass SAPI headers verbatim due to mixed sensitivity in aggregated payloads._
 
-### Error Handling & Resilience
+- **Rule**: Strictest policy wins.
+  1. If _any_ upstream resource is `no-store` (e.g., Contact) → PAPI response is `no-store`.
+  2. If _any_ upstream resource is `private` → PAPI response is `private`.
+  3. Otherwise → PAPI response is `public` with the minimum `max-age`.
 
-- **Graceful Degradation**: If SAPI returns partial data (e.g., Certifications timeout), PAPI returns `200 OK` with an empty array for that section and an `integrityNote`.
-- **Circuit Breaker**: After 3 consecutive SAPI failures, PAPI returns cached data only.
-- **Pagination**: Implements recursive fetching for SAPI resources exceeding the default page limit (200 records).
-- **Tracing**: Correlation IDs (`X-Request-Id`) are propagated to all downstream SAPI calls.
+### 5. Field Mapping (Transformation Layer)
+
+| Object        | SAPI Field      | PAPI Field       | Logic           |
+| :------------ | :-------------- | :--------------- | :-------------- |
+| Contact       | `name`          | `fullName`       | Rename          |
+| Experience    | `name`          | `role`           | Semantic Rename |
+| Certification | `earnedDate`    | `dateEarned`     | JS Convention   |
+| Project       | `dateCompleted` | `completionDate` | JS Convention   |
+| Project       | `heroImageUrl`  | `heroImageUrl`   | Passthrough     |
 
 Base URLs:
 
-- <a href="https://api.portfolio.ryanbumstead.com/papi/v1">https://api.portfolio.ryanbumstead.com/papi/v1</a>
+- <a href="https://api.portfolio.ryanbumstead.com/papi">https://api.portfolio.ryanbumstead.com/papi</a>
 
 Email: <a href="mailto:ryan@ryanbumstead.com">Ryan Bumstead</a> Web: <a href="https://ryanbumstead.com">Ryan Bumstead</a>
 License: <a href="https://opensource.org/licenses/MIT">MIT</a>
 
 # Authentication
 
-- API Key (ApiKeyAuth) - Parameter Name: **X-API-Key**, in: header. API Key for authenticating to PAPI.
-  PAPI internally manages SAPI credentials (`client_id`, `client_secret`).
+- API Key (ClientIdAuth)
+  - Parameter Name: **client_id**, in: header. MuleSoft/Salesforce Client ID
+
+- API Key (ClientSecretAuth)
+  - Parameter Name: **client_secret**, in: header. MuleSoft/Salesforce Client Secret (Standard Enforcement Policy)
 
 <h1 id="portfolio-process-api-papi--orchestration">Orchestration</h1>
 
@@ -66,10 +71,11 @@ const headers = {
   Accept: "application/json",
   "X-Request-Id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
   "X-API-Version": "v1",
-  "X-API-Key": "API_KEY"
+  client_id: "API_KEY",
+  client_secret: "API_KEY"
 };
 
-fetch("https://api.portfolio.ryanbumstead.com/papi/v1/profile/full", {
+fetch("https://api.portfolio.ryanbumstead.com/papi/profile/full", {
   method: "GET",
 
   headers: headers
@@ -107,15 +113,10 @@ _Note_: Junction object calls (e.g., `/project-skills`) are dependent on their p
 
 <h3 id="getfullportfolio-parameters">Parameters</h3>
 
-| Name          | In     | Type         | Required | Description                                                       |
-| ------------- | ------ | ------------ | -------- | ----------------------------------------------------------------- |
-| X-Request-Id  | header | string(uuid) | false    | Optional correlation ID. If not provided, PAPI will generate one. |
-| X-API-Version | header | string       | false    | PAPI version. Defaults to v1 if not specified.                    |
-
-#### Detailed descriptions
-
-**X-Request-Id**: Optional correlation ID. If not provided, PAPI will generate one.
-This ID is propagated to all downstream SAPI calls.
+| Name          | In     | Type         | Required | Description                        |
+| ------------- | ------ | ------------ | -------- | ---------------------------------- |
+| X-Request-Id  | header | string(uuid) | false    | Correlation ID propagated to SAPI. |
+| X-API-Version | header | string       | true     | API Version (e.g., v1).            |
 
 > Example responses
 
@@ -125,31 +126,45 @@ This ID is propagated to all downstream SAPI calls.
 {
   "config": {
     "ownerEmail": "bumsteadryan@gmail.com",
+    "ownerPhone": "+1 555-0199",
     "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
     "calendlyUrl": "https://calendly.com/ryanbumstead",
     "githubUrl": "https://github.com/ryanbumstead",
-    "trailheadUrl": "https://trailblazer.me/id/ryanbumstead"
+    "trailheadUrl": "https://trailblazer.me/id/ryanbumstead",
+    "personalWebsiteUrl": "https://ryanbumstead.com",
+    "careerObjective": "Driving digital transformation through architecture."
   },
   "contactInfo": {
+    "id": "0035e00000B2O3DAAV",
     "fullName": "Ryan Bumstead",
     "email": "bumsteadryan@gmail.com",
     "phone": "555-0199",
+    "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://github.com/ryanbumstead"
+    "github": "https://github.com/ryanbumstead",
+    "trailhead": "https://trailblazer.me/id/ryanbumstead",
+    "portfolioUrl": "https://ryanbumstead.com",
+    "bio": "Specializing in API-led connectivity..."
   },
   "summary": "7+ Years of Experience as a Salesforce Platform Architect specializing in API-led connectivity and DevOps.",
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",
       "name": "Apex",
+      "displayName": "Salesforce Apex",
       "category": "Backend",
-      "proficiency": 5
+      "proficiency": 5,
+      "iconName": "utility:code",
+      "colorHex": "#0070d2"
     },
     {
       "id": "a075e00000B2O3DAAX",
       "name": "LWC",
+      "displayName": "Lightning Web Components",
       "category": "Frontend",
-      "proficiency": 5
+      "proficiency": 5,
+      "iconName": "standard:lightning_component",
+      "colorHex": "#00A1E0"
     }
   ],
   "experience": [
@@ -159,6 +174,7 @@ This ID is propagated to all downstream SAPI calls.
       "role": "Senior Technical Architect",
       "dateRange": "Jan 2023 - Present",
       "isCurrent": true,
+      "isRemote": true,
       "skillsUsed": ["Apex", "LWC", "Event Bus"],
       "highlights": [
         "Designed multi-cloud architectures",
@@ -174,18 +190,31 @@ This ID is propagated to all downstream SAPI calls.
       "solution": "Built on LWR with SAPI/PAPI architecture",
       "businessValue": "Increased interview rate by 40%",
       "status": "Live – In Production",
+      "completionDate": "2025-12-01",
       "heroImageUrl": "https://assets.portfolio.com/hero.png",
+      "liveUrl": "https://portfolio.ryanbumstead.com",
+      "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
       "technologies": ["LWR", "Apex"],
       "assets": []
     }
   ],
-  "certifications": [],
+  "certifications": [
+    {
+      "id": "a105e00000B2O3DAAV",
+      "name": "Certified Application Architect",
+      "issuer": "Salesforce",
+      "dateEarned": "2024-05-15",
+      "skillsUsed": ["Security"]
+    }
+  ],
   "education": [
     {
       "id": "a115e00000B2O3DAAV",
       "school": "Creighton University",
       "degree": "B.S. Computer Science",
-      "year": "2018"
+      "fieldOfStudy": "Computer Science",
+      "year": "2018",
+      "gpa": 3.8
     }
   ],
   "testimonials": [
@@ -195,10 +224,11 @@ This ID is propagated to all downstream SAPI calls.
       "title": "VP of Engineering",
       "relationship": "Manager",
       "quote": "Ryan is a beast at architecture.",
-      "vibe": "Professional"
+      "vibe": "Professional",
+      "avatarUrl": "https://linkedin.com/in/janedoe/photo"
     }
   ],
-  "integrityNote": "Partial data: Certifications service unavailable."
+  "integrityNote": "Complete"
 }
 ```
 
@@ -220,7 +250,7 @@ This ID is propagated to all downstream SAPI calls.
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid or missing X-API-Key header",
+  "message": "Invalid client_id or client_secret",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -263,17 +293,17 @@ This ID is propagated to all downstream SAPI calls.
 | Status | Meaning                                                                    | Description                                       | Schema                                              |
 | ------ | -------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------- |
 | 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | The complete portfolio payload                    | [FullPortfolioPayload](#schemafullportfoliopayload) |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                        | [ErrorResponse](#schemaerrorresponse)               |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Missing or invalid API key                        | [ErrorResponse](#schemaerrorresponse)               |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure | [ErrorResponse](#schemaerrorresponse)               |
-| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | PAPI or downstream SAPI is unavailable            | [ErrorResponse](#schemaerrorresponse)               |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                        | [Error](#schemaerror)                               |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid Client Credentials                        | [Error](#schemaerror)                               |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure | [Error](#schemaerror)                               |
+| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | PAPI or downstream SAPI is unavailable            | [Error](#schemaerror)                               |
 
 ### Response Headers
 
 | Status | Header           | Type    | Format | Description                                                       |
 | ------ | ---------------- | ------- | ------ | ----------------------------------------------------------------- |
 | 200    | X-Request-Id     | string  | uuid   | Correlation ID for distributed tracing                            |
-| 200    | Cache-Control    | string  |        | Derived from upstream SAPI resources.                             |
+| 200    | Cache-Control    | string  |        | Derived from upstream SAPI resources (Contacts = no-store).       |
 | 200    | X-Data-Integrity | string  |        | Indicates if the payload is complete or has partial missing data. |
 | 400    | X-Request-Id     | string  | uuid   | Correlation ID for distributed tracing                            |
 | 401    | X-Request-Id     | string  | uuid   | Correlation ID for distributed tracing                            |
@@ -283,7 +313,7 @@ This ID is propagated to all downstream SAPI calls.
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiKeyAuth
+ClientIdAuth & ClientSecretAuth
 </aside>
 
 ## getProfileSummary
@@ -297,10 +327,11 @@ const headers = {
   Accept: "application/json",
   "X-Request-Id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
   "X-API-Version": "v1",
-  "X-API-Key": "API_KEY"
+  client_id: "API_KEY",
+  client_secret: "API_KEY"
 };
 
-fetch("https://api.portfolio.ryanbumstead.com/papi/v1/profile/summary", {
+fetch("https://api.portfolio.ryanbumstead.com/papi/profile/summary", {
   method: "GET",
 
   headers: headers
@@ -332,15 +363,10 @@ Stitches junction objects (ExperienceSkill, CertificationSkill) to their parents
 
 <h3 id="getprofilesummary-parameters">Parameters</h3>
 
-| Name          | In     | Type         | Required | Description                                                       |
-| ------------- | ------ | ------------ | -------- | ----------------------------------------------------------------- |
-| X-Request-Id  | header | string(uuid) | false    | Optional correlation ID. If not provided, PAPI will generate one. |
-| X-API-Version | header | string       | false    | PAPI version. Defaults to v1 if not specified.                    |
-
-#### Detailed descriptions
-
-**X-Request-Id**: Optional correlation ID. If not provided, PAPI will generate one.
-This ID is propagated to all downstream SAPI calls.
+| Name          | In     | Type         | Required | Description                        |
+| ------------- | ------ | ------------ | -------- | ---------------------------------- |
+| X-Request-Id  | header | string(uuid) | false    | Correlation ID propagated to SAPI. |
+| X-API-Version | header | string       | true     | API Version (e.g., v1).            |
 
 > Example responses
 
@@ -424,7 +450,7 @@ This ID is propagated to all downstream SAPI calls.
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid or missing X-API-Key header",
+  "message": "Invalid client_id or client_secret",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -467,10 +493,10 @@ This ID is propagated to all downstream SAPI calls.
 | Status | Meaning                                                                    | Description                                       | Schema                                  |
 | ------ | -------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------- |
 | 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | A unified profile object                          | [ProfileSummary](#schemaprofilesummary) |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                        | [ErrorResponse](#schemaerrorresponse)   |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Missing or invalid API key                        | [ErrorResponse](#schemaerrorresponse)   |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure | [ErrorResponse](#schemaerrorresponse)   |
-| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | PAPI or downstream SAPI is unavailable            | [ErrorResponse](#schemaerrorresponse)   |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                        | [Error](#schemaerror)                   |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid Client Credentials                        | [Error](#schemaerror)                   |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure | [Error](#schemaerror)                   |
+| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | PAPI or downstream SAPI is unavailable            | [Error](#schemaerror)                   |
 
 ### Response Headers
 
@@ -486,7 +512,7 @@ This ID is propagated to all downstream SAPI calls.
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiKeyAuth
+ClientIdAuth & ClientSecretAuth
 </aside>
 
 ## getFeaturedProjects
@@ -500,10 +526,11 @@ const headers = {
   Accept: "application/json",
   "X-Request-Id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
   "X-API-Version": "v1",
-  "X-API-Key": "API_KEY"
+  client_id: "API_KEY",
+  client_secret: "API_KEY"
 };
 
-fetch("https://api.portfolio.ryanbumstead.com/papi/v1/projects/featured", {
+fetch("https://api.portfolio.ryanbumstead.com/papi/projects/featured", {
   method: "GET",
 
   headers: headers
@@ -533,15 +560,10 @@ Retrieves projects marked as 'Featured' with nested Skills and Assets.
 
 <h3 id="getfeaturedprojects-parameters">Parameters</h3>
 
-| Name          | In     | Type         | Required | Description                                                       |
-| ------------- | ------ | ------------ | -------- | ----------------------------------------------------------------- |
-| X-Request-Id  | header | string(uuid) | false    | Optional correlation ID. If not provided, PAPI will generate one. |
-| X-API-Version | header | string       | false    | PAPI version. Defaults to v1 if not specified.                    |
-
-#### Detailed descriptions
-
-**X-Request-Id**: Optional correlation ID. If not provided, PAPI will generate one.
-This ID is propagated to all downstream SAPI calls.
+| Name          | In     | Type         | Required | Description                        |
+| ------------- | ------ | ------------ | -------- | ---------------------------------- |
+| X-Request-Id  | header | string(uuid) | false    | Correlation ID propagated to SAPI. |
+| X-API-Version | header | string       | true     | API Version (e.g., v1).            |
 
 > Example responses
 
@@ -556,6 +578,7 @@ This ID is propagated to all downstream SAPI calls.
     "solution": "Built on LWR with SAPI/PAPI architecture",
     "businessValue": "Increased interview rate by 40%",
     "status": "Live – In Production",
+    "completionDate": "2025-12-01",
     "heroImageUrl": "https://assets.portfolio.com/hero.png",
     "liveUrl": "https://portfolio.ryanbumstead.com",
     "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
@@ -589,7 +612,7 @@ This ID is propagated to all downstream SAPI calls.
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid or missing X-API-Key header",
+  "message": "Invalid client_id or client_secret",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -629,49 +652,45 @@ This ID is propagated to all downstream SAPI calls.
 
 <h3 id="getfeaturedprojects-responses">Responses</h3>
 
-| Status | Meaning                                                                    | Description                                       | Schema                                |
-| ------ | -------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | A list of enriched project records                | Inline                                |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                        | [ErrorResponse](#schemaerrorresponse) |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Missing or invalid API key                        | [ErrorResponse](#schemaerrorresponse) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure | [ErrorResponse](#schemaerrorresponse) |
-| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | PAPI or downstream SAPI is unavailable            | [ErrorResponse](#schemaerrorresponse) |
+| Status | Meaning                                                                    | Description                                       | Schema                |
+| ------ | -------------------------------------------------------------------------- | ------------------------------------------------- | --------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | A list of enriched project records                | Inline                |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                        | [Error](#schemaerror) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid Client Credentials                        | [Error](#schemaerror) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure | [Error](#schemaerror) |
+| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | PAPI or downstream SAPI is unavailable            | [Error](#schemaerror) |
 
 <h3 id="getfeaturedprojects-responseschema">Response Schema</h3>
 
 Status Code **200**
 
-| Name            | Type                                        | Required | Restrictions | Description                                             |
-| --------------- | ------------------------------------------- | -------- | ------------ | ------------------------------------------------------- |
-| _anonymous_     | [[EnrichedProject](#schemaenrichedproject)] | false    | none         | [Project enriched with Skills and Assets]               |
-| » id            | string                                      | true     | none         | none                                                    |
-| » title         | string                                      | true     | none         | none                                                    |
-| » challenge     | string                                      | false    | none         | none                                                    |
-| » solution      | string                                      | false    | none         | none                                                    |
-| » businessValue | string                                      | false    | none         | none                                                    |
-| » status        | string                                      | true     | none         | none                                                    |
-| » heroImageUrl  | string(uri)                                 | false    | none         | URL of the main display image. Matches SAPI field name. |
-| » liveUrl       | string(uri)                                 | false    | none         | none                                                    |
-| » repositoryUrl | string(uri)                                 | false    | none         | none                                                    |
-| » technologies  | [string]                                    | false    | none         | Skill names from ProjectSkill junction                  |
-| » assets        | [object]                                    | false    | none         | Images, videos, or links related to the project         |
-| »» type         | string                                      | true     | none         | none                                                    |
-| »» url          | string(uri)                                 | true     | none         | none                                                    |
-| »» caption      | string                                      | false    | none         | none                                                    |
+| Name             | Type                                        | Required | Restrictions | Description                                             |
+| ---------------- | ------------------------------------------- | -------- | ------------ | ------------------------------------------------------- |
+| _anonymous_      | [[EnrichedProject](#schemaenrichedproject)] | false    | none         | [Project enriched with Skills and Assets]               |
+| » id             | string                                      | true     | none         | none                                                    |
+| » title          | string¦null                                 | false    | none         | none                                                    |
+| » challenge      | string                                      | false    | none         | none                                                    |
+| » solution       | string                                      | false    | none         | none                                                    |
+| » businessValue  | string                                      | false    | none         | none                                                    |
+| » status         | string¦null                                 | false    | none         | Project Status (e.g., Live, Archived)                   |
+| » completionDate | string(date)¦null                           | false    | none         | Mapped from SAPI dateCompleted                          |
+| » heroImageUrl   | string(uri)                                 | false    | none         | URL of the main display image. Matches SAPI field name. |
+| » liveUrl        | string(uri)                                 | false    | none         | none                                                    |
+| » repositoryUrl  | string(uri)                                 | false    | none         | none                                                    |
+| » technologies   | [string]                                    | false    | none         | Skill names from ProjectSkill junction                  |
+| » assets         | [object]                                    | false    | none         | Images, videos, or links related to the project         |
+| »» type          | string                                      | true     | none         | none                                                    |
+| »» url           | string(uri)                                 | true     | none         | none                                                    |
+| »» caption       | string                                      | false    | none         | none                                                    |
 
 #### Enumerated Values
 
-| Property | Value                   |
-| -------- | ----------------------- |
-| status   | Live – In Production    |
-| status   | Live – Demo / Reference |
-| status   | Active Development      |
-| status   | On Hold                 |
-| status   | Archived                |
-| type     | Image                   |
-| type     | Video                   |
-| type     | Document                |
-| type     | Link                    |
+| Property | Value    |
+| -------- | -------- |
+| type     | Image    |
+| type     | Video    |
+| type     | Document |
+| type     | Link     |
 
 ### Response Headers
 
@@ -688,7 +707,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiKeyAuth
+ClientIdAuth & ClientSecretAuth
 </aside>
 
 <h1 id="portfolio-process-api-papi--transformation">Transformation</h1>
@@ -706,10 +725,11 @@ const headers = {
   Accept: "application/json",
   "X-Request-Id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
   "X-API-Version": "v1",
-  "X-API-Key": "API_KEY"
+  client_id: "API_KEY",
+  client_secret: "API_KEY"
 };
 
-fetch("https://api.portfolio.ryanbumstead.com/papi/v1/resume/generate", {
+fetch("https://api.portfolio.ryanbumstead.com/papi/resume/generate", {
   method: "GET",
 
   headers: headers
@@ -747,23 +767,28 @@ Generates an ATS-optimized plain text resume.
 
 **Persona Filtering**:
 
-- `admin`: Shows System Admin highlights only
-- `developer`: Shows Development highlights only
-- `architect`: Shows Architecture/Design highlights only
-- `general`: Shows all highlights (no persona filter)
+- `Admin`: System Admin highlights only
+- `Developer`: Development highlights only
+- `Architect`: Architecture/Design highlights only
+
+**SAPI Mapping**:
+
+- PAPI persona values are passed directly to SAPI `/experience-highlights?persona={value}`
+- If persona is omitted, all highlights are returned (no filtering)
 
 <h3 id="generateresume-parameters">Parameters</h3>
 
-| Name          | In     | Type         | Required | Description                                                       |
-| ------------- | ------ | ------------ | -------- | ----------------------------------------------------------------- |
-| X-Request-Id  | header | string(uuid) | false    | Optional correlation ID. If not provided, PAPI will generate one. |
-| X-API-Version | header | string       | false    | PAPI version. Defaults to v1 if not specified.                    |
-| persona       | query  | string       | false    | The target audience for the resume                                |
+| Name          | In     | Type         | Required | Description                                              |
+| ------------- | ------ | ------------ | -------- | -------------------------------------------------------- |
+| X-Request-Id  | header | string(uuid) | false    | Correlation ID propagated to SAPI.                       |
+| X-API-Version | header | string       | true     | API Version (e.g., v1).                                  |
+| persona       | query  | string       | false    | Target audience for the resume. Omit for all highlights. |
 
 #### Detailed descriptions
 
-**X-Request-Id**: Optional correlation ID. If not provided, PAPI will generate one.
-This ID is propagated to all downstream SAPI calls.
+**persona**: Target audience for the resume. Omit for all highlights.
+
+**Note**: This value is passed directly to SAPI's persona filter.
 
 #### Enumerated Values
 
@@ -772,7 +797,6 @@ This ID is propagated to all downstream SAPI calls.
 | persona   | Admin     |
 | persona   | Developer |
 | persona   | Architect |
-| persona   | general   |
 
 > Example responses
 
@@ -804,7 +828,7 @@ This ID is propagated to all downstream SAPI calls.
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid or missing X-API-Key header",
+  "message": "Invalid client_id or client_secret",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -844,13 +868,13 @@ This ID is propagated to all downstream SAPI calls.
 
 <h3 id="generateresume-responses">Responses</h3>
 
-| Status | Meaning                                                                    | Description                                        | Schema                                |
-| ------ | -------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | A JSON object containing the formatted resume text | Inline                                |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                         | [ErrorResponse](#schemaerrorresponse) |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Missing or invalid API key                         | [ErrorResponse](#schemaerrorresponse) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure  | [ErrorResponse](#schemaerrorresponse) |
-| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | PAPI or downstream SAPI is unavailable             | [ErrorResponse](#schemaerrorresponse) |
+| Status | Meaning                                                                    | Description                                        | Schema                |
+| ------ | -------------------------------------------------------------------------- | -------------------------------------------------- | --------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | A JSON object containing the formatted resume text | Inline                |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                         | [Error](#schemaerror) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid Client Credentials                         | [Error](#schemaerror) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure  | [Error](#schemaerror) |
+| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | PAPI or downstream SAPI is unavailable             | [Error](#schemaerror) |
 
 <h3 id="generateresume-responseschema">Response Schema</h3>
 
@@ -876,7 +900,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiKeyAuth
+ClientIdAuth & ClientSecretAuth
 </aside>
 
 <h1 id="portfolio-process-api-papi--logic">Logic</h1>
@@ -894,10 +918,11 @@ const headers = {
   Accept: "application/json",
   "X-Request-Id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
   "X-API-Version": "v1",
-  "X-API-Key": "API_KEY"
+  client_id: "API_KEY",
+  client_secret: "API_KEY"
 };
 
-fetch("https://api.portfolio.ryanbumstead.com/papi/v1/testimonials/feed", {
+fetch("https://api.portfolio.ryanbumstead.com/papi/testimonials/feed", {
   method: "GET",
 
   headers: headers
@@ -922,23 +947,18 @@ Retrieves testimonials with "Vibe Control" logic applied.
 
 **Filtering Logic**:
 
-- `professional`: Only shows `Relationship_Type__c IN ('Manager', 'Client')` AND `Vibe_Mode__c = 'Professional'`
-- `casual`: Shows all approved testimonials including `Vibe_Mode__c = 'Casual'`
+- `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.
+- `casual`: Returns all approved testimonials, regardless of relationship type or vibe (includes 'Casual' vibe and 'Fan' relationships).
 
 **Use Case**: About page testimonials section
 
 <h3 id="gettestimonialfeed-parameters">Parameters</h3>
 
-| Name          | In     | Type         | Required | Description                                                       |
-| ------------- | ------ | ------------ | -------- | ----------------------------------------------------------------- |
-| X-Request-Id  | header | string(uuid) | false    | Optional correlation ID. If not provided, PAPI will generate one. |
-| X-API-Version | header | string       | false    | PAPI version. Defaults to v1 if not specified.                    |
-| mode          | query  | string       | false    | Filter testimonials by vibe                                       |
-
-#### Detailed descriptions
-
-**X-Request-Id**: Optional correlation ID. If not provided, PAPI will generate one.
-This ID is propagated to all downstream SAPI calls.
+| Name          | In     | Type         | Required | Description                        |
+| ------------- | ------ | ------------ | -------- | ---------------------------------- |
+| X-Request-Id  | header | string(uuid) | false    | Correlation ID propagated to SAPI. |
+| X-API-Version | header | string       | true     | API Version (e.g., v1).            |
+| mode          | query  | string       | false    | Filter testimonials by vibe        |
 
 #### Enumerated Values
 
@@ -983,7 +1003,7 @@ This ID is propagated to all downstream SAPI calls.
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid or missing X-API-Key header",
+  "message": "Invalid client_id or client_secret",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -1023,13 +1043,13 @@ This ID is propagated to all downstream SAPI calls.
 
 <h3 id="gettestimonialfeed-responses">Responses</h3>
 
-| Status | Meaning                                                                    | Description                                       | Schema                                |
-| ------ | -------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | A filtered list of testimonials                   | Inline                                |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                        | [ErrorResponse](#schemaerrorresponse) |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Missing or invalid API key                        | [ErrorResponse](#schemaerrorresponse) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure | [ErrorResponse](#schemaerrorresponse) |
-| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | PAPI or downstream SAPI is unavailable            | [ErrorResponse](#schemaerrorresponse) |
+| Status | Meaning                                                                    | Description                                       | Schema                |
+| ------ | -------------------------------------------------------------------------- | ------------------------------------------------- | --------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | A filtered list of testimonials                   | Inline                |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                        | [Error](#schemaerror) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid Client Credentials                        | [Error](#schemaerror) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure | [Error](#schemaerror) |
+| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | PAPI or downstream SAPI is unavailable            | [Error](#schemaerror) |
 
 <h3 id="gettestimonialfeed-responseschema">Response Schema</h3>
 
@@ -1073,7 +1093,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiKeyAuth
+ClientIdAuth & ClientSecretAuth
 </aside>
 
 ## generateAiContent
@@ -1104,10 +1124,11 @@ const headers = {
   'Accept':'application/json',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
   'X-API-Version':'v1',
-  'X-API-Key':'API_KEY'
+  'client_id':'API_KEY',
+  'client_secret':'API_KEY'
 };
 
-fetch('https://api.portfolio.ryanbumstead.com/papi/v1/ai/generate',
+fetch('https://api.portfolio.ryanbumstead.com/papi/ai/generate',
 {
   method: 'POST',
   body: inputBody,
@@ -1165,25 +1186,20 @@ Proxies generative AI requests to LLM providers with circuit breaker pattern.
 
 <h3 id="generateaicontent-parameters">Parameters</h3>
 
-| Name                 | In     | Type         | Required | Description                                                       |
-| -------------------- | ------ | ------------ | -------- | ----------------------------------------------------------------- |
-| X-Request-Id         | header | string(uuid) | false    | Optional correlation ID. If not provided, PAPI will generate one. |
-| X-API-Version        | header | string       | false    | PAPI version. Defaults to v1 if not specified.                    |
-| body                 | body   | object       | true     | none                                                              |
-| » type               | body   | string       | true     | The type of content to generate                                   |
-| » context            | body   | object       | true     | Contextual data for generation                                    |
-| »» jobDescription    | body   | string       | false    | Full text of job posting (for cover letters)                      |
-| »» companyName       | body   | string       | false    | none                                                              |
-| »» role              | body   | string       | false    | none                                                              |
-| »» skills            | body   | [string]     | false    | Skills to emphasize                                               |
-| »» experienceSummary | body   | string       | false    | Brief professional summary                                        |
-| » tone               | body   | string       | false    | Desired tone of generated content                                 |
-| » maxLength          | body   | integer      | false    | Maximum character count                                           |
-
-#### Detailed descriptions
-
-**X-Request-Id**: Optional correlation ID. If not provided, PAPI will generate one.
-This ID is propagated to all downstream SAPI calls.
+| Name                 | In     | Type         | Required | Description                                  |
+| -------------------- | ------ | ------------ | -------- | -------------------------------------------- |
+| X-Request-Id         | header | string(uuid) | false    | Correlation ID propagated to SAPI.           |
+| X-API-Version        | header | string       | true     | API Version (e.g., v1).                      |
+| body                 | body   | object       | true     | none                                         |
+| » type               | body   | string       | true     | The type of content to generate              |
+| » context            | body   | object       | true     | Contextual data for generation               |
+| »» jobDescription    | body   | string       | false    | Full text of job posting (for cover letters) |
+| »» companyName       | body   | string       | false    | none                                         |
+| »» role              | body   | string       | false    | none                                         |
+| »» skills            | body   | [string]     | false    | Skills to emphasize                          |
+| »» experienceSummary | body   | string       | false    | Brief professional summary                   |
+| » tone               | body   | string       | false    | Desired tone of generated content            |
+| » maxLength          | body   | integer      | false    | Maximum character count                      |
 
 #### Enumerated Values
 
@@ -1230,7 +1246,7 @@ This ID is propagated to all downstream SAPI calls.
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid or missing X-API-Key header",
+  "message": "Invalid client_id or client_secret",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -1282,14 +1298,14 @@ This ID is propagated to all downstream SAPI calls.
 
 <h3 id="generateaicontent-responses">Responses</h3>
 
-| Status | Meaning                                                                    | Description                                       | Schema                                |
-| ------ | -------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successfully generated content                    | Inline                                |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                        | [ErrorResponse](#schemaerrorresponse) |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Missing or invalid API key                        | [ErrorResponse](#schemaerrorresponse) |
-| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | Rate limit exceeded (LLM provider quota)          | [ErrorResponse](#schemaerrorresponse) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure | [ErrorResponse](#schemaerrorresponse) |
-| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | All AI providers unavailable                      | [ErrorResponse](#schemaerrorresponse) |
+| Status | Meaning                                                                    | Description                                       | Schema                |
+| ------ | -------------------------------------------------------------------------- | ------------------------------------------------- | --------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successfully generated content                    | Inline                |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters                        | [Error](#schemaerror) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid Client Credentials                        | [Error](#schemaerror) |
+| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | Rate limit exceeded (LLM provider quota)          | [Error](#schemaerror) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal PAPI error or SAPI communication failure | [Error](#schemaerror) |
+| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)   | All AI providers unavailable                      | [Error](#schemaerror) |
 
 <h3 id="generateaicontent-responseschema">Response Schema</h3>
 
@@ -1319,10 +1335,12 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiKeyAuth
+ClientIdAuth & ClientSecretAuth
 </aside>
 
 <h1 id="portfolio-process-api-papi--monitoring">Monitoring</h1>
+
+Health checks and observability
 
 ## getHealth
 
@@ -1335,7 +1353,7 @@ const headers = {
   Accept: "application/json"
 };
 
-fetch("https://api.portfolio.ryanbumstead.com/papi/v1/health", {
+fetch("https://api.portfolio.ryanbumstead.com/papi/health", {
   method: "GET",
 
   headers: headers
@@ -1382,10 +1400,10 @@ Performs a shallow health check (runtime only). Does not validate SAPI connectiv
 
 <h3 id="gethealth-responses">Responses</h3>
 
-| Status | Meaning                                                                  | Description                            | Schema                                |
-| ------ | ------------------------------------------------------------------------ | -------------------------------------- | ------------------------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                  | Service is healthy                     | [HealthStatus](#schemahealthstatus)   |
-| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4) | PAPI or downstream SAPI is unavailable | [ErrorResponse](#schemaerrorresponse) |
+| Status | Meaning                                                                  | Description                            | Schema                              |
+| ------ | ------------------------------------------------------------------------ | -------------------------------------- | ----------------------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                  | Service is healthy                     | [HealthStatus](#schemahealthstatus) |
+| 503    | [Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4) | PAPI or downstream SAPI is unavailable | [Error](#schemaerror)               |
 
 ### Response Headers
 
@@ -1402,12 +1420,12 @@ This operation does not require authentication
 
 # Schemas
 
-<h2 id="tocS_ErrorResponse">ErrorResponse</h2>
+<h2 id="tocS_Error">Error</h2>
 <!-- backwards compatibility -->
-<a id="schemaerrorresponse"></a>
-<a id="schema_ErrorResponse"></a>
-<a id="tocSerrorresponse"></a>
-<a id="tocserrorresponse"></a>
+<a id="schemaerror"></a>
+<a id="schema_Error"></a>
+<a id="tocSerror"></a>
+<a id="tocserror"></a>
 
 ```json
 {
@@ -1528,6 +1546,7 @@ This operation does not require authentication
       "solution": "Built on LWR with SAPI/PAPI architecture",
       "businessValue": "Increased interview rate by 40%",
       "status": "Live – In Production",
+      "completionDate": "2025-12-01",
       "heroImageUrl": "https://assets.portfolio.com/hero.png",
       "liveUrl": "https://portfolio.ryanbumstead.com",
       "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
@@ -1694,16 +1713,16 @@ Work Experience enriched with related Skills and Highlights
 
 ### Properties
 
-| Name       | Type     | Required | Restrictions | Description                                                |
-| ---------- | -------- | -------- | ------------ | ---------------------------------------------------------- |
-| id         | string   | true     | none         | Salesforce Record ID (18-char)                             |
-| employer   | string   | true     | none         | none                                                       |
-| role       | string   | true     | none         | none                                                       |
-| dateRange  | string   | true     | none         | Formatted as "MMM YYYY - MMM YYYY" or "MMM YYYY - Present" |
-| isCurrent  | boolean  | true     | none         | none                                                       |
-| isRemote   | boolean  | false    | none         | none                                                       |
-| skillsUsed | [string] | false    | none         | Skills derived from ExperienceSkill junction               |
-| highlights | [string] | false    | none         | Selected bullet points (filtered by persona if applicable) |
+| Name       | Type         | Required | Restrictions | Description                                                |
+| ---------- | ------------ | -------- | ------------ | ---------------------------------------------------------- |
+| id         | string       | true     | none         | Salesforce Record ID (18-char)                             |
+| employer   | string       | true     | none         | none                                                       |
+| role       | string¦null  | false    | none         | none                                                       |
+| dateRange  | string       | true     | none         | Formatted as "MMM YYYY - MMM YYYY" or "MMM YYYY - Present" |
+| isCurrent  | boolean¦null | false    | none         | none                                                       |
+| isRemote   | boolean¦null | false    | none         | none                                                       |
+| skillsUsed | [string]     | false    | none         | Skills derived from ExperienceSkill junction               |
+| highlights | [string]     | false    | none         | Selected bullet points (filtered by persona if applicable) |
 
 <h2 id="tocS_EnrichedProject">EnrichedProject</h2>
 <!-- backwards compatibility -->
@@ -1720,6 +1739,7 @@ Work Experience enriched with related Skills and Highlights
   "solution": "Built on LWR with SAPI/PAPI architecture",
   "businessValue": "Increased interview rate by 40%",
   "status": "Live – In Production",
+  "completionDate": "2025-12-01",
   "heroImageUrl": "https://assets.portfolio.com/hero.png",
   "liveUrl": "https://portfolio.ryanbumstead.com",
   "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
@@ -1738,36 +1758,32 @@ Project enriched with Skills and Assets
 
 ### Properties
 
-| Name          | Type        | Required | Restrictions | Description                                             |
-| ------------- | ----------- | -------- | ------------ | ------------------------------------------------------- |
-| id            | string      | true     | none         | none                                                    |
-| title         | string      | true     | none         | none                                                    |
-| challenge     | string      | false    | none         | none                                                    |
-| solution      | string      | false    | none         | none                                                    |
-| businessValue | string      | false    | none         | none                                                    |
-| status        | string      | true     | none         | none                                                    |
-| heroImageUrl  | string(uri) | false    | none         | URL of the main display image. Matches SAPI field name. |
-| liveUrl       | string(uri) | false    | none         | none                                                    |
-| repositoryUrl | string(uri) | false    | none         | none                                                    |
-| technologies  | [string]    | false    | none         | Skill names from ProjectSkill junction                  |
-| assets        | [object]    | false    | none         | Images, videos, or links related to the project         |
-| » type        | string      | true     | none         | none                                                    |
-| » url         | string(uri) | true     | none         | none                                                    |
-| » caption     | string      | false    | none         | none                                                    |
+| Name           | Type              | Required | Restrictions | Description                                             |
+| -------------- | ----------------- | -------- | ------------ | ------------------------------------------------------- |
+| id             | string            | true     | none         | none                                                    |
+| title          | string¦null       | false    | none         | none                                                    |
+| challenge      | string            | false    | none         | none                                                    |
+| solution       | string            | false    | none         | none                                                    |
+| businessValue  | string            | false    | none         | none                                                    |
+| status         | string¦null       | false    | none         | Project Status (e.g., Live, Archived)                   |
+| completionDate | string(date)¦null | false    | none         | Mapped from SAPI dateCompleted                          |
+| heroImageUrl   | string(uri)       | false    | none         | URL of the main display image. Matches SAPI field name. |
+| liveUrl        | string(uri)       | false    | none         | none                                                    |
+| repositoryUrl  | string(uri)       | false    | none         | none                                                    |
+| technologies   | [string]          | false    | none         | Skill names from ProjectSkill junction                  |
+| assets         | [object]          | false    | none         | Images, videos, or links related to the project         |
+| » type         | string            | true     | none         | none                                                    |
+| » url          | string(uri)       | true     | none         | none                                                    |
+| » caption      | string            | false    | none         | none                                                    |
 
 #### Enumerated Values
 
-| Property | Value                   |
-| -------- | ----------------------- |
-| status   | Live – In Production    |
-| status   | Live – Demo / Reference |
-| status   | Active Development      |
-| status   | On Hold                 |
-| status   | Archived                |
-| type     | Image                   |
-| type     | Video                   |
-| type     | Document                |
-| type     | Link                    |
+| Property | Value    |
+| -------- | -------- |
+| type     | Image    |
+| type     | Video    |
+| type     | Document |
+| type     | Link     |
 
 <h2 id="tocS_EnrichedTestimonial">EnrichedTestimonial</h2>
 <!-- backwards compatibility -->
@@ -1877,7 +1893,7 @@ Simplified contact information for the header
 | fullName     | string        | true     | none         | none                                   |
 | email        | string(email) | true     | none         | none                                   |
 | phone        | string        | false    | none         | none                                   |
-| title        | string        | true     | none         | none                                   |
+| title        | string¦null   | false    | none         | none                                   |
 | linkedIn     | string(uri)   | false    | none         | none                                   |
 | github       | string(uri)   | false    | none         | none                                   |
 | trailhead    | string(uri)   | false    | none         | none                                   |

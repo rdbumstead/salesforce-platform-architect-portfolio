@@ -180,36 +180,35 @@ Retrieves the primary contact details for the portfolio owner.
     "accountName": "Salesforce",
     "title": "Platform Architect",
     "trailhead": "https://trailblazer.me/id/rbumstead",
-    "careerObjective": "Driving digital transformation through architecture.",
+    "careerObjective": "Driving digital transformation...",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
     "portfolio": "https://ryanbumstead.com"
   }
 ]
 ```
 
-> 400 Response
+> 500 Response
 
 ```json
 {
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
-  "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
 }
 ```
 
 <h3 id="getcontacts-responses">Responses</h3>
 
-| Status  | Meaning                                                                    | Description                                              | Schema                |
-| ------- | -------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------- |
-| 200     | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Contact records.                 | Inline                |
-| 400     | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure. | [Error](#schemaerror) |
-| 401     | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
-| 403     | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
-| 429     | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500     | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
-| default | Default                                                                    | none                                                     | None                  |
+| Status | Meaning                                                                    | Description                                              | Schema                |
+| ------ | -------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Contact records.                 | Inline                |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure. | [Error](#schemaerror) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
+| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
+| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getcontacts-responseschema">Response Schema</h3>
 
@@ -243,6 +242,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -318,6 +318,18 @@ Retrieves professional experience history.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getexperience-responses">Responses</h3>
 
 | Status | Meaning                                                                    | Description                                              | Schema                |
@@ -327,27 +339,27 @@ Retrieves professional experience history.
 | 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
 | 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
 | 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getexperience-responseschema">Response Schema</h3>
 
 Status Code **200**
 
-| Name              | Type                              | Required | Restrictions | Description                                    |
-| ----------------- | --------------------------------- | -------- | ------------ | ---------------------------------------------- |
-| _anonymous_       | [[Experience](#schemaexperience)] | false    | none         | [Professional Experience Schema.]              |
-| » id              | string                            | false    | read-only    | Salesforce Record ID                           |
-| » employerName    | string                            | false    | none         | Employer Name                                  |
-| » employerId      | string                            | false    | none         | Employer Account ID                            |
-| » name            | string                            | false    | none         | Role Title                                     |
-| » startDate       | string(date)                      | false    | none         | Start Date                                     |
-| » endDate         | string(date)¦null                 | false    | none         | End Date (null if current)                     |
-| » isCurrentRole   | boolean                           | false    | read-only    | Is Current Role Flag                           |
-| » isRemote        | boolean                           | false    | none         | Remote Work Flag                               |
-| » accomplishments | string¦null                       | false    | none         | Trusted HTML content for controlled rendering. |
-| » contactId       | string                            | false    | none         | Contact ID                                     |
-| » contactName     | string                            | false    | none         | Contact Name                                   |
-| » sortOrder       | number¦null                       | false    | none         | Sort Order                                     |
+| Name              | Type                              | Required | Restrictions | Description                                                                                         |
+| ----------------- | --------------------------------- | -------- | ------------ | --------------------------------------------------------------------------------------------------- |
+| _anonymous_       | [[Experience](#schemaexperience)] | false    | none         | [Professional Experience Schema.]                                                                   |
+| » id              | string                            | false    | read-only    | Salesforce Record ID                                                                                |
+| » employerName    | string                            | false    | none         | Employer Name                                                                                       |
+| » employerId      | string                            | false    | none         | Employer Account ID                                                                                 |
+| » name            | string                            | false    | none         | Role Title                                                                                          |
+| » startDate       | string(date)                      | false    | none         | Start Date                                                                                          |
+| » endDate         | string(date)¦null                 | false    | none         | End Date (null if current)                                                                          |
+| » isCurrentRole   | boolean                           | false    | read-only    | Is Current Role Flag                                                                                |
+| » isRemote        | boolean                           | false    | none         | Remote Work Flag                                                                                    |
+| » accomplishments | string¦null                       | false    | none         | DEPRECATED: Use /experience-highlights endpoint instead. This field will be removed in SAPI v2.0.0. |
+| » contactId       | string                            | false    | none         | Contact ID                                                                                          |
+| » contactName     | string                            | false    | none         | Contact Name                                                                                        |
+| » sortOrder       | number¦null                       | false    | none         | Sort Order                                                                                          |
 
 ### Response Headers
 
@@ -362,6 +374,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -431,44 +444,26 @@ Examples:
 ```json
 [
   {
-    "id": "a0CgK00000LVWWRUA5",
-    "name": "Prototyping & Fabrication",
-    "description": "Assisted in all facets of prototyping aspects such as: concept development, design, and fabrication.",
-    "experienceId": "a06gK000008xuHiQAI",
-    "experienceName": "IT Project Assistant",
-    "personaTag": "Architect",
-    "sortOrder": 1
-  },
-  {
-    "id": "a0CgK00000LVkSpUAL",
-    "name": "Administer Salesforce CRM for 400+ users",
-    "description": "Administer Salesforce CRM for 400+ users, ensuring system security, data integrity, and platform performance.",
-    "experienceId": "a06gK000001PSrlQAG",
-    "experienceName": "Application Administrator",
-    "personaTag": "Admin",
-    "sortOrder": 1
-  },
-  {
-    "id": "a0CgK00000LVkT0UAL",
-    "name": "Career Skills App Architect",
-    "description": "Architect of a Career Skills application leveraged by cross-functional teams to manage and allocate over five million dollars in grant funds.",
-    "experienceId": "a06gK000001PUITQA4",
-    "experienceName": "Salesforce Solutions Architect & Consultant",
-    "personaTag": "Architect",
-    "sortOrder": 1
+    "id": "a035e00000B2O3DAAV",
+    "experienceId": "a025e00000B2O3DAAV",
+    "experienceName": "Technical Architect",
+    "name": "DevOps Transformation",
+    "description": "Implemented CI/CD pipelines reducing deployment time by 80%.",
+    "sortOrder": 1,
+    "personaTag": "Architect"
   }
 ]
 ```
 
-> 400 Response
+> 500 Response
 
 ```json
 {
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
-  "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
 }
 ```
 
@@ -481,7 +476,7 @@ Examples:
 | 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
 | 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
 | 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getexperiencehighlights-responseschema">Response Schema</h3>
 
@@ -519,6 +514,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -594,34 +590,34 @@ Example Usage: `/projects?isFeatured=true`
 ```json
 [
   {
-    "id": "a0AgK000003Fl1hUAC",
-    "name": "Salesforce Platform Architect Portfolio",
-    "challenge": "Recruiters and Hiring Managers struggle to verify an architect's hands-on skills through static PDFs.",
-    "solution": "Built a multi-cloud LWR site with automated CI/CD, strict FinOps limits, and 'Vibe-Gated' logic.",
-    "businessValue": "Reduces 'Time-to-Trust' for evaluators by proving 'Enterprise Grade' is a mindset.",
+    "id": "a015e00000B2O3DAAV",
+    "name": "Global CRM Migration",
+    "challenge": "Legacy system had 5M duplicate records.",
+    "solution": "Implemented MDM strategy using Data Cloud.",
+    "businessValue": "Reduced data storage costs by 40%.",
     "status": "Active Development",
     "dateCompleted": "2025-12-01",
     "heroImageUrl": "https://assets.ryanbumstead.com/hero.jpg",
-    "liveUrl": "https://rbumstead-dev-ed.develop.my.site.com/portfolio/",
-    "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
-    "pillar": "DevOps & Agility",
+    "liveUrl": "https://project-demo.com",
+    "repositoryUrl": "https://github.com/rdbumstead/project",
+    "pillar": "Data Architecture",
     "isFeatured": true,
     "contactName": "Ryan Bumstead",
     "contactId": "0035e00000B2O3DAAV",
-    "sortOrder": 1
+    "sortOrder": 10
   }
 ]
 ```
 
-> 400 Response
+> 500 Response
 
 ```json
 {
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
-  "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
 }
 ```
 
@@ -634,7 +630,7 @@ Example Usage: `/projects?isFeatured=true`
 | 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
 | 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
 | 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getprojects-responseschema">Response Schema</h3>
 
@@ -682,6 +678,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -751,17 +748,28 @@ Retrieves assets (images, links) associated with a project.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getprojectassets-responses">Responses</h3>
 
-| Status | Meaning                                                                    | Description                                              | Schema                |
-| ------ | -------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Project Assets.                  | Inline                |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure. | [Error](#schemaerror) |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
-| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
-| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)             | The requested resource ID was not found.                 | [Error](#schemaerror) |
-| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| Status | Meaning                                                                    | Description                                                                | Schema                |
+| ------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Project Assets. Returns empty array if none found. | Inline                |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure.                   | [Error](#schemaerror) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.                                 | [Error](#schemaerror) |
+| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                                  | [Error](#schemaerror) |
+| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                                   | [Error](#schemaerror) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).                             | [Error](#schemaerror) |
 
 <h3 id="getprojectassets-responseschema">Response Schema</h3>
 
@@ -799,9 +807,9 @@ Status Code **200**
 | 400    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 401    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
-| 404    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -870,16 +878,28 @@ Retrieves received testimonials. Returns only records where Approved\_\_c = true
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="gettestimonials-responses">Responses</h3>
 
-| Status | Meaning                                                                    | Description                                              | Schema                |
-| ------ | -------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Testimonials.                    | Inline                |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure. | [Error](#schemaerror) |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
-| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
-| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| Status | Meaning                                                                    | Description                                                              | Schema                |
+| ------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Testimonials. Returns empty array if none found. | Inline                |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure.                 | [Error](#schemaerror) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.                               | [Error](#schemaerror) |
+| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                                | [Error](#schemaerror) |
+| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                                 | [Error](#schemaerror) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).                           | [Error](#schemaerror) |
 
 <h3 id="gettestimonials-responseschema">Response Schema</h3>
 
@@ -922,6 +942,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -987,6 +1008,18 @@ Retrieves related account/employer records.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getaccounts-responses">Responses</h3>
 
 | Status | Meaning                                                                    | Description                                              | Schema                |
@@ -996,7 +1029,7 @@ Retrieves related account/employer records.
 | 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
 | 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
 | 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getaccounts-responseschema">Response Schema</h3>
 
@@ -1023,6 +1056,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1080,47 +1114,27 @@ Retrieves technical skills and proficiency scores.
 ```json
 [
   {
-    "id": "a07gK00000Jao8gQAB",
-    "name": "Lightning Web Components",
-    "displayName": "LWC",
-    "category": "Frontend",
+    "id": "a075e00000B2O3DAAV",
+    "name": "Apex",
+    "displayName": "Salesforce Apex",
+    "category": "Development",
     "proficiencyScore": 5,
-    "iconName": "standard:lightning_component",
-    "svgPathData": "M10 10 H 90 V 90 H 10 Z",
-    "colorHex": "#00A1E0"
-  },
-  {
-    "id": "a07gK00000242mxQAA",
-    "name": "Salesforce Experience Cloud",
-    "displayName": "Experience Cloud",
-    "category": "Frontend",
-    "proficiencyScore": 5,
-    "iconName": "standard:portal",
-    "svgPathData": "M10 10 H 90 V 90 H 10 Z",
-    "colorHex": "#00A1E0"
-  },
-  {
-    "id": "a07gK000004BUIHQA4",
-    "name": "CSS3",
-    "displayName": "CSS",
-    "category": "Frontend",
-    "proficiencyScore": 4,
-    "iconName": "standard:topic",
-    "svgPathData": "M10 10 H 90 V 90 H 10 Z",
-    "colorHex": "#00A1E0"
+    "iconName": "utility:code",
+    "svgPathData": "M10...",
+    "colorHex": "#0070d2"
   }
 ]
 ```
 
-> 400 Response
+> 500 Response
 
 ```json
 {
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
-  "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
 }
 ```
 
@@ -1133,7 +1147,7 @@ Retrieves technical skills and proficiency scores.
 | 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
 | 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
 | 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getskills-responseschema">Response Schema</h3>
 
@@ -1164,6 +1178,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1223,44 +1238,26 @@ Retrieves professional certifications.
 ```json
 [
   {
-    "contactId": "003gK000000AtL9QAK",
+    "id": "a105e00000B2O3DAAV",
+    "name": "Application Architect",
+    "contactId": "0035e00000B2O3DAAV",
     "contactName": "Ryan Bumstead",
-    "id": "a08gK00000D4MH0QAN",
-    "issuerId": "001gK00000SxO9RQAV",
-    "issuerName": "Trailhead Academy",
-    "earnedDate": "2025-11-14",
-    "name": "Anypoint Platform Development: Fundamentals - DEX401"
-  },
-  {
-    "contactId": "003gK000000AtL9QAK",
-    "contactName": "Ryan Bumstead",
-    "id": "a08gK000004JC4oQAG",
-    "issuerId": "001gK000007XnSZQA0",
-    "issuerName": "Amazon Web Services",
-    "earnedDate": "2025-05-04",
-    "name": "AWS Academy Graduate - AWS Academy Cloud Foundations"
-  },
-  {
-    "contactId": "003gK000000AtL9QAK",
-    "contactName": "Ryan Bumstead",
-    "id": "a08gK0000030tVpQAI",
-    "issuerId": "001gK000004VFwXQAW",
+    "issuerId": "0015e00000A1O3DAAV",
     "issuerName": "Salesforce",
-    "earnedDate": "2025-01-03",
-    "name": "Salesforce Agentforce Specialist"
+    "earnedDate": "2024-05-15"
   }
 ]
 ```
 
-> 400 Response
+> 500 Response
 
 ```json
 {
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
-  "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
 }
 ```
 
@@ -1273,7 +1270,7 @@ Retrieves professional certifications.
 | 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
 | 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
 | 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getcertifications-responseschema">Response Schema</h3>
 
@@ -1303,6 +1300,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1374,6 +1372,18 @@ Retrieves educational background.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="geteducation-responses">Responses</h3>
 
 | Status | Meaning                                                                    | Description                                              | Schema                |
@@ -1383,7 +1393,7 @@ Retrieves educational background.
 | 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
 | 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
 | 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="geteducation-responseschema">Response Schema</h3>
 
@@ -1415,6 +1425,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1487,6 +1498,18 @@ Retrieves junction records linking Projects to Skills.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getprojectskills-responses">Responses</h3>
 
 | Status | Meaning                                                                    | Description                                              | Schema                |
@@ -1496,7 +1519,7 @@ Retrieves junction records linking Projects to Skills.
 | 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
 | 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
 | 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getprojectskills-responseschema">Response Schema</h3>
 
@@ -1526,6 +1549,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1594,6 +1618,18 @@ Retrieves junction records linking Experiences to Skills.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getexperienceskills-responses">Responses</h3>
 
 | Status | Meaning                                                                    | Description                                              | Schema                |
@@ -1603,7 +1639,7 @@ Retrieves junction records linking Experiences to Skills.
 | 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
 | 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
 | 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getexperienceskills-responseschema">Response Schema</h3>
 
@@ -1633,6 +1669,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1701,6 +1738,18 @@ Retrieves junction records linking Certifications to Skills.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getcertificationskills-responses">Responses</h3>
 
 | Status | Meaning                                                                    | Description                                              | Schema                |
@@ -1710,7 +1759,7 @@ Retrieves junction records linking Certifications to Skills.
 | 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
 | 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
 | 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                                     | None                  |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getcertificationskills-responseschema">Response Schema</h3>
 
@@ -1740,6 +1789,7 @@ Status Code **200**
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1808,16 +1858,28 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 }
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getportfolioconfig-responses">Responses</h3>
 
-| Status | Meaning                                                                    | Description                                   | Schema                                    |
-| ------ | -------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Global Configuration. | [PortfolioConfig](#schemaportfolioconfig) |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.    | [Error](#schemaerror)                     |
-| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                     | [Error](#schemaerror)                     |
-| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)             | The requested resource ID was not found.      | [Error](#schemaerror)                     |
-| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                      | [Error](#schemaerror)                     |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | none                                          | None                                      |
+| Status | Meaning                                                                    | Description                                    | Schema                                    |
+| ------ | -------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Global Configuration.  | [PortfolioConfig](#schemaportfolioconfig) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.     | [Error](#schemaerror)                     |
+| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                      | [Error](#schemaerror)                     |
+| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)             | The requested resource ID was not found.       | [Error](#schemaerror)                     |
+| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                       | [Error](#schemaerror)                     |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault). | [Error](#schemaerror)                     |
 
 ### Response Headers
 
@@ -1830,6 +1892,7 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 | 404    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.  |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.  |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                              |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.  |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -2177,20 +2240,20 @@ Professional Experience Schema.
 
 ### Properties
 
-| Name            | Type              | Required | Restrictions | Description                                    |
-| --------------- | ----------------- | -------- | ------------ | ---------------------------------------------- |
-| id              | string            | false    | read-only    | Salesforce Record ID                           |
-| employerName    | string            | false    | none         | Employer Name                                  |
-| employerId      | string            | false    | none         | Employer Account ID                            |
-| name            | string            | false    | none         | Role Title                                     |
-| startDate       | string(date)      | false    | none         | Start Date                                     |
-| endDate         | string(date)¦null | false    | none         | End Date (null if current)                     |
-| isCurrentRole   | boolean           | false    | read-only    | Is Current Role Flag                           |
-| isRemote        | boolean           | false    | none         | Remote Work Flag                               |
-| accomplishments | string¦null       | false    | none         | Trusted HTML content for controlled rendering. |
-| contactId       | string            | false    | none         | Contact ID                                     |
-| contactName     | string            | false    | none         | Contact Name                                   |
-| sortOrder       | number¦null       | false    | none         | Sort Order                                     |
+| Name            | Type              | Required | Restrictions | Description                                                                                         |
+| --------------- | ----------------- | -------- | ------------ | --------------------------------------------------------------------------------------------------- |
+| id              | string            | false    | read-only    | Salesforce Record ID                                                                                |
+| employerName    | string            | false    | none         | Employer Name                                                                                       |
+| employerId      | string            | false    | none         | Employer Account ID                                                                                 |
+| name            | string            | false    | none         | Role Title                                                                                          |
+| startDate       | string(date)      | false    | none         | Start Date                                                                                          |
+| endDate         | string(date)¦null | false    | none         | End Date (null if current)                                                                          |
+| isCurrentRole   | boolean           | false    | read-only    | Is Current Role Flag                                                                                |
+| isRemote        | boolean           | false    | none         | Remote Work Flag                                                                                    |
+| accomplishments | string¦null       | false    | none         | DEPRECATED: Use /experience-highlights endpoint instead. This field will be removed in SAPI v2.0.0. |
+| contactId       | string            | false    | none         | Contact ID                                                                                          |
+| contactName     | string            | false    | none         | Contact Name                                                                                        |
+| sortOrder       | number¦null       | false    | none         | Sort Order                                                                                          |
 
 <h2 id="tocS_ExperienceHighlight">ExperienceHighlight</h2>
 <!-- backwards compatibility -->

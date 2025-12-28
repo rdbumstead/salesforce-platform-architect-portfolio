@@ -58,7 +58,6 @@ servers:
         enum:
           - rbumstead-dev-ed.develop.my.site.com
 
-# Global Default Security: Enforces ID AND Secret on ALL endpoints
 security:
   - ApiClientId: []
     ApiClientSecret: []
@@ -323,20 +322,21 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
 
-  ServerError:
-    description: Internal platform error (Apex/MuleSoft Fault).
-    headers:
-      X-Request-Id:
-        $ref: "#/components/headers/RequestIdResponse"
-    content:
-      application/json:
-        schema:
-          $ref: "#/components/schemas/Error"
+    ServerError:
+      description: Internal platform error (Apex/MuleSoft Fault).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
           example:
-            httpStatus: 504
-            errorCode: "GATEWAY_TIMEOUT"
-            message: "Upstream Salesforce processing exceeded 10,000ms."
+            httpStatus: 500
+            errorCode: "INTERNAL_SERVER_ERROR"
+            message: "Upstream Salesforce processing failed."
             correlationId: "123e4567-e89b-12d3-a456-426614174000"
+            retryable: true
 
   schemas:
     Error:
@@ -376,7 +376,6 @@ components:
           example: "123e4567-e89b-12d3-a456-426614174000"
           description: "Unique ID tracking the request. Matches X-Request-Id."
 
-    # --- Reusable Enums (Modularity) ---
     Persona:
       type: string
       description: "Target audience for content filtering."
@@ -411,7 +410,6 @@ components:
       description: "Tone/Style Category"
       enum: [Professional, Casual]
       example: "Professional"
-    # -----------------------------------
 
     HealthStatus:
       type: object
@@ -436,83 +434,67 @@ components:
           description: "Status of downstream systems."
           properties:
             salesforce:
-              {
-                type: string,
-                example: "deferred",
-                description: "Status of Salesforce Core."
-              }
+              type: string
+              example: "deferred"
+              description: "Status of Salesforce Core."
 
     Contact:
       type: object
       description: Contact Information Schema.
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "0035e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "0035e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         name:
-          { type: string, example: "Ryan Bumstead", description: "Full Name" }
+          type: string
+          example: "Ryan Bumstead"
+          description: "Full Name"
         email:
-          {
-            type: string,
-            format: email,
-            example: "ryan@ryanbumstead.com",
-            description: "Email Address"
-          }
+          type: string
+          format: email
+          example: "ryan@ryanbumstead.com"
+          description: "Email Address"
         phone:
-          { type: string, example: "+1 555-0199", description: "Phone Number" }
+          type: string
+          example: "+1 555-0199"
+          description: "Phone Number"
         accountId:
-          {
-            type: string,
-            example: "0015e00000A1O3DAAV",
-            description: "Related Account ID"
-          }
+          type: string
+          example: "0015e00000A1O3DAAV"
+          description: "Related Account ID"
         accountName:
-          {
-            type: string,
-            example: "Salesforce",
-            description: "Related Account Name"
-          }
+          type: string
+          example: "Salesforce"
+          description: "Related Account Name"
         title:
-          {
-            type: string,
-            example: "Platform Architect",
-            description: "Job Title"
-          }
+          type: string
+          example: "Platform Architect"
+          description: "Job Title"
         trailhead:
-          {
-            type: string,
-            format: uri,
-            example: "https://trailblazer.me/id/rbumstead",
-            nullable: true,
-            description: "Trailhead Profile URL"
-          }
+          type: string
+          format: uri
+          example: "https://trailblazer.me/id/rbumstead"
+          nullable: true
+          description: "Trailhead Profile URL"
         careerObjective:
-          {
-            type: string,
-            example: "Driving digital transformation...",
-            nullable: true,
-            description: "Short Professional Summary"
-          }
+          type: string
+          example: "Driving digital transformation..."
+          nullable: true
+          description: "Short Professional Summary"
         linkedIn:
-          {
-            type: string,
-            format: uri,
-            example: "https://linkedin.com/in/ryanbumstead",
-            nullable: true,
-            description: "LinkedIn Profile URL"
-          }
+          type: string
+          format: uri
+          example: "https://linkedin.com/in/ryanbumstead"
+          nullable: true
+          description: "LinkedIn Profile URL"
         portfolio:
-          {
-            type: string,
-            format: uri,
-            example: "https://ryanbumstead.com",
-            nullable: true,
-            description: "Portfolio Website URL"
-          }
+          type: string
+          format: uri
+          example: "https://ryanbumstead.com"
+          nullable: true
+          description: "Portfolio Website URL"
       additionalProperties: true
 
     Project:
@@ -520,101 +502,77 @@ components:
       description: Portfolio Project Schema.
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a015e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "a015e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         name:
-          {
-            type: string,
-            example: "Global CRM Migration",
-            description: "Project Name"
-          }
+          type: string
+          example: "Global CRM Migration"
+          description: "Project Name"
         challenge:
-          {
-            type: string,
-            example: "Legacy system had 5M duplicate records.",
-            nullable: true,
-            description: "STAR Method: Situation/Task"
-          }
+          type: string
+          example: "Legacy system had 5M duplicate records."
+          nullable: true
+          description: "STAR Method: Situation/Task"
         solution:
-          {
-            type: string,
-            example: "Implemented MDM strategy using Data Cloud.",
-            nullable: true,
-            description: "STAR Method: Action"
-          }
+          type: string
+          example: "Implemented MDM strategy using Data Cloud."
+          nullable: true
+          description: "STAR Method: Action"
         businessValue:
-          {
-            type: string,
-            example: "Reduced data storage costs by 40%.",
-            nullable: true,
-            description: "STAR Method: Result"
-          }
+          type: string
+          example: "Reduced data storage costs by 40%."
+          nullable: true
+          description: "STAR Method: Result"
         status:
           $ref: "#/components/schemas/ProjectStatus"
         dateCompleted:
-          {
-            type: string,
-            format: date,
-            example: "2025-12-01",
-            nullable: true,
-            description: "Completion Date"
-          }
+          type: string
+          format: date
+          example: "2025-12-01"
+          nullable: true
+          description: "Completion Date"
         heroImageUrl:
-          {
-            type: string,
-            format: uri,
-            example: "https://assets.ryanbumstead.com/hero.jpg",
-            nullable: true,
-            description: "Banner Image URL"
-          }
+          type: string
+          format: uri
+          example: "https://assets.ryanbumstead.com/hero.jpg"
+          nullable: true
+          description: "Banner Image URL"
         liveUrl:
-          {
-            type: string,
-            format: uri,
-            example: "https://project-demo.com",
-            nullable: true,
-            description: "Live Demo URL"
-          }
+          type: string
+          format: uri
+          example: "https://project-demo.com"
+          nullable: true
+          description: "Live Demo URL"
         repositoryUrl:
-          {
-            type: string,
-            format: uri,
-            example: "https://github.com/rdbumstead/project",
-            nullable: true,
-            description: "Code Repository URL"
-          }
+          type: string
+          format: uri
+          example: "https://github.com/rdbumstead/project"
+          nullable: true
+          description: "Code Repository URL"
         pillar:
-          {
-            type: string,
-            example: "Data Architecture",
-            nullable: true,
-            description: "Architectural Pillar"
-          }
+          type: string
+          example: "Data Architecture"
+          nullable: true
+          description: "Architectural Pillar"
         isFeatured:
-          {
-            type: boolean,
-            example: true,
-            description: "Featured Flag for Home Page"
-          }
+          type: boolean
+          example: true
+          description: "Featured Flag for Home Page"
         contactName:
-          { type: string, example: "Ryan Bumstead", description: "Owner Name" }
+          type: string
+          example: "Ryan Bumstead"
+          description: "Owner Name"
         contactId:
-          {
-            type: string,
-            example: "0035e00000B2O3DAAV",
-            description: "Owner ID"
-          }
+          type: string
+          example: "0035e00000B2O3DAAV"
+          description: "Owner ID"
         sortOrder:
-          {
-            type: number,
-            example: 10,
-            nullable: true,
-            description: "Display Sort Order"
-          }
+          type: number
+          example: 10
+          nullable: true
+          description: "Display Sort Order"
       additionalProperties: true
 
     Experience:
@@ -622,74 +580,61 @@ components:
       description: Professional Experience Schema.
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a025e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "a025e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         employerName:
-          { type: string, example: "Salesforce", description: "Employer Name" }
+          type: string
+          example: "Salesforce"
+          description: "Employer Name"
         employerId:
-          {
-            type: string,
-            example: "0015e00000A1O3DAAV",
-            description: "Employer Account ID"
-          }
+          type: string
+          example: "0015e00000A1O3DAAV"
+          description: "Employer Account ID"
         name:
-          {
-            type: string,
-            description: "Role Title",
-            example: "Technical Architect"
-          }
+          type: string
+          description: "Role Title"
+          example: "Technical Architect"
         startDate:
-          {
-            type: string,
-            format: date,
-            example: "2023-01-01",
-            description: "Start Date"
-          }
+          type: string
+          format: date
+          example: "2023-01-01"
+          description: "Start Date"
         endDate:
-          {
-            type: string,
-            format: date,
-            example: "2025-01-01",
-            nullable: true,
-            description: "End Date (null if current)"
-          }
+          type: string
+          format: date
+          example: "2025-01-01"
+          nullable: true
+          description: "End Date (null if current)"
         isCurrentRole:
-          {
-            type: boolean,
-            readOnly: true,
-            example: true,
-            description: "Is Current Role Flag"
-          }
+          type: boolean
+          readOnly: true
+          example: true
+          description: "Is Current Role Flag"
         isRemote:
-          { type: boolean, example: true, description: "Remote Work Flag" }
+          type: boolean
+          example: true
+          description: "Remote Work Flag"
         accomplishments:
           type: string
+          deprecated: true
           example: "<ul><li>Led 5 successful deployments</li></ul>"
-          description: "Trusted HTML content for controlled rendering."
+          description: "DEPRECATED: Use /experience-highlights endpoint instead. This field will be removed in SAPI v2.0.0."
           nullable: true
         contactId:
-          {
-            type: string,
-            example: "0035e00000B2O3DAAV",
-            description: "Contact ID"
-          }
+          type: string
+          example: "0035e00000B2O3DAAV"
+          description: "Contact ID"
         contactName:
-          {
-            type: string,
-            example: "Ryan Bumstead",
-            description: "Contact Name"
-          }
+          type: string
+          example: "Ryan Bumstead"
+          description: "Contact Name"
         sortOrder:
-          {
-            type: number,
-            example: 10,
-            nullable: true,
-            description: "Sort Order"
-          }
+          type: number
+          example: 10
+          nullable: true
+          description: "Sort Order"
       additionalProperties: true
 
     ExperienceHighlight:
@@ -697,37 +642,30 @@ components:
       description: Experience Bullet Point Schema.
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a035e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "a035e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         experienceId:
-          {
-            type: string,
-            example: "a025e00000B2O3DAAV",
-            description: "Parent Experience ID"
-          }
+          type: string
+          example: "a025e00000B2O3DAAV"
+          description: "Parent Experience ID"
         experienceName:
-          {
-            type: string,
-            example: "Technical Architect",
-            description: "Parent Experience Name"
-          }
+          type: string
+          example: "Technical Architect"
+          description: "Parent Experience Name"
         name:
-          {
-            type: string,
-            example: "DevOps Transformation",
-            description: "Highlight Title"
-          }
+          type: string
+          example: "DevOps Transformation"
+          description: "Highlight Title"
         description:
-          {
-            type: string,
-            example: "Implemented CI/CD pipelines reducing deployment time by 80%.",
-            description: "Detailed Description"
-          }
-        sortOrder: { type: number, example: 1, description: "Sort Order" }
+          type: string
+          example: "Implemented CI/CD pipelines reducing deployment time by 80%."
+          description: "Detailed Description"
+        sortOrder:
+          type: number
+          example: 1
+          description: "Sort Order"
         personaTag:
           $ref: "#/components/schemas/Persona"
       additionalProperties: true
@@ -737,47 +675,38 @@ components:
       description: "Project Asset (Image/Video) Schema."
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a045e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "a045e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         name:
-          {
-            type: string,
-            example: "Architecture Diagram",
-            description: "Asset Name"
-          }
+          type: string
+          example: "Architecture Diagram"
+          description: "Asset Name"
         projectId:
-          {
-            type: string,
-            example: "a015e00000B2O3DAAV",
-            description: "Parent Project ID"
-          }
+          type: string
+          example: "a015e00000B2O3DAAV"
+          description: "Parent Project ID"
         projectName:
-          {
-            type: string,
-            example: "Global CRM Migration",
-            description: "Parent Project Name"
-          }
+          type: string
+          example: "Global CRM Migration"
+          description: "Parent Project Name"
         type:
           $ref: "#/components/schemas/AssetType"
         externalUrl:
-          {
-            type: string,
-            format: uri,
-            example: "https://assets.ryanbumstead.com/arch.png",
-            description: "Asset URL"
-          }
+          type: string
+          format: uri
+          example: "https://assets.ryanbumstead.com/arch.png"
+          description: "Asset URL"
         altText:
-          {
-            type: string,
-            example: "C4 Model System Context Diagram",
-            nullable: true,
-            description: "Accessibility Alt Text"
-          }
-        sortOrder: { type: number, example: 1, description: "Sort Order" }
+          type: string
+          example: "C4 Model System Context Diagram"
+          nullable: true
+          description: "Accessibility Alt Text"
+        sortOrder:
+          type: number
+          example: 1
+          description: "Sort Order"
       additionalProperties: true
 
     Testimonial:
@@ -785,46 +714,38 @@ components:
       description: Social Proof Schema.
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a055e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "a055e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         name:
-          {
-            type: string,
-            example: "Testimonial from Jane Doe",
-            description: "Testimonial Name"
-          }
+          type: string
+          example: "Testimonial from Jane Doe"
+          description: "Testimonial Name"
         authorName:
-          { type: string, example: "Jane Doe", description: "Author Name" }
+          type: string
+          example: "Jane Doe"
+          description: "Author Name"
         authorTitle:
-          {
-            type: string,
-            example: "CTO, Tech Corp",
-            nullable: true,
-            description: "Author Title"
-          }
+          type: string
+          example: "CTO, Tech Corp"
+          nullable: true
+          description: "Author Title"
         avatarUrl:
-          {
-            type: string,
-            format: uri,
-            example: "https://linkedin.com/image/jane.jpg",
-            nullable: true,
-            description: "Author Avatar URL"
-          }
+          type: string
+          format: uri
+          example: "https://linkedin.com/image/jane.jpg"
+          nullable: true
+          description: "Author Avatar URL"
         relationshipType:
           $ref: "#/components/schemas/RelationshipType"
         vibeMode:
           $ref: "#/components/schemas/VibeMode"
         context:
-          {
-            type: string,
-            example: "Worked together on the Q1 digital transformation.",
-            nullable: true,
-            description: "Context of Work"
-          }
+          type: string
+          example: "Worked together on the Q1 digital transformation."
+          nullable: true
+          description: "Context of Work"
       additionalProperties: true
 
     ProjectSkill:
@@ -832,39 +753,34 @@ components:
       description: "Junction Object: Project <-> Skill."
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a065e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "a065e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         projectId:
-          {
-            type: string,
-            example: "a015e00000B2O3DAAV",
-            description: "Project ID"
-          }
+          type: string
+          example: "a015e00000B2O3DAAV"
+          description: "Project ID"
         projectName:
-          {
-            type: string,
-            example: "Global CRM Migration",
-            description: "Project Name"
-          }
+          type: string
+          example: "Global CRM Migration"
+          description: "Project Name"
         skillId:
-          {
-            type: string,
-            example: "a075e00000B2O3DAAV",
-            description: "Skill ID"
-          }
-        skillName: { type: string, example: "Apex", description: "Skill Name" }
+          type: string
+          example: "a075e00000B2O3DAAV"
+          description: "Skill ID"
+        skillName:
+          type: string
+          example: "Apex"
+          description: "Skill Name"
         skillCategory:
-          {
-            type: string,
-            example: "Backend Development",
-            description: "Skill Category"
-          }
+          type: string
+          example: "Backend Development"
+          description: "Skill Category"
         skillProficiencyScore:
-          { type: number, example: 5, description: "Proficiency Score" }
+          type: number
+          example: 5
+          description: "Proficiency Score"
       additionalProperties: true
 
     ExperienceSkill:
@@ -872,39 +788,34 @@ components:
       description: "Junction Object: Experience <-> Skill."
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a085e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "a085e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         experienceId:
-          {
-            type: string,
-            example: "a025e00000B2O3DAAV",
-            description: "Experience ID"
-          }
+          type: string
+          example: "a025e00000B2O3DAAV"
+          description: "Experience ID"
         experienceName:
-          {
-            type: string,
-            example: "Technical Architect",
-            description: "Experience Name"
-          }
+          type: string
+          example: "Technical Architect"
+          description: "Experience Name"
         skillId:
-          {
-            type: string,
-            example: "a075e00000B2O3DAAV",
-            description: "Skill ID"
-          }
-        skillName: { type: string, example: "LWC", description: "Skill Name" }
+          type: string
+          example: "a075e00000B2O3DAAV"
+          description: "Skill ID"
+        skillName:
+          type: string
+          example: "LWC"
+          description: "Skill Name"
         skillCategory:
-          {
-            type: string,
-            example: "Frontend Development",
-            description: "Skill Category"
-          }
+          type: string
+          example: "Frontend Development"
+          description: "Skill Category"
         skillProficiencyScore:
-          { type: number, example: 4, description: "Proficiency Score" }
+          type: number
+          example: 4
+          description: "Proficiency Score"
       additionalProperties: true
 
     CertificationSkill:
@@ -912,40 +823,34 @@ components:
       description: "Junction Object: Certification <-> Skill."
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a095e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "a095e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         certificationId:
-          {
-            type: string,
-            example: "a105e00000B2O3DAAV",
-            description: "Certification ID"
-          }
+          type: string
+          example: "a105e00000B2O3DAAV"
+          description: "Certification ID"
         certificationName:
-          {
-            type: string,
-            example: "Salesforce Certified Application Architect",
-            description: "Certification Name"
-          }
+          type: string
+          example: "Salesforce Certified Application Architect"
+          description: "Certification Name"
         skillId:
-          {
-            type: string,
-            example: "a075e00000B2O3DAAV",
-            description: "Skill ID"
-          }
+          type: string
+          example: "a075e00000B2O3DAAV"
+          description: "Skill ID"
         skillName:
-          { type: string, example: "Security", description: "Skill Name" }
+          type: string
+          example: "Security"
+          description: "Skill Name"
         skillCategory:
-          {
-            type: string,
-            example: "Architecture",
-            description: "Skill Category"
-          }
+          type: string
+          example: "Architecture"
+          description: "Skill Category"
         skillProficiencyScore:
-          { type: number, example: 5, description: "Proficiency Score" }
+          type: number
+          example: 5
+          description: "Proficiency Score"
       additionalProperties: true
 
     PortfolioConfig:
@@ -953,66 +858,50 @@ components:
       description: "Global Config Schema (Custom Metadata)."
       properties:
         ownerEmail:
-          {
-            type: string,
-            format: email,
-            example: "ryan@ryanbumstead.com",
-            description: "Owner Email"
-          }
+          type: string
+          format: email
+          example: "ryan@ryanbumstead.com"
+          description: "Owner Email"
         ownerPhone:
-          {
-            type: string,
-            example: "+1 555-0199",
-            nullable: true,
-            description: "Owner Phone"
-          }
+          type: string
+          example: "+1 555-0199"
+          nullable: true
+          description: "Owner Phone"
         linkedInUrl:
-          {
-            type: string,
-            format: uri,
-            example: "https://linkedin.com/in/ryanbumstead",
-            nullable: true,
-            description: "LinkedIn URL"
-          }
+          type: string
+          format: uri
+          example: "https://linkedin.com/in/ryanbumstead"
+          nullable: true
+          description: "LinkedIn URL"
         gitHubProfileUrl:
-          {
-            type: string,
-            format: uri,
-            example: "https://github.com/ryanbumstead",
-            nullable: true,
-            description: "GitHub URL"
-          }
+          type: string
+          format: uri
+          example: "https://github.com/ryanbumstead"
+          nullable: true
+          description: "GitHub URL"
         calendlyUrl:
-          {
-            type: string,
-            format: uri,
-            example: "https://calendly.com/ryanbumstead",
-            nullable: true,
-            description: "Calendly URL"
-          }
+          type: string
+          format: uri
+          example: "https://calendly.com/ryanbumstead"
+          nullable: true
+          description: "Calendly URL"
         trailblazerProfileUrl:
-          {
-            type: string,
-            format: uri,
-            example: "https://trailblazer.me/id/rbumstead",
-            nullable: true,
-            description: "Trailhead URL"
-          }
+          type: string
+          format: uri
+          example: "https://trailblazer.me/id/rbumstead"
+          nullable: true
+          description: "Trailhead URL"
         personalWebsiteUrl:
-          {
-            type: string,
-            format: uri,
-            example: "https://ryanbumstead.com",
-            nullable: true,
-            description: "Personal Website URL"
-          }
+          type: string
+          format: uri
+          example: "https://ryanbumstead.com"
+          nullable: true
+          description: "Personal Website URL"
         careerObjective:
-          {
-            type: string,
-            example: "Looking for Principal Architect roles.",
-            nullable: true,
-            description: "Career Objective Text"
-          }
+          type: string
+          example: "Looking for Principal Architect roles."
+          nullable: true
+          description: "Career Objective Text"
       additionalProperties: true
 
     Account:
@@ -1020,28 +909,24 @@ components:
       description: "Account/Employer Schema."
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "0015e00000A1O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "0015e00000A1O3DAAV"
+          description: "Salesforce Record ID"
         name:
-          { type: string, example: "Salesforce", description: "Account Name" }
+          type: string
+          example: "Salesforce"
+          description: "Account Name"
         industry:
-          {
-            type: string,
-            example: "Technology",
-            nullable: true,
-            description: "Industry"
-          }
+          type: string
+          example: "Technology"
+          nullable: true
+          description: "Industry"
         abbreviation:
-          {
-            type: string,
-            example: "SFDC",
-            nullable: true,
-            description: "Abbreviation"
-          }
+          type: string
+          example: "SFDC"
+          nullable: true
+          description: "Abbreviation"
       additionalProperties: true
 
     Skill:
@@ -1049,49 +934,42 @@ components:
       description: Skill Schema.
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a075e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
-        name: { type: string, example: "Apex", description: "Skill Name" }
+          type: string
+          readOnly: true
+          example: "a075e00000B2O3DAAV"
+          description: "Salesforce Record ID"
+        name:
+          type: string
+          example: "Apex"
+          description: "Skill Name"
         displayName:
-          {
-            type: string,
-            example: "Salesforce Apex",
-            nullable: true,
-            description: "Display Name"
-          }
+          type: string
+          example: "Salesforce Apex"
+          nullable: true
+          description: "Display Name"
         category:
-          {
-            type: string,
-            example: "Development",
-            description: "Skill Category"
-          }
+          type: string
+          example: "Development"
+          description: "Skill Category"
         proficiencyScore:
-          { type: number, example: 5, description: "Self-Reported Proficiency" }
+          type: number
+          example: 5
+          description: "Self-Reported Proficiency"
         iconName:
-          {
-            type: string,
-            example: "utility:code",
-            nullable: true,
-            description: "Icon Name"
-          }
+          type: string
+          example: "utility:code"
+          nullable: true
+          description: "Icon Name"
         svgPathData:
-          {
-            type: string,
-            example: "M10...",
-            nullable: true,
-            description: "SVG Path Data"
-          }
+          type: string
+          example: "M10..."
+          nullable: true
+          description: "SVG Path Data"
         colorHex:
-          {
-            type: string,
-            example: "#0070d2",
-            nullable: true,
-            description: "Category Color Hex"
-          }
+          type: string
+          example: "#0070d2"
+          nullable: true
+          description: "Category Color Hex"
       additionalProperties: true
 
     Certification:
@@ -1099,45 +977,35 @@ components:
       description: Certification Schema.
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a105e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "a105e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         name:
-          {
-            type: string,
-            example: "Application Architect",
-            description: "Certification Name"
-          }
+          type: string
+          example: "Application Architect"
+          description: "Certification Name"
         contactId:
-          {
-            type: string,
-            example: "0035e00000B2O3DAAV",
-            description: "Contact ID"
-          }
+          type: string
+          example: "0035e00000B2O3DAAV"
+          description: "Contact ID"
         contactName:
-          {
-            type: string,
-            example: "Ryan Bumstead",
-            description: "Contact Name"
-          }
+          type: string
+          example: "Ryan Bumstead"
+          description: "Contact Name"
         issuerId:
-          {
-            type: string,
-            example: "0015e00000A1O3DAAV",
-            description: "Issuer Account ID"
-          }
+          type: string
+          example: "0015e00000A1O3DAAV"
+          description: "Issuer Account ID"
         issuerName:
-          { type: string, example: "Salesforce", description: "Issuer Name" }
+          type: string
+          example: "Salesforce"
+          description: "Issuer Name"
         earnedDate:
-          {
-            type: string,
-            format: date,
-            example: "2024-05-15",
-            description: "Date Earned"
-          }
+          type: string
+          format: date
+          example: "2024-05-15"
+          description: "Date Earned"
       additionalProperties: true
 
     Education:
@@ -1145,56 +1013,44 @@ components:
       description: Education Schema.
       properties:
         id:
-          {
-            type: string,
-            readOnly: true,
-            example: "a115e00000B2O3DAAV",
-            description: "Salesforce Record ID"
-          }
+          type: string
+          readOnly: true
+          example: "a115e00000B2O3DAAV"
+          description: "Salesforce Record ID"
         name:
-          {
-            type: string,
-            example: "Bachelor of Science",
-            description: "Degree Name"
-          }
+          type: string
+          example: "Bachelor of Science"
+          description: "Degree Name"
         contactId:
-          {
-            type: string,
-            example: "0035e00000B2O3DAAV",
-            description: "Contact ID"
-          }
+          type: string
+          example: "0035e00000B2O3DAAV"
+          description: "Contact ID"
         contactName:
-          {
-            type: string,
-            example: "Ryan Bumstead",
-            description: "Contact Name"
-          }
+          type: string
+          example: "Ryan Bumstead"
+          description: "Contact Name"
         issuerId:
-          {
-            type: string,
-            example: "0015e00000A1O3DAAV",
-            description: "University Account ID"
-          }
+          type: string
+          example: "0015e00000A1O3DAAV"
+          description: "University Account ID"
         issuerName:
-          {
-            type: string,
-            example: "University of Technology",
-            description: "University Name"
-          }
+          type: string
+          example: "University of Technology"
+          description: "University Name"
         fieldOfStudy:
-          {
-            type: string,
-            example: "Computer Science",
-            description: "Field of Study"
-          }
+          type: string
+          example: "Computer Science"
+          description: "Field of Study"
         graduationDate:
-          {
-            type: string,
-            format: date,
-            example: "2018-05-01",
-            description: "Graduation Date"
-          }
-        gpa: { type: number, example: 3.8, nullable: true, description: "GPA" }
+          type: string
+          format: date
+          example: "2018-05-01"
+          description: "Graduation Date"
+        gpa:
+          type: number
+          example: 3.8
+          nullable: true
+          description: "GPA"
       additionalProperties: true
 
 paths:
@@ -1253,24 +1109,11 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Contact"
-              example:
-                - id: "0035e00000B2O3DAAV"
-                  name: "Ryan Bumstead"
-                  email: "ryan@ryanbumstead.com"
-                  phone: "+1 555-0199"
-                  accountId: "0015e00000A1O3DAAV"
-                  accountName: "Salesforce"
-                  title: "Platform Architect"
-                  trailhead: "https://trailblazer.me/id/rbumstead"
-                  careerObjective: "Driving digital transformation through architecture."
-                  linkedIn: "https://linkedin.com/in/ryanbumstead"
-                  portfolio: "https://ryanbumstead.com"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
-        default: { $ref: "#/components/responses/ServerError" }
 
   /experience:
     get:
@@ -1341,28 +1184,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ExperienceHighlight"
-              example:
-                - id: "a0CgK00000LVWWRUA5"
-                  name: "Prototyping & Fabrication"
-                  description: "Assisted in all facets of prototyping aspects such as: concept development, design, and fabrication."
-                  experienceId: "a06gK000008xuHiQAI"
-                  experienceName: "IT Project Assistant"
-                  personaTag: "Architect"
-                  sortOrder: 1.0
-                - id: "a0CgK00000LVkSpUAL"
-                  name: "Administer Salesforce CRM for 400+ users"
-                  description: "Administer Salesforce CRM for 400+ users, ensuring system security, data integrity, and platform performance."
-                  experienceId: "a06gK000001PSrlQAG"
-                  experienceName: "Application Administrator"
-                  personaTag: "Admin"
-                  sortOrder: 1.0
-                - id: "a0CgK00000LVkT0UAL"
-                  name: "Career Skills App Architect"
-                  description: "Architect of a Career Skills application leveraged by cross-functional teams to manage and allocate over five million dollars in grant funds."
-                  experienceId: "a06gK000001PUITQA4"
-                  experienceName: "Salesforce Solutions Architect & Consultant"
-                  personaTag: "Architect"
-                  sortOrder: 1.0
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1404,22 +1225,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Project"
-              example:
-                - id: "a0AgK000003Fl1hUAC"
-                  name: "Salesforce Platform Architect Portfolio"
-                  challenge: "Recruiters and Hiring Managers struggle to verify an architect's hands-on skills through static PDFs."
-                  solution: "Built a multi-cloud LWR site with automated CI/CD, strict FinOps limits, and 'Vibe-Gated' logic."
-                  businessValue: "Reduces 'Time-to-Trust' for evaluators by proving 'Enterprise Grade' is a mindset."
-                  status: "Active Development"
-                  dateCompleted: "2025-12-01"
-                  heroImageUrl: "https://assets.ryanbumstead.com/hero.jpg"
-                  liveUrl: "https://rbumstead-dev-ed.develop.my.site.com/portfolio/"
-                  repositoryUrl: "https://github.com/ryanbumstead/portfolio"
-                  pillar: "DevOps & Agility"
-                  isFeatured: true
-                  contactName: "Ryan Bumstead"
-                  contactId: "0035e00000B2O3DAAV"
-                  sortOrder: 1
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1440,7 +1245,7 @@ paths:
         - $ref: "#/components/parameters/offsetParam"
       responses:
         "200":
-          description: Successful retrieval of Project Assets.
+          description: Successful retrieval of Project Assets. Returns empty array if none found.
           headers:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdResponse"
@@ -1459,7 +1264,6 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1476,7 +1280,7 @@ paths:
         - $ref: "#/components/parameters/offsetParam"
       responses:
         "200":
-          description: Successful retrieval of Testimonials.
+          description: Successful retrieval of Testimonials. Returns empty array if none found.
           headers:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdResponse"
@@ -1591,31 +1395,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Skill"
-              example:
-                - id: "a07gK00000Jao8gQAB"
-                  name: "Lightning Web Components"
-                  displayName: "LWC"
-                  category: "Frontend"
-                  proficiencyScore: 5.0
-                  iconName: "standard:lightning_component"
-                  svgPathData: "M10 10 H 90 V 90 H 10 Z"
-                  colorHex: "#00A1E0"
-                - id: "a07gK00000242mxQAA"
-                  name: "Salesforce Experience Cloud"
-                  displayName: "Experience Cloud"
-                  category: "Frontend"
-                  proficiencyScore: 5.0
-                  iconName: "standard:portal"
-                  svgPathData: "M10 10 H 90 V 90 H 10 Z"
-                  colorHex: "#00A1E0"
-                - id: "a07gK000004BUIHQA4"
-                  name: "CSS3"
-                  displayName: "CSS"
-                  category: "Frontend"
-                  proficiencyScore: 4.0
-                  iconName: "standard:topic"
-                  svgPathData: "M10 10 H 90 V 90 H 10 Z"
-                  colorHex: "#00A1E0"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1654,28 +1433,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Certification"
-              example:
-                - contactId: "003gK000000AtL9QAK"
-                  contactName: "Ryan Bumstead"
-                  id: "a08gK00000D4MH0QAN"
-                  issuerId: "001gK00000SxO9RQAV"
-                  issuerName: "Trailhead Academy"
-                  earnedDate: "2025-11-14"
-                  name: "Anypoint Platform Development: Fundamentals - DEX401"
-                - contactId: "003gK000000AtL9QAK"
-                  contactName: "Ryan Bumstead"
-                  id: "a08gK000004JC4oQAG"
-                  issuerId: "001gK000007XnSZQA0"
-                  issuerName: "Amazon Web Services"
-                  earnedDate: "2025-05-04"
-                  name: "AWS Academy Graduate - AWS Academy Cloud Foundations"
-                - contactId: "003gK000000AtL9QAK"
-                  contactName: "Ryan Bumstead"
-                  id: "a08gK0000030tVpQAI"
-                  issuerId: "001gK000004VFwXQAW"
-                  issuerName: "Salesforce"
-                  earnedDate: "2025-01-03"
-                  name: "Salesforce Agentforce Specialist"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
