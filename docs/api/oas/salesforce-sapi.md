@@ -1,20 +1,3 @@
----
-title: Salesforce System API (SAPI) v1.2.0
-language_tabs:
-  - javascript: JavaScript
-  - apex: Apex
-language_clients:
-  - javascript: ""
-  - apex: ""
-toc_footers: []
-includes: []
-search: false
-highlight_theme: darkula
-headingLevel: 2
----
-
-<!-- Generator: Widdershins v4.0.1 -->
-
 <h1 id="salesforce-system-api-sapi-">Salesforce System API (SAPI) v1.2.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
@@ -197,36 +180,35 @@ Retrieves the primary contact details for the portfolio owner.
     "accountName": "Salesforce",
     "title": "Platform Architect",
     "trailhead": "https://trailblazer.me/id/rbumstead",
-    "careerObjective": "Driving digital transformation through architecture.",
+    "careerObjective": "Driving digital transformation...",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
     "portfolio": "https://ryanbumstead.com"
   }
 ]
 ```
 
-> 400 Response
+> 500 Response
 
 ```json
 {
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
-  "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
 }
 ```
 
 <h3 id="getcontacts-responses">Responses</h3>
 
-| Status  | Meaning                                                                    | Description                                              | Schema                |
-| ------- | -------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------- |
-| 200     | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Contact records.                 | Inline                |
-| 400     | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure. | [Error](#schemaerror) |
-| 401     | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
-| 403     | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
-| 429     | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500     | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
-| default | Default                                                                    | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
+| Status | Meaning                                                                    | Description                                              | Schema                |
+| ------ | -------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Contact records.                 | Inline                |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure. | [Error](#schemaerror) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
+| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
+| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
 
 <h3 id="getcontacts-responseschema">Response Schema</h3>
 
@@ -249,19 +231,18 @@ Status Code **200**
 
 ### Response Headers
 
-| Status  | Header        | Type    | Format | Description                                                        |
-| ------- | ------------- | ------- | ------ | ------------------------------------------------------------------ |
-| 200     | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
-| 200     | X-Total-Count | integer |        | Total number of records available for this resource (Estimation).  |
-| 200     | X-Has-More    | boolean |        | Boolean indicator if more records exist beyond the current offset. |
-| 200     | Cache-Control | string  |        | Directive to prevent caching of sensitive/dynamic data.            |
-| 400     | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
-| 401     | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
-| 403     | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
-| 429     | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
-| 429     | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
-| 500     | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
-| default | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
+| Status | Header        | Type    | Format | Description                                                        |
+| ------ | ------------- | ------- | ------ | ------------------------------------------------------------------ |
+| 200    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
+| 200    | X-Total-Count | integer |        | Total number of records available for this resource (Estimation).  |
+| 200    | X-Has-More    | boolean |        | Boolean indicator if more records exist beyond the current offset. |
+| 200    | Cache-Control | string  |        | Directive to prevent caching of sensitive/dynamic data.            |
+| 400    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
+| 401    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
+| 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
+| 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
+| 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
+| 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -337,6 +318,18 @@ Retrieves professional experience history.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getexperience-responses">Responses</h3>
 
 | Status | Meaning                                                                    | Description                                              | Schema                |
@@ -352,21 +345,21 @@ Retrieves professional experience history.
 
 Status Code **200**
 
-| Name              | Type                              | Required | Restrictions | Description                                    |
-| ----------------- | --------------------------------- | -------- | ------------ | ---------------------------------------------- |
-| _anonymous_       | [[Experience](#schemaexperience)] | false    | none         | [Professional Experience Schema.]              |
-| » id              | string                            | false    | read-only    | Salesforce Record ID                           |
-| » employerName    | string                            | false    | none         | Employer Name                                  |
-| » employerId      | string                            | false    | none         | Employer Account ID                            |
-| » name            | string                            | false    | none         | Role Title                                     |
-| » startDate       | string(date)                      | false    | none         | Start Date                                     |
-| » endDate         | string(date)¦null                 | false    | none         | End Date (null if current)                     |
-| » isCurrentRole   | boolean                           | false    | read-only    | Is Current Role Flag                           |
-| » isRemote        | boolean                           | false    | none         | Remote Work Flag                               |
-| » accomplishments | string¦null                       | false    | none         | Trusted HTML content for controlled rendering. |
-| » contactId       | string                            | false    | none         | Contact ID                                     |
-| » contactName     | string                            | false    | none         | Contact Name                                   |
-| » sortOrder       | number¦null                       | false    | none         | Sort Order                                     |
+| Name              | Type                              | Required | Restrictions | Description                                                                                         |
+| ----------------- | --------------------------------- | -------- | ------------ | --------------------------------------------------------------------------------------------------- |
+| _anonymous_       | [[Experience](#schemaexperience)] | false    | none         | [Professional Experience Schema.]                                                                   |
+| » id              | string                            | false    | read-only    | Salesforce Record ID                                                                                |
+| » employerName    | string                            | false    | none         | Employer Name                                                                                       |
+| » employerId      | string                            | false    | none         | Employer Account ID                                                                                 |
+| » name            | string                            | false    | none         | Role Title                                                                                          |
+| » startDate       | string(date)                      | false    | none         | Start Date                                                                                          |
+| » endDate         | string(date)¦null                 | false    | none         | End Date (null if current)                                                                          |
+| » isCurrentRole   | boolean                           | false    | read-only    | Is Current Role Flag                                                                                |
+| » isRemote        | boolean                           | false    | none         | Remote Work Flag                                                                                    |
+| » accomplishments | string¦null                       | false    | none         | DEPRECATED: Use /experience-highlights endpoint instead. This field will be removed in SAPI v2.0.0. |
+| » contactId       | string                            | false    | none         | Contact ID                                                                                          |
+| » contactName     | string                            | false    | none         | Contact Name                                                                                        |
+| » sortOrder       | number¦null                       | false    | none         | Sort Order                                                                                          |
 
 ### Response Headers
 
@@ -424,22 +417,25 @@ Fetches resume bullets. Supports Persona filtering for PAPI optimization.
 
 <h3 id="getexperiencehighlights-parameters">Parameters</h3>
 
-| Name          | In     | Type                      | Required | Description                                                                           |
-| ------------- | ------ | ------------------------- | -------- | ------------------------------------------------------------------------------------- |
-| X-API-Version | header | string                    | true     | API Contract Version (e.g., v1).                                                      |
-| X-Request-Id  | header | string(uuid)              | true     | Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.                   |
-| experienceId  | query  | string                    | false    | Filter by Experience Salesforce ID.                                                   |
-| persona       | query  | [Persona](#schemapersona) | false    | Filters records where the target field (Multi-Select Picklist) includes this persona. |
-| limit         | query  | integer                   | false    | Maximum number of records to return.                                                  |
-| offset        | query  | integer                   | false    | Pagination offset.                                                                    |
+| Name          | In     | Type         | Required | Description                                                                                       |
+| ------------- | ------ | ------------ | -------- | ------------------------------------------------------------------------------------------------- |
+| X-API-Version | header | string       | true     | API Contract Version (e.g., v1).                                                                  |
+| X-Request-Id  | header | string(uuid) | true     | Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.                               |
+| experienceId  | query  | string       | false    | Filter by Experience Salesforce ID.                                                               |
+| persona       | query  | any          | false    | Filters records where the target field (Multi-Select Picklist) includes the specified persona(s). |
+| limit         | query  | integer      | false    | Maximum number of records to return.                                                              |
+| offset        | query  | integer      | false    | Pagination offset.                                                                                |
 
-#### Enumerated Values
+#### Detailed descriptions
 
-| Parameter | Value     |
-| --------- | --------- |
-| persona   | Admin     |
-| persona   | Developer |
-| persona   | Architect |
+**persona**: Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).
+Can be a single value or multiple values (comma-separated or repeated parameters).
+
+Examples:
+
+- Single: `?persona=Admin`
+- Multiple (comma): `?persona=Admin,Developer`
+- Multiple (repeated): `?persona=Admin&persona=Developer`
 
 > Example responses
 
@@ -448,44 +444,26 @@ Fetches resume bullets. Supports Persona filtering for PAPI optimization.
 ```json
 [
   {
-    "id": "a0CgK00000LVWWRUA5",
-    "name": "Prototyping & Fabrication",
-    "description": "Assisted in all facets of prototyping aspects such as: concept development, design, and fabrication.",
-    "experienceId": "a06gK000008xuHiQAI",
-    "experienceName": "IT Project Assistant",
-    "personaTag": "Architect",
-    "sortOrder": 1
-  },
-  {
-    "id": "a0CgK00000LVkSpUAL",
-    "name": "Administer Salesforce CRM for 400+ users",
-    "description": "Administer Salesforce CRM for 400+ users, ensuring system security, data integrity, and platform performance.",
-    "experienceId": "a06gK000001PSrlQAG",
-    "experienceName": "Application Administrator",
-    "personaTag": "Admin",
-    "sortOrder": 1
-  },
-  {
-    "id": "a0CgK00000LVkT0UAL",
-    "name": "Career Skills App Architect",
-    "description": "Architect of a Career Skills application leveraged by cross-functional teams to manage and allocate over five million dollars in grant funds.",
-    "experienceId": "a06gK000001PUITQA4",
-    "experienceName": "Salesforce Solutions Architect & Consultant",
-    "personaTag": "Architect",
-    "sortOrder": 1
+    "id": "a035e00000B2O3DAAV",
+    "experienceId": "a025e00000B2O3DAAV",
+    "experienceName": "Technical Architect",
+    "name": "DevOps Transformation",
+    "description": "Implemented CI/CD pipelines reducing deployment time by 80%.",
+    "sortOrder": 1,
+    "personaTag": "Architect"
   }
 ]
 ```
 
-> 400 Response
+> 500 Response
 
 ```json
 {
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
-  "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
 }
 ```
 
@@ -584,24 +562,26 @@ Example Usage: `/projects?isFeatured=true`
 
 <h3 id="getprojects-parameters">Parameters</h3>
 
-| Name          | In     | Type         | Required | Description                                                         |
-| ------------- | ------ | ------------ | -------- | ------------------------------------------------------------------- |
-| X-API-Version | header | string       | true     | API Contract Version (e.g., v1).                                    |
-| X-Request-Id  | header | string(uuid) | true     | Correlation ID for distributed tracing (Logs/Splunk). Must be UUID. |
-| status        | query  | string       | false    | Filter by Project Status (Draft, Active, Archived).                 |
-| limit         | query  | integer      | false    | Maximum number of records to return.                                |
-| offset        | query  | integer      | false    | Pagination offset.                                                  |
-| contactName   | query  | string       | false    | Filter by Contact Name.                                             |
-| projectName   | query  | string       | false    | Filter by Project Name.                                             |
-| isFeatured    | query  | boolean      | false    | Filter only featured projects.                                      |
+| Name          | In     | Type                                  | Required | Description                                                         |
+| ------------- | ------ | ------------------------------------- | -------- | ------------------------------------------------------------------- |
+| X-API-Version | header | string                                | true     | API Contract Version (e.g., v1).                                    |
+| X-Request-Id  | header | string(uuid)                          | true     | Correlation ID for distributed tracing (Logs/Splunk). Must be UUID. |
+| status        | query  | [ProjectStatus](#schemaprojectstatus) | false    | Filter by Project Status.                                           |
+| limit         | query  | integer                               | false    | Maximum number of records to return.                                |
+| offset        | query  | integer                               | false    | Pagination offset.                                                  |
+| contactName   | query  | string                                | false    | Filter by Contact Name.                                             |
+| projectName   | query  | string                                | false    | Filter by Project Name.                                             |
+| isFeatured    | query  | boolean                               | false    | Filter only featured projects.                                      |
 
 #### Enumerated Values
 
-| Parameter | Value    |
-| --------- | -------- |
-| status    | Draft    |
-| status    | Active   |
-| status    | Archived |
+| Parameter | Value                   |
+| --------- | ----------------------- |
+| status    | Live – In Production    |
+| status    | Live – Demo / Reference |
+| status    | Active Development      |
+| status    | On Hold                 |
+| status    | Archived                |
 
 > Example responses
 
@@ -610,34 +590,34 @@ Example Usage: `/projects?isFeatured=true`
 ```json
 [
   {
-    "id": "a0AgK000003Fl1hUAC",
-    "name": "Salesforce Platform Architect Portfolio",
-    "challenge": "Recruiters and Hiring Managers struggle to verify an architect's hands-on skills through static PDFs.",
-    "solution": "Built a multi-cloud LWR site with automated CI/CD, strict FinOps limits, and 'Vibe-Gated' logic.",
-    "businessValue": "Reduces 'Time-to-Trust' for evaluators by proving 'Enterprise Grade' is a mindset.",
-    "status": "Active",
+    "id": "a015e00000B2O3DAAV",
+    "name": "Global CRM Migration",
+    "challenge": "Legacy system had 5M duplicate records.",
+    "solution": "Implemented MDM strategy using Data Cloud.",
+    "businessValue": "Reduced data storage costs by 40%.",
+    "status": "Active Development",
     "dateCompleted": "2025-12-01",
     "heroImageUrl": "https://assets.ryanbumstead.com/hero.jpg",
-    "liveUrl": "https://rbumstead-dev-ed.develop.my.site.com/portfolio/",
-    "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
-    "pillar": "DevOps & Agility",
+    "liveUrl": "https://project-demo.com",
+    "repositoryUrl": "https://github.com/rdbumstead/project",
+    "pillar": "Data Architecture",
     "isFeatured": true,
     "contactName": "Ryan Bumstead",
     "contactId": "0035e00000B2O3DAAV",
-    "sortOrder": 1
+    "sortOrder": 10
   }
 ]
 ```
 
-> 400 Response
+> 500 Response
 
 ```json
 {
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
-  "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
 }
 ```
 
@@ -656,32 +636,34 @@ Example Usage: `/projects?isFeatured=true`
 
 Status Code **200**
 
-| Name            | Type                        | Required | Restrictions | Description                 |
-| --------------- | --------------------------- | -------- | ------------ | --------------------------- |
-| _anonymous_     | [[Project](#schemaproject)] | false    | none         | [Portfolio Project Schema.] |
-| » id            | string                      | false    | read-only    | Salesforce Record ID        |
-| » name          | string                      | false    | none         | Project Name                |
-| » challenge     | string¦null                 | false    | none         | STAR Method: Situation/Task |
-| » solution      | string¦null                 | false    | none         | STAR Method: Action         |
-| » businessValue | string¦null                 | false    | none         | STAR Method: Result         |
-| » status        | string                      | false    | none         | Project Lifecycle Status    |
-| » dateCompleted | string(date)¦null           | false    | none         | Completion Date             |
-| » heroImageUrl  | string(uri)¦null            | false    | none         | Banner Image URL            |
-| » liveUrl       | string(uri)¦null            | false    | none         | Live Demo URL               |
-| » repositoryUrl | string(uri)¦null            | false    | none         | Code Repository URL         |
-| » pillar        | string¦null                 | false    | none         | Architectural Pillar        |
-| » isFeatured    | boolean                     | false    | none         | Featured Flag for Home Page |
-| » contactName   | string                      | false    | none         | Owner Name                  |
-| » contactId     | string                      | false    | none         | Owner ID                    |
-| » sortOrder     | number¦null                 | false    | none         | Display Sort Order          |
+| Name            | Type                                  | Required | Restrictions | Description                 |
+| --------------- | ------------------------------------- | -------- | ------------ | --------------------------- |
+| _anonymous_     | [[Project](#schemaproject)]           | false    | none         | [Portfolio Project Schema.] |
+| » id            | string                                | false    | read-only    | Salesforce Record ID        |
+| » name          | string                                | false    | none         | Project Name                |
+| » challenge     | string¦null                           | false    | none         | STAR Method: Situation/Task |
+| » solution      | string¦null                           | false    | none         | STAR Method: Action         |
+| » businessValue | string¦null                           | false    | none         | STAR Method: Result         |
+| » status        | [ProjectStatus](#schemaprojectstatus) | false    | none         | Project Lifecycle Status    |
+| » dateCompleted | string(date)¦null                     | false    | none         | Completion Date             |
+| » heroImageUrl  | string(uri)¦null                      | false    | none         | Banner Image URL            |
+| » liveUrl       | string(uri)¦null                      | false    | none         | Live Demo URL               |
+| » repositoryUrl | string(uri)¦null                      | false    | none         | Code Repository URL         |
+| » pillar        | string¦null                           | false    | none         | Architectural Pillar        |
+| » isFeatured    | boolean                               | false    | none         | Featured Flag for Home Page |
+| » contactName   | string                                | false    | none         | Owner Name                  |
+| » contactId     | string                                | false    | none         | Owner ID                    |
+| » sortOrder     | number¦null                           | false    | none         | Display Sort Order          |
 
 #### Enumerated Values
 
-| Property | Value    |
-| -------- | -------- |
-| status   | Draft    |
-| status   | Active   |
-| status   | Archived |
+| Property | Value                   |
+| -------- | ----------------------- |
+| status   | Live – In Production    |
+| status   | Live – Demo / Reference |
+| status   | Active Development      |
+| status   | On Hold                 |
+| status   | Archived                |
 
 ### Response Headers
 
@@ -766,17 +748,28 @@ Retrieves assets (images, links) associated with a project.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getprojectassets-responses">Responses</h3>
 
-| Status | Meaning                                                                    | Description                                              | Schema                |
-| ------ | -------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Project Assets.                  | Inline                |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure. | [Error](#schemaerror) |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
-| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
-| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)             | The requested resource ID was not found.                 | [Error](#schemaerror) |
-| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
+| Status | Meaning                                                                    | Description                                                                | Schema                |
+| ------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Project Assets. Returns empty array if none found. | Inline                |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure.                   | [Error](#schemaerror) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.                                 | [Error](#schemaerror) |
+| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                                  | [Error](#schemaerror) |
+| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                                   | [Error](#schemaerror) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).                             | [Error](#schemaerror) |
 
 <h3 id="getprojectassets-responseschema">Response Schema</h3>
 
@@ -789,7 +782,7 @@ Status Code **200**
 | » name        | string                                | false    | none         | Asset Name                            |
 | » projectId   | string                                | false    | none         | Parent Project ID                     |
 | » projectName | string                                | false    | none         | Parent Project Name                   |
-| » type        | string                                | false    | none         | Asset Type                            |
+| » type        | [AssetType](#schemaassettype)         | false    | none         | Asset Type                            |
 | » externalUrl | string(uri)                           | false    | none         | Asset URL                             |
 | » altText     | string¦null                           | false    | none         | Accessibility Alt Text                |
 | » sortOrder   | number                                | false    | none         | Sort Order                            |
@@ -814,7 +807,6 @@ Status Code **200**
 | 400    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 401    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 403    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
-| 404    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
 | 429    | Retry-After   | integer |        | Seconds until the rate limit resets.                               |
 | 500    | X-Request-Id  | string  | uuid   | Echoed correlation ID for distributed tracing and observability.   |
@@ -886,32 +878,44 @@ Retrieves received testimonials. Returns only records where Approved\_\_c = true
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="gettestimonials-responses">Responses</h3>
 
-| Status | Meaning                                                                    | Description                                              | Schema                |
-| ------ | -------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------- |
-| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Testimonials.                    | Inline                |
-| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure. | [Error](#schemaerror) |
-| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.               | [Error](#schemaerror) |
-| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                | [Error](#schemaerror) |
-| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                 | [Error](#schemaerror) |
-| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).           | [Error](#schemaerror) |
+| Status | Meaning                                                                    | Description                                                              | Schema                |
+| ------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Successful retrieval of Testimonials. Returns empty array if none found. | Inline                |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters or schema validation failure.                 | [Error](#schemaerror) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or missing API Client Credentials.                               | [Error](#schemaerror) |
+| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Insufficient permissions.                                                | [Error](#schemaerror) |
+| 429    | [Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)         | API rate limit exceeded.                                                 | [Error](#schemaerror) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal platform error (Apex/MuleSoft Fault).                           | [Error](#schemaerror) |
 
 <h3 id="gettestimonials-responseschema">Response Schema</h3>
 
 Status Code **200**
 
-| Name               | Type                                | Required | Restrictions | Description               |
-| ------------------ | ----------------------------------- | -------- | ------------ | ------------------------- |
-| _anonymous_        | [[Testimonial](#schematestimonial)] | false    | none         | [Social Proof Schema.]    |
-| » id               | string                              | false    | read-only    | Salesforce Record ID      |
-| » name             | string                              | false    | none         | Testimonial Name          |
-| » authorName       | string                              | false    | none         | Author Name               |
-| » authorTitle      | string¦null                         | false    | none         | Author Title              |
-| » avatarUrl        | string(uri)¦null                    | false    | none         | Author Avatar URL         |
-| » relationshipType | string                              | false    | none         | Professional Relationship |
-| » vibeMode         | string                              | false    | none         | Tone/Style Category       |
-| » context          | string¦null                         | false    | none         | Context of Work           |
+| Name               | Type                                        | Required | Restrictions | Description               |
+| ------------------ | ------------------------------------------- | -------- | ------------ | ------------------------- |
+| _anonymous_        | [[Testimonial](#schematestimonial)]         | false    | none         | [Social Proof Schema.]    |
+| » id               | string                                      | false    | read-only    | Salesforce Record ID      |
+| » name             | string                                      | false    | none         | Testimonial Name          |
+| » authorName       | string                                      | false    | none         | Author Name               |
+| » authorTitle      | string¦null                                 | false    | none         | Author Title              |
+| » avatarUrl        | string(uri)¦null                            | false    | none         | Author Avatar URL         |
+| » relationshipType | [RelationshipType](#schemarelationshiptype) | false    | none         | Professional Relationship |
+| » vibeMode         | [VibeMode](#schemavibemode)                 | false    | none         | Tone/Style Category       |
+| » context          | string¦null                                 | false    | none         | Context of Work           |
 
 #### Enumerated Values
 
@@ -1002,6 +1006,18 @@ Retrieves related account/employer records.
     "abbreviation": "SFDC"
   }
 ]
+```
+
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
 ```
 
 <h3 id="getaccounts-responses">Responses</h3>
@@ -1098,47 +1114,27 @@ Retrieves technical skills and proficiency scores.
 ```json
 [
   {
-    "id": "a07gK00000Jao8gQAB",
-    "name": "Lightning Web Components",
-    "displayName": "LWC",
-    "category": "Frontend",
+    "id": "a075e00000B2O3DAAV",
+    "name": "Apex",
+    "displayName": "Salesforce Apex",
+    "category": "Development",
     "proficiencyScore": 5,
-    "iconName": "standard:lightning_component",
-    "svgPathData": "M10 10 H 90 V 90 H 10 Z",
-    "colorHex": "#00A1E0"
-  },
-  {
-    "id": "a07gK00000242mxQAA",
-    "name": "Salesforce Experience Cloud",
-    "displayName": "Experience Cloud",
-    "category": "Frontend",
-    "proficiencyScore": 5,
-    "iconName": "standard:portal",
-    "svgPathData": "M10 10 H 90 V 90 H 10 Z",
-    "colorHex": "#00A1E0"
-  },
-  {
-    "id": "a07gK000004BUIHQA4",
-    "name": "CSS3",
-    "displayName": "CSS",
-    "category": "Frontend",
-    "proficiencyScore": 4,
-    "iconName": "standard:topic",
-    "svgPathData": "M10 10 H 90 V 90 H 10 Z",
-    "colorHex": "#00A1E0"
+    "iconName": "utility:code",
+    "svgPathData": "M10...",
+    "colorHex": "#0070d2"
   }
 ]
 ```
 
-> 400 Response
+> 500 Response
 
 ```json
 {
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
-  "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
 }
 ```
 
@@ -1242,44 +1238,26 @@ Retrieves professional certifications.
 ```json
 [
   {
-    "contactId": "003gK000000AtL9QAK",
+    "id": "a105e00000B2O3DAAV",
+    "name": "Application Architect",
+    "contactId": "0035e00000B2O3DAAV",
     "contactName": "Ryan Bumstead",
-    "id": "a08gK00000D4MH0QAN",
-    "issuerId": "001gK00000SxO9RQAV",
-    "issuerName": "Trailhead Academy",
-    "earnedDate": "2025-11-14",
-    "name": "Anypoint Platform Development: Fundamentals - DEX401"
-  },
-  {
-    "contactId": "003gK000000AtL9QAK",
-    "contactName": "Ryan Bumstead",
-    "id": "a08gK000004JC4oQAG",
-    "issuerId": "001gK000007XnSZQA0",
-    "issuerName": "Amazon Web Services",
-    "earnedDate": "2025-05-04",
-    "name": "AWS Academy Graduate - AWS Academy Cloud Foundations"
-  },
-  {
-    "contactId": "003gK000000AtL9QAK",
-    "contactName": "Ryan Bumstead",
-    "id": "a08gK0000030tVpQAI",
-    "issuerId": "001gK000004VFwXQAW",
+    "issuerId": "0015e00000A1O3DAAV",
     "issuerName": "Salesforce",
-    "earnedDate": "2025-01-03",
-    "name": "Salesforce Agentforce Specialist"
+    "earnedDate": "2024-05-15"
   }
 ]
 ```
 
-> 400 Response
+> 500 Response
 
 ```json
 {
-  "httpStatus": 400,
-  "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
-  "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
 }
 ```
 
@@ -1392,6 +1370,18 @@ Retrieves educational background.
     "gpa": 3.8
   }
 ]
+```
+
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
 ```
 
 <h3 id="geteducation-responses">Responses</h3>
@@ -1508,6 +1498,18 @@ Retrieves junction records linking Projects to Skills.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getprojectskills-responses">Responses</h3>
 
 | Status | Meaning                                                                    | Description                                              | Schema                |
@@ -1614,6 +1616,18 @@ Retrieves junction records linking Experiences to Skills.
     "skillProficiencyScore": 4
   }
 ]
+```
+
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
 ```
 
 <h3 id="getexperienceskills-responses">Responses</h3>
@@ -1724,6 +1738,18 @@ Retrieves junction records linking Certifications to Skills.
 ]
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getcertificationskills-responses">Responses</h3>
 
 | Status | Meaning                                                                    | Description                                              | Schema                |
@@ -1832,6 +1858,18 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 }
 ```
 
+> 500 Response
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Upstream Salesforce processing failed.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
 <h3 id="getportfolioconfig-responses">Responses</h3>
 
 | Status | Meaning                                                                    | Description                                    | Schema                                    |
@@ -1932,6 +1970,118 @@ Target audience for content filtering.
 | _anonymous_ | Developer |
 | _anonymous_ | Architect |
 
+<h2 id="tocS_ProjectStatus">ProjectStatus</h2>
+<!-- backwards compatibility -->
+<a id="schemaprojectstatus"></a>
+<a id="schema_ProjectStatus"></a>
+<a id="tocSprojectstatus"></a>
+<a id="tocsprojectstatus"></a>
+
+```json
+"Active Development"
+```
+
+Project Lifecycle Status
+
+### Properties
+
+| Name        | Type   | Required | Restrictions | Description              |
+| ----------- | ------ | -------- | ------------ | ------------------------ |
+| _anonymous_ | string | false    | none         | Project Lifecycle Status |
+
+#### Enumerated Values
+
+| Property    | Value                   |
+| ----------- | ----------------------- |
+| _anonymous_ | Live – In Production    |
+| _anonymous_ | Live – Demo / Reference |
+| _anonymous_ | Active Development      |
+| _anonymous_ | On Hold                 |
+| _anonymous_ | Archived                |
+
+<h2 id="tocS_AssetType">AssetType</h2>
+<!-- backwards compatibility -->
+<a id="schemaassettype"></a>
+<a id="schema_AssetType"></a>
+<a id="tocSassettype"></a>
+<a id="tocsassettype"></a>
+
+```json
+"Image"
+```
+
+Asset Type
+
+### Properties
+
+| Name        | Type   | Required | Restrictions | Description |
+| ----------- | ------ | -------- | ------------ | ----------- |
+| _anonymous_ | string | false    | none         | Asset Type  |
+
+#### Enumerated Values
+
+| Property    | Value    |
+| ----------- | -------- |
+| _anonymous_ | Image    |
+| _anonymous_ | Video    |
+| _anonymous_ | Document |
+| _anonymous_ | Link     |
+
+<h2 id="tocS_RelationshipType">RelationshipType</h2>
+<!-- backwards compatibility -->
+<a id="schemarelationshiptype"></a>
+<a id="schema_RelationshipType"></a>
+<a id="tocSrelationshiptype"></a>
+<a id="tocsrelationshiptype"></a>
+
+```json
+"Manager"
+```
+
+Professional Relationship
+
+### Properties
+
+| Name        | Type   | Required | Restrictions | Description               |
+| ----------- | ------ | -------- | ------------ | ------------------------- |
+| _anonymous_ | string | false    | none         | Professional Relationship |
+
+#### Enumerated Values
+
+| Property    | Value     |
+| ----------- | --------- |
+| _anonymous_ | Manager   |
+| _anonymous_ | Peer      |
+| _anonymous_ | Client    |
+| _anonymous_ | Recruiter |
+| _anonymous_ | Fan       |
+
+<h2 id="tocS_VibeMode">VibeMode</h2>
+<!-- backwards compatibility -->
+<a id="schemavibemode"></a>
+<a id="schema_VibeMode"></a>
+<a id="tocSvibemode"></a>
+<a id="tocsvibemode"></a>
+
+```json
+"Professional"
+```
+
+Tone/Style Category
+
+### Properties
+
+| Name        | Type   | Required | Restrictions | Description         |
+| ----------- | ------ | -------- | ------------ | ------------------- |
+| _anonymous_ | string | false    | none         | Tone/Style Category |
+
+#### Enumerated Values
+
+| Property    | Value        |
+| ----------- | ------------ |
+| _anonymous_ | Professional |
+| _anonymous_ | Casual       |
+
 <h2 id="tocS_HealthStatus">HealthStatus</h2>
 <!-- backwards compatibility -->
 <a id="schemahealthstatus"></a>
@@ -2027,7 +2177,7 @@ Contact Information Schema.
   "challenge": "Legacy system had 5M duplicate records.",
   "solution": "Implemented MDM strategy using Data Cloud.",
   "businessValue": "Reduced data storage costs by 40%.",
-  "status": "Active",
+  "status": "Active Development",
   "dateCompleted": "2025-12-01",
   "heroImageUrl": "https://assets.ryanbumstead.com/hero.jpg",
   "liveUrl": "https://project-demo.com",
@@ -2044,31 +2194,23 @@ Portfolio Project Schema.
 
 ### Properties
 
-| Name          | Type              | Required | Restrictions | Description                 |
-| ------------- | ----------------- | -------- | ------------ | --------------------------- |
-| id            | string            | false    | read-only    | Salesforce Record ID        |
-| name          | string            | false    | none         | Project Name                |
-| challenge     | string¦null       | false    | none         | STAR Method: Situation/Task |
-| solution      | string¦null       | false    | none         | STAR Method: Action         |
-| businessValue | string¦null       | false    | none         | STAR Method: Result         |
-| status        | string            | false    | none         | Project Lifecycle Status    |
-| dateCompleted | string(date)¦null | false    | none         | Completion Date             |
-| heroImageUrl  | string(uri)¦null  | false    | none         | Banner Image URL            |
-| liveUrl       | string(uri)¦null  | false    | none         | Live Demo URL               |
-| repositoryUrl | string(uri)¦null  | false    | none         | Code Repository URL         |
-| pillar        | string¦null       | false    | none         | Architectural Pillar        |
-| isFeatured    | boolean           | false    | none         | Featured Flag for Home Page |
-| contactName   | string            | false    | none         | Owner Name                  |
-| contactId     | string            | false    | none         | Owner ID                    |
-| sortOrder     | number¦null       | false    | none         | Display Sort Order          |
-
-#### Enumerated Values
-
-| Property | Value    |
-| -------- | -------- |
-| status   | Draft    |
-| status   | Active   |
-| status   | Archived |
+| Name          | Type                                  | Required | Restrictions | Description                 |
+| ------------- | ------------------------------------- | -------- | ------------ | --------------------------- |
+| id            | string                                | false    | read-only    | Salesforce Record ID        |
+| name          | string                                | false    | none         | Project Name                |
+| challenge     | string¦null                           | false    | none         | STAR Method: Situation/Task |
+| solution      | string¦null                           | false    | none         | STAR Method: Action         |
+| businessValue | string¦null                           | false    | none         | STAR Method: Result         |
+| status        | [ProjectStatus](#schemaprojectstatus) | false    | none         | Project Lifecycle Status    |
+| dateCompleted | string(date)¦null                     | false    | none         | Completion Date             |
+| heroImageUrl  | string(uri)¦null                      | false    | none         | Banner Image URL            |
+| liveUrl       | string(uri)¦null                      | false    | none         | Live Demo URL               |
+| repositoryUrl | string(uri)¦null                      | false    | none         | Code Repository URL         |
+| pillar        | string¦null                           | false    | none         | Architectural Pillar        |
+| isFeatured    | boolean                               | false    | none         | Featured Flag for Home Page |
+| contactName   | string                                | false    | none         | Owner Name                  |
+| contactId     | string                                | false    | none         | Owner ID                    |
+| sortOrder     | number¦null                           | false    | none         | Display Sort Order          |
 
 <h2 id="tocS_Experience">Experience</h2>
 <!-- backwards compatibility -->
@@ -2098,20 +2240,20 @@ Professional Experience Schema.
 
 ### Properties
 
-| Name            | Type              | Required | Restrictions | Description                                    |
-| --------------- | ----------------- | -------- | ------------ | ---------------------------------------------- |
-| id              | string            | false    | read-only    | Salesforce Record ID                           |
-| employerName    | string            | false    | none         | Employer Name                                  |
-| employerId      | string            | false    | none         | Employer Account ID                            |
-| name            | string            | false    | none         | Role Title                                     |
-| startDate       | string(date)      | false    | none         | Start Date                                     |
-| endDate         | string(date)¦null | false    | none         | End Date (null if current)                     |
-| isCurrentRole   | boolean           | false    | read-only    | Is Current Role Flag                           |
-| isRemote        | boolean           | false    | none         | Remote Work Flag                               |
-| accomplishments | string¦null       | false    | none         | Trusted HTML content for controlled rendering. |
-| contactId       | string            | false    | none         | Contact ID                                     |
-| contactName     | string            | false    | none         | Contact Name                                   |
-| sortOrder       | number¦null       | false    | none         | Sort Order                                     |
+| Name            | Type              | Required | Restrictions | Description                                                                                         |
+| --------------- | ----------------- | -------- | ------------ | --------------------------------------------------------------------------------------------------- |
+| id              | string            | false    | read-only    | Salesforce Record ID                                                                                |
+| employerName    | string            | false    | none         | Employer Name                                                                                       |
+| employerId      | string            | false    | none         | Employer Account ID                                                                                 |
+| name            | string            | false    | none         | Role Title                                                                                          |
+| startDate       | string(date)      | false    | none         | Start Date                                                                                          |
+| endDate         | string(date)¦null | false    | none         | End Date (null if current)                                                                          |
+| isCurrentRole   | boolean           | false    | read-only    | Is Current Role Flag                                                                                |
+| isRemote        | boolean           | false    | none         | Remote Work Flag                                                                                    |
+| accomplishments | string¦null       | false    | none         | DEPRECATED: Use /experience-highlights endpoint instead. This field will be removed in SAPI v2.0.0. |
+| contactId       | string            | false    | none         | Contact ID                                                                                          |
+| contactName     | string            | false    | none         | Contact Name                                                                                        |
+| sortOrder       | number¦null       | false    | none         | Sort Order                                                                                          |
 
 <h2 id="tocS_ExperienceHighlight">ExperienceHighlight</h2>
 <!-- backwards compatibility -->
@@ -2170,25 +2312,16 @@ Project Asset (Image/Video) Schema.
 
 ### Properties
 
-| Name        | Type        | Required | Restrictions | Description            |
-| ----------- | ----------- | -------- | ------------ | ---------------------- |
-| id          | string      | false    | read-only    | Salesforce Record ID   |
-| name        | string      | false    | none         | Asset Name             |
-| projectId   | string      | false    | none         | Parent Project ID      |
-| projectName | string      | false    | none         | Parent Project Name    |
-| type        | string      | false    | none         | Asset Type             |
-| externalUrl | string(uri) | false    | none         | Asset URL              |
-| altText     | string¦null | false    | none         | Accessibility Alt Text |
-| sortOrder   | number      | false    | none         | Sort Order             |
-
-#### Enumerated Values
-
-| Property | Value    |
-| -------- | -------- |
-| type     | Image    |
-| type     | Video    |
-| type     | Document |
-| type     | Link     |
+| Name        | Type                          | Required | Restrictions | Description            |
+| ----------- | ----------------------------- | -------- | ------------ | ---------------------- |
+| id          | string                        | false    | read-only    | Salesforce Record ID   |
+| name        | string                        | false    | none         | Asset Name             |
+| projectId   | string                        | false    | none         | Parent Project ID      |
+| projectName | string                        | false    | none         | Parent Project Name    |
+| type        | [AssetType](#schemaassettype) | false    | none         | Asset Type             |
+| externalUrl | string(uri)                   | false    | none         | Asset URL              |
+| altText     | string¦null                   | false    | none         | Accessibility Alt Text |
+| sortOrder   | number                        | false    | none         | Sort Order             |
 
 <h2 id="tocS_Testimonial">Testimonial</h2>
 <!-- backwards compatibility -->
@@ -2214,28 +2347,16 @@ Social Proof Schema.
 
 ### Properties
 
-| Name             | Type             | Required | Restrictions | Description               |
-| ---------------- | ---------------- | -------- | ------------ | ------------------------- |
-| id               | string           | false    | read-only    | Salesforce Record ID      |
-| name             | string           | false    | none         | Testimonial Name          |
-| authorName       | string           | false    | none         | Author Name               |
-| authorTitle      | string¦null      | false    | none         | Author Title              |
-| avatarUrl        | string(uri)¦null | false    | none         | Author Avatar URL         |
-| relationshipType | string           | false    | none         | Professional Relationship |
-| vibeMode         | string           | false    | none         | Tone/Style Category       |
-| context          | string¦null      | false    | none         | Context of Work           |
-
-#### Enumerated Values
-
-| Property         | Value        |
-| ---------------- | ------------ |
-| relationshipType | Manager      |
-| relationshipType | Peer         |
-| relationshipType | Client       |
-| relationshipType | Recruiter    |
-| relationshipType | Fan          |
-| vibeMode         | Professional |
-| vibeMode         | Casual       |
+| Name             | Type                                        | Required | Restrictions | Description               |
+| ---------------- | ------------------------------------------- | -------- | ------------ | ------------------------- |
+| id               | string                                      | false    | read-only    | Salesforce Record ID      |
+| name             | string                                      | false    | none         | Testimonial Name          |
+| authorName       | string                                      | false    | none         | Author Name               |
+| authorTitle      | string¦null                                 | false    | none         | Author Title              |
+| avatarUrl        | string(uri)¦null                            | false    | none         | Author Avatar URL         |
+| relationshipType | [RelationshipType](#schemarelationshiptype) | false    | none         | Professional Relationship |
+| vibeMode         | [VibeMode](#schemavibemode)                 | false    | none         | Tone/Style Category       |
+| context          | string¦null                                 | false    | none         | Context of Work           |
 
 <h2 id="tocS_ProjectSkill">ProjectSkill</h2>
 <!-- backwards compatibility -->
