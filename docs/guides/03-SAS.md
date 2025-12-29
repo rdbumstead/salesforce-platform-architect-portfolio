@@ -598,13 +598,16 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **Rationale:** Shields Salesforce from external API rate limits and decreases total latency while documenting a path to advanced multi-cloud scaling.
 - **Implications:** Avoids scope creep for the initial MVP launch while establishing a Phase 8 architectural baseline.
 
-### ADR-017: System API Security & Method Constraints
+### ADR-017: System API Security & Dual-Sided Auth Pattern
 
 - **Status:** Accepted
-- **Context:** Requirement for strict parity between MuleSoft API Manager policies and Salesforce Apex-based validation for the SAPI v1.2.0 rollout.
-- **Decision:** Implement an explicit API Key model (client_id/client_secret) and a Strict Read-Only (GET-only) design.
-- **Rationale:** Ensures security consistency across all request paths and eliminates write-access risks for public-facing guest endpoints.
-- **Implications:** Credentials validated against Custom Metadata; non-GET methods return a 405 Method Not Allowed status.
+- **Context:** The architecture requires secure, stateless authentication between the Process Layer (PAPI) and System Layer (SAPI), mirroring an enterprise Mutual TLS or Client Credential flow.
+- **Decision:** Implement a **Dual-Sided Client Credential** pattern using explicit header validation.
+- **Rationale:** Establishes a clear separation of concerns between the "Consumer" (PAPI) and the "Provider" (SAPI), allowing for independent credential rotation and policy enforcement.
+- **Implications:**
+  - **Outbound (PAPI Layer):** The orchestration layer (simulated on AWS/MuleSoft) acts as the secure client. It retrieves the `client_id` and `client_secret` from a **Secure Vault** (e.g., AWS Secrets Manager) to sign the outbound request.
+  - **Inbound (SAPI Layer):** The Salesforce runtime acts as the API Gateway. It validates the incoming headers against `Portfolio_Config__mdt` (Custom Metadata) to simulate an API Policy enforcement point.
+  - **Constraints:** Write access is strictly prohibited; non-GET methods return 405 Method Not Allowed.
 
 ### ADR-018: FinOps Constraint – AWS Lambda Function URLs vs. API Gateway
 
@@ -661,6 +664,22 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **Decision:** Enforce the Twin API Pattern using OpenAPI 3.0 as the source of truth.
 - **Rationale:** Ensures the Apex implementation (SAPI) and MuleSoft proxy remain interchangeable, demonstrating "API-Led Connectivity".
 - **Implications:** Schema changes require a corresponding YAML update before implementation.
+
+### ADR-025: PAPI Fan-Out Throttling (Capacity Planning)
+
+- **Status:** Accepted
+- **Context:** The Process API (PAPI) `/profile/full` endpoint aggregates data from ~8 upstream System API (SAPI) calls. SAPI has a hard limit of 120 req/min.
+- **Decision:** Enforce a strict rate limit of **15 requests/minute** on the PAPI layer.
+- **Rationale:** Implementing "Backpressure" at the edge prevents the "Fan-Out Effect" (1 request becoming 8) from cascading and exhausting downstream SAPI quotas (15 \* 8 = 120).
+- **Implications:** Clients requesting full profile hydration faster than every 4 seconds will receive HTTP 429; this is acceptable for a Portfolio use case.
+
+### ADR-026: Header-Based API Versioning Strategy
+
+- **Status:** Accepted
+- **Context:** The API contract will evolve (v1.1, v1.2) and requires a strategy to manage breaking changes without disrupting existing consumers.
+- **Decision:** Utilize the `X-API-Version` header (e.g., `X-API-Version: 1.2`) rather than URL path versioning (e.g., `/v1/profile`).
+- **Rationale:** Decouples the **Resource Identity** (URL) from the **Representation Version** (Schema). Allows for cleaner URLs and easier routing logic in the future AWS Lambda layer (Door 2).
+- **Implications:** Clients must be configured to send this header; default behavior (missing header) will resolve to the latest stable version.
 
 ## 8. Contingency & Rollback Plans
 
@@ -942,7 +961,7 @@ The following policies were configured in API Manager to demonstrate enterprise 
 
 ### Appendix D: Data Dictionary (Detailed Schema)
 
-#### D.1 Object: Experience**c (Formerly Work_Experience**c)
+#### D.1 Object: Experience\_\_c
 
 Represents an employment period.
 
@@ -957,7 +976,7 @@ Represents an employment period.
 | **Accomplishments** | `Accomplishments__c` | Long Text | 32768  | No       | Summary text.                     |
 | **Sort Order**      | `Sort_Order__c`      | Number    | 18,0   | No       | Custom sort logic.                |
 
-#### D.2 Object: Experience_Highlight**c (Formerly Resume_Highlight**c)
+#### D.2 Object: Experience_Highlight\_\_c
 
 Granular bullet points for resume generation.
 
@@ -998,7 +1017,7 @@ Social proof records.
 | **Vibe Mode**    | `Vibe_Mode__c`         | Picklist | -      | Yes      | Display filter.      |
 | **Approved**     | `Approved__c`          | Checkbox | -      | No       | Security gate.       |
 
-#### D.5 Object: GitHub_Cache\_\_c (Custom Setting)
+#### D.5 Object: GitHub_Cache\_\_c
 
 Stores transient API responses to avoid rate limits.
 
@@ -1061,13 +1080,13 @@ Media gallery assets.
 
 #### D.11 Picklist Value Enumeration
 
-| Field                  | Object                    | Values                                           |
-| :--------------------- | :------------------------ | :----------------------------------------------- |
-| `Persona_Tag__c`       | `Experience_Highlight__c` | Admin, Developer, Architect, General             |
-| `Relationship_Type__c` | `Testimonial__c`          | Manager, Peer, Client, Recruiter, Fan            |
-| `Vibe_Mode__c`         | `Testimonial__c`          | Professional (Clean/Corporate), Casual (Fun/Raw) |
-| `Status__c`            | `Project__c`              | Draft, Active, Archived                          |
-| `Pillar__c`            | `Project__c`              | Business, Consulting, Integration, AI, DevOps    |
+| Field                  | Object                    | Values                                                                               |
+| :--------------------- | :------------------------ | :----------------------------------------------------------------------------------- |
+| `Persona_Tag__c`       | `Experience_Highlight__c` | Admin, Developer, Architect, General                                                 |
+| `Relationship_Type__c` | `Testimonial__c`          | Manager, Peer, Client, Recruiter, Fan                                                |
+| `Vibe_Mode__c`         | `Testimonial__c`          | Professional (Clean/Corporate), Casual (Fun/Raw)                                     |
+| `Status__c`            | `Project__c`              | Live - In Production, Live - Demo / Reference, Active Development, On Hold, Archived |
+| `Pillar__c`            | `Project__c`              | Business, Consulting, Integration, AI, DevOps                                        |
 
 #### D.12 Index & Query Optimization
 
