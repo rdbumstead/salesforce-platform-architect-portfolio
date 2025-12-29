@@ -1,61 +1,510 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <mule
+  xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+  xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+  xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
   xmlns:http="http://www.mulesoft.org/schema/mule/http"
   xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
   xmlns="http://www.mulesoft.org/schema/mule/core"
   xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="
-           http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-           http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-           http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd"
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd 
+            http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+            http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+            http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+            http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+            http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd"
 >
 
     <configuration-properties file="properties.yaml" />
     <configuration defaultErrorHandler-ref="global-error-handler" />
+
+    <apikit:config
+    name="salesforce-sapi-config"
+    api="resource::d36f7e6c-21b6-4b7e-aea1-9cbf0a9d1be0:salesforce-sapi:1.2.0:oas:zip:salesforce-sapi.yaml"
+    outboundHeadersMapName="outboundHeaders"
+    httpStatusVarName="httpStatus"
+  />
 
     <http:listener-config name="HTTP_Listener_config">
         <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
 
     <salesforce:sfdc-config name="Salesforce_Config">
-        <salesforce:basic-connection
-      username="${sfdc.username}"
-      password="${sfdc.password}"
-      securityToken="${sfdc.token}"
-    />
+        <salesforce:oauth-client-credentials-connection>
+            <salesforce:oauth-client-credentials
+        clientId="${sfdc.key}"
+        clientSecret="${sfdc.secret}"
+        tokenUrl="https://${sfdc.domain}.my.salesforce.com/services/oauth2/token"
+      />
+        </salesforce:oauth-client-credentials-connection>
     </salesforce:sfdc-config>
 
-	<error-handler name="global-error-handler">
-	    <on-error-continue
+    <api-gateway:autodiscovery
+    apiId="${api.id}"
+    flowRef="salesforce-sapi-main"
+    doc:name="API Autodiscovery"
+  />
+
+    <error-handler name="global-error-handler">
+        
+        <on-error-continue
+      type="APP:NOT_FOUND, APP:CONFIGURATION_ERROR"
       enableNotifications="false"
       logException="true"
-      type="ANY"
     >
-	        <choice>
-	            <when
-          expression='#[
-	                (error.description default "") contains "Invalid query parameter" or
-	                (error.exception is org::mule::runtime::core::api::expression::ExpressionRuntimeException) or
-	                (error.exception is java::lang::IllegalArgumentException)
-	            ]'
-        >
-	                
-	                <set-variable variableName="httpStatus" value="400" />
-	                <set-payload
-            value='#[{ "message": "Bad Request", "details": error.description default "Invalid parameter provided" }]'
-            mimeType="application/json"
-          />
-	            </when>
-	            <otherwise>
-	                <set-variable variableName="httpStatus" value="500" />
-	                <set-payload
-            value='#[{ "message": "Internal Server Error", "details": "An unexpected error occurred" }]'
-            mimeType="application/json"
-          />
-	            </otherwise>
-	        </choice>
-	    </on-error-continue>
-	</error-handler>
+            <ee:transform doc:name="404 Response">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 404,
+    errorCode: "NOT_FOUND",
+    message: error.description default "The requested resource was not found",
+    retryable: false,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >404</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="APIKIT:BAD_REQUEST, APP:BAD_REQUEST"
+      enableNotifications="false"
+      logException="true"
+    >
+            <ee:transform doc:name="400 Response">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 400,
+    errorCode: "BAD_REQUEST",
+    message: error.description default "Invalid request parameters or malformed request body",
+    retryable: false,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >400</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="HTTP:UNAUTHORIZED"
+      enableNotifications="false"
+      logException="true"
+    >
+            <ee:transform doc:name="401 Response">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 401,
+    errorCode: "UNAUTHORIZED",
+    message: "Invalid or missing OAuth Access Token",
+    retryable: false,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >401</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="HTTP:FORBIDDEN"
+      enableNotifications="false"
+      logException="true"
+    >
+            <ee:transform doc:name="403 Response">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 403,
+    errorCode: "FORBIDDEN",
+    message: "Insufficient permissions. Required scope not granted",
+    retryable: false,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >403</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="APIKIT:NOT_FOUND"
+      enableNotifications="false"
+      logException="true"
+    >
+            <ee:transform doc:name="404 Response">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 404,
+    errorCode: "NOT_FOUND",
+    message: error.description default "The requested resource was not found",
+    retryable: false,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >404</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="APIKIT:METHOD_NOT_ALLOWED"
+      enableNotifications="false"
+      logException="true"
+    >
+            <ee:transform doc:name="405 Response">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 405,
+    errorCode: "METHOD_NOT_ALLOWED",
+    message: "HTTP method not allowed for this endpoint",
+    retryable: false,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >405</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="APIKIT:NOT_ACCEPTABLE"
+      enableNotifications="false"
+      logException="true"
+    >
+            <ee:transform doc:name="406 Response">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 406,
+    errorCode: "NOT_ACCEPTABLE",
+    message: "Not acceptable",
+    retryable: false,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >406</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="APIKIT:UNSUPPORTED_MEDIA_TYPE"
+      enableNotifications="false"
+      logException="true"
+    >
+            <ee:transform doc:name="415 Response">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 415,
+    errorCode: "UNSUPPORTED_MEDIA_TYPE",
+    message: "Unsupported media type",
+    retryable: false,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >415</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="HTTP:TOO_MANY_REQUESTS"
+      enableNotifications="false"
+      logException="true"
+    >
+            <ee:transform doc:name="429 Response">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 429,
+    errorCode: "RATE_LIMIT_EXCEEDED",
+    message: "API rate limit exceeded. Please retry after the specified time",
+    retryable: true,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >429</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid(),
+    "Retry-After": "60"
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="APIKIT:NOT_IMPLEMENTED"
+      enableNotifications="false"
+      logException="true"
+    >
+            <ee:transform doc:name="501 Response">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 501,
+    errorCode: "NOT_IMPLEMENTED",
+    message: "Not Implemented",
+    retryable: false,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >501</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="SALESFORCE:CONNECTIVITY"
+      enableNotifications="true"
+      logException="true"
+    >
+            <ee:transform doc:name="503 Service Unavailable">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 503,
+    errorCode: "SALESFORCE_UNAVAILABLE",
+    message: "Salesforce service is temporarily unavailable",
+    retryable: true,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >503</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid(),
+    "Retry-After": "30"
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="HTTP:TIMEOUT, SALESFORCE:TIMEOUT"
+      enableNotifications="true"
+      logException="true"
+    >
+            <ee:transform doc:name="504 Gateway Timeout">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 504,
+    errorCode: "GATEWAY_TIMEOUT",
+    message: "Request timeout while communicating with Salesforce",
+    retryable: true,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >504</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+
+        <on-error-continue
+      type="ANY"
+      enableNotifications="true"
+      logException="true"
+    >
+            <ee:transform doc:name="500 Internal Error">
+                <ee:message>
+                    <ee:set-payload
+          ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    httpStatus: 500,
+    errorCode: "INTERNAL_SERVER_ERROR",
+    message: "An unexpected error occurred",
+    retryable: false,
+    correlationId: vars.requestId default uuid()
+}]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable
+            variableName="httpStatus"
+          >500</ee:set-variable>
+                    <ee:set-variable
+            variableName="outboundHeaders"
+          ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": vars.requestId default uuid()
+}]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </on-error-continue>
+    </error-handler>
 
 </mule>

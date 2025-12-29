@@ -2,11 +2,19 @@
 output application/java
 import * from modules::queryHelpers
 
-var base = "SELECT Id, Name, Experience__c, Persona_Tag__c, Sort_Order__c FROM Experience_Highlight__c"
+var experienceId = vars.experienceId default ''
+var persona = vars.persona default ''
+
 var conditions = [
-    if (!isBlank(vars.experienceId default '')) "Experience__c = '" ++ escapeSOQL(vars.experienceId) ++ "'" else null,
-    // Note: Persona_Tag__c is a Multi-Picklist. SOQL requires 'INCLUDES'
-    if (!isBlank(vars.persona default '')) "Persona_Tag__c INCLUDES ('" ++ escapeSOQL(vars.persona) ++ "')" else null
+    eqIfPresent("Experience__r.Id", experienceId),
+    includesIfPresent("Persona_Tag__c", persona)
 ] filter ($ != null)
 ---
-base ++ whereIfAny(conditions) ++ " ORDER BY Sort_Order__c ASC"
+buildPagedQuery(
+    "Id, Name, Experience__r.Id, Experience__r.Name, Persona_Tag__c, Sort_Order__c, Description__c",
+    "Experience_Highlight__c",
+    conditions,
+    "ORDER BY Sort_Order__c ASC",
+    vars.limit,
+    vars.offset
+)

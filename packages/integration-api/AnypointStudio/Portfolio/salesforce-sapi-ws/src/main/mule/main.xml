@@ -2,475 +2,859 @@
 <mule
   xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
   xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
-  xmlns:http="http://www.mulesoft.org/schema/mule/http"
   xmlns="http://www.mulesoft.org/schema/mule/core"
   xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-                          http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
                           http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
                           http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd"
 >
 
-    <flow
-    name="get-sfdc-accounts"
-    doc:id="c45aa4fb-f24d-4887-a0b9-471281dd3f5b"
-  >
-        <ee:transform doc:name="Set SOQL Query">
-			<ee:variables>
-				<ee:set-variable resource="queries/accountQuery.dwl" variableName="soqlQuery" />
-			</ee:variables>
-		</ee:transform>
-		<salesforce:query
-      doc:name="Account (Dynamic SOQL)"
-      config-ref="Salesforce_Config"
-    >
-            <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
-        </salesforce:query>
-		<ee:transform doc:name="To JSON">
-			<ee:message>
-				<ee:set-payload
+    <flow name="get-sfdc-health" doc:id="4f6cca3d-0f39-4947-88eb-82369de90785">
+        <ee:transform doc:name="Build Health Response">
+            <ee:message>
+                <ee:set-payload
         ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+{
+    status: "UP",
+    checkType: "SHALLOW",
+    timestamp: now(),
+    dependencies: {
+        salesforce: "deferred"
+    }
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "Cache-Control": "no-store, no-cache",
+    "X-Request-Id": correlationId
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </flow>
+
+    <flow
+    name="get-sfdc-accounts"
+    doc:id="e6de6116-2760-4e93-8216-bc88c9f864af"
+  >
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/accountQuery.dwl"
+          variableName="queries"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Count Query"
+      config-ref="Salesforce_Config"
+      target="totalCount"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload map (item) -> {
+    id: item.Id,
+    name: item.Name,
+    abbreviation: item.Abbreviation__c,
+    industry: item.Industry
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "max-age=300, public"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
     </flow>
 
     <flow
     name="get-sfdc-certifications"
-    doc:id="25fe5aae-aa1f-4218-9b2d-c9289fe2d845"
+    doc:id="5f300feb-6980-4f46-9bdc-7c4fd41e4c72"
   >
-        <ee:transform doc:name="Set SOQL Query">
-			<ee:variables>
-				<ee:set-variable
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
           resource="queries/certificationsQuery.dwl"
-          variableName="soqlQuery"
+          variableName="queries"
         />
-			</ee:variables>
-		</ee:transform>
+            </ee:variables>
+        </ee:transform>
         <salesforce:query
-      doc:name="Certification (Dynamic SOQL)"
+      doc:name="Count Query"
       config-ref="Salesforce_Config"
+      target="totalCount"
     >
             <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
         </salesforce:query>
-		<ee:transform doc:name="To JSON">
-			<ee:message>
-				<ee:set-payload
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
+            <ee:message>
+                <ee:set-payload
         ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+payload map (item) -> {
+    id: item.Id,
+    name: item.Name,
+    contactId: item.Contact__r.Id,
+    contactName: item.Contact__r.Name,
+    issuerId: item.Issuer__r.Id,
+    issuerName: item.Issuer__r.Name,
+    earnedDate: item.Earned_Date__c
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "max-age=300, public"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
     </flow>
 
     <flow
     name="get-sfdc-contacts"
-    doc:id="c9bf1f00-9135-4bde-a57b-da6efa3451e8"
+    doc:id="86b9398a-1b2f-4eb7-88b1-711f97634d3f"
   >
-        <ee:transform doc:name="Set SOQL Query">
-			<ee:variables>
-				<ee:set-variable resource="queries/contactQuery.dwl" variableName="soqlQuery" />
-			</ee:variables>
-		</ee:transform>
-		<salesforce:query
-      doc:name="Contact (Dynamic SOQL)"
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/contactQuery.dwl"
+          variableName="queries"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Count Query"
       config-ref="Salesforce_Config"
+      target="totalCount"
     >
             <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
         </salesforce:query>
-		<ee:transform doc:name="To JSON">
-			<ee:message>
-				<ee:set-payload
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
+            <ee:message>
+                <ee:set-payload
         ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+payload map (item) -> {
+    id: item.Id,
+    name: item.Name,
+    email: item.Email,
+    phone: item.Phone,
+    accountId: item.Account.Id,
+    accountName: item.Account.Name,
+    title: item.Title,
+    careerObjective: item.Career_Objective__c,
+    linkedIn: item.LinkedIn__c,
+    trailhead: item.Trailhead__c,
+    portfolio: item.Portfolio__c
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "no-store, no-cache"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
     </flow>
 
     <flow
     name="get-sfdc-education"
-    doc:id="31da7425-a060-45dd-9880-3b34311405ad"
+    doc:id="6a7d6232-4052-41b1-be93-60977482f183"
   >
-        <ee:transform doc:name="Set SOQL Query">
-			<ee:variables>
-				<ee:set-variable
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
           resource="queries/educationQuery.dwl"
-          variableName="soqlQuery"
+          variableName="queries"
         />
-			</ee:variables>
-		</ee:transform>
+            </ee:variables>
+        </ee:transform>
         <salesforce:query
-      doc:name="Education (Dynamic SOQL)"
+      doc:name="Count Query"
       config-ref="Salesforce_Config"
+      target="totalCount"
     >
             <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
         </salesforce:query>
-		<ee:transform doc:name="To JSON">
-			<ee:message>
-				<ee:set-payload
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
+            <ee:message>
+                <ee:set-payload
         ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+payload map (item) -> {
+    id: item.Id,
+    name: item.Name,
+    contactId: item.Contact__r.Id,
+    contactName: item.Contact__r.Name,
+    issuerId: item.Issuer__r.Id,
+    issuerName: item.Issuer__r.Name,
+    fieldOfStudy: item.Field_of_Study__c,
+    gpa: item.GPA__c,
+    graduationDate: item.Graduation_Date__c
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "max-age=300, public"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
     </flow>
 
-    <flow name="get-sfdc-skills" doc:id="6e3d315e-fdee-4eb6-bd33-516e7f940a08">
-        <ee:transform doc:name="Set SOQL Query">
-			<ee:variables>
-				<ee:set-variable resource="queries/skillsQuery.dwl" variableName="soqlQuery" />
-			</ee:variables>
-		</ee:transform>
+    <flow name="get-sfdc-skills" doc:id="a0bf81a8-db77-4835-a7a5-9e59578c6971">
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/skillsQuery.dwl"
+          variableName="queries"
+        />
+            </ee:variables>
+        </ee:transform>
         <salesforce:query
-      doc:name="Skills (Dynamic SOQL)"
+      doc:name="Count Query"
       config-ref="Salesforce_Config"
+      target="totalCount"
     >
             <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
         </salesforce:query>
-		<ee:transform doc:name="To JSON">
-			<ee:message>
-				<ee:set-payload
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
+            <ee:message>
+                <ee:set-payload
         ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+payload map (item) -> {
+    id: item.Id,
+    name: item.Name,
+    displayName: item.Display_Name__c,
+    category: item.Category__c,
+    proficiencyScore: item.Proficiency_Score__c,
+    colorHex: item.Color_Hex__c,
+    svgPathData: item.SVG_Path_Data__c,
+    iconName: item.Icon_Name__c
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "max-age=300, public"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </flow>
+
+    <flow
+    name="get-sfdc-certification-skills"
+    doc:id="ff33f741-a4eb-4032-bce3-9f1b7332a007"
+  >
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/certificationSkillsQuery.dwl"
+          variableName="queries"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Count Query"
+      config-ref="Salesforce_Config"
+      target="totalCount"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload map (item) -> {
+    id: item.Id,
+    certificationId: item.Certification__r.Id,
+    certificationName: item.Certification__r.Name,
+    skillId: item.Skill__r.Id,
+    skillName: item.Skill__r.Name,
+    skillCategory: item.Skill__r.Category__c,
+    skillProficiencyScore: item.Skill__r.Proficiency_Score__c
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "max-age=300, public"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
     </flow>
 
     <flow
     name="get-sfdc-experience"
-    doc:id="0a73cfdd-34f3-4ea5-ba49-026d2dc921f4"
+    doc:id="e7897a3f-cf56-4704-b97a-d870d83d4695"
   >
-        <ee:transform doc:name="Set SOQL Query">
-			<ee:variables>
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
                 <ee:set-variable
           resource="queries/experienceQuery.dwl"
-          variableName="soqlQuery"
-        />
-			</ee:variables>
-		</ee:transform>
-		<salesforce:query
-      doc:name="Experience (Dynamic)"
-      config-ref="Salesforce_Config"
-    >
-            <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
-        </salesforce:query>
-        <ee:transform doc:name="HTML Clean &amp; JSON">
-			<ee:message>
-				<ee:set-payload
-        ><![CDATA[%dw 2.0
-output application/json
-fun cleanHtml(text) = 
-    if (text == null) null
-    else trim(text replace /<[^>]+>/ with "" replace /&nbsp;/ with " " replace /\r?\n/ with " " replace /\s+/ with " ")
----
-payload map (item) -> 
-    item update {
-        case acc at .Accomplishments__c -> cleanHtml(acc)
-    }]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-    </flow>
-
-    <flow name="get-sfdc-projects">
-        <ee:transform doc:name="Set SOQL Query">
-            <ee:variables>
-                <ee:set-variable
-          resource="queries/projectsQuery.dwl"
-          variableName="soqlQuery"
+          variableName="queries"
         />
             </ee:variables>
         </ee:transform>
         <salesforce:query
-      doc:name="Projects (Dynamic)"
+      doc:name="Count Query"
       config-ref="Salesforce_Config"
+      target="totalCount"
     >
             <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
         </salesforce:query>
-        <ee:transform doc:name="To JSON">
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
             <ee:message>
                 <ee:set-payload
         ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
+payload map (item) -> {
+    id: item.Id,
+    contactId: item.Contact__r.Id,
+    contactName: item.Contact__r.Name,
+    name: item.Name,
+    employerId: item.Employer__r.Id,
+    employerName: item.Employer__r.Name,
+    startDate: item.Start_Date__c,
+    endDate: item.End_Date__c,
+    isCurrentRole: item.Is_Current_Role__c,
+    isRemote: item.Is_Remote__c,
+    accomplishments: item.Accomplishments__c,
+    sortOrder: item.Sort_Order__c
+}]]></ee:set-payload>
             </ee:message>
-        </ee:transform>
-    </flow>
-
-    <flow name="get-sfdc-project-assets">
-        <ee:transform doc:name="Set SOQL Query">
             <ee:variables>
                 <ee:set-variable
-          resource="queries/projectAssetsQuery.dwl"
-          variableName="soqlQuery"
-        />
-            </ee:variables>
-        </ee:transform>
-        <salesforce:query
-      doc:name="Project Assets (Dynamic)"
-      config-ref="Salesforce_Config"
-    >
-            <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
-        </salesforce:query>
-        <ee:transform doc:name="To JSON">
-            <ee:message>
-                <ee:set-payload
+          variableName="outboundHeaders"
         ><![CDATA[%dw 2.0
-output application/json
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
 ---
-payload]]></ee:set-payload>
-            </ee:message>
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "no-store, no-cache"
+}]]></ee:set-variable>
+            </ee:variables>
         </ee:transform>
     </flow>
 
-    <flow name="get-sfdc-testimonials">
-        <ee:transform doc:name="Set SOQL Query">
-            <ee:variables>
-                <ee:set-variable
-          resource="queries/testimonialsQuery.dwl"
-          variableName="soqlQuery"
-        />
-            </ee:variables>
-        </ee:transform>
-        <salesforce:query
-      doc:name="Testimonials (Dynamic)"
-      config-ref="Salesforce_Config"
-    >
-            <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
-        </salesforce:query>
-        <ee:transform doc:name="To JSON">
-            <ee:message>
-                <ee:set-payload
-        ><![CDATA[%dw 2.0
-output application/json
----
-payload]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-
-    <flow name="get-sfdc-experience-highlights">
-        <ee:transform doc:name="Set SOQL Query">
+    <flow
+    name="get-sfdc-experience-highlights"
+    doc:id="83010d5a-6a02-4713-9f47-fb024a25d96b"
+  >
+        <ee:transform doc:name="Generate Queries">
             <ee:variables>
                 <ee:set-variable
           resource="queries/experienceHighlightsQuery.dwl"
-          variableName="soqlQuery"
+          variableName="queries"
         />
             </ee:variables>
         </ee:transform>
         <salesforce:query
-      doc:name="Highlights (Dynamic)"
+      doc:name="Count Query"
       config-ref="Salesforce_Config"
+      target="totalCount"
     >
             <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
         </salesforce:query>
-        <ee:transform doc:name="To JSON">
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
             <ee:message>
                 <ee:set-payload
         ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
+payload map (item) -> {
+    id: item.Id,
+    name: item.Name,
+    experienceId: item.Experience__r.Id,
+    experienceName: item.Experience__r.Name,
+    personaTag: item.Persona_Tag__c,
+    sortOrder: item.Sort_Order__c,
+    description: item.Description__c
+}]]></ee:set-payload>
             </ee:message>
-        </ee:transform>
-    </flow>
-
-    <flow name="get-sfdc-portfolio-config">
-        <ee:transform doc:name="Set SOQL Query">
             <ee:variables>
                 <ee:set-variable
-          resource="queries/portfolioConfigQuery.dwl"
-          variableName="soqlQuery"
-        />
-            </ee:variables>
-        </ee:transform>
-        <salesforce:query
-      doc:name="Config (Dynamic)"
-      config-ref="Salesforce_Config"
-    >
-            <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
-        </salesforce:query>
-        <ee:transform doc:name="To JSON (Single Object)">
-            <ee:message>
-                <ee:set-payload
+          variableName="outboundHeaders"
         ><![CDATA[%dw 2.0
-output application/json
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
 ---
-payload[0] default {}]]></ee:set-payload>
-            </ee:message>
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "no-store, no-cache"
+}]]></ee:set-variable>
+            </ee:variables>
         </ee:transform>
     </flow>
 
-    <flow name="get-sfdc-project-skills">
-        <ee:transform doc:name="Set SOQL Query">
-            <ee:variables>
-                <ee:set-variable
-          resource="queries/projectSkillsQuery.dwl"
-          variableName="soqlQuery"
-        />
-            </ee:variables>
-        </ee:transform>
-        <salesforce:query
-      doc:name="Project Skills (Dynamic)"
-      config-ref="Salesforce_Config"
-    >
-            <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
-        </salesforce:query>
-        <ee:transform doc:name="To JSON">
-            <ee:message>
-                <ee:set-payload
-        ><![CDATA[%dw 2.0
-output application/json
----
-payload]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-
-    <flow name="get-sfdc-experience-skills">
-        <ee:transform doc:name="Set SOQL Query">
+    <flow
+    name="get-sfdc-experience-skills"
+    doc:id="eda54efe-d81c-4c96-a7bc-bcca638f6a82"
+  >
+        <ee:transform doc:name="Generate Queries">
             <ee:variables>
                 <ee:set-variable
           resource="queries/experienceSkillsQuery.dwl"
-          variableName="soqlQuery"
+          variableName="queries"
         />
             </ee:variables>
         </ee:transform>
         <salesforce:query
-      doc:name="Experience Skills (Dynamic)"
+      doc:name="Count Query"
       config-ref="Salesforce_Config"
+      target="totalCount"
     >
             <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
         </salesforce:query>
-        <ee:transform doc:name="To JSON">
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
             <ee:message>
                 <ee:set-payload
         ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
+payload map (item) -> {
+    id: item.Id,
+    experienceId: item.Experience__r.Id,
+    experienceName: item.Experience__r.Name,
+    skillId: item.Skill__r.Id,
+    skillName: item.Skill__r.Name,
+    skillCategory: item.Skill__r.Category__c,
+    skillProficiencyScore: item.Skill__r.Proficiency_Score__c
+}]]></ee:set-payload>
             </ee:message>
-        </ee:transform>
-    </flow>
-
-    <flow name="get-sfdc-certification-skills">
-        <ee:transform doc:name="Set SOQL Query">
             <ee:variables>
                 <ee:set-variable
-          resource="queries/certificationSkillsQuery.dwl"
-          variableName="soqlQuery"
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "max-age=300, public"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </flow>
+
+    <flow
+    name="get-sfdc-portfolio-config"
+    doc:id="9032e3ab-6f91-4e72-bbae-7ea0a79d10a6"
+  >
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/portfolioConfigQuery.dwl"
+          variableName="queries"
         />
             </ee:variables>
         </ee:transform>
-        <salesforce:query
-      doc:name="Certification Skills (Dynamic)"
-      config-ref="Salesforce_Config"
-    >
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
             <salesforce:salesforce-query
-      ><![CDATA[#[vars.soqlQuery]]]></salesforce:salesforce-query>
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
         </salesforce:query>
-        <ee:transform doc:name="To JSON">
+        <ee:transform doc:name="Map Response">
             <ee:message>
                 <ee:set-payload
         ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
+(payload map (item) -> {
+    ownerEmail: item.Owner_Email__c,
+    ownerPhone: item.Owner_Phone__c,
+    linkedInUrl: item.LinkedIn_URL__c,
+    calendlyUrl: item.Calendly_URL__c,
+    gitHubProfileUrl: item.GitHub_Profile_URL__c,
+    careerObjective: item.Career_Objective__c,
+    trailblazerProfileUrl: item.Trailblazer_Profile_URL__c,
+    personalWebsiteUrl: item.Personal_Website_URL__c
+})[0]]]></ee:set-payload>
             </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+---
+{
+    "X-Request-Id": correlationId,
+    "Cache-Control": "max-age=300, public"
+}]]></ee:set-variable>
+            </ee:variables>
         </ee:transform>
     </flow>
 
-    <sub-flow name="set-query-params">
-        <set-variable
-      variableName="contactName"
-      value='#[trim(message.attributes.queryParams."contact-name" default "")]'
-      doc:name="contactName"
-    />
-        <set-variable
-      variableName="employerName"
-      value='#[trim(message.attributes.queryParams."employer-name" default "")]'
-      doc:name="employerName"
-    />
-        <set-variable
-      variableName="accountName"
-      value='#[trim(message.attributes.queryParams."account-name" default "")]'
-      doc:name="accountName"
-    />
-        <set-variable
-      variableName="issuerName"
-      value='#[trim(message.attributes.queryParams."issuer" default "")]'
-      doc:name="issuerName"
-    />
-        <set-variable
-      variableName="currentlyEmployed"
-      value='#[trim(message.attributes.queryParams."currently-employed" default "") as Boolean default null]'
-      doc:name="currentlyEmployed"
-    />
-        
-        <set-variable
-      value='#[trim(message.attributes.queryParams."certification-name" default "")]'
-      doc:name="certificationName"
-      doc:id="4e5ae95a-340e-4889-a059-c4d2352dc7bb"
-      variableName="certificationName"
-    />
-		<set-variable
-      variableName="limit"
-      value='#[message.attributes.queryParams."limit" default 50]'
-      doc:name="limit"
-    />
-        <set-variable
-      variableName="offset"
-      value='#[message.attributes.queryParams."offset" default 0]'
-      doc:name="offset"
-    />
-        
-        <set-variable
-      variableName="projectId"
-      value='#[trim(message.attributes.queryParams."projectId" default "")]'
-      doc:name="projectId"
-    />
-        <set-variable
-      variableName="experienceId"
-      value='#[trim(message.attributes.queryParams."experienceId" default "")]'
-      doc:name="experienceId"
-    />
-        <set-variable
-      variableName="certificationId"
-      value='#[trim(message.attributes.queryParams."certificationId" default "")]'
-      doc:name="certificationId"
-    />
-        
-        <set-variable
-      variableName="status"
-      value='#[trim(message.attributes.queryParams."status" default "")]'
-      doc:name="status"
-    />
-        <set-variable
-      variableName="persona"
-      value='#[trim(message.attributes.queryParams."persona" default "")]'
-      doc:name="persona"
-    />
-    </sub-flow>
+    <flow
+    name="get-sfdc-project-assets"
+    doc:id="567cb440-8933-4be9-a988-5c773111aa5f"
+  >
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/projectAssetsQuery.dwl"
+          variableName="queries"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Count Query"
+      config-ref="Salesforce_Config"
+      target="totalCount"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload map (item) -> {
+    id: item.Id,
+    name: item.Name,
+    projectId: item.Project__r.Id,
+    projectName: item.Project__r.Name,
+    externalUrl: item.External_URL__c,
+    'type': item.Type__c,
+    sortOrder: item.Sort_Order__c,
+    altText: item.Alt_Text__c
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "max-age=300, public"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </flow>
+
+    <flow
+    name="get-sfdc-project-skills"
+    doc:id="ae0fcf2a-e7b1-40e6-b86f-db4972ec3a91"
+  >
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/projectSkillsQuery.dwl"
+          variableName="queries"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Count Query"
+      config-ref="Salesforce_Config"
+      target="totalCount"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload map (item) -> {
+    id: item.Id,
+    projectId: item.Project__r.Id,
+    projectName: item.Project__r.Name,
+    skillId: item.Skill__r.Id,
+    skillName: item.Skill__r.Name,
+    skillCategory: item.Skill__r.Category__c,
+    skillProficiencyScore: item.Skill__r.Proficiency_Score__c
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "max-age=300, public"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </flow>
+
+    <flow
+    name="get-sfdc-projects"
+    doc:id="bf8588e1-f731-4e2c-bd41-c22cb771ef3c"
+  >
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/projectsQuery.dwl"
+          variableName="queries"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Count Query"
+      config-ref="Salesforce_Config"
+      target="totalCount"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload map (item) -> {
+    id: item.Id,
+    name: item.Name,
+    contactId: item.Contact__r.Id,
+    contactName: item.Contact__r.Name,
+    challenge: item.Challenge__c,
+    solution: item.Solution__c,
+    businessValue: item.Business_Value__c,
+    status: item.Status__c,
+    pillar: item.Pillar__c,
+    heroImageUrl: item.Hero_Image_URL__c,
+    liveUrl: item.Live_URL__c,
+    repositoryUrl: item.Repository_URL__c,
+    dateCompleted: item.Date_Completed__c,
+    isFeatured: item.Is_Featured__c,
+    sortOrder: item.Sort_Order__c
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "max-age=300, public"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </flow>
+
+    <flow
+    name="get-sfdc-testimonials"
+    doc:id="23b59280-3ce3-4813-82cf-d6afa4b966ad"
+  >
+        <ee:transform doc:name="Generate Queries">
+            <ee:variables>
+                <ee:set-variable
+          resource="queries/testimonialsQuery.dwl"
+          variableName="queries"
+        />
+            </ee:variables>
+        </ee:transform>
+        <salesforce:query
+      doc:name="Count Query"
+      config-ref="Salesforce_Config"
+      target="totalCount"
+    >
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.countQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <salesforce:query doc:name="Data Query" config-ref="Salesforce_Config">
+            <salesforce:salesforce-query
+      ><![CDATA[#[vars.queries.dataQuery]]]></salesforce:salesforce-query>
+        </salesforce:query>
+        <ee:transform doc:name="Map Response">
+            <ee:message>
+                <ee:set-payload
+        ><![CDATA[%dw 2.0
+output application/json
+---
+payload map (item) -> {
+    id: item.Id,
+    name: item.Name,
+    authorName: item.Author_Name__c,
+    authorTitle: item.Author_Title__c,
+    avatarUrl: item.Avatar_URL__c,
+    vibeMode: item.Vibe_Mode__c,
+    relationshipType: item.Relationship_Type__c,
+    context: item.Context__c
+}]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable
+          variableName="outboundHeaders"
+        ><![CDATA[%dw 2.0
+output application/java
+var total = vars.totalCount[0].expr0 as Number default 0
+var offset = vars.offset as Number default 0
+---
+{
+    "X-Total-Count": total,
+    "X-Has-More": (offset + sizeOf(payload)) < total,
+    "X-Request-Id": correlationId,
+    "Cache-Control": "no-store, no-cache"
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </flow>
+
 </mule>
