@@ -1,14 +1,16 @@
 %dw 2.0
 output application/java
 import * from modules::queryHelpers
-
-var base = "SELECT Id, Experience__c, Skill__r.Name, Skill__r.Category__c FROM Experience_Skill__c"
-
+var experienceId = vars.experienceId default ''
 var conditions = [
-    if (!isBlank(vars.experienceId default '')) 
-        "Experience__c = '" ++ escapeSOQL(vars.experienceId) ++ "'" 
-    else null
+    eqIfPresent("Experience__r.Id", experienceId)
 ] filter ($ != null)
-
 ---
-base ++ whereIfAny(conditions) ++ " ORDER BY Skill__r.Category__c ASC" ++ limitAndOffset(vars.limit, vars.offset)
+buildPagedQuery(
+    "Id, Experience__r.Id, Experience__r.Name, Skill__r.Id, Skill__r.Name, Skill__r.Category__c, Skill__r.Proficiency_Score__c",
+    "Experience_Skill__c",
+    conditions,
+    "ORDER BY Skill__r.Category__c ASC",
+    vars.limit,
+    vars.offset
+)

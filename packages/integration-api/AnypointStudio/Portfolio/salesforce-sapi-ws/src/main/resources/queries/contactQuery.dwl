@@ -1,12 +1,16 @@
 %dw 2.0
 output application/java
 import * from modules::queryHelpers
-
-var base = "SELECT Id, Name, Email, Phone, Account.Name, Career_Objective__c, LinkedIn__c, Trailhead__c, Portfolio__c FROM Contact"
+var contactName = vars.contactName default ''
 var conditions = [
-    if (!isBlank(vars.contactName default '')) 
-        "Name = '" ++ escapeSOQL(vars.contactName) ++ "'" 
-    else null
+    eqIfPresent("Name", contactName)
 ] filter ($ != null)
 ---
-base ++ whereIfAny(conditions) ++ " ORDER BY Name ASC"
+buildPagedQuery(
+    "Id, Name, Email, Phone, Account.Id, Account.Name, Title, Career_Objective__c, LinkedIn__c, Trailhead__c, Portfolio__c",
+    "Contact",
+    conditions,
+    "ORDER BY Name ASC",
+    vars.limit,
+    vars.offset
+)

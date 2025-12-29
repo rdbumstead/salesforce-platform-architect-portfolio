@@ -8,7 +8,7 @@
 
 	<groupId>14130f82-e9e1-4926-b94b-cacb2d88ee28</groupId>
 	<artifactId>salesforce-sapi</artifactId>
-	<version>1.0.0</version>
+	<version>1.2.0</version>
 	<packaging>mule-application</packaging>
 
 	<name>salesforce-sapi-ws</name>
@@ -18,7 +18,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<app.runtime>4.10.0</app.runtime>
-		<mule.maven.plugin.version>4.5.3</mule.maven.plugin.version>
+		<mule.maven.plugin.version>4.6.1</mule.maven.plugin.version>
 	</properties>
 
 	<build>
@@ -33,9 +33,6 @@
 				<artifactId>mule-maven-plugin</artifactId>
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
-				<configuration>
-					<classifier>---- select project type ----</classifier>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
@@ -43,30 +40,30 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.mule.connectors</groupId>
-			<artifactId>mule-http-connector</artifactId>
-			<version>1.10.5</version>
-			<classifier>mule-plugin</classifier>
-		</dependency>
-		<dependency>
-			<groupId>org.mule.connectors</groupId>
 			<artifactId>mule-sockets-connector</artifactId>
 			<version>1.2.7</version>
 			<classifier>mule-plugin</classifier>
 		</dependency>
 		<dependency>
-			<groupId>com.mulesoft.connectors</groupId>
-			<artifactId>mule-salesforce-connector</artifactId>
-			<version>11.2.3</version>
-			<classifier>mule-plugin</classifier>
-		</dependency>
-		<dependency>
 			<groupId>org.mule.modules</groupId>
 			<artifactId>mule-apikit-module</artifactId>
-			<version>1.11.7</version>
+			<version>1.11.10</version>
 			<classifier>mule-plugin</classifier>
 		</dependency>
 		<dependency>
-			<groupId>14130f82-e9e1-4926-b94b-cacb2d88ee28</groupId>
+			<groupId>org.mule.connectors</groupId>
+			<artifactId>mule-http-connector</artifactId>
+			<version>1.11.0</version>
+			<classifier>mule-plugin</classifier>
+		</dependency>
+		<dependency>
+			<groupId>com.mulesoft.connectors</groupId>
+			<artifactId>mule-salesforce-connector</artifactId>
+			<version>11.3.2</version>
+			<classifier>mule-plugin</classifier>
+		</dependency>
+		<dependency>
+			<groupId>d36f7e6c-21b6-4b7e-aea1-9cbf0a9d1be0</groupId>
 			<artifactId>salesforce-sapi</artifactId>
 			<version>1.1.1</version>
 			<classifier>oas</classifier>

@@ -1,12 +1,16 @@
 %dw 2.0
 output application/java
 import * from modules::queryHelpers
-
-var base = "SELECT Id, Name, External_URL__c, Type__c, Sort_Order__c FROM Project_Asset__c"
+var projectId = vars.projectId default ''
 var conditions = [
-    if (!isBlank(vars.projectId default '')) 
-        "Project__c = '" ++ escapeSOQL(vars.projectId) ++ "'" 
-    else null
+    eqIfPresent("Project__r.Id", projectId)
 ] filter ($ != null)
 ---
-base ++ whereIfAny(conditions) ++ " ORDER BY Sort_Order__c ASC"
+buildPagedQuery(
+    "Id, Name, Project__r.Id, Project__r.Name, External_URL__c, Type__c, Sort_Order__c, Alt_Text__c",
+    "Project_Asset__c",
+    conditions,
+    "ORDER BY Sort_Order__c ASC",
+    vars.limit,
+    vars.offset
+)
