@@ -9,7 +9,7 @@
 [![Email](https://img.shields.io/badge/Email-ryan@ryanbumstead.com-D14836?logo=gmail&logoColor=white)](mailto:ryan@ryanbumstead.com)
 [![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
-**📅 Project Status:** Architecture complete (6 enterprise docs, 24 ADRs) • MVP code in development • **Live launch Q1 2026**
+**📅 Project Status:** Architecture complete (6 enterprise docs, 26 ADRs) • MVP code in development • **Live launch Q1 2026**
 
 **🌐 Live Site:** [https://ryanbumstead.com](https://ryanbumstead.com) (Static placeholder until MVP launch)
 
@@ -40,7 +40,7 @@ Principal-level Salesforce Platform Architecture including:
 **📈 By The Numbers:**
 
 - ✅ **6 enterprise architecture documents** — SAS, Charter, Technical Guide, Operations Guide, Governance Framework, Executive Overview
-- ✅ **24 architectural decisions documented** — Covering performance, security, AI governance, FinOps, resilience, and integration patterns
+- ✅ **26 architectural decisions documented** — Covering performance, security, AI governance, FinOps, resilience, and integration patterns
 - ✅ **12 core competencies mapped** — Each with verifiable artifacts and validation methods
 - ✅ **3 active CI/CD pipelines** — Delta deployments, PR validation gates, org heartbeat automation
 - ✅ **$0.00 forever multi-cloud architecture** — AWS Always-Free tier governance with Lambda Function URLs
@@ -83,7 +83,7 @@ Principal-level Salesforce Platform Architecture including:
 
 **✅ Available Now:**
 
-- [Architecture decisions documented with rationale](docs/guides/03-SAS.md#7-architectural-decision-records-adrs) — 24 ADRs covering performance, security, AI, FinOps
+- [Architecture decisions documented with rationale](docs/guides/03-SAS.md#7-architectural-decision-records-adrs) — 26 ADRs covering performance, security, AI, FinOps
 - [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) — 3 active workflows (deploy, PR validation, org heartbeat)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml) — Twin API pattern with SAPI + PAPI specifications
 - [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#adr-018-finops-constraint--aws-lambda-function-urls-vs-api-gateway) — $0.00 forever architecture using AWS Always-Free tier
@@ -144,7 +144,7 @@ Principal-level Salesforce Platform Architecture including:
 ## Architectural Decision Records
 
 <details>
-<summary><strong>📋 Architectural Decision Records (ADR) Index</strong> (Click to expand—24 documented decisions)</summary>
+<summary><strong>📋 Architectural Decision Records (ADR) Index</strong> (Click to expand—26 documented decisions)</summary>
 
 | ID                                                                                                      | Subject                             | Strategic Driver         |
 | :------------------------------------------------------------------------------------------------------ | :---------------------------------- | :----------------------- |
@@ -172,6 +172,8 @@ Principal-level Salesforce Platform Architecture including:
 | [ADR-022](docs/guides/03-SAS.md#adr-022-resilience-engineering--resilience-simulation-toggle)           | Resilience Simulation Toggle        | Trust / Resilience       |
 | [ADR-023](docs/guides/03-SAS.md#adr-023-client-side-pdf-generation-jspdf-for-mvp)                       | Client-Side PDF Generation (jsPDF)  | Tooling / MVP Speed      |
 | [ADR-024](docs/guides/03-SAS.md#adr-024-twin-api-pattern--contract-first-parity)                        | Twin API Pattern                    | Contract Parity          |
+| [ADR-025](docs/guides/03-SAS.md#adr-025-papi-fan-out-throttling--capacity-planning)                     | PAPI Fan-Out Throttling             | Capacity Planning        |
+| [ADR-026](docs/guides/03-SAS.md#adr-026-header-based-api-versioning-strategy)                           | Header-Based API Versioning         | Versioning Strategy      |
 
 </details>
 

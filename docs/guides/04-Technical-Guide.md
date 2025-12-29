@@ -12,6 +12,7 @@
   - [2.1 GitHub Integration (Live Feed)](#21-github-integration-live-feed)
   - [2.2 Jira Integration (Roadmap)](#22-jira-integration-roadmap)
   - [2.3 Agentforce Integration](#23-agentforce-integration)
+  - [2.4 System API Security (The "Twin" Pattern)](#24-system-api-security-the-twin-pattern)
 - [3. Frontend (LWR) Component Logic](#3-frontend-lwr-component-logic)
   - [3.1 c-skill-network (Visualization)](#31-c-skill-network-visualization)
   - [3.2 c-resume-builder](#32-c-resume-builder)
@@ -106,6 +107,15 @@ All external API calls originate from a secure **Named Credential** accessed via
 - **Grounding:** Configure Agent Topic to query Project\_\_c.
 - **System Prompt:** Use "Mirror Mode" in system instructions to reveal logic.
 - **Fallback:** If unavailable, use "Fallback Mode" in Custom Metadata to display a static "AI Interaction Preview" video.
+
+### 2.4 System API Security (The "Twin" Pattern)
+
+This architecture simulates an enterprise API Gateway hand-off:
+
+| Role          | Component                | Responsibility                                           | Implementation                                                                                                                           |
+| :------------ | :----------------------- | :------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sender**    | PAPI (Integration Layer) | **Secure Storage:** Holds the keys to access Salesforce. | In a real scenario, keys live in AWS Secrets Manager. In this demo, they are configuration properties injected at runtime.               |
+| **Validator** | SAPI (Salesforce Core)   | **Policy Enforcement:** Verifies the keys permit access. | Uses `Portfolio_Config__mdt` to act as a local decision point, rejecting requests with invalid headers before they reach business logic. |
 
 **Interface Definition (IAIGenerationService):**
 

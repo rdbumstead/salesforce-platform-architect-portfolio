@@ -212,4 +212,10 @@ Desktop.ini
 
 # IntelliJ / WebStorm
 .idea/
-*.iml
+*.iml# Agentic / Dev Artifacts
+git_status_*.txt
+git_status_fix.txt
+
+# Agentic / Dev Artifacts
+git_status_*.txt
+git_status_fix.txt
