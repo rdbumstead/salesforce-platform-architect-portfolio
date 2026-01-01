@@ -6,6 +6,17 @@ on:
     paths:
       - "packages/**"
       - "sfdx-project.json"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/**"
+      - ".github/workflows/deploy.yml"
+      - ".github/actions/**"
+    paths-ignore:
+      - "packages/integration-api/specs/**"
+      - "packages/integration-api/AnypointStudio/**"
+      - "packages/**/*.md"
+      - "packages/**/jsconfig.json"
+      - "packages/**/.gitkeep"
   workflow_dispatch:
     inputs:
       deployment_mode:

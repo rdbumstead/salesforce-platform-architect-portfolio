@@ -7,6 +7,16 @@ on:
     paths:
       - "packages/**"
       - "sfdx-project.json"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/**"
+      - ".github/workflows/pr.yml"
+      - ".github/actions/**"
+    paths-ignore:
+      - "packages/**/*.md"
+      - "packages/**/jsconfig.json"
+      - "packages/**/.gitkeep"
+      - "packages/integration-api/AnypointStudio/**"
 
 jobs:
   validate:
