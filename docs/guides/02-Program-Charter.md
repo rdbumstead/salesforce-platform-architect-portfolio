@@ -126,7 +126,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 
 **Conversion:**
 
-- \> 20% of visitors interact with "API Tester" or "Resume Builder" (verified via Custom Events).
+- > 20% of visitors interact with "API Tester" or "Resume Builder" (verified via Custom Events).
   - api_test_executed: User successfully calls an endpoint in the API Tester.
   - resume_download_pdf: User exports a resume in Creative Mode.
   - resilience_test_triggered: User toggles the "Resilience Simulation" switch.
@@ -184,7 +184,7 @@ The delivery is organized into four parallel execution tracks:
 **Phase 5: Intelligence**
 
 - Data360 Setup
-- Data360 Data Integration (CRM Connector → Project**c, Experience**c)
+- Data360 Data Integration (CRM Connector → `Project__c`, `Experience__c`)
 - Agentforce Grounding on Data360 Data Model Objects (DMOs)
 - Prompt Engineering & Mirror Mode configuration
 - Triple-fallback AI generation service (Agentforce → Gemini Flash → Local Template)
@@ -232,8 +232,8 @@ _Design artifacts complete; implementation begins post-launch._
 **Phase 1: Foundation & DevOps**
 
 - **A.1:** Configure Connected App (JWT) & GitHub Secrets.
-- **D.1:** Deploy Project\_\_c Object.
-- **D.2:** Deploy Testimonial\_\_c Object.
+- **D.1:** Deploy `Project__c` Object.
+- **D.2:** Deploy `Testimonial__c` Object.
 - **E.1:** Write ProjectControllerTest (Target: 90% coverage).
 - **A.7:** Generate C4 Level 1 diagram in IcePanel & Upload as Static Resource.
 - **1.3:** Verify Technical Acceptance Criteria (CI/CD Green, LCP Baseline).
@@ -243,7 +243,7 @@ _Design artifacts complete; implementation begins post-launch._
 - Create free Atlassian Jira account and generate API Token.
 - **A.8:** Configure Named Credential Jira_API in Salesforce.
 - Develop c-roadmap-viewer LWC + JiraService.cls.
-- **D.3 / D.4:** Deploy Experience**c parent and Experience_Highlight**c child objects.
+- **D.3 / D.4:** Deploy `Experience__c` parent and `Experience_Highlight__c` child objects.
 - Develop c-resume-builder LWC with persona-based Apex filtering logic.
 
 **Phase 3: Integration**
@@ -276,10 +276,10 @@ _Design artifacts complete; implementation begins post-launch._
 
 **Phase 6: Observability & Launch**
 
-- [ ] **Dev:** Install Nebula Logger (Unlocked Pkg) & configure LoggerSettings\_\_c.
+- [ ] **Dev:** Install Nebula Logger (Unlocked Pkg) & configure `LoggerSettings__c`.
 - **Dev:** Build c-system-health-footer LWC (Glass Box) using requestIdleCallback.
 - **Dev:** Implement AnalyticsService.js for unified GA4 event tracking.
-- **Config:** Add "Resilience Simulation" toggle and resilience logic to GitHubService.cls.
+- **Config:** Add "Resilience Simulation" toggle and resilience logic to `GitHubService.cls`.
 - **QA:** Verify "Glass Box" matches actual Developer Console limits.
 - **QA:** Verify GA4 Real-Time view receives api_test_executed events.
 

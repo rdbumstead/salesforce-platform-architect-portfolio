@@ -219,7 +219,7 @@ The architecture is designed to operate within the specific limits of the Salesf
 
 This section defines the structured metadata model that underpins portfolio rendering, AI grounding, and cross-object relationships. For the detailed field-level definition, see Appendix D.
 
-### 4.1 Logical Data Model (ERD)
+### 4.1 Logical Data Model (Simplified ERD)
 
 ```mermaid
 erDiagram
@@ -259,28 +259,28 @@ erDiagram
 
 ### 4.2 Core Entities
 
-- **Project\_\_c:** The central hub. Stores Challenge, Solution, and Business Value narratives.
-- **Skill\_\_c:** The competency library. Supports polymorphic rendering (SLDS standard icons vs. Custom Brand SVGs).
-- **Experience\_\_c:** Employment history records (Header Info Only).
-- **Experience_Highlight\_\_c:** Child object of Experience. Contains granular bullet points tagged by persona (Admin, Dev, Architect) to enable dynamic resume generation.
+- **`Project__c`:** The central hub. Stores Challenge, Solution, and Business Value narratives.
+- **`Skill__c`:** The competency library. Supports polymorphic rendering (SLDS standard icons vs. Custom Brand SVGs).
+- **`Experience__c`:** Employment history records (Header Info Only).
+- **`Experience_Highlight__c`:** Child object of `Experience__c`. Contains granular bullet points tagged by persona (Admin, Dev, Architect) to enable dynamic resume generation.
 
 ### 4.3 Junction Objects (The Glue)
 
-- **Project_Skill\_\_c:** Connects Skills to Projects (e.g., linking "Flow" to "MCC Employer Hub").
-- **Experience_Skill\_\_c:** Connects Skills to Job History.
+- **`Project_Skill__c`:** Connects Skills to Projects (e.g., linking "Flow" to "MCC Employer Hub").
+- **`Experience_Skill__c`:** Connects Skills to Job History.
 
 ### 4.4 Asset Management
 
-- **Project_Asset\_\_c:** Stores references to visual artifacts (Flowcharts, Dashboards) to decouple heavy media from the Project record itself.
+- **`Project_Asset__c`:** Stores references to visual artifacts (Flowcharts, Dashboards) to decouple heavy media from the Project record itself.
 
 ### 4.5 Social Proof Engine (Gamified Data)
 
-- **Testimonial\_\_c:** Stores structured feedback.
-  - Author_Name\_\_c (Text): Stores the name of the submitter. Note: Standard Contact lookups are avoided to ensure Guest User compatibility.
-  - Relationship_Type\_\_c (Picklist): Manager, Peer, Client, Recruiter, Fan/Visitor.
-  - Context\_\_c (Text/Picklist): Dynamic sentence fragments (e.g., "Absolute Beast", "Saved our Bacon").
-  - Vibe_Mode\_\_c (Picklist): Professional vs. Casual (Controls display logic).
-  - Approved\_\_c (Checkbox): Default false. Security gate for public display.
+- **`Testimonial__c`:** Stores structured feedback.
+  - `Author_Name__c` (Text): Stores the name of the submitter. Note: Standard `Contact` lookups are avoided to ensure Guest User compatibility.
+  - `Relationship_Type__c` (Picklist): Manager, Peer, Client, Recruiter, Fan/Visitor.
+  - `Context__c` (Text/Picklist): Dynamic sentence fragments (e.g., "Absolute Beast", "Saved our Bacon").
+  - `Vibe_Mode__c` (Picklist): Professional vs. Casual (Controls display logic).
+  - `Approved__c` (Checkbox): Default false. Security gate for public display.
 
 ### 4.6 Data Security Matrix
 
@@ -288,15 +288,15 @@ The following matrix defines the CRUD and Field Level Security (FLS) settings en
 
 | Object                        | Admin (System) | Guest User (Public)              | Integration User (API) |
 | :---------------------------- | :------------- | :------------------------------- | :--------------------- |
-| **Project\_\_c**              | CRED / Full    | Read-Only                        | Read-Only              |
-| **Experience\_\_c**           | CRED / Full    | Read-Only                        | Read-Only              |
-| **Experience_Highlight\_\_c** | CRED / Full    | Read-Only                        | Read-Only              |
-| **Skill\_\_c**                | CRED / Full    | Read-Only                        | Read-Only              |
-| **Testimonial\_\_c**          | CRED / Full    | **No Access** (Handled via Apex) | Read-Only              |
-| **GitHub_Cache\_\_c**         | CRED / Full    | **No Access** (System Only)      | No Access              |
-| **Portfolio_Config\_\_mdt**   | CRED / Full    | Read-Only (via App)              | Read-Only              |
+| **`Project__c`**              | CRED / Full    | Read-Only                        | Read-Only              |
+| **`Experience__c`**           | CRED / Full    | Read-Only                        | Read-Only              |
+| **`Experience_Highlight__c`** | CRED / Full    | Read-Only                        | Read-Only              |
+| **`Skill__c`**                | CRED / Full    | Read-Only                        | Read-Only              |
+| **`Testimonial__c`**          | CRED / Full    | **No Access** (Handled via Apex) | Read-Only              |
+| **`GitHub_Cache__c`**         | CRED / Full    | **No Access** (System Only)      | No Access              |
+| **`Portfolio_Config__mdt`**   | CRED / Full    | Read-Only (via App)              | Read-Only              |
 
-**Note:** Guest User access to Testimonial\_\_c records is strictly controlled via the SAPI_Testimonial Apex class which applies the "Vibe Mode" and "Approved" filters before returning data to the LWR site.
+**Note:** Guest User access to `Testimonial__c` records is strictly controlled via the `SAPI_Testimonial` Apex class which applies the "Vibe Mode" and "Approved" filters before returning data to the LWR site.
 
 ## 5. Solution Components (The Pillars)
 
@@ -306,8 +306,8 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 
 - **Objective:** Demonstrate Business Analysis and Process Mapping.
 - **Artifacts:** Sanitized Process Flow Diagrams and Executive Dashboard mockups.
-- **Integration:** Assets mapped via Project_Asset\_\_c for gallery rendering.
-- **Component:** c-schema-visualizer
+- **Integration:** Assets mapped via `Project_Asset__c` for gallery rendering.
+- **Component:** `c-schema-visualizer`
 - **Data Source:** Apex Schema.getGlobalDescribe() ensures the diagram never drifts from the actual deployment.
 - **Reuse Signal:** Reuses the **AntV G6** library imported for Pillar D, demonstrating efficient asset management and component reusability.
 
@@ -323,7 +323,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 - **Implementation Layer:** Native Apex REST Class (SAPI_Experience) implementing the interface defined in the OAS.
 - **Contract Parity:** The Apex implementation adheres strictly to the JSON response structure defined in the OAS to ensure client-side compatibility.
 - **Documentation Layer:** Redoc (via Static Resource) providing industry-standard, read-only API documentation.
-- **Tooling Layer:** Custom c-api-tester LWC acting as a "Developer Console," allowing live execution of endpoints. Validates runtime responses against the design standard.
+- **Tooling Layer:** Custom `c-api-tester` LWC acting as a "Developer Console," allowing live execution of endpoints. Validates runtime responses against the design standard.
 - **External Integration:** GitHub REST API integration (Live Feed) using a Server-Side caching pattern to prevent rate-limiting.
 - **Execution Model:** No client-side access tokens used. All API calls originate from a secure Named Credential accessed via Apex.
 
@@ -332,7 +332,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 - **Objective:** Demonstrate Hybrid Search (Vector + Keyword) and RAG architecture.
 - **Mechanism:** Agentforce Service Agent grounded on Data 360 DMOs (Data Model Objects) rather than direct CRM objects.
 - **Architecture:**
-  - **Ingestion:** Project**c and Experience**c records are ingested into Data 360 via CRM Connector.
+  - **Ingestion:** `Project__c` and `Experience__c` records are ingested into Data 360 via CRM Connector.
   - **Context Layer:** A specific "Portfolio Context" Search Index is built from these DMOs.
   - **Retrieval:** Agentforce queries the Search Index to generate responses, decoupling the AI reasoning layer from the transactional database (See ADR-011).
 - **Mirror Mode:** System instruction configured to reveal the underlying system prompt and SOQL logic for transparency.
@@ -343,8 +343,8 @@ To demonstrate practical Application of RAG (Retrieval-Augmented Generation), th
 
 - **The Concept:** Instead of a static "About Me," recruiters input their Company Name and Job Title. The system generates a custom cover letter explaining why this specific candidate matches that specific role.
 - **The Architecture:**
-  - **Input Layer:** LWC Form (c-cover-letter-generator) captures context (e.g., "Senior Architect", "Financial Services").
-  - **Retrieval Layer:** Agentforce Topic executes a SOQL query against Project**c and Experience**c to find records matching the input keywords.
+  - **Input Layer:** LWC Form (`c-cover-letter-generator`) captures context (e.g., "Senior Architect", "Financial Services").
+  - **Retrieval Layer:** Agentforce Topic executes a SOQL query against `Project__c` and `Experience__c` to find records matching the input keywords.
   - **Generation Layer:** The LLM synthesizes the retrieved project data into a 3-paragraph professional narrative.
   - **Generation Strategy**
     - To demonstrate high availability, the generation layer utilizes an Apex interface (IAIGenerationService) with a dispatcher implementing the Strategy Pattern.
@@ -417,7 +417,7 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 - **Tooling:** Atlassian Jira + GitHub Actions (CI/CD).
 - **Configuration:** Custom LWC c-roadmap-viewer calls Apex JiraService.cls to fetch Epics/Stories live via REST API.
 - **Integration:** Uses Named Credentials to securely authenticate with Atlassian API Token.
-- **Mechanism:** The c-smart-checklist component subscribes to the Governance_Event\_\_e Platform Event.
+- **Mechanism:** The `c-smart-checklist` component subscribes to the `Governance_Event__e` Platform Event.
 - **Workflow:** When the CI/CD pipeline (GitHub Actions) completes a successful deployment, it upserts a record or publishes an event via the Salesforce CLI. The LWC receives this event and automatically checks the "Green Build Badge" box on the UI.
 - **Architectural Signal:** This proves the candidate understands the Streaming API and Event-Driven Architecture.
 
@@ -454,19 +454,19 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 
 ### 6.2 Lightning Web Components (LWC)
 
-- **c-hero-banner:** Includes "How to Evaluate Me" navigation guide.
-- **c-testimonial-submit:** "Mad Libs" style sentence builder with Vibe Toggle (Professional/Casual).
-- **c-api-tester:** Developer console LWC utilizing fetch() to exercise endpoints defined in Section 5.3.
-- **c-changelog:** Displays live commit history fetched via cached Apex data.
-- **c-skill-network:** Visualizes Junction Objects via AntV G6 to achieve "IcePanel-style" animated flow lines.
+- **`c-hero-banner`:** Includes "How to Evaluate Me" navigation guide.
+- **`c-testimonial-submit`:** "Mad Libs" style sentence builder with Vibe Toggle (Professional/Casual).
+- **`c-api-tester`:** Developer console LWC utilizing fetch() to exercise endpoints defined in Section 5.3.
+- **`c-changelog`:** Displays live commit history fetched via cached Apex data.
+- **`c-skill-network`:** Visualizes Junction Objects via AntV G6 to achieve "IcePanel-style" animated flow lines.
   - **Performance Strategy:** Implements strict code-splitting by lazy-loading the G6 library only when the component enters the viewport. This ensures the initial page load LCP remains < 2.5s.
   - **Mobile Strategy:** Automatically detects mobile viewports and falls back to a static SVG image to prevent canvas rendering overhead on low-power devices.
   - **Accessibility:** Includes a "Pause Animation" toggle button for users with motion sensitivity.
   - **Dependency:** Requires Lightning Web Security (LWS) to be enabled.
-- **c-code-viewer:** Fetches raw source code via Prism.js.
-- **c-resume-builder:** Client-side PDF generation via jsPDF.
-- **c-roadmap-viewer:** Performs real-time REST callout to Jira API to render "In Progress" and "Done" columns for the roadmap board.
-- **c-footer:** Contains GitHub Actions Badge.
+- **`c-code-viewer`:** Fetches raw source code via Prism.js.
+- **`c-resume-builder`:** Client-side PDF generation via jsPDF.
+- **`c-roadmap-viewer`:** Performs real-time REST callout to Jira API to render "In Progress" and "Done" columns for the roadmap board.
+- **`c-footer`:** Contains GitHub Actions Badge.
 
 ## 7. Architectural Decision Records (ADRs)
 
@@ -527,7 +527,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 ### 8.3 API Rate Limit Exhaustion
 
 - **Symptom:** GitHub Commits or Portfolio API returns status 429.
-- **Mitigation:** System automatically serves cached responses from GitHub_Cache\_\_c (Custom Setting) indefinitely until the limit resets.
+- **Mitigation:** System automatically serves cached responses from `GitHub_Cache__c` (Custom Setting) indefinitely until the limit resets.
 
 ### 8.4 Resilience Simulation Operations
 
@@ -555,9 +555,9 @@ The system exposes real-time telemetry to the user via the c-system-health-foote
 - **A.1 CI/CD Pipeline Configuration:** Authentication via Connected App with "Use Digital Signatures." Stores keys in GitHub Secrets. Use pr.yml for quality gates and deploy.yml for production push.
 - **A.2 CORS & Security:** Whitelist custom domain, enable LWS, update CSP for external scripts (Calendly, GitHub, Atlassian). Log retention policy: Zero-Persistence.
 - **A.3 Code Reusability:** Shared Prism.js utility module. Nebula Logger handles try/catch blocks.
-- **A.4 GitHub API Integration:** Uses Named Credential GitHub_API. Caches to GitHub_Cache\_\_c. Refreshed by GitHubCacheRefreshJob.cls.
+- **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches to `GitHub_Cache__c`. Refreshed by `GitHubCacheRefreshJob.cls`.
 - **A.5 Hero Banner Navigation:** (Refer to UI specs).
-- **A.6 Agentforce Configuration:** Configure Agent Topic to query Project\_\_c. Use "Mirror Mode" in system instructions.
+- **A.6 Agentforce Configuration:** Configure Agent Topic to query `Project__c`. Use "Mirror Mode" in system instructions.
 - **A.7 Architecture Diagram Hosting:** Export C4 diagram and upload as Static Resource.
 - **A.8 Jira Integration:** Endpoint: ryanbumstead.atlassian.net. Auth: Basic Auth with Named Credential.
 - **A.9 Advanced Visualization Strategy:**
@@ -577,11 +577,11 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 
 **Version:** 1.2.0
 
-**Security:** System-to-system API Key headers (client_id, client_secret) validated via Salesforce Custom Metadata.
+**Security:** System-to-system API Key headers (`client_id`, `client_secret`) validated via Salesforce Custom Metadata.
 
 **Key Design Principles:**
 
-- **Zero Trust Architecture:** All endpoints require explicit API Key validation (client_id, client_secret) mapped to Custom Metadata permissions
+- **Zero Trust Architecture:** All endpoints require explicit API Key validation (`client_id`, `client_secret`) mapped to Custom Metadata permissions
 - **Distributed Tracing:** Mandatory `X-Request-Id` header (UUID format) in all requests for correlation across log aggregation systems
 - **Contract-First Design:** OpenAPI 3.0 specification defines the interface before implementation
 - **Explicit Caching:** `Cache-Control` headers distinguish between cacheable configuration (`max-age=300`) and dynamic data (`no-store`)
@@ -593,14 +593,14 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 | Endpoint                 | Method | Purpose                                        | Cache Strategy          |
 | :----------------------- | :----- | :--------------------------------------------- | :---------------------- |
 | `/contacts`              | GET    | Retrieve Contact records                       | No-Cache (PII)          |
-| `/experience`            | GET    | Retrieve Experience\_\_c records               | No-Cache (Dynamic)      |
+| `/experience`            | GET    | Retrieve `Experience__c` records               | No-Cache (Dynamic)      |
 | `/experience-highlights` | GET    | Retrieve resume bullets with persona filtering | No-Cache (Dynamic)      |
-| `/projects`              | GET    | Retrieve Project\_\_c records                  | Cacheable (5 min)       |
+| `/projects`              | GET    | Retrieve `Project__c` records                  | Cacheable (5 min)       |
 | `/projects/{id}`         | GET    | Retrieve single Project by ID                  | Cacheable (5 min)       |
 | `/projects`              | POST   | Create Project (Future - Currently 405)        | N/A                     |
 | `/project-assets`        | GET    | Retrieve media assets linked to projects       | Cacheable (5 min)       |
 | `/testimonials`          | GET    | Retrieve approved testimonials                 | No-Cache (Social Proof) |
-| `/skills`                | GET    | Retrieve Skill\_\_c records                    | Cacheable (5 min)       |
+| `/skills`                | GET    | Retrieve `Skill__c` records                    | Cacheable (5 min)       |
 | `/certifications`        | GET    | Retrieve certification records                 | Cacheable (5 min)       |
 | `/education`             | GET    | Retrieve education records                     | Cacheable (5 min)       |
 | `/portfolio-config`      | GET    | Retrieve global configuration singleton        | Cacheable (5 min)       |
@@ -781,7 +781,7 @@ The following policies were configured in API Manager to demonstrate enterprise 
 
 ### Appendix D: Data Dictionary (Detailed Schema)
 
-#### D.1 Object: Experience\_\_c
+#### D.1 Object: `Experience__c`
 
 Represents an employment period.
 
@@ -793,10 +793,10 @@ Represents an employment period.
 | **End Date**        | `End_Date__c`        | Date      | -      | No       | Employment end (Null if current). |
 | **Is Current Role** | `Is_Current_Role__c` | Checkbox  | -      | No       | Logic flag for "Present".         |
 | **Is Remote**       | `Is_Remote__c`       | Checkbox  | -      | No       | Remote work flag.                 |
-| **Accomplishments** | `Accomplishments__c` | Long Text | 32768  | No       | Summary text.                     |
+| **Accomplishments** | `Accomplishments__c` | Long Text | 32768  | No       | Summary text. (Deprecated)        |
 | **Sort Order**      | `Sort_Order__c`      | Number    | 18,0   | No       | Custom sort logic.                |
 
-#### D.2 Object: Experience_Highlight\_\_c
+#### D.2 Object: `Experience_Highlight__c`
 
 Granular bullet points for resume generation.
 
@@ -809,7 +809,7 @@ Granular bullet points for resume generation.
 | **Admin Sort**  | `Admin_Sort_Order__c`     | Number        | 2,0    | No       | Sort order for Admin resume. |
 | **Dev Sort**    | `Developer_Sort_Order__c` | Number        | 2,0    | No       | Sort order for Dev resume.   |
 
-#### D.3 Object: Project\_\_c
+#### D.3 Object: `Project__c`
 
 Portfolio case studies.
 
@@ -824,7 +824,7 @@ Portfolio case studies.
 | **Live URL**       | `Live_URL__c`       | URL       | 255    | No       | Link to demo.       |
 | **Repository**     | `Repository_URL__c` | URL       | 255    | No       | Link to code.       |
 
-#### D.4 Object: Testimonial\_\_c
+#### D.4 Object: `Testimonial__c`
 
 Social proof records.
 
@@ -837,7 +837,7 @@ Social proof records.
 | **Vibe Mode**    | `Vibe_Mode__c`         | Picklist | -      | Yes      | Display filter.      |
 | **Approved**     | `Approved__c`          | Checkbox | -      | No       | Security gate.       |
 
-#### D.5 Object: GitHub_Cache\_\_c
+#### D.5 Object: `GitHub_Cache__c`
 
 Stores transient API responses to avoid rate limits.
 
@@ -846,7 +846,7 @@ Stores transient API responses to avoid rate limits.
 | **Name**         | `Name`            | Text      | 80     | Yes      | Cache Key (e.g., 'RecentCommits'). |
 | **JSON Payload** | `JSON_Payload__c` | Long Text | 131072 | Yes      | The raw JSON response from GitHub. |
 
-#### D.6 Object: Portfolio_Config\_\_mdt (Custom Metadata)
+#### D.6 Object: `Portfolio_Config__mdt` (Custom Metadata)
 
 Global configuration settings.
 
@@ -858,7 +858,7 @@ Global configuration settings.
 | **GitHub**      | `GitHub_Profile_URL__c` | URL       | 255    | Yes      | Repo URL.               |
 | **Career Obj**  | `Career_Objective__c`   | Text Area | 255    | No       | Short bio header.       |
 
-#### D.7 Object: Project_Skill\_\_c (Junction)
+#### D.7 Object: `Project_Skill__c` (Junction)
 
 Links Projects to Skills for the G6 Graph.
 
@@ -867,7 +867,7 @@ Links Projects to Skills for the G6 Graph.
 | **Project** | `Project__c` | Master-Detail(`Project__c`) | Yes      | Parent Project.   |
 | **Skill**   | `Skill__c`   | Master-Detail(`Skill__c`)   | Yes      | Associated Skill. |
 
-#### D.8 Object: Experience_Skill\_\_c (Junction)
+#### D.8 Object: `Experience_Skill__c` (Junction)
 
 Links Experience to Skills.
 
@@ -876,7 +876,7 @@ Links Experience to Skills.
 | **Experience** | `Experience__c` | Master-Detail(`Experience__c`) | Yes      | Parent Experience.  |
 | **Skill**      | `Skill__c`      | Master-Detail(`Skill__c`)      | Yes      | Skill Demonstrated. |
 
-#### D.9 Object: Skill\_\_c
+#### D.9 Object: `Skill__c`
 
 Competency library.
 
@@ -887,7 +887,7 @@ Competency library.
 | **Icon Name**   | `Icon_Name__c`   | Text     | 100    | No       | SLDS icon reference or custom SVG. |
 | **Proficiency** | `Proficiency__c` | Number   | 2,0    | No       | Self-assessed skill level 1-5.     |
 
-#### D.10 Object: Project_Asset\_\_c
+#### D.10 Object: `Project_Asset__c`
 
 Media gallery assets.
 
@@ -912,11 +912,11 @@ Media gallery assets.
 
 To support high-volume queries during traffic spikes (e.g., LinkedIn post viral shares):
 
-- **Indexed Fields:** Project**c.Status**c + Project**c.Pillar**c (Composite Index)
+- **Indexed Fields:** `Project__c.Status__c` + `Project__c.Pillar__c` (Composite Index)
 - **Query:** `SELECT Id FROM Project__c WHERE Status__c IN ('Live — Demo / Reference', 'Live — In Production', 'Active Development') AND Pillar__c = 'C'`
 - **Justification:** API Tester component filters by pillar (Section 5.3).
-- **Non-Indexed Fields:** Testimonial**c.Context**c (Text, rarely filtered).
-- **Why Skip:** Only queried via Approved\_\_c = true (already indexed via checkbox).
+- **Non-Indexed Fields:** `Testimonial__c.Context__c` (Text, rarely filtered).
+- **Why Skip:** Only queried via `Approved__c = true` (already indexed via checkbox).
 
 ### Appendix F: Testing Strategy
 
@@ -976,15 +976,15 @@ To demonstrate Cloud Financial Management (FinOps) awareness, this architecture 
 - **Circuit Breaker Policy: If daily quota > 1,200 (80%):**
   1. **Force GeminiCircuitBreaker to OPEN for 3600s.**
   2. **Route traffic to LocalTemplateService.**
-  3. **Trigger Alert to Owner_Email\_\_c.**
+  3. **Trigger Alert to `Owner_Email__c`.**
 
 ### Appendix K: Validation Rules & Logic
 
-- **K.1 Experience\_\_c:** VR_End_Date_After_Start.
-- **K.2 Experience_Highlight\_\_c:** VR_Persona_Required.
-- **K.3 Testimonial\_\_c:** VR_Vibe_Required.
-- **K.4 Sharing Rules:** Guest User Read-Only for Project/Experience. Testimonial is Private (No Access).
-- **K.5** Restriction Rules on Guest User Profile verified compatible in Spring '26. Fallback to Criteria-Based Sharing Rule (Approved\_\_c = true) remains documented if needed.
+- **K.1 `Experience__c`:** `VR_End_Date_After_Start`.
+- **K.2 `Experience_Highlight__c`:** `VR_Persona_Required`.
+- **K.3 `Testimonial__c`:** `VR_Vibe_Required`.
+- **K.4 Sharing Rules:** Guest User Read-Only for `Project__c`/`Experience__c`. `Testimonial__c` is Private (No Access).
+- **K.5** Restriction Rules on Guest User Profile verified compatible in Spring '26. Fallback to Criteria-Based Sharing Rule (`Approved__c = true`) remains documented if needed.
 
 ### Appendix L: Reference Artifacts
 

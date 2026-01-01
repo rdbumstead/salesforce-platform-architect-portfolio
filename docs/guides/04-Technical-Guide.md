@@ -104,7 +104,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 
 ### 2.3 Agentforce Integration
 
-- **Grounding:** Configure Agent Topic to query Project\_\_c.
+- **Grounding:** Configure Agent Topic to query `Project__c`.
 - **System Prompt:** Use "Mirror Mode" in system instructions to reveal logic.
 - **Fallback:** If unavailable, use "Fallback Mode" in Custom Metadata to display a static "AI Interaction Preview" video.
 
@@ -176,26 +176,26 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
   - Includes a "Pause Animation" toggle button.
   - Uses the **"Shadow Structure" Pattern** (a visually hidden `<ul>`) for screen readers.
 
-### 3.2 c-resume-builder
+### 3.2 `c-resume-builder`
 
 - Performs client-side PDF generation using **jsPDF**.
-- The underlying Apex logic filters Experience_Highlight\_\_c records based on the user's requested **Persona Tag** (e.g., Admin vs. Architect).
+- The underlying Apex logic filters `Experience_Highlight__c` records based on the user's requested **Persona Tag** (e.g., Admin vs. Architect).
 
 ### 3.3 c-testimonial-submit
 
 - Uses a "Mad Libs" style sentence builder.
 - Includes a "Vibe Toggle" (Professional/Casual) to implement the "Vibe-Gated" submission pattern.
 
-### 3.4 Dynamic ERD Visualizer (c-schema-visualizer)
+### 3.4 Dynamic ERD Visualizer (`c-schema-visualizer`)
 
-- **Schema Extraction:** The Apex controller SchemaService.cls utilizes Schema.getGlobalDescribe() to dynamically map Project**c, Skill**c, and their Junction objects.
+- **Schema Extraction:** The Apex controller `SchemaService.cls` utilizes `Schema.getGlobalDescribe()` to dynamically map `Project__c`, `Skill__c`, and their Junction objects.
 - **Node Mapping:** Salesforce Child Relationships (getDescribe().getChildRelationships()) are mapped to G6 "Edges," while SObjects are mapped to "Nodes."
 - **Performance:** To prevent Heap Size errors during schema description, the service is strictly scoped to the portfolio namespace and caches the JSON result in Platform Cache.
 
-### 3.5 Executable Governance (c-smart-docs)
+### 3.5 Executable Governance (`c-smart-docs`)
 
-- **Event Subscription:** Utilizes the lightning/empApi module to subscribe to event/Governance_Notification\_\_e.
-- **State Management:** The component maintains the state of checklist items (e.g., isBuildGreen, isTestsPassing) in the browser's localStorage so the "Verified" checkmarks persist across page reloads for the user session.
+- **Event Subscription:** Utilizes the `lightning/empApi` module to subscribe to `event/Governance_Notification__e`.
+- **State Management:** The component maintains the state of checklist items (e.g., `isBuildGreen`, `isTestsPassing`) in the browser's `localStorage` so the "Verified" checkmarks persist across page reloads for the user session.
 
 ### 3.6 c-system-health-footer (Glass Box)
 
