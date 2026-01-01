@@ -127,7 +127,7 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 
 ### Scenario: GitHub Rate Limit Exhaustion
 
-- The system uses `GitHub_Cache__c` to store API responses. If the API fails (429/500), the Apex GitHubService will automatically serve cached data.
+- The system uses `GitHub_Cache__c` to store API responses. If the API fails (429/500), the Apex `GitHubService` will automatically serve cached data.
 
 ## 5. Observability & Monitoring
 
