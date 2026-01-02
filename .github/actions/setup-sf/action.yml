@@ -58,5 +58,3 @@ runs:
         else
           sf org login jwt $LOGIN_FLAGS
         fi
-
-        rm portfolio.key
