@@ -68,8 +68,13 @@ jobs:
           OUTPUT=$(sf org create scratch --target-dev-hub portfolio --definition-file config/project-scratch-def.json --alias ci-org --duration-days 1 --set-default --no-ancestors --wait 30 --json 2>&1)
           EXIT_CODE=$?
           set -e
-          if [ $EXIT_CODE -ne 0 ] && echo "$OUTPUT" | grep -q "LIMIT_EXCEEDED"; then
-             echo "Scratch Org limit reached. Switching to Fallback Mode."
+          if [ $EXIT_CODE -ne 0 ]; then
+             if echo "$OUTPUT" | grep -q "LIMIT_EXCEEDED"; then
+                echo "Scratch Org limit reached. Switching to Fallback Mode."
+             else
+                echo "Scratch Org creation failed with unexpected error. Switching to Fallback Mode."
+                echo "::warning::Scratch org creation failed. Error: $OUTPUT"
+             fi
              echo "ORG_TYPE=fallback" >> $GITHUB_ENV
           fi
 
