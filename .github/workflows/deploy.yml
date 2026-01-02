@@ -52,7 +52,7 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.deployment_mode }}" == "full" ]; then
             sf project deploy start --source-dir packages --target-org portfolio --wait 60
-          elif [ -s changed/package/package.xml ]; then
+          elif { [ -s changed/package/package.xml ] && grep -q "<types>" changed/package/package.xml; } || { [ -s changed/destructiveChanges/destructiveChanges.xml ] && grep -q "<types>" changed/destructiveChanges/destructiveChanges.xml; }; then
             sf project deploy start --manifest changed/package/package.xml --post-destructive-changes changed/destructiveChanges/destructiveChanges.xml --target-org portfolio --wait 30
           else
             echo "No metadata changes detected."
