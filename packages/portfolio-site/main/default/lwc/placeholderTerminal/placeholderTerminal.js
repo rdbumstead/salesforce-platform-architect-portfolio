@@ -134,10 +134,10 @@ export default class PlaceholderTerminal extends LightningElement {
   }
 
   get terminalTitle() {
-    if (typeof window === "undefined")
-      return "RYAN_BUMSTEAD_PORTFOLIO_ARCHITECT v1.0";
+    // SSR Safe: use globalThis check or default to large screen
+    const width = globalThis?.innerWidth || 1200;
 
-    return window.innerWidth < 450
+    return width < 450
       ? "PORTFOLIO_ARCHITECT v1.0"
       : "RYAN_BUMSTEAD_PORTFOLIO_ARCHITECT v1.0";
   }
