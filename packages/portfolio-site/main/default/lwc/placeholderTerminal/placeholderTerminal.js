@@ -101,24 +101,42 @@ export default class PlaceholderTerminal extends LightningElement {
     }
   ];
 
+  static renderMode = "light";
+
+  _hasRendered = false;
+
   connectedCallback() {
-    this._handleEscape = this.handleGlobalKeydown.bind(this);
-    window.addEventListener("keydown", this._handleEscape);
+    // SSR: Do not access window or document here
+  }
 
-    const hasVisited = sessionStorage.getItem("portfolio_booted");
+  renderedCallback() {
+    if (this._hasRendered) return;
+    this._hasRendered = true;
 
-    if (hasVisited) {
-      this.skipBootSequence();
-    } else {
-      this.runBootSequence();
+    if (typeof window !== "undefined") {
+      this._handleEscape = this.handleGlobalKeydown.bind(this);
+      window.addEventListener("keydown", this._handleEscape);
+
+      const hasVisited = sessionStorage.getItem("portfolio_booted");
+
+      if (hasVisited) {
+        this.skipBootSequence();
+      } else {
+        this.runBootSequence();
+      }
     }
   }
 
   disconnectedCallback() {
-    window.removeEventListener("keydown", this._handleEscape);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("keydown", this._handleEscape);
+    }
   }
 
   get terminalTitle() {
+    if (typeof window === "undefined")
+      return "RYAN_BUMSTEAD_PORTFOLIO_ARCHITECT v1.0";
+
     return window.innerWidth < 450
       ? "PORTFOLIO_ARCHITECT v1.0"
       : "RYAN_BUMSTEAD_PORTFOLIO_ARCHITECT v1.0";
