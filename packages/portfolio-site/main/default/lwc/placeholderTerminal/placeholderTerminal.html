@@ -1,56 +1,73 @@
 <template>
+  <div class="component-container">
     <div class="terminal-container">
-        <div class="terminal-header" aria-hidden="true">
-            <div class="dots">
-                <span class="dot red"></span>
-                <span class="dot yellow"></span>
-                <span class="dot green"></span>
-            </div>
-            <div class="title">{terminalTitle}</div>
-            <div class="spacer"></div>
+      <div class="terminal-header" aria-hidden="true">
+        <div class="dots">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+        </div>
+        <div class="title">{terminalTitle}</div>
+        <div class="spacer"></div>
+      </div>
+
+      <div
+        class="terminal-body"
+        lwc:ref="terminalBody"
+        aria-live="polite"
+        aria-atomic="false"
+      >
+        <div class="log-line init">
+          <span class="icon">></span>
+          <span class="text">[INIT] Process ID: 2026</span>
         </div>
 
-        <div class="terminal-body" lwc:ref="terminalBody" aria-live="polite" aria-atomic="false">
-            <div class="log-line init">
-                <span class="icon">></span> 
-                <span class="text">[INIT] Process ID: 2026</span>
-            </div>
-
-            <template for:each={displayedLogs} for:item="log">
-                <div key={log.id} class={log.cssClass}>
-                    <span class="icon">{log.icon}</span>
-                    <span class="text">{log.text}</span>
-                </div>
-            </template>
-
-            <template lwc:if={isBooting}>
-                <div class="cursor-line">
-                    <span class="icon">></span>
-                    <span class="cursor-block"></span>
-                </div>
-            </template>
-        </div>
-        
-        <template lwc:if={isBooting}>
-            <button class="skip-btn" 
-                    onclick={handleSkip} 
-                    onkeydown={handleSkip}
-                    aria-label="Skip boot animation">
-                [ESC] SKIP DIAGNOSTICS
-            </button>
+        <template for:each={displayedLogs} for:item="log">
+          <div key={log.id} class={log.cssClass}>
+            <span class="icon">{log.icon}</span>
+            <span class="text">{log.text}</span>
+          </div>
         </template>
+
+        <template lwc:if={isBooting}>
+          <div class="cursor-line">
+            <span class="icon">></span>
+            <span class="cursor-block"></span>
+          </div>
+        </template>
+      </div>
+
+      <template lwc:if={isBooting}>
+        <button
+          class="skip-btn"
+          onclick={handleSkip}
+          onkeydown={handleSkip}
+          aria-label="Skip boot animation"
+        >
+          [ESC] SKIP DIAGNOSTICS
+        </button>
+      </template>
     </div>
 
     <div class={ctaClass}>
-        <h1>COMING SOON <span class="highlight">Q1 2026</span></h1>
-        
-        <div class="buttons">
-            <a href="https://www.linkedin.com/in/ryanbumstead" target="_blank" class="btn primary">
-                Connect on LinkedIn
-            </a>
-            <a href="https://github.com/rdbumstead" target="_blank" class="btn secondary">
-                View Source on GitHub
-            </a>
-        </div>
+      <h1>COMING SOON <span class="highlight">Q1 2026</span></h1>
+
+      <div class="buttons">
+        <a
+          href="https://www.linkedin.com/in/ryanbumstead"
+          target="_blank"
+          class="btn primary"
+        >
+          Connect on LinkedIn
+        </a>
+        <a
+          href="https://github.com/rdbumstead"
+          target="_blank"
+          class="btn secondary"
+        >
+          View Source on GitHub
+        </a>
+      </div>
     </div>
+  </div>
 </template>
