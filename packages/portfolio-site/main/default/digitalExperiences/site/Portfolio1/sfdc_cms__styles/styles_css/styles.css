@@ -1,83 +1,77 @@
-/*
- * LWR Global Overrides
- */
 :root {
-  /* Slate Palette */
-  --color-slate-950: #020617;
-  --color-slate-900: #0f172a;
-  --color-slate-800: #1e293b;
-  --color-slate-700: #334155;
-  --color-slate-200: #e2e8f0;
-  --color-slate-50: #f8fafc;
+  --slate-950: #020617;
+  --slate-900: #0f172a;
+  --slate-800: #1e293b;
+  --slate-700: #334155;
+  --slate-600: #475569;
+  --slate-400: #94a3b8;
+  --slate-200: #e2e8f0;
 
-  /* Semantic Theme Defaults */
-  --theme-bg-primary: var(--color-slate-950);
-  --theme-text-primary: var(--color-slate-200);
+  --theme-bg-primary: var(--slate-950);
+  --theme-bg-secondary: var(--slate-900);
+  --theme-text-primary: var(--slate-200);
+  --theme-accent-blue: #3b82f6;
+  --theme-accent-green: #22c55e;
+
   --font-mono: "Fira Code", "Courier New", monospace;
 
-  /* * THE FIX: DXP Styling Hooks 
-   * These tell standard LWR components (Header/Footer) to inherit your theme
-   */
-  --dxp-g-root: var(--theme-bg-primary); /* Sets the main site background */
-  --dxp-g-root-contrast: var(
-    --theme-text-primary
-  ); /* Sets default text color */
-  --dxp-s-link-text-color: var(
-    --color-slate-200
-  ); /* Fixes links getting lost */
-  --dxp-s-link-text-color-hover: #ffffff;
+  --dxp-g-root: var(--theme-bg-primary) !important;
+  --dxp-g-root-contrast: var(--theme-text-primary) !important;
+  --dxp-g-brand: var(--theme-accent-blue);
+
+  --dxp-c-header-color-background: transparent !important;
+  --dxp-c-footer-color-background: transparent !important;
+  --dxp-c-content-color-background: transparent !important;
+
+  --dxp-s-link-text-color: var(--theme-accent-blue);
+  --dxp-s-link-text-color-hover: #60a5fa;
 }
 
-/* * 1. Root reset 
- * Ensures the physical page container is dark 
- */
 html,
 body {
   height: 100%;
   font-family: var(--font-mono);
-  background-color: var(--theme-bg-primary) !important; /* Crucial override */
+  background-color: var(--theme-bg-primary) !important;
   color: var(--theme-text-primary);
+  margin: 0;
 }
 
-/* * 2. The LWR "White Bar" Killer
- * Target the specific LWR layout containers, not Aura classes
- */
 .dxp-content-layout,
 .dxp-root-layout,
 .dxp-site-layout,
 .dxp-region-header,
 .dxp-region-footer,
+.dxp-region-content,
 .dxp-section {
-  background-color: transparent !important; /* Let the body color shine through */
+  background-color: transparent !important;
   background: transparent !important;
 }
 
-/* Custom Scrollbar (Kept from your snippet) */
 ::-webkit-scrollbar {
   width: 10px;
+  height: 10px;
 }
+
 ::-webkit-scrollbar-track {
-  background: var(--color-slate-950);
+  background: var(--slate-950);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: var(--color-slate-700);
-  border-radius: 4px;
+  background: var(--slate-700);
+  border-radius: 5px;
+  border: 2px solid var(--slate-950);
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-slate-800);
+  background: var(--slate-600);
 }
 
-/* * 3. Button Resets
- * Removed Aura classes (.slds-button), kept generic and DXP specific
- */
-button,
-.dxp-button {
-  transition: all 0.2s ease-in-out !important;
+::selection {
+  background: rgba(34, 197, 94, 0.3);
+  color: #ffffff;
 }
 
-button:hover,
-.dxp-button:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+:focus-visible {
+  outline: 2px solid var(--slate-200);
+  outline-offset: 2px;
 }
