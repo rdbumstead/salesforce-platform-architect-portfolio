@@ -76,6 +76,17 @@
   text-overflow: ellipsis;
   text-align: center;
   margin: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-cursor {
+  display: inline-block;
+  color: var(--color-slate-700, #64748b);
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+  font-weight: 700;
 }
 
 .spacer {
