@@ -29,4 +29,60 @@ html {
 
 body {
   margin: 0;
+  /* Custom Scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-slate-700) var(--color-slate-950);
+}
+
+/* Chrome/Safari Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-slate-950);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-slate-700);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-slate-800);
+}
+
+/* Force Dark Background on Standard LWR Containers */
+.forceCommunityThemeHeader,
+.forceCommunityThemeFooter,
+.siteforceServiceBody,
+.cHeader,
+.cFooter,
+.slds-global-header_container {
+  background-color: var(--color-slate-950) !important;
+  color: var(--theme-text-primary) !important;
+}
+
+/* Button Animations & Styles Override */
+button,
+.slds-button,
+.dxp-button {
+  transition: all 0.2s ease-in-out !important;
+}
+
+button:hover,
+.slds-button:hover,
+.dxp-button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+button:active,
+.slds-button:active,
+.dxp-button:active {
+  transform: translateY(0px);
+  transform: scale(0.98);
 }
