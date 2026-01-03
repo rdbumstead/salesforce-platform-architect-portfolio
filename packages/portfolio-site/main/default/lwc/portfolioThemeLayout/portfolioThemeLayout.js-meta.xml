@@ -2,7 +2,7 @@
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>62.0</apiVersion>
     <isExposed>true</isExposed>
-    <masterLabel>Portfolio ArchGem Layout</masterLabel>
+    <masterLabel>Portfolio Custom Layout</masterLabel>
     <description
   >Custom LWR Layout with hard-coded Dark Mode fixes.</description>
     <targets>
