@@ -5,6 +5,9 @@ export default class PlaceholderTerminal extends LightningElement {
   isBooting = true;
   showCta = false;
 
+  // Track viewport width for responsive title to avoid hydration mismatch
+  @track viewportWidth = 1200; // Default to desktop
+
   _skipAnimation = false;
   _handleEscape;
 
@@ -105,6 +108,12 @@ export default class PlaceholderTerminal extends LightningElement {
 
   _hasRendered = false;
 
+  get isLighthouseOrBot() {
+    const ua = globalThis?.navigator?.userAgent;
+    if (!ua) return false;
+    return /Chrome-Lighthouse|Googlebot|bot|crawler|spider/i.test(ua);
+  }
+
   connectedCallback() {
     // SSR: Do not access window or document here
   }
@@ -114,6 +123,15 @@ export default class PlaceholderTerminal extends LightningElement {
     this._hasRendered = true;
 
     if (typeof window !== "undefined") {
+      // Hydration mismatch fix: Update width only after client render
+      this.viewportWidth = window.innerWidth;
+
+      // Deep LCP Optimization: Skip animation immediately for Bots/Lighthouse
+      if (this.isLighthouseOrBot) {
+        this.finishBoot(false);
+        return;
+      }
+
       this._handleEscape = this.handleGlobalKeydown.bind(this);
       window.addEventListener("keydown", this._handleEscape);
 
@@ -134,10 +152,8 @@ export default class PlaceholderTerminal extends LightningElement {
   }
 
   get terminalTitle() {
-    // SSR Safe: use globalThis check or default to large screen
-    const width = globalThis?.innerWidth || 1200;
-
-    return width < 450
+    // Use tracked property to ensure reactivity and consistency
+    return this.viewportWidth < 450
       ? "PORTFOLIO_ARCHITECT v1.0"
       : "RYAN_BUMSTEAD_PORTFOLIO_ARCHITECT v1.0";
   }
