@@ -1,0 +1,12 @@
+<apex:page
+  id="communitiesLandingPage"
+  controller="CommunitiesLandingController"
+  title="{!$Label.site.site_login}"
+>
+  <!-- Use JS to redirect to start URL to avoid PMD VfCsrf violation -->
+  <script>
+    window.onload = function () {
+      window.location.href = "{!$Site.Prefix}/home";
+    };
+  </script>
+</apex:page>
