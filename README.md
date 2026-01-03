@@ -2,6 +2,7 @@
 
 [![CI/CD — main](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml)
 [![PR Validation](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml)
+[![Cloudflare Worker](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy-worker.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy-worker.yml)
 [![Daily Org Heartbeat](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/keep-alive.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/keep-alive.yml)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Ryan_Bumstead-0077B5?logo=linkedin&logoColor=white)](https://linkedin.com/in/ryanbumstead)
 [![Trailhead](https://img.shields.io/badge/Trailhead-rbumstead-00A1E0?logo=salesforce&logoColor=white)](https://www.salesforce.com/trailblazer/rbumstead)
@@ -42,7 +43,7 @@ Principal-level Salesforce Platform Architecture including:
 - ✅ **6 enterprise architecture documents** — SAS, Charter, Technical Guide, Operations Guide, Governance Framework, Executive Overview
 - ✅ **26 architectural decisions documented** — Covering performance, security, AI governance, FinOps, resilience, and integration patterns
 - ✅ **12 core competencies mapped** — Each with verifiable artifacts and validation methods
-- ✅ **3 active CI/CD pipelines** — Delta deployments, PR validation gates, org heartbeat automation
+- ✅ **4 active CI/CD pipelines** — Delta deployments, PR validation gates, heartbeat, Cloudflare Worker deployments
 - ✅ **$0.00 forever multi-cloud architecture** — AWS Always-Free tier governance with Lambda Function URLs
 - 🚧 **MVP launch Q1 2026** — Interactive demonstrations and live API testing
 - 📐 **Phase 8 multi-cloud Q2 2026** — AWS Lambda BFF "Door 2" architecture activation
@@ -84,7 +85,7 @@ Principal-level Salesforce Platform Architecture including:
 **✅ Available Now:**
 
 - [Architecture decisions documented with rationale](docs/guides/03-SAS.md#7-architectural-decision-records-adrs) — 26 ADRs covering performance, security, AI, FinOps
-- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) — 3 active workflows (deploy, PR validation, org heartbeat)
+- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) — 4 active workflows (deploy, PR validation, heartbeat, worker)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml) — Twin API pattern with SAPI + PAPI specifications
 - [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#adr-018-finops-constraint--aws-lambda-function-urls-vs-api-gateway) — $0.00 forever architecture using AWS Always-Free tier
 - [Mobile performance targets quantified](docs/guides/03-SAS.md#adr-020-mobile-performance--static-svg-fallback-strategy) — LCP < 2.5s with static SVG fallback strategy
