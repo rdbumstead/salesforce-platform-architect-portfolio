@@ -5,7 +5,7 @@
     "brandingSetType": "APP",
     "definitionName": "talon-template-byo:branding",
     "values": {
-      "BackgroundColor": "#ffffff",
+      "BackgroundColor": "#020617",
       "BaseFont": "var(--dxp-g-root-font-family)",
       "BaseFontSize": "1rem",
       "BodyFont": "var(--dxp-s-html-font-family)",
@@ -192,7 +192,7 @@
       "TertiaryButtonHoverColor": "var(--dxp-s-tertiary-button-color-1)",
       "TertiaryButtonHoverTextColor": "var(--dxp-s-tertiary-button-text-color-1)",
       "TertiaryButtonTextColor": "var(--dxp-s-button-color)",
-      "TextColor": "#1a1b1e",
+      "TextColor": "#e2e8f0",
       "VerticalRowPaddingDesktop": "1rem",
       "VerticalRowPaddingMobile": "0.75rem",
       "_BackgroundColor1": "#ebebeb",
