@@ -125,6 +125,7 @@ test-result/
 **/test-result/
 test-results/
 **/test-results/
+.lighthouseci/**
 
 # ---------------------------------------------------------------------
 # CI/CD, Delta & Build Artifacts
@@ -142,6 +143,7 @@ build/
 .tmp/
 .temp/
 .cache/
+.wrangler/
 
 # Deployment Artifacts
 .deploy/
