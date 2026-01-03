@@ -109,8 +109,8 @@ export default class PlaceholderTerminal extends LightningElement {
   _hasRendered = false;
 
   get isLighthouseOrBot() {
-    if (typeof window === "undefined" || !window.navigator) return false;
-    const ua = window.navigator.userAgent;
+    const ua = globalThis?.navigator?.userAgent;
+    if (!ua) return false;
     return /Chrome-Lighthouse|Googlebot|bot|crawler|spider/i.test(ua);
   }
 
