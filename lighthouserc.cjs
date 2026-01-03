@@ -2,7 +2,7 @@
 module.exports = {
   ci: {
     collect: {
-      url: ['https://rbumstead-dev-ed.develop.my.site.com/portfolio/'],
+      url: ['https://ryanbumstead.com/'],
       numberOfRuns: 3,
     },
     assert: {
