@@ -1,0 +1,32 @@
+/*
+ * Your global styles here
+ */
+:root {
+  /* Slate Palette */
+  --color-slate-950: #020617;
+  --color-slate-900: #0f172a;
+  --color-slate-800: #1e293b;
+  --color-slate-700: #334155;
+  --color-slate-200: #e2e8f0;
+  --color-slate-50: #f8fafc;
+
+  /* Semantic Theme Defaults */
+  --theme-bg-primary: var(--color-slate-950);
+  --theme-text-primary: var(--color-slate-200);
+  --font-mono: "Fira Code", "Courier New", monospace;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: var(--font-mono);
+  color: var(--theme-text-primary);
+}
+
+html {
+  background: var(--theme-bg-primary);
+}
+
+body {
+  margin: 0;
+}

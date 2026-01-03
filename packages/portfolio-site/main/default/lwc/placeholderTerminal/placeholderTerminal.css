@@ -4,9 +4,7 @@
   align-items: center;
   justify-content: center;
   min-height: 80vh;
-  background-color: transparent;
-  color: #334155;
-  font-family: "Fira Code", "Courier New", monospace;
+  /* Inherit global theme colors from body */
   padding: 1rem;
   width: 100%;
 }
@@ -14,21 +12,21 @@
 .terminal-container {
   width: 100%;
   max-width: 800px;
-  background-color: #020617;
+  background-color: var(--color-slate-950, #020617);
   border-radius: 8px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  border: 1px solid #1e293b;
+  border: 1px solid var(--color-slate-800, #1e293b);
   margin-bottom: 2rem;
   position: relative;
 }
 
 .terminal-header {
-  background-color: #0f172a;
+  background-color: var(--color-slate-900, #0f172a);
   padding: 8px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--color-slate-800, #1e293b);
   height: 40px;
   border-radius: 8px 8px 0 0;
 }
@@ -70,7 +68,7 @@
 
 .title {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--color-slate-700, #64748b);
   letter-spacing: 0.5px;
   font-weight: 600;
   white-space: nowrap;
@@ -189,7 +187,7 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: #0f172a;
+  color: var(--theme-text-primary, #e2e8f0);
   line-height: 1.2;
   letter-spacing: -1px;
 }
