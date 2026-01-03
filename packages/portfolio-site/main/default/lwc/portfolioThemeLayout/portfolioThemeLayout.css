@@ -6,7 +6,7 @@
   --dxp-g-root-contrast: #e2e8f0;
 }
 
-.archgem-layout-wrapper {
+.portfolio-layout-wrapper {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -28,7 +28,7 @@
 }
 
 @media screen and (max-width: 768px) {
-  .archgem-layout-wrapper {
+  .portfolio-layout-wrapper {
     min-height: 100dvh;
   }
 }
