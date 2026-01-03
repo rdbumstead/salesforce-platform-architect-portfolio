@@ -63,6 +63,25 @@ body {
   color: var(--theme-text-primary) !important;
 }
 
+/* Force Dark Background on Sections & Layouts */
+.dxp-content-layout,
+.dxp-section,
+.ui-widget,
+.siteforceContentArea,
+.siteforceServiceBody {
+  background-color: var(--color-slate-950) !important;
+  background: var(--color-slate-950) !important;
+}
+
+/* Fix any columns or regions with white backgrounds */
+.slds-col,
+.dxp-region-header,
+.dxp-region-footer,
+.siteforceHeaderRegion,
+.siteforceFooterRegion {
+  background-color: transparent !important;
+}
+
 /* Button Animations & Styles Override */
 button,
 .slds-button,
