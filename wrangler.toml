@@ -1,0 +1,9 @@
+name = "portfolio-cache-warmer"
+main = "scripts/cache-warmer.js"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["*/5 * * * *"] # Run every 5 minutes
+
+[vars]
+TARGET_URL = "https://ryanbumstead.com/"

@@ -1,8 +1,10 @@
 /* eslint-env node */
+const url = process.env.TARGET_URL || 'https://ryanbumstead.com/';
+
 module.exports = {
   ci: {
     collect: {
-      url: ['https://ryanbumstead.com/'],
+      url: [url],
       numberOfRuns: 3,
     },
     assert: {
