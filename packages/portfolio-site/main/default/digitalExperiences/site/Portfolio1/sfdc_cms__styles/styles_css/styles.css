@@ -1,5 +1,5 @@
 /*
- * Your global styles here
+ * LWR Global Overrides
  */
 :root {
   /* Slate Palette */
@@ -14,94 +14,70 @@
   --theme-bg-primary: var(--color-slate-950);
   --theme-text-primary: var(--color-slate-200);
   --font-mono: "Fira Code", "Courier New", monospace;
+
+  /* * THE FIX: DXP Styling Hooks 
+   * These tell standard LWR components (Header/Footer) to inherit your theme
+   */
+  --dxp-g-root: var(--theme-bg-primary); /* Sets the main site background */
+  --dxp-g-root-contrast: var(
+    --theme-text-primary
+  ); /* Sets default text color */
+  --dxp-s-link-text-color: var(
+    --color-slate-200
+  ); /* Fixes links getting lost */
+  --dxp-s-link-text-color-hover: #ffffff;
 }
 
+/* * 1. Root reset 
+ * Ensures the physical page container is dark 
+ */
 html,
 body {
   height: 100%;
   font-family: var(--font-mono);
+  background-color: var(--theme-bg-primary) !important; /* Crucial override */
   color: var(--theme-text-primary);
 }
 
-html {
-  background: var(--theme-bg-primary);
+/* * 2. The LWR "White Bar" Killer
+ * Target the specific LWR layout containers, not Aura classes
+ */
+.dxp-content-layout,
+.dxp-root-layout,
+.dxp-site-layout,
+.dxp-region-header,
+.dxp-region-footer,
+.dxp-section {
+  background-color: transparent !important; /* Let the body color shine through */
+  background: transparent !important;
 }
 
-body {
-  margin: 0;
-  /* Custom Scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-slate-700) var(--color-slate-950);
-}
-
-/* Chrome/Safari Scrollbar */
+/* Custom Scrollbar (Kept from your snippet) */
 ::-webkit-scrollbar {
   width: 10px;
 }
-
 ::-webkit-scrollbar-track {
   background: var(--color-slate-950);
 }
-
 ::-webkit-scrollbar-thumb {
   background: var(--color-slate-700);
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-slate-800);
 }
 
-/* Force Dark Background on Standard LWR Containers */
-.forceCommunityThemeHeader,
-.forceCommunityThemeFooter,
-.siteforceServiceBody,
-.cHeader,
-.cFooter,
-.slds-global-header_container {
-  background-color: var(--color-slate-950) !important;
-  color: var(--theme-text-primary) !important;
-}
-
-/* Force Dark Background on Sections & Layouts */
-.dxp-content-layout,
-.dxp-section,
-.ui-widget,
-.siteforceContentArea,
-.siteforceServiceBody {
-  background-color: var(--color-slate-950) !important;
-  background: var(--color-slate-950) !important;
-}
-
-/* Fix any columns or regions with white backgrounds */
-.slds-col,
-.dxp-region-header,
-.dxp-region-footer,
-.siteforceHeaderRegion,
-.siteforceFooterRegion {
-  background-color: transparent !important;
-}
-
-/* Button Animations & Styles Override */
+/* * 3. Button Resets
+ * Removed Aura classes (.slds-button), kept generic and DXP specific
+ */
 button,
-.slds-button,
 .dxp-button {
   transition: all 0.2s ease-in-out !important;
 }
 
 button:hover,
-.slds-button:hover,
 .dxp-button:hover {
   transform: translateY(-2px);
   filter: brightness(1.1);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-button:active,
-.slds-button:active,
-.dxp-button:active {
-  transform: translateY(0px);
-  transform: scale(0.98);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
