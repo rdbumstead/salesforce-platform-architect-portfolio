@@ -8,7 +8,7 @@
 @isTest
 private class GeminiServiceTest {
   @isTest
-  static void testGenerateContent_Success() {
+  static void testGenerateContentSuccess() {
     // 1. Set Mock
     Test.setMock(
       HttpCalloutMock.class,
@@ -32,7 +32,7 @@ private class GeminiServiceTest {
   }
 
   @isTest
-  static void testGenerateContent_Error() {
+  static void testGenerateContentError() {
     // 1. Set Mock
     Test.setMock(
       HttpCalloutMock.class,
@@ -56,7 +56,7 @@ private class GeminiServiceTest {
   }
 
   @isTest
-  static void testGenerateContent_Exception() {
+  static void testGenerateContentException() {
     // Force an exception by passing null to the mock engine if needed,
     // or rely on the 400 error test to cover the main catch block path depending on how robust the catch is.
     // The 'Error' test above covers the "if status != 200" path.

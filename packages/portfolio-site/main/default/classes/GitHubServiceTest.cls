@@ -8,7 +8,7 @@
 @isTest
 private class GitHubServiceTest {
   @isTest
-  static void testGetRecentCommits_Success() {
+  static void testGetRecentCommitsSuccess() {
     // 0. Set Service Mock
     PortfolioService.mockConfig = new Portfolio_Config__mdt(
       GitHub_Repo_Path__c = 'test/repo'
@@ -36,7 +36,7 @@ private class GitHubServiceTest {
   }
 
   @isTest
-  static void testGetRecentCommits_Error() {
+  static void testGetRecentCommitsError() {
     // 1. Set Mock (Failure)
     Test.setMock(
       HttpCalloutMock.class,

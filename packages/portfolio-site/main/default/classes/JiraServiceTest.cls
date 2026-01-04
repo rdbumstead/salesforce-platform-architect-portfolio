@@ -1,7 +1,7 @@
 @isTest
 private class JiraServiceTest {
   @isTest
-  static void testGetRoadmap_Success() {
+  static void testGetRoadmapSuccess() {
     // 0. Set Service Mock
     PortfolioService.mockConfig = new Portfolio_Config__mdt(
       Jira_Project_Key__c = 'SPAP'
@@ -30,7 +30,7 @@ private class JiraServiceTest {
   }
 
   @isTest
-  static void testGetRoadmap_Error() {
+  static void testGetRoadmapError() {
     // 1. Set Mock
     Test.setMock(
       HttpCalloutMock.class,
