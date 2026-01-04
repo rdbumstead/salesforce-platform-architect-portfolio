@@ -7,7 +7,7 @@ private class CacheCleanupSchedulerTest {
   @IsTest
   static void testSchedulerExecution() {
     System.runAs(new User(Id = UserInfo.getUserId())) {
-      CacheCleanupTestDataFactory.createGithubCache(3);
+      TestFactory.createJiraCache(200);
 
       for (Github_Cache__c g : [SELECT Id FROM Github_Cache__c]) {
         Test.setCreatedDate(g.Id, Datetime.now().addHours(-3));

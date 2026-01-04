@@ -9,7 +9,7 @@ private class GithubCacheCleanupBatchTest {
     System.runAs(new User(Id = UserInfo.getUserId())) {
       CacheCleanupSettings.testOverrideEnabled = true;
 
-      CacheCleanupTestDataFactory.createGithubCache(10);
+      TestFactory.createGithubCache(10);
 
       for (Github_Cache__c rec : [SELECT Id FROM Github_Cache__c]) {
         Test.setCreatedDate(rec.Id, Datetime.now().addHours(-5));
@@ -31,7 +31,7 @@ private class GithubCacheCleanupBatchTest {
   static void testGithubBatchWhenDisabled() {
     CacheCleanupSettings.testOverrideEnabled = false;
 
-    CacheCleanupTestDataFactory.createGithubCache(10);
+    TestFactory.createGithubCache(10);
 
     Test.startTest();
     Database.executeBatch(new GithubCacheCleanupBatch(), 200);

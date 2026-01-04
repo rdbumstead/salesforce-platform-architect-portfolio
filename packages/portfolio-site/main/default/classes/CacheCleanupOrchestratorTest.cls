@@ -12,7 +12,7 @@ private class CacheCleanupOrchestratorTest {
     System.runAs(new User(Id = UserInfo.getUserId())) {
       CacheCleanupSettings.testOverrideEnabled = true;
 
-      CacheCleanupTestDataFactory.createGithubCache(5);
+      TestFactory.createGithubCache(5);
 
       for (Github_Cache__c g : [SELECT Id FROM Github_Cache__c]) {
         Test.setCreatedDate(g.Id, Datetime.now().addHours(-5));
@@ -62,7 +62,7 @@ private class CacheCleanupOrchestratorTest {
   static void testRunJiraCleanupWhenEnabled() {
     CacheCleanupSettings.testOverrideEnabled = true;
 
-    CacheCleanupTestDataFactory.createJiraCache(4);
+    TestFactory.createJiraCache(4);
 
     for (Jira_Cache__c j : [SELECT Id FROM Jira_Cache__c]) {
       Test.setCreatedDate(j.Id, Datetime.now().addHours(-2));

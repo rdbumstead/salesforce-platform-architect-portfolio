@@ -9,7 +9,7 @@ private class JiraCacheCleanupBatchTest {
     System.runAs(new User(Id = UserInfo.getUserId())) {
       CacheCleanupSettings.testOverrideEnabled = true;
 
-      CacheCleanupTestDataFactory.createJiraCache(10);
+      TestFactory.createJiraCache(200);
 
       for (Jira_Cache__c rec : [SELECT Id FROM Jira_Cache__c]) {
         Test.setCreatedDate(rec.Id, Datetime.now().addHours(-1));
