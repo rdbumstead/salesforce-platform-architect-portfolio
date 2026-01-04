@@ -13,7 +13,8 @@ private class SAPI_TestimonialTest {
       Author_Name__c = 'Jane Doe',
       Approved__c = true,
       Relationship_Type__c = 'Manager',
-      Vibe_Mode__c = 'Professional'
+      Vibe_Mode__c = 'Professional',
+      Sort_Order__c = 1
     );
     insert t;
   }
@@ -22,7 +23,6 @@ private class SAPI_TestimonialTest {
   static void testGetTestimonialsSuccess() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/sapi/v1/testimonials/';
     req.httpMethod = 'GET';
@@ -34,6 +34,9 @@ private class SAPI_TestimonialTest {
       SAPI_Testimonial.getTestimonials();
       Test.stopTest();
 
+      if (res.statusCode != 200) {
+        System.assert(false, 'ERR:' + res.responseBody.toString());
+      }
       System.assertEquals(200, res.statusCode, 'Should return 200 OK');
       System.assertNotEquals(
         null,
@@ -53,7 +56,7 @@ private class SAPI_TestimonialTest {
   static void testGetTestimonialsWithFilter() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'vibeMode' => 'Professional' };
+    req.params.put('vibeMode', 'Professional');
 
     req.requestURI = '/services/apexrest/sapi/v1/testimonials/';
     req.httpMethod = 'GET';
@@ -73,7 +76,7 @@ private class SAPI_TestimonialTest {
   static void testGetTestimonialsInvalidLimit() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'limit' => '0' };
+    req.params.put('limit', '0');
 
     req.requestURI = '/services/apexrest/sapi/v1/testimonials/';
     req.httpMethod = 'GET';

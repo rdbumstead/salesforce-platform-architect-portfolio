@@ -37,20 +37,20 @@ global with sharing class SAPI_Experience {
 
       // Build dynamic query
       String baseQuery =
-        'SELECT Id, Name, Employer__c, Employer__r.Name, Role__c, ' +
-        'Start_Date__c, End_Date__c, Is_Current__c, Is_Remote__c, Sort_Order__c, ' +
+        'SELECT Id, Name, Employer__c, Employer__r.Name, Position_Title__c, ' +
+        'Start_Date__c, End_Date__c, Is_Current_Role__c, Is_Remote__c, Sort_Order__c, ' +
         'Contact__c, Contact__r.Name, ' +
         '(SELECT Id, Name, Description__c, Persona_Tag__c, Sort_Order__c FROM Experience_Highlights__r ORDER BY Sort_Order__c ASC) ' +
         'FROM Experience__c WHERE Id != null';
 
       if (currentlyEmployed != null) {
-        baseQuery += ' AND Is_Current__c = :currentlyEmployed';
+        baseQuery += ' AND Is_Current_Role__c = :currentlyEmployed';
       }
       if (String.isNotBlank(employerName)) {
         baseQuery += ' AND Employer__r.Name LIKE :employerName';
       }
 
-      baseQuery += ' WITH USER_MODE ORDER BY Is_Current__c DESC, End_Date__c DESC NULLS FIRST, Start_Date__c DESC';
+      baseQuery += ' WITH USER_MODE ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST, Start_Date__c DESC';
       baseQuery += ' LIMIT :limitParam OFFSET :offsetParam';
 
       List<Experience__c> experiences = Database.query(baseQuery);
@@ -82,7 +82,7 @@ global with sharing class SAPI_Experience {
     for (Experience__c exp : experiences) {
       Map<String, Object> item = new Map<String, Object>{
         'id' => exp.Id,
-        'name' => exp.Role__c,
+        'name' => exp.Position_Title__c,
         'employerId' => exp.Employer__c,
         'employerName' => exp.Employer__r?.Name,
         'startDate' => exp.Start_Date__c != null
@@ -91,7 +91,7 @@ global with sharing class SAPI_Experience {
         'endDate' => exp.End_Date__c != null
           ? String.valueOf(exp.End_Date__c)
           : null,
-        'isCurrentRole' => exp.Is_Current__c,
+        'isCurrentRole' => exp.Is_Current_Role__c,
         'isRemote' => exp.Is_Remote__c,
         'sortOrder' => exp.Sort_Order__c,
         'contactId' => exp.Contact__c,

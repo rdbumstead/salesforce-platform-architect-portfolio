@@ -87,10 +87,10 @@ global with sharing class PAPI_Resume {
       SELECT
         Id,
         Employer__r.Name,
-        Role__c,
+        Position_Title__c,
         Start_Date__c,
         End_Date__c,
-        Is_Current__c,
+        Is_Current_Role__c,
         (
           SELECT Description__c
           FROM Experience_Highlights__r
@@ -100,7 +100,7 @@ global with sharing class PAPI_Resume {
         )
       FROM Experience__c
       WITH USER_MODE
-      ORDER BY Is_Current__c DESC, End_Date__c DESC NULLS FIRST
+      ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
       LIMIT 10
     ];
 
@@ -108,7 +108,9 @@ global with sharing class PAPI_Resume {
       String employer = exp.Employer__r?.Name != null
         ? exp.Employer__r.Name
         : 'Unknown';
-      String role = exp.Role__c != null ? exp.Role__c : 'Role';
+      String role = exp.Position_Title__c != null
+        ? exp.Position_Title__c
+        : 'Role';
       resumeText += employer + ' | ' + role + '\n';
       resumeText +=
         PAPITransformer.formatDateRange(exp.Start_Date__c, exp.End_Date__c) +
@@ -177,7 +179,12 @@ global with sharing class PAPI_Resume {
     resumeText += 'EDUCATION\n\n';
 
     List<Education__c> education = [
-      SELECT School__c, Degree__c, Field_of_Study__c, Graduation_Date__c
+      SELECT
+        Issuer__c,
+        Issuer__r.Name,
+        Degree__c,
+        Field_of_Study__c,
+        Graduation_Date__c
       FROM Education__c
       WITH USER_MODE
       ORDER BY Graduation_Date__c DESC
@@ -185,7 +192,7 @@ global with sharing class PAPI_Resume {
     ];
 
     for (Education__c edu : education) {
-      resumeText += edu.School__c + '\n';
+      resumeText += edu.Issuer__r.Name + '\n';
       resumeText += edu.Degree__c;
       if (edu.Field_of_Study__c != null)
         resumeText += ' in ' + edu.Field_of_Study__c;

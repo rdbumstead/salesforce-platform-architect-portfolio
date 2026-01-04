@@ -27,9 +27,10 @@ private class PAPI_ProfileTest {
     // Create Experience
     Experience__c exp = new Experience__c(
       Employer__c = employer.Id,
-      Role__c = 'Test Architect',
+      Position_Title__c = 'Test Architect',
       Start_Date__c = Date.today().addYears(-2),
-      Is_Current__c = true,
+      Sort_Order__c = 1,
+      Is_Current_Role__c = true,
       Contact__c = c.Id
     );
     insert exp;
@@ -46,6 +47,7 @@ private class PAPI_ProfileTest {
     Project__c proj = new Project__c(
       Name = 'Test Project',
       Status__c = 'Live – In Production',
+      Sort_Order__c = 1,
       Is_Featured__c = true
     );
     insert proj;
@@ -53,7 +55,8 @@ private class PAPI_ProfileTest {
     // Create Testimonial
     Testimonial__c t = new Testimonial__c(
       Author_Name__c = 'Jane Doe',
-      Approved__c = true
+      Approved__c = true,
+      Sort_Order__c = 1
     );
     insert t;
   }
@@ -62,7 +65,7 @@ private class PAPI_ProfileTest {
   static void testGetFullPortfolioSuccess() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/papi/v1/profile/full';
     req.httpMethod = 'GET';
@@ -99,7 +102,7 @@ private class PAPI_ProfileTest {
   static void testGetProfileSummarySuccess() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/papi/v1/profile/summary';
     req.httpMethod = 'GET';
@@ -117,7 +120,7 @@ private class PAPI_ProfileTest {
   static void testGetProfileInvalidEndpoint() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/papi/v1/profile/invalid';
     req.httpMethod = 'GET';

@@ -23,8 +23,11 @@ private class PAPI_ResumeTest {
 
     Experience__c exp = new Experience__c(
       Employer__c = employer.Id,
-      Role__c = 'Developer',
+      Position_Title__c = 'Developer',
       Start_Date__c = Date.today().addYears(-1),
+      End_Date__c = Date.today(),
+      Is_Current_Role__c = false,
+      Sort_Order__c = 1,
       Contact__c = c.Id
     );
     insert exp;
@@ -33,7 +36,8 @@ private class PAPI_ResumeTest {
       Experience__c = exp.Id,
       Name = 'Highlight 1',
       Description__c = 'Did great things',
-      Persona_Tag__c = 'General'
+      Persona_Tag__c = 'Architect',
+      Sort_Order__c = 1
     );
     insert h;
 
@@ -44,15 +48,23 @@ private class PAPI_ResumeTest {
     );
     insert skill;
 
+    Account sfAccount = new Account(Name = 'Salesforce');
+    insert sfAccount;
+
     Certification__c cert = new Certification__c(
       Name = 'Platform Developer I',
-      Issuer__c = 'Salesforce',
+      Issuer__c = sfAccount.Id,
+      Contact__c = c.Id,
       Earned_Date__c = Date.today().addMonths(-6)
     );
     insert cert;
 
+    Account uniAccount = new Account(Name = 'Test University');
+    insert uniAccount;
+
     Education__c edu = new Education__c(
-      School__c = 'Test University',
+      Issuer__c = uniAccount.Id,
+      Contact__c = c.Id,
       Degree__c = 'B.S.',
       Field_of_Study__c = 'Computer Science',
       Graduation_Date__c = Date.today().addYears(-5)
@@ -64,7 +76,7 @@ private class PAPI_ResumeTest {
   static void testGenerateResumeDefaultPersona() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/papi/v1/resume/generate';
     req.httpMethod = 'GET';
@@ -92,7 +104,7 @@ private class PAPI_ResumeTest {
   static void testGenerateResumeWithPersona() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'persona' => 'Architect' };
+    req.params.put('persona', 'Architect');
 
     req.requestURI = '/services/apexrest/papi/v1/resume/generate';
     req.httpMethod = 'GET';
@@ -116,7 +128,7 @@ private class PAPI_ResumeTest {
   static void testGenerateResumeInvalidPersona() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'persona' => 'InvalidPersona' };
+    req.params.put('persona', 'InvalidPersona');
 
     req.requestURI = '/services/apexrest/papi/v1/resume/generate';
     req.httpMethod = 'GET';
@@ -134,7 +146,7 @@ private class PAPI_ResumeTest {
   static void testGenerateResumeInvalidEndpoint() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/papi/v1/resume/invalid';
     req.httpMethod = 'GET';

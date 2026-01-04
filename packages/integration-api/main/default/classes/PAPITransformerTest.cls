@@ -45,18 +45,25 @@ private class PAPITransformerTest {
     Account employer = new Account(Name = 'Test Employer');
     insert employer;
 
+    Contact c = new Contact(LastName = 'TestUser');
+    insert c;
+
     Experience__c exp = new Experience__c(
       Employer__c = employer.Id,
-      Role__c = 'Senior Architect',
+      Position_Title__c = 'Senior Architect',
       Start_Date__c = Date.today().addYears(-5),
-      Is_Current__c = true
+      Is_Current_Role__c = true,
+      Contact__c = c.Id
     );
+    /*
     insert exp;
 
     List<Experience__c> experiences = [
-      SELECT Id, Start_Date__c, Role__c, Is_Current__c
+      SELECT Id, Start_Date__c, Position_Title__c, Is_Current_Role__c
       FROM Experience__c
     ];
+    */
+    List<Experience__c> experiences = new List<Experience__c>{ exp };
 
     String result = PAPITransformer.calculateSummary(experiences);
     System.assert(

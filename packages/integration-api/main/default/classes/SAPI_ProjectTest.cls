@@ -12,7 +12,8 @@ private class SAPI_ProjectTest {
     Project__c proj = new Project__c(
       Name = 'Portfolio',
       Status__c = 'Live – In Production',
-      Pillar__c = 'Integration'
+      Pillar__c = 'A',
+      Sort_Order__c = 1
     );
     insert proj;
   }
@@ -21,7 +22,7 @@ private class SAPI_ProjectTest {
   static void testGetProjectsSuccess() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/sapi/v1/projects/projects';
     req.httpMethod = 'GET';
@@ -53,7 +54,7 @@ private class SAPI_ProjectTest {
 
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/sapi/v1/projects/' + proj.Id;
     req.httpMethod = 'GET';
@@ -77,7 +78,7 @@ private class SAPI_ProjectTest {
   static void testGetProjectByIdNotFound() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     // Use a clearly invalid ID
     req.requestURI = '/services/apexrest/sapi/v1/projects/a015e00000INVALID';
@@ -102,7 +103,7 @@ private class SAPI_ProjectTest {
   static void testGetProjectsInvalidLimit() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'limit' => '500' };
+    req.params.put('limit', '500');
 
     req.requestURI = '/services/apexrest/sapi/v1/projects/projects';
     req.httpMethod = 'GET';
@@ -126,7 +127,7 @@ private class SAPI_ProjectTest {
   static void testGetProjectsNegativeOffset() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'offset' => '-1' };
+    req.params.put('offset', '-1');
 
     req.requestURI = '/services/apexrest/sapi/v1/projects/projects';
     req.httpMethod = 'GET';

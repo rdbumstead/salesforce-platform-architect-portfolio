@@ -14,8 +14,9 @@ private class SAPI_ResumeTest {
 
     Experience__c exp = new Experience__c(
       Employer__c = employer.Id,
-      Role__c = 'Technical Architect',
-      Start_Date__c = Date.today()
+      Position_Title__c = 'Technical Architect',
+      Start_Date__c = Date.today(),
+      Sort_Order__c = 1
     );
     insert exp;
 
@@ -23,7 +24,8 @@ private class SAPI_ResumeTest {
       Experience__c = exp.Id,
       Name = 'DevOps Transformation',
       Description__c = 'Led CI/CD implementation',
-      Persona_Tag__c = 'General'
+      Persona_Tag__c = 'Architect',
+      Sort_Order__c = 1
     );
     insert h;
   }
@@ -32,7 +34,7 @@ private class SAPI_ResumeTest {
   static void testGetResumeDataDefaultPersona() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/sapi/v1/resume/';
     req.httpMethod = 'GET';
@@ -48,7 +50,7 @@ private class SAPI_ResumeTest {
 
       String responseJson = res.responseBody.toString();
       System.assert(
-        responseJson.contains('General'),
+        responseJson.contains('Architect'),
         'Response should contain default persona'
       );
       System.assert(
@@ -62,7 +64,7 @@ private class SAPI_ResumeTest {
   static void testGetResumeDataSpecificPersona() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'persona' => 'Architect' };
+    req.params.put('persona', 'Architect');
 
     req.requestURI = '/services/apexrest/sapi/v1/resume/';
     req.httpMethod = 'GET';
@@ -88,7 +90,7 @@ private class SAPI_ResumeTest {
   static void testGetResumeDataInvalidPersona() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'persona' => 'InvalidPersona' };
+    req.params.put('persona', 'InvalidPersona');
 
     req.requestURI = '/services/apexrest/sapi/v1/resume/';
     req.httpMethod = 'GET';

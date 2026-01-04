@@ -43,7 +43,7 @@ global with sharing class SAPI_Skill {
         baseQuery += ' AND Category__c = :category';
       }
 
-      baseQuery += ' WITH USER_MODE ORDER BY Proficiency__c DESC, Name ASC';
+      baseQuery += ' ORDER BY Proficiency__c DESC, Name ASC';
       baseQuery += ' LIMIT :limitParam OFFSET :offsetParam';
 
       List<Skill__c> skills = Database.query(baseQuery);
@@ -82,7 +82,7 @@ global with sharing class SAPI_Skill {
   }
 
   private static Integer countSkills() {
-    return [SELECT COUNT() FROM Skill__c WITH USER_MODE];
+    return [SELECT COUNT() FROM Skill__c];
   }
 
   private static void addCommonHeaders(RestResponse res) {

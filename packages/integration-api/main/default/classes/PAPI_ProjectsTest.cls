@@ -13,6 +13,7 @@ private class PAPI_ProjectsTest {
       Name = 'Featured Project',
       Status__c = 'Live – In Production',
       Is_Featured__c = true,
+      Sort_Order__c = 1,
       Challenge__c = 'Test challenge',
       Solution__c = 'Test solution'
     );
@@ -21,7 +22,8 @@ private class PAPI_ProjectsTest {
     Project__c nonFeatured = new Project__c(
       Name = 'Regular Project',
       Status__c = 'Live – Demo / Reference',
-      Is_Featured__c = false
+      Is_Featured__c = false,
+      Sort_Order__c = 2
     );
     insert nonFeatured;
 
@@ -39,7 +41,7 @@ private class PAPI_ProjectsTest {
   static void testGetFeaturedProjectsSuccess() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/papi/v1/projects/featured';
     req.httpMethod = 'GET';
@@ -63,7 +65,7 @@ private class PAPI_ProjectsTest {
   static void testGetAllProjectsSuccess() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/papi/v1/projects/all';
     req.httpMethod = 'GET';

@@ -58,9 +58,9 @@ public with sharing class PAPITransformer {
     return new Map<String, Object>{
       'id' => exp.Id,
       'employer' => exp.Employer__r?.Name,
-      'role' => exp.Role__c,
+      'role' => exp.Position_Title__c,
       'dateRange' => formatDateRange(exp.Start_Date__c, exp.End_Date__c),
-      'isCurrent' => exp.Is_Current__c,
+      'isCurrent' => exp.Is_Current_Role__c,
       'isRemote' => exp.Is_Remote__c,
       'skillsUsed' => skillsUsed,
       'highlights' => highlights
@@ -141,8 +141,11 @@ public with sharing class PAPITransformer {
       if (exp.Start_Date__c != null && exp.Start_Date__c < earliest) {
         earliest = exp.Start_Date__c;
       }
-      if (exp.Is_Current__c == true && String.isNotBlank(exp.Role__c)) {
-        currentRole = exp.Role__c;
+      if (
+        exp.Is_Current_Role__c == true &&
+        String.isNotBlank(exp.Position_Title__c)
+      ) {
+        currentRole = exp.Position_Title__c;
       }
     }
 

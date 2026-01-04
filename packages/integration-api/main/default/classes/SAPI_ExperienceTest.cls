@@ -14,9 +14,10 @@ private class SAPI_ExperienceTest {
 
     Experience__c exp = new Experience__c(
       Employer__c = employer.Id,
-      Role__c = 'Technical Architect',
+      Position_Title__c = 'Technical Architect',
       Start_Date__c = Date.today().addYears(-1),
-      Is_Current__c = true
+      Is_Current_Role__c = true,
+      Sort_Order__c = 1
     );
     insert exp;
   }
@@ -25,7 +26,7 @@ private class SAPI_ExperienceTest {
   static void testGetExperiencesSuccess() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/sapi/v1/experience/';
     req.httpMethod = 'GET';
@@ -56,7 +57,7 @@ private class SAPI_ExperienceTest {
   static void testGetExperiencesFilterCurrentlyEmployed() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'currentlyEmployed' => 'true' };
+    req.params.put('currentlyEmployed', 'true');
 
     req.requestURI = '/services/apexrest/sapi/v1/experience/';
     req.httpMethod = 'GET';
@@ -76,7 +77,7 @@ private class SAPI_ExperienceTest {
   static void testGetExperiencesInvalidOffset() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'offset' => '-5' };
+    req.params.put('offset', '-5');
 
     req.requestURI = '/services/apexrest/sapi/v1/experience/';
     req.httpMethod = 'GET';

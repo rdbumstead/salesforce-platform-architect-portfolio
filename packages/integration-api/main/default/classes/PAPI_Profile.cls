@@ -82,10 +82,10 @@ global with sharing class PAPI_Profile {
         Name,
         Employer__c,
         Employer__r.Name,
-        Role__c,
+        Position_Title__c,
         Start_Date__c,
         End_Date__c,
-        Is_Current__c,
+        Is_Current_Role__c,
         Is_Remote__c,
         (
           SELECT Id, Description__c
@@ -94,7 +94,7 @@ global with sharing class PAPI_Profile {
         )
       FROM Experience__c
       WITH USER_MODE
-      ORDER BY Is_Current__c DESC, End_Date__c DESC NULLS FIRST
+      ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
       LIMIT 50
     ];
 
@@ -204,7 +204,8 @@ global with sharing class PAPI_Profile {
     List<Education__c> education = [
       SELECT
         Id,
-        School__c,
+        Issuer__c,
+        Issuer__r.Name,
         Degree__c,
         Field_of_Study__c,
         Graduation_Date__c,
@@ -220,7 +221,7 @@ global with sharing class PAPI_Profile {
       transformedEdu.add(
         new Map<String, Object>{
           'id' => e.Id,
-          'school' => e.School__c,
+          'school' => e.Issuer__r.Name,
           'degree' => e.Degree__c,
           'fieldOfStudy' => e.Field_of_Study__c,
           'year' => e.Graduation_Date__c != null
@@ -288,13 +289,13 @@ global with sharing class PAPI_Profile {
         Id,
         Name,
         Employer__r.Name,
-        Role__c,
+        Position_Title__c,
         Start_Date__c,
         End_Date__c,
-        Is_Current__c
+        Is_Current_Role__c
       FROM Experience__c
       WITH USER_MODE
-      ORDER BY Is_Current__c DESC, End_Date__c DESC NULLS FIRST
+      ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
       LIMIT 20
     ];
 

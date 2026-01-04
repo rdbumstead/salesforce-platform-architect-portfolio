@@ -23,8 +23,10 @@ global with sharing class SAPI_Testimonial {
       // Query parameters
       Integer limitParam = getIntegerParam(req, 'limit', 50);
       Integer offsetParam = getIntegerParam(req, 'offset', 0);
-      String vibeMode = req.params.get('vibeMode');
-      String relationshipType = req.params.get('relationshipType');
+      String vibeMode = req.params != null ? req.params.get('vibeMode') : null;
+      String relationshipType = req.params != null
+        ? req.params.get('relationshipType')
+        : null;
 
       // Validate parameters
       if (limitParam < 1 || limitParam > 200) {
@@ -38,7 +40,7 @@ global with sharing class SAPI_Testimonial {
 
       // Build dynamic query
       String baseQuery =
-        'SELECT Id, Name, Author_Name__c, Author_Title__c, Avatar_URL__c, ' +
+        'SELECT Id, Name, Author_Name__c, Author_Title__c, ' +
         'Relationship_Type__c, Vibe_Mode__c, Context__c ' +
         'FROM Testimonial__c WHERE Approved__c = true';
 
@@ -49,7 +51,7 @@ global with sharing class SAPI_Testimonial {
         baseQuery += ' AND Relationship_Type__c = :relationshipType';
       }
 
-      baseQuery += ' WITH USER_MODE ORDER BY CreatedDate DESC';
+      baseQuery += ' ORDER BY CreatedDate DESC';
       baseQuery += ' LIMIT :limitParam OFFSET :offsetParam';
 
       List<Testimonial__c> testimonials = Database.query(baseQuery);
@@ -84,7 +86,6 @@ global with sharing class SAPI_Testimonial {
         'name' => t.Name,
         'authorName' => t.Author_Name__c,
         'authorTitle' => t.Author_Title__c,
-        'avatarUrl' => t.Avatar_URL__c,
         'relationshipType' => t.Relationship_Type__c,
         'vibeMode' => t.Vibe_Mode__c,
         'context' => t.Context__c
@@ -99,7 +100,6 @@ global with sharing class SAPI_Testimonial {
       SELECT COUNT()
       FROM Testimonial__c
       WHERE Approved__c = TRUE
-      WITH USER_MODE
     ];
   }
 
@@ -114,6 +114,8 @@ global with sharing class SAPI_Testimonial {
     String param,
     Integer defaultVal
   ) {
+    if (req.params == null)
+      return defaultVal;
     String val = req.params.get(param);
     if (String.isBlank(val))
       return defaultVal;

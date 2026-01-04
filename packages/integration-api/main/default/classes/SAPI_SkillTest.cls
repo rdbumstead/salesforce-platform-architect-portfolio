@@ -11,7 +11,7 @@ private class SAPI_SkillTest {
   static void setup() {
     Skill__c s = new Skill__c(
       Name = 'Apex',
-      Category__c = 'Backend Development',
+      Category__c = 'Backend',
       Proficiency__c = 5
     );
     insert s;
@@ -21,7 +21,7 @@ private class SAPI_SkillTest {
   static void testGetSkillsSuccess() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>();
+    // req.params = new Map<String, String>();
 
     req.requestURI = '/services/apexrest/sapi/v1/skills/';
     req.httpMethod = 'GET';
@@ -52,7 +52,7 @@ private class SAPI_SkillTest {
   static void testGetSkillsWithCategoryFilter() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'category' => 'Backend Development' };
+    req.params.put('category', 'Backend Development');
 
     req.requestURI = '/services/apexrest/sapi/v1/skills/';
     req.httpMethod = 'GET';
@@ -72,7 +72,7 @@ private class SAPI_SkillTest {
   static void testGetSkillsInvalidLimit() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    req.params = new Map<String, String>{ 'limit' => '300' };
+    req.params.put('limit', '300');
 
     req.requestURI = '/services/apexrest/sapi/v1/skills/';
     req.httpMethod = 'GET';
