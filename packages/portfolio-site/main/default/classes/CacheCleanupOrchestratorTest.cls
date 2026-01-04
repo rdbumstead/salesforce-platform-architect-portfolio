@@ -34,7 +34,7 @@ private class CacheCleanupOrchestratorTest {
   static void testRunWhenDisabledDoesNothing() {
     CacheCleanupSettings.testOverrideEnabled = false;
 
-    CacheCleanupTestDataFactory.createGithubCache(3);
+    TestFactory.createGithubCache(3);
 
     Test.startTest();
     new CacheCleanupOrchestrator().run();
@@ -83,7 +83,7 @@ private class CacheCleanupOrchestratorTest {
   static void testRunJiraCleanupWhenDisabledDoesNothing() {
     CacheCleanupSettings.testOverrideEnabled = false;
 
-    CacheCleanupTestDataFactory.createJiraCache(2);
+    TestFactory.createJiraCache(2);
 
     Test.startTest();
     CacheCleanupOrchestrator.runJiraCleanup();

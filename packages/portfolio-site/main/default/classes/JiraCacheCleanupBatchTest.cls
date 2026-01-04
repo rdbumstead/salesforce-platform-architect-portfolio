@@ -31,7 +31,7 @@ private class JiraCacheCleanupBatchTest {
   static void testBatchWhenDisabledDoesNothing() {
     CacheCleanupSettings.testOverrideEnabled = false;
 
-    CacheCleanupTestDataFactory.createJiraCache(6);
+    TestFactory.createJiraCache(6);
 
     Test.startTest();
     Database.executeBatch(new JiraCacheCleanupBatch(), 200);
@@ -48,7 +48,7 @@ private class JiraCacheCleanupBatchTest {
   static void testBatchWithEmptyScopeIsSafe() {
     CacheCleanupSettings.testOverrideEnabled = true;
 
-    CacheCleanupTestDataFactory.createJiraCache(5);
+    TestFactory.createJiraCache(5);
 
     Test.startTest();
     Database.executeBatch(new JiraCacheCleanupBatch(), 200);
