@@ -57,7 +57,6 @@ global with sharing class PAPI_Projects {
           'Live – Demo / Reference',
           'Active Development'
         )
-      WITH USER_MODE
       ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
       LIMIT 10
     ];
@@ -94,7 +93,6 @@ global with sharing class PAPI_Projects {
           'Live – Demo / Reference',
           'Active Development'
         )
-      WITH USER_MODE
       ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
       LIMIT 50
     ];
@@ -124,7 +122,6 @@ global with sharing class PAPI_Projects {
       SELECT Project__c, Skill__r.Name
       FROM Project_Skill__c
       WHERE Project__c IN :projIds
-      WITH USER_MODE
     ]) {
       if (!skillsMap.containsKey(ps.Project__c)) {
         skillsMap.put(ps.Project__c, new List<String>());
@@ -138,7 +135,6 @@ global with sharing class PAPI_Projects {
       SELECT Project__c, Name, Type__c, External_URL__c, Alt_Text__c
       FROM Project_Asset__c
       WHERE Project__c IN :projIds
-      WITH USER_MODE
       ORDER BY Sort_Order__c ASC
     ]) {
       if (!assetsMap.containsKey(pa.Project__c)) {
@@ -178,7 +174,7 @@ global with sharing class PAPI_Projects {
 
   private static void addCommonHeaders(RestResponse res) {
     res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', Request.getCurrent().getRequestId());
+    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
     res.addHeader('X-API-Version', 'v1');
   }
 
@@ -193,7 +189,7 @@ global with sharing class PAPI_Projects {
       'httpStatus' => statusCode,
       'errorCode' => errorCode,
       'message' => message,
-      'correlationId' => Request.getCurrent().getRequestId(),
+      'correlationId' => RequestUtil.getRequestId(),
       'retryable' => (statusCode >= 500)
     };
     res.responseBody = Blob.valueOf(JSON.serialize(error));

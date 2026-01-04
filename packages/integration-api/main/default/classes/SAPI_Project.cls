@@ -62,7 +62,6 @@ global with sharing class SAPI_Project {
             Contact__r.Name
           FROM Project__c
           WHERE Id = :projectId
-          WITH USER_MODE
           LIMIT 1
         ];
 
@@ -76,7 +75,8 @@ global with sharing class SAPI_Project {
         // Build dynamic query with filters
         String baseQuery =
           'SELECT Id, Name, Status__c, Pillar__c, Hero_Image_URL__c, ' +
-          'Is_Featured__c, Sort_Order__c, Contact__r.Name ' +
+          'Is_Featured__c, Sort_Order__c, Contact__r.Name, ' +
+          'Challenge__c, Solution__c, Business_Value__c, Live_URL__c, Repository_URL__c, Date_Completed__c ' +
           'FROM Project__c WHERE Status__c IN (\'Live – In Production\', \'Live – Demo / Reference\', \'Active Development\')';
 
         if (String.isNotBlank(statusFilter)) {
@@ -86,7 +86,7 @@ global with sharing class SAPI_Project {
           baseQuery += ' AND Is_Featured__c = :isFeatured';
         }
 
-        baseQuery += ' WITH USER_MODE ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC';
+        baseQuery += ' ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC';
         baseQuery += ' LIMIT :limitParam OFFSET :offsetParam';
 
         projects = Database.query(baseQuery);
@@ -156,13 +156,12 @@ global with sharing class SAPI_Project {
           'Live – Demo / Reference',
           'Active Development'
         )
-      WITH USER_MODE
     ];
   }
 
   private static void addCommonHeaders(RestResponse res) {
     res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', Request.getCurrent().getRequestId());
+    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
     res.addHeader('X-API-Version', 'v1');
   }
 
@@ -207,7 +206,7 @@ global with sharing class SAPI_Project {
       'httpStatus' => statusCode,
       'errorCode' => errorCode,
       'message' => message,
-      'correlationId' => Request.getCurrent().getRequestId(),
+      'correlationId' => RequestUtil.getRequestId(),
       'retryable' => (statusCode >= 500)
     };
     res.responseBody = Blob.valueOf(JSON.serialize(error));

@@ -63,20 +63,21 @@ private class PAPI_ProfileTest {
 
   @IsTest
   static void testGetFullPortfolioSuccess() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
-
-    req.requestURI = '/services/apexrest/papi/v1/profile/full';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+    RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
     PAPI_Profile.getProfile();
     Test.stopTest();
 
-    System.assertEquals(200, res.statusCode, 'Should return 200 OK');
+    String responseBody = res.responseBody != null
+      ? res.responseBody.toString()
+      : '';
+    System.assertEquals(
+      200,
+      res.statusCode,
+      'Status should be 200. Error: ' + responseBody
+    );
     System.assertNotEquals(
       null,
       res.responseBody,
@@ -100,32 +101,27 @@ private class PAPI_ProfileTest {
 
   @IsTest
   static void testGetProfileSummarySuccess() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
-
-    req.requestURI = '/services/apexrest/papi/v1/profile/summary';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/summary');
+    RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
     PAPI_Profile.getProfile();
     Test.stopTest();
 
-    System.assertEquals(200, res.statusCode, 'Should return 200 OK');
+    String responseBody = res.responseBody != null
+      ? res.responseBody.toString()
+      : '';
+    System.assertEquals(
+      200,
+      res.statusCode,
+      'Status should be 200. Error: ' + responseBody
+    );
   }
 
   @IsTest
   static void testGetProfileInvalidEndpoint() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
-
-    req.requestURI = '/services/apexrest/papi/v1/profile/invalid';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/invalid');
+    RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
     PAPI_Profile.getProfile();

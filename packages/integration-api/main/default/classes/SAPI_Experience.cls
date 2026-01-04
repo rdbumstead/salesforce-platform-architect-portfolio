@@ -50,7 +50,7 @@ global with sharing class SAPI_Experience {
         baseQuery += ' AND Employer__r.Name LIKE :employerName';
       }
 
-      baseQuery += ' WITH USER_MODE ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST, Start_Date__c DESC';
+      baseQuery += ' ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST, Start_Date__c DESC';
       baseQuery += ' LIMIT :limitParam OFFSET :offsetParam';
 
       List<Experience__c> experiences = Database.query(baseQuery);
@@ -124,12 +124,12 @@ global with sharing class SAPI_Experience {
   }
 
   private static Integer countExperiences() {
-    return [SELECT COUNT() FROM Experience__c WITH USER_MODE];
+    return [SELECT COUNT() FROM Experience__c];
   }
 
   private static void addCommonHeaders(RestResponse res) {
     res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', Request.getCurrent().getRequestId());
+    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
     res.addHeader('X-API-Version', 'v1');
   }
 
@@ -166,7 +166,7 @@ global with sharing class SAPI_Experience {
       'httpStatus' => statusCode,
       'errorCode' => errorCode,
       'message' => message,
-      'correlationId' => Request.getCurrent().getRequestId(),
+      'correlationId' => RequestUtil.getRequestId(),
       'retryable' => (statusCode >= 500)
     };
     res.responseBody = Blob.valueOf(JSON.serialize(error));

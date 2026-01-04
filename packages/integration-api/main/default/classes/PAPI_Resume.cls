@@ -57,8 +57,6 @@ global with sharing class PAPI_Resume {
         );
         return;
       }
-    } else {
-      persona = 'General';
     }
 
     // Fetch Contact
@@ -66,7 +64,6 @@ global with sharing class PAPI_Resume {
       SELECT Id, Name, Email, Phone, Title, Career_Objective__c
       FROM Contact
       WHERE Is_Portfolio_Owner__c = TRUE
-      WITH USER_MODE
       LIMIT 1
     ];
 
@@ -83,6 +80,7 @@ global with sharing class PAPI_Resume {
     // Experience Section
     resumeText += 'EXPERIENCE\n\n';
 
+    // Build experience query - fetch all highlights, filter in memory if persona provided
     List<Experience__c> experiences = [
       SELECT
         Id,
@@ -92,14 +90,11 @@ global with sharing class PAPI_Resume {
         End_Date__c,
         Is_Current_Role__c,
         (
-          SELECT Description__c
+          SELECT Description__c, Persona_Tag__c
           FROM Experience_Highlights__r
-          WHERE Persona_Tag__c IN (:persona, 'General')
           ORDER BY Sort_Order__c ASC
-          LIMIT 5
         )
       FROM Experience__c
-      WITH USER_MODE
       ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
       LIMIT 10
     ];
@@ -116,8 +111,18 @@ global with sharing class PAPI_Resume {
         PAPITransformer.formatDateRange(exp.Start_Date__c, exp.End_Date__c) +
         '\n';
 
+      Integer highlightCount = 0;
       for (Experience_Highlight__c h : exp.Experience_Highlights__r) {
-        resumeText += '- ' + h.Description__c + '\n';
+        // Filter by persona if provided, otherwise include all
+        if (
+          String.isBlank(persona) ||
+          (h.Persona_Tag__c != null && h.Persona_Tag__c.contains(persona))
+        ) {
+          resumeText += '- ' + h.Description__c + '\n';
+          highlightCount++;
+          if (highlightCount >= 5)
+            break; // Limit to 5 highlights per experience
+        }
       }
       resumeText += '\n';
     }
@@ -128,7 +133,6 @@ global with sharing class PAPI_Resume {
     List<Skill__c> skills = [
       SELECT Name, Category__c, Proficiency__c
       FROM Skill__c
-      WITH USER_MODE
       ORDER BY Proficiency__c DESC
       LIMIT 20
     ];
@@ -157,7 +161,6 @@ global with sharing class PAPI_Resume {
     List<Certification__c> certs = [
       SELECT Name, Issuer__c, Earned_Date__c
       FROM Certification__c
-      WITH USER_MODE
       ORDER BY Earned_Date__c DESC
       LIMIT 10
     ];
@@ -186,19 +189,24 @@ global with sharing class PAPI_Resume {
         Field_of_Study__c,
         Graduation_Date__c
       FROM Education__c
-      WITH USER_MODE
       ORDER BY Graduation_Date__c DESC
       LIMIT 5
     ];
 
     for (Education__c edu : education) {
-      resumeText += edu.Issuer__r.Name + '\n';
-      resumeText += edu.Degree__c;
-      if (edu.Field_of_Study__c != null)
-        resumeText += ' in ' + edu.Field_of_Study__c;
-      if (edu.Graduation_Date__c != null)
-        resumeText += ' (' + edu.Graduation_Date__c.year() + ')';
-      resumeText += '\n\n';
+      String schoolName = edu.Issuer__r?.Name != null
+        ? edu.Issuer__r.Name
+        : 'Unknown';
+      resumeText += schoolName + '\n';
+      if (edu.Degree__c != null) {
+        resumeText += edu.Degree__c;
+        if (edu.Field_of_Study__c != null)
+          resumeText += ' in ' + edu.Field_of_Study__c;
+        if (edu.Graduation_Date__c != null)
+          resumeText += ' (' + edu.Graduation_Date__c.year() + ')';
+        resumeText += '\n';
+      }
+      resumeText += '\n';
     }
 
     Map<String, Object> response = new Map<String, Object>{
@@ -221,8 +229,17 @@ global with sharing class PAPI_Resume {
 
   private static void addCommonHeaders(RestResponse res) {
     res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', Request.getCurrent().getRequestId());
+    String requestId = getRequestId();
+    res.addHeader('X-Request-Id', requestId);
     res.addHeader('X-API-Version', 'v1');
+  }
+
+  private static String getRequestId() {
+    try {
+      return Request.getCurrent()?.getRequestId();
+    } catch (Exception e) {
+      return 'N/A';
+    }
   }
 
   private static void sendError(
@@ -236,7 +253,7 @@ global with sharing class PAPI_Resume {
       'httpStatus' => statusCode,
       'errorCode' => errorCode,
       'message' => message,
-      'correlationId' => Request.getCurrent().getRequestId(),
+      'correlationId' => getRequestId(),
       'retryable' => (statusCode >= 500)
     };
     res.responseBody = Blob.valueOf(JSON.serialize(error));

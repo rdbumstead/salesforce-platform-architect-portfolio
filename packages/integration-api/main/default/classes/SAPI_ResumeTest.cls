@@ -28,87 +28,78 @@ private class SAPI_ResumeTest {
       Sort_Order__c = 1
     );
     insert h;
+
+    Experience_Highlight__c h2 = new Experience_Highlight__c(
+      Experience__c = exp.Id,
+      Name = 'Architecture Review',
+      Description__c = 'Led architecture reviews',
+      Persona_Tag__c = 'Developer',
+      Sort_Order__c = 2
+    );
+    insert h2;
   }
 
   @IsTest
   static void testGetResumeDataDefaultPersona() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/resume/');
 
-    req.requestURI = '/services/apexrest/sapi/v1/resume/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    Test.startTest();
+    SAPI_Resume.getResumeData();
+    Test.stopTest();
 
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      Test.startTest();
-      SAPI_Resume.getResumeData();
-      Test.stopTest();
+    RestResponse res = RestTestUtil.getResponse();
+    System.assertEquals(200, res.statusCode, 'Should return 200 OK');
 
-      System.assertEquals(200, res.statusCode, 'Should return 200 OK');
-
-      String responseJson = res.responseBody.toString();
-      System.assert(
-        responseJson.contains('Architect'),
-        'Response should contain default persona'
-      );
-      System.assert(
-        responseJson.contains('Led CI/CD'),
-        'Response should contain highlight description'
-      );
-    }
+    String responseJson = res.responseBody.toString();
+    System.assert(
+      responseJson.contains('Architect'),
+      'Response should contain highlights when no persona filter'
+    );
+    System.assert(
+      responseJson.contains('Led CI/CD'),
+      'Response should contain highlight description'
+    );
   }
 
   @IsTest
   static void testGetResumeDataSpecificPersona() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('persona', 'Architect');
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/resume/',
+      new Map<String, String>{ 'persona' => 'Architect' }
+    );
 
-    req.requestURI = '/services/apexrest/sapi/v1/resume/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    Test.startTest();
+    SAPI_Resume.getResumeData();
+    Test.stopTest();
 
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      Test.startTest();
-      SAPI_Resume.getResumeData();
-      Test.stopTest();
+    RestResponse res = RestTestUtil.getResponse();
+    System.assertEquals(200, res.statusCode, 'Should return 200 OK');
 
-      System.assertEquals(200, res.statusCode, 'Should return 200 OK');
-
-      String responseJson = res.responseBody.toString();
-      System.assert(
-        responseJson.contains('Architect'),
-        'Response should contain requested persona'
-      );
-    }
+    String responseJson = res.responseBody.toString();
+    System.assert(
+      responseJson.contains('Architect'),
+      'Response should contain requested persona'
+    );
   }
 
   @IsTest
   static void testGetResumeDataInvalidPersona() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('persona', 'InvalidPersona');
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/resume/',
+      new Map<String, String>{ 'persona' => 'InvalidPersona' }
+    );
 
-    req.requestURI = '/services/apexrest/sapi/v1/resume/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    Test.startTest();
+    SAPI_Resume.getResumeData();
+    Test.stopTest();
 
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      Test.startTest();
-      SAPI_Resume.getResumeData();
-      Test.stopTest();
+    RestResponse res = RestTestUtil.getResponse();
+    System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
 
-      System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
-
-      String responseJson = res.responseBody.toString();
-      System.assert(
-        responseJson.contains('Invalid persona'),
-        'Response should contain validation error'
-      );
-    }
+    String responseJson = res.responseBody.toString();
+    System.assert(
+      responseJson.contains('Invalid persona'),
+      'Response should contain validation error'
+    );
   }
 }

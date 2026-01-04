@@ -20,20 +20,21 @@ private class SAPI_ProjectTest {
 
   @IsTest
   static void testGetProjectsSuccess() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
-
-    req.requestURI = '/services/apexrest/sapi/v1/projects/projects';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/projects/projects');
+    RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
     SAPI_Project.getProjects();
     Test.stopTest();
 
-    System.assertEquals(200, res.statusCode, 'Should return 200 OK');
+    String responseBody = res.responseBody != null
+      ? res.responseBody.toString()
+      : '';
+    System.assertEquals(
+      200,
+      res.statusCode,
+      'Status should be 200. Error: ' + responseBody
+    );
     System.assertNotEquals(
       null,
       res.responseBody,
@@ -52,14 +53,8 @@ private class SAPI_ProjectTest {
   static void testGetProjectByIdSuccess() {
     Project__c proj = [SELECT Id FROM Project__c LIMIT 1];
 
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
-
-    req.requestURI = '/services/apexrest/sapi/v1/projects/' + proj.Id;
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/projects/' + proj.Id);
+    RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
     SAPI_Project.getProjects();
@@ -76,15 +71,11 @@ private class SAPI_ProjectTest {
 
   @IsTest
   static void testGetProjectByIdNotFound() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
-
     // Use a clearly invalid ID
-    req.requestURI = '/services/apexrest/sapi/v1/projects/a015e00000INVALID';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/projects/a015e00000INVALID'
+    );
+    RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
     SAPI_Project.getProjects();
@@ -101,14 +92,12 @@ private class SAPI_ProjectTest {
 
   @IsTest
   static void testGetProjectsInvalidLimit() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('limit', '500');
-
-    req.requestURI = '/services/apexrest/sapi/v1/projects/projects';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    Map<String, String> params = new Map<String, String>{ 'limit' => '500' };
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/projects/projects',
+      params
+    );
+    RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
     SAPI_Project.getProjects();
@@ -125,14 +114,12 @@ private class SAPI_ProjectTest {
 
   @IsTest
   static void testGetProjectsNegativeOffset() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('offset', '-1');
-
-    req.requestURI = '/services/apexrest/sapi/v1/projects/projects';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    Map<String, String> params = new Map<String, String>{ 'offset' => '-1' };
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/projects/projects',
+      params
+    );
+    RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
     SAPI_Project.getProjects();

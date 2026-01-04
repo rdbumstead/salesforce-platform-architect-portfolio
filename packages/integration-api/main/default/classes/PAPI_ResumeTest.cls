@@ -74,19 +74,13 @@ private class PAPI_ResumeTest {
 
   @IsTest
   static void testGenerateResumeDefaultPersona() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
-
-    req.requestURI = '/services/apexrest/papi/v1/resume/generate';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
 
     Test.startTest();
     PAPI_Resume.getResume();
     Test.stopTest();
 
+    RestResponse res = RestTestUtil.getResponse();
     System.assertEquals(200, res.statusCode, 'Should return 200 OK');
 
     String responseJson = res.responseBody.toString();
@@ -102,19 +96,16 @@ private class PAPI_ResumeTest {
 
   @IsTest
   static void testGenerateResumeWithPersona() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('persona', 'Architect');
-
-    req.requestURI = '/services/apexrest/papi/v1/resume/generate';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet(
+      '/services/apexrest/papi/v1/resume/generate',
+      new Map<String, String>{ 'persona' => 'Architect' }
+    );
 
     Test.startTest();
     PAPI_Resume.getResume();
     Test.stopTest();
 
+    RestResponse res = RestTestUtil.getResponse();
     System.assertEquals(200, res.statusCode, 'Should return 200 OK');
 
     String responseJson = res.responseBody.toString();
@@ -126,37 +117,28 @@ private class PAPI_ResumeTest {
 
   @IsTest
   static void testGenerateResumeInvalidPersona() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('persona', 'InvalidPersona');
-
-    req.requestURI = '/services/apexrest/papi/v1/resume/generate';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet(
+      '/services/apexrest/papi/v1/resume/generate',
+      new Map<String, String>{ 'persona' => 'InvalidPersona' }
+    );
 
     Test.startTest();
     PAPI_Resume.getResume();
     Test.stopTest();
 
+    RestResponse res = RestTestUtil.getResponse();
     System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
   }
 
   @IsTest
   static void testGenerateResumeInvalidEndpoint() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
-
-    req.requestURI = '/services/apexrest/papi/v1/resume/invalid';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/invalid');
 
     Test.startTest();
     PAPI_Resume.getResume();
     Test.stopTest();
 
+    RestResponse res = RestTestUtil.getResponse();
     System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
   }
 }

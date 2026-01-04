@@ -24,72 +24,54 @@ private class SAPI_ExperienceTest {
 
   @IsTest
   static void testGetExperiencesSuccess() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/experience/');
 
-    req.requestURI = '/services/apexrest/sapi/v1/experience/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    Test.startTest();
+    SAPI_Experience.getExperiences();
+    Test.stopTest();
 
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      Test.startTest();
-      SAPI_Experience.getExperiences();
-      Test.stopTest();
+    RestResponse res = RestTestUtil.getResponse();
+    System.assertEquals(200, res.statusCode, 'Should return 200 OK');
+    System.assertNotEquals(
+      null,
+      res.responseBody,
+      'Response body should not be null'
+    );
 
-      System.assertEquals(200, res.statusCode, 'Should return 200 OK');
-      System.assertNotEquals(
-        null,
-        res.responseBody,
-        'Response body should not be null'
-      );
-
-      String responseJson = res.responseBody.toString();
-      System.assert(
-        responseJson.contains('Technical Architect'),
-        'Response should contain role'
-      );
-    }
+    String responseJson = res.responseBody.toString();
+    System.assert(
+      responseJson.contains('Technical Architect'),
+      'Response should contain role'
+    );
   }
 
   @IsTest
   static void testGetExperiencesFilterCurrentlyEmployed() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('currentlyEmployed', 'true');
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/experience/',
+      new Map<String, String>{ 'currentlyEmployed' => 'true' }
+    );
 
-    req.requestURI = '/services/apexrest/sapi/v1/experience/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    Test.startTest();
+    SAPI_Experience.getExperiences();
+    Test.stopTest();
 
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      Test.startTest();
-      SAPI_Experience.getExperiences();
-      Test.stopTest();
-
-      System.assertEquals(200, res.statusCode, 'Should return 200 OK');
-    }
+    RestResponse res = RestTestUtil.getResponse();
+    System.assertEquals(200, res.statusCode, 'Should return 200 OK');
   }
 
   @IsTest
   static void testGetExperiencesInvalidOffset() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('offset', '-5');
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/experience/',
+      new Map<String, String>{ 'offset' => '-5' }
+    );
 
-    req.requestURI = '/services/apexrest/sapi/v1/experience/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    Test.startTest();
+    SAPI_Experience.getExperiences();
+    Test.stopTest();
 
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      Test.startTest();
-      SAPI_Experience.getExperiences();
-      Test.stopTest();
-
-      System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
-    }
+    RestResponse res = RestTestUtil.getResponse();
+    System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
   }
 }

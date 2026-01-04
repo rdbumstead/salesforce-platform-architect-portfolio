@@ -30,7 +30,7 @@ global with sharing class PAPI_Health {
 
   private static void addCommonHeaders(RestResponse res) {
     res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', Request.getCurrent().getRequestId());
+    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
     res.addHeader('X-API-Version', 'v1');
   }
 }

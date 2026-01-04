@@ -62,7 +62,6 @@ global with sharing class PAPI_Profile {
         Career_Objective__c
       FROM Contact
       WHERE Is_Portfolio_Owner__c = TRUE
-      WITH USER_MODE
       LIMIT 1
     ];
 
@@ -93,7 +92,6 @@ global with sharing class PAPI_Profile {
           ORDER BY Sort_Order__c ASC
         )
       FROM Experience__c
-      WITH USER_MODE
       ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
       LIMIT 50
     ];
@@ -121,7 +119,6 @@ global with sharing class PAPI_Profile {
     List<Skill__c> skills = [
       SELECT Id, Name, Category__c, Proficiency__c, Icon_Name__c
       FROM Skill__c
-      WITH USER_MODE
       ORDER BY Proficiency__c DESC, Name ASC
       LIMIT 100
     ];
@@ -153,7 +150,6 @@ global with sharing class PAPI_Profile {
           'Live – Demo / Reference',
           'Active Development'
         )
-      WITH USER_MODE
       ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
       LIMIT 50
     ];
@@ -179,7 +175,6 @@ global with sharing class PAPI_Profile {
     List<Certification__c> certs = [
       SELECT Id, Name, Issuer__c, Earned_Date__c
       FROM Certification__c
-      WITH USER_MODE
       ORDER BY Earned_Date__c DESC
       LIMIT 50
     ];
@@ -211,7 +206,6 @@ global with sharing class PAPI_Profile {
         Graduation_Date__c,
         GPA__c
       FROM Education__c
-      WITH USER_MODE
       ORDER BY Graduation_Date__c DESC
       LIMIT 10
     ];
@@ -245,7 +239,6 @@ global with sharing class PAPI_Profile {
         Avatar_URL__c
       FROM Testimonial__c
       WHERE Approved__c = TRUE
-      WITH USER_MODE
       ORDER BY CreatedDate DESC
       LIMIT 20
     ];
@@ -273,10 +266,19 @@ global with sharing class PAPI_Profile {
 
     // Simplified version - contact + experience + skills + certs + education
     List<Contact> contacts = [
-      SELECT Id, Name, Email, Phone, Title, Career_Objective__c
+      SELECT
+        Id,
+        Name,
+        Email,
+        Phone,
+        Title,
+        Career_Objective__c,
+        LinkedIn_URL__c,
+        GitHub_URL__c,
+        Trailhead_URL__c,
+        Portfolio_URL__c
       FROM Contact
       WHERE Is_Portfolio_Owner__c = TRUE
-      WITH USER_MODE
       LIMIT 1
     ];
 
@@ -292,9 +294,9 @@ global with sharing class PAPI_Profile {
         Position_Title__c,
         Start_Date__c,
         End_Date__c,
-        Is_Current_Role__c
+        Is_Current_Role__c,
+        Is_Remote__c
       FROM Experience__c
-      WITH USER_MODE
       ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
       LIMIT 20
     ];
@@ -315,7 +317,6 @@ global with sharing class PAPI_Profile {
     List<Skill__c> skills = [
       SELECT Id, Name, Category__c, Proficiency__c, Icon_Name__c
       FROM Skill__c
-      WITH USER_MODE
       ORDER BY Proficiency__c DESC
       LIMIT 50
     ];
@@ -362,7 +363,6 @@ global with sharing class PAPI_Profile {
       SELECT Experience__c, Skill__r.Name
       FROM Experience_Skill__c
       WHERE Experience__c IN :expIds
-      WITH USER_MODE
     ]) {
       if (!result.containsKey(es.Experience__c)) {
         result.put(es.Experience__c, new List<String>());
@@ -385,7 +385,6 @@ global with sharing class PAPI_Profile {
       SELECT Project__c, Skill__r.Name
       FROM Project_Skill__c
       WHERE Project__c IN :projIds
-      WITH USER_MODE
     ]) {
       if (!result.containsKey(ps.Project__c)) {
         result.put(ps.Project__c, new List<String>());
@@ -408,7 +407,6 @@ global with sharing class PAPI_Profile {
       SELECT Project__c, Name, Type__c, External_URL__c, Alt_Text__c
       FROM Project_Asset__c
       WHERE Project__c IN :projIds
-      WITH USER_MODE
       ORDER BY Sort_Order__c ASC
     ]) {
       if (!result.containsKey(pa.Project__c)) {
@@ -435,7 +433,7 @@ global with sharing class PAPI_Profile {
 
   private static void addCommonHeaders(RestResponse res) {
     res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', Request.getCurrent().getRequestId());
+    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
     res.addHeader('X-API-Version', 'v1');
   }
 
@@ -450,7 +448,7 @@ global with sharing class PAPI_Profile {
       'httpStatus' => statusCode,
       'errorCode' => errorCode,
       'message' => message,
-      'correlationId' => Request.getCurrent().getRequestId(),
+      'correlationId' => RequestUtil.getRequestId(),
       'retryable' => (statusCode >= 500)
     };
     res.responseBody = Blob.valueOf(JSON.serialize(error));
