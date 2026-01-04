@@ -1,0 +1,3 @@
+.slds-timeline__item_task:before {
+  background-color: var(--lwc-colorBackgroundAlt, #ffffff);
+}

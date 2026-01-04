@@ -1,0 +1,33 @@
+<template>
+  <lightning-card title="Governance Checklist" icon-name="action:approval">
+    <div class="slds-p-around_medium">
+      <div class="slds-m-bottom_medium">
+        <span class="slds-badge slds-theme_success" if:true={isConnected}
+          >Live Connected</span
+        >
+        <span class="slds-badge slds-theme_warning" if:false={isConnected}
+          >Offline</span
+        >
+      </div>
+
+      <ul class="slds-has-dividers_bottom-space">
+        <template for:each={items} for:item="item">
+          <li key={item.id} class="slds-item">
+            <div class="slds-grid slds-grid_vertical-align-center">
+              <lightning-icon
+                icon-name={item.icon}
+                size="x-small"
+                class={item.iconClass}
+                variant={item.variant}
+              >
+              </lightning-icon>
+              <span class="slds-m-left_small slds-truncate" title={item.label}
+                >{item.label}</span
+              >
+            </div>
+          </li>
+        </template>
+      </ul>
+    </div>
+  </lightning-card>
+</template>

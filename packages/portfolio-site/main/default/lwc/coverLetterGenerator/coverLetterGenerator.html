@@ -1,0 +1,75 @@
+<template>
+  <lightning-card title="AI Cover Letter Generator" icon-name="custom:custom15">
+    <div class="slds-p-around_medium">
+      <!-- Configuration Form -->
+      <div class="slds-grid slds-gutters">
+        <div class="slds-col slds-size_1-of-2">
+          <lightning-input
+            label="Company Name"
+            value={companyName}
+            onchange={handleInputChange}
+            data-field="companyName"
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-2">
+          <lightning-input
+            label="Job Title"
+            value={jobTitle}
+            onchange={handleInputChange}
+            data-field="jobTitle"
+          ></lightning-input>
+        </div>
+      </div>
+
+      <div class="slds-m-top_medium">
+        <lightning-textarea
+          label="Job Description / Key Requirements"
+          value={jobDescription}
+          onchange={handleInputChange}
+          data-field="jobDescription"
+        ></lightning-textarea>
+      </div>
+
+      <div class="slds-m-top_medium slds-text-align_right">
+        <lightning-button
+          variant="brand"
+          label="Generate with Agentforce"
+          icon-name="utility:magicwand"
+          onclick={handleGenerate}
+          disabled={isLoading}
+        ></lightning-button>
+      </div>
+
+      <!-- Result Area -->
+      <div
+        if:true={generatedContent}
+        class="slds-m-top_large slds-box slds-theme_shade animate-fade-in"
+      >
+        <div class="slds-text-align_right slds-m-bottom_x-small">
+          <lightning-badge
+            label={generationSource}
+            icon-name="utility:connected_apps"
+          ></lightning-badge>
+        </div>
+        <div class="content-body">
+          <lightning-formatted-text
+            value={generatedContent}
+          ></lightning-formatted-text>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div if:true={isLoading} class="slds-m-top_medium">
+        <lightning-progress-bar
+          value={progress}
+          size="medium"
+        ></lightning-progress-bar>
+        <p
+          class="slds-text-align_center slds-text-color_weak slds-m-top_x-small"
+        >
+          Agentforce is analyzing {jobTitle} requirements...
+        </p>
+      </div>
+    </div>
+  </lightning-card>
+</template>

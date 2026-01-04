@@ -1,0 +1,40 @@
+.kanban-column {
+  background-color: var(--lwc-colorBackgroundStencil, #f3f3f3);
+  padding: 0.5rem;
+  border-radius: 4px;
+  min-height: 300px;
+}
+
+.kanban-card {
+  background-color: var(--lwc-colorBackgroundAlt, #ffffff);
+  border-left: 4px solid transparent;
+  transition: transform 0.2s;
+}
+
+.kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.ticket-id {
+  font-size: 0.75rem;
+  color: var(--lwc-colorTextWeak, #696969);
+  font-weight: bold;
+}
+
+.border-left-todo {
+  border-left: 4px solid #747474;
+  padding-left: 8px;
+}
+.border-left-progress {
+  border-left: 4px solid #0176d3;
+  padding-left: 8px;
+}
+.border-left-done {
+  border-left: 4px solid #2e844a;
+  padding-left: 8px;
+}
+
+.done-card {
+  opacity: 0.8;
+}

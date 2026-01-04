@@ -1,0 +1,65 @@
+.hero-container {
+  background-color: var(--lwc-colorBackgroundAlt, #ffffff);
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+}
+
+.highlight {
+  color: var(--lwc-brandAccessible, #0070d2);
+  font-weight: 700;
+}
+
+.guidance-box {
+  border-left: 4px solid var(--lwc-brandAccessible, #0070d2);
+}
+
+.placeholder-circle {
+  width: 250px;
+  height: 250px;
+  background-color: var(--lwc-colorBackgroundStencil, #f3f2f2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+/* Simple Animations */
+.animate-slide-up {
+  animation: slideUp 0.8s ease-out forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.animate-fade-in {
+  animation: fadeIn 1.2s ease-out forwards;
+  opacity: 0;
+}
+
+.delay-1 {
+  animation-delay: 0.2s;
+}
+.delay-2 {
+  animation-delay: 0.4s;
+}
+
+@keyframes slideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-container {
+    text-align: center;
+    min-height: auto;
+  }
+}

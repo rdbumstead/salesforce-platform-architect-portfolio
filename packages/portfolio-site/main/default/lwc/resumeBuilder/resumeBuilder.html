@@ -1,0 +1,86 @@
+<template>
+  <lightning-card title="Resume Generator" icon-name="doctype:pdf">
+    <div class="slds-p-around_medium">
+      <div class="slds-grid slds-gutters">
+        <!-- Left: Configuration -->
+        <div class="slds-col slds-size_1-of-3">
+          <div class="slds-box slds-theme_shade">
+            <h3 class="slds-text-heading_small slds-m-bottom_medium">
+              Configuration
+            </h3>
+
+            <lightning-combobox
+              name="persona"
+              label="Target Persona"
+              value={selectedPersona}
+              options={personaOptions}
+              onchange={handlePersonaChange}
+              class="slds-m-bottom_medium"
+            >
+            </lightning-combobox>
+
+            <div class="slds-form-element slds-m-bottom_medium">
+              <lightning-input
+                type="checkbox"
+                label="Include Header"
+                checked={includeHeader}
+                onchange={handleConfigChange}
+                data-field="includeHeader"
+              ></lightning-input>
+              <lightning-input
+                type="checkbox"
+                label="Include Skills"
+                checked={includeSkills}
+                onchange={handleConfigChange}
+                data-field="includeSkills"
+              ></lightning-input>
+            </div>
+
+            <lightning-button
+              variant="brand"
+              label="Download PDF"
+              icon-name="utility:download"
+              onclick={handleDownload}
+              class="slds-size_1-of-1"
+            >
+            </lightning-button>
+          </div>
+        </div>
+
+        <!-- Right: Live Preview -->
+        <div class="slds-col slds-size_2-of-3">
+          <div class="preview-paper slds-p-around_large slds-scrollable_y">
+            <!-- Header -->
+            <div
+              if:true={includeHeader}
+              class="preview-header slds-text-align_center slds-m-bottom_large"
+            >
+              <h1 class="slds-text-heading_large">Ryan Bumstead</h1>
+              <p class="slds-text-body_small">
+                Salesforce Technical Architect | {selectedPersona} Focused
+              </p>
+            </div>
+
+            <!-- Content dynamically changes based on persona -->
+            <div class="preview-content">
+              <h2 class="section-title">Experience</h2>
+              <template for:each={previewData} for:item="item">
+                <div key={item.id} class="slds-m-bottom_medium">
+                  <div class="slds-grid slds-grid_align-spread">
+                    <strong>{item.role} at {item.employer}</strong>
+                    <span>{item.date}</span>
+                  </div>
+                  <ul class="slds-list_dotted slds-m-top_x-small">
+                    <template for:each={item.bullets} for:item="bullet">
+                      <li key={bullet}>{bullet}</li>
+                    </template>
+                  </ul>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </lightning-card>
+</template>

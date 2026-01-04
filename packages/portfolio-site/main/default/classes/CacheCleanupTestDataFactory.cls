@@ -1,23 +1,27 @@
+/**
+ * @description       : Test data factory for Cache Cleanup unit tests.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 11/30/2025
+ **/
 @IsTest
 public class CacheCleanupTestDataFactory {
+  public static void createGithubCache(Integer count) {
+    List<Github_Cache__c> records = new List<Github_Cache__c>();
 
-    public static void createGithubCache(Integer count) {
-        List<Github_Cache__c> records = new List<Github_Cache__c>();
-
-        for (Integer i = 0; i < count; i++) {
-            records.add(new Github_Cache__c(
-            ));
-        }
-        insert records;
+    for (Integer i = 0; i < count; i++) {
+      records.add(new Github_Cache__c());
     }
+    insert records;
+  }
 
-    public static void createJiraCache(Integer count) {
-        List<Jira_Cache__c> records = new List<Jira_Cache__c>();
+  public static void createJiraCache(Integer count) {
+    List<Jira_Cache__c> records = new List<Jira_Cache__c>();
 
-        for (Integer i = 0; i < count; i++) {
-            records.add(new Jira_Cache__c(
-            ));
-        }
-        insert records;
+    for (Integer i = 0; i < count; i++) {
+      records.add(new Jira_Cache__c());
     }
+    insert records;
+  }
 }

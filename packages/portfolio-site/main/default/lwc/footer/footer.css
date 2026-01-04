@@ -1,0 +1,45 @@
+.footer-container {
+  background-color: var(
+    --lwc-colorBackgroundAltInverse,
+    #032d60
+  ); /* Dark blue footer */
+  color: var(--lwc-colorTextInverse, #ffffff);
+  border-top: 4px solid var(--lwc-brandAccessible, #0070d2);
+}
+
+.copyright {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.links a {
+  color: var(--lwc-colorTextInverse, #ffffff);
+  text-decoration: none;
+  margin: 0 5px;
+  font-size: 0.9rem;
+}
+
+.links a:hover {
+  text-decoration: underline;
+  opacity: 1;
+}
+
+.health-item {
+  font-family: monospace;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.value.success {
+  color: #4bca81; /* Green */
+}
+
+@media (max-width: 768px) {
+  .system-health {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  .slds-grid_align-end {
+    justify-content: center;
+  }
+}

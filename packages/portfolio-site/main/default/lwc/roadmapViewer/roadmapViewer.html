@@ -1,0 +1,100 @@
+<template>
+  <div class="roadmap-container slds-p-around_medium">
+    <div class="header slds-m-bottom_medium slds-grid slds-grid_align-spread">
+      <h2 class="slds-text-heading_medium">Product Roadmap</h2>
+      <div class="sync-status">
+        <lightning-badge
+          label="Live Sync: Jira"
+          icon-name="utility:sync"
+          class="slds-theme_success"
+        ></lightning-badge>
+      </div>
+    </div>
+
+    <div class="slds-grid slds-gutters">
+      <!-- Column 1: To Do -->
+      <div class="slds-col slds-size_1-of-3">
+        <div class="kanban-column">
+          <h3
+            class="slds-text-heading_small slds-m-bottom_small slds-p-left_small border-left-todo"
+          >
+            To Do
+          </h3>
+          <template for:each={todoItems} for:item="item">
+            <div
+              key={item.id}
+              class="kanban-card slds-box slds-box_small slds-m-bottom_small"
+            >
+              <div class="slds-grid slds-grid_align-spread">
+                <span class="ticket-id">{item.id}</span>
+                <lightning-badge
+                  label={item.type}
+                  class={item.badgeClass}
+                ></lightning-badge>
+              </div>
+              <p class="slds-text-heading_small slds-m-top_x-small">
+                {item.title}
+              </p>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Column 2: In Progress -->
+      <div class="slds-col slds-size_1-of-3">
+        <div class="kanban-column">
+          <h3
+            class="slds-text-heading_small slds-m-bottom_small slds-p-left_small border-left-progress"
+          >
+            In Progress
+          </h3>
+          <template for:each={inProgressItems} for:item="item">
+            <div
+              key={item.id}
+              class="kanban-card slds-box slds-box_small slds-m-bottom_small"
+            >
+              <div class="slds-grid slds-grid_align-spread">
+                <span class="ticket-id">{item.id}</span>
+                <lightning-badge
+                  label={item.type}
+                  class={item.badgeClass}
+                ></lightning-badge>
+              </div>
+              <p class="slds-text-heading_small slds-m-top_x-small">
+                {item.title}
+              </p>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Column 3: Done -->
+      <div class="slds-col slds-size_1-of-3">
+        <div class="kanban-column">
+          <h3
+            class="slds-text-heading_small slds-m-bottom_small slds-p-left_small border-left-done"
+          >
+            Done
+          </h3>
+          <template for:each={doneItems} for:item="item">
+            <div
+              key={item.id}
+              class="kanban-card slds-box slds-box_small slds-m-bottom_small done-card"
+            >
+              <div class="slds-grid slds-grid_align-spread">
+                <span class="ticket-id">{item.id}</span>
+                <lightning-badge
+                  label={item.type}
+                  class={item.badgeClass}
+                ></lightning-badge>
+              </div>
+              <p class="slds-text-heading_small slds-m-top_x-small">
+                {item.title}
+              </p>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

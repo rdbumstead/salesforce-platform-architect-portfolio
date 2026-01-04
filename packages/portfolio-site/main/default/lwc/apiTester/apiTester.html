@@ -1,0 +1,48 @@
+<template>
+  <lightning-card title="System API Console" icon-name="utility:apex">
+    <div class="slds-p-around_medium console-container">
+      <div class="slds-grid slds-gutters slds-grid_vertical-align-end">
+        <div class="slds-col slds-size_2-of-3">
+          <lightning-combobox
+            name="endpoint"
+            label="Endpoint"
+            value={selectedEndpoint}
+            placeholder="Select an endpoint..."
+            options={endpointOptions}
+            onchange={handleEndpointChange}
+          >
+          </lightning-combobox>
+        </div>
+        <div class="slds-col slds-size_1-of-3">
+          <lightning-button
+            variant="brand"
+            label="Execute GET"
+            title="Execute GET"
+            onclick={handleExecute}
+            class="slds-m-bottom_none"
+            disabled={isLoading}
+          >
+          </lightning-button>
+        </div>
+      </div>
+
+      <div class="slds-m-top_medium result-box">
+        <div if:true={isLoading} class="slds-is-relative slds-p-around_large">
+          <lightning-spinner
+            alternative-text="Loading"
+            size="small"
+          ></lightning-spinner>
+        </div>
+        <div if:false={isLoading}>
+          <pre class="json-viewer">{responseBody}</pre>
+        </div>
+      </div>
+
+      <div class="slds-text-align_right slds-m-top_x-small">
+        <span class="slds-text-body_small slds-text-color_weak"
+          >Status: {responseStatus} | Latency: {latency}ms</span
+        >
+      </div>
+    </div>
+  </lightning-card>
+</template>

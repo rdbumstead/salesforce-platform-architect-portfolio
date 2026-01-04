@@ -1,0 +1,47 @@
+<template>
+  <lightning-card title="Skill Network" icon-name="standard:invocable_action">
+    <div
+      class="slds-p-around_medium"
+      style="position: relative; min-height: 500px"
+    >
+      <template if:true={isLoading}>
+        <lightning-spinner
+          alternative-text="Loading Graph"
+          size="medium"
+        ></lightning-spinner>
+      </template>
+
+      <!-- Accessibility: Toggle Animation -->
+      <div class="controls slds-p-bottom_small slds-text-align_right">
+        <lightning-button-icon
+          icon-name="utility:pause"
+          alternative-text="Pause Animation"
+          title="Pause"
+          onclick={handlePause}
+        ></lightning-button-icon>
+        <lightning-button-icon
+          icon-name="utility:refresh"
+          alternative-text="Reset Layout"
+          title="Reset"
+          onclick={handleReset}
+          class="slds-m-left_x-small"
+        ></lightning-button-icon>
+      </div>
+
+      <!-- G6 Canvas Container -->
+      <div class="graph-container" lwc:dom="manual"></div>
+
+      <!-- Fallback for Screen Readers or Mobile -->
+      <div class="slds-assistive-text">
+        <h3>Skill Relationships</h3>
+        <ul>
+          <template for:each={skills} for:item="skill">
+            <li key={skill.id}>
+              {skill.name} connects to {skill.relatedProjectCount} projects.
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </lightning-card>
+</template>
