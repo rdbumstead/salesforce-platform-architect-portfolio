@@ -9,7 +9,7 @@ private class JiraCacheCleanupBatchTest {
     System.runAs(new User(Id = UserInfo.getUserId())) {
       CacheCleanupSettings.testOverrideEnabled = true;
 
-      CacheCleanupTestDataFactory.createJiraCache(10);
+      TestFactory.createJiraCache(200);
 
       for (Jira_Cache__c rec : [SELECT Id FROM Jira_Cache__c]) {
         Test.setCreatedDate(rec.Id, Datetime.now().addHours(-1));
@@ -31,7 +31,7 @@ private class JiraCacheCleanupBatchTest {
   static void testBatchWhenDisabledDoesNothing() {
     CacheCleanupSettings.testOverrideEnabled = false;
 
-    CacheCleanupTestDataFactory.createJiraCache(6);
+    TestFactory.createJiraCache(6);
 
     Test.startTest();
     Database.executeBatch(new JiraCacheCleanupBatch(), 200);
@@ -48,7 +48,7 @@ private class JiraCacheCleanupBatchTest {
   static void testBatchWithEmptyScopeIsSafe() {
     CacheCleanupSettings.testOverrideEnabled = true;
 
-    CacheCleanupTestDataFactory.createJiraCache(5);
+    TestFactory.createJiraCache(5);
 
     Test.startTest();
     Database.executeBatch(new JiraCacheCleanupBatch(), 200);

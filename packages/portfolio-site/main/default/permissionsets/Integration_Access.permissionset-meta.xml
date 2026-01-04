@@ -10,15 +10,20 @@
         <name>Portfolio_Config__mdt</name>
     </customMetadataTypeAccesses>
 
-    <externalCredentialPrincipalAccesses>
+<externalCredentialPrincipalAccesses>
         <enabled>true</enabled>
         <externalCredentialPrincipal
-    >Portfolio_Auth-GitHub_Principal</externalCredentialPrincipal>
+    >GitHub_Auth-GitHub_Principal</externalCredentialPrincipal>
     </externalCredentialPrincipalAccesses>
     <externalCredentialPrincipalAccesses>
         <enabled>true</enabled>
         <externalCredentialPrincipal
-    >Portfolio_Auth-Jira_Principal</externalCredentialPrincipal>
+    >Jira_Auth-Jira_Principal</externalCredentialPrincipal>
+    </externalCredentialPrincipalAccesses>
+    <externalCredentialPrincipalAccesses>
+        <enabled>true</enabled>
+        <externalCredentialPrincipal
+    >Gemini_Auth-Gemini_Principal</externalCredentialPrincipal>
     </externalCredentialPrincipalAccesses>
 
     <userPermissions>
