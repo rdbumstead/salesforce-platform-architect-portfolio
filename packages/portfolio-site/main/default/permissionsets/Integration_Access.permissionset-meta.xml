@@ -10,13 +10,20 @@
         <name>Portfolio_Config__mdt</name>
     </customMetadataTypeAccesses>
 
+    <externalCredentialPrincipalAccesses>
+        <enabled>true</enabled>
+        <externalCredentialPrincipal
+    >Portfolio_Auth-GitHub_Principal</externalCredentialPrincipal>
+    </externalCredentialPrincipalAccesses>
+    <externalCredentialPrincipalAccesses>
+        <enabled>true</enabled>
+        <externalCredentialPrincipal
+    >Portfolio_Auth-Jira_Principal</externalCredentialPrincipal>
+    </externalCredentialPrincipalAccesses>
+
     <userPermissions>
         <enabled>true</enabled>
         <name>ApiEnabled</name>
-    </userPermissions>
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ApiUserOnly</name>
     </userPermissions>
 
     <objectPermissions>
@@ -462,11 +469,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Experience_Highlight__c.Developer_Sort_Order__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Experience__c.Accomplishments__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
