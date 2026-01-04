@@ -4,6 +4,7 @@
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 01/03/2026
+ * @Test Class        : [RestTestUtil]
  **/
 @IsTest
 public class RestTestUtil {
