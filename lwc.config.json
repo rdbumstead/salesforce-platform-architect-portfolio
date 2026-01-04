@@ -1,0 +1,8 @@
+{
+  "modules": [
+    {
+      "dir": "packages/portfolio-site/main/default/lwc",
+      "name": "c"
+    }
+  ]
+}

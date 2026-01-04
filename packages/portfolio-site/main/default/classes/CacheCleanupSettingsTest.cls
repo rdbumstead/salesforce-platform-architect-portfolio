@@ -1,41 +1,59 @@
+/**
+ * @description       : Unit tests for CacheCleanupSettings wrapper.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 11/30/2025
+ **/
 @IsTest
 private class CacheCleanupSettingsTest {
+  @IsTest
+  static void testDefaultFallbackValues() {
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      Test.startTest();
 
-    @IsTest
-    static void testDefaultFallbackValues() {
-        
-        Test.startTest();
+      Boolean enabled = CacheCleanupSettings.isEnabled();
+      Boolean hardDelete = CacheCleanupSettings.allowHardDelete();
+      Integer batchSize = CacheCleanupSettings.batchSize();
 
-        Boolean enabled = CacheCleanupSettings.isEnabled();
-        Boolean hardDelete = CacheCleanupSettings.allowHardDelete();
-        Integer batchSize = CacheCleanupSettings.batchSize();
+      Test.stopTest();
 
-        Test.stopTest();
-
-        System.assertNotEquals(null, enabled, 'isEnabled should return a value.');
-        System.assertNotEquals(null, hardDelete, 'allowHardDelete should return a value.');
-        System.assert(batchSize > 0, 'batchSize should be positive: ' + batchSize);
+      System.assertNotEquals(null, enabled, 'isEnabled should return a value.');
+      System.assertNotEquals(
+        null,
+        hardDelete,
+        'allowHardDelete should return a value.'
+      );
+      System.assert(
+        batchSize > 0,
+        'batchSize should be positive: ' + batchSize
+      );
     }
+  }
 
-    @IsTest
-    static void testTestOverrideEnabled() {
-        CacheCleanupSettings.testOverrideEnabled = false;
+  @IsTest
+  static void testTestOverrideEnabled() {
+    CacheCleanupSettings.testOverrideEnabled = false;
 
-        Test.startTest();
-        Boolean enabled = CacheCleanupSettings.isEnabled();
-        Test.stopTest();
+    Test.startTest();
+    Boolean enabled = CacheCleanupSettings.isEnabled();
+    Test.stopTest();
 
-        System.assertEquals(false, enabled, 'Test override should disable cleanup.');
-    }
-    
-    @IsTest
-    static void testTestOverrideEnabledTrue() {
-        CacheCleanupSettings.testOverrideEnabled = true;
+    System.assertEquals(
+      false,
+      enabled,
+      'Test override should disable cleanup.'
+    );
+  }
 
-        Test.startTest();
-        Boolean enabled = CacheCleanupSettings.isEnabled();
-        Test.stopTest();
+  @IsTest
+  static void testTestOverrideEnabledTrue() {
+    CacheCleanupSettings.testOverrideEnabled = true;
 
-        System.assertEquals(true, enabled, 'Test override should enable cleanup.');
-    }
+    Test.startTest();
+    Boolean enabled = CacheCleanupSettings.isEnabled();
+    Test.stopTest();
+
+    System.assertEquals(true, enabled, 'Test override should enable cleanup.');
+  }
 }

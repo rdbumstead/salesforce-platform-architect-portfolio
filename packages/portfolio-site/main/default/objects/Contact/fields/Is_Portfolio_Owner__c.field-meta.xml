@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Portfolio__c</fullName>
-    <label>Portfolio</label>
-    <required>false</required>
+    <fullName>Is_Portfolio_Owner__c</fullName>
+    <defaultValue>false</defaultValue>
+    <label>Is Portfolio Owner</label>
     <trackFeedHistory>false</trackFeedHistory>
-    <type>Url</type>
+    <type>Checkbox</type>
 </CustomField>

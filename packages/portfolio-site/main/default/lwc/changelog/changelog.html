@@ -1,0 +1,55 @@
+<template>
+  <lightning-card title="Latest Updates" icon-name="standard:feed">
+    <div class="slds-p-horizontal_medium">
+      <template if:true={commits}>
+        <ul class="slds-timeline">
+          <template for:each={commits} for:item="commit">
+            <li
+              key={commit.sha}
+              class="slds-timeline__item_expandable slds-timeline__item_task"
+            >
+              <div class="slds-media">
+                <div class="slds-media__figure">
+                  <lightning-icon
+                    icon-name="utility:git_merge"
+                    size="x-small"
+                  ></lightning-icon>
+                </div>
+                <div class="slds-media__body">
+                  <div
+                    class="slds-grid slds-grid_align-spread slds-timeline__trigger"
+                  >
+                    <div
+                      class="slds-grid slds-grid_vertical-align-center slds-truncate_container_75 slds-no-space"
+                    >
+                      <h3 class="slds-truncate" title={commit.message}>
+                        <a href={commit.url} target="_blank"
+                          >{commit.message}</a
+                        >
+                      </h3>
+                    </div>
+                    <div
+                      class="slds-timeline__actions slds-timeline__actions_inline"
+                    >
+                      <p class="slds-timeline__date">{commit.date}</p>
+                    </div>
+                  </div>
+                  <p class="slds-m-horizontal_xx-small">
+                    <span class="slds-truncate" title={commit.author}
+                      >Author: {commit.author}</span
+                    >
+                  </p>
+                </div>
+              </div>
+            </li>
+          </template>
+        </ul>
+      </template>
+      <template if:false={commits}>
+        <div class="slds-text-align_center slds-p-around_medium">
+          <p>No recent updates found.</p>
+        </div>
+      </template>
+    </div>
+  </lightning-card>
+</template>

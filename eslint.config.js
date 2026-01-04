@@ -7,22 +7,7 @@ const globals = require("globals");
 module.exports = [
   // Global ignores
   {
-    ignores: [
-      "**/node_modules/**",
-      "**/.sfdx/**",
-      "**/.sf/**",
-      "**/dist/**",
-      "**/build/**",
-      "**/coverage/**",
-      "**/target/**",
-      "**/META-INF/**",
-      "**/*.config.js",
-      "**/*.config.cjs",
-      "**/AnypointStudio/**",
-      "scripts/**",
-      "scan-results.html",
-      "results.html"
-    ]
+    ignores: ["**/AnypointStudio/**", "scan-results.html", "results.html"]
   },
 
   // Base ESLint recommended rules
@@ -121,6 +106,15 @@ module.exports = [
   {
     files: ["scripts/**/*.js", "eslint.config.js", "lighthouserc.cjs"],
     languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    }
+  },
+  {
+    files: ["scripts/cache-warmer.js"],
+    languageOptions: {
+      sourceType: "module",
       globals: {
         ...globals.node
       }

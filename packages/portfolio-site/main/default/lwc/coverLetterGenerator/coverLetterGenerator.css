@@ -1,0 +1,18 @@
+.content-body {
+  white-space: pre-wrap;
+  font-family: "Salesforce Sans", Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

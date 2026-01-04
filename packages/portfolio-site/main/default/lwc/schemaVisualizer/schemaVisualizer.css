@@ -1,0 +1,12 @@
+.chart-container {
+  min-height: 400px;
+  background-color: var(--lwc-colorBackgroundAlt, #ffffff);
+}
+
+.mock-chart {
+  border: 2px dashed #ccc;
+  padding: 4rem;
+  color: #999;
+  font-family: monospace;
+  font-size: 1.2rem;
+}

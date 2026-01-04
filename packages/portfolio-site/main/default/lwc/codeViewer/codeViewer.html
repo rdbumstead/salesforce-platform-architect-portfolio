@@ -1,0 +1,27 @@
+<template>
+  <lightning-card title={title} icon-name="utility:code">
+    <div class="slds-p-around_medium">
+      <template if:true={isLoading}>
+        <lightning-spinner
+          alternative-text="Loading"
+          size="small"
+        ></lightning-spinner>
+      </template>
+      <template if:false={isLoading}>
+        <!-- Prism.js requires <pre><code> structure -->
+        <div class="code-container">
+          <pre
+            class="line-numbers"
+          ><code class="language-apex">{codeContent}</code></pre>
+        </div>
+      </template>
+    </div>
+    <div slot="footer">
+      <lightning-button
+        label="Copy to Clipboard"
+        icon-name="utility:copy"
+        onclick={handleCopy}
+      ></lightning-button>
+    </div>
+  </lightning-card>
+</template>

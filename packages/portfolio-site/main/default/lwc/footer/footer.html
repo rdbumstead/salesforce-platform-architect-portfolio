@@ -1,0 +1,53 @@
+<template>
+  <div class="footer-container slds-p-around_medium slds-m-top_large">
+    <div class="slds-grid slds-wrap slds-grid_vertical-align-center">
+      <!-- Left: Copyright & Links -->
+      <div
+        class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3 slds-text-align_center slds-medium-order_1"
+      >
+        <p class="copyright">
+          &copy; {currentYear} Ryan Bumstead. Built on Salesforce LWR.
+        </p>
+        <div class="links slds-m-top_x-small">
+          <a href="https://github.com/rdbumstead" target="_blank">GitHub</a> |
+          <a href="https://linkedin.com/in/ryanbumstead" target="_blank"
+            >LinkedIn</a
+          >
+        </div>
+      </div>
+
+      <!-- Center: GitHub Actions Badge (Live Verification) -->
+      <div
+        class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3 slds-text-align_center slds-p-vertical_small slds-medium-order_2"
+      >
+        <div class="badge-container">
+          <span class="slds-text-body_small slds-m-right_small"
+            >Latest Deploy:</span
+          >
+          <!-- Using a static image for MVP, ideally dynamic URL to workflow badge -->
+          <img
+            src="https://github.com/rdbumstead/salesforce-architect-portfolio/actions/workflows/deploy-worker.yml/badge.svg"
+            alt="Build Status"
+            onerror={handleBadgeError}
+          />
+        </div>
+      </div>
+
+      <!-- Right: System Health (Glass Box) -->
+      <div
+        class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3 slds-text-align_right slds-medium-order_3 system-health"
+      >
+        <div class="slds-grid slds-grid_vertical slds-grid_align-end">
+          <div class="health-item">
+            <span class="label">LCP Target:</span>
+            <span class="value success">&lt; 2.5s</span>
+          </div>
+          <div class="health-item">
+            <span class="label">API Quota:</span>
+            <span class="value">Running on Free Tier</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

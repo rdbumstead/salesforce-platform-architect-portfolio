@@ -1,7 +1,4 @@
-/**
- * An apex page controller that supports self registration of users in communities that allow self registration
- */
-public class CommunitiesSelfRegController {
+public with sharing class CommunitiesSelfRegController {
   public String firstName { get; set; }
   public String lastName { get; set; }
   public String email { get; set; }
@@ -27,7 +24,11 @@ public class CommunitiesSelfRegController {
   public CommunitiesSelfRegController() {
     String expid = ApexPages.currentPage().getParameters().get('expid');
     if (expId != null) {
-      Site.setExperienceId(expId);
+      try {
+        Site.setExperienceId(expId);
+      } catch (Exception ex) {
+        System.debug('Error setting Experience Id: ' + ex.getMessage());
+      }
     }
   }
 

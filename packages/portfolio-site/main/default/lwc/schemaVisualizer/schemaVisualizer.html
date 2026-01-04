@@ -1,0 +1,21 @@
+<template>
+  <lightning-card title="Data Model (ERD)" icon-name="standard:relationship">
+    <div class="slds-p-around_medium chart-container">
+      <template if:true={isLoading}>
+        <lightning-spinner
+          alternative-text="Loading Chart"
+          size="small"
+        ></lightning-spinner>
+      </template>
+      <div if:false={isLoading} class="slds-text-align_center">
+        <!-- Placeholder for G6 or Mermaid Chart -->
+        <p class="slds-m-bottom_medium slds-text-color_weak">
+          Visualization powered by AntV G6 (Lazy Loaded).
+        </p>
+        <div class="mock-chart">
+          [ Project__c ] --&lt; [ Project_Skill__c ] &gt;-- [ Skill__c ]
+        </div>
+      </div>
+    </div>
+  </lightning-card>
+</template>

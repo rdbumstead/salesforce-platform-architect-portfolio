@@ -1,3 +1,10 @@
+/**
+ * @description       : Terminal UI wrapper component.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 12/19/2025
+ **/
 import { LightningElement, track } from "lwc";
 
 export default class PlaceholderTerminal extends LightningElement {

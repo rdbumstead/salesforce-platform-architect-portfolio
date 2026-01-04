@@ -1,3 +1,10 @@
+/**
+ * @description       : Unit tests for placeholderTerminal LWC.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 12/19/2025
+ **/
 import { createElement } from "@lwc/engine-dom";
 import PlaceholderTerminal from "c/placeholderTerminal";
 

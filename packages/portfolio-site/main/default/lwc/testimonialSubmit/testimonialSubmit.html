@@ -1,0 +1,67 @@
+<template>
+  <div class="slds-box slds-theme_default">
+    <h2 class="slds-text-heading_medium slds-m-bottom_medium">
+      Leave a Review
+    </h2>
+
+    <div class="mad-libs-container slds-text-heading_small">
+      <p>
+        I am a
+        <lightning-combobox
+          name="relationship"
+          variant="label-hidden"
+          options={relationshipOptions}
+          placeholder="select role"
+          class="inline-input"
+          onchange={handleChange}
+        >
+        </lightning-combobox>
+        and I think Ryan is
+        <lightning-input
+          name="context"
+          variant="label-hidden"
+          placeholder="describe in 3 words"
+          class="inline-input-text"
+          onchange={handleChange}
+        >
+        </lightning-input
+        >.
+      </p>
+      <p class="slds-m-top_small">
+        My name is
+        <lightning-input
+          name="authorName"
+          variant="label-hidden"
+          placeholder="Enter Name"
+          class="inline-input-text"
+          onchange={handleChange}
+        >
+        </lightning-input
+        >.
+      </p>
+    </div>
+
+    <div class="slds-m-top_medium">
+      <lightning-input
+        type="toggle"
+        label="Vibe Mode"
+        name="vibeMode"
+        checked={isCasual}
+        message-toggle-active="Casual"
+        message-toggle-inactive="Professional"
+        onchange={handleVibeToggle}
+      >
+      </lightning-input>
+    </div>
+
+    <div class="slds-m-top_large slds-text-align_right">
+      <lightning-button
+        label="Submit Review"
+        variant="brand"
+        onclick={handleSubmit}
+        disabled={isSubmitDisabled}
+      >
+      </lightning-button>
+    </div>
+  </div>
+</template>

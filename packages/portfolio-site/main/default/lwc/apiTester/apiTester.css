@@ -1,0 +1,19 @@
+.console-container {
+  background-color: var(--lwc-colorBackgroundStencil, #f3f3f3);
+}
+
+.result-box {
+  background-color: #1e1e1e; /* Dark theme for console */
+  color: #d4d4d4;
+  border-radius: 4px;
+  padding: 10px;
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.json-viewer {
+  margin: 0;
+  white-space: pre-wrap;
+}

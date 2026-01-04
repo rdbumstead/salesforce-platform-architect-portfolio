@@ -1,0 +1,27 @@
+.mad-libs-container {
+  line-height: 2.5rem;
+}
+
+.inline-input,
+.inline-input-text {
+  display: inline-block;
+  width: 200px;
+  margin: 0 0.5rem;
+  border-bottom: 2px dashed var(--lwc-brandAccessible, #0070d2);
+}
+
+/* Remove standard borders to look like a fill-in-the-blank paper */
+.inline-input ::part(input),
+.inline-input-text ::part(input) {
+  border: none;
+  background: transparent;
+  padding: 0;
+  height: 2rem;
+  font-weight: bold;
+  color: var(--lwc-brandAccessible, #0070d2);
+}
+
+.inline-input ::part(input):focus,
+.inline-input-text ::part(input):focus {
+  box-shadow: none;
+}
