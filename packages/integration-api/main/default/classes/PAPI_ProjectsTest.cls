@@ -80,7 +80,7 @@ private class PAPI_ProjectsTest {
   }
 
   @IsTest
-  static void testGetProjects_InternalError() {
+  static void testGetProjectsInternalError() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
 

@@ -42,7 +42,7 @@ private class ContentGenerationControllerTest {
   }
 
   @IsTest
-  static void testGenerateCoverLetter_GoldPath() {
+  static void testGenerateCoverLetterGoldPath() {
     // Setup Mock: Agentforce works
     ContentGenerationController.mockAgentforceService = new MockService(
       true,
@@ -67,7 +67,7 @@ private class ContentGenerationControllerTest {
   }
 
   @IsTest
-  static void testGenerateCoverLetter_SilverPath() {
+  static void testGenerateCoverLetterSilverPath() {
     // Setup Mock: Agentforce fails/unavailable, Gemini works
     ContentGenerationController.mockAgentforceService = new MockService(
       false,
@@ -98,7 +98,7 @@ private class ContentGenerationControllerTest {
   }
 
   @IsTest
-  static void testGenerateCoverLetter_BronzePath() {
+  static void testGenerateCoverLetterBronzePath() {
     // Setup Mock: Agentforce & Gemini fail, Local works (default)
     ContentGenerationController.mockAgentforceService = new MockService(
       true,
@@ -135,7 +135,7 @@ private class ContentGenerationControllerTest {
   }
 
   @IsTest
-  static void testGenerateCoverLetter_AllFail() {
+  static void testGenerateCoverLetterAllFail() {
     // Setup Mock: All fail
     ContentGenerationController.mockAgentforceService = new MockService(
       false,

@@ -131,7 +131,7 @@ private class PAPI_ProfileTest {
   }
 
   @IsTest
-  static void testGetProfile_InternalError() {
+  static void testGetProfileInternalError() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
 
