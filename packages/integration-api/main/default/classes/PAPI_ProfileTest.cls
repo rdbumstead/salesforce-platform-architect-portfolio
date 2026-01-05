@@ -129,4 +129,26 @@ private class PAPI_ProfileTest {
 
     System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
   }
+
+  @IsTest
+  static void testGetProfileInternalError() {
+    RestRequest req = new RestRequest();
+    RestResponse res = new RestResponse();
+
+    // Trigger exception by leaving necessary context null or invalid
+    req.requestURI = null;
+    req.httpMethod = 'GET';
+    RestContext.request = req;
+    RestContext.response = res;
+
+    Test.startTest();
+    PAPI_Profile.getProfile();
+    Test.stopTest();
+
+    System.assertEquals(
+      500,
+      res.statusCode,
+      'Should return 500 Internal Server Error'
+    );
+  }
 }

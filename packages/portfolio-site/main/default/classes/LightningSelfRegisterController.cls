@@ -11,7 +11,13 @@ global class LightningSelfRegisterController {
   }
 
   @TestVisible
+  private static Boolean allowTestOverrides = false;
+
+  @TestVisible
   private static boolean siteAsContainerEnabled(String communityUrl) {
+    if (Test.isRunningTest() && !allowTestOverrides) {
+      return false; // Default test behavior
+    }
     Auth.AuthConfiguration authConfig = new Auth.AuthConfiguration(
       communityUrl,
       ''
@@ -111,12 +117,12 @@ global class LightningSelfRegisterController {
       if (userId != null) {
         if (password != null && password.length() > 1) {
           ApexPages.PageReference lgn = Site.login(email, password, startUrl);
-          if (!Test.isRunningTest()) {
+          if (!Test.isRunningTest() || allowTestOverrides) {
             aura.redirect(lgn);
           }
         } else {
           ApexPages.PageReference confirmRef = new PageReference(regConfirmUrl);
-          if (!Test.isRunningTest()) {
+          if (!Test.isRunningTest() || allowTestOverrides) {
             aura.redirect(confirmRef);
           }
         }
@@ -135,7 +141,8 @@ global class LightningSelfRegisterController {
     List<Map<String, Object>> extraFields = new List<Map<String, Object>>();
     Schema.FieldSet fieldSet = Schema.SObjectType.User.fieldSets.getMap()
       .get(extraFieldsFieldSet);
-    if (!Test.isRunningTest()) {
+
+    if (!Test.isRunningTest() || allowTestOverrides) {
       if (fieldSet != null) {
         for (Schema.FieldSetMember f : fieldSet.getFields()) {
           Map<String, Object> fieldDetail = new Map<String, Object>();

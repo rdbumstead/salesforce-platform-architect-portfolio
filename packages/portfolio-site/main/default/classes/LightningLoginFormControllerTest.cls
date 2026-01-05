@@ -67,4 +67,12 @@ public with sharing class LightningLoginFormControllerTest {
     // Just ensure it runs without exception
     System.assert(url == null || url != null);
   }
+  @IsTest
+  static void testLoginException() {
+    LightningLoginFormController.testThrowException = true;
+    System.assertEquals(
+      'Test Exception',
+      LightningLoginFormController.login('user', 'pwd', 'url')
+    );
+  }
 }

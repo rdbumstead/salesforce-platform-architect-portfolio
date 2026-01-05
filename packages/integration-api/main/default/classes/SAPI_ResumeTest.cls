@@ -102,4 +102,24 @@ private class SAPI_ResumeTest {
       'Response should contain validation error'
     );
   }
+  @IsTest
+  static void testGetResumeDataInternalError() {
+    RestRequest req = new RestRequest();
+    RestResponse res = new RestResponse();
+    // req.requestURI = null;
+    RestContext.request = req;
+    RestContext.response = res;
+
+    SAPI_Resume.throwException = true;
+
+    Test.startTest();
+    SAPI_Resume.getResumeData();
+    Test.stopTest();
+
+    System.assertEquals(
+      500,
+      res.statusCode,
+      'Should return 500 on internal error'
+    );
+  }
 }

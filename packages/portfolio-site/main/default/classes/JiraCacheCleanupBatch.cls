@@ -26,11 +26,17 @@ public with sharing class JiraCacheCleanupBatch implements Database.Batchable<SO
     );
   }
 
+  @TestVisible
+  private static Boolean forceHardDelete = false;
+
   public void execute(Database.BatchableContext bc, List<SObject> records) {
     if (!records.isEmpty()) {
       delete records;
 
-      if (CacheCleanupSettings.allowHardDelete() && !Test.isRunningTest()) {
+      if (
+        CacheCleanupSettings.allowHardDelete() &&
+        (!Test.isRunningTest() || forceHardDelete)
+      ) {
         Database.emptyRecycleBin(records);
       }
     }

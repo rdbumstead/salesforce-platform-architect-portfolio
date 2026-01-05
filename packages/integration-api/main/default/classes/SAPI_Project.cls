@@ -19,6 +19,9 @@ global with sharing class SAPI_Project {
 
     try {
       addCommonHeaders(res);
+      if (Test.isRunningTest() && throwException) {
+        throw new CalloutException('Forced Exception');
+      }
 
       // Extract path parameter for single record fetch
       String projectId = extractIdFromPath(req.requestURI, 'projects');
@@ -211,4 +214,7 @@ global with sharing class SAPI_Project {
     };
     res.responseBody = Blob.valueOf(JSON.serialize(error));
   }
+
+  @TestVisible
+  private static Boolean throwException = false;
 }

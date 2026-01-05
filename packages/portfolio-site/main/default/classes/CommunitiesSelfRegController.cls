@@ -21,6 +21,9 @@ public with sharing class CommunitiesSelfRegController {
     }
   }
 
+  @TestVisible
+  private static String testMockUserId;
+
   public CommunitiesSelfRegController() {
     String expid = ApexPages.currentPage().getParameters().get('expid');
     if (expId != null) {
@@ -65,6 +68,10 @@ public with sharing class CommunitiesSelfRegController {
 
     try {
       userId = Site.createExternalUser(u, accountId, password);
+      // Allow mock ID in tests
+      if (Test.isRunningTest() && testMockUserId != null) {
+        userId = testMockUserId;
+      }
     } catch (Site.ExternalUserCreateException ex) {
       List<String> errors = ex.getDisplayMessages();
       for (String error : errors) {

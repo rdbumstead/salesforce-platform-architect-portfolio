@@ -60,4 +60,28 @@ private class JiraCacheCleanupBatchTest {
       'Recent Jira records should not be deleted.'
     );
   }
+  @IsTest
+  static void testFullCoverage() {
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      CacheCleanupSettings.testOverrideEnabled = true;
+
+      TestFactory.createJiraCache(10);
+      for (Jira_Cache__c rec : [SELECT Id FROM Jira_Cache__c]) {
+        Test.setCreatedDate(rec.Id, Datetime.now().addHours(-1));
+      }
+
+      // Force hard delete
+      JiraCacheCleanupBatch.forceHardDelete = true;
+
+      Test.startTest();
+      Database.executeBatch(new JiraCacheCleanupBatch(), 200);
+      Test.stopTest();
+
+      System.assertEquals(
+        0,
+        [SELECT COUNT() FROM Jira_Cache__c],
+        'Records should be hard deleted'
+      );
+    }
+  }
 }

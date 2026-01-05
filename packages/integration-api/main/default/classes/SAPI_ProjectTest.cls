@@ -133,4 +133,25 @@ private class SAPI_ProjectTest {
       'Response should contain offset error message'
     );
   }
+  @IsTest
+  static void testGetProjectsInternalError() {
+    RestRequest req = new RestRequest();
+    RestResponse res = new RestResponse();
+    // req.requestURI = null;
+    req.httpMethod = 'GET';
+    RestContext.request = req;
+    RestContext.response = res;
+
+    SAPI_Project.throwException = true;
+
+    Test.startTest();
+    SAPI_Project.getProjects();
+    Test.stopTest();
+
+    System.assertEquals(
+      500,
+      res.statusCode,
+      'Should return 500 on internal error'
+    );
+  }
 }

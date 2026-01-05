@@ -74,4 +74,44 @@ private class SAPI_ExperienceTest {
     RestResponse res = RestTestUtil.getResponse();
     System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
   }
+  @IsTest
+  static void testGetExperiencesInvalidLimit() {
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/experience/',
+      new Map<String, String>{ 'limit' => '500' }
+    );
+
+    Test.startTest();
+    SAPI_Experience.getExperiences();
+    Test.stopTest();
+
+    RestResponse res = RestTestUtil.getResponse();
+    System.assertEquals(
+      400,
+      res.statusCode,
+      'Should return 400 for high limit'
+    );
+  }
+
+  @IsTest
+  static void testGetExperiencesInternalError() {
+    RestRequest req = new RestRequest();
+    RestResponse res = new RestResponse();
+    // req.requestURI = null;
+    req.httpMethod = 'GET';
+    RestContext.request = req;
+    RestContext.response = res;
+
+    SAPI_Experience.throwException = true;
+
+    Test.startTest();
+    SAPI_Experience.getExperiences();
+    Test.stopTest();
+
+    System.assertEquals(
+      500,
+      res.statusCode,
+      'Should return 500 on internal error'
+    );
+  }
 }
