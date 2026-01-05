@@ -91,4 +91,25 @@ private class SAPI_TestimonialTest {
       System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
     }
   }
+  @IsTest
+  static void testGetTestimonialsInternalError() {
+    RestRequest req = new RestRequest();
+    RestResponse res = new RestResponse();
+    // req.requestURI = null; // No longer needed
+    req.httpMethod = 'GET';
+    RestContext.request = req;
+    RestContext.response = res;
+
+    SAPI_Testimonial.throwException = true;
+
+    Test.startTest();
+    SAPI_Testimonial.getTestimonials();
+    Test.stopTest();
+
+    System.assertEquals(
+      500,
+      res.statusCode,
+      'Should return 500 on internal error'
+    );
+  }
 }

@@ -57,9 +57,33 @@ private class GeminiServiceTest {
 
   @isTest
   static void testGenerateContentException() {
-    // Force an exception by passing null to the mock engine if needed,
-    // or rely on the 400 error test to cover the main catch block path depending on how robust the catch is.
-    // The 'Error' test above covers the "if status != 200" path.
-    // To test the "Catch" block, we usually mock a CalloutException.
+    // 1. Set Mock to throw exception
+    Test.setMock(
+      HttpCalloutMock.class,
+      new TestFactory.MockResponseGenerator(500, 'Error', 'Error')
+    );
+    // Since we rely on TestFactory mock generator which might not support throwing exceptions easily without modification,
+    // we can use a custom inner mock here.
+    Test.setMock(HttpCalloutMock.class, new MockTrigger());
+
+    // 2. Run Test
+    Test.startTest();
+    String result = GeminiService.generateContentStatic('Define AI');
+    Test.stopTest();
+
+    // 3. Assert
+    System.assert(
+      result.contains('Exception:'),
+      'Should handle exceptions gracefully'
+    );
+  }
+
+  public class MockTrigger implements HttpCalloutMock {
+    public HttpResponse respond(HttpRequest req) {
+      CalloutException e = (CalloutException) CalloutException.class
+        .newInstance();
+      e.setMessage('Service Unavailable');
+      throw e;
+    }
   }
 }

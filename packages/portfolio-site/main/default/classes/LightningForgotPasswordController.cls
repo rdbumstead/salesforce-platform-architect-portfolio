@@ -2,9 +2,15 @@ global class LightningForgotPasswordController {
   public LightningForgotPasswordController() {
   }
 
+  @TestVisible
+  private static Boolean testThrowException = false;
+
   @AuraEnabled
   public static String forgotPassword(String username, String checkEmailUrl) {
     try {
+      if (Test.isRunningTest() && testThrowException) {
+        throw new CalloutException('Test Exception');
+      }
       Site.forgotPassword(username);
       ApexPages.PageReference checkEmailRef = new PageReference(checkEmailUrl);
       if (!Site.isValidUsername(username)) {

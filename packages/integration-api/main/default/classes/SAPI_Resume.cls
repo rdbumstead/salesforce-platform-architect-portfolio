@@ -18,6 +18,9 @@ global with sharing class SAPI_Resume {
 
     try {
       addCommonHeaders(res);
+      if (Test.isRunningTest() && throwException) {
+        throw new CalloutException('Forced Exception');
+      }
 
       // Query parameters
       String persona = req.params.get('persona');
@@ -147,4 +150,7 @@ global with sharing class SAPI_Resume {
     };
     res.responseBody = Blob.valueOf(JSON.serialize(error));
   }
+
+  @TestVisible
+  private static Boolean throwException = false;
 }

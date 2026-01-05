@@ -56,4 +56,20 @@ private class CacheCleanupSettingsTest {
 
     System.assertEquals(true, enabled, 'Test override should enable cleanup.');
   }
+
+  @IsTest
+  static void testSettingsNull() {
+    CacheCleanupSettings.useMockSettings = true;
+    CacheCleanupSettings.mockSettings = null; // Force null settings
+
+    Test.startTest();
+    // When settings is null, batchSize returns 200
+    Integer size = CacheCleanupSettings.batchSize();
+    // When settings is null, isEnabled returns true (default)
+    Boolean enabled = CacheCleanupSettings.isEnabled();
+    Test.stopTest();
+
+    System.assertEquals(200, size, 'Should default to 200');
+    System.assertEquals(true, enabled, 'Should default to true');
+  }
 }

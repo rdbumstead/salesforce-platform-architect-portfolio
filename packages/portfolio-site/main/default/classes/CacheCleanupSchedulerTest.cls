@@ -24,4 +24,24 @@ private class CacheCleanupSchedulerTest {
       );
     }
   }
+
+  @IsTest
+  static void testSchedulerExecutionDisabled() {
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      // Disable cleanup via TestVisible override
+      CacheCleanupSettings.testOverrideEnabled = false;
+
+      TestFactory.createJiraCache(10);
+
+      Test.startTest();
+      new CacheCleanupScheduler().execute(null);
+      Test.stopTest();
+
+      System.assertEquals(
+        10,
+        [SELECT COUNT() FROM Jira_Cache__c],
+        'Scheduler should NOT trigger cleanup when disabled.'
+      );
+    }
+  }
 }

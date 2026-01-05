@@ -55,4 +55,55 @@ private class GitHubServiceTest {
     // 3. Assert (Circuit Breaker)
     System.assertEquals(0, commits.size(), 'Should return empty list on error');
   }
+  @isTest
+  static void testGetRecentCommitsException() {
+    PortfolioService.mockConfig = new Portfolio_Config__mdt(
+      GitHub_Repo_Path__c = 'test/repo'
+    );
+    Test.setMock(HttpCalloutMock.class, new MockTrigger());
+
+    Test.startTest();
+    List<GitHubService.CommitItem> commits = GitHubService.getRecentCommits();
+    Test.stopTest();
+
+    System.assertEquals(
+      0,
+      commits.size(),
+      'Should handle exception gracefully'
+    );
+  }
+
+  @isTest
+  static void testGetRecentCommitsParsingEdgeCase() {
+    PortfolioService.mockConfig = new Portfolio_Config__mdt(
+      GitHub_Repo_Path__c = 'test/repo'
+    );
+
+    // JSON with git author but no github user
+    String json = '[{"sha":"123","commit":{"message":"msg","author":{"name":"GitUser","date":"2023-01-01T00:00:00Z"}}, "html_url":"url"}]';
+
+    Test.setMock(
+      HttpCalloutMock.class,
+      new TestFactory.MockResponseGenerator(200, 'OK', json)
+    );
+
+    Test.startTest();
+    List<GitHubService.CommitItem> commits = GitHubService.getRecentCommits();
+    Test.stopTest();
+
+    System.assertEquals(
+      'GitUser',
+      commits[0].authorName,
+      'Should parse git author name'
+    );
+  }
+
+  public class MockTrigger implements HttpCalloutMock {
+    public HttpResponse respond(HttpRequest req) {
+      CalloutException e = (CalloutException) CalloutException.class
+        .newInstance();
+      e.setMessage('Service Unavailable');
+      throw e;
+    }
+  }
 }

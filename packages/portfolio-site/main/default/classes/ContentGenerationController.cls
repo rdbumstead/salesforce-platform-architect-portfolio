@@ -13,6 +13,13 @@ public with sharing class ContentGenerationController {
   public class ContentGenerationException extends Exception {
   }
 
+  @TestVisible
+  private static IAIGenerationService mockAgentforceService;
+  @TestVisible
+  private static IAIGenerationService mockGeminiService;
+  @TestVisible
+  private static IAIGenerationService mockLocalService;
+
   /**
    * @description Generates a cover letter using the best available service.
    * @param companyName Name of the target company.
@@ -51,7 +58,11 @@ public with sharing class ContentGenerationController {
     IAIGenerationService service;
 
     // 1. Try Agentforce (Gold Path)
-    service = new AgentforceService();
+    // Use test mock if set, otherwise instantiate regular service
+    service = (mockAgentforceService != null)
+      ? mockAgentforceService
+      : new AgentforceService();
+
     if (service.isAvailable()) {
       try {
         return service.generateContent(prompt, context);
@@ -63,7 +74,10 @@ public with sharing class ContentGenerationController {
     }
 
     // 2. Try Gemini (Silver Path)
-    service = new GeminiService();
+    service = (mockGeminiService != null)
+      ? mockGeminiService
+      : new GeminiService();
+
     if (service.isAvailable()) {
       try {
         return service.generateContent(prompt, context);
@@ -76,7 +90,9 @@ public with sharing class ContentGenerationController {
 
     // 3. Fallback to Local Templates (Bronze Path - Always Available)
     try {
-      service = new LocalTemplateService();
+      service = (mockLocalService != null)
+        ? mockLocalService
+        : new LocalTemplateService();
       return service.generateContent(prompt, context);
     } catch (Exception e) {
       errorMessages.add('LocalTemplate: ' + e.getMessage());

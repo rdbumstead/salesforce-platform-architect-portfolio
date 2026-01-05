@@ -1,22 +1,50 @@
 @IsTest
 public with sharing class CommunitiesSelfRegControllerTest {
-  @IsTest(SeeAllData=true)
+  @IsTest
   public static void testCommunitiesSelfRegController() {
     CommunitiesSelfRegController controller = new CommunitiesSelfRegController();
     controller.firstName = 'FirstName';
     controller.lastName = 'LastName';
     controller.email = 'test@force.com';
     controller.communityNickname = 'test';
-
-    // registerUser will always return null when the page isn't accessed as a guest user
-    System.assert(controller.registerUser() == null);
-
     controller.password = 'abcd1234';
-    controller.confirmPassword = 'abcd123';
-    System.assert(controller.registerUser() == null);
+    controller.confirmPassword = 'abcd1234';
+
+    // Test Success (with Mock)
+    CommunitiesSelfRegController.testMockUserId = '005fakeuseridxx';
+    System.assertEquals(
+      null,
+      controller.registerUser(),
+      'Should return null or page ref'
+    );
   }
 
-  @IsTest(SeeAllData=true)
+  @IsTest
+  public static void testCommunitiesSelfRegControllerValues() {
+    CommunitiesSelfRegController controller = new CommunitiesSelfRegController();
+    controller.firstName = 'FirstName';
+    controller.lastName = 'LastName';
+    controller.email = 'test@force.com';
+    controller.communityNickname = 'test';
+    controller.password = 'abcd1234';
+    controller.confirmPassword = 'abcd12345'; // Mismatch
+
+    // Test Password Mismatch
+    System.assertEquals(
+      null,
+      controller.registerUser(),
+      'Should return null on validation error'
+    );
+    Boolean hasError = false;
+    for (ApexPages.Message msg : ApexPages.getMessages()) {
+      if (msg.getSummary().contains(Label.site.passwords_dont_match)) {
+        hasError = true;
+      }
+    }
+    System.assert(hasError, 'Should have password mismatch error');
+  }
+
+  @IsTest
   public static void testCommunitiesSelfRegControllerInstantiation() {
     ApexPages.currentPage().getParameters().put('expid', 'testExpId');
     CommunitiesSelfRegController controller = new CommunitiesSelfRegController();

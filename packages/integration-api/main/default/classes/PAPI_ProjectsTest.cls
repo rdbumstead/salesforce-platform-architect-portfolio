@@ -78,4 +78,31 @@ private class PAPI_ProjectsTest {
 
     System.assertEquals(200, res.statusCode, 'Should return 200 OK');
   }
+
+  @IsTest
+  static void testGetProjects_InternalError() {
+    RestRequest req = new RestRequest();
+    RestResponse res = new RestResponse();
+
+    // Leaving requestURI null will cause extractEndpoint to throw NullPointerException
+    // This verifies the catch block and sendError method
+    req.requestURI = null;
+    req.httpMethod = 'GET';
+    RestContext.request = req;
+    RestContext.response = res;
+
+    Test.startTest();
+    PAPI_Projects.getProjects();
+    Test.stopTest();
+
+    System.assertEquals(
+      500,
+      res.statusCode,
+      'Should catch exception and return 500'
+    );
+    System.assert(
+      res.responseBody.toString().contains('INTERNAL_SERVER_ERROR'),
+      'Should return correct error code'
+    );
+  }
 }

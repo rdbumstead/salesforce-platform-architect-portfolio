@@ -87,4 +87,24 @@ private class SAPI_SkillTest {
       System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
     }
   }
+  @IsTest
+  static void testGetSkillsInternalError() {
+    RestRequest req = new RestRequest();
+    RestResponse res = new RestResponse();
+    // req.requestURI = null;
+    RestContext.request = req;
+    RestContext.response = res;
+
+    SAPI_Skill.throwException = true;
+
+    Test.startTest();
+    SAPI_Skill.getSkills();
+    Test.stopTest();
+
+    System.assertEquals(
+      500,
+      res.statusCode,
+      'Should return 500 on internal error'
+    );
+  }
 }

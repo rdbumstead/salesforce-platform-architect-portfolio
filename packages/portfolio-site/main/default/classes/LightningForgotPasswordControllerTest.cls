@@ -49,4 +49,15 @@ public with sharing class LightningForgotPasswordControllerTest {
     System.assertEquals(null, result);
     result = LightningForgotPasswordController.setExperienceId('expId');
   }
+  @IsTest
+  static void testLightningForgotPasswordControllerException() {
+    LightningForgotPasswordController.testThrowException = true;
+    System.assertEquals(
+      'Test Exception',
+      LightningForgotPasswordController.forgotPassword(
+        'a@salesforce.com',
+        'http://a.com'
+      )
+    );
+  }
 }

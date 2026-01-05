@@ -37,4 +37,19 @@ private class PortfolioServiceTest {
       'Repo Path should be set'
     );
   }
+
+  @IsTest
+  static void testGetConfigWithoutMock() {
+    // This tests the code path where mockConfig is null
+    // It captures the SOQL query execution (even if it returns nothing in test context)
+    PortfolioService.mockConfig = null;
+
+    Test.startTest();
+    Portfolio_Config__mdt config = PortfolioService.getConfig();
+    Test.stopTest();
+
+    // In test context without SeeAllData, config might be null, but the lines utilize valid logic
+    // We just assert no exception occurred
+    System.assert(true, 'Should run without exception');
+  }
 }

@@ -12,6 +12,11 @@ public with sharing class GithubCacheCleanupBatch implements Database.Batchable<
    * @param bc BatchableContext
    * @return Database.QueryLocator
    */
+  @TestVisible
+  private static Boolean forceHardDelete = false;
+  @TestVisible
+  private static Boolean forceChainBatch = false;
+
   public Database.QueryLocator start(Database.BatchableContext bc) {
     if (!CacheCleanupSettings.isEnabled()) {
       return Database.getQueryLocator(
@@ -30,7 +35,10 @@ public with sharing class GithubCacheCleanupBatch implements Database.Batchable<
     if (!scope.isEmpty()) {
       delete scope;
 
-      if (CacheCleanupSettings.allowHardDelete() && !Test.isRunningTest()) {
+      if (
+        CacheCleanupSettings.allowHardDelete() &&
+        (!Test.isRunningTest() || forceHardDelete)
+      ) {
         Database.emptyRecycleBin(scope);
       }
     }
@@ -38,7 +46,10 @@ public with sharing class GithubCacheCleanupBatch implements Database.Batchable<
 
   public void finish(Database.BatchableContext bc) {
     // Intentionally disabled during tests to avoid recursive async execution
-    if (!Test.isRunningTest() && CacheCleanupSettings.isEnabled()) {
+    if (
+      CacheCleanupSettings.isEnabled() &&
+      (!Test.isRunningTest() || forceChainBatch)
+    ) {
       CacheCleanupOrchestrator.runJiraCleanup();
     }
   }

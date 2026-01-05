@@ -36,7 +36,15 @@ public with sharing class CacheCleanupSettings {
     return size > 0 ? size : 200;
   }
 
+  @TestVisible
+  private static Cache_Cleanup_Settings__mdt mockSettings;
+  @TestVisible
+  private static Boolean useMockSettings = false;
+
   private static Cache_Cleanup_Settings__mdt settings() {
+    if (useMockSettings) {
+      return mockSettings;
+    }
     return Cache_Cleanup_Settings__mdt.getInstance('Default');
   }
 }

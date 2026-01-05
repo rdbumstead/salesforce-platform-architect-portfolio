@@ -2,6 +2,9 @@ global class LightningLoginFormController {
   public LightningLoginFormController() {
   }
 
+  @TestVisible
+  private static Boolean testThrowException = false;
+
   @AuraEnabled
   public static String login(
     String username,
@@ -9,6 +12,9 @@ global class LightningLoginFormController {
     String startUrl
   ) {
     try {
+      if (Test.isRunningTest() && testThrowException) {
+        throw new CalloutException('Test Exception');
+      }
       ApexPages.PageReference lgn = Site.login(username, password, startUrl);
       aura.redirect(lgn);
       return null;
