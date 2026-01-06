@@ -276,7 +276,7 @@ _Design artifacts complete; implementation begins post-launch._
 
 **Phase 6: Observability & Launch**
 
-- [ ] **Dev:** Install Nebula Logger (Unlocked Pkg) & configure `LoggerSettings__c`.
+- **Dev:** Install Nebula Logger (Unlocked Pkg) & configure `LoggerSettings__c`.
 - **Dev:** Build c-system-health-footer LWC (Glass Box) using requestIdleCallback.
 - **Dev:** Implement AnalyticsService.js for unified GA4 event tracking.
 - **Config:** Add "Resilience Simulation" toggle and resilience logic to `GitHubService.cls`.
