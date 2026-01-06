@@ -8,12 +8,12 @@
   - [1.3 Agentforce Integration](#13-agentforce-integration)
   - [1.4 System API Security (The "Twin" Pattern)](#14-system-api-security-the-twin-pattern)
 - [2. Frontend (LWR) Component Logic](#2-frontend-lwr-component-logic)
-  - [2.1 c-skill-network (Visualization)](#21-c-skill-network-visualization)
-  - [2.2 c-resume-builder](#22-c-resume-builder)
-  - [2.3 c-testimonial-submit](#23-c-testimonial-submit)
-  - [2.4 Dynamic ERD Visualizer (c-schema-visualizer)](#24-dynamic-erd-visualizer-c-schema-visualizer)
-  - [2.5 Executable Governance (c-smart-docs)](#25-executable-governance-c-smart-docs)
-  - [2.6 c-system-health-footer (Glass Box)](#26-c-system-health-footer-glass-box)
+  - [2.1 `c-skill-network` (Visualization)](#21-c-skill-network-visualization)
+  - [2.2 `c-resume-builder`](#22-c-resume-builder)
+  - [2.3 `c-testimonial-submit`](#23-c-testimonial-submit)
+  - [2.4 `c-schema-visualizer` (Dynamic ERD Visualizer)](#24-c-schema-visualizer-dynamic-erd-visualizer)
+  - [2.5 `c-smart-docs` (Executable Governance)](#25-c-smart-docs-executable-governance)
+  - [2.6 `c-system-health-footer` (Glass Box)](#26-c-system-health-footer-glass-box)
   - [2.7 Architectural Decision Record: ADR-014 (Deferred Telemetry)](#27-architectural-decision-record-adr-014-deferred-telemetry)
   - [2.8 Analytics Instrumentation (GA4)](#28-analytics-instrumentation-ga4)
 - [3. Quality Assurance Checklist](#3-quality-assurance-checklist)
@@ -44,7 +44,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 ### 1.2 Jira Integration (Roadmap)
 
 - **Authentication:** Basic Auth with a Named Credential.
-- **Component:** c-roadmap-viewer LWC calls the Apex JiraService.cls to fetch Epics/Stories via REST API.
+- **Component:** `c-roadmap-viewer` LWC calls the Apex JiraService.cls to fetch Epics/Stories via REST API.
 - **Degraded Mode:**
   - After three consecutive 503 errors, a circuit breaker opens for 30 minutes.
   - The user sees a "Roadmap temporarily unavailable" message.
@@ -117,7 +117,7 @@ public class AIResponseWrapper {
 
 The front-end is based on **LWR** for sub-second page loads. **Lightning Web Security (LWS)** is required for security and to support libraries like AntV G6 and jsPDF.
 
-### 2.1 c-skill-network (Visualization)
+### 2.1 `c-skill-network` (Visualization)
 
 - **Lazy Loading:** Dynamic import (lazy-loading) of the **G6 library** occurs only when the component enters the viewport to maintain a fast initial LCP.
 - **Mobile Guardrail:**
@@ -133,25 +133,25 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - **Pdf Generation:** Performs client-side PDF generation using **jsPDF**.
 - **Logic:** The underlying Apex logic filters `Experience_Highlight__c` records based on the user's requested **Persona Tag** (e.g., Admin vs. Architect).
 
-### 2.3 c-testimonial-submit
+### 2.3 `c-testimonial-submit`
 
 - Uses a "Mad Libs" style sentence builder.
 - Includes a "Vibe Toggle" (Professional/Casual) to implement the "Vibe-Gated" submission pattern.
 
-### 2.4 Dynamic ERD Visualizer (`c-schema-visualizer`)
+### 2.4 `c-schema-visualizer` (Dynamic ERD Visualizer)
 
 - **Schema Extraction:** The Apex controller `SchemaService.cls` utilizes `Schema.getGlobalDescribe()` to dynamically map `Project__c`, `Skill__c`, and their Junction objects.
 - **Node Mapping:** Salesforce Child Relationships (getDescribe().getChildRelationships()) are mapped to G6 "Edges," while SObjects are mapped to "Nodes."
 - **Performance:** To prevent Heap Size errors during schema description, the service is strictly scoped to the portfolio namespace and caches the JSON result in Platform Cache.
 
-### 2.5 Executable Governance (`c-smart-docs`)
+### 2.5 `c-smart-docs` (Executable Governance)
 
 - **Event Subscription:** Utilizes the `lightning/empApi` module to subscribe to `event/Governance_Notification__e`.
 - **State Management:** The component maintains the state of checklist items (e.g., `isBuildGreen`, `isTestsPassing`) in the browser's `localStorage` so the "Verified" checkmarks persist across page reloads for the user session.
 
-### 2.6 c-system-health-footer (Glass Box)
+### 2.6 `c-system-health-footer` (Glass Box)
 
-- **Component:** c-system-health-footer
+- **Component:** `c-system-health-footer`
 - **Purpose:** Displays real-time Salesforce Limits (Heap, CPU) and GitHub API quotas.
 - **Implementation:** Uses the **Deferred Loading Pattern** (see ADR-014). The component loads with placeholder data and triggers the Apex data fetch only via requestIdleCallback() to ensure it never delays the main page load (LCP).
 - **Resilience Toggle:** Includes the "Resilience Simulation" switch that forces the GitHubService into a degraded state for testing.
@@ -186,9 +186,9 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - [ ] Verify Skill Graph/Roadmap use lightning/uiGraphQLApi (Network tab shows /graphql call to Salesforce domain)
 - [ ] API Lab "Enterprise Mode" tab disabled with clear "Phase 8 — Q2 2026" messaging
 - [ ] **Circuit Breaker Recovery:**
-  1. Trigger 3 Agentforce failures (mock).
-     - PASS: Circuit auto-resets to **Closed**.
-  2. Wait 61 seconds.
-     - PASS: Next request attempts Agentforce.
-  3. Submit new request.
-     - PASS: Nebula logs "Circuit recovered".
+  - [ ] Trigger 3 Agentforce failures (mock).
+    - PASS: Circuit auto-resets to **Closed**.
+  - [ ] Wait 61 seconds.
+    - PASS: Next request attempts Agentforce.
+  - [ ] Submit new request.
+    - PASS: Nebula logs "Circuit recovered".

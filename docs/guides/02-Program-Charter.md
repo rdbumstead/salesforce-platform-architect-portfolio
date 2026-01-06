@@ -191,7 +191,7 @@ The delivery is organized into four parallel execution tracks:
 
 **Phase 6: Observability & Launch**
 
-- **System Health "Glass Box":** Develop c-system-health-footer with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
+- **System Health "Glass Box":** Develop `c-system-health-footer` with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
 - **Enterprise Logging:** Install and configure Nebula Logger (Unlocked Package); configure storage guardrails (2-day retention).
 - **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test circuit breakers and cached data fallbacks.
 - **Analytics Instrumentation:** Deploy Google Analytics 4 (GA4) with custom events for API tests and resume downloads.
@@ -201,7 +201,7 @@ The delivery is organized into four parallel execution tracks:
 **Phase 7: Observability & Governance (Post-Launch)**
 
 - **System Health Dashboard:** "Glass Box" footer.
-- **Smart Documentation:** Implement c-smart-checklist using lightning/empApi to listen for Deployment_Event\_\_e and auto-complete governance checklists.
+- **Smart Documentation:** Implement `c-smart-checklist` using lightning/empApi to listen for Deployment_Event\_\_e and auto-complete governance checklists.
 
 **Phase 8: Multi-Cloud & FinOps — Hybrid GraphQL Strategy (Q2 2026)**
 _Design artifacts complete; implementation begins post-launch._
@@ -242,16 +242,16 @@ _Design artifacts complete; implementation begins post-launch._
 
 - Create free Atlassian Jira account and generate API Token.
 - **A.8:** Configure Named Credential Jira_API in Salesforce.
-- Develop c-roadmap-viewer LWC + JiraService.cls.
+- Develop `c-roadmap-viewer` LWC + JiraService.cls.
 - **D.3 / D.4:** Deploy `Experience__c` parent and `Experience_Highlight__c` child objects.
-- Develop c-resume-builder LWC with persona-based Apex filtering logic.
+- Develop `c-resume-builder` LWC with persona-based Apex filtering logic.
 
 **Phase 3: Integration**
 
 - Implement SAPI_Experience Apex Class (System API).
 - **Appx C:** Configure MuleSoft Governance Policies (Reference Implementation).
 - Upload Redoc documentation as Static Resource.
-- Develop c-api-tester LWC with fetch() harness.
+- Develop `c-api-tester` LWC with fetch() harness.
 - **A.4:** Implement GitHub Live Feed, Custom Setting Cache, and Scheduler.
 
 **Phase 4: Innovation**
@@ -259,25 +259,25 @@ _Design artifacts complete; implementation begins post-launch._
 - **A.6:** Configure Agentforce Service Agent & Topic Grounding.
 - **Security:** Enable "Lightning Web Security" in Session Settings.
 - **Asset:** Download g6.min.js (v4.x/v5.x) and upload as G6_Library (Public Cache).
-- **Dev:** Implement c-skill-network LWC using G6 graph.update loop for edge animation.
+- **Dev:** Implement `c-skill-network` LWC using G6 graph.update loop for edge animation.
 - **Optimization:** Implement G6 lazy-loading (Network Tab proof).
 - **Optimization:** Build "Static SVG" fallback for mobile LCP compliance.
   - **Asset:** Export static SVG from G6 during local build (graph.toFullDataURL()).
   - **Upload:** Store SVG as Static Resource "Skill_Graph_Fallback".
-  - **Logic:** c-skill-network detects mobile and renders `<img src={staticResourceUrl}>`.
+  - **Logic:** `c-skill-network` detects mobile and renders `<img src={staticResourceUrl}>`.
 - **A11y:** Add "Pause Animation" toggle button.
 - Conduct Mobile QA on iOS and Android devices.
 
 **Phase 5: Optimization**
 
 - Implement LogService.cls (Email Offloading).
-- Implement "Vibe-Gate" logic on c-testimonial-submit.
+- Implement "Vibe-Gate" logic on `c-testimonial-submit`.
 - Generate C4 Level 2 & 3 Diagrams in IcePanel.
 
 **Phase 6: Observability & Launch**
 
 - **Dev:** Install Nebula Logger (Unlocked Pkg) & configure `LoggerSettings__c`.
-- **Dev:** Build c-system-health-footer LWC (Glass Box) using requestIdleCallback.
+- **Dev:** Build `c-system-health-footer` LWC (Glass Box) using requestIdleCallback.
 - **Dev:** Implement AnalyticsService.js for unified GA4 event tracking.
 - **Config:** Add "Resilience Simulation" toggle and resilience logic to `GitHubService.cls`.
 - **QA:** Verify "Glass Box" matches actual Developer Console limits.

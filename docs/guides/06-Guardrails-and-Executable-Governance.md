@@ -251,7 +251,3 @@ These guardrails aren't just technical controls — they translate directly to b
 ---
 
 **Key Takeaway:** Governance isn't about saying "no" — it's about architecting systems that succeed within real-world constraints while maintaining enterprise-grade quality, security, and observability. The free-tier constraints in this portfolio mirror the budget, security, and performance constraints of enterprise systems at scale.
-
-```
-
-```

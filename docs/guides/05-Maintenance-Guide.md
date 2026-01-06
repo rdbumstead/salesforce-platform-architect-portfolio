@@ -114,7 +114,7 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 ### 3.2 Pipeline Triggers
 
 - **PR Validation (pr.yml):** Runs on Pull Requests modifying `packages/**`.
-  - _Quality Gate:_ Apex Coverage > 75%.
+  - _Quality Gate:_ Apex Coverage > 90% (Hard Gate).
   - _Security Gate:_ Zero Critical PMD Violations.
 - **Production Deploy (deploy.yml):** Runs on Push to main modifying `packages/**`.
 

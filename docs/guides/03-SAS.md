@@ -529,7 +529,7 @@ Ensuring the system fails gracefully during outage events.
 
 ## 9. Observability & Glass Box
 
-The system exposes real-time telemetry to the user via the c-system-health-footer component to demonstrate "Glass Box" architecture.
+The system exposes real-time telemetry to the user via the `c-system-health-footer` component to demonstrate "Glass Box" architecture.
 
 - **Heap/CPU:** Visualized vs. Governor Limits.
 - **AI Provider Health:** Current active provider and estimated latency.
