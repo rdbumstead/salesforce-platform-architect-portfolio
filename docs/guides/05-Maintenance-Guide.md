@@ -133,8 +133,7 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 
 1. Revert main branch to previous commit SHA.
 2. Trigger fresh deployment.
-3. Trigger fresh deployment.
-4. Verify site health via Smoke Test suite / Manual Verification.
+3. Verify site health via Smoke Test suite / Manual Verification.
 
 ### 4.2 Scenario: GitHub Rate Limit Exhaustion
 

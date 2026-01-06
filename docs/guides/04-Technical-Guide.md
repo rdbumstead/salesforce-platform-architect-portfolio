@@ -158,8 +158,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 
 - **Context:** Real-time telemetry is non-essential for the user journey.
 - **Decision:** All "System Health" data fetching must be decoupled from the critical rendering path.
-- **Implementation:** Fetch logic is wrapped in requestIdleCallback() (or a 3000ms setTimeout fallback).
-- **Consequence:** Zero impact on LCP scores; UI renders instantly, health bars animate in later.
+- **Reference:** See **[ADR-014: Deferred Telemetry Loading](../adr/014-deferred-telemetry-loading-performance.md)** for full decision context.
 
 ### 2.8 Analytics Instrumentation (GA4)
 
