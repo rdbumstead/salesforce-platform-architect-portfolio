@@ -77,6 +77,9 @@ public interface IAIGenerationService {
 
 **Standardized Response Object (AIResponseWrapper):**
 
+<details>
+<summary>View AIResponseWrapper.cls</summary>
+
 ```apex
 public class AIResponseWrapper {
   @AuraEnabled
@@ -101,6 +104,8 @@ public class AIResponseWrapper {
   }
 }
 ```
+
+</details>
 
 **Gemini Quota Implementation:**
 

@@ -14,7 +14,7 @@
 - [3. Risk & Security Architecture](#3-risk--security-architecture)
   - [3.1 Threat Model Summary](#31-threat-model-summary)
 - [4. Data Architecture & Schema](#4-data-architecture--schema)
-  - [4.1 Logical Data Model (ERD)](#41-logical-data-model-erd)
+  - [4.1 Logical Data Model (Simplified ERD)](#41-logical-data-model-simplified-erd)
   - [4.2 Core Entities](#42-core-entities)
   - [4.3 Junction Objects (The Glue)](#43-junction-objects-the-glue)
   - [4.4 Asset Management](#44-asset-management)
@@ -347,6 +347,9 @@ To demonstrate practical Application of RAG (Retrieval-Augmented Generation), th
       - **Path 2 (Silver):** Google Gemini Flash 1.5 API (Fallback if Path 1 times out > 2s).
       - **Path 3 (Bronze):** Deterministic Local Template (Metadata Fallback if API blackout).
 
+<details>
+<summary>Click to view Sequence Diagram</summary>
+
 ```mermaid
 sequenceDiagram
     participant UI as LWC
@@ -399,6 +402,8 @@ sequenceDiagram
         Note over Dispatcher: Log GA4 Event ai_fallback_usage
     end
 ```
+
+</details>
 
 - **Privacy:** Inputs are processed transiently and never stored in Salesforce.
 
