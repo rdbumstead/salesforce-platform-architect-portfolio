@@ -234,7 +234,7 @@ _Design artifacts complete; implementation begins post-launch._
 - **A.1:** Configure Connected App (JWT) & GitHub Secrets.
 - **D.1:** Deploy `Project__c` Object.
 - **D.2:** Deploy `Testimonial__c` Object.
-- **E.1:** Write ProjectControllerTest (Target: 90% coverage).
+- **E.1:** Write ProjectControllerTest (90% Hard Gate).
 - **A.7:** Generate C4 Level 1 diagram in IcePanel & Upload as Static Resource.
 - **1.3:** Verify Technical Acceptance Criteria (CI/CD Green, LCP Baseline).
 
