@@ -160,34 +160,34 @@ The delivery is organized into four parallel execution tracks:
 
 **Phase 1: Core Foundation (Completed)**
 
-- Org Setup (DevHub, DX Project).
-- GitHub Repo Init (Branch Protection Rules).
-- CI/CD Pipeline V1 (Validation Only).
+- **Org Setup:** (DevHub, DX Project).
+- **GitHub Repo Init:** (Branch Protection Rules).
+- **CI/CD Pipeline V1:** (Validation Only).
 
 **Phase 2: Data & API Layer (In Progress)**
 
-- Schema Deployment. (Completed)
-- Apex REST Services (SAPI_Project, SAPI_Experience).
-- Data Loading (Seed Data).
+- **Schema Deployment:** (Completed)
+- **Apex REST Services:** (`SAPI_Project`, `SAPI_Experience`).
+- **Data Loading:** (Seed Data).
 
 **Phase 3: UI Framework (Pending)**
 
-- Theme Layout Component.
-- Hero Banner (Dynamic).
-- Navigation Service.
+- **Theme Layout:** Component.
+- **Hero Banner:** (Dynamic).
+- **Navigation Service.**
 
 **Phase 4: Integrations**
 
-- Jira Connect (Named Credential).
-- GitHub Connect (Cache Strategy).
+- **Jira Connect:** (Named Credential).
+- **GitHub Connect:** (Cache Strategy).
 
 **Phase 5: Intelligence**
 
-- Data360 Setup
-- Data360 Data Integration (CRM Connector → `Project__c`, `Experience__c`)
-- Agentforce Grounding on Data360 Data Model Objects (DMOs)
-- Prompt Engineering & Mirror Mode configuration
-- Triple-fallback AI generation service (Agentforce → Gemini Flash → Local Template)
+- **Data360 Setup.**
+- **Data360 Data Integration:** (CRM Connector → `Project__c`, `Experience__c`)
+- **Agentforce Grounding:** on Data360 Data Model Objects (DMOs)
+- **Prompt Engineering:** & Mirror Mode configuration
+- **AI Generation Service:** Triple-fallback (Agentforce → Gemini Flash → Local Template)
 
 **Phase 6: Observability & Launch**
 
@@ -240,18 +240,18 @@ _Design artifacts complete; implementation begins post-launch._
 
 **Phase 2: Delivery**
 
-- Create free Atlassian Jira account and generate API Token.
+- **Config:** Create free Atlassian Jira account and generate API Token.
 - **A.8:** Configure Named Credential Jira_API in Salesforce.
-- Develop `c-roadmap-viewer` LWC + JiraService.cls.
+- **Dev:** Develop `c-roadmap-viewer` LWC + `JiraService.cls`.
 - **D.3 / D.4:** Deploy `Experience__c` parent and `Experience_Highlight__c` child objects.
-- Develop `c-resume-builder` LWC with persona-based Apex filtering logic.
+- **Dev:** Develop `c-resume-builder` LWC with persona-based Apex filtering logic.
 
 **Phase 3: Integration**
 
-- Implement SAPI_Experience Apex Class (System API).
+- **Dev:** Implement `SAPI_Experience` Apex Class (System API).
 - **Appx C:** Configure MuleSoft Governance Policies (Reference Implementation).
-- Upload Redoc documentation as Static Resource.
-- Develop `c-api-tester` LWC with fetch() harness.
+- **Docs:** Upload Redoc documentation as Static Resource.
+- **Dev:** Develop `c-api-tester` LWC with fetch() harness.
 - **A.4:** Implement GitHub Live Feed, Custom Setting Cache, and Scheduler.
 
 **Phase 4: Innovation**
@@ -270,15 +270,15 @@ _Design artifacts complete; implementation begins post-launch._
 
 **Phase 5: Optimization**
 
-- Implement LogService.cls (Email Offloading).
-- Implement "Vibe-Gate" logic on `c-testimonial-submit`.
-- Generate C4 Level 2 & 3 Diagrams in IcePanel.
+- **Dev:** Implement `LogService.cls` (Email Offloading).
+- **Dev:** Implement "Vibe-Gate" logic on `c-testimonial-submit`.
+- **Docs:** Generate C4 Level 2 & 3 Diagrams in IcePanel.
 
 **Phase 6: Observability & Launch**
 
 - **Dev:** Install Nebula Logger (Unlocked Pkg) & configure `LoggerSettings__c`.
 - **Dev:** Build `c-system-health-footer` LWC (Glass Box) using requestIdleCallback.
-- **Dev:** Implement AnalyticsService.js for unified GA4 event tracking.
+- **Dev:** Implement `AnalyticsService.js` for unified GA4 event tracking.
 - **Config:** Add "Resilience Simulation" toggle and resilience logic to `GitHubService.cls`.
 - **QA:** Verify "Glass Box" matches actual Developer Console limits.
 - **QA:** Verify GA4 Real-Time view receives api_test_executed events.
