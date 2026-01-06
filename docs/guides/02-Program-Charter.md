@@ -127,9 +127,9 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 **Conversion:**
 
 - Greater than 20% of visitors interact with "API Tester" or "Resume Builder" (verified via Custom Events).
-  - `api_test_executed`: User successfully calls an endpoint in the API Tester.
-  - `resume_download_pdf`: User exports a resume in Creative Mode.
-  - `resilience_test_triggered`: User toggles the "Resilience Simulation" switch.
+  - **api_test_executed:** User successfully calls an endpoint in the API Tester.
+  - **resume_download_pdf:** User exports a resume in Creative Mode.
+  - **resilience_test_triggered:** User toggles the "Resilience Simulation" switch.
 
 **Reach:**
 
@@ -206,24 +206,24 @@ The delivery is organized into four parallel execution tracks:
 **Phase 8: Multi-Cloud & FinOps — Hybrid GraphQL Strategy (Q2 2026)**
 _Design artifacts complete; implementation begins post-launch._
 
-- Native GraphQL Verification
-  - Confirm Skill Graph, Roadmap, and Project Gallery all use lightning/uiGraphQLApi (already live in MVP)
-- AWS Lambda Polyglot Gateway (Function URL) — "Door 2"
+- **Native GraphQL Verification:**
+  - Confirm `c-skill-network`, `c-roadmap-viewer`, and Project Gallery all use `lightning/uiGraphQLApi`
+- **AWS Lambda Polyglot Gateway:** (Function URL) — "Door 2"
   - Deploy single HTTPS Function URL endpoint (no API Gateway)
   - Support both REST → GraphQL translation and direct GraphQL
-  - In-function governance: x-api-key validation, tiered rate limiting, CloudWatch metrics
-- **Static Asset Offloading (S3 + CloudFront):**
+  - In-function governance: `x-api-key` validation, tiered rate limiting, CloudWatch metrics
+- **Static Asset Offloading:** (S3 + CloudFront)
   - Migrate heavy media assets (images, videos) from Salesforce Static Resources.
-- Resume Engine Migration
-  - Move PDF generation from client-side jsPDF to serverless Node.js Lambda (perfect fidelity)
-- **FinOps & Cost Governance ($0.00 forever):**
+- **Resume Engine Migration:**
+  - Move PDF generation from client-side `jsPDF` to serverless Node.js Lambda (perfect fidelity)
+- **FinOps & Cost Governance:** ($0.00 forever)
   - Use only Always Free services
   - Deliberately avoid API Gateway and VPC to eliminate all cost traps
   - CloudWatch billing alarm at $0.01
-- **API Lab Upgrade**
+- **API Lab Upgrade:**
   - Enable "Enterprise Mode" toggle
   - Live payload comparison (Native vs Lambda)
-  - Real-time rate-limit counters in Glass Box footer
+  - Real-time rate-limit counters in `c-system-health-footer`
 
 **Phase 9: Edge AI Proxy (Cloudflare Workers)**
 

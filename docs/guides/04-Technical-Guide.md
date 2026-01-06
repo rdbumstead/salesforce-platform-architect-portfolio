@@ -9,8 +9,8 @@
   - [1.4 System API Security (The "Twin" Pattern)](#14-system-api-security-the-twin-pattern)
 - [2. Frontend (LWR) Component Logic](#2-frontend-lwr-component-logic)
   - [2.1 `c-skill-network` (Visualization)](#21-c-skill-network-visualization)
-  - [2.2 `c-resume-builder`](#22-c-resume-builder)
-  - [2.3 `c-testimonial-submit`](#23-c-testimonial-submit)
+  - [2.2 `c-resume-builder` (Resume Generation)](#22-c-resume-builder-resume-generation)
+  - [2.3 `c-testimonial-submit` (Social Proof)](#23-c-testimonial-submit-social-proof)
   - [2.4 `c-schema-visualizer` (Dynamic ERD Visualizer)](#24-c-schema-visualizer-dynamic-erd-visualizer)
   - [2.5 `c-smart-docs` (Executable Governance)](#25-c-smart-docs-executable-governance)
   - [2.6 `c-system-health-footer` (Glass Box)](#26-c-system-health-footer-glass-box)
@@ -128,12 +128,12 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
   - Includes a "Pause Animation" toggle button.
   - Uses the **"Shadow Structure" Pattern** (a visually hidden `<ul>`) for screen readers.
 
-### 2.2 `c-resume-builder`
+### 2.2 `c-resume-builder` (Resume Generation)
 
 - **Pdf Generation:** Performs client-side PDF generation using **jsPDF**.
 - **Logic:** The underlying Apex logic filters `Experience_Highlight__c` records based on the user's requested **Persona Tag** (e.g., Admin vs. Architect).
 
-### 2.3 `c-testimonial-submit`
+### 2.3 `c-testimonial-submit` (Social Proof)
 
 - Uses a "Mad Libs" style sentence builder.
 - Includes a "Vibe Toggle" (Professional/Casual) to implement the "Vibe-Gated" submission pattern.

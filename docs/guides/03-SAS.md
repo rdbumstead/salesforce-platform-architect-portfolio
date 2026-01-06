@@ -635,7 +635,7 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Base URL:** `https://api.portfolio.ryanbumstead.com/papi/v1`
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 
 **Layer Classification:** Process API (MuleSoft API-led connectivity pattern)
 
