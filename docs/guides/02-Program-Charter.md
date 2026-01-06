@@ -126,10 +126,10 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 
 **Conversion:**
 
-- > 20% of visitors interact with "API Tester" or "Resume Builder" (verified via Custom Events).
-  - api_test_executed: User successfully calls an endpoint in the API Tester.
-  - resume_download_pdf: User exports a resume in Creative Mode.
-  - resilience_test_triggered: User toggles the "Resilience Simulation" switch.
+- Greater than 20% of visitors interact with "API Tester" or "Resume Builder" (verified via Custom Events).
+  - `api_test_executed`: User successfully calls an endpoint in the API Tester.
+  - `resume_download_pdf`: User exports a resume in Creative Mode.
+  - `resilience_test_triggered`: User toggles the "Resilience Simulation" switch.
 
 **Reach:**
 
