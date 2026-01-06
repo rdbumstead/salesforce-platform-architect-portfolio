@@ -41,14 +41,15 @@
   - [Appendix B: API Specification (OpenAPI/Swagger)](#appendix-b-api-specification-openapiswagger)
   - [Appendix C: MuleSoft Code, Governance, & Proxy Configuration (Reference)](#appendix-c-mulesoft-code-governance--proxy-configuration-reference)
   - [Appendix D: Data Dictionary (Detailed Schema)](#appendix-d-data-dictionary-detailed-schema)
+  - [Appendix E: Environment Strategy](#appendix-e-environment-strategy)
   - [Appendix F: Testing Strategy](#appendix-f-testing-strategy)
   - [Appendix G: Accessibility Strategy (A11y)](#appendix-g-accessibility-strategy-a11y)
   - [Appendix H: Deployment Architecture View](#appendix-h-deployment-architecture-view)
   - [Appendix I: Org & Package Structure](#appendix-i-org--package-structure)
-  - [Appendix J: Cloud FinOps Strategy (Phase 8 – Q2 2026)](#appendix-j-cloud-finops-strategy-phase-8--q2-2026)
+  - [Appendix J: Cloud FinOps Strategy (Phase 8 - Q2 2026)](#appendix-j-cloud-finops-strategy-phase-8---q2-2026)
   - [Appendix K: Validation Rules & Logic](#appendix-k-validation-rules--logic)
   - [Appendix L: Reference Artifacts](#appendix-l-reference-artifacts)
-  - [Appendix M: Cross-Cutting Pattern – Dual-Door Integration Strategy](#appendix-m-cross-cutting-pattern--dual-door-integration-strategy)
+  - [Appendix M: Cross-Cutting Pattern - Dual-Door Integration Strategy](#appendix-m-cross-cutting-pattern---dual-door-integration-strategy)
 
 ---
 
@@ -894,6 +895,10 @@ To support high-volume queries during traffic spikes (e.g., LinkedIn post viral 
 - **Non-Indexed Fields:** `Testimonial__c.Context__c` (Text, rarely filtered).
 - **Why Skip:** Only queried via `Approved__c = true` (already indexed via checkbox).
 
+### Appendix E: Environment Strategy
+
+- **Strategy:** Refer to **[Maintenance & Operations Guide: Environment Hygiene](./05-Maintenance-Guide.md#2-environment-hygiene-the-clean-sweep)** for the comprehensive environment strategy, including org separation and authorized code rules.
+
 ### Appendix F: Testing Strategy
 
 - **Strategy:** Refer to **[06 - Quality Gates & DevOps Discipline](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the comprehensive testing strategy (Unit, LWC, Integration).
@@ -923,7 +928,7 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 - `/packages/demos/employer-hub`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on building a centralized hub for employers.
 - `/packages/demos/nonprofit-literacy`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on the implementation of nonprofit success pack and the program management module including business analysis on several products including Salesforce Education Cloud.
 
-### Appendix J: Cloud FinOps Strategy (Phase 8 — Q2 2026)
+### Appendix J: Cloud FinOps Strategy (Phase 8 - Q2 2026)
 
 - **FinOps Strategy:** Refer to **[06 - AWS FinOps & Serverless Guardrails](./06-Guardrails-and-Executable-Governance.md#3-aws-finops--serverless-guardrails-phase-8)** for the detailed cost governance model ($0.00 Forever architecture).
 
@@ -945,7 +950,7 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 - Mule Flow XML: `/mulesoft/src/main/mule/*.xml`
 - DataWeave Queries: `/mulesoft/src/main/resources/queries/*.dwl`
 
-### Appendix M: Cross-Cutting Pattern — Dual-Door Integration Strategy
+### Appendix M: Cross-Cutting Pattern - Dual-Door Integration Strategy
 
 | Feature               | Door 1 — Native Salesforce GraphQL (lightning/uiGraphQLApi) | Door 2 — AWS Lambda Polyglot BFF (Function URL)         |
 | :-------------------- | :---------------------------------------------------------- | :------------------------------------------------------ |
