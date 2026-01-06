@@ -1,0 +1,31 @@
+name: Performance Audit (Lighthouse)
+
+on:
+  workflow_dispatch:
+    inputs:
+      audit_url:
+        description: "Target URL to Audit"
+        required: true
+        default: "https://ryanbumstead.com/"
+
+jobs:
+  lighthouse-monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Lighthouse CI
+        run: npm run test:lighthouse
+        continue-on-error: true
+        env:
+          TARGET_URL: ${{ inputs.audit_url }}
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
