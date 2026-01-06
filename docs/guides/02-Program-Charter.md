@@ -15,9 +15,9 @@
   - [3.3 Detailed Phasing](#33-detailed-phasing)
 - [4. Implementation Checklist (Execution Plan)](#4-implementation-checklist-execution-plan)
 - [5. Product Strategy & User Stories](#5-product-strategy--user-stories)
-  - [E.1 Outcome-Driven Product Framework](#e1-outcome-driven-product-framework)
-  - [E.2 Epic Breakdown Example: Resume Builder](#e2-epic-breakdown-example-resume-builder)
-  - [E.3 Core User Stories](#e3-core-user-stories)
+  - [5.1 Outcome-Driven Product Framework](#51-outcome-driven-product-framework)
+  - [5.2 Epic Breakdown Example: Resume Builder](#52-epic-breakdown-example-resume-builder)
+  - [5.3 Core User Stories](#53-core-user-stories)
 
 ---
 
@@ -285,7 +285,7 @@ _Design artifacts complete; implementation begins post-launch._
 
 ## 5. Product Strategy & User Stories
 
-### E.1 Outcome-Driven Product Framework
+### 5.1 Outcome-Driven Product Framework
 
 Before user stories are written, features are evaluated against a "Problem Statement Framework" to ensure they deliver architectural value.
 
@@ -293,7 +293,7 @@ Before user stories are written, features are evaluated against a "Problem State
 - **The Need:** A verified, interactive demonstration of complex capabilities (API, LWC, AI).
 - **The Value:** Reduces "Time-to-Trust" for the evaluator; differentiates the candidate from paper-qualified applicants.
 
-### E.2 Epic Breakdown Example: Resume Builder
+### 5.2 Epic Breakdown Example: Resume Builder
 
 - **Epic:** Dynamic Resume Generation.
 - **Value Driver:** Demonstrates ability to manipulate complex data hierarchies and render client-side.
@@ -302,7 +302,7 @@ Before user stories are written, features are evaluated against a "Problem State
   - Filters by "Admin" vs "Architect" persona.
   - Exports to clean PDF.
 
-### E.3 Core User Stories
+### 5.3 Core User Stories
 
 | ID          | Persona               | I Want To...                     | So That...                                                     |
 | :---------- | :-------------------- | :------------------------------- | :------------------------------------------------------------- |

@@ -5,10 +5,6 @@
 - [Strategic Intent](#strategic-intent)
 - [Business Value: Why Build This Complexity?](#business-value-why-build-this-complexity)
 - [Success Criteria (Definition of Done)](#success-criteria-definition-of-done)
-  - [1. Portfolio Impact](#1-portfolio-impact)
-  - [2. Functional Acceptance – MVP (Live at Q1 2026 Launch)](#2-functional-acceptance--mvp-live-at-q1-2026-launch)
-  - [3. Target State Acceptance – Phase 8 (Q2 2026)](#3-target-state-acceptance--phase-8-q2-2026)
-  - [4. Technical Acceptance (Required for MVP)](#4-technical-acceptance-required-for-mvp)
 
 ---
 

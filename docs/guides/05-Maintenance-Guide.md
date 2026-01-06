@@ -5,16 +5,16 @@
 - [1. Security Rotation Policy (CI/CD)](#1-security-rotation-policy-cicd)
   - [1.1 Rotation Procedure](#11-rotation-procedure)
 - [2. Environment Hygiene (The "Clean Sweep")](#2-environment-hygiene-the-clean-sweep)
-  - [Organization Rules](#organization-rules)
-  - [Emergency Cleanup Protocol](#emergency-cleanup-protocol)
+  - [2.1 Organization Rules](#21-organization-rules)
+  - [2.2 Emergency Cleanup Protocol](#22-emergency-cleanup-protocol)
 - [3. DevOps Architecture](#3-devops-architecture)
-  - [Local Development Commands](#local-development-commands)
-  - [Pipeline Triggers](#pipeline-triggers)
-  - [Pipeline Strategy: Delta Deployment](#pipeline-strategy-delta-deployment)
-  - [Org Persistence](#org-persistence)
+  - [3.1 Local Development Commands](#31-local-development-commands)
+  - [3.2 Pipeline Triggers](#32-pipeline-triggers)
+  - [3.3 Pipeline Strategy: Delta Deployment](#33-pipeline-strategy-delta-deployment)
+  - [3.4 Org Persistence](#34-org-persistence)
 - [4. Disaster Recovery](#4-disaster-recovery)
-  - [Scenario: Deployment Failure](#scenario-deployment-failure)
-  - [Scenario: GitHub Rate Limit Exhaustion](#scenario-github-rate-limit-exhaustion)
+  - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
+  - [4.2 Scenario: GitHub Rate Limit Exhaustion](#42-scenario-github-rate-limit-exhaustion)
 - [5. Observability & Monitoring](#5-observability--monitoring)
   - [5.1 Quota Monitoring (Automated)](#51-quota-monitoring-automated)
 
@@ -75,12 +75,12 @@ openssl req -new -key portfolio.key -x509 -days 400 -out portfolio.crt
 
 The Developer Edition org shares space with Trailhead challenges and standard Salesforce metadata. To prevent "Pollution" from failing the CI/CD pipeline, strict separation is enforced.
 
-### Organization Rules
+### 2.1 Organization Rules
 
 - **Authorized Code:** Only metadata present in `packages/` is authorized.
 - **Standard Sites:** The "Portfolio" site must **not** utilize standard controllers (e.g., SiteLogin, CommunitiesSelfReg) as Authenticated Users are Out of Scope.
 
-### Emergency Cleanup Protocol
+### 2.2 Emergency Cleanup Protocol
 
 If standard Visualforce pages or Apex classes lock the deployment (Dependency Hell), use the **"Lobotomy Strategy"**:
 
@@ -97,7 +97,7 @@ If standard Visualforce pages or Apex classes lock the deployment (Dependency He
 
 ## 3. DevOps Architecture
 
-### Local Development Commands
+### 3.1 Local Development Commands
 
 To prevent "Commit Shame" (failing pipelines after pushing), developers must execute validation scripts locally before pushing to GitHub. The project uses npm scripts to abstract complex CLI commands:
 
@@ -106,14 +106,14 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 - **`npm run validate`**: The "Golden Command". It runs the delta generation and immediately triggers a check-only deployment to the org.
   - _Note:_ Uses scripts/validate.js to handle "Empty Package" scenarios gracefully on Windows.
 
-### Pipeline Triggers
+### 3.2 Pipeline Triggers
 
 - **PR Validation (pr.yml):** Runs on Pull Requests modifying `packages/**`.
   - _Quality Gate:_ Apex Coverage > 75%.
   - _Security Gate:_ Zero Critical PMD Violations.
 - **Production Deploy (deploy.yml):** Runs on Push to main modifying `packages/**`.
 
-### Pipeline Strategy: Delta Deployment
+### 3.3 Pipeline Strategy: Delta Deployment
 
 To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipeline utilizes a "Delta Deployment" strategy using sfdx-git-delta.
 
@@ -122,21 +122,21 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 - **Destructive Changes:** The pipeline is configured to respect `destructiveChanges.xml`. If metadata is deleted from the repo, sfdx-git-delta will generate the destructive manifest, and the pipeline will automatically delete those components from the Org during deployment.
 - **Cross-Platform Compatibility:** The `package.json` scripts leverage `shx` and `rimraf` to ensure all shell commands (mkdir, rm) execute consistently on both Windows (Local Development) and Ubuntu Linux (GitHub Actions Runners).
 
-### Org Persistence
+### 3.4 Org Persistence
 
 - **Heartbeat (keep-alive.yml):** Runs daily at 08:00 UTC to execute a SOQL query against the org.
 - _Purpose:_ Prevents the Developer Edition from being marked inactive and deleted by Salesforce.
 
 ## 4. Disaster Recovery
 
-### Scenario: Deployment Failure
+### 4.1 Scenario: Deployment Failure
 
 1. Revert main branch to previous commit SHA.
 2. Trigger fresh deployment.
 3. Trigger fresh deployment.
 4. Verify site health via Smoke Test suite / Manual Verification.
 
-### Scenario: GitHub Rate Limit Exhaustion
+### 4.2 Scenario: GitHub Rate Limit Exhaustion
 
 - The system uses `GitHub_Cache__c` to store API responses. If the API fails (429/500), the Apex `GitHubService` will automatically serve cached data.
 

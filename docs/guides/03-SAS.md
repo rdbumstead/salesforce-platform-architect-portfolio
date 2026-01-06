@@ -34,7 +34,7 @@
   - [8.1 Deployment Failure](#81-deployment-failure)
   - [8.2 Agentforce Unavailable](#82-agentforce-unavailable)
   - [8.3 API Rate Limit Exhaustion](#83-api-rate-limit-exhaustion)
-  - [8.4 Degraded Mode Operations](#84-degraded-mode-operations)
+  - [8.4 Resilience Simulation Operations](#84-resilience-simulation-operations)
 - [9. Observability & Glass Box](#9-observability--glass-box)
 - [Appendices](#appendices)
   - [Appendix A: Engineering Implementation Notes](#appendix-a-engineering-implementation-notes)
