@@ -123,7 +123,7 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 
 **What it does:** Instead of deploying all 500+ metadata files on every change, only deploy what changed.  
 **Strategic Value:** Enables "Hyperspeed Iteration". Typical deployment time drops from ~8 minutes (full deploy) to ~90 seconds (delta deploy).  
-**Implementation:** For the technical configuration of `sfdx-git-delta` in the pipeline, see **[Maintenance Guide: Delta Deployment](./05-Maintenance-Guide.md#pipeline-strategy-delta-deployment)**.
+**Implementation:** For the technical configuration of `sfdx-git-delta` in the pipeline, see **[Maintenance Guide: Delta Deployment](./05-Maintenance-Guide.md#33-pipeline-strategy-delta-deployment)**.
 
 ---
 
