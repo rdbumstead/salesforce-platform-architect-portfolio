@@ -456,6 +456,9 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 
 Full architectural decisions are documented in the `docs/adr/` directory.
 
+<details>
+<summary>Click to view full list of Architectural Decision Records (ADRs)</summary>
+
 | ID                                                                                     | Title                                                           | Status                   |
 | :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :----------------------- |
 | [ADR-001](../adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura                                 | Accepted                 |
@@ -484,6 +487,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern – Contract-First Parity                        | Accepted                 |
 | [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling (Capacity Planning)                     | Accepted                 |
 | [ADR-026](../adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning Strategy                            | Accepted                 |
+
+</details>
 
 ## 8. Contingency & Rollback Plans
 

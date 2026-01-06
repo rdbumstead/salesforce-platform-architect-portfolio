@@ -109,7 +109,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 **Technical Acceptance:**
 
 - LCP < 2.5s measured via Lighthouse Mobile Audit.
-- All Apex tests > 75% coverage (Target: 90% for critical paths).
+- All Apex tests > 90% coverage (Hard Governance Gate).
 - CI/CD pipeline passing (Green build badge on Repo).
 - Zero critical security warnings from PMD Scanner.
 - Network Tab screenshot confirms G6 lazy-load occurs >2s after LCP.

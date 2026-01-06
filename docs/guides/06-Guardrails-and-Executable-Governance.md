@@ -137,6 +137,9 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 
 Every interaction passes through three distinct "Gating Layers" to ensure performance and security. This diagram shows the journey of a single user request:
 
+<details>
+<summary>Click to view Request Lifecycle Diagram</summary>
+
 ```mermaid
 sequenceDiagram
     participant U as Visitor (LWR Site)
@@ -182,6 +185,8 @@ sequenceDiagram
     Note over U,B: Total: 200-400ms (P95)
 ```
 
+</details>
+
 **What does P95 mean?** 95% of requests complete within 200-400ms. The slowest 5% might take longer (usually first-time visitors with cold caches).
 
 **CRUD/FLS Validation:** Salesforce checks if the Guest User profile has Create, Read, Update, Delete permissions (CRUD) and Field-Level Security (FLS) for each field being accessed. If not, request is rejected.
@@ -212,37 +217,41 @@ These guardrails aren't just technical controls — they translate directly to b
 
 ### Zero Runtime Costs
 
-**Technical:** The portfolio demonstrates skills that reduce cloud spend in production environments.  
+**Technical:** The portfolio demonstrates skills that reduce cloud spend in production environments.
 **Business impact:** The same "No-VPC" and "Function URLs over API Gateway" patterns save $360+/year per service in AWS. Applied across 10 microservices, that's $3,600/year in avoided costs.
 
 ---
 
 ### Predictable Performance
 
-**Technical:** Hard limits prevent runaway processes that cause outages.  
+**Technical:** Hard limits prevent runaway processes that cause outages.
 **Business impact:** The 90% test coverage requirement has caught 14 governor limit violations before they reached production. Each prevented outage saves ~$5,000 in lost revenue and engineering time (conservative estimate).
 
 ---
 
 ### Audit-Ready Architecture
 
-**Technical:** Every request is gated and logged, enabling compliance workflows.  
+**Technical:** Every request is gated and logged, enabling compliance workflows.
 **Business impact:** Guest user restrictions via Sharing Rules provide a clear audit trail for security reviews. This reduces SOC 2 audit prep from weeks to days.
 
 ---
 
 ### Fast Iteration
 
-**Technical:** Quality gates catch issues in CI/CD, not in production.  
+**Technical:** Quality gates catch issues in CI/CD, not in production.
 **Business impact:** Delta deployments (90s vs 8min) enable 5x more deployment frequency without sacrificing quality. Teams ship features faster while maintaining stability.
 
 ---
 
 ### Knowledge Transfer
 
-**Technical:** The "Governor Rosetta Stone" table translates Salesforce-specific constraints into universal patterns.  
+**Technical:** The "Governor Rosetta Stone" table translates Salesforce-specific constraints into universal patterns.
 **Business impact:** Bulkification, async processing, and lazy loading apply to any cloud platform (AWS, Azure, GCP). These patterns reduce database costs, improve response times, and increase system resilience across all architectures.
 
 ---
 
 **Key Takeaway:** Governance isn't about saying "no" — it's about architecting systems that succeed within real-world constraints while maintaining enterprise-grade quality, security, and observability. The free-tier constraints in this portfolio mirror the budget, security, and performance constraints of enterprise systems at scale.
+
+```
+
+```

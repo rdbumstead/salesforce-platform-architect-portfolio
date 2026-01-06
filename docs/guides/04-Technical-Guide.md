@@ -177,7 +177,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 ## 3. Quality Assurance Checklist
 
 - [ ] **LCP:** Verify < 2.5s via Lighthouse Mobile Audit.
-- [ ] **Coverage:** Verify Apex tests > 90% coverage (Critical Path).
+- [ ] **Coverage:** Verify Apex tests > 90% coverage (Hard Gate).
 - [ ] **Security:** Verify Zero critical warnings from PMD Scanner.
 - [ ] **Accessibility:** Confirm the "Pause Animation" toggle exists and works.
 - [ ] **Degradation Test:** Toggle "Resilience Simulation" (disconnect GitHub). Verify UI seamlessly switches to cached data with a "Data Stale" badge.
