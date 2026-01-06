@@ -33,36 +33,6 @@ The primary problem this portfolio solves is that Recruiters and Hiring Managers
 
 ## Success Criteria (Definition of Done)
 
-To define the "Definition of Done" for this portfolio, the following metrics must be met:
+This project adheres to strict functional and technical acceptance criteria, including Performance (LCP < 2.5s) and Code Quality (Apex Coverage > 90%).
 
-### 1. Portfolio Impact
-
-- [ ] LinkedIn post regarding launch generates > 100 views
-- [ ] Interview requests received from 3+ companies within 30 days of launch
-
-### 2. Functional Acceptance — MVP (Live at Q1 2026 Launch)
-
-- [ ] All 5 pillars accessible via guided navigation
-- [ ] API tester successfully calls ≥ 3 native endpoints (REST + Salesforce GraphQL)
-- [ ] Skill Graph, Roadmap Viewer, and Project Gallery load via lightning/uiGraphQLApi wire adapter
-- [ ] Resume generates in both ATS (Plain Text) and Creative (PDF) modes
-- [ ] Dynamic ERD renders all 5 core Custom Objects without hardcoding
-- [ ] "Smart Docs" component receives test Platform Event and updates UI without refresh
-- [ ] Mobile responsive layout passes manual verification on iOS Safari and Android Chrome
-
-### 3. Target State Acceptance — Phase 8 (Q2 2026) — _Not in MVP_
-
-_Note: These criteria are designed today for Q2 2026 implementation to demonstrate architectural forward-planning._
-
-- [ ] API Lab toggle switches to "Enterprise Mode" (AWS Lambda Function URL)
-- [ ] Live payload counter shows ≥ 85% reduction vs native mode
-- [ ] Glass Box footer shows real-time API key usage, rate-limit counters, and "$0.00 forever"
-- [ ] Resume Engine runs serverless on Lambda (perfect PDF fidelity)
-
-### 4. Technical Acceptance (Required for MVP)
-
-- [ ] LCP < 2.5s measured via Lighthouse Mobile Audit
-- [ ] All Apex tests > 75% coverage (Target: 90% for critical paths)
-- [ ] CI/CD pipeline passing (Green build badge on Repo)
-- [ ] Zero critical security warnings from PMD Scanner
-- [ ] Network Tab screenshot confirms G6 lazy-load occurs >2s after LCP
+For the authoritative definition of all success metrics, quality gates, and "Definition of Done", please refer to the **[Program Charter: Success Criteria](./02-Program-Charter.md#22-success-criteria-definition-of-done)**.

@@ -174,10 +174,8 @@ All architectural artifacts adhere to the C4 Model (Context, Containers, Compone
 
 ### 1.5 Quality Gates (Technical Acceptance)
 
-The SAS enforces:
+Refer to **[06 - Guardrails & Executable Governance](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the authoritative definition of LCP and Coverage thresholds.
 
-- **LCP < 2.5s** (Monitored via Lighthouse CI in GitHub Actions).
-- **Apex Coverage > 75%** (Enforced via sfdx force:apex:test:run --codecoverage).
 - **Zero PMD Critical Violations** (Enforced via sfdx scanner:run in PR checks).
 - **Reference:** See **Program Charter Section 2.2** for complete success criteria.
 
@@ -319,13 +317,9 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.3 Pillar C: Work Experience Verification API (Twin API Pattern)
 
 - **Objective:** Demonstrate Enterprise Integration Patterns and Developer Experience (DX).
-- **Design Layer:** OpenAPI Specification (OAS 3.0) (hosted on GitHub) selected over RAML to ensure universal portability and vendor neutrality.
-- **Implementation Layer:** Native Apex REST Class (SAPI_Experience) implementing the interface defined in the OAS.
-- **Contract Parity:** The Apex implementation adheres strictly to the JSON response structure defined in the OAS to ensure client-side compatibility.
-- **Documentation Layer:** Redoc (via Static Resource) providing industry-standard, read-only API documentation.
-- **Tooling Layer:** Custom `c-api-tester` LWC acting as a "Developer Console," allowing live execution of endpoints. Validates runtime responses against the design standard.
-- **External Integration:** GitHub REST API integration (Live Feed) using a Server-Side caching pattern to prevent rate-limiting.
-- **Execution Model:** No client-side access tokens used. All API calls originate from a secure Named Credential accessed via Apex.
+- **Design:** OpenAPI Specification (OAS 3.0) hosted on GitHub.
+- **Implementation:** Native Apex REST Class (`SAPI_Experience`).
+- **Technical Detail:** For the complete breakdown of the caching strategy, caching patterns, and API tooling, refer to the **[Technical Guide: Integration Service Implementation](./04-Technical-Guide.md#1-integration-service-implementation)**.
 
 ### 5.4 Pillar D: AI & Innovation (Agentforce)
 
@@ -415,28 +409,14 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 
 - **Objective:** Demonstrate ALM, CI/CD Maturity, and External System Integration.
 - **Tooling:** Atlassian Jira + GitHub Actions (CI/CD).
-- **Configuration:** Custom LWC c-roadmap-viewer calls Apex JiraService.cls to fetch Epics/Stories live via REST API.
-- **Integration:** Uses Named Credentials to securely authenticate with Atlassian API Token.
+- **Technical Detail:** For the integration architecture (JiraService) and Platform Event subscription model, refer to the **[Technical Guide: Jira Integration](./04-Technical-Guide.md#12-jira-integration-roadmap)**.
 - **Mechanism:** The `c-smart-checklist` component subscribes to the `Governance_Event__e` Platform Event.
 - **Workflow:** When the CI/CD pipeline (GitHub Actions) completes a successful deployment, it upserts a record or publishes an event via the Salesforce CLI. The LWC receives this event and automatically checks the "Green Build Badge" box on the UI.
 - **Architectural Signal:** This proves the candidate understands the Streaming API and Event-Driven Architecture.
 
 #### 5.5.1 The Governance Model
 
-Every architectural decision follows a three-gate approval process:
-
-**Gate 1: Technical Feasibility**
-
-- Apex governor limits assessed (SOQL queries, DML rows).
-- LWC bundle size < 100KB verified.
-- Related ADR documented (e.g., ADR-011: Why G6 Lazy-Load).
-
-**Gate 2: Security & Privacy**
-
-- Guest User FLS matrix updated (Section 4.5).
-- Named Credential secrets rotated (90-day policy).
-
-**Gate 3: Definition of Ready (DoR)**
+For the detailed "Three-Gate Approval Process" (Technical Feasibility, Security, DoR) governing these pillars, refer to **[06 - The Three-Gate Approval Process](./06-Guardrails-and-Executable-Governance.md#6-the-three-gate-approval-process)**.
 
 - Acceptance criteria defined (Gherkin syntax preferred).
 - Test data generation script written.
@@ -455,18 +435,16 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 ### 6.2 Lightning Web Components (LWC)
 
 - **`c-hero-banner`:** Includes "How to Evaluate Me" navigation guide.
-- **`c-testimonial-submit`:** "Mad Libs" style sentence builder with Vibe Toggle (Professional/Casual).
-- **`c-api-tester`:** Developer console LWC utilizing fetch() to exercise endpoints defined in Section 5.3.
-- **`c-changelog`:** Displays live commit history fetched via cached Apex data.
-- **`c-skill-network`:** Visualizes Junction Objects via AntV G6 to achieve "IcePanel-style" animated flow lines.
-  - **Performance Strategy:** Implements strict code-splitting by lazy-loading the G6 library only when the component enters the viewport. This ensures the initial page load LCP remains < 2.5s.
-  - **Mobile Strategy:** Automatically detects mobile viewports and falls back to a static SVG image to prevent canvas rendering overhead on low-power devices.
-  - **Accessibility:** Includes a "Pause Animation" toggle button for users with motion sensitivity.
-  - **Dependency:** Requires Lightning Web Security (LWS) to be enabled.
+- **`c-testimonial-submit`:** "Mad Libs" style sentence builder.
+- **`c-api-tester`:** Developer console LWC utilizing fetch() to exercise endpoints.
+- **`c-changelog`:** Displays live commit history.
+- **`c-skill-network`:** Visualizes Junction Objects via AntV G6.
 - **`c-code-viewer`:** Fetches raw source code via Prism.js.
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
-- **`c-roadmap-viewer`:** Performs real-time REST callout to Jira API to render "In Progress" and "Done" columns for the roadmap board.
+- **`c-roadmap-viewer`:** Performs real-time REST callout to Jira API.
 - **`c-footer`:** Contains GitHub Actions Badge.
+
+> **Technical Implementation:** For detailed performance strategies (lazy-loading), mobile fallbacks, and accessibility patterns for these components, please refer to the **[Technical Guide: Frontend Component Logic](./04-Technical-Guide.md#2-frontend-lwr-component-logic)**.
 
 ## 7. Architectural Decision Records (ADRs)
 
@@ -510,10 +488,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 - **Mitigation:**
   1. Check GitHub Action logs for specific metadata error.
   2. If environment issue: Manually deploy via CLI: sf project deploy start.
-- **Rollback:**
-  1. Revert the main branch to the previous commit SHA.
-  2. Trigger a fresh deployment of the reverted state.
-  3. Verify site health via Smoke Test suite.
+- **Detection:** Automated email notification from GitHub Actions.
+- **Rollback:** See **[Maintenance & Operations Guide: Disaster Recovery](./05-Maintenance-Guide.md#4-disaster-recovery)** for the definitive rollback procedure.
 
 ### 8.2 Agentforce Unavailable
 
@@ -920,9 +896,7 @@ To support high-volume queries during traffic spikes (e.g., LinkedIn post viral 
 
 ### Appendix F: Testing Strategy
 
-- **F.1 Apex Unit Testing:** 90% coverage for critical paths. Use Test.setMock. SeeAllData=false. Negative testing for Rate Limits.
-- **F.2 LWC Testing:** Jest. Verify fetch headers, PDF generation logic, and form validation.
-- **F.3 Integration & Security:** Static Analysis (PMD) on PR. Smoke Testing post-deployment.
+- **Strategy:** Refer to **[06 - Quality Gates & DevOps Discipline](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the comprehensive testing strategy (Unit, LWC, Integration).
 
 ### Appendix G: Accessibility Strategy (A11y)
 
@@ -951,32 +925,7 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 ### Appendix J: Cloud FinOps Strategy (Phase 8 — Q2 2026)
 
-To demonstrate Cloud Financial Management (FinOps) awareness, this architecture strictly adheres to Free Tier limits.
-
-**J.1 The "Always Free" Safety Net (Safe Forever)**
-
-- **AWS Lambda:** 1 million requests/month forever.
-- **Amazon CloudFront:** 1 TB data transfer/month forever.
-- **Amazon DynamoDB:** 25GB storage forever.
-
-**J.2 Deliberately Not Used**
-
-- AWS API Gateway — avoided entirely (would expire after 12 months)
-  - replaced with Lambda Function URL to preserve $0.00 forever claim in perpetuity
-
-**J.3 The Cost Traps & Mitigation**
-
-- **The Route 53 Trap:** Do not migrate Nameservers to AWS. Use external DNS.
-- **The NAT Gateway Trap:** Run Lambda in "No VPC" mode.
-
-**J.4 Gemini API Cost Governance**
-
-- **Free Tier Limits: 15 requests/min | 1,500 requests/day.**
-- **Tracking Mechanism: Usage count stored in Platform Cache (local.AIMetrics) to minimize DML limits.**
-- **Circuit Breaker Policy: If daily quota > 1,200 (80%):**
-  1. **Force GeminiCircuitBreaker to OPEN for 3600s.**
-  2. **Route traffic to LocalTemplateService.**
-  3. **Trigger Alert to `Owner_Email__c`.**
+- **FinOps Strategy:** Refer to **[06 - AWS FinOps & Serverless Guardrails](./06-Guardrails-and-Executable-Governance.md#3-aws-finops--serverless-guardrails-phase-8)** for the detailed cost governance model ($0.00 Forever architecture).
 
 ### Appendix K: Validation Rules & Logic
 

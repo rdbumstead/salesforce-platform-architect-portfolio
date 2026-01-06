@@ -7,7 +7,8 @@
 - [3. AWS FinOps & Serverless Guardrails (Phase 8)](#3-aws-finops--serverless-guardrails-phase-8)
 - [4. Quality Gates & DevOps Discipline](#4-quality-gates--devops-discipline)
 - [5. Request Lifecycle & Governance Gates](#5-request-lifecycle--governance-gates)
-- [6. Business Impact of Executable Governance](#6-business-impact-of-executable-governance)
+- [6. The Three-Gate Approval Process](#6-the-three-gate-approval-process)
+- [7. Business Impact of Executable Governance](#7-business-impact-of-executable-governance)
 
 ---
 
@@ -44,6 +45,8 @@ We treat these limits as a blueprint for building high-performance systems.
 **Key Insight:** These aren't arbitrary restrictions — they force the same discipline required in any high-scale system (database query optimization, memory management, async processing).
 
 ## 3. AWS FinOps & Serverless Guardrails (Phase 8)
+
+> **Architectural Reference:** For the detailed system diagrams and component specifications of the Phase 8 architecture, please refer to the **[Systems Architecture Specification (SAS)](./03-SAS.md#11-architectural-north-star)**.
 
 **What is FinOps?** Financial Operations (FinOps) is the practice of making cloud costs visible and controllable. AWS charges for everything — compute time, network traffic, log storage — so architectural decisions directly impact the monthly bill.
 
@@ -94,8 +97,7 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### Test Coverage (90% Required)
 
 **What it measures:** Percentage of code executed by automated tests.  
-**Industry standard:** Salesforce requires 75% for production deployments.  
-**Our standard:** 90% on all critical paths (API services, AI inference, data transformations).  
+**Our standard:** We enforce the strict coverage thresholds defined in the **[Program Charter: Success Criteria](./02-Program-Charter.md#22-success-criteria-definition-of-done)**.  
 **Why it matters:** Untested code fails in production. High coverage catches bugs before customers see them.
 
 ---
@@ -120,9 +122,8 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### Delta Deployment Strategy
 
 **What it does:** Instead of deploying all 500+ metadata files on every change, only deploy what changed.  
-**Tool:** sfdx-git-delta compares the current commit to the previous one and generates a deployment package with only modified files.  
-**Impact:** Typical deployment time drops from ~8 minutes (full deploy) to ~90 seconds (delta deploy).  
-**Why it matters:** Faster deployments mean faster iteration. Teams can deploy 5x more frequently without increasing risk.
+**Strategic Value:** Enables "Hyperspeed Iteration". Typical deployment time drops from ~8 minutes (full deploy) to ~90 seconds (delta deploy).  
+**Implementation:** For the technical configuration of `sfdx-git-delta` in the pipeline, see **[Maintenance Guide: Delta Deployment](./05-Maintenance-Guide.md#pipeline-strategy-delta-deployment)**.
 
 ---
 
@@ -185,7 +186,27 @@ sequenceDiagram
 
 **CRUD/FLS Validation:** Salesforce checks if the Guest User profile has Create, Read, Update, Delete permissions (CRUD) and Field-Level Security (FLS) for each field being accessed. If not, request is rejected.
 
-## 6. Business Impact of Executable Governance
+## 6. The Three-Gate Approval Process
+
+Every architectural decision follows a strict three-gate approval process before implementation:
+
+### Gate 1: Technical Feasibility
+
+- Apex governor limits assessed (SOQL queries, DML rows).
+- LWC bundle size < 100KB verified.
+- Related ADR documented (e.g., ADR-011: Why G6 Lazy-Load).
+
+### Gate 2: Security & Privacy
+
+- Guest User FLS matrix updated.
+- Named Credential secrets rotated (90-day policy).
+
+### Gate 3: Definition of Ready (DoR)
+
+- User Story Acceptance Criteria defined in Jira.
+- Figma mockups approved by Product Owner.
+
+## 7. Business Impact of Executable Governance
 
 These guardrails aren't just technical controls — they translate directly to business outcomes:
 

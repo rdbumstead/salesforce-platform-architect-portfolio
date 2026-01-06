@@ -10,6 +10,7 @@
 - [3. DevOps Architecture](#3-devops-architecture)
   - [Local Development Commands](#local-development-commands)
   - [Pipeline Triggers](#pipeline-triggers)
+  - [Pipeline Strategy: Delta Deployment](#pipeline-strategy-delta-deployment)
   - [Org Persistence](#org-persistence)
 - [4. Disaster Recovery](#4-disaster-recovery)
   - [Scenario: Deployment Failure](#scenario-deployment-failure)
@@ -112,6 +113,15 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
   - _Security Gate:_ Zero Critical PMD Violations.
 - **Production Deploy (deploy.yml):** Runs on Push to main modifying `packages/**`.
 
+### Pipeline Strategy: Delta Deployment
+
+To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipeline utilizes a "Delta Deployment" strategy using sfdx-git-delta.
+
+- **Validation (pr.yml):** Calculates the diff between the PR branch and origin/main. It generates a temporary package of _only_ the changed components and runs a "Dry Run" deployment with RunLocalTests to ensure validity without altering the org.
+- **Production (deploy.yml):** Calculates the diff between the current commit and the previous commit (HEAD~1). It deploys strictly the changed metadata to the Production environment.
+- **Destructive Changes:** The pipeline is configured to respect `destructiveChanges.xml`. If metadata is deleted from the repo, sfdx-git-delta will generate the destructive manifest, and the pipeline will automatically delete those components from the Org during deployment.
+- **Cross-Platform Compatibility:** The `package.json` scripts leverage `shx` and `rimraf` to ensure all shell commands (mkdir, rm) execute consistently on both Windows (Local Development) and Ubuntu Linux (GitHub Actions Runners).
+
 ### Org Persistence
 
 - **Heartbeat (keep-alive.yml):** Runs daily at 08:00 UTC to execute a SOQL query against the org.
@@ -123,7 +133,8 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 
 1. Revert main branch to previous commit SHA.
 2. Trigger fresh deployment.
-3. Verify site health manually.
+3. Trigger fresh deployment.
+4. Verify site health via Smoke Test suite / Manual Verification.
 
 ### Scenario: GitHub Rate Limit Exhaustion
 
