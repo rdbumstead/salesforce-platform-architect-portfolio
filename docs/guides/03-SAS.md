@@ -69,28 +69,50 @@ The high-level data flow demonstrating the multi-cloud, API-led strategy.
 
 ```mermaid
 graph LR
-    User((User)) --> LWR[Experience Cloud LWR]
+    %% Define Styles
+    classDef sfdc fill:#00A1E0,stroke:#005FB2,stroke-width:2px,color:white,font-weight:bold;
+    classDef aws fill:#FF9900,stroke:#CC7A00,stroke-width:2px,color:white,font-weight:bold;
+    classDef jira fill:#0052CC,stroke:#0747A6,stroke-width:2px,color:white,font-weight:bold;
+    classDef github fill:#24292F,stroke:#1B1F23,stroke-width:2px,color:white,font-weight:bold;
+    classDef user fill:#333333,stroke:#000000,stroke-width:2px,color:white,font-weight:bold;
+    classDef future fill:#FFE5B4,stroke:#FFA500,stroke-width:2px,stroke-dasharray: 5 5;
 
-    %% DOOR 1 - Native Salesforce GraphQL MVP Q1 2026
-    LWR -->|Native GraphQL lightning/uiGraphQLApi| SF_GQL[Salesforce GraphQL API]
-    SF_GQL --> DB[(Custom Objects)]
+    %% Nodes
+    User((User))
+    LWR[Experience Cloud LWR]
+    SF_GQL[Salesforce GraphQL API]
+    DB[(Custom Objects)]
+    Lambda[AWS Lambda Gateway<br/>Phase 8 - Q2 2026]
+    Apex[Apex Runtime]
+    AI[Agentforce Agent]
+    Jira[Jira API]
+    GitHub[GitHub API]
+    Resume[Resume Engine<br/>Future]
 
-    %% DOOR 2 - External Polyglot BFF Phase 8 Q2 2026
-    LWR -->|Phase 8 Q2 2026 - Design Complete| Lambda[AWS Lambda Polyglot Gateway]
+    %% Live MVP Connections (Solid)
+    User --> LWR
+    LWR -->|Native GraphQL<br/>lightning/uiGraphQLApi| SF_GQL
+    SF_GQL --> DB
+    LWR -->|Apex REST| Apex
+    Apex <--> AI
+    Apex -->|REST via<br/>Named Credentials| Jira
+    Apex -->|REST via<br/>Named Credentials| GitHub
 
-    %% Classic Apex REST path
-    LWR -->|Apex REST| Apex[Apex Runtime]
-    Lambda -->|REST via Named Credentials| Apex
+    %% Phase 8 Connections (Dashed)
+    LWR -.->|Phase 8<br/>Design Complete| Lambda
+    Lambda -.->|Function URL| Apex
+    Lambda -.->|Serverless| Resume
 
-    %% External integrations
-    Apex -->|REST| Jira[Jira API]
-    Apex -->|REST| GitHub[GitHub API]
+    %% Apply Styles
+    class LWR,SF_GQL,DB,Apex,AI sfdc;
+    class Lambda,Resume aws;
+    class Jira jira;
+    class GitHub github;
+    class User user;
 
-    %% Future extensions
-    Lambda -->|Serverless| Resume[Resume Engine Future]
-
-    %% AI stays on-platform
-    Apex <--> AI[Agentforce]
+    %% Link Styling
+    linkStyle 0,1,2,3,4,5,6 stroke:#2ECC71,stroke-width:3px;
+    linkStyle 7,8,9 stroke:#FFA500,stroke-width:2px,stroke-dasharray:5;
 ```
 
 **Architecture Implementation Status (MVP – Q1 2026 Launch)**
