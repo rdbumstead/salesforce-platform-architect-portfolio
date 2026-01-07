@@ -50,7 +50,6 @@ How a recruiter or architect experiences this portfolio:
 
 ```mermaid
 sequenceDiagram
-    %%{init: {'theme': 'base', 'themeVariables': { 'mainBkg': '#ffffff'}}}%%
     participant R as Recruiter
     participant H as Hero Banner
     participant G as Skill Graph

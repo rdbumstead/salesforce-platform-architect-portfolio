@@ -5,9 +5,11 @@
     "**/.sfdx": true
   },
   "xml.preferences.showSchemaDocumentationType": "none",
-
+  
   "files.associations": {
     ".sfcaignore": "ignore",
     "*.ignore": "ignore"
-  }
+  },
+  
+  "scss.validate": false
 }
