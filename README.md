@@ -1,5 +1,6 @@
 # Ryan Bumstead — Salesforce Platform Architect Portfolio
 
+[![Governance Hub](https://img.shields.io/badge/Documentation-Governance_Hub-005FB2?logo=githubpages&logoColor=white)](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/)
 [![CI/CD — main](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml)
 [![PR Validation](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml)
 [![Cloudflare Worker](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy-worker.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy-worker.yml)
@@ -12,6 +13,7 @@
 
 **📅 Project Status:** Architecture complete (6 enterprise docs, 26 ADRs) • MVP code in development • **Live launch Q1 2026**
 
+**📘 Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 **🌐 Live Site:** [https://ryanbumstead.com](https://ryanbumstead.com) (Static placeholder until MVP launch)
 
 > **Quick note for non-Salesforce readers:**  
@@ -251,14 +253,17 @@ graph LR
 
 ## Full Architecture Documentation
 
-| Document                                      | Link                                                             |
-| :-------------------------------------------- | :--------------------------------------------------------------- |
-| 01 – Executive Overview                       | [Read →](docs/guides/01-Executive-Overview.md)                   |
-| 02 – Program Charter & Roadmap                | [Read →](docs/guides/02-Program-Charter.md)                      |
-| 03 – Systems Architecture Specification (SAS) | [Read →](docs/guides/03-SAS.md)                                  |
-| 04 – Technical Implementation Guide           | [Read →](docs/guides/04-Technical-Guide.md)                      |
-| 05 – Maintenance & Operations Guide           | [Read →](docs/guides/05-Maintenance-Guide.md)                    |
-| 06 – Guardrails & Executable Governance       | [Read →](docs/guides/06-Guardrails-and-Executable-Governance.md) |
+> [!TIP]
+> **View these documents in the [Governance Hub](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) for the best reading experience.**
+
+| Document                                      | Link                                                                     |
+| :-------------------------------------------- | :----------------------------------------------------------------------- |
+| 01 – Executive Overview                       | [Read in Repo →](docs/guides/01-Executive-Overview.md)                   |
+| 02 – Program Charter & Roadmap                | [Read in Repo →](docs/guides/02-Program-Charter.md)                      |
+| 03 – Systems Architecture Specification (SAS) | [Read in Repo →](docs/guides/03-SAS.md)                                  |
+| 04 – Technical Implementation Guide           | [Read in Repo →](docs/guides/04-Technical-Guide.md)                      |
+| 05 – Maintenance & Operations Guide           | [Read in Repo →](docs/guides/05-Maintenance-Guide.md)                    |
+| 06 – Guardrails & Executable Governance       | [Read in Repo →](docs/guides/06-Guardrails-and-Executable-Governance.md) |
 
 > **For Non-Salesforce Readers:** Document 06 includes plain-English explanations of Salesforce governor limits, AWS cost optimization patterns, and constraint-based design principles. No prior platform knowledge required.
 
