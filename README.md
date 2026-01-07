@@ -1,26 +1,25 @@
 # Ryan Bumstead — Salesforce Platform Architect Portfolio
 
-[![Governance Hub](https://img.shields.io/badge/Documentation-Governance_Hub-005FB2?logo=readthedocs&logoColor=white)](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/)
+[![Governance Hub](https://img.shields.io/badge/Documentation-Governance_Hub-0176D3?logo=readthedocs&logoColor=white)](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/)
 [![CI/CD — main](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml)
 [![PR Validation](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml)
-[![Cloudflare Worker](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy-worker.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy-worker.yml)
 [![Daily Org Heartbeat](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/keep-alive.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/keep-alive.yml)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Ryan_Bumstead-0077B5?logo=linkedin&logoColor=white)](https://linkedin.com/in/ryanbumstead)
 [![Trailhead](https://img.shields.io/badge/Trailhead-rbumstead-00A1E0?logo=salesforce&logoColor=white)](https://www.salesforce.com/trailblazer/rbumstead)
 [![Certifications](https://img.shields.io/badge/Certifications-8_Salesforce-00A1E0?logo=salesforce&logoColor=white)](https://www.salesforce.com/trailblazer/rbumstead)
-[![Email](https://img.shields.io/badge/Email-ryan@ryanbumstead.com-D14836?logo=gmail&logoColor=white)](mailto:ryan@ryanbumstead.com)
 [![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
-**📅 Project Status:** Architecture complete (6 enterprise docs, 26 ADRs) • MVP code in development • **Live launch Q1 2026**
+> [!IMPORTANT]
+> **Project Status:** Architecture complete (6 enterprise docs, 26 ADRs) • MVP code in development.
+> **Target Launch:** Q1 2026.
+> **Contact:** [LinkedIn](https://linkedin.com/in/ryanbumstead) • [ryan@ryanbumstead.com](mailto:ryan@ryanbumstead.com)
 
 **📘 Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 
-**🌐 Live Site:** [https://ryanbumstead.com](https://ryanbumstead.com) (Static placeholder until MVP launch)
+**🌐 Live App:** [https://ryanbumstead.com](https://ryanbumstead.com) (Static placeholder until MVP launch)
 
-> **Quick note for non-Salesforce readers:**  
-> This is a full enterprise-grade system built on Salesforce (the #1 CRM platform). Think of it as a public web app with real-time data, AI-generated content, and strict DevOps—all running on Salesforce's cloud. The architecture is complete; the code is being built now.
-
-**Contact:** [LinkedIn](https://linkedin.com/in/ryanbumstead) • ryan@ryanbumstead.com
+> [!TIP]
+> **Non-Salesforce Reader?** This is a full enterprise-grade system built on the Salesforce CRM platform. It functions as a high-scale public web app with real-time data, AI-generated content, and strict DevOps protocols.
 
 ---
 
@@ -30,28 +29,22 @@
 
 Principal-level Salesforce Platform Architecture including:
 
-- **End-to-end multi-cloud systems design** — Lightning Web Runtime (LWR) + AWS Lambda BFF with $0.00-forever architecture
-- **Enterprise DevOps maturity** — Delta deployments, automated quality gates, JWT-based CI/CD, scratch org automation
-- **API-first architecture** — OpenAPI 3.0 specifications with Twin API pattern proving Salesforce/MuleSoft parity
-- **Applied AI governance** — Triple-fallback inference pipeline (Agentforce → Gemini → Local) with circuit breakers
-- **Production-grade observability** — Real-time Glass Box telemetry, distributed tracing, constraint-aware monitoring
-- **Security architecture** — Zero Trust model with guest user restrictions, API key validation, read-only enforcement
-- **Full enterprise documentation suite** — SAS, Charter, Technical Guide, Operations Guide, Governance Framework
-- **8 Salesforce certifications** — AI Associate, Agentforce Specialist, Data Cloud Consultant, Platform App Builder
+- **Multi-Cloud Design** — LWR + AWS Lambda BFF with $0.00-forever architecture.
+- **DevOps Maturity** — Delta deployments, automated quality gates, and JWT-based CI/CD.
+- **Contract-First APIs** — OpenAPI 3.0 specs proving Salesforce/MuleSoft parity.
+- **Applied AI Governance** — Triple-fallback inference pipeline (Agentforce → Gemini → Local).
+- **Observability** — Real-time Glass Box telemetry and constraint-aware monitoring.
 
 ### Portfolio Overview
 
 **📈 By The Numbers:**
 
-- ✅ **6 enterprise architecture documents** — SAS, Charter, Technical Guide, Operations Guide, Governance Framework, Executive Overview
-- ✅ **26 architectural decisions documented** — Covering performance, security, AI governance, FinOps, resilience, and integration patterns
-- ✅ **12 core competencies mapped** — Each with verifiable artifacts and validation methods
-- ✅ **4 active CI/CD pipelines** — Delta deployments, PR validation gates, heartbeat, Cloudflare Worker deployments
-- ✅ **$0.00 forever multi-cloud architecture** — AWS Always-Free tier governance with Lambda Function URLs
-- 🚧 **MVP launch Q1 2026** — Interactive demonstrations and live API testing
-- 📐 **Phase 8 multi-cloud Q2 2026** — AWS Lambda BFF "Door 2" architecture activation
+- ✅ **6 Enterprise Documents** — SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
+- ✅ **26 Architectural Decisions (ADRs)** — Documented rationale for performance, security, and AI.
+- ✅ **12 Core Competencies** — Mapped to verifiable artifacts and validation methods.
+- ✅ **4 Active CI/CD Pipelines** — Delta deploys, PR gates, heartbeat, and worker automation.
 
-**⚡ Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [26 ADRs](#architectural-decision-records) • [Architecture Diagram](#north-star-architecture) • [Full Docs](#full-architecture-documentation)
+**⚡ Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [Architecture Diagram](#north-star-architecture) • [Full Docs](#full-architecture-documentation)
 
 ---
 
@@ -272,16 +265,18 @@ graph LR
 
 ## API & Integration Contracts (Contract-First Design)
 
-This project utilizes a **Twin API Pattern** ([ADR-024](docs/guides/03-SAS.md#adr-024-twin-api-pattern--contract-first-parity)), where System and Process APIs are designed to strict OpenAPI 3.0 specifications to ensure technical parity between Salesforce and enterprise middleware.
+> [!NOTE]
+> This project utilizes a **Twin API Pattern** ([ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)), where System and Process APIs are designed to strict OpenAPI 3.0 specifications to ensure technical parity between Salesforce and enterprise middleware.
 
 | Specification       | Layer   | Description                                | Status / Link                                                                                         |
 | :------------------ | :------ | :----------------------------------------- | :---------------------------------------------------------------------------------------------------- |
 | **Salesforce SAPI** | System  | Core CRM data access (Read-Only)           | [YAML](packages/integration-api/specs/salesforce-sapi.yaml) • [Docs](docs/api/oas/salesforce-sapi.md) |
 | **Portfolio PAPI**  | Process | Orchestration & tailored resume generation | [YAML](packages/integration-api/specs/portfolio-papi.yaml) • [Docs](docs/api/oas/portfolio-papi.md)   |
 
-> **Architectural Note:** In the MVP, the **PAPI** is hosted on Salesforce Apex (Door 1). In Phase 8, the architecture enables Door 2, which delegates orchestration to an **AWS Lambda Polyglot Gateway** to bypass platform limits and support multi-cloud scalability.
-
-> **Security Note:** Both APIs utilize a two-layer authentication model (See [ADR-017](docs/guides/03-SAS.md#adr-017-system-api-security--method-constraints)) featuring explicit API Key headers and internal OAuth2 Client Credentials for Salesforce connectivity.
+> [!NOTE]
+> This project utilizes a **Twin API Pattern**. In the MVP, orchestration is handled by Salesforce Apex (Door 1). Phase 8 enables Door 2, delegating to **AWS Lambda** for 85%+ payload reduction.
+>
+> **Security Strategy:** All APIs enforce a two-layer auth model ([ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)) featuring explicit API Key headers and internal OAuth2 Client Credentials.
 
 ---
 
