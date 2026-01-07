@@ -1,6 +1,6 @@
 # Ryan Bumstead — Salesforce Platform Architect Portfolio
 
-[![Governance Hub](https://img.shields.io/badge/Documentation-Governance_Hub-005FB2?logo=githubpages&logoColor=white)](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/)
+[![Governance Hub](https://img.shields.io/badge/Documentation-Governance_Hub-005FB2?logo=readthedocs&logoColor=white)](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/)
 [![CI/CD — main](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml)
 [![PR Validation](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml)
 [![Cloudflare Worker](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy-worker.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy-worker.yml)
