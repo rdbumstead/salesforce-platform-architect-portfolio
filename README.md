@@ -14,6 +14,7 @@
 **📅 Project Status:** Architecture complete (6 enterprise docs, 26 ADRs) • MVP code in development • **Live launch Q1 2026**
 
 **📘 Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
+
 **🌐 Live Site:** [https://ryanbumstead.com](https://ryanbumstead.com) (Static placeholder until MVP launch)
 
 > **Quick note for non-Salesforce readers:**  
