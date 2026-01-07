@@ -18,7 +18,7 @@ Owner: Ryan Bumstead
 
 Version: 1.0
 
-Date: MVP — Q1 2026
+Date: MVP – Q1 2026
 
 This document outlines the governance framework and constraint-based design principles that enable the portfolio to operate within zero-budget constraints while maintaining enterprise-grade quality, security, and performance standards.
 
@@ -34,17 +34,21 @@ This portfolio is built on a "Zero-Dollar Budget" requirement. This is not a lim
 
 We treat these limits as a blueprint for building high-performance systems.
 
-| Salesforce Constraint                | What It Means                                                                                                                                    | Enterprise Pattern Applied                   | Portfolio Implementation                                                                                                                      |
-| :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| **100 SOQL Queries per transaction** | SOQL (Salesforce Object Query Language) is like SQL for databases. You get 100 database queries per page load. Exceed this and your app crashes. | **Bulkification** (batch processing)         | All `SAPI_*` classes use map-based caching to ensure exactly 1 query per request, no matter how many records are processed.                   |
-| **10 second CPU timeout**            | Your code gets 10 seconds of processing time. After that, Salesforce kills it to protect other customers.                                        | **Async Strategy** (offload work)            | Heavy operations (like Resume PDF generation) are offloaded to AWS Lambda (Phase 8) so Salesforce only handles lightweight coordination.      |
-| **6MB Heap Size**                    | Your code can only use 6MB of memory per transaction. For context, a single high-res image is ~5MB.                                              | **Lazy Loading** (load only when needed)     | The AntV G6 visualization library (700KB) is split into chunks and loaded only when users scroll to the Skill Graph section.                  |
-| **Guest User Security**              | Anonymous visitors have restricted permissions by default. They can't see sensitive data without explicit grants.                                | **Zero Trust** (deny by default)             | Restricted strictly to custom objects via Sharing and Restriction Rules. No access to standard Salesforce objects (Accounts, Contacts, etc.). |
-| **Real-time Telemetry**              | Salesforce provides APIs to check how close you are to hitting limits.                                                                           | **Glass Box Observability** (show your work) | Governor limits (SOQL count, heap usage, CPU time) displayed in site footer so visitors can see the system is healthy.                        |
+| Salesforce Constraint                | What It Means                                                                                                                                    | Enterprise Pattern Applied               | Portfolio Implementation                                                                                                                      |
+| :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
+| **100 SOQL Queries per transaction** | SOQL (Salesforce Object Query Language) is like SQL for databases. You get 100 database queries per page load. Exceed this and your app crashes. | **Bulkification** (batch processing)     | All `SAPI_*` classes use map-based caching to ensure exactly 1 query per request, no matter how many records are processed.                   |
+| **10 second CPU timeout**            | Your code gets 10 seconds of processing time. After that, Salesforce kills it to protect other customers.                                        | **Async Strategy** (offload work)        | Heavy operations (like Resume PDF generation) are offloaded to AWS Lambda (Phase 8) so Salesforce only handles lightweight coordination.      |
+| **6MB Heap Size**                    | Your code can only use 6MB of memory per transaction. For context, a single high-res image is ~5MB.                                              | **Lazy Loading** (load only when needed) | The AntV G6 visualization library (700KB) is split into chunks and loaded only when users scroll to the Skill Graph section.                  |
+| **Guest User Security**              | Anonymous visitors have restricted permissions by default. They can't see sensitive data without explicit grants.                                | **Zero Trust** (deny by default)         | Restricted strictly to custom objects via Sharing and Restriction Rules. No access to standard Salesforce objects (Accounts, Contacts, etc.). |
+| **Real-time Telemetry**              | Salesforce provides APIs to check how close you are to hitting limits.                                                                           | **Glass Box Telemetry** (show your work) | Governor limits (SOQL count, heap usage, CPU time) displayed in site footer so visitors can see the system is healthy.                        |
 
 **Key Insight:** These aren't arbitrary restrictions — they force the same discipline required in any high-scale system (database query optimization, memory management, async processing).
 
 ## 3. AWS FinOps & Serverless Guardrails (Phase 8)
+
+| Phase       | Status                         | Rationale                                                               |
+| :---------- | :----------------------------- | :---------------------------------------------------------------------- |
+| **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
 
 > **Architectural Reference:** For the detailed system diagrams and component specifications of the Phase 8 architecture, please refer to the **[Systems Architecture Specification (SAS)](./03-SAS.md#11-architectural-north-star)**.
 
@@ -137,11 +141,14 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 
 Every interaction passes through three distinct "Gating Layers" to ensure performance and security. This diagram shows the journey of a single user request:
 
+**Summary:** A 3-layer defense (Performance, Security, Governance) ensuring P95 latency < 400ms.
+
 <details>
 <summary>Click to view Request Lifecycle Diagram</summary>
 
 ```mermaid
 sequenceDiagram
+    %%{init: {'theme': 'base', 'themeVariables': { 'mainBkg': '#ffffff'}}}%%
     participant U as Visitor (LWR Site)
     participant B as Frontend Budget (LCP/JS)
     participant G as Security Gate (Guest Profile)

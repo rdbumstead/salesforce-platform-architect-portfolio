@@ -35,7 +35,7 @@
   - [8.2 Agentforce Unavailable](#82-agentforce-unavailable)
   - [8.3 API Rate Limit Exhaustion](#83-api-rate-limit-exhaustion)
   - [8.4 Resilience Simulation Operations](#84-resilience-simulation-operations)
-- [9. Observability & Glass Box](#9-observability--glass-box)
+- [9. Observability & Glass Box Telemetry](#9-observability--glass-box-telemetry)
 - [Appendices](#appendices)
   - [Appendix A: Engineering Implementation Notes](#appendix-a-engineering-implementation-notes)
   - [Appendix B: API Specification (OpenAPI/Swagger)](#appendix-b-api-specification-openapiswagger)
@@ -69,6 +69,7 @@ The high-level data flow demonstrating the multi-cloud, API-led strategy.
 
 ```mermaid
 graph LR
+    %%{init: {'flowchart': {'nodeSpacing': 50, 'rankSpacing': 50}}}%%
     %% ========= BRAND STYLES =========
     classDef user fill:#424242,stroke:#000000,stroke-width:2px,color:#ffffff,font-weight:bold;
     classDef sfdc fill:#00A1E0,stroke:#005FB2,stroke-width:2px,color:#ffffff,font-weight:bold;
@@ -116,6 +117,9 @@ graph LR
 
 ```
 
+> [!TIP]
+> **Scalability Escape Hatch:** While this system is constrained to the Free Tier (Developer Edition), the architecture is designed to scale. If traffic exceeded limits, the **Phase 8** design moves the heavy lifting (Resume Generation, API Gateway) to AWS Serverless equivalents, allowing the Salesforce Core to remain a lightweight orchestration layer. This ensures the system could handle enterprise-scale traffic with minimal refactoring.
+
 **Architecture Implementation Status (MVP – Q1 2026 Launch)**
 
 Live MVP (Door 1)
@@ -124,7 +128,11 @@ Live MVP (Door 1)
 - Apex REST services
 - Direct integrations (GitHub, Jira via Named Credentials)
 
-Phase 8 — Q2 2026 (Design Complete)
+Phase 8 – Q2 2026 (Design Complete)
+
+| Phase       | Status                         | Rationale                                                               |
+| :---------- | :----------------------------- | :---------------------------------------------------------------------- |
+| **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
 
 - AWS Lambda Polyglot Gateway (Function URL) — "Door 2"
 - Enterprise API governance layer
@@ -136,6 +144,7 @@ Phase 8 — Q2 2026 (Design Complete)
 
 ```mermaid
 graph TD
+    %%{init: {'flowchart': {'nodeSpacing': 50, 'rankSpacing': 50}}}%%
     %% ========= STYLES =========
     classDef client fill:#E8F5E9,stroke:#2E7D32,stroke-width:3px,color:#1B5E20,font-weight:bold;
     classDef sfdc fill:#E3F2FD,stroke:#1976D2,stroke-width:3px,color:#0D47A1,font-weight:bold;
@@ -543,9 +552,9 @@ Ensuring the system fails gracefully during outage events.
 | **Jira API Down**             | 3 consecutive 503 errors                                  | Show "Roadmap temporarily unavailable" message               | Circuit Breaker opens for 30 min   |
 | **User-Triggered Simulation** | `Resilience_Simulation_Enabled__c = True` (Session Cache) | "Simulation Active" badge appears; API calls mock 500 errors | Reset via UI Toggle or Session End |
 
-## 9. Observability & Glass Box
+## 9. Observability & Glass Box Telemetry
 
-The system exposes real-time telemetry to the user via the `c-system-health-footer` component to demonstrate "Glass Box" architecture.
+The system exposes real-time telemetry to the user via the `c-system-health-footer` component to demonstrate "Glass Box Telemetry" architecture.
 
 - **Heap/CPU:** Visualized vs. Governor Limits.
 - **AI Provider Health:** Current active provider and estimated latency.
@@ -980,7 +989,7 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 | Feature               | Door 1 — Native Salesforce GraphQL (lightning/uiGraphQLApi) | Door 2 — AWS Lambda Polyglot BFF (Function URL)         |
 | :-------------------- | :---------------------------------------------------------- | :------------------------------------------------------ |
-| **Timeline**          | MVP — Q1 2026 (planned)                                     | Phase 8 — Q2 2026 (design complete)                     |
+| **Timeline**          | MVP – Q1 2026 (planned)                                     | Phase 8 – Q2 2026 (design complete)                     |
 | **Primary Consumers** | All internal LWC components (Skill Graph, Roadmap)          | API Lab "Enterprise Mode", future mobile apps           |
 | **Technology**        | lightning/uiGraphQLApi wire adapter                         | Single Lambda Function URL + in-function governance     |
 | **Latency**           | Lowest possible (LDS + UI cache)                            | Single external round-trip                              |
@@ -988,4 +997,4 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 | **Governance**        | Platform-managed                                            | Full enterprise policies (keys, rate limits, analytics) |
 | **Payload Reduction** | Platform-optimized                                          | 85—92% reduction vs parallel REST calls                 |
 | **Cost**              | $0                                                          | $0.00 forever (no API Gateway, no VPC)                  |
-| **Current Status**    | Planned for MVP launch                                      | Fully architected & documented — activation in Phase 8  |
+| **Current Status**    | Planned for MVP launch                                      | Fully architected & documented – activation in Phase 8  |

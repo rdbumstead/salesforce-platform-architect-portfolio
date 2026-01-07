@@ -197,19 +197,25 @@ The delivery is organized into four parallel execution tracks:
 
 **Phase 6: Observability & Launch**
 
-- **System Health "Glass Box":** Develop `c-system-health-footer` with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
+- **System Health "Glass Box Telemetry":** Develop `c-system-health-footer` with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
 - **Enterprise Logging:** Install and configure Nebula Logger (Unlocked Package); configure storage guardrails (2-day retention).
 - **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test Circuit Breakers and cached data fallbacks.
 - **Analytics Instrumentation:** Deploy Google Analytics 4 (GA4) with custom events for API tests and resume downloads.
-- **API Mode Indicator:** Glass Box footer displays "GraphQL Mode: Native (Live)" – prepares UI for Phase 8 toggle.
+- **API Mode Indicator:** Glass Box Telemetry footer displays "GraphQL Mode: Native (Live)" – prepares UI for Phase 8 toggle.
 - **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration.
 
 **Phase 7: Observability & Governance (Post-Launch)**
 
-- **System Health Dashboard:** "Glass Box" footer.
+- **System Health Dashboard:** "Glass Box Telemetry" footer.
 - **Smart Documentation:** Implement `c-smart-checklist` using lightning/empApi to listen for Deployment_Event\_\_e and auto-complete governance checklists.
 
 **Phase 8: Multi-Cloud & FinOps – Hybrid GraphQL Strategy (Q2 2026)**
+
+| Phase       | Status                         | Rationale                                                               |
+| :---------- | :----------------------------- | :---------------------------------------------------------------------- |
+| **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
+| **MVP**     | **Live**                       | Focus on sub-2.5s LCP and Zero Cost constraint.                         |
+
 _Design artifacts complete; implementation begins post-launch._
 
 - **Native GraphQL Verification:**
@@ -255,7 +261,7 @@ _Design artifacts complete; implementation begins post-launch._
 **Phase 3: Integration**
 
 - **Dev:** Implement `SAPI_Experience` Apex Class (System API).
-- **Appx C:** Configure MuleSoft Governance Policies (Reference Implementation).
+- **Appendix C:** Configure MuleSoft Governance Policies (Reference Implementation).
 - **Docs:** Upload Redoc documentation as Static Resource.
 - **Dev:** Develop `c-api-tester` LWC with fetch() harness.
 - **A.4:** Implement GitHub Live Feed, Custom Setting Cache, and Scheduler.
@@ -283,10 +289,10 @@ _Design artifacts complete; implementation begins post-launch._
 **Phase 6: Observability & Launch**
 
 - **Dev:** Install Nebula Logger (Unlocked Pkg) & configure `LoggerSettings__c`.
-- **Dev:** Build `c-system-health-footer` LWC (Glass Box) using requestIdleCallback.
+- **Dev:** Build `c-system-health-footer` LWC (Glass Box Telemetry) using requestIdleCallback.
 - **Dev:** Implement `AnalyticsService.js` for unified GA4 event tracking.
 - **Config:** Add "Resilience Simulation" toggle and resilience logic to `GitHubService.cls`.
-- **QA:** Verify "Glass Box" matches actual Developer Console limits.
+- **QA:** Verify "Glass Box Telemetry" matches actual Developer Console limits.
 - **QA:** Verify GA4 Real-Time view receives api_test_executed events.
 
 ## 5. Product Strategy & User Stories

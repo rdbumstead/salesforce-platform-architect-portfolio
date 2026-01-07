@@ -13,10 +13,11 @@
   - [2.3 `c-testimonial-submit` (Social Proof)](#23-c-testimonial-submit-social-proof)
   - [2.4 `c-schema-visualizer` (Dynamic ERD Visualizer)](#24-c-schema-visualizer-dynamic-erd-visualizer)
   - [2.5 `c-smart-docs` (Executable Governance)](#25-c-smart-docs-executable-governance)
-  - [2.6 `c-system-health-footer` (Glass Box)](#26-c-system-health-footer-glass-box)
+  - [2.6 `c-system-health-footer` (Glass Box Telemetry)](#26-c-system-health-footer-glass-box-telemetry)
   - [2.7 Architectural Decision Record: ADR-014 (Deferred Telemetry)](#27-architectural-decision-record-adr-014-deferred-telemetry)
   - [2.8 Analytics Instrumentation (GA4)](#28-analytics-instrumentation-ga4)
 - [3. Quality Assurance Checklist](#3-quality-assurance-checklist)
+  - [3.4 Concrete Testing Example](#34-concrete-testing-example)
 
 ---
 
@@ -75,7 +76,7 @@ public interface IAIGenerationService {
   AIResponseWrapper generate(String prompt, String context);
   String getProviderName(); // e.g., 'Agentforce'
   Boolean isHealthy(); // Circuit Breaker check
-  Integer getEstimatedLatencyMs(); // For Glass Box telemetry
+  Integer getEstimatedLatencyMs(); // For Glass Box Telemetry
 }
 ```
 
@@ -153,7 +154,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - **Event Subscription:** Utilizes the `lightning/empApi` module to subscribe to `event/Governance_Notification__e`.
 - **State Management:** The component maintains the state of checklist items (e.g., `isBuildGreen`, `isTestsPassing`) in the browser's `localStorage` so the "Verified" checkmarks persist across page reloads for the user session.
 
-### 2.6 `c-system-health-footer` (Glass Box)
+### 2.6 `c-system-health-footer` (Glass Box Telemetry)
 
 - **Component:** `c-system-health-footer`
 - **Purpose:** Displays real-time Salesforce Limits (Heap, CPU) and GitHub API quotas.
@@ -185,10 +186,10 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - [ ] **Security:** Verify Zero critical warnings from PMD Scanner.
 - [ ] **Accessibility:** Confirm the "Pause Animation" toggle exists and works.
 - [ ] **Degradation Test:** Toggle "Resilience Simulation" (disconnect GitHub). Verify UI seamlessly switches to cached data with a "Data Stale" badge.
-- [ ] **Limit Visibility:** Verify "Glass Box" footer accurately reflects Heap Size changes after running a heavy operation.
+- [ ] **Limit Visibility:** Verify "Glass Box Telemetry" footer accurately reflects Heap Size changes after running a heavy operation.
 - [ ] **Analytics:** Verify api_test_executed event fires in GA4 Real-Time view when using the API Tester.
 - [ ] Verify Skill Graph/Roadmap use lightning/uiGraphQLApi (Network tab shows /graphql call to Salesforce domain)
-- [ ] API Lab "Enterprise Mode" tab disabled with clear "Phase 8 — Q2 2026" messaging
+- [ ] API Lab "Enterprise Mode" tab disabled with clear "Phase 8 – Q2 2026" messaging
 - [ ] **Circuit Breaker Recovery:**
   - [ ] Trigger 3 Agentforce failures (mock).
     - PASS: Circuit auto-resets to **Closed**.
@@ -196,3 +197,38 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
     - PASS: Next request attempts Agentforce.
   - [ ] Submit new request.
     - PASS: Nebula logs "Circuit recovered".
+
+## 3.4 Concrete Testing Example
+
+We don't just "aim" for quality; we enforce it. Here is a real example of an Apex test that mocks the GitHub API and enforces Governor Limits:
+
+```apex
+@IsTest
+private class GitHubServiceTest {
+  @IsTest
+  static void testGetRepoDetails_EnforcesLimits() {
+    // 1. Set Mock with specific payload
+    Test.setMock(
+      HttpCalloutMock.class,
+      new GitHubMockResponse(200, '{"stargazers_count": 5}')
+    );
+
+    // 2. Execute within Governor Limit tracking
+    Test.startTest();
+    GitHubService.RepoDetails result = GitHubService.getRepoDetails('my-repo');
+    Test.stopTest();
+
+    // 3. Assert Logic AND Governance
+    System.assertEquals(5, result.stars, 'Should parse JSON correctly');
+    System.assertEquals(
+      1,
+      Limits.getCallouts(),
+      'Should make exactly 1 callout'
+    );
+    System.assert(
+      Limits.getHeapSize() < 100000,
+      'Heap usage should be minimal'
+    );
+  }
+}
+```
