@@ -14,7 +14,8 @@
   - [3.4 Org Persistence](#34-org-persistence)
 - [4. Disaster Recovery](#4-disaster-recovery)
   - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
-  - [4.2 Scenario: GitHub Rate Limit Exhaustion](#42-scenario-github-rate-limit-exhaustion)
+  - [4.2 Scenario: Security Misconfiguration (Guest User)](#42-scenario-security-misconfiguration-guest-user)
+  - [4.3 Scenario: GitHub Rate Limit Exhaustion](#43-scenario-github-rate-limit-exhaustion)
 - [5. Observability & Monitoring](#5-observability--monitoring)
   - [5.1 Quota Monitoring (Automated)](#51-quota-monitoring-automated)
 
@@ -140,14 +141,14 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 2. Trigger fresh deployment.
 3. Verify site health via Smoke Test suite / Manual Verification.
 
-### 4.3 Scenario: Security Misconfiguration (Guest User)
+### 4.2 Scenario: Security Misconfiguration (Guest User)
 
 - **Symptom:** PMD Scan or Health Check fails due to "Guest User Open Access".
 - **Mitigation:**
   1. **Immediate Rollback:** Revert `force-app/main/default/permissionsets/Guest_User.permissionset-meta.xml` to the previous commit.
   2. **Nuke & Rebuild:** If unsure, delete the Permission Set from the org (`sf project delete source`) and redeploy the `main` branch version.
 
-### 4.2 Scenario: GitHub Rate Limit Exhaustion
+### 4.3 Scenario: GitHub Rate Limit Exhaustion
 
 - The system uses `GitHub_Cache__c` to store API responses. If the API fails (429/500), the Apex `GitHubService` will automatically serve cached data.
 
