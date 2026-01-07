@@ -59,28 +59,34 @@ header h2 {
 header a.button {
   display: inline-flex !important;
   align-items: center;
-  gap: 6px;
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: #FFFFFF !important;
+  justify-content: center;
+  gap: 8px;
+  
+  background-color: #FFFFFF !important; 
+  color: #0176D3 !important; 
+  border: none; 
+  
   text-decoration: none;
-  font-weight: 500;
-  font-size: 0.9rem !important;
-  padding: 6px 14px !important;
+  font-weight: 700;
+  font-size: 0.85rem !important;
+  padding: 10px 16px !important;
   border-radius: 4px;
   transition: all 0.2s ease;
-  line-height: 1.2;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  white-space: nowrap;
 }
 
 header a.button:hover {
-  background-color: rgba(255, 255, 255, 0.25) !important;
-  border-color: #FFFFFF;
-  transform: translateY(-1px);
+  background-color: #f3f3f3 !important; 
+  color: #005FB2 !important; 
+  transform: translateY(-1px); 
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
 header a.button .icon {
   font-size: 1.1em;
-  line-height: 1;
+  margin-top: -2px;
 }
 
 #content-wrapper {
