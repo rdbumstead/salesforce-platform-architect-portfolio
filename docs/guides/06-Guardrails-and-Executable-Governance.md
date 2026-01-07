@@ -173,7 +173,7 @@ sequenceDiagram
     A->>A: Check Heap/SOQL Limits
     alt Limit Approaching
         A-->>B: Error: Deferred/Cached Result
-        Note right of B: Circuit breaker triggered
+        Note right of B: Circuit Breaker triggered
     else Healthy
         A->>D: Fetch/Commit Data
         Note right of D: ~150-300ms (API call)

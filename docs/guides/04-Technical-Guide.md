@@ -26,7 +26,7 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Date: MVP — Q1 2026
+Date: MVP – Q1 2026
 
 ## 1. Integration Service Implementation
 
@@ -53,7 +53,11 @@ All external API calls originate from a secure **Named Credential** accessed via
 
 - **Grounding:** Configure Agent Topic to query `Project__c`.
 - **System Prompt:** Use "Mirror Mode" in system instructions to reveal logic.
-- **Fallback:** If unavailable, use "Fallback Mode" in Custom Metadata to display a static "AI Interaction Preview" video.
+- **Resilience Strategy (Triple Fallback):**
+  1. **Primary:** Call Agentforce (Standard).
+  2. **Secondary:** If timeout/error, call Google Gemini Flash (via Named Credential).
+  3. **Tertiary (Safety Net):** If both fail or quotas exceeded, load "Local Template" from Static Resource (Deterministic JSON).
+- **Fallback Mode:** Configurable via Custom Metadata to force degradation for testing.
 
 ### 1.4 System API Security (The "Twin" Pattern)
 
@@ -123,7 +127,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - **Mobile Guardrail:**
   - Automatically detects mobile viewports (FORM_FACTOR).
   - Falls back to a **static SVG image** (Skill_Graph_Fallback Static Resource) to prevent rendering overhead on low-power devices.
-- **Stale Data Guardrail:** Mobile SVG includes embedded build timestamp. If server-side skill count > SVG metadata count, a subtle "Graph outdated — refresh for latest" banner appears.
+- **Stale Data Guardrail:** Mobile SVG includes embedded build timestamp. If server-side skill count > SVG metadata count, a subtle "Graph outdated – refresh for latest" banner appears.
 - **Accessibility (A11y):**
   - Includes a "Pause Animation" toggle button.
   - Uses the **"Shadow Structure" Pattern** (a visually hidden `<ul>`) for screen readers.

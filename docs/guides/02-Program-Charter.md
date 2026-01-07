@@ -27,7 +27,7 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Date: MVP — Q1 2026
+Date: MVP – Q1 2026
 
 Est. Total Effort: ~70 Hours (MVP Core in ~47 Hours)
 
@@ -54,7 +54,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - Skill Graph, Roadmap, and Project Gallery all use native wire adapter for sub-250 ms LCP
 - No external dependencies required
 
-#### Target Enterprise State — Phase 8 (Q2 2026) — _Design Complete / Implementation Deferred_
+#### Target Enterprise State – Phase 8 (Q2 2026) – _Design Complete / Implementation Deferred_
 
 - AWS Lambda Polyglot Gateway (Function URL) "Door 2" fully designed (see SAS 1.1 & 5.3).
 - Implementation deferred to guarantee on-time MVP launch
@@ -76,7 +76,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and Automated PR Commenting.
 - **External API Integration (GitHub):** Live feed of portfolio repository commits displayed on the site.
 - **External API Integration (Jira):** Live fetch of portfolio roadmap Epics and Stories.
-- **Multi-Cloud Integration patterns using AWS Free Tier (Lambda Function URL, S3, CloudFront) — Phase 8 (Q2 2026) — design complete**
+- **Multi-Cloud Integration patterns using AWS Free Tier (Lambda Function URL, S3, CloudFront) – Phase 8 (Q2 2026) – design complete**
 - **Advanced Visualization:** Dynamic Skill Graph using AntV G6 with custom flow animation.
 - **Dynamic ERD Visualizer:** A live-rendered Entity Relationship Diagram utilizing the Schema class and AntV G6 to visualize the actual Org metadata, replacing static architecture diagrams.
 - **Executable Governance:** LWC-based documentation that subscribes to Platform Events to automatically verify its own success criteria (e.g., verifying a "Green Build" checkbox in real-time).
@@ -107,6 +107,12 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - Mobile responsive layout passes manual verification on iOS Safari and Android Chrome.
 
 **Technical Acceptance:**
+| Metric | Current Baseline (Est.) | Target (Hard Gate) |
+| :--- | :--- | :--- |
+| **LCP (Mobile)** | ~3.5s (Standard LWR) | **< 2.5s** |
+| **Apex Coverage** | 78% (Avg Project) | **> 90%** |
+| **Code Scanning** | N/A | **0 Critical Violations** |
+| **Accessibility** | 85 (Avg Theme) | **100** |
 
 - LCP < 2.5s measured via Lighthouse Mobile Audit.
 - All Apex tests > 90% coverage (Hard Governance Gate).
@@ -195,7 +201,7 @@ The delivery is organized into four parallel execution tracks:
 - **Enterprise Logging:** Install and configure Nebula Logger (Unlocked Package); configure storage guardrails (2-day retention).
 - **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test circuit breakers and cached data fallbacks.
 - **Analytics Instrumentation:** Deploy Google Analytics 4 (GA4) with custom events for API tests and resume downloads.
-- **API Mode Indicator:** Glass Box footer displays "GraphQL Mode: Native (Live)" — prepares UI for Phase 8 toggle.
+- **API Mode Indicator:** Glass Box footer displays "GraphQL Mode: Native (Live)" – prepares UI for Phase 8 toggle.
 - **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration.
 
 **Phase 7: Observability & Governance (Post-Launch)**
@@ -203,12 +209,12 @@ The delivery is organized into four parallel execution tracks:
 - **System Health Dashboard:** "Glass Box" footer.
 - **Smart Documentation:** Implement `c-smart-checklist` using lightning/empApi to listen for Deployment_Event\_\_e and auto-complete governance checklists.
 
-**Phase 8: Multi-Cloud & FinOps — Hybrid GraphQL Strategy (Q2 2026)**
+**Phase 8: Multi-Cloud & FinOps – Hybrid GraphQL Strategy (Q2 2026)**
 _Design artifacts complete; implementation begins post-launch._
 
 - **Native GraphQL Verification:**
   - Confirm `c-skill-network`, `c-roadmap-viewer`, and Project Gallery all use `lightning/uiGraphQLApi`
-- **AWS Lambda Polyglot Gateway:** (Function URL) — "Door 2"
+- **AWS Lambda Polyglot Gateway:** (Function URL) – "Door 2" – **Designed, not yet implemented** (launching Q2 2026)
   - Deploy single HTTPS Function URL endpoint (no API Gateway)
   - Support both REST → GraphQL translation and direct GraphQL
   - In-function governance: `x-api-key` validation, tiered rate limiting, CloudWatch metrics

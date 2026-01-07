@@ -26,7 +26,7 @@ Owner: Ryan Bumstead
 
 Version: 1.0
 
-Date: MVP — Q1 2026
+Date: MVP – Q1 2026
 
 This document outlines the operational procedures required to maintain the security, stability, and "Green Build" status of the portfolio architecture.
 
@@ -139,6 +139,13 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 1. Revert main branch to previous commit SHA.
 2. Trigger fresh deployment.
 3. Verify site health via Smoke Test suite / Manual Verification.
+
+### 4.3 Scenario: Security Misconfiguration (Guest User)
+
+- **Symptom:** PMD Scan or Health Check fails due to "Guest User Open Access".
+- **Mitigation:**
+  1. **Immediate Rollback:** Revert `force-app/main/default/permissionsets/Guest_User.permissionset-meta.xml` to the previous commit.
+  2. **Nuke & Rebuild:** If unsure, delete the Permission Set from the org (`sf project delete source`) and redeploy the `main` branch version.
 
 ### 4.2 Scenario: GitHub Rate Limit Exhaustion
 

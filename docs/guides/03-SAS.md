@@ -59,7 +59,7 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Date: MVP — Q1 2026
+Date: MVP – Q1 2026
 
 ## 1. System Context & Architecture
 
@@ -93,7 +93,7 @@ graph LR
     Apex <--> AI[Agentforce]
 ```
 
-**Architecture Implementation Status (MVP — Q1 2026 Launch)**
+**Architecture Implementation Status (MVP – Q1 2026 Launch)**
 
 Live MVP (Door 1)
 
@@ -504,7 +504,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 
 ### 8.2 Agentforce Unavailable
 
-- **Symptom:** Agentforce Service Agent fails to load or returns generic errors (common in some Dev Edition regions).
+- **Symptom:** Agentforce Service Agent fails to load or returns generic errors (common in some **Developer Edition** regions).
 - **Detection:** `<agentforce-service-agent>` LWC fails to render during manual testing.
 - **Mitigation:**
   1. Enable "Fallback Mode" in Custom Metadata.
@@ -524,7 +524,7 @@ Ensuring the system fails gracefully during outage events.
 | :---------------------------- | :-------------------------------------------------------- | :----------------------------------------------------------- | :--------------------------------- |
 | **GitHub API Rate Limit**     | HTTP 429 response                                         | Display cached commits with "Last Updated: 15m ago" badge    | Scheduler retries in 15 min        |
 | **G6 Library 404**            | `loadScript()` Promise rejection                          | Render static SVG immediately                                | Log error + email admin            |
-| **Jira API Down**             | 3 consecutive 503 errors                                  | Show "Roadmap temporarily unavailable" message               | Circuit breaker opens for 30 min   |
+| **Jira API Down**             | 3 consecutive 503 errors                                  | Show "Roadmap temporarily unavailable" message               | Circuit Breaker opens for 30 min   |
 | **User-Triggered Simulation** | `Resilience_Simulation_Enabled__c = True` (Session Cache) | "Simulation Active" badge appears; API calls mock 500 errors | Reset via UI Toggle or Session End |
 
 ## 9. Observability & Glass Box
