@@ -69,50 +69,51 @@ The high-level data flow demonstrating the multi-cloud, API-led strategy.
 
 ```mermaid
 graph LR
-    %% Define Styles
-    classDef sfdc fill:#00A1E0,stroke:#005FB2,stroke-width:2px,color:white,font-weight:bold;
-    classDef aws fill:#FF9900,stroke:#CC7A00,stroke-width:2px,color:white,font-weight:bold;
-    classDef jira fill:#0052CC,stroke:#0747A6,stroke-width:2px,color:white,font-weight:bold;
-    classDef github fill:#24292F,stroke:#1B1F23,stroke-width:2px,color:white,font-weight:bold;
-    classDef user fill:#333333,stroke:#000000,stroke-width:2px,color:white,font-weight:bold;
-    classDef future fill:#FFE5B4,stroke:#FFA500,stroke-width:2px,stroke-dasharray: 5 5;
+    %% ========= BRAND STYLES =========
+    classDef user fill:#424242,stroke:#000000,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef sfdc fill:#00A1E0,stroke:#005FB2,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef aws fill:#FF9900,stroke:#CC7A00,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef jira fill:#0052CC,stroke:#003A8F,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef github fill:#24292E,stroke:#000000,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef data fill:#8E24AA,stroke:#4A148C,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef future fill:#FFF3E0,stroke:#FB8C00,stroke-width:2px,stroke-dasharray:5 5;
 
-    %% Nodes
+    %% ========= NODES =========
     User((User))
-    LWR[Experience Cloud LWR]
-    SF_GQL[Salesforce GraphQL API]
-    DB[(Custom Objects)]
-    Lambda[AWS Lambda Gateway<br/>Phase 8 - Q2 2026]
+    LWR[Experience Cloud<br/>LWR]
+    GQL[Salesforce<br/>GraphQL]
     Apex[Apex Runtime]
-    AI[Agentforce Agent]
-    Jira[Jira API]
+    DB[(Custom Objects)]
+    AI[Agentforce]
+    Jira[Jira Cloud API]
     GitHub[GitHub API]
-    Resume[Resume Engine<br/>Future]
+    Lambda[AWS Lambda<br/>Phase 8]
 
-    %% Live MVP Connections (Solid)
+    %% ========= FLOWS =========
     User --> LWR
-    LWR -->|Native GraphQL<br/>lightning/uiGraphQLApi| SF_GQL
-    SF_GQL --> DB
-    LWR -->|Apex REST| Apex
+    LWR --> GQL
+    GQL --> DB
+    LWR --> Apex
     Apex <--> AI
-    Apex -->|REST via<br/>Named Credentials| Jira
-    Apex -->|REST via<br/>Named Credentials| GitHub
+    Apex --> Jira
+    Apex --> GitHub
 
-    %% Phase 8 Connections (Dashed)
-    LWR -.->|Phase 8<br/>Design Complete| Lambda
-    Lambda -.->|Function URL| Apex
-    Lambda -.->|Serverless| Resume
+    %% ========= FUTURE =========
+    LWR -.-> Lambda
+    Lambda -.-> Apex
 
-    %% Apply Styles
-    class LWR,SF_GQL,DB,Apex,AI sfdc;
-    class Lambda,Resume aws;
+    %% ========= APPLY STYLES =========
+    class User user;
+    class LWR,GQL,Apex,AI sfdc;
+    class DB data;
     class Jira jira;
     class GitHub github;
-    class User user;
+    class Lambda aws;
 
-    %% Link Styling
-    linkStyle 0,1,2,3,4,5,6 stroke:#2ECC71,stroke-width:3px;
-    linkStyle 7,8,9 stroke:#FFA500,stroke-width:2px,stroke-dasharray:5;
+    %% ========= CRITICAL PATH =========
+    linkStyle 0,1,2 stroke:#2ECC71,stroke-width:3px;
+
+
 ```
 
 **Architecture Implementation Status (MVP – Q1 2026 Launch)**
@@ -135,36 +136,29 @@ Phase 8 — Q2 2026 (Design Complete)
 
 ```mermaid
 graph TD
-    subgraph Client_Layer [Client Layer]
-        Browser[Mobile & Desktop Browser]
-        LWR[LWR Experience Site]
-    end
+    %% ========= STYLES =========
+    classDef client fill:#E8F5E9,stroke:#2E7D32,stroke-width:3px,color:#1B5E20,font-weight:bold;
+    classDef sfdc fill:#E3F2FD,stroke:#1976D2,stroke-width:3px,color:#0D47A1,font-weight:bold;
+    classDef external fill:#FFF3E0,stroke:#FB8C00,stroke-width:3px,color:#E65100,font-weight:bold;
+    classDef data fill:#F3E5F5,stroke:#8E24AA,stroke-width:2px,color:#4A148C;
 
-    subgraph Salesforce_Core [Salesforce Core]
-        Apex[Apex Controller Layer]
-        Cache[Platform Cache / Custom Settings]
-        DB[(Custom Objects)]
-        AI[Agentforce Engine]
-        Logger[Nebula Logger / Platform Events]
-    end
+    %% ========= LAYERS =========
+    Browser --> LWR
+    LWR --> Apex
+    Apex --> DB
+    Apex --> AI
+    Apex --> Jira
+    Apex --> GitHub
 
-    subgraph External_Services [Integration Layer]
-        Jira[Jira Agile]
-        Git[GitHub DevOps]
-        AWS[AWS Storage]
-    end
+    %% ========= APPLY STYLES =========
+    class Browser,LWR client;
+    class Apex,AI sfdc;
+    class DB data;
+    class Jira,GitHub external;
 
-    Browser -->|Render| LWR
-    LWR -->|Wire Service| Apex
-    Apex -->|SOQL| DB
-    Apex -->|Grounding| AI
-    Apex -->|REST/Named Creds| Jira
-    Apex -->|REST/Named Creds| Git
-    Apex -->|REST/Named Creds| AWS
+    %% ========= CRITICAL PATH =========
+    linkStyle 0,1,2 stroke:#2E7D32,stroke-width:4px;
 
-    %% Logger Connections
-    Apex -->|Publish| Logger
-    Logger -->|Persist| DB
 ```
 
 ### 1.3 Key Salesforce Features Used
