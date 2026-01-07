@@ -20,10 +20,10 @@
     "delta": "npm run clean && shx mkdir -p changed && sf sgd source delta --to HEAD --from origin/main --output-dir changed --source-dir packages --generate-delta",
     "scan:security": "snyk test",
     "scan:secrets": "secretlint --maskSecrets \"packages/**/*.{cls,trigger,js,xml,yaml,yml}\" \"docs/**/*.md\" \"scripts/**/*.js\"",
-    "sf:coverage": "sf apex run test --code-coverage --result-format human --wait 10",
+    "sf:coverage": "sf apex run test --code-coverage --coverage-requirement 75 --result-format human --wait 10",
     "sf:validate": "sf project deploy validate --source-dir packages --test-level RunLocalTests",
     "test:lighthouse": "lhci autorun",
-    "validate": "node scripts/validate.js",
+    "delta:validate": "node scripts/validate.js",
     "docs:api": "node scripts/generate-api-docs.js",
     "docs:verify": "npm run docs:api && git diff --exit-code docs/api/oas/ && echo \"SUCCESS: API Documentation is synchronized.\""
   },
