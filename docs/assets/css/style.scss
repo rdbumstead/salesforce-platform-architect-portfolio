@@ -18,8 +18,14 @@ body {
 
 a {
   color: #0176D3;
+  text-decoration: none;
 }
 
+a:hover {
+  text-decoration: underline;
+}
+
+/* --- HEADER & NAVIGATION --- */
 header {
   background-color: $header-bg-color;
   background-image: none;
@@ -56,39 +62,26 @@ header h2 {
   line-height: 1.2;
 }
 
-header a.button {
-  display: inline-flex !important;
+/* Badge in Header (Clean Link) */
+a.header-badge-link {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  
-  background-color: #FFFFFF !important; 
-  color: #0176D3 !important; 
-  border: none; 
-  
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 0.85rem !important;
-  padding: 10px 16px !important;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  line-height: 1;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  white-space: nowrap;
+  text-decoration: none !important; /* No underline on hover for the badge itself */
 }
 
-header a.button:hover {
-  background-color: #f3f3f3 !important; 
-  color: #005FB2 !important; 
-  transform: translateY(-1px); 
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+/* --- UNIVERSAL BADGE ALIGNMENT STRATEGY --- */
+/* Targets Shields.io, GitHub Actions (.svg), and any generic badge images */
+img[src*="shields.io"],
+img[src*="badge.svg"],
+img[src*="workflows"] {
+  vertical-align: middle !important; /* Forces perfect vertical centering */
+  margin-right: 6px;                 /* Consistent spacing between badges */
+  border: none;
+  box-shadow: none;
+  height: 20px;                      /* Enforce standard badge height */
 }
 
-header a.button .icon {
-  font-size: 1.1em;
-  margin-top: -2px;
-}
-
+/* --- LAYOUT & CONTENT --- */
 #content-wrapper {
   background-color: transparent;
   padding-top: 40px;
@@ -108,6 +101,16 @@ header a.button .icon {
   border: 1px solid #e5e5e5;
 }
 
+ul, ol {
+  margin-bottom: 1em;
+}
+
+li > ul, li > ol {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+/* --- FOOTER --- */
 footer {
   flex-shrink: 0;
   text-align: center;
@@ -118,20 +121,7 @@ footer {
   background: transparent;
 }
 
-ul, ol {
-  margin-bottom: 1em;
-}
-
-li > ul, li > ol {
-  margin-bottom: 0;
-  margin-top: 0;
-}
-
-img[src*="shields.io"] {
-  margin-right: 5px;
-  vertical-align: middle;
-}
-
+/* --- BACK TO TOP BUTTON --- */
 #back-to-top {
   position: fixed;
   bottom: 30px;
@@ -165,6 +155,7 @@ img[src*="shields.io"] {
   transform: translateY(-2px);
 }
 
+/* --- MOBILE RESPONSIVENESS --- */
 @media screen and (max-width: 900px) {
   header .inner {
     flex-direction: column;
@@ -174,6 +165,11 @@ img[src*="shields.io"] {
   header h2 {
     margin-top: 5px !important;
     white-space: normal;
+  }
+  
+  /* Push the badge below the text on mobile */
+  a.header-badge-link {
+    margin-top: 15px; 
   }
 
   #main-content {

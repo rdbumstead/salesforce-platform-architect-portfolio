@@ -18,9 +18,10 @@
           </a>
           <h2>{{ site.description | default: site.github.project_tagline }}</h2>
         </div>
+        
         {% if site.github.is_project_page %}
-          <a href="{{ site.github.repository_url }}" class="button" target="_blank">
-            <span class="icon">📦</span> View Source
+          <a href="{{ site.github.repository_url }}" target="_blank" class="header-badge-link">
+            <img src="https://img.shields.io/badge/GitHub-View_Source-181717?logo=github&logoColor=white" alt="View Source on GitHub">
           </a>
         {% endif %}
       </div>
@@ -50,25 +51,20 @@
       import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
       
       document.addEventListener('DOMContentLoaded', () => {
+        // Mermaid Adapter
         const mermaidBlocks = document.querySelectorAll('pre code.language-mermaid');
         mermaidBlocks.forEach((codeBlock) => {
           const div = document.createElement('div');
           div.className = 'mermaid';
           div.textContent = codeBlock.textContent;
           const pre = codeBlock.closest('pre');
-          if (pre) {
-            pre.replaceWith(div);
-          }
+          if (pre) pre.replaceWith(div);
         });
 
-        mermaid.initialize({ 
-          startOnLoad: true, 
-          theme: 'neutral', 
-          securityLevel: 'loose'
-        });
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
 
+        // Back to Top Logic
         const backToTopButton = document.getElementById('back-to-top');
-        
         window.addEventListener('scroll', () => {
           if (window.scrollY > 150) {
             backToTopButton.classList.add('visible');
@@ -78,10 +74,7 @@
         });
 
         backToTopButton.addEventListener('click', () => {
-          window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-          });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       });
     </script>
