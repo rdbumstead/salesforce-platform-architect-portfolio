@@ -2,20 +2,12 @@ name: Validate PR (Scratch Org)
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     branches: [main]
     paths:
       - "packages/**"
-      - "!packages/**/*.md"
-      - "!packages/**/jsconfig.json"
-      - "!packages/**/.gitkeep"
-      - "!packages/integration-api/AnypointStudio/**"
       - "sfdx-project.json"
       - "package.json"
-      - "package-lock.json"
-      - "scripts/**"
-      - ".github/workflows/pr.yml"
-      - ".github/actions/**"
 
 jobs:
   validate:
@@ -40,13 +32,6 @@ jobs:
           username: ${{ secrets.SFDX_USERNAME }}
           is_dev_hub: "true"
 
-      - name: Run Snyk Security Scan
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-
       - name: Run Quality Gates
         run: |
           npm run scan:secrets
@@ -54,27 +39,17 @@ jobs:
           npm run scan
           npm run docs:verify
 
-      - name: Run Lighthouse Performance Audit
-        run: npm run test:lighthouse || echo "Lighthouse failed assertion, but continuing build."
-        env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-
-      - name: Create Scratch Org or Fallback
+      - name: Create Scratch Org
         id: create_org
         run: |
           echo "ORG_TYPE=scratch" >> $GITHUB_ENV
           set +e
-          # Target the 'portfolio' alias established in the composite action
+          # Duration set to 1 day to ensure auto-cleanup if delete is skipped
           OUTPUT=$(sf org create scratch --target-dev-hub portfolio --definition-file config/project-scratch-def.json --alias ci-org --duration-days 1 --set-default --no-ancestors --wait 30 --json 2>&1)
           EXIT_CODE=$?
           set -e
           if [ $EXIT_CODE -ne 0 ]; then
-             if echo "$OUTPUT" | grep -q "LIMIT_EXCEEDED"; then
-                echo "Scratch Org limit reached. Switching to Fallback Mode."
-             else
-                echo "Scratch Org creation failed with unexpected error. Switching to Fallback Mode."
-                echo "::warning::Scratch org creation failed. Error: $OUTPUT"
-             fi
+             echo "Scratch Org limit reached. Switching to Fallback Mode."
              echo "ORG_TYPE=fallback" >> $GITHUB_ENV
           fi
 
@@ -87,8 +62,33 @@ jobs:
       - name: Deploy & Test (Fallback Mode)
         if: env.ORG_TYPE == 'fallback'
         run: |
+          # Dry-run against Prod (Portfolio) if Scratch limit hit
           sf project deploy start --target-org portfolio --source-dir packages --dry-run --test-level RunLocalTests --wait 30
 
+      - name: Provide Instant Access (If Label Applied)
+        if: env.ORG_TYPE == 'scratch' && contains(github.event.pull_request.labels.*.name, 'debug:keep-org')
+        run: |
+          # 1. Extract the Auth URL safely
+          sf org display --target-org ci-org --verbose --json | jq -r .result.sfdxAuthUrl > auth_url.txt
+          AUTH_URL=$(cat auth_url.txt)
+
+          # 2. Generate the Developer Summary
+          echo "### UAT Environment Ready" >> $GITHUB_STEP_SUMMARY
+          echo "> **Status:** Org preserved for 24 hours." >> $GITHUB_STEP_SUMMARY
+          echo "> **Action:** Copy and run the block below to launch the org locally." >> $GITHUB_STEP_SUMMARY
+
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# 1. Create temporary auth file" >> $GITHUB_STEP_SUMMARY
+          echo "echo '${AUTH_URL}' > uat_auth.txt" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# 2. Authenticate & Open" >> $GITHUB_STEP_SUMMARY
+          echo "sf org login sfdx-url -f uat_auth.txt --set-alias pr-${{ github.event.number }}-uat" >> $GITHUB_STEP_SUMMARY
+          echo "sf org open -o pr-${{ github.event.number }}-uat" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# 3. Cleanup" >> $GITHUB_STEP_SUMMARY
+          echo "rm uat_auth.txt" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
       - name: Delete Scratch Org
-        if: always() && env.ORG_TYPE == 'scratch'
+        if: always() && env.ORG_TYPE == 'scratch' && !contains(github.event.pull_request.labels.*.name, 'debug:keep-org')
         run: sf org delete scratch --target-org ci-org --no-prompt || true

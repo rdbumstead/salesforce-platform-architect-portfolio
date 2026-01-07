@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Salesforce Platform Architect Portfolio",
   "scripts": {
+    "setup:plugins": "sf plugins install @salesforce/plugin-code-analyzer sfdx-git-delta",
     "lint": "eslint **/{aura,lwc}/**/*.js",
     "test": "npm run test:unit",
     "test:unit": "sfdx-lwc-jest",
@@ -19,6 +20,8 @@
     "delta": "npm run clean && shx mkdir -p changed && sf sgd source delta --to HEAD --from origin/main --output-dir changed --source-dir packages --generate-delta",
     "scan:security": "snyk test",
     "scan:secrets": "secretlint --maskSecrets \"packages/**/*.{cls,trigger,js,xml,yaml,yml}\" \"docs/**/*.md\" \"scripts/**/*.js\"",
+    "sf:coverage": "sf apex run test --code-coverage --result-format human --wait 10",
+    "sf:validate": "sf project deploy validate --source-dir packages --test-level RunLocalTests",
     "test:lighthouse": "lhci autorun",
     "validate": "node scripts/validate.js",
     "docs:api": "node scripts/generate-api-docs.js",
@@ -57,6 +60,12 @@
     ],
     "**/lwc/**": [
       "sfdx-lwc-jest -- --bail --findRelatedTests --passWithNoTests"
+    ],
+    "**/*.{cls,trigger,js,xml,yaml,yml,md}": [
+      "secretlint --maskSecrets"
+    ],
+    "packages/integration-api/specs/**/*.yaml": [
+      "npm run docs:api"
     ]
   }
 }
