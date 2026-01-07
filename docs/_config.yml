@@ -1,0 +1,10 @@
+title: Platform Architect Portfolio
+description: Governance, Architecture, and Living Documentation
+theme: jekyll-theme-architect
+show_downloads: false
+
+# Navigation
+header_pages:
+  - index.md
+  - guides/01-Executive-Overview.md
+  - guides/03-SAS.md

@@ -1,0 +1,27 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+$header-bg-color: #0176D3;
+$header-bg-image: none;
+
+header {
+  background-color: $header-bg-color;
+  background-image: none;
+  border-bottom: 4px solid #005FB2;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #181b39;
+}
+
+a {
+  color: #0176D3;
+}
+
+img[src*="shields.io"] {
+  margin-right: 5px;
+  vertical-align: middle;
+}
