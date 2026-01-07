@@ -14,7 +14,7 @@
 - [3. Risk & Security Architecture](#3-risk--security-architecture)
   - [3.1 Threat Model Summary](#31-threat-model-summary)
 - [4. Data Architecture & Schema](#4-data-architecture--schema)
-  - [4.1 Logical Data Model (ERD)](#41-logical-data-model-erd)
+  - [4.1 Logical Data Model (Simplified ERD)](#41-logical-data-model-simplified-erd)
   - [4.2 Core Entities](#42-core-entities)
   - [4.3 Junction Objects (The Glue)](#43-junction-objects-the-glue)
   - [4.4 Asset Management](#44-asset-management)
@@ -34,21 +34,22 @@
   - [8.1 Deployment Failure](#81-deployment-failure)
   - [8.2 Agentforce Unavailable](#82-agentforce-unavailable)
   - [8.3 API Rate Limit Exhaustion](#83-api-rate-limit-exhaustion)
-  - [8.4 Degraded Mode Operations](#84-degraded-mode-operations)
-- [9. Observability & Glass Box](#9-observability--glass-box)
+  - [8.4 Resilience Simulation Operations](#84-resilience-simulation-operations)
+- [9. Observability & Glass Box Telemetry](#9-observability--glass-box-telemetry)
 - [Appendices](#appendices)
   - [Appendix A: Engineering Implementation Notes](#appendix-a-engineering-implementation-notes)
   - [Appendix B: API Specification (OpenAPI/Swagger)](#appendix-b-api-specification-openapiswagger)
   - [Appendix C: MuleSoft Code, Governance, & Proxy Configuration (Reference)](#appendix-c-mulesoft-code-governance--proxy-configuration-reference)
   - [Appendix D: Data Dictionary (Detailed Schema)](#appendix-d-data-dictionary-detailed-schema)
+  - [Appendix E: Environment Strategy](#appendix-e-environment-strategy)
   - [Appendix F: Testing Strategy](#appendix-f-testing-strategy)
   - [Appendix G: Accessibility Strategy (A11y)](#appendix-g-accessibility-strategy-a11y)
   - [Appendix H: Deployment Architecture View](#appendix-h-deployment-architecture-view)
   - [Appendix I: Org & Package Structure](#appendix-i-org--package-structure)
-  - [Appendix J: Cloud FinOps Strategy (Phase 8 – Q2 2026)](#appendix-j-cloud-finops-strategy-phase-8--q2-2026)
+  - [Appendix J: Cloud FinOps Strategy (Phase 8 - Q2 2026)](#appendix-j-cloud-finops-strategy-phase-8---q2-2026)
   - [Appendix K: Validation Rules & Logic](#appendix-k-validation-rules--logic)
   - [Appendix L: Reference Artifacts](#appendix-l-reference-artifacts)
-  - [Appendix M: Cross-Cutting Pattern – Dual-Door Integration Strategy](#appendix-m-cross-cutting-pattern--dual-door-integration-strategy)
+  - [Appendix M: Cross-Cutting Pattern - Dual-Door Integration Strategy](#appendix-m-cross-cutting-pattern---dual-door-integration-strategy)
 
 ---
 
@@ -58,7 +59,7 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Date: MVP — Q1 2026
+Date: MVP – Q1 2026
 
 ## 1. System Context & Architecture
 
@@ -68,31 +69,58 @@ The high-level data flow demonstrating the multi-cloud, API-led strategy.
 
 ```mermaid
 graph LR
-    User((User)) --> LWR[Experience Cloud LWR]
+    %%{init: {'flowchart': {'nodeSpacing': 50, 'rankSpacing': 50}}}%%
+    %% ========= BRAND STYLES =========
+    classDef user fill:#424242,stroke:#000000,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef sfdc fill:#00A1E0,stroke:#005FB2,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef aws fill:#FF9900,stroke:#CC7A00,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef jira fill:#0052CC,stroke:#003A8F,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef github fill:#24292E,stroke:#000000,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef data fill:#8E24AA,stroke:#4A148C,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef future fill:#FFF3E0,stroke:#FB8C00,stroke-width:2px,stroke-dasharray:5 5;
 
-    %% DOOR 1 - Native Salesforce GraphQL MVP Q1 2026
-    LWR -->|Native GraphQL lightning/uiGraphQLApi| SF_GQL[Salesforce GraphQL API]
-    SF_GQL --> DB[(Custom Objects)]
+    %% ========= NODES =========
+    User((User))
+    LWR[Experience Cloud<br/>LWR]
+    GQL[Salesforce<br/>GraphQL]
+    Apex[Apex Runtime]
+    DB[(Custom Objects)]
+    AI[Agentforce]
+    Jira[Jira Cloud API]
+    GitHub[GitHub API]
+    Lambda[AWS Lambda<br/>Phase 8]
 
-    %% DOOR 2 - External Polyglot BFF Phase 8 Q2 2026
-    LWR -->|Phase 8 Q2 2026 - Design Complete| Lambda[AWS Lambda Polyglot Gateway]
+    %% ========= FLOWS =========
+    User --> LWR
+    LWR --> GQL
+    GQL --> DB
+    LWR --> Apex
+    Apex <--> AI
+    Apex --> Jira
+    Apex --> GitHub
 
-    %% Classic Apex REST path
-    LWR -->|Apex REST| Apex[Apex Runtime]
-    Lambda -->|REST via Named Credentials| Apex
+    %% ========= FUTURE =========
+    LWR -.-> Lambda
+    Lambda -.-> Apex
 
-    %% External integrations
-    Apex -->|REST| Jira[Jira API]
-    Apex -->|REST| GitHub[GitHub API]
+    %% ========= APPLY STYLES =========
+    class User user;
+    class LWR,GQL,Apex,AI sfdc;
+    class DB data;
+    class Jira jira;
+    class GitHub github;
+    class Lambda aws;
 
-    %% Future extensions
-    Lambda -->|Serverless| Resume[Resume Engine Future]
+    %% ========= CRITICAL PATH =========
+    linkStyle 0,1,2 stroke:#2ECC71,stroke-width:3px;
 
-    %% AI stays on-platform
-    Apex <--> AI[Agentforce]
+
 ```
 
-**Architecture Implementation Status (MVP — Q1 2026 Launch)**
+> [!TIP]
+> **Scalability Escape Hatch:** While this system is constrained to the Free Tier (Developer Edition), the architecture is designed to scale. If traffic exceeded limits, the **Phase 8** design moves the heavy lifting (Resume Generation, API Gateway) to AWS Serverless equivalents, allowing the Salesforce Core to remain a lightweight orchestration layer. This ensures the system could handle enterprise-scale traffic with minimal refactoring.
+
+**Architecture Implementation Status (MVP – Q1 2026 Launch)**
 
 Live MVP (Door 1)
 
@@ -100,7 +128,11 @@ Live MVP (Door 1)
 - Apex REST services
 - Direct integrations (GitHub, Jira via Named Credentials)
 
-Phase 8 — Q2 2026 (Design Complete)
+Phase 8 – Q2 2026 (Design Complete)
+
+| Phase       | Status                         | Rationale                                                               |
+| :---------- | :----------------------------- | :---------------------------------------------------------------------- |
+| **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
 
 - AWS Lambda Polyglot Gateway (Function URL) — "Door 2"
 - Enterprise API governance layer
@@ -112,36 +144,30 @@ Phase 8 — Q2 2026 (Design Complete)
 
 ```mermaid
 graph TD
-    subgraph Client_Layer [Client Layer]
-        Browser[Mobile & Desktop Browser]
-        LWR[LWR Experience Site]
-    end
+    %%{init: {'flowchart': {'nodeSpacing': 50, 'rankSpacing': 50}}}%%
+    %% ========= STYLES =========
+    classDef client fill:#E8F5E9,stroke:#2E7D32,stroke-width:3px,color:#1B5E20,font-weight:bold;
+    classDef sfdc fill:#E3F2FD,stroke:#1976D2,stroke-width:3px,color:#0D47A1,font-weight:bold;
+    classDef external fill:#FFF3E0,stroke:#FB8C00,stroke-width:3px,color:#E65100,font-weight:bold;
+    classDef data fill:#F3E5F5,stroke:#8E24AA,stroke-width:2px,color:#4A148C;
 
-    subgraph Salesforce_Core [Salesforce Core]
-        Apex[Apex Controller Layer]
-        Cache[Platform Cache / Custom Settings]
-        DB[(Custom Objects)]
-        AI[Agentforce Engine]
-        Logger[Nebula Logger / Platform Events]
-    end
+    %% ========= LAYERS =========
+    Browser --> LWR
+    LWR --> Apex
+    Apex --> DB
+    Apex --> AI
+    Apex --> Jira
+    Apex --> GitHub
 
-    subgraph External_Services [Integration Layer]
-        Jira[Jira Agile]
-        Git[GitHub DevOps]
-        AWS[AWS Storage]
-    end
+    %% ========= APPLY STYLES =========
+    class Browser,LWR client;
+    class Apex,AI sfdc;
+    class DB data;
+    class Jira,GitHub external;
 
-    Browser -->|Render| LWR
-    LWR -->|Wire Service| Apex
-    Apex -->|SOQL| DB
-    Apex -->|Grounding| AI
-    Apex -->|REST/Named Creds| Jira
-    Apex -->|REST/Named Creds| Git
-    Apex -->|REST/Named Creds| AWS
+    %% ========= CRITICAL PATH =========
+    linkStyle 0,1,2 stroke:#2E7D32,stroke-width:4px;
 
-    %% Logger Connections
-    Apex -->|Publish| Logger
-    Logger -->|Persist| DB
 ```
 
 ### 1.3 Key Salesforce Features Used
@@ -174,10 +200,8 @@ All architectural artifacts adhere to the C4 Model (Context, Containers, Compone
 
 ### 1.5 Quality Gates (Technical Acceptance)
 
-The SAS enforces:
+Refer to **[06 - Guardrails & Executable Governance](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the authoritative definition of LCP and Coverage thresholds.
 
-- **LCP < 2.5s** (Monitored via Lighthouse CI in GitHub Actions).
-- **Apex Coverage > 75%** (Enforced via sfdx force:apex:test:run --codecoverage).
 - **Zero PMD Critical Violations** (Enforced via sfdx scanner:run in PR checks).
 - **Reference:** See **Program Charter Section 2.2** for complete success criteria.
 
@@ -319,13 +343,9 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.3 Pillar C: Work Experience Verification API (Twin API Pattern)
 
 - **Objective:** Demonstrate Enterprise Integration Patterns and Developer Experience (DX).
-- **Design Layer:** OpenAPI Specification (OAS 3.0) (hosted on GitHub) selected over RAML to ensure universal portability and vendor neutrality.
-- **Implementation Layer:** Native Apex REST Class (SAPI_Experience) implementing the interface defined in the OAS.
-- **Contract Parity:** The Apex implementation adheres strictly to the JSON response structure defined in the OAS to ensure client-side compatibility.
-- **Documentation Layer:** Redoc (via Static Resource) providing industry-standard, read-only API documentation.
-- **Tooling Layer:** Custom `c-api-tester` LWC acting as a "Developer Console," allowing live execution of endpoints. Validates runtime responses against the design standard.
-- **External Integration:** GitHub REST API integration (Live Feed) using a Server-Side caching pattern to prevent rate-limiting.
-- **Execution Model:** No client-side access tokens used. All API calls originate from a secure Named Credential accessed via Apex.
+- **Design:** OpenAPI Specification (OAS 3.0) hosted on GitHub.
+- **Implementation:** Native Apex REST Class (`SAPI_Experience`).
+- **Technical Detail:** For the complete breakdown of the caching strategy, caching patterns, and API tooling, refer to the **[Technical Guide: Integration Service Implementation](./04-Technical-Guide.md#1-integration-service-implementation)**.
 
 ### 5.4 Pillar D: AI & Innovation (Agentforce)
 
@@ -351,6 +371,9 @@ To demonstrate practical Application of RAG (Retrieval-Augmented Generation), th
       - **Path 1 (Gold):** Agentforce Service Agent (Data 360 Grounding).
       - **Path 2 (Silver):** Google Gemini Flash 1.5 API (Fallback if Path 1 times out > 2s).
       - **Path 3 (Bronze):** Deterministic Local Template (Metadata Fallback if API blackout).
+
+<details>
+<summary>Click to view Sequence Diagram</summary>
 
 ```mermaid
 sequenceDiagram
@@ -405,6 +428,8 @@ sequenceDiagram
     end
 ```
 
+</details>
+
 - **Privacy:** Inputs are processed transiently and never stored in Salesforce.
 
 #### 5.4.2 Optional Edge Layer Integration (Future Scope)
@@ -415,28 +440,14 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 
 - **Objective:** Demonstrate ALM, CI/CD Maturity, and External System Integration.
 - **Tooling:** Atlassian Jira + GitHub Actions (CI/CD).
-- **Configuration:** Custom LWC c-roadmap-viewer calls Apex JiraService.cls to fetch Epics/Stories live via REST API.
-- **Integration:** Uses Named Credentials to securely authenticate with Atlassian API Token.
+- **Technical Detail:** For the integration architecture (JiraService) and Platform Event subscription model, refer to the **[Technical Guide: Jira Integration](./04-Technical-Guide.md#12-jira-integration-roadmap)**.
 - **Mechanism:** The `c-smart-checklist` component subscribes to the `Governance_Event__e` Platform Event.
 - **Workflow:** When the CI/CD pipeline (GitHub Actions) completes a successful deployment, it upserts a record or publishes an event via the Salesforce CLI. The LWC receives this event and automatically checks the "Green Build Badge" box on the UI.
 - **Architectural Signal:** This proves the candidate understands the Streaming API and Event-Driven Architecture.
 
 #### 5.5.1 The Governance Model
 
-Every architectural decision follows a three-gate approval process:
-
-**Gate 1: Technical Feasibility**
-
-- Apex governor limits assessed (SOQL queries, DML rows).
-- LWC bundle size < 100KB verified.
-- Related ADR documented (e.g., ADR-011: Why G6 Lazy-Load).
-
-**Gate 2: Security & Privacy**
-
-- Guest User FLS matrix updated (Section 4.5).
-- Named Credential secrets rotated (90-day policy).
-
-**Gate 3: Definition of Ready (DoR)**
+For the detailed "Three-Gate Approval Process" (Technical Feasibility, Security, DoR) governing these pillars, refer to **[06 - The Three-Gate Approval Process](./06-Guardrails-and-Executable-Governance.md#6-the-three-gate-approval-process)**.
 
 - Acceptance criteria defined (Gherkin syntax preferred).
 - Test data generation script written.
@@ -455,22 +466,23 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 ### 6.2 Lightning Web Components (LWC)
 
 - **`c-hero-banner`:** Includes "How to Evaluate Me" navigation guide.
-- **`c-testimonial-submit`:** "Mad Libs" style sentence builder with Vibe Toggle (Professional/Casual).
-- **`c-api-tester`:** Developer console LWC utilizing fetch() to exercise endpoints defined in Section 5.3.
-- **`c-changelog`:** Displays live commit history fetched via cached Apex data.
-- **`c-skill-network`:** Visualizes Junction Objects via AntV G6 to achieve "IcePanel-style" animated flow lines.
-  - **Performance Strategy:** Implements strict code-splitting by lazy-loading the G6 library only when the component enters the viewport. This ensures the initial page load LCP remains < 2.5s.
-  - **Mobile Strategy:** Automatically detects mobile viewports and falls back to a static SVG image to prevent canvas rendering overhead on low-power devices.
-  - **Accessibility:** Includes a "Pause Animation" toggle button for users with motion sensitivity.
-  - **Dependency:** Requires Lightning Web Security (LWS) to be enabled.
+- **`c-testimonial-submit`:** "Mad Libs" style sentence builder.
+- **`c-api-tester`:** Developer console LWC utilizing fetch() to exercise endpoints.
+- **`c-changelog`:** Displays live commit history.
+- **`c-skill-network`:** Visualizes Junction Objects via AntV G6.
 - **`c-code-viewer`:** Fetches raw source code via Prism.js.
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
-- **`c-roadmap-viewer`:** Performs real-time REST callout to Jira API to render "In Progress" and "Done" columns for the roadmap board.
+- **`c-roadmap-viewer`:** Performs real-time REST callout to Jira API.
 - **`c-footer`:** Contains GitHub Actions Badge.
+
+> **Technical Implementation:** For detailed performance strategies (lazy-loading), mobile fallbacks, and accessibility patterns for these components, please refer to the **[Technical Guide: Frontend Component Logic](./04-Technical-Guide.md#2-frontend-lwr-component-logic)**.
 
 ## 7. Architectural Decision Records (ADRs)
 
 Full architectural decisions are documented in the `docs/adr/` directory.
+
+<details>
+<summary>Click to view full list of Architectural Decision Records (ADRs)</summary>
 
 | ID                                                                                     | Title                                                           | Status                   |
 | :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :----------------------- |
@@ -501,6 +513,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling (Capacity Planning)                     | Accepted                 |
 | [ADR-026](../adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning Strategy                            | Accepted                 |
 
+</details>
+
 ## 8. Contingency & Rollback Plans
 
 ### 8.1 Deployment Failure
@@ -510,14 +524,12 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 - **Mitigation:**
   1. Check GitHub Action logs for specific metadata error.
   2. If environment issue: Manually deploy via CLI: sf project deploy start.
-- **Rollback:**
-  1. Revert the main branch to the previous commit SHA.
-  2. Trigger a fresh deployment of the reverted state.
-  3. Verify site health via Smoke Test suite.
+- **Detection:** Automated email notification from GitHub Actions.
+- **Rollback:** See **[Maintenance & Operations Guide: Disaster Recovery](./05-Maintenance-Guide.md#4-disaster-recovery)** for the definitive rollback procedure.
 
 ### 8.2 Agentforce Unavailable
 
-- **Symptom:** Agentforce Service Agent fails to load or returns generic errors (common in some Dev Edition regions).
+- **Symptom:** Agentforce Service Agent fails to load or returns generic errors (common in some **Developer Edition** regions).
 - **Detection:** `<agentforce-service-agent>` LWC fails to render during manual testing.
 - **Mitigation:**
   1. Enable "Fallback Mode" in Custom Metadata.
@@ -537,12 +549,12 @@ Ensuring the system fails gracefully during outage events.
 | :---------------------------- | :-------------------------------------------------------- | :----------------------------------------------------------- | :--------------------------------- |
 | **GitHub API Rate Limit**     | HTTP 429 response                                         | Display cached commits with "Last Updated: 15m ago" badge    | Scheduler retries in 15 min        |
 | **G6 Library 404**            | `loadScript()` Promise rejection                          | Render static SVG immediately                                | Log error + email admin            |
-| **Jira API Down**             | 3 consecutive 503 errors                                  | Show "Roadmap temporarily unavailable" message               | Circuit breaker opens for 30 min   |
+| **Jira API Down**             | 3 consecutive 503 errors                                  | Show "Roadmap temporarily unavailable" message               | Circuit Breaker opens for 30 min   |
 | **User-Triggered Simulation** | `Resilience_Simulation_Enabled__c = True` (Session Cache) | "Simulation Active" badge appears; API calls mock 500 errors | Reset via UI Toggle or Session End |
 
-## 9. Observability & Glass Box
+## 9. Observability & Glass Box Telemetry
 
-The system exposes real-time telemetry to the user via the c-system-health-footer component to demonstrate "Glass Box" architecture.
+The system exposes real-time telemetry to the user via the `c-system-health-footer` component to demonstrate "Glass Box Telemetry" architecture.
 
 - **Heap/CPU:** Visualized vs. Governor Limits.
 - **AI Provider Health:** Current active provider and estimated latency.
@@ -648,7 +660,7 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Base URL:** `https://api.portfolio.ryanbumstead.com/papi/v1`
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 
 **Layer Classification:** Process API (MuleSoft API-led connectivity pattern)
 
@@ -661,13 +673,13 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Core Endpoints:**
 
-| Endpoint             | Purpose                         | Upstream SAPI Calls                                                                                         | Benefit                                                  |
-| :------------------- | :------------------------------ | :---------------------------------------------------------------------------------------------------------- | :------------------------------------------------------- |
-| `/profile/full`      | Complete portfolio hydration    | 10+ (Config, Contact, Experience, Projects, Skills, Certifications, Education, Testimonials, all Junctions) | **Single Request** loads entire app state                |
-| `/profile/summary`   | Employment profile only         | 5 (Contact, Experience, Skills, Certifications, Education)                                                  | Lightweight profile for resume generation                |
-| `/resume/generate`   | ATS-optimized plain text resume | 3 (Experience, Experience Highlights filtered by persona, Skills)                                           | Server-side text formatting eliminates client complexity |
-| `/projects/featured` | Enriched project showcase       | 3 (Projects, Project Assets, Project Skills)                                                                | Pre-joined data structure eliminates N+1 query problem   |
-| `/testimonials/feed` | Curated social proof            | 1 (Testimonials with Vibe Mode filter)                                                                      | Server-side filtering ensures brand consistency          |
+| Endpoint             | Purpose                         | Upstream SAPI Calls                                               | Benefit                                                  |
+| :------------------- | :------------------------------ | :---------------------------------------------------------------- | :------------------------------------------------------- |
+| `/profile/full`      | Complete portfolio hydration    | 10+ endpoints (Config, Skills, Tests, etc.)                       | **Single Request** loads entire app state                |
+| `/profile/summary`   | Employment profile only         | 5 (Contact, Experience, Skills, Certifications, Education)        | Lightweight profile for resume generation                |
+| `/resume/generate`   | ATS-optimized plain text resume | 3 (Experience, Experience Highlights filtered by persona, Skills) | Server-side text formatting eliminates client complexity |
+| `/projects/featured` | Enriched project showcase       | 3 (Projects, Project Assets, Project Skills)                      | Pre-joined data structure eliminates N+1 query problem   |
+| `/testimonials/feed` | Curated social proof            | 1 (Testimonials with Vibe Mode filter)                            | Server-side filtering ensures brand consistency          |
 
 **Transformation Examples:**
 
@@ -918,11 +930,13 @@ To support high-volume queries during traffic spikes (e.g., LinkedIn post viral 
 - **Non-Indexed Fields:** `Testimonial__c.Context__c` (Text, rarely filtered).
 - **Why Skip:** Only queried via `Approved__c = true` (already indexed via checkbox).
 
+### Appendix E: Environment Strategy
+
+- **Strategy:** Refer to **[Maintenance & Operations Guide: Environment Hygiene](./05-Maintenance-Guide.md#2-environment-hygiene-the-clean-sweep)** for the comprehensive environment strategy, including org separation and authorized code rules.
+
 ### Appendix F: Testing Strategy
 
-- **F.1 Apex Unit Testing:** 90% coverage for critical paths. Use Test.setMock. SeeAllData=false. Negative testing for Rate Limits.
-- **F.2 LWC Testing:** Jest. Verify fetch headers, PDF generation logic, and form validation.
-- **F.3 Integration & Security:** Static Analysis (PMD) on PR. Smoke Testing post-deployment.
+- **Strategy:** Refer to **[06 - Quality Gates & DevOps Discipline](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the comprehensive testing strategy (Unit, LWC, Integration).
 
 ### Appendix G: Accessibility Strategy (A11y)
 
@@ -949,34 +963,9 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 - `/packages/demos/employer-hub`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on building a centralized hub for employers.
 - `/packages/demos/nonprofit-literacy`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on the implementation of nonprofit success pack and the program management module including business analysis on several products including Salesforce Education Cloud.
 
-### Appendix J: Cloud FinOps Strategy (Phase 8 — Q2 2026)
+### Appendix J: Cloud FinOps Strategy (Phase 8 - Q2 2026)
 
-To demonstrate Cloud Financial Management (FinOps) awareness, this architecture strictly adheres to Free Tier limits.
-
-**J.1 The "Always Free" Safety Net (Safe Forever)**
-
-- **AWS Lambda:** 1 million requests/month forever.
-- **Amazon CloudFront:** 1 TB data transfer/month forever.
-- **Amazon DynamoDB:** 25GB storage forever.
-
-**J.2 Deliberately Not Used**
-
-- AWS API Gateway — avoided entirely (would expire after 12 months)
-  - replaced with Lambda Function URL to preserve $0.00 forever claim in perpetuity
-
-**J.3 The Cost Traps & Mitigation**
-
-- **The Route 53 Trap:** Do not migrate Nameservers to AWS. Use external DNS.
-- **The NAT Gateway Trap:** Run Lambda in "No VPC" mode.
-
-**J.4 Gemini API Cost Governance**
-
-- **Free Tier Limits: 15 requests/min | 1,500 requests/day.**
-- **Tracking Mechanism: Usage count stored in Platform Cache (local.AIMetrics) to minimize DML limits.**
-- **Circuit Breaker Policy: If daily quota > 1,200 (80%):**
-  1. **Force GeminiCircuitBreaker to OPEN for 3600s.**
-  2. **Route traffic to LocalTemplateService.**
-  3. **Trigger Alert to `Owner_Email__c`.**
+- **FinOps Strategy:** Refer to **[06 - AWS FinOps & Serverless Guardrails](./06-Guardrails-and-Executable-Governance.md#3-aws-finops--serverless-guardrails-phase-8)** for the detailed cost governance model ($0.00 Forever architecture).
 
 ### Appendix K: Validation Rules & Logic
 
@@ -996,11 +985,11 @@ To demonstrate Cloud Financial Management (FinOps) awareness, this architecture 
 - Mule Flow XML: `/mulesoft/src/main/mule/*.xml`
 - DataWeave Queries: `/mulesoft/src/main/resources/queries/*.dwl`
 
-### Appendix M: Cross-Cutting Pattern — Dual-Door Integration Strategy
+### Appendix M: Cross-Cutting Pattern - Dual-Door Integration Strategy
 
 | Feature               | Door 1 — Native Salesforce GraphQL (lightning/uiGraphQLApi) | Door 2 — AWS Lambda Polyglot BFF (Function URL)         |
 | :-------------------- | :---------------------------------------------------------- | :------------------------------------------------------ |
-| **Timeline**          | MVP — Q1 2026 (planned)                                     | Phase 8 — Q2 2026 (design complete)                     |
+| **Timeline**          | MVP – Q1 2026 (planned)                                     | Phase 8 – Q2 2026 (design complete)                     |
 | **Primary Consumers** | All internal LWC components (Skill Graph, Roadmap)          | API Lab "Enterprise Mode", future mobile apps           |
 | **Technology**        | lightning/uiGraphQLApi wire adapter                         | Single Lambda Function URL + in-function governance     |
 | **Latency**           | Lowest possible (LDS + UI cache)                            | Single external round-trip                              |
@@ -1008,4 +997,4 @@ To demonstrate Cloud Financial Management (FinOps) awareness, this architecture 
 | **Governance**        | Platform-managed                                            | Full enterprise policies (keys, rate limits, analytics) |
 | **Payload Reduction** | Platform-optimized                                          | 85—92% reduction vs parallel REST calls                 |
 | **Cost**              | $0                                                          | $0.00 forever (no API Gateway, no VPC)                  |
-| **Current Status**    | Planned for MVP launch                                      | Fully architected & documented — activation in Phase 8  |
+| **Current Status**    | Planned for MVP launch                                      | Fully architected & documented – activation in Phase 8  |

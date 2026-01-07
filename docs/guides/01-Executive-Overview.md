@@ -2,13 +2,12 @@
 
 **Table of Contents**
 
-- [Strategic Intent](#strategic-intent)
-- [Business Value: Why Build This Complexity?](#business-value-why-build-this-complexity)
-- [Success Criteria (Definition of Done)](#success-criteria-definition-of-done)
-  - [1. Portfolio Impact](#1-portfolio-impact)
-  - [2. Functional Acceptance – MVP (Live at Q1 2026 Launch)](#2-functional-acceptance--mvp-live-at-q1-2026-launch)
-  - [3. Target State Acceptance – Phase 8 (Q2 2026)](#3-target-state-acceptance--phase-8-q2-2026)
-  - [4. Technical Acceptance (Required for MVP)](#4-technical-acceptance-required-for-mvp)
+- [1. Strategic Summary (Read This First)](#1-strategic-summary-read-this-first)
+- [2. Strategic Intent](#2-strategic-intent)
+- [3. Business Value: Why Build This Complexity?](#3-business-value-why-build-this-complexity)
+  - [3.1 The "5-Minute Tour" User Journey](#31-the-5-minute-tour-user-journey)
+- [4. Terminology & Acronyms](#4-terminology--acronyms)
+- [5. Success Criteria (Definition of Done)](#5-success-criteria-definition-of-done)
 
 ---
 
@@ -18,51 +17,70 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Date: MVP — Q1 2026
+Date: MVP – Q1 2026
 
-## Strategic Intent
+## 1. Strategic Summary (Read This First)
 
-This Program Charter defines the strategic intent and delivery plan for the Salesforce Platform Architect Portfolio. It serves as the authoritative reference for project scope, business value, and timeline.
+**The Problem:** Enterprise Salesforce implementations often fail due to three silent killers: uncontrolled costs (FinOps), slow performance (LCP > 4s), and fragile security (Guest User leaks).
 
-## Business Value: Why Build This Complexity?
+**The Solution:** This portfolio demonstrates a **Zero-Cost, High-Scale Architecture**. It proves you can build an enterprise-grade, secure, and observable system entirely within the constraints of the Salesforce Free Tier.
+
+**Why It Matters:**
+
+- **For CTOs:** It proves we can respect budget constraints without sacrificing capability.
+- **For Architects:** It demonstrates "Glass Box Telemetry" — showing exactly how the system behaves under load.
+- **For Recruiters:** It is a living proof-of-work that loads in < 2.5 seconds.
+
+If you only inspect one thing, look at the **[Systems Architecture Specification (SAS)](./03-SAS.md)** to see the "North Star" diagram.
+
+## 2. Strategic Intent
+
+This Executive Overview defines the strategic intent and delivery plan for the Salesforce Platform Architect Portfolio. It serves as the authoritative entry point for project scope, business value, and timeline.
+
+## 3. Business Value: Why Build This Complexity?
 
 The primary problem this portfolio solves is that Recruiters and Hiring Managers struggle to verify an architect's hands-on skills through static PDFs.
 
 - **The Need:** A verified, interactive demonstration of complex capabilities like API design, LWC, and AI.
 - **The Value:** This system intentionally mirrors a real enterprise architecture so evaluators can see architecture quality, integration patterns, DevOps discipline, and multi-cloud strategy — all within a controlled, demonstrable environment. It proves that "Enterprise Grade" is a mindset, not just a license tier.
 
-## Success Criteria (Definition of Done)
+### 3.1 The "5-Minute Tour" User Journey
 
-To define the "Definition of Done" for this portfolio, the following metrics must be met:
+How a recruiter or architect experiences this portfolio:
 
-### 1. Portfolio Impact
+```mermaid
+sequenceDiagram
+    %%{init: {'theme': 'base', 'themeVariables': { 'mainBkg': '#ffffff'}}}%%
+    participant R as Recruiter
+    participant H as Hero Banner
+    participant G as Skill Graph
+    participant C as Code Viewer
+    participant T as Trust
 
-- [ ] LinkedIn post regarding launch generates > 100 views
-- [ ] Interview requests received from 3+ companies within 30 days of launch
+    R->>H: Lands on Portfolio
+    H-->>R: "5-Minute Tour" Guide
+    R->>G: Explores Skills (Graph)
+    G-->>R: Visualization of Expertise
+    R->>C: Clicks "View Source"
+    C-->>R: Live GitHub Code (Proof)
+    Note over R,T: "This isn't just a PDF."
+    R->>T: High Confidence Signal
+```
 
-### 2. Functional Acceptance — MVP (Live at Q1 2026 Launch)
+## 4. Terminology & Acronyms
 
-- [ ] All 5 pillars accessible via guided navigation
-- [ ] API tester successfully calls ≥ 3 native endpoints (REST + Salesforce GraphQL)
-- [ ] Skill Graph, Roadmap Viewer, and Project Gallery load via lightning/uiGraphQLApi wire adapter
-- [ ] Resume generates in both ATS (Plain Text) and Creative (PDF) modes
-- [ ] Dynamic ERD renders all 5 core Custom Objects without hardcoding
-- [ ] "Smart Docs" component receives test Platform Event and updates UI without refresh
-- [ ] Mobile responsive layout passes manual verification on iOS Safari and Android Chrome
+To clarify Salesforce-specific terms used throughout this portfolio:
 
-### 3. Target State Acceptance — Phase 8 (Q2 2026) — _Not in MVP_
+| Term                  | Definition                                                                                                       |
+| :-------------------- | :--------------------------------------------------------------------------------------------------------------- |
+| **LWR**               | **Lightning Web Runtime**. A high-performance, standards-based framework for building fast Salesforce sites.     |
+| **SAPI**              | **System API**. The interface that directly touches the database/backend (Salesforce Core).                      |
+| **PAPI**              | **Process API**. The integration layer that orchestrates logic across systems (e.g., Calling SAPI + Agentforce). |
+| **FORM_FACTOR**       | A Salesforce constant that automatically detects the user's device type (Large, Medium, Small).                  |
+| **Developer Edition** | The free, zero-cost Salesforce environment used to host this portfolio.                                          |
 
-_Note: These criteria are designed today for Q2 2026 implementation to demonstrate architectural forward-planning._
+## 5. Success Criteria (Definition of Done)
 
-- [ ] API Lab toggle switches to "Enterprise Mode" (AWS Lambda Function URL)
-- [ ] Live payload counter shows ≥ 85% reduction vs native mode
-- [ ] Glass Box footer shows real-time API key usage, rate-limit counters, and "$0.00 forever"
-- [ ] Resume Engine runs serverless on Lambda (perfect PDF fidelity)
+This project adheres to strict functional and technical acceptance criteria, including Performance (LCP < 2.5s) and Code Quality (Apex Coverage > 90%).
 
-### 4. Technical Acceptance (Required for MVP)
-
-- [ ] LCP < 2.5s measured via Lighthouse Mobile Audit
-- [ ] All Apex tests > 75% coverage (Target: 90% for critical paths)
-- [ ] CI/CD pipeline passing (Green build badge on Repo)
-- [ ] Zero critical security warnings from PMD Scanner
-- [ ] Network Tab screenshot confirms G6 lazy-load occurs >2s after LCP
+For the authoritative definition of all success metrics, quality gates, and "Definition of Done", please refer to the **[Program Charter: Success Criteria](./02-Program-Charter.md#22-success-criteria-definition-of-done)**.

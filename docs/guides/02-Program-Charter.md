@@ -15,9 +15,9 @@
   - [3.3 Detailed Phasing](#33-detailed-phasing)
 - [4. Implementation Checklist (Execution Plan)](#4-implementation-checklist-execution-plan)
 - [5. Product Strategy & User Stories](#5-product-strategy--user-stories)
-  - [E.1 Outcome-Driven Product Framework](#e1-outcome-driven-product-framework)
-  - [E.2 Epic Breakdown Example: Resume Builder](#e2-epic-breakdown-example-resume-builder)
-  - [E.3 Core User Stories](#e3-core-user-stories)
+  - [5.1 Outcome-Driven Product Framework](#51-outcome-driven-product-framework)
+  - [5.2 Epic Breakdown Example: Resume Builder](#52-epic-breakdown-example-resume-builder)
+  - [5.3 Core User Stories](#53-core-user-stories)
 
 ---
 
@@ -27,7 +27,7 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Date: MVP — Q1 2026
+Date: MVP – Q1 2026
 
 Est. Total Effort: ~70 Hours (MVP Core in ~47 Hours)
 
@@ -44,7 +44,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Glass Box Telemetry:** Real-time visibility into Governor Limits (Heap, CPU) and API quotas, proving FinOps and multi-tenant awareness.
 - **Dynamic Architecture:** A live Entity Relationship Diagram (ERD) generated from the actual production schema, not a static image.
 - **Executable Governance:** Documentation that self-verifies against runtime state (e.g., "Pipeline Green" checks verify themselves).
-- **Resilience Simulation:** On-demand testing of fallback patterns and circuit breakers (e.g., severing GitHub integration to test graceful degradation).
+- **Resilience Simulation:** On-demand testing of fallback patterns and Circuit Breakers (e.g., severing GitHub integration to test graceful degradation).
 
 ### 1.3 Current vs. Target Architecture Scope
 
@@ -54,7 +54,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - Skill Graph, Roadmap, and Project Gallery all use native wire adapter for sub-250 ms LCP
 - No external dependencies required
 
-#### Target Enterprise State — Phase 8 (Q2 2026) — _Design Complete / Implementation Deferred_
+#### Target Enterprise State – Phase 8 (Q2 2026) – _Design Complete / Implementation Deferred_
 
 - AWS Lambda Polyglot Gateway (Function URL) "Door 2" fully designed (see SAS 1.1 & 5.3).
 - Implementation deferred to guarantee on-time MVP launch
@@ -76,7 +76,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and Automated PR Commenting.
 - **External API Integration (GitHub):** Live feed of portfolio repository commits displayed on the site.
 - **External API Integration (Jira):** Live fetch of portfolio roadmap Epics and Stories.
-- **Multi-Cloud Integration patterns using AWS Free Tier (Lambda Function URL, S3, CloudFront) — Phase 8 (Q2 2026) — design complete**
+- **Multi-Cloud Integration patterns using AWS Free Tier (Lambda Function URL, S3, CloudFront) – Phase 8 (Q2 2026) – design complete**
 - **Advanced Visualization:** Dynamic Skill Graph using AntV G6 with custom flow animation.
 - **Dynamic ERD Visualizer:** A live-rendered Entity Relationship Diagram utilizing the Schema class and AntV G6 to visualize the actual Org metadata, replacing static architecture diagrams.
 - **Executable Governance:** LWC-based documentation that subscribes to Platform Events to automatically verify its own success criteria (e.g., verifying a "Green Build" checkbox in real-time).
@@ -107,9 +107,15 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - Mobile responsive layout passes manual verification on iOS Safari and Android Chrome.
 
 **Technical Acceptance:**
+| Metric | Current Baseline (Est.) | Target (Hard Gate) |
+| :--- | :--- | :--- |
+| **LCP (Mobile)** | ~3.5s (Standard LWR) | **< 2.5s** |
+| **Apex Coverage** | 78% (Avg Project) | **> 90%** |
+| **Code Scanning** | N/A | **0 Critical Violations** |
+| **Accessibility** | 85 (Avg Theme) | **100** |
 
 - LCP < 2.5s measured via Lighthouse Mobile Audit.
-- All Apex tests > 75% coverage (Target: 90% for critical paths).
+- All Apex tests > 90% coverage (Hard Governance Gate).
 - CI/CD pipeline passing (Green build badge on Repo).
 - Zero critical security warnings from PMD Scanner.
 - Network Tab screenshot confirms G6 lazy-load occurs >2s after LCP.
@@ -126,10 +132,10 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 
 **Conversion:**
 
-- > 20% of visitors interact with "API Tester" or "Resume Builder" (verified via Custom Events).
-  - api_test_executed: User successfully calls an endpoint in the API Tester.
-  - resume_download_pdf: User exports a resume in Creative Mode.
-  - resilience_test_triggered: User toggles the "Resilience Simulation" switch.
+- Greater than 20% of visitors interact with "API Tester" or "Resume Builder" (verified via Custom Events).
+  - **api_test_executed:** User successfully calls an endpoint in the API Tester.
+  - **resume_download_pdf:** User exports a resume in Creative Mode.
+  - **resilience_test_triggered:** User toggles the "Resilience Simulation" switch.
 
 **Reach:**
 
@@ -160,70 +166,76 @@ The delivery is organized into four parallel execution tracks:
 
 **Phase 1: Core Foundation (Completed)**
 
-- Org Setup (DevHub, DX Project).
-- GitHub Repo Init (Branch Protection Rules).
-- CI/CD Pipeline V1 (Validation Only).
+- **Org Setup:** (DevHub, DX Project).
+- **GitHub Repo Init:** (Branch Protection Rules).
+- **CI/CD Pipeline V1:** (Validation Only).
 
 **Phase 2: Data & API Layer (In Progress)**
 
-- Schema Deployment. (Completed)
-- Apex REST Services (SAPI_Project, SAPI_Experience).
-- Data Loading (Seed Data).
+- **Schema Deployment:** (Completed)
+- **Apex REST Services:** (`SAPI_Project`, `SAPI_Experience`).
+- **Data Loading:** (Seed Data).
 
 **Phase 3: UI Framework (Pending)**
 
-- Theme Layout Component.
-- Hero Banner (Dynamic).
-- Navigation Service.
+- **Theme Layout:** Component.
+- **Hero Banner:** (Dynamic).
+- **Navigation Service.**
 
 **Phase 4: Integrations**
 
-- Jira Connect (Named Credential).
-- GitHub Connect (Cache Strategy).
+- **Jira Connect:** (Named Credential).
+- **GitHub Connect:** (Cache Strategy).
 
 **Phase 5: Intelligence**
 
-- Data360 Setup
-- Data360 Data Integration (CRM Connector → `Project__c`, `Experience__c`)
-- Agentforce Grounding on Data360 Data Model Objects (DMOs)
-- Prompt Engineering & Mirror Mode configuration
-- Triple-fallback AI generation service (Agentforce → Gemini Flash → Local Template)
+- **Data360 Setup.**
+- **Data360 Data Integration:** (CRM Connector → `Project__c`, `Experience__c`)
+- **Agentforce Grounding:** on Data360 Data Model Objects (DMOs)
+- **Prompt Engineering:** & Mirror Mode configuration
+- **AI Generation Service:** Triple-fallback (Agentforce → Gemini Flash → Local Template)
 
 **Phase 6: Observability & Launch**
 
-- **System Health "Glass Box":** Develop c-system-health-footer with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
+- **System Health "Glass Box Telemetry":** Develop `c-system-health-footer` with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
 - **Enterprise Logging:** Install and configure Nebula Logger (Unlocked Package); configure storage guardrails (2-day retention).
-- **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test circuit breakers and cached data fallbacks.
+- **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test Circuit Breakers and cached data fallbacks.
 - **Analytics Instrumentation:** Deploy Google Analytics 4 (GA4) with custom events for API tests and resume downloads.
-- **API Mode Indicator:** Glass Box footer displays "GraphQL Mode: Native (Live)" — prepares UI for Phase 8 toggle.
+- **API Mode Indicator:** Glass Box Telemetry footer displays "GraphQL Mode: Native (Live)" – prepares UI for Phase 8 toggle.
 - **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration.
 
 **Phase 7: Observability & Governance (Post-Launch)**
 
-- **System Health Dashboard:** "Glass Box" footer.
-- **Smart Documentation:** Implement c-smart-checklist using lightning/empApi to listen for Deployment_Event\_\_e and auto-complete governance checklists.
+- **System Health Dashboard:** "Glass Box Telemetry" footer.
+- **Smart Documentation:** Implement `c-smart-checklist` using lightning/empApi to listen for Deployment_Event\_\_e and auto-complete governance checklists.
 
-**Phase 8: Multi-Cloud & FinOps — Hybrid GraphQL Strategy (Q2 2026)**
+**Phase 8: Multi-Cloud & FinOps – Hybrid GraphQL Strategy (Q2 2026)**
+
+| Phase       | Status                         | Rationale                                                               |
+| :---------- | :----------------------------- | :---------------------------------------------------------------------- |
+| **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
+| **MVP**     | **Live**                       | Focus on sub-2.5s LCP and Zero Cost constraint.                         |
+
 _Design artifacts complete; implementation begins post-launch._
 
-- Native GraphQL Verification
-  - Confirm Skill Graph, Roadmap, and Project Gallery all use lightning/uiGraphQLApi (already live in MVP)
-- AWS Lambda Polyglot Gateway (Function URL) — "Door 2"
+- **Native GraphQL Verification:**
+  - Confirm `c-skill-network`, `c-roadmap-viewer`, and Project Gallery all use `lightning/uiGraphQLApi`
+- **AWS Lambda Polyglot Gateway:** (Function URL) – "Door 2" – **Designed, not yet implemented** (launching Q2 2026)
   - Deploy single HTTPS Function URL endpoint (no API Gateway)
   - Support both REST → GraphQL translation and direct GraphQL
-  - In-function governance: x-api-key validation, tiered rate limiting, CloudWatch metrics
-- **Static Asset Offloading (S3 + CloudFront):**
+  - In-function governance: `x-api-key` validation, tiered rate limiting, CloudWatch metrics
+- **Static Asset Offloading:** (S3 + CloudFront)
   - Migrate heavy media assets (images, videos) from Salesforce Static Resources.
-- Resume Engine Migration
-  - Move PDF generation from client-side jsPDF to serverless Node.js Lambda (perfect fidelity)
-- **FinOps & Cost Governance ($0.00 forever):**
+- **Resume Engine Migration:**
+  - Move PDF generation from client-side `jsPDF` to serverless Node.js Lambda (perfect fidelity)
+- **FinOps & Cost Governance:** ($0.00 forever)
   - Use only Always Free services
   - Deliberately avoid API Gateway and VPC to eliminate all cost traps
   - CloudWatch billing alarm at $0.01
-- **API Lab Upgrade**
+- **API Lab Upgrade:**
   - Enable "Enterprise Mode" toggle
   - Live payload comparison (Native vs Lambda)
-  - Real-time rate-limit counters in Glass Box footer
+  - Real-time rate-limit counters in `c-system-health-footer`
 
 **Phase 9: Edge AI Proxy (Cloudflare Workers)**
 
@@ -234,24 +246,24 @@ _Design artifacts complete; implementation begins post-launch._
 - **A.1:** Configure Connected App (JWT) & GitHub Secrets.
 - **D.1:** Deploy `Project__c` Object.
 - **D.2:** Deploy `Testimonial__c` Object.
-- **E.1:** Write ProjectControllerTest (Target: 90% coverage).
+- **E.1:** Write ProjectControllerTest (90% Hard Gate).
 - **A.7:** Generate C4 Level 1 diagram in IcePanel & Upload as Static Resource.
 - **1.3:** Verify Technical Acceptance Criteria (CI/CD Green, LCP Baseline).
 
 **Phase 2: Delivery**
 
-- Create free Atlassian Jira account and generate API Token.
+- **Config:** Create free Atlassian Jira account and generate API Token.
 - **A.8:** Configure Named Credential Jira_API in Salesforce.
-- Develop c-roadmap-viewer LWC + JiraService.cls.
+- **Dev:** Develop `c-roadmap-viewer` LWC + `JiraService.cls`.
 - **D.3 / D.4:** Deploy `Experience__c` parent and `Experience_Highlight__c` child objects.
-- Develop c-resume-builder LWC with persona-based Apex filtering logic.
+- **Dev:** Develop `c-resume-builder` LWC with persona-based Apex filtering logic.
 
 **Phase 3: Integration**
 
-- Implement SAPI_Experience Apex Class (System API).
-- **Appx C:** Configure MuleSoft Governance Policies (Reference Implementation).
-- Upload Redoc documentation as Static Resource.
-- Develop c-api-tester LWC with fetch() harness.
+- **Dev:** Implement `SAPI_Experience` Apex Class (System API).
+- **Appendix C:** Configure MuleSoft Governance Policies (Reference Implementation).
+- **Docs:** Upload Redoc documentation as Static Resource.
+- **Dev:** Develop `c-api-tester` LWC with fetch() harness.
 - **A.4:** Implement GitHub Live Feed, Custom Setting Cache, and Scheduler.
 
 **Phase 4: Innovation**
@@ -259,33 +271,33 @@ _Design artifacts complete; implementation begins post-launch._
 - **A.6:** Configure Agentforce Service Agent & Topic Grounding.
 - **Security:** Enable "Lightning Web Security" in Session Settings.
 - **Asset:** Download g6.min.js (v4.x/v5.x) and upload as G6_Library (Public Cache).
-- **Dev:** Implement c-skill-network LWC using G6 graph.update loop for edge animation.
+- **Dev:** Implement `c-skill-network` LWC using G6 graph.update loop for edge animation.
 - **Optimization:** Implement G6 lazy-loading (Network Tab proof).
 - **Optimization:** Build "Static SVG" fallback for mobile LCP compliance.
   - **Asset:** Export static SVG from G6 during local build (graph.toFullDataURL()).
   - **Upload:** Store SVG as Static Resource "Skill_Graph_Fallback".
-  - **Logic:** c-skill-network detects mobile and renders `<img src={staticResourceUrl}>`.
+  - **Logic:** `c-skill-network` detects mobile and renders `<img src={staticResourceUrl}>`.
 - **A11y:** Add "Pause Animation" toggle button.
 - Conduct Mobile QA on iOS and Android devices.
 
 **Phase 5: Optimization**
 
-- Implement LogService.cls (Email Offloading).
-- Implement "Vibe-Gate" logic on c-testimonial-submit.
-- Generate C4 Level 2 & 3 Diagrams in IcePanel.
+- **Dev:** Implement `LogService.cls` (Email Offloading).
+- **Dev:** Implement "Vibe-Gate" logic on `c-testimonial-submit`.
+- **Docs:** Generate C4 Level 2 & 3 Diagrams in IcePanel.
 
 **Phase 6: Observability & Launch**
 
-- [ ] **Dev:** Install Nebula Logger (Unlocked Pkg) & configure `LoggerSettings__c`.
-- **Dev:** Build c-system-health-footer LWC (Glass Box) using requestIdleCallback.
-- **Dev:** Implement AnalyticsService.js for unified GA4 event tracking.
+- **Dev:** Install Nebula Logger (Unlocked Pkg) & configure `LoggerSettings__c`.
+- **Dev:** Build `c-system-health-footer` LWC (Glass Box Telemetry) using requestIdleCallback.
+- **Dev:** Implement `AnalyticsService.js` for unified GA4 event tracking.
 - **Config:** Add "Resilience Simulation" toggle and resilience logic to `GitHubService.cls`.
-- **QA:** Verify "Glass Box" matches actual Developer Console limits.
+- **QA:** Verify "Glass Box Telemetry" matches actual Developer Console limits.
 - **QA:** Verify GA4 Real-Time view receives api_test_executed events.
 
 ## 5. Product Strategy & User Stories
 
-### E.1 Outcome-Driven Product Framework
+### 5.1 Outcome-Driven Product Framework
 
 Before user stories are written, features are evaluated against a "Problem Statement Framework" to ensure they deliver architectural value.
 
@@ -293,7 +305,7 @@ Before user stories are written, features are evaluated against a "Problem State
 - **The Need:** A verified, interactive demonstration of complex capabilities (API, LWC, AI).
 - **The Value:** Reduces "Time-to-Trust" for the evaluator; differentiates the candidate from paper-qualified applicants.
 
-### E.2 Epic Breakdown Example: Resume Builder
+### 5.2 Epic Breakdown Example: Resume Builder
 
 - **Epic:** Dynamic Resume Generation.
 - **Value Driver:** Demonstrates ability to manipulate complex data hierarchies and render client-side.
@@ -302,7 +314,7 @@ Before user stories are written, features are evaluated against a "Problem State
   - Filters by "Admin" vs "Architect" persona.
   - Exports to clean PDF.
 
-### E.3 Core User Stories
+### 5.3 Core User Stories
 
 | ID          | Persona               | I Want To...                     | So That...                                                     |
 | :---------- | :-------------------- | :------------------------------- | :------------------------------------------------------------- |

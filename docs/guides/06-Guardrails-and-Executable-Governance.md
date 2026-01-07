@@ -7,7 +7,8 @@
 - [3. AWS FinOps & Serverless Guardrails (Phase 8)](#3-aws-finops--serverless-guardrails-phase-8)
 - [4. Quality Gates & DevOps Discipline](#4-quality-gates--devops-discipline)
 - [5. Request Lifecycle & Governance Gates](#5-request-lifecycle--governance-gates)
-- [6. Business Impact of Executable Governance](#6-business-impact-of-executable-governance)
+- [6. The Three-Gate Approval Process](#6-the-three-gate-approval-process)
+- [7. Business Impact of Executable Governance](#7-business-impact-of-executable-governance)
 
 ---
 
@@ -17,7 +18,7 @@ Owner: Ryan Bumstead
 
 Version: 1.0
 
-Date: MVP — Q1 2026
+Date: MVP – Q1 2026
 
 This document outlines the governance framework and constraint-based design principles that enable the portfolio to operate within zero-budget constraints while maintaining enterprise-grade quality, security, and performance standards.
 
@@ -33,17 +34,23 @@ This portfolio is built on a "Zero-Dollar Budget" requirement. This is not a lim
 
 We treat these limits as a blueprint for building high-performance systems.
 
-| Salesforce Constraint                | What It Means                                                                                                                                    | Enterprise Pattern Applied                   | Portfolio Implementation                                                                                                                      |
-| :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| **100 SOQL Queries per transaction** | SOQL (Salesforce Object Query Language) is like SQL for databases. You get 100 database queries per page load. Exceed this and your app crashes. | **Bulkification** (batch processing)         | All `SAPI_*` classes use map-based caching to ensure exactly 1 query per request, no matter how many records are processed.                   |
-| **10 second CPU timeout**            | Your code gets 10 seconds of processing time. After that, Salesforce kills it to protect other customers.                                        | **Async Strategy** (offload work)            | Heavy operations (like Resume PDF generation) are offloaded to AWS Lambda (Phase 8) so Salesforce only handles lightweight coordination.      |
-| **6MB Heap Size**                    | Your code can only use 6MB of memory per transaction. For context, a single high-res image is ~5MB.                                              | **Lazy Loading** (load only when needed)     | The AntV G6 visualization library (700KB) is split into chunks and loaded only when users scroll to the Skill Graph section.                  |
-| **Guest User Security**              | Anonymous visitors have restricted permissions by default. They can't see sensitive data without explicit grants.                                | **Zero Trust** (deny by default)             | Restricted strictly to custom objects via Sharing and Restriction Rules. No access to standard Salesforce objects (Accounts, Contacts, etc.). |
-| **Real-time Telemetry**              | Salesforce provides APIs to check how close you are to hitting limits.                                                                           | **Glass Box Observability** (show your work) | Governor limits (SOQL count, heap usage, CPU time) displayed in site footer so visitors can see the system is healthy.                        |
+| Salesforce Constraint                | What It Means                                                                                                                                    | Enterprise Pattern Applied               | Portfolio Implementation                                                                                                                      |
+| :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
+| **100 SOQL Queries per transaction** | SOQL (Salesforce Object Query Language) is like SQL for databases. You get 100 database queries per page load. Exceed this and your app crashes. | **Bulkification** (batch processing)     | All `SAPI_*` classes use map-based caching to ensure exactly 1 query per request, no matter how many records are processed.                   |
+| **10 second CPU timeout**            | Your code gets 10 seconds of processing time. After that, Salesforce kills it to protect other customers.                                        | **Async Strategy** (offload work)        | Heavy operations (like Resume PDF generation) are offloaded to AWS Lambda (Phase 8) so Salesforce only handles lightweight coordination.      |
+| **6MB Heap Size**                    | Your code can only use 6MB of memory per transaction. For context, a single high-res image is ~5MB.                                              | **Lazy Loading** (load only when needed) | The AntV G6 visualization library (700KB) is split into chunks and loaded only when users scroll to the Skill Graph section.                  |
+| **Guest User Security**              | Anonymous visitors have restricted permissions by default. They can't see sensitive data without explicit grants.                                | **Zero Trust** (deny by default)         | Restricted strictly to custom objects via Sharing and Restriction Rules. No access to standard Salesforce objects (Accounts, Contacts, etc.). |
+| **Real-time Telemetry**              | Salesforce provides APIs to check how close you are to hitting limits.                                                                           | **Glass Box Telemetry** (show your work) | Governor limits (SOQL count, heap usage, CPU time) displayed in site footer so visitors can see the system is healthy.                        |
 
 **Key Insight:** These aren't arbitrary restrictions — they force the same discipline required in any high-scale system (database query optimization, memory management, async processing).
 
 ## 3. AWS FinOps & Serverless Guardrails (Phase 8)
+
+| Phase       | Status                         | Rationale                                                               |
+| :---------- | :----------------------------- | :---------------------------------------------------------------------- |
+| **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
+
+> **Architectural Reference:** For the detailed system diagrams and component specifications of the Phase 8 architecture, please refer to the **[Systems Architecture Specification (SAS)](./03-SAS.md#11-architectural-north-star)**.
 
 **What is FinOps?** Financial Operations (FinOps) is the practice of making cloud costs visible and controllable. AWS charges for everything — compute time, network traffic, log storage — so architectural decisions directly impact the monthly bill.
 
@@ -73,7 +80,7 @@ To maintain a "$0.00 Forever" guarantee, the architecture avoids common "cost tr
 
 **The Problem:** Google's Gemini AI has a free tier (15 requests/minute, 1500 requests/day). Exceed this and requests fail with HTTP 429 errors.
 
-**Our Solution:** A circuit breaker in `local.AIMetrics` (Salesforce's in-memory cache) tracks usage. When 80% of the daily quota is consumed, the system automatically switches to the fallback AI model.
+**Our Solution:** A Circuit Breaker in `local.AIMetrics` (Salesforce's in-memory cache) tracks usage. When 80% of the daily quota is consumed, the system automatically switches to the fallback AI model.
 
 **Why 80%?** Leaves a 20% buffer for legitimate traffic while preventing quota exhaustion that would break the site for all visitors.
 
@@ -94,8 +101,7 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### Test Coverage (90% Required)
 
 **What it measures:** Percentage of code executed by automated tests.  
-**Industry standard:** Salesforce requires 75% for production deployments.  
-**Our standard:** 90% on all critical paths (API services, AI inference, data transformations).  
+**Our standard:** We enforce the strict coverage thresholds defined in the **[Program Charter: Success Criteria](./02-Program-Charter.md#22-success-criteria-definition-of-done)**.  
 **Why it matters:** Untested code fails in production. High coverage catches bugs before customers see them.
 
 ---
@@ -120,9 +126,8 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### Delta Deployment Strategy
 
 **What it does:** Instead of deploying all 500+ metadata files on every change, only deploy what changed.  
-**Tool:** sfdx-git-delta compares the current commit to the previous one and generates a deployment package with only modified files.  
-**Impact:** Typical deployment time drops from ~8 minutes (full deploy) to ~90 seconds (delta deploy).  
-**Why it matters:** Faster deployments mean faster iteration. Teams can deploy 5x more frequently without increasing risk.
+**Strategic Value:** Enables "Hyperspeed Iteration". Typical deployment time drops from ~8 minutes (full deploy) to ~90 seconds (delta deploy).  
+**Implementation:** For the technical configuration of `sfdx-git-delta` in the pipeline, see **[Maintenance Guide: Delta Deployment](./05-Maintenance-Guide.md#33-pipeline-strategy-delta-deployment)**.
 
 ---
 
@@ -136,8 +141,14 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 
 Every interaction passes through three distinct "Gating Layers" to ensure performance and security. This diagram shows the journey of a single user request:
 
+**Summary:** A 3-layer defense (Performance, Security, Governance) ensuring P95 latency < 400ms.
+
+<details>
+<summary>Click to view Request Lifecycle Diagram</summary>
+
 ```mermaid
 sequenceDiagram
+    %%{init: {'theme': 'base', 'themeVariables': { 'mainBkg': '#ffffff'}}}%%
     participant U as Visitor (LWR Site)
     participant B as Frontend Budget (LCP/JS)
     participant G as Security Gate (Guest Profile)
@@ -169,7 +180,7 @@ sequenceDiagram
     A->>A: Check Heap/SOQL Limits
     alt Limit Approaching
         A-->>B: Error: Deferred/Cached Result
-        Note right of B: Circuit breaker triggered
+        Note right of B: Circuit Breaker triggered
     else Healthy
         A->>D: Fetch/Commit Data
         Note right of D: ~150-300ms (API call)
@@ -181,45 +192,67 @@ sequenceDiagram
     Note over U,B: Total: 200-400ms (P95)
 ```
 
+</details>
+
 **What does P95 mean?** 95% of requests complete within 200-400ms. The slowest 5% might take longer (usually first-time visitors with cold caches).
 
 **CRUD/FLS Validation:** Salesforce checks if the Guest User profile has Create, Read, Update, Delete permissions (CRUD) and Field-Level Security (FLS) for each field being accessed. If not, request is rejected.
 
-## 6. Business Impact of Executable Governance
+## 6. The Three-Gate Approval Process
+
+Every architectural decision follows a strict three-gate approval process before implementation:
+
+### Gate 1: Technical Feasibility
+
+- Apex governor limits assessed (SOQL queries, DML rows).
+- LWC bundle size < 100KB verified.
+- Related ADR documented (e.g., ADR-011: Why G6 Lazy-Load).
+
+### Gate 2: Security & Privacy
+
+- Guest User FLS matrix updated.
+- Named Credential secrets rotated (90-day policy).
+
+### Gate 3: Definition of Ready (DoR)
+
+- User Story Acceptance Criteria defined in Jira.
+- Figma mockups approved by Product Owner.
+
+## 7. Business Impact of Executable Governance
 
 These guardrails aren't just technical controls — they translate directly to business outcomes:
 
 ### Zero Runtime Costs
 
-**Technical:** The portfolio demonstrates skills that reduce cloud spend in production environments.  
+**Technical:** The portfolio demonstrates skills that reduce cloud spend in production environments.
 **Business impact:** The same "No-VPC" and "Function URLs over API Gateway" patterns save $360+/year per service in AWS. Applied across 10 microservices, that's $3,600/year in avoided costs.
 
 ---
 
 ### Predictable Performance
 
-**Technical:** Hard limits prevent runaway processes that cause outages.  
+**Technical:** Hard limits prevent runaway processes that cause outages.
 **Business impact:** The 90% test coverage requirement has caught 14 governor limit violations before they reached production. Each prevented outage saves ~$5,000 in lost revenue and engineering time (conservative estimate).
 
 ---
 
 ### Audit-Ready Architecture
 
-**Technical:** Every request is gated and logged, enabling compliance workflows.  
+**Technical:** Every request is gated and logged, enabling compliance workflows.
 **Business impact:** Guest user restrictions via Sharing Rules provide a clear audit trail for security reviews. This reduces SOC 2 audit prep from weeks to days.
 
 ---
 
 ### Fast Iteration
 
-**Technical:** Quality gates catch issues in CI/CD, not in production.  
+**Technical:** Quality gates catch issues in CI/CD, not in production.
 **Business impact:** Delta deployments (90s vs 8min) enable 5x more deployment frequency without sacrificing quality. Teams ship features faster while maintaining stability.
 
 ---
 
 ### Knowledge Transfer
 
-**Technical:** The "Governor Rosetta Stone" table translates Salesforce-specific constraints into universal patterns.  
+**Technical:** The "Governor Rosetta Stone" table translates Salesforce-specific constraints into universal patterns.
 **Business impact:** Bulkification, async processing, and lazy loading apply to any cloud platform (AWS, Azure, GCP). These patterns reduce database costs, improve response times, and increase system resilience across all architectures.
 
 ---
