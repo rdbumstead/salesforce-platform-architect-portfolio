@@ -113,8 +113,6 @@ graph LR
 
     %% ========= CRITICAL PATH =========
     linkStyle 0,1,2 stroke:#2ECC71,stroke-width:3px;
-
-
 ```
 
 > [!TIP]
