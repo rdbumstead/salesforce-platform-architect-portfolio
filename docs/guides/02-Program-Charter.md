@@ -44,7 +44,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Glass Box Telemetry:** Real-time visibility into Governor Limits (Heap, CPU) and API quotas, proving FinOps and multi-tenant awareness.
 - **Dynamic Architecture:** A live Entity Relationship Diagram (ERD) generated from the actual production schema, not a static image.
 - **Executable Governance:** Documentation that self-verifies against runtime state (e.g., "Pipeline Green" checks verify themselves).
-- **Resilience Simulation:** On-demand testing of fallback patterns and circuit breakers (e.g., severing GitHub integration to test graceful degradation).
+- **Resilience Simulation:** On-demand testing of fallback patterns and Circuit Breakers (e.g., severing GitHub integration to test graceful degradation).
 
 ### 1.3 Current vs. Target Architecture Scope
 
@@ -199,7 +199,7 @@ The delivery is organized into four parallel execution tracks:
 
 - **System Health "Glass Box":** Develop `c-system-health-footer` with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
 - **Enterprise Logging:** Install and configure Nebula Logger (Unlocked Package); configure storage guardrails (2-day retention).
-- **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test circuit breakers and cached data fallbacks.
+- **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test Circuit Breakers and cached data fallbacks.
 - **Analytics Instrumentation:** Deploy Google Analytics 4 (GA4) with custom events for API tests and resume downloads.
 - **API Mode Indicator:** Glass Box footer displays "GraphQL Mode: Native (Live)" – prepares UI for Phase 8 toggle.
 - **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration.

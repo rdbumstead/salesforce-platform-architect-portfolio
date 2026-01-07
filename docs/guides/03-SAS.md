@@ -648,13 +648,13 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Core Endpoints:**
 
-| Endpoint             | Purpose                         | Upstream SAPI Calls                                                                                         | Benefit                                                  |
-| :------------------- | :------------------------------ | :---------------------------------------------------------------------------------------------------------- | :------------------------------------------------------- |
-| `/profile/full`      | Complete portfolio hydration    | 10+ (Config, Contact, Experience, Projects, Skills, Certifications, Education, Testimonials, all Junctions) | **Single Request** loads entire app state                |
-| `/profile/summary`   | Employment profile only         | 5 (Contact, Experience, Skills, Certifications, Education)                                                  | Lightweight profile for resume generation                |
-| `/resume/generate`   | ATS-optimized plain text resume | 3 (Experience, Experience Highlights filtered by persona, Skills)                                           | Server-side text formatting eliminates client complexity |
-| `/projects/featured` | Enriched project showcase       | 3 (Projects, Project Assets, Project Skills)                                                                | Pre-joined data structure eliminates N+1 query problem   |
-| `/testimonials/feed` | Curated social proof            | 1 (Testimonials with Vibe Mode filter)                                                                      | Server-side filtering ensures brand consistency          |
+| Endpoint             | Purpose                         | Upstream SAPI Calls                                               | Benefit                                                  |
+| :------------------- | :------------------------------ | :---------------------------------------------------------------- | :------------------------------------------------------- |
+| `/profile/full`      | Complete portfolio hydration    | 10+ endpoints (Config, Skills, Tests, etc.)                       | **Single Request** loads entire app state                |
+| `/profile/summary`   | Employment profile only         | 5 (Contact, Experience, Skills, Certifications, Education)        | Lightweight profile for resume generation                |
+| `/resume/generate`   | ATS-optimized plain text resume | 3 (Experience, Experience Highlights filtered by persona, Skills) | Server-side text formatting eliminates client complexity |
+| `/projects/featured` | Enriched project showcase       | 3 (Projects, Project Assets, Project Skills)                      | Pre-joined data structure eliminates N+1 query problem   |
+| `/testimonials/feed` | Curated social proof            | 1 (Testimonials with Vibe Mode filter)                            | Server-side filtering ensures brand consistency          |
 
 **Transformation Examples:**
 

@@ -46,7 +46,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 - **Authentication:** Basic Auth with a Named Credential.
 - **Component:** `c-roadmap-viewer` LWC calls the Apex JiraService.cls to fetch Epics/Stories via REST API.
 - **Degraded Mode:**
-  - After three consecutive 503 errors, a circuit breaker opens for 30 minutes.
+  - After three consecutive 503 errors, a Circuit Breaker opens for 30 minutes.
   - The user sees a "Roadmap temporarily unavailable" message.
 
 ### 1.3 Agentforce Integration

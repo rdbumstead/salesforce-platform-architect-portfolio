@@ -76,7 +76,7 @@ To maintain a "$0.00 Forever" guarantee, the architecture avoids common "cost tr
 
 **The Problem:** Google's Gemini AI has a free tier (15 requests/minute, 1500 requests/day). Exceed this and requests fail with HTTP 429 errors.
 
-**Our Solution:** A circuit breaker in `local.AIMetrics` (Salesforce's in-memory cache) tracks usage. When 80% of the daily quota is consumed, the system automatically switches to the fallback AI model.
+**Our Solution:** A Circuit Breaker in `local.AIMetrics` (Salesforce's in-memory cache) tracks usage. When 80% of the daily quota is consumed, the system automatically switches to the fallback AI model.
 
 **Why 80%?** Leaves a 20% buffer for legitimate traffic while preventing quota exhaustion that would break the site for all visitors.
 
