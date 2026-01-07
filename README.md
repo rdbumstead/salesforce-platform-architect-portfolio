@@ -48,7 +48,7 @@ Principal-level Salesforce Platform Architecture including:
 - 🚧 **MVP launch Q1 2026** — Interactive demonstrations and live API testing
 - 📐 **Phase 8 multi-cloud Q2 2026** — AWS Lambda BFF "Door 2" architecture activation
 
-**⚡ Quick Navigation:** [Verify Claims](#evaluate-the-architecture) • [Evidence Matrix](#evidence-matrix) • [24 ADRs](#architectural-decision-records) • [Architecture Diagram](#north-star-architecture) • [Full Docs](#full-architecture-documentation)
+**⚡ Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [26 ADRs](#architectural-decision-records) • [Architecture Diagram](#north-star-architecture) • [Full Docs](#full-architecture-documentation)
 
 ---
 
@@ -57,40 +57,36 @@ Principal-level Salesforce Platform Architecture including:
 <details>
 <summary><strong>📊 Skills-to-Artifacts Evidence Matrix</strong> (Click to expand—maps competencies to verifiable deliverables)</summary>
 
-| Core Competency                              | Demonstrated By                                 | Artifact/Evidence                                                                                                                                                                                | Verification Method                                            |
-| :------------------------------------------- | :---------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------- |
-| **API Design & Contract-First Architecture** | Twin API Pattern with OpenAPI 3.0               | [SAPI Specification](packages/integration-api/specs/salesforce-sapi.yaml) • [ADR-024](docs/guides/03-SAS.md#adr-024-twin-api-pattern--contract-first-parity)                                     | Review OpenAPI schema structure and Apex implementation parity |
-| **Enterprise DevOps & CI/CD**                | Delta deployments with quality gates            | [GitHub Actions Workflows](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) • [ADR-006](docs/guides/03-SAS.md#adr-006-jwt-bearer-flow-for-cicd)                    | Check pipeline badges and deployment history                   |
-| **Multi-Cloud Architecture**                 | AWS Lambda BFF + Salesforce LWR hybrid          | [Phase 8 Design](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8--q2-2026) • [ADR-018](docs/guides/03-SAS.md#adr-018-finops-constraint--aws-lambda-function-urls-vs-api-gateway)  | Review FinOps strategy and dual-door pattern                   |
-| **AI/ML Governance**                         | Triple-fallback inference with circuit breakers | [AI Strategy Section](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) • [ADR-015](docs/guides/03-SAS.md#adr-015-strategy-pattern-for-generative-ai)                  | Review sequence diagram and failover logic                     |
-| **Security Architecture**                    | Zero Trust with Guest User restrictions         | [Data Security Matrix](docs/guides/03-SAS.md#46-data-security-matrix) • [ADR-012](docs/guides/03-SAS.md#adr-012-guest-user-security-restriction-rules)                                           | Examine FLS configuration and API key validation               |
-| **Resilience Engineering**                   | Circuit breaker pattern with degraded mode      | [Contingency Plans](docs/guides/03-SAS.md#8-contingency--rollback-plans) • [ADR-022](docs/guides/03-SAS.md#adr-022-resilience-engineering--resilience-simulation-toggle)                         | Test resilience simulation toggle (live Q1 2026)               |
-| **Performance Optimization**                 | Mobile-first with measured LCP targets          | [NFRs Section](docs/guides/03-SAS.md#21-core-nfrs) • [ADR-020](docs/guides/03-SAS.md#adr-020-mobile-performance--static-svg-fallback-strategy)                                                   | Review Lighthouse CI results in Actions                        |
-| **Data Modeling**                            | Persona-based resume generation schema          | [ERD Diagram](docs/guides/03-SAS.md#41-logical-data-model-erd) • [Data Dictionary](docs/guides/03-SAS.md#appendix-d-data-dictionary-detailed-schema)                                             | Examine junction object strategy and filtering logic           |
-| **Cloud Financial Operations (FinOps)**      | $0.00 forever architecture                      | [FinOps Appendix](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8--q2-2026) • [ADR-018](docs/guides/03-SAS.md#adr-018-finops-constraint--aws-lambda-function-urls-vs-api-gateway) | Verify Always-Free tier governance model                       |
-| **Observability & Monitoring**               | Real-time telemetry with Glass Box pattern      | [Observability Section](docs/guides/03-SAS.md#9-observability--glass-box) • [ADR-014](docs/guides/03-SAS.md#adr-014-deferred-telemetry-loading-performance)                                      | View Glass Box footer demo (live Q1 2026)                      |
-| **Integration Patterns**                     | Server-side caching for external APIs           | [GitHub Integration](docs/guides/03-SAS.md#a4-github-api-integration) • [ADR-007](docs/guides/03-SAS.md#adr-007-github-api-server-side-caching)                                                  | Review Named Credential configuration                          |
-| **Technical Documentation**                  | Enterprise-grade architecture suite             | [6 Architecture Guides](#full-architecture-documentation) • [SAS](docs/guides/03-SAS.md)                                                                                                         | Review documentation structure and C4 model diagrams           |
+| Core Competency                 | Demonstrated By                                 | Artifact/Evidence                                                                                                                                                                  | Verification Method                                            |
+| :------------------------------ | :---------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------- |
+| **API Design & Contract-First** | Twin API Pattern with OpenAPI 3.0               | [SAPI Specification](packages/integration-api/specs/salesforce-sapi.yaml) • [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)                                      | Review OpenAPI schema structure and Apex implementation parity |
+| **Enterprise DevOps & CI/CD**   | Delta deployments with quality gates            | [GitHub Actions Workflows](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) • [ADR-006](docs/adr/006-jwt-bearer-flow-for-ci-cd.md)                   | Check pipeline badges and deployment history                   |
+| **Multi-Cloud Architecture**    | AWS Lambda BFF + Salesforce LWR hybrid          | [Phase 8 Design](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---q2-2026) • [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)  | Review FinOps strategy and dual-door pattern                   |
+| **AI/ML Governance**            | Triple-fallback inference with circuit breakers | [AI Strategy Section](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) • [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                  | Review sequence diagram and failover logic                     |
+| **Security Architecture**       | Zero Trust with Guest User restrictions         | [Data Security Matrix](docs/guides/03-SAS.md#46-data-security-matrix) • [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md)                                           | Examine FLS configuration and API key validation               |
+| **Resilience Engineering**      | Circuit breaker pattern with degraded mode      | [Contingency Plans](docs/guides/03-SAS.md#8-contingency--rollback-plans) • [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)                          | Test resilience simulation toggle (live Q1 2026)               |
+| **Performance Optimization**    | Mobile-first with measured LCP targets          | [NFRs Section](docs/guides/03-SAS.md#21-core-nfrs) • [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)                                                    | Review Lighthouse CI results in Actions                        |
+| **Data Modeling**               | Persona-based resume generation schema          | [ERD Diagram](docs/guides/03-SAS.md#41-logical-data-model-simplified-erd) • [Data Dictionary](docs/guides/03-SAS.md#appendix-d-data-dictionary-detailed-schema)                    | Examine junction object strategy and filtering logic           |
+| **Cloud FinOps**                | $0.00 forever architecture                      | [FinOps Appendix](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---q2-2026) • [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md) | Verify Always-Free tier governance model                       |
+| **Observability & Monitoring**  | Real-time telemetry with Glass Box pattern      | [Observability Section](docs/guides/03-SAS.md#9-observability--glass-box-telemetry) • [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                            | View Glass Box footer demo (live Q1 2026)                      |
+| **Integration Patterns**        | Server-side caching for external APIs           | [GitHub Integration](docs/guides/03-SAS.md#appendix-a-engineering-implementation-notes) • [ADR-007](docs/adr/007-github-api-server-side-caching.md)                                | Review Named Credential configuration                          |
+| **Technical Documentation**     | Enterprise-grade architecture suite             | [6 Architecture Guides](#full-architecture-documentation) • [SAS](docs/guides/03-SAS.md)                                                                                           | Review documentation structure and C4 model diagrams           |
 
 </details>
 
 ---
 
-### Evaluate the Architecture
-
-**⏱️ Time-constrained?** 2 minutes → verification checklist | 5 minutes → pick 3 ADRs | 10 minutes → skills matrix deep dive
-
-**Verification Checklist for Evaluators:**
+### Verification Checklist for Evaluators
 
 **✅ Available Now:**
 
-- [Architecture decisions documented with rationale](docs/guides/03-SAS.md#7-architectural-decision-records-adrs) — 26 ADRs covering performance, security, AI, FinOps
+- [Architecture decisions documented with rationale](docs/adr/) — 26 ADRs covering performance, security, AI, FinOps
 - [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) — 4 active workflows (deploy, PR validation, heartbeat, worker)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml) — Twin API pattern with SAPI + PAPI specifications
-- [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#adr-018-finops-constraint--aws-lambda-function-urls-vs-api-gateway) — $0.00 forever architecture using AWS Always-Free tier
-- [Mobile performance targets quantified](docs/guides/03-SAS.md#adr-020-mobile-performance--static-svg-fallback-strategy) — LCP < 2.5s with static SVG fallback strategy
+- [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---q2-2026) — $0.00 forever architecture using AWS Always-Free tier
+- [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs) — LCP < 2.5s with static SVG fallback strategy
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix) — Guest user FLS restrictions + API key validation + read-only endpoints
-- [AI governance with failover strategy](docs/guides/03-SAS.md#adr-015-strategy-pattern-for-generative-ai) — Triple-fallback inference stack with circuit breakers
+- [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) — Triple-fallback inference stack with circuit breakers
 
 **🚧 Available at MVP Launch (Q1 2026):**
 
@@ -203,16 +199,50 @@ Principal-level Salesforce Platform Architecture including:
 
 ```mermaid
 graph LR
-    User((User)) --> LWR[Experience Cloud LWR]
-    LWR -->|Door 1: Native GraphQL Q1 2026| SF_GQL[Salesforce GraphQL API]
-    SF_GQL --> DB[(Custom Objects)]
-    LWR -->|Door 2: External Gateway Q2 2026| Lambda[AWS Lambda Polyglot BFF]
-    LWR --> Apex[Apex Runtime]
-    Lambda --> Apex
-    Apex --> Jira[Jira API]
-    Apex --> GitHub[GitHub API]
-    Apex <--> AI[Agentforce AI]
-    style Lambda fill:#FF9900,stroke:#333,stroke-width:2px
+    %%{init: {'flowchart': {'nodeSpacing': 50, 'rankSpacing': 50}}}%%
+    %% ========= BRAND STYLES =========
+    classDef user fill:#424242,stroke:#000000,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef sfdc fill:#00A1E0,stroke:#005FB2,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef aws fill:#FF9900,stroke:#CC7A00,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef jira fill:#0052CC,stroke:#003A8F,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef github fill:#24292E,stroke:#000000,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef data fill:#8E24AA,stroke:#4A148C,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef future fill:#FFF3E0,stroke:#FB8C00,stroke-width:2px,stroke-dasharray:5 5;
+
+    %% ========= NODES =========
+    User((User))
+    LWR[Experience Cloud<br/>LWR]
+    GQL[Salesforce<br/>GraphQL]
+    Apex[Apex Runtime]
+    DB[(Custom Objects)]
+    AI[Agentforce]
+    Jira[Jira Cloud API]
+    GitHub[GitHub API]
+    Lambda[AWS Lambda<br/>Phase 8]
+
+    %% ========= FLOWS =========
+    User --> LWR
+    LWR --> GQL
+    GQL --> DB
+    LWR --> Apex
+    Apex <--> AI
+    Apex --> Jira
+    Apex --> GitHub
+
+    %% ========= FUTURE =========
+    LWR -.-> Lambda
+    Lambda -.-> Apex
+
+    %% ========= APPLY STYLES =========
+    class User user;
+    class LWR,GQL,Apex,AI sfdc;
+    class DB data;
+    class Jira jira;
+    class GitHub github;
+    class Lambda aws;
+
+    %% ========= CRITICAL PATH =========
+    linkStyle 0,1,2 stroke:#2ECC71,stroke-width:3px;
 ```
 
 > **Diagram Description (for accessibility):** The diagram shows a user connecting to an Experience Cloud LWR site, which routes data requests through either a native Salesforce GraphQL API (Door 1, live in Q1 2026) or an AWS Lambda Polyglot Backend For Frontend (Door 2, design complete for Q2 2026). The Apex Runtime handles integrations with Jira, GitHub, and Agentforce AI, all backed by custom Salesforce objects.
@@ -257,9 +287,9 @@ This project utilizes a **Twin API Pattern** ([ADR-024](docs/guides/03-SAS.md#ad
 ├── scripts/                # CI/CD utility scripts
 ├── .github/workflows/      # PR validation + delta deploy pipelines
 └── config/                 # Linting, formatting, DevOps configs
-
-# Repo is source-driven: no build artifacts, only clean source and configs.
 ```
+
+> Repo is source-driven: no build artifacts, only clean source and configs.
 
 ---
 
