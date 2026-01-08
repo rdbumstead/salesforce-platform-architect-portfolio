@@ -10,10 +10,15 @@ plugins:
   - jekyll-default-layout
   - jekyll-titles-from-headings
 
+# Configure Sass
+sass:
+  style: compressed
+
 # Configure Markdown engine
 kramdown:
   input: GFM
   syntax_highlighter: rouge
+  gfm_quirks: paragraph_end
 
 # Navigation
 header_pages:
