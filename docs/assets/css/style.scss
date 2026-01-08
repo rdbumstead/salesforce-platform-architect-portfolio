@@ -79,8 +79,8 @@ body {
     list-style: none !important;
     list-style-type: none !important;
     background: none !important;
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
 
@@ -138,14 +138,15 @@ body {
 #table-of-contents + ul,
 #table-of-contents + p + ul {
   list-style: none !important;
-  margin: 1em 0 !important;
+  margin: 0.5em 0 !important;
   padding: 0 !important;
 
   li {
     list-style: none !important;
     background: none !important;
-    padding: 2px 0 !important;
+    padding: 0 !important;
     margin: 0 !important;
+    line-height: 1.4 !important;
 
     &::before { content: none !important; display: none !important; }
 
@@ -158,8 +159,9 @@ body {
 
     ul {
       list-style: none !important;
-      margin: 5px 0 5px 20px !important;
+      margin: 0 0 0 20px !important;
       padding: 0 !important;
+      li { margin: 0 !important; padding: 0 !important; }
       li::before { content: none !important; }
     }
   }
