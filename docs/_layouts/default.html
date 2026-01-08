@@ -133,14 +133,18 @@
         const tocToggle = document.getElementById("toc-toggle");
         const tocSidebar = document.getElementById("toc-sidebar");
         const tocList = document.getElementById("toc-list");
-        const headers = document.querySelectorAll(
-          "#main-content h2, #main-content h3"
-        );
+
+        const headers = Array.from(
+          document.querySelectorAll("#main-content h2, #main-content h3")
+        ).filter((h) => h.textContent.toLowerCase() !== "table of contents");
 
         if (headers.length > 0) {
           headers.forEach((header) => {
             if (!header.id) {
-              header.id = header.textContent.toLowerCase().replace(/\s+/g, "-");
+              header.id = header.textContent
+                .toLowerCase()
+                .replace(/\s+/g, "-")
+                .replace(/[^\w-]/g, "");
             }
             const link = document.createElement("a");
             link.href = `#${header.id}`;
