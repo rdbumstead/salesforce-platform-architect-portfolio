@@ -151,8 +151,8 @@ footer {
 blockquote {
   margin:           1.5em 0;
   padding:          0.8rem 1rem;
-  border-left:      0.25rem solid #0969da;
-  background-color: #ddf4ff;
+  border-left:      0.25rem solid #d0d7de;
+  background-color: #f6f8fa;
   border-radius:    6px;
   font-style:       normal;
   color:            #1f2328;
@@ -160,12 +160,12 @@ blockquote {
   p { margin-bottom: 0; }
 
   strong:first-child {
-    display:       block;
-    margin-bottom: 0.5rem;
-    font-size:     0.85rem;
-    font-weight:   600;
+    display:        block;
+    margin-bottom:  0.5rem;
+    font-size:      0.85rem;
+    font-weight:    600;
     text-transform: uppercase;
-    color:         #0969da;
+    color:          #636c76;
   }
 }
 

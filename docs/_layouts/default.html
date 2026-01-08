@@ -89,10 +89,7 @@
         backToTopButton.addEventListener("click", () => {
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
-      });
-    </script>
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
+
         const alertConfig = {
           TIP: { border: "#1a7f37", bg: "#dafbe1", text: "#1a7f37" },
           IMPORTANT: { border: "#8250df", bg: "#fbefff", text: "#8250df" },
@@ -102,18 +99,16 @@
         };
 
         document.querySelectorAll("blockquote").forEach((bq) => {
-          const content = bq.innerHTML;
-
+          const content = bq.innerHTML.trim();
           const match = content.match(
-            /\[!(TIP|IMPORTANT|WARNING|CAUTION|NOTE)\]/
+            /^\[!(TIP|IMPORTANT|WARNING|CAUTION|NOTE)\]/
           );
 
           if (match) {
             const type = match[1];
             const config = alertConfig[type];
-
-            bq.innerHTML = content.replace(
-              /\[!(TIP|IMPORTANT|WARNING|CAUTION|NOTE)\]/,
+            bq.innerHTML = bq.innerHTML.replace(
+              `[!${type}]`,
               `<strong>${type}</strong>`
             );
 
