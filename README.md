@@ -273,10 +273,10 @@ graph LR
 >
 > **Security:** All APIs enforce a two-layer auth model ([ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)) featuring explicit API Key headers and internal OAuth2 Client Credentials.
 
-| Spec                | Role                            | Standard    | Link                                                  |
-| :------------------ | :------------------------------ | :---------- | :---------------------------------------------------- |
-| **Experience PAPI** | **Process API** (Client-Facing) | OpenAPI 3.0 | [View Spec (YAML)](docs/api/oas/portfolio-papi.yaml)  |
-| **Salesforce SAPI** | **System API** (Data Access)    | OpenAPI 3.0 | [View Spec (YAML)](docs/api/oas/salesforce-sapi.yaml) |
+| Spec                | Role                            | Standard    | Documentation                                     | Source                                                           |
+| :------------------ | :------------------------------ | :---------- | :------------------------------------------------ | :--------------------------------------------------------------- |
+| **Experience PAPI** | **Process API** (Client-Facing) | OpenAPI 3.0 | [View Docs (MD)](docs/api/oas/portfolio-papi.md)  | [View YAML](packages/integration-api/specs/portfolio-papi.yaml)  |
+| **Salesforce SAPI** | **System API** (Data Access)    | OpenAPI 3.0 | [View Docs (MD)](docs/api/oas/salesforce-sapi.md) | [View YAML](packages/integration-api/specs/salesforce-sapi.yaml) |
 
 ---
 
