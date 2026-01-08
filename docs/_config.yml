@@ -3,6 +3,18 @@ description: Governance, Architecture, and Living Documentation
 theme: jekyll-theme-architect
 show_downloads: false
 
+# Build settings
+plugins:
+  - jekyll-remote-theme
+  - jekyll-github-metadata
+  - jekyll-default-layout
+  - jekyll-titles-from-headings
+
+# Configure Markdown engine
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
 # Navigation
 header_pages:
   - index.md
