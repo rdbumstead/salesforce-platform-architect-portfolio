@@ -128,9 +128,9 @@ Live MVP (Door 1)
 
 Phase 8 – Q2 2026 (Design Complete)
 
-| Phase       | Status                         | Rationale                                                               |
-| :---------- | :----------------------------- | :---------------------------------------------------------------------- |
-| **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
+| Phase       | Status                                       | Rationale                                                               |
+| :---------- | :------------------------------------------- | :---------------------------------------------------------------------- |
+| **Phase 8** | **Design Complete • Implementation Q2 2026** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
 
 - AWS Lambda Polyglot Gateway (Function URL) — "Door 2"
 - Enterprise API governance layer
@@ -201,11 +201,9 @@ All architectural artifacts adhere to the C4 Model (Context, Containers, Compone
 Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Discipline](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the authoritative definition of LCP and Coverage thresholds.
 
 - **Zero PMD Critical Violations** (Enforced via sfdx scanner:run in PR checks).
-- **Reference:** See **Program Charter Section 2.2** for complete success criteria.
+- **Reference:** See **[Guardrails & Executable Governance: Quality Gates](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for authoritative technical acceptance thresholds (replaces Program Charter lookup).
 
 ## 2. Non-Functional Requirements (NFRs)
-
-This architecture prioritizes performance, security, and resilience within the constraints of a Developer Edition environment.
 
 ### 2.1 Core NFRs
 
@@ -242,6 +240,8 @@ The architecture is designed to operate within the specific limits of the Salesf
 This section defines the structured metadata model that underpins portfolio rendering, AI grounding, and cross-object relationships. For the detailed field-level definition, see Appendix D.
 
 ### 4.1 Logical Data Model (Simplified ERD)
+
+> _What This Diagram Shows: The entity-relationship diagram representing the custom schema. It highlights the use of Junction Objects (`Project_Skill__c`) for many-to-many relationships and the persona-based tagging system in `Experience_Highlight__c`._
 
 ```mermaid
 erDiagram
@@ -373,6 +373,8 @@ To demonstrate practical Application of RAG (Retrieval-Augmented Generation), th
 
 <details>
 <summary>Click to view Sequence Diagram</summary>
+
+> _What This Code Does: This sequence diagram illustrates the "Strategy Pattern" dispatcher logic. It shows how the system attempts the Gold Path (Agentforce) first, fails over to Sliver (Gemini) if necessary, and finally falls back to the Bronze (Local Template) if all APIs are offline._
 
 ```mermaid
 sequenceDiagram

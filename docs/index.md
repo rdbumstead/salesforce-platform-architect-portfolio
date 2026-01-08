@@ -49,18 +49,18 @@ _Target Audience: Architects, Developers_
 - [ADR-008: Jira Integration vs. Agile Accelerator](adr/008-jira-integration-vs-agile-accelerator.md)
 - [ADR-012: Guest User Security (Restriction Rules)](adr/012-guest-user-security-restriction-rules.md)
 - [ADR-017: System API Security & Dual-Sided Auth](adr/017-system-api-security-and-dual-sided-auth-pattern.md)
-- [ADR-018: FinOps (Lambda URLs vs. API Gateway)](adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)
 - [ADR-024: Twin API Pattern](adr/024-twin-api-pattern-contract-first-parity.md)
 - [ADR-025: PAPI Fan-Out & Throttling](adr/025-papi-fan-out-throttling-capacity-planning.md)
 - [ADR-026: Header-Based API Versioning](adr/026-header-based-api-versioning-strategy.md)
 
-**AI & Telemetry**
+**AI, Data & FinOps**
 
 - [ADR-011: Context Grounding Strategy](adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)
 - [ADR-013: Structured Logging (Nebula)](adr/013-structured-logging-framework-nebula-logger.md)
 - [ADR-014: Deferred Telemetry Loading](adr/014-deferred-telemetry-loading-performance.md)
 - [ADR-015: Strategy Pattern for GenAI](adr/015-strategy-pattern-for-generative-ai.md)
 - [ADR-016: Cloudflare Worker as Edge Proxy](adr/016-cloudflare-worker-as-edge-ai-proxy.md)
+- [ADR-018: FinOps (Lambda URLs vs. API Gateway)](adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)
 - [ADR-019: Executable Governance (Platform Events)](adr/019-executable-governance-platform-events-for-documentation-logic.md)
 - [ADR-022: Resilience Engineering (Chaos Toggle)](adr/022-resilience-engineering-resilience-simulation-toggle.md)
 
