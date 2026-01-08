@@ -12,6 +12,7 @@
 > [!IMPORTANT]
 > **Project Status:** Architecture complete (6 enterprise docs, 26 ADRs) • MVP code in development.
 > **Target Launch:** Q1 2026.
+>
 > **Contact:** [LinkedIn](https://linkedin.com/in/ryanbumstead) • [ryan@ryanbumstead.com](mailto:ryan@ryanbumstead.com)
 
 **📘 Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
