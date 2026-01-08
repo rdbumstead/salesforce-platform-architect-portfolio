@@ -151,45 +151,22 @@ footer {
 blockquote {
   margin:           1.5em 0;
   padding:          0.8rem 1rem;
-  color:            #1f2328;
-  border-left:      0.25rem solid #d0d7de;
-  background-color: #f6f8fa;
+  border-left:      0.25rem solid #0969da;
+  background-color: #ddf4ff;
   border-radius:    6px;
   font-style:       normal;
+  color:            #1f2328;
 
-  p:first-child strong:first-child {
-    display:       flex;
-    align-items:   center;
-    gap:           8px;
+  p { margin-bottom: 0; }
+
+  strong:first-child {
+    display:       block;
     margin-bottom: 0.5rem;
     font-size:     0.85rem;
     font-weight:   600;
     text-transform: uppercase;
+    color:         #0969da;
   }
-}
-
-blockquote:has(strong:contains("[!NOTE]")) {
-  border-left-color: #0969da;
-  background-color:  #ddf4ff;
-  strong:first-child { color: #0969da; }
-}
-
-blockquote:has(strong:contains("[!TIP]")) {
-  border-left-color: #1a7f37;
-  background-color:  #dafbe1;
-  strong:first-child { color: #1a7f37; }
-}
-
-blockquote:has(strong:contains("[!IMPORTANT]")) {
-  border-left-color: #8250df;
-  background-color:  #fbefff;
-  strong:first-child { color: #8250df; }
-}
-
-blockquote:has(strong:contains("[!WARNING]")) {
-  border-left-color: #9a6700;
-  background-color:  #fff8c5;
-  strong:first-child { color: #9a6700; }
 }
 
 @media screen and (max-width: 900px) {
