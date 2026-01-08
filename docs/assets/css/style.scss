@@ -78,11 +78,9 @@ body {
   ul, ol, li {
     list-style: none !important;
     list-style-type: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
     background: none !important;
-    border: none !important;
-    text-indent: 0 !important;
+    margin: 0;
+    padding: 0;
   }
 }
 
@@ -111,11 +109,13 @@ body {
 #toc-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
   
   a {
     display: block;
-    padding: 6px 12px;
+    padding: 4px 8px;
     color: #444;
     font-size: 0.9rem;
     text-decoration: none;
@@ -123,51 +123,44 @@ body {
     transition: all 0.2s ease;
 
     &.h3 {
-      margin-left: 15px;
+      margin-left: 12px;
       font-size: 0.85rem;
       color: #666;
-      border-left: 1px solid #eee;
     }
 
     &:hover {
       background-color: #f0f7fd;
       color: #0176D3;
-      text-decoration: none !important;
     }
   }
 }
 
-#table-of-contents + ul {
+#table-of-contents + ul,
+#table-of-contents + p + ul {
   list-style: none !important;
-  list-style-type: none !important;
-  margin-left: 0 !important;
-  padding-left: 0 !important;
+  margin: 1em 0 !important;
+  padding: 0 !important;
 
   li {
     list-style: none !important;
     background: none !important;
-    margin-bottom: 5px !important;
-    padding-left: 0 !important;
-    
+    padding: 2px 0 !important;
+    margin: 0 !important;
+
+    &::before { content: none !important; display: none !important; }
+
     a {
       text-decoration: none;
       color: #0176D3;
       font-weight: 500;
-      
-      &:hover {
-        text-decoration: underline;
-      }
+      &:hover { text-decoration: underline; }
     }
 
     ul {
       list-style: none !important;
-      margin-left: 20px !important;
-      margin-top: 5px !important;
-      
-      li {
-        background: none !important;
-        font-size: 0.95em;
-      }
+      margin: 5px 0 5px 20px !important;
+      padding: 0 !important;
+      li::before { content: none !important; }
     }
   }
 }
