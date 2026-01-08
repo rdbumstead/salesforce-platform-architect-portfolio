@@ -93,30 +93,43 @@
     </script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll("blockquote").forEach((bq) => {
-          const firstStrong = bq.querySelector("strong:first-child");
-          if (!firstStrong) return;
+        const alertConfig = {
+          TIP: { border: "#1a7f37", bg: "#dafbe1", text: "#1a7f37" },
+          IMPORTANT: { border: "#8250df", bg: "#fbefff", text: "#8250df" },
+          WARNING: { border: "#cf222e", bg: "#ffebe9", text: "#cf222e" },
+          CAUTION: { border: "#cf222e", bg: "#ffebe9", text: "#cf222e" },
+          NOTE: { border: "#0969da", bg: "#ddf4ff", text: "#0969da" }
+        };
 
-          const type = firstStrong.textContent;
-          if (type.includes("[!")) {
-            firstStrong.textContent = type.replace("[!", "").replace("]", "");
-          }
-          if (type.includes("TIP")) {
-            bq.style.borderLeftColor = "#1a7f37";
-            bq.style.backgroundColor = "#dafbe1";
-            firstStrong.style.color = "#1a7f37";
-          } else if (type.includes("IMPORTANT")) {
-            bq.style.borderLeftColor = "#8250df";
-            bq.style.backgroundColor = "#fbefff";
-            firstStrong.style.color = "#8250df";
-          } else if (type.includes("NOTE")) {
-            bq.style.borderLeftColor = "#0969da";
-            bq.style.backgroundColor = "#ddf4ff";
-            firstStrong.style.color = "#0969da";
-          } else if (type.includes("WARNING") || type.includes("CAUTION")) {
-            bq.style.borderLeftColor = "#cf222e";
-            bq.style.backgroundColor = "#ffebe9";
-            firstStrong.style.color = "#cf222e";
+        document.querySelectorAll("blockquote").forEach((bq) => {
+          const content = bq.innerHTML;
+
+          const match = content.match(
+            /\[!(TIP|IMPORTANT|WARNING|CAUTION|NOTE)\]/
+          );
+
+          if (match) {
+            const type = match[1];
+            const config = alertConfig[type];
+
+            bq.innerHTML = content.replace(
+              /\[!(TIP|IMPORTANT|WARNING|CAUTION|NOTE)\]/,
+              `<strong>${type}</strong>`
+            );
+
+            bq.style.borderLeftColor = config.border;
+            bq.style.backgroundColor = config.bg;
+            bq.style.borderLeftWidth = "0.25rem";
+            bq.style.borderLeftStyle = "solid";
+
+            const newStrong = bq.querySelector("strong");
+            if (newStrong) {
+              newStrong.style.color = config.text;
+              newStrong.style.display = "block";
+              newStrong.style.marginBottom = "0.5rem";
+              newStrong.style.textTransform = "uppercase";
+              newStrong.style.fontSize = "0.85rem";
+            }
           }
         });
       });
