@@ -74,6 +74,16 @@ body {
   flex-direction: column;
 
   &.open { transform: translateX(0); }
+
+  ul, ol, li {
+    list-style: none !important;
+    list-style-type: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    border: none !important;
+    text-indent: 0 !important;
+  }
 }
 
 #toc-toggle {
@@ -101,16 +111,64 @@ body {
 #toc-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  list-style-type: none !important;
-  padding-left: 0 !important;
-  margin-left: 0 !important;
+  gap: 8px;
+  
   a {
+    display: block;
+    padding: 6px 12px;
     color: #444;
     font-size: 0.9rem;
     text-decoration: none;
-    &.h3 { padding-left: 15px; font-size: 0.85rem; color: #666; }
-    &:hover { color: #0176D3; text-decoration: underline; }
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &.h3 {
+      margin-left: 15px;
+      font-size: 0.85rem;
+      color: #666;
+      border-left: 1px solid #eee;
+    }
+
+    &:hover {
+      background-color: #f0f7fd;
+      color: #0176D3;
+      text-decoration: none !important;
+    }
+  }
+}
+
+#table-of-contents + ul {
+  list-style: none !important;
+  list-style-type: none !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+
+  li {
+    list-style: none !important;
+    background: none !important;
+    margin-bottom: 5px !important;
+    padding-left: 0 !important;
+    
+    a {
+      text-decoration: none;
+      color: #0176D3;
+      font-weight: 500;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    ul {
+      list-style: none !important;
+      margin-left: 20px !important;
+      margin-top: 5px !important;
+      
+      li {
+        background: none !important;
+        font-size: 0.95em;
+      }
+    }
   }
 }
 
@@ -151,6 +209,10 @@ blockquote {
   background-color: #f6f8fa;
   border-radius: 6px;
   font-style: normal;
+  color: #1f2328;
+
+  p { margin-bottom: 0; }
+
   strong:first-child {
     display: block; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: #636c76;
   }
