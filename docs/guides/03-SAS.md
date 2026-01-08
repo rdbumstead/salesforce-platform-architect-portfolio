@@ -201,7 +201,7 @@ All architectural artifacts adhere to the C4 Model (Context, Containers, Compone
 Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Discipline](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the authoritative definition of LCP and Coverage thresholds.
 
 - **Zero PMD Critical Violations** (Enforced via sfdx scanner:run in PR checks).
-- **Reference:** See **[Guardrails & Executable Governance: Quality Gates](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for authoritative technical acceptance thresholds (replaces Program Charter lookup).
+- **Reference:** See **[Guardrails & Executable Governance: Quality Gates](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for authoritative technical acceptance thresholds.
 
 ## 2. Non-Functional Requirements (NFRs)
 

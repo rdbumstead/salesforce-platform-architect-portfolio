@@ -176,17 +176,17 @@ Principal-level Salesforce Platform Architecture including:
 <details>
 <summary><strong>📖 Glossary of Terms</strong> (Click to expand)</summary>
 
-| Term          | Meaning                                                       | Status                        |
-| :------------ | :------------------------------------------------------------ | :---------------------------- |
-| **LWR**       | Lightning Web Runtime — Modern Salesforce frontend framework  | Live at MVP                   |
-| **ADR**       | Architectural Decision Record — Documented design rationale   | Complete (24 records)         |
-| **Dual-Door** | Native Salesforce + External API gateway strategy             | Door 1: MVP / Door 2: Phase 8 |
-| **FinOps**    | Financial Operations — Cloud cost governance and optimization | Design complete for Phase 8   |
-| **Glass Box** | Real-time system telemetry and observability UI pattern       | Live at MVP                   |
-| **RAG**       | Retrieval-Augmented Generation — AI grounding technique       | Live at MVP                   |
-| **BFF**       | Backend For Frontend — Tailored API layer for UI optimization | Design complete for Phase 8   |
-| **SAPI**      | System API — Direct data access layer (API-led connectivity)  | Live at MVP                   |
-| **PAPI**      | Process API — Orchestration layer (API-led connectivity)      | Live at MVP                   |
+| Term          | Meaning                                                                                                                   | Status                        |
+| :------------ | :------------------------------------------------------------------------------------------------------------------------ | :---------------------------- |
+| **LWR**       | Lightning Web Runtime — Modern Salesforce frontend framework                                                              | Live at MVP                   |
+| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (26 records). |
+| **Dual-Door** | Native Salesforce + External API gateway strategy                                                                         | Door 1: MVP / Door 2: Phase 8 |
+| **FinOps**    | Financial Operations — Cloud cost governance and optimization                                                             | Design complete for Phase 8   |
+| **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live at MVP                   |
+| **RAG**       | Retrieval-Augmented Generation — AI grounding technique                                                                   | Live at MVP                   |
+| **BFF**       | Backend For Frontend — Tailored API layer for UI optimization                                                             | Design complete for Phase 8   |
+| **SAPI**      | System API — Direct data access layer (API-led connectivity)                                                              | Live at MVP                   |
+| **PAPI**      | Process API — Orchestration layer (API-led connectivity)                                                                  | Live at MVP                   |
 
 </details>
 
