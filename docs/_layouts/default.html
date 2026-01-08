@@ -102,7 +102,6 @@
       import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
 
       document.addEventListener("DOMContentLoaded", () => {
-        // --- Mermaid Initialization ---
         const mermaidBlocks = document.querySelectorAll(
           "pre code.language-mermaid"
         );
@@ -119,7 +118,6 @@
           securityLevel: "loose"
         });
 
-        // --- Floating Nav & Back to Top ---
         const btt = document.getElementById("back-to-top");
         window.addEventListener("scroll", () => {
           if (window.scrollY > 150) {
@@ -132,7 +130,6 @@
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
 
-        // --- Collapsible TOC Logic ---
         const tocToggle = document.getElementById("toc-toggle");
         const tocSidebar = document.getElementById("toc-sidebar");
         const tocList = document.getElementById("toc-list");
@@ -162,7 +159,6 @@
           tocSidebar.classList.toggle("open");
         });
 
-        // --- Alert Fixer ---
         const alertConfig = {
           TIP: { border: "#1a7f37", bg: "#dafbe1", text: "#1a7f37" },
           IMPORTANT: { border: "#8250df", bg: "#fbefff", text: "#8250df" },
