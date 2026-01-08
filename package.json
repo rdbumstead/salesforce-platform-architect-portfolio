@@ -26,7 +26,7 @@
     "delta:validate": "node scripts/validate.js",
     "docs:api": "node scripts/generate-api-docs.js",
     "docs:verify": "npm run docs:api && git diff --exit-code docs/api/oas/ && echo \"SUCCESS: API Documentation is synchronized.\"",
-    "pre-launch-check": "echo \"Starting Pre-Launch Check...\" && npm run prettier:verify && npm run scan && npm run test:unit && npm run sf:coverage && npm run test:lighthouse && echo \"✅ PRE-LAUNCH CHECK PASSED\""
+    "pre-launch-check": "node scripts/pre-launch-check.js"
   },
   "devDependencies": {
     "@lhci/cli": "^0.13.0",
