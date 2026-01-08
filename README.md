@@ -95,7 +95,8 @@ Principal-level Salesforce Platform Architecture including:
 
 ## Interactive Demonstrations (Live Q1 2026)
 
-> **Note:** Detailed preview of items from the "Available at Launch" section above. The live site is currently under development.
+> [!NOTE]
+> Detailed preview of items from the "Available at Launch" section above. The live site is currently under development.
 
 **Resilience Engineering**
 
@@ -266,17 +267,11 @@ graph LR
 ## API & Integration Contracts (Contract-First Design)
 
 > [!NOTE]
-> This project utilizes a **Twin API Pattern** ([ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)), where System and Process APIs are designed to strict OpenAPI 3.0 specifications to ensure technical parity between Salesforce and enterprise middleware.
-
-| Specification       | Layer   | Description                                | Status / Link                                                                                         |
-| :------------------ | :------ | :----------------------------------------- | :---------------------------------------------------------------------------------------------------- |
-| **Salesforce SAPI** | System  | Core CRM data access (Read-Only)           | [YAML](packages/integration-api/specs/salesforce-sapi.yaml) • [Docs](docs/api/oas/salesforce-sapi.md) |
-| **Portfolio PAPI**  | Process | Orchestration & tailored resume generation | [YAML](packages/integration-api/specs/portfolio-papi.yaml) • [Docs](docs/api/oas/portfolio-papi.md)   |
-
-> [!NOTE]
-> This project utilizes a **Twin API Pattern**. In the MVP, orchestration is handled by Salesforce Apex (Door 1). Phase 8 enables Door 2, delegating to **AWS Lambda** for 85%+ payload reduction.
+> This project utilizes a **Twin API Pattern** ([ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)). System and Process APIs are designated to strict OpenAPI 3.0 specifications to ensure technical parity between Salesforce and enterprise middleware.
 >
-> **Security Strategy:** All APIs enforce a two-layer auth model ([ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)) featuring explicit API Key headers and internal OAuth2 Client Credentials.
+> **Strategy:** In the MVP, orchestration is handled by Salesforce Apex (Door 1). Phase 8 enables Door 2, delegating to **AWS Lambda** for 85%+ payload reduction.
+>
+> **Security:** All APIs enforce a two-layer auth model ([ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)) featuring explicit API Key headers and internal OAuth2 Client Credentials.
 
 ---
 
@@ -290,6 +285,7 @@ graph LR
 └── config/                 # Linting, formatting, DevOps configs
 ```
 
+> [!NOTE]
 > Repo is source-driven: no build artifacts, only clean source and configs.
 
 ---

@@ -28,6 +28,7 @@ _Target Audience: Stakeholders, Recruiters, Ops Team_
 
 _Target Audience: Architects, Developers_
 
+> [!NOTE]
 > _ADRs are immutable records of significant design choices. They capture the context and consequences of decisions._
 
 **Core Platform & UI**

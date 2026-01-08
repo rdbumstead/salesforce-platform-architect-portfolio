@@ -198,7 +198,7 @@ All architectural artifacts adhere to the C4 Model (Context, Containers, Compone
 
 ### 1.5 Quality Gates (Technical Acceptance)
 
-Refer to **[06 - Guardrails & Executable Governance](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the authoritative definition of LCP and Coverage thresholds.
+Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Discipline](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the authoritative definition of LCP and Coverage thresholds.
 
 - **Zero PMD Critical Violations** (Enforced via sfdx scanner:run in PR checks).
 - **Reference:** See **Program Charter Section 2.2** for complete success criteria.
@@ -318,7 +318,8 @@ The following matrix defines the CRUD and Field Level Security (FLS) settings en
 | **`GitHub_Cache__c`**         | CRED / Full    | **No Access** (System Only)      | No Access              |
 | **`Portfolio_Config__mdt`**   | CRED / Full    | Read-Only (via App)              | Read-Only              |
 
-**Note:** Guest User access to `Testimonial__c` records is strictly controlled via the `SAPI_Testimonial` Apex class which applies the "Vibe Mode" and "Approved" filters before returning data to the LWR site.
+> [!NOTE]
+> Guest User access to `Testimonial__c` records is strictly controlled via the `SAPI_Testimonial` Apex class which applies the "Vibe Mode" and "Approved" filters before returning data to the LWR site.
 
 ## 5. Solution Components (The Pillars)
 
@@ -445,7 +446,7 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 
 #### 5.5.1 The Governance Model
 
-For the detailed "Three-Gate Approval Process" (Technical Feasibility, Security, DoR) governing these pillars, refer to **[06 - The Three-Gate Approval Process](./06-Guardrails-and-Executable-Governance.md#6-the-three-gate-approval-process)**.
+For the detailed "Three-Gate Approval Process" (Technical Feasibility, Security, DoR) governing these pillars, refer to **[Guardrails & Executable Governance: The Three-Gate Approval Process](./06-Guardrails-and-Executable-Governance.md#6-the-three-gate-approval-process)**.
 
 - Acceptance criteria defined (Gherkin syntax preferred).
 - Test data generation script written.
@@ -473,6 +474,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-roadmap-viewer`:** Performs real-time REST callout to Jira API.
 - **`c-footer`:** Contains GitHub Actions Badge.
 
+> [!TIP]
 > **Technical Implementation:** For detailed performance strategies (lazy-loading), mobile fallbacks, and accessibility patterns for these components, please refer to the **[Technical Guide: Frontend Component Logic](./04-Technical-Guide.md#2-frontend-lwr-component-logic)**.
 
 ## 7. Architectural Decision Records (ADRs)
@@ -757,7 +759,8 @@ Complete OpenAPI specifications available in repository:
 
 ### Appendix C: MuleSoft Code, Governance, & Proxy Configuration (Reference)
 
-**Note:** This architecture represents the "Ideal Enterprise State" designed during the Anypoint Platform trial period (November 2025). While the live deployment has expired, the design artifacts, source code, and policy configurations remain as reference implementations demonstrating enterprise API governance practices. The Apex REST implementation functions as a runtime twin within Salesforce.
+> [!NOTE]
+> This architecture represents the "Ideal Enterprise State" designed during the Anypoint Platform trial period (November 2025). While the live deployment has expired, the design artifacts, source code, and policy configurations remain as reference implementations demonstrating enterprise API governance practices. The Apex REST implementation functions as a runtime twin within Salesforce.
 
 **C.1 API Proxy Pattern**
 
@@ -934,7 +937,7 @@ To support high-volume queries during traffic spikes (e.g., LinkedIn post viral 
 
 ### Appendix F: Testing Strategy
 
-- **Strategy:** Refer to **[06 - Quality Gates & DevOps Discipline](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the comprehensive testing strategy (Unit, LWC, Integration).
+- **Strategy:** Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Discipline](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the comprehensive testing strategy (Unit, LWC, Integration).
 
 ### Appendix G: Accessibility Strategy (A11y)
 
@@ -963,7 +966,7 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 ### Appendix J: Cloud FinOps Strategy (Phase 8 - Q2 2026)
 
-- **FinOps Strategy:** Refer to **[06 - AWS FinOps & Serverless Guardrails](./06-Guardrails-and-Executable-Governance.md#3-aws-finops--serverless-guardrails-phase-8)** for the detailed cost governance model ($0.00 Forever architecture).
+- **FinOps Strategy:** Refer to **[Guardrails & Executable Governance: AWS FinOps & Serverless Guardrails](./06-Guardrails-and-Executable-Governance.md#3-aws-finops--serverless-guardrails-phase-8)** for the detailed cost governance model ($0.00 Forever architecture).
 
 ### Appendix K: Validation Rules & Logic
 
