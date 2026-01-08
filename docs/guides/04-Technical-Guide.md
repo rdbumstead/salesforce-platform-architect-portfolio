@@ -181,6 +181,16 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 
 ## 3. Quality Assurance Checklist
 
+> [!TIP]
+> **Show, Don't Tell:** Instead of manually checking these items, run the unified verification script to audit the entire system state in one command:
+>
+> ```bash
+> npm run pre-launch-check
+> # Runs: LCP audit (Lighthouse), PMD security scan, Apex test coverage, and Circuit Breaker simulation
+> ```
+
+### 3.1 Key Verification Items
+
 - [ ] **LCP:** Verify < 2.5s via Lighthouse Mobile Audit.
 - [ ] **Coverage:** Verify Apex tests > 90% coverage (Hard Gate).
 - [ ] **Security:** Verify Zero critical warnings from PMD Scanner.

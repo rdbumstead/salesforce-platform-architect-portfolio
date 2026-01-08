@@ -25,7 +25,8 @@
     "test:lighthouse": "lhci autorun",
     "delta:validate": "node scripts/validate.js",
     "docs:api": "node scripts/generate-api-docs.js",
-    "docs:verify": "npm run docs:api && git diff --exit-code docs/api/oas/ && echo \"SUCCESS: API Documentation is synchronized.\""
+    "docs:verify": "npm run docs:api && git diff --exit-code docs/api/oas/ && echo \"SUCCESS: API Documentation is synchronized.\"",
+    "pre-launch-check": "node scripts/pre-launch-check.js"
   },
   "devDependencies": {
     "@lhci/cli": "^0.13.0",

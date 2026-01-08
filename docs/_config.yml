@@ -3,7 +3,20 @@ description: Governance, Architecture, and Living Documentation
 theme: jekyll-theme-architect
 show_downloads: false
 
-# Navigation
+plugins:
+  - jekyll-remote-theme
+  - jekyll-github-metadata
+  - jekyll-default-layout
+  - jekyll-titles-from-headings
+
+sass:
+  style: compressed
+
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  gfm_quirks: paragraph_end
+
 header_pages:
   - index.md
   - guides/01-Executive-Overview.md

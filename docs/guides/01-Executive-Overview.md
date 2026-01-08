@@ -27,7 +27,9 @@ Date: MVP – Q1 2026
 
 **Why It Matters:**
 
-- **For CTOs:** It proves we can respect budget constraints without sacrificing capability.
+> [!TIP]
+> **For Non-Salesforce Readers:** It proves we can respect budget constraints without sacrificing capability.
+
 - **For Architects:** It demonstrates "Glass Box Telemetry" — showing exactly how the system behaves under load.
 - **For Recruiters:** It is a living proof-of-work that loads in < 2.5 seconds.
 

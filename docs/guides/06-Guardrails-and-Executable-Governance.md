@@ -26,6 +26,7 @@ This document outlines the governance framework and constraint-based design prin
 
 This portfolio is built on a "Zero-Dollar Budget" requirement. This is not a limitation; it is an architectural challenge. We demonstrate **Constraint-Based Design** by building a resilient, observable system that survives within the strict limits of a Salesforce Developer Edition (free tier) and the AWS Always-Free Tier.
 
+> [!TIP]
 > **Why Constraint-Based Design Matters**: Many architects treat free tiers as temporary scaffolding. This portfolio proves you can build production-grade systems within zero-budget constraints — a skill that translates directly to cost optimization in enterprise environments where every dollar of cloud spend requires justification.
 
 ## 2. The Salesforce "Governor" Rosetta Stone
@@ -50,6 +51,7 @@ We treat these limits as a blueprint for building high-performance systems.
 | :---------- | :----------------------------- | :---------------------------------------------------------------------- |
 | **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
 
+> [!NOTE]
 > **Architectural Reference:** For the detailed system diagrams and component specifications of the Phase 8 architecture, please refer to the **[Systems Architecture Specification (SAS)](./03-SAS.md#11-architectural-north-star)**.
 
 **What is FinOps?** Financial Operations (FinOps) is the practice of making cloud costs visible and controllable. AWS charges for everything — compute time, network traffic, log storage — so architectural decisions directly impact the monthly bill.
