@@ -273,6 +273,11 @@ graph LR
 >
 > **Security:** All APIs enforce a two-layer auth model ([ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)) featuring explicit API Key headers and internal OAuth2 Client Credentials.
 
+| Spec                | Role                            | Standard    | Link                                                  |
+| :------------------ | :------------------------------ | :---------- | :---------------------------------------------------- |
+| **Experience PAPI** | **Process API** (Client-Facing) | OpenAPI 3.0 | [View Spec (YAML)](docs/api/oas/portfolio-papi.yaml)  |
+| **Salesforce SAPI** | **System API** (Data Access)    | OpenAPI 3.0 | [View Spec (YAML)](docs/api/oas/salesforce-sapi.yaml) |
+
 ---
 
 ## Repo Structure
@@ -285,7 +290,6 @@ graph LR
 └── config/                 # Linting, formatting, DevOps configs
 ```
 
-> [!NOTE]
 > Repo is source-driven: no build artifacts, only clean source and configs.
 
 ---
