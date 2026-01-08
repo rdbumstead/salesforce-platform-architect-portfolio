@@ -34,6 +34,27 @@
       </div>
     </header>
 
+    <nav id="toc-sidebar">
+      <button id="toc-toggle" title="Toggle Table of Contents">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div id="toc-content">
+        <h3>Contents</h3>
+        <div id="toc-list"></div>
+      </div>
+    </nav>
+
     <div id="content-wrapper">
       <div class="inner clearfix">
         <section id="main-content">{{ content }}</section>
@@ -54,12 +75,34 @@
       </div>
     </footer>
 
-    <button id="back-to-top" title="Back to Top">&uarr;</button>
+    <div id="floating-nav">
+      {% if page.url != "/" %}
+      <a
+        href="{{ '/' | relative_url }}"
+        id="back-to-hub"
+        title="Back to Governance Hub"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </a>
+      {% endif %}
+      <button id="back-to-top" title="Back to Top">&uarr;</button>
+    </div>
 
     <script type="module">
       import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
 
       document.addEventListener("DOMContentLoaded", () => {
+        // --- Mermaid Initialization ---
         const mermaidBlocks = document.querySelectorAll(
           "pre code.language-mermaid"
         );
@@ -70,26 +113,56 @@
           const pre = codeBlock.closest("pre");
           if (pre) pre.replaceWith(div);
         });
-
         mermaid.initialize({
           startOnLoad: true,
           theme: "neutral",
           securityLevel: "loose"
         });
 
-        const backToTopButton = document.getElementById("back-to-top");
+        // --- Floating Nav & Back to Top ---
+        const btt = document.getElementById("back-to-top");
         window.addEventListener("scroll", () => {
           if (window.scrollY > 150) {
-            backToTopButton.classList.add("visible");
+            btt.classList.add("visible");
           } else {
-            backToTopButton.classList.remove("visible");
+            btt.classList.remove("visible");
           }
         });
-
-        backToTopButton.addEventListener("click", () => {
+        btt.addEventListener("click", () => {
           window.scrollTo({ top: 0, behavior: "smooth" });
         });
 
+        // --- Collapsible TOC Logic ---
+        const tocToggle = document.getElementById("toc-toggle");
+        const tocSidebar = document.getElementById("toc-sidebar");
+        const tocList = document.getElementById("toc-list");
+        const headers = document.querySelectorAll(
+          "#main-content h2, #main-content h3"
+        );
+
+        if (headers.length > 0) {
+          headers.forEach((header) => {
+            if (!header.id) {
+              header.id = header.textContent.toLowerCase().replace(/\s+/g, "-");
+            }
+            const link = document.createElement("a");
+            link.href = `#${header.id}`;
+            link.textContent = header.textContent;
+            link.className = header.tagName.toLowerCase();
+            link.addEventListener("click", () => {
+              tocSidebar.classList.remove("open");
+            });
+            tocList.appendChild(link);
+          });
+        } else {
+          tocSidebar.style.display = "none";
+        }
+
+        tocToggle.addEventListener("click", () => {
+          tocSidebar.classList.toggle("open");
+        });
+
+        // --- Alert Fixer ---
         const alertConfig = {
           TIP: { border: "#1a7f37", bg: "#dafbe1", text: "#1a7f37" },
           IMPORTANT: { border: "#8250df", bg: "#fbefff", text: "#8250df" },
@@ -103,16 +176,13 @@
           const match = rawHTML.match(
             /\[!(TIP|IMPORTANT|WARNING|CAUTION|NOTE)\]/
           );
-
           if (match) {
             const type = match[1];
             const config = alertConfig[type];
-
             bq.style.borderLeftColor = config.border;
             bq.style.backgroundColor = config.bg;
             bq.style.borderLeftWidth = "0.25rem";
             bq.style.borderLeftStyle = "solid";
-
             bq.innerHTML = rawHTML.replace(
               /\[!(TIP|IMPORTANT|WARNING|CAUTION|NOTE)\]/,
               `<strong style="color: ${config.text}; display: block; margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.85rem;">${type}</strong>`
