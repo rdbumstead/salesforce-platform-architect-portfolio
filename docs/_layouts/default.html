@@ -99,32 +99,24 @@
         };
 
         document.querySelectorAll("blockquote").forEach((bq) => {
-          const content = bq.innerHTML.trim();
-          const match = content.match(
-            /^\[!(TIP|IMPORTANT|WARNING|CAUTION|NOTE)\]/
+          const rawHTML = bq.innerHTML;
+          const match = rawHTML.match(
+            /\[!(TIP|IMPORTANT|WARNING|CAUTION|NOTE)\]/
           );
 
           if (match) {
             const type = match[1];
             const config = alertConfig[type];
-            bq.innerHTML = bq.innerHTML.replace(
-              `[!${type}]`,
-              `<strong>${type}</strong>`
-            );
 
             bq.style.borderLeftColor = config.border;
             bq.style.backgroundColor = config.bg;
             bq.style.borderLeftWidth = "0.25rem";
             bq.style.borderLeftStyle = "solid";
 
-            const newStrong = bq.querySelector("strong");
-            if (newStrong) {
-              newStrong.style.color = config.text;
-              newStrong.style.display = "block";
-              newStrong.style.marginBottom = "0.5rem";
-              newStrong.style.textTransform = "uppercase";
-              newStrong.style.fontSize = "0.85rem";
-            }
+            bq.innerHTML = rawHTML.replace(
+              /\[!(TIP|IMPORTANT|WARNING|CAUTION|NOTE)\]/,
+              `<strong style="color: ${config.text}; display: block; margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.85rem;">${type}</strong>`
+            );
           }
         });
       });
