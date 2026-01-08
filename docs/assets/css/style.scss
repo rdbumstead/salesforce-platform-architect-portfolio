@@ -165,14 +165,18 @@ header h2 { font-size: 1rem !important; color: rgba(255, 255, 255, 0.9); }
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid #e5e5e5;
 
-  #table-of-contents ~ ul, 
-  #table-of-contents ~ p ~ ul {
+  ul#markdown-toc, 
+  ul#markdown-toc ul,
+  #table-of-contents + ul,
+  #table-of-contents + p + ul {
     list-style: none !important;
+    list-style-type: none !important;
     margin: 0 !important;
     padding: 0 !important;
-    
+
     li {
       list-style: none !important;
+      list-style-type: none !important;
       background: none !important;
       margin: 0 !important;
       padding: 0 !important;
@@ -185,12 +189,6 @@ header h2 { font-size: 1rem !important; color: rgba(255, 255, 255, 0.9); }
         text-decoration: none;
         color: #0176D3;
         &:hover { text-decoration: underline; }
-      }
-
-      ul {
-        margin: 0 0 0 20px !important;
-        padding: 0 !important;
-        li { margin: 0 !important; padding: 0 !important; }
       }
     }
   }
