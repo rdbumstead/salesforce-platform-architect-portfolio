@@ -6,6 +6,11 @@ $header-bg-color: #0176D3;
 $body-bg-color:   #F4F6F9;
 $card-bg-color:   #FFFFFF;
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 100px;
+}
+
 body {
   font-family:      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color:            #181b39;
