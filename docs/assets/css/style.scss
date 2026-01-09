@@ -162,7 +162,7 @@ body {
     list-style-type: none !important;
     background: none !important;
     margin-top: 0 !important;
-    margin-bottom: 0 !important;
+    margin-bottom: 20px !important;
     padding-left: 0 !important;
     
     li {
@@ -180,6 +180,12 @@ body {
         text-decoration: none;
         color: #0176D3;
         &:hover { text-decoration: underline; }
+      }
+
+      ul {
+        margin: 0 0 0 20px !important;
+        padding: 0 !important;
+        list-style: none !important;
       }
     }
   }
