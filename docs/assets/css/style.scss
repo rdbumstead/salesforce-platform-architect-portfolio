@@ -154,7 +154,7 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid #e5e5e5;
   
-  & > ul:first-of-type,
+  body.is-content & > ul:first-of-type,
   #markdown-toc,
   #table-of-contents + ul,
   #table-of-contents + p + ul {
