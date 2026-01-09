@@ -28,7 +28,6 @@
     <tabs>Skill__c</tabs>
     <tabs>Testimonial__c</tabs>
     <uiType>Lightning</uiType>
-    <utilityBar>SPAP_UtilityBar</utilityBar>
     <workspaceConfig>
         <mappings>
             <fieldName>Certification__c</fieldName>
