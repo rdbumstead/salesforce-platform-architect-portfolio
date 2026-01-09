@@ -275,8 +275,8 @@ graph LR
 
 | Spec                | Role                            | Standard    | Documentation                                     | Source                                                           |
 | :------------------ | :------------------------------ | :---------- | :------------------------------------------------ | :--------------------------------------------------------------- |
-| **Experience PAPI** | **Process API** (Client-Facing) | OpenAPI 3.0 | [View Docs (MD)](docs/api/oas/portfolio-papi.md)  | [View YAML](packages/integration-api/specs/portfolio-papi.yaml)  |
 | **Salesforce SAPI** | **System API** (Data Access)    | OpenAPI 3.0 | [View Docs (MD)](docs/api/oas/salesforce-sapi.md) | [View YAML](packages/integration-api/specs/salesforce-sapi.yaml) |
+| **Portfolio PAPI**  | **Process API** (Client-Facing) | OpenAPI 3.0 | [View Docs (MD)](docs/api/oas/portfolio-papi.md)  | [View YAML](packages/integration-api/specs/portfolio-papi.yaml)  |
 
 ---
 
