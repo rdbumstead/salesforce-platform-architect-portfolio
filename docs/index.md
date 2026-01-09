@@ -1,5 +1,3 @@
-# Salesforce Platform Architect Portfolio
-
 [![View Source](https://img.shields.io/badge/GitHub-View_Source-181717?logo=github&logoColor=white)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio)
 [![CI/CD — main](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml)
 [![PR Validation](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml)
@@ -35,7 +33,9 @@ _Target Audience: Architects, Developers_
 
 - [ADR-001: Experience Cloud LWR vs. Aura](adr/001-experience-cloud-lwr-vs-aura.md)
 - [ADR-002: Custom Objects vs. Standard Objects](adr/002-custom-objects-vs-standard-objects.md)
+- [ADR-004: Static Resource Code Rendering](adr/004-static-resource-code-rendering.md)
 - [ADR-005: Gamified Testimonial UI](adr/005-gamified-testimonial-ui.md)
+- [ADR-009: Granular Resume Data Model](adr/009-granular-resume-data-model.md)
 - [ADR-010: Visualization Engine (Vis.js vs. AntV G6)](adr/010-visualization-engine-vis-js-vs-antv-g6.md)
 - [ADR-020: Mobile Performance (SVG Fallback)](adr/020-mobile-performance-static-svg-fallback-strategy.md)
 - [ADR-021: Native GraphQL vs. Apex REST](adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)
