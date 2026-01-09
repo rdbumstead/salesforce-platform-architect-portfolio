@@ -154,26 +154,24 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid #e5e5e5;
 
-  ul:first-of-type,
   #markdown-toc,
   #table-of-contents + ul,
-  #table-of-contents + p + ul {
+  #table-of-contents + p + ul,
+  section > ul:first-of-type {
     list-style: none !important;
     list-style-type: none !important;
     background: none !important;
-    margin-top: 0 !important;
-    margin-bottom: 20px !important;
+    margin-bottom: 0 !important;
     padding-left: 0 !important;
-    
-    li {
+
+    > li {
       list-style: none !important;
-      list-style-type: none !important;
       background: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
+      margin-bottom: 0 !important;
+      padding-left: 0 !important;
       line-height: 1.4 !important;
       &::before { content: none !important; display: none !important; }
-      
+
       a {
         display: inline-block;
         padding: 2px 0;
@@ -182,10 +180,16 @@ body {
         &:hover { text-decoration: underline; }
       }
 
+      /* ALLOW nested lists to have their natural architectural indent */
       ul {
-        margin: 0 0 0 20px !important;
-        padding: 0 !important;
         list-style: none !important;
+        margin: 0 0 0 20px !important;
+        padding-left: 0 !important;
+        
+        li {
+          margin-bottom: 0 !important;
+          background: none !important;
+        }
       }
     }
   }
