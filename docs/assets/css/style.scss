@@ -21,12 +21,33 @@ body {
   bottom: 30px;
   right: 30px;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 15px;
   z-index: 1000;
 }
 
-#back-to-top, #back-to-hub {
+#back-to-top {
+  display: none;
+  background: #0176D3;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 24px;
+  padding-bottom: 4px;
+
+  &.visible {
+    display: flex;
+  }
+}
+
+#back-to-hub {
   background: #0176D3;
   color: white;
   border: none;
@@ -40,18 +61,6 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
-}
-
-#back-to-top {
-  opacity: 0;
-  pointer-events: none;
-  font-size: 24px;
-  padding-bottom: 4px;
-}
-
-#back-to-top.visible {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 #back-to-top:hover, #back-to-hub:hover {
@@ -136,6 +145,47 @@ body {
   }
 }
 
+#main-content {
+  max-width: 960px;
+  margin: 0 auto;
+  background-color: $card-bg-color;
+  padding: 50px 60px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e5e5;
+
+  ul#markdown-toc, 
+  ul#markdown-toc ul,
+  ul#markdown-toc li,
+  #table-of-contents + ul,
+  #table-of-contents + p + ul,
+  #table-of-contents + ul li,
+  #table-of-contents + p + ul li {
+    list-style: none !important;
+    list-style-type: none !important;
+    background: none !important;
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    line-height: 1.4 !important;
+    &::before { content: none !important; display: none !important; }
+    
+    a {
+      display: inline-block;
+      padding: 1px 0;
+      text-decoration: none;
+      color: #0176D3;
+      &:hover { text-decoration: underline; }
+    }
+  }
+  
+  ul#markdown-toc ul,
+  #table-of-contents + ul ul,
+  #table-of-contents + p + ul ul {
+    margin-left: 20px !important;
+  }
+}
+
 header {
   background-color: $header-bg-color;
   border-bottom: 4px solid #005FB2;
@@ -155,44 +205,6 @@ header h1 { font-size: 1.8rem !important; color: #FFFFFF; }
 header h2 { font-size: 1rem !important; color: rgba(255, 255, 255, 0.9); }
 
 #content-wrapper { padding-top: 40px; flex: 1; }
-
-#main-content {
-  max-width: 960px;
-  margin: 0 auto;
-  background-color: $card-bg-color;
-  padding: 50px 60px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e5e5;
-
-  ul#markdown-toc, 
-  ul#markdown-toc ul,
-  #table-of-contents + ul,
-  #table-of-contents + p + ul {
-    list-style: none !important;
-    list-style-type: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-
-    li {
-      list-style: none !important;
-      list-style-type: none !important;
-      background: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      line-height: 1.4 !important;
-      &::before { content: none !important; display: none !important; }
-      
-      a {
-        display: inline-block;
-        padding: 2px 0;
-        text-decoration: none;
-        color: #0176D3;
-        &:hover { text-decoration: underline; }
-      }
-    }
-  }
-}
 
 blockquote {
   margin: 1.5em 0;
