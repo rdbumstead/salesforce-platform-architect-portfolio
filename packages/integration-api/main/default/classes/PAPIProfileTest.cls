@@ -6,7 +6,7 @@
  * @Created           : 01/02/2026
  **/
 @IsTest
-private class PAPI_ProfileTest {
+private class PAPIProfileTest {
   @TestSetup
   static void setup() {
     // Create Portfolio Owner Contact

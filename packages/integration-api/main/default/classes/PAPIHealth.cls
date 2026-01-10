@@ -4,10 +4,10 @@
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/05/2025
- * @Test Class        : [PAPI_HealthTest]
+ * @Test Class        : [PAPIHealthTest]
  **/
 @RestResource(urlMapping='/papi/v1/health')
-global with sharing class PAPI_Health {
+global with sharing class PAPIHealth {
   /**
    * @description GET method to check PAPI health status.
    */

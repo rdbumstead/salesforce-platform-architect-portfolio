@@ -6,7 +6,7 @@
  * @Created           : 01/02/2026
  **/
 @IsTest
-private class PAPI_HealthTest {
+private class PAPIHealthTest {
   @IsTest
   static void testGetHealthReturnsUp() {
     RestRequest req = new RestRequest();

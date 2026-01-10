@@ -24,6 +24,12 @@ on:
         default: "delta"
         type: choice
         options: [delta, full]
+      destructive_timing:
+        description: "Destructive Changes Timing"
+        required: true
+        default: "post"
+        type: choice
+        options: [pre, post]
 
 jobs:
   deploy:
@@ -53,7 +59,12 @@ jobs:
           if [ "${{ github.event.inputs.deployment_mode }}" == "full" ]; then
             sf project deploy start --source-dir packages --target-org portfolio --wait 60
           elif { [ -s changed/package/package.xml ] && grep -q "<types>" changed/package/package.xml; } || { [ -s changed/destructiveChanges/destructiveChanges.xml ] && grep -q "<types>" changed/destructiveChanges/destructiveChanges.xml; }; then
-            sf project deploy start --manifest changed/package/package.xml --post-destructive-changes changed/destructiveChanges/destructiveChanges.xml --target-org portfolio --wait 30
+            DESTRUCTIVE_FLAG="--post-destructive-changes"
+            if [ "${{ github.event.inputs.destructive_timing }}" == "pre" ]; then
+               DESTRUCTIVE_FLAG="--pre-destructive-changes"
+            fi
+
+            sf project deploy start --manifest changed/package/package.xml $DESTRUCTIVE_FLAG changed/destructiveChanges/destructiveChanges.xml --target-org portfolio --wait 30
           else
             echo "No metadata changes detected."
           fi

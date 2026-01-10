@@ -4,10 +4,10 @@
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/05/2025
- * @Test Class        : [PAPI_ResumeTest]
+ * @Test Class        : [PAPIResumeTest]
  **/
 @RestResource(urlMapping='/papi/v1/resume/*')
-global with sharing class PAPI_Resume {
+global with sharing class PAPIResume {
   /**
    * @description GET method to generate resume.
    *              /resume/generate?persona={Admin|Developer|Architect}

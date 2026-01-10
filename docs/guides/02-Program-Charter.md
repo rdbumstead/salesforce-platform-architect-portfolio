@@ -173,7 +173,7 @@ The delivery is organized into four parallel execution tracks:
 **Phase 2: Data & API Layer (In Progress)**
 
 - **Schema Deployment:** (Completed)
-- **Apex REST Services:** (`SAPI_Project`, `SAPI_Experience`).
+- **Apex REST Services:** (`SAPIProject`, `SAPIExperience`).
 - **Data Loading:** (Seed Data).
 
 **Phase 3: UI Framework (Pending)**
