@@ -6,7 +6,7 @@
  * @Created           : 01/02/2026
  **/
 @IsTest
-private class SAPI_TestimonialTest {
+private class SAPITestimonialTest {
   @TestSetup
   static void setup() {
     Testimonial__c t = new Testimonial__c(

@@ -6,7 +6,7 @@
  * @Created           : 01/02/2026
  **/
 @IsTest
-private class SAPI_ResumeTest {
+private class SAPIResumeTest {
   @TestSetup
   static void setup() {
     Account employer = new Account(Name = 'Salesforce');

@@ -6,7 +6,7 @@
  * @Created           : 01/02/2026
  **/
 @IsTest
-private class PAPI_ProjectsTest {
+private class PAPIProjectsTest {
   @TestSetup
   static void setup() {
     Project__c proj = new Project__c(

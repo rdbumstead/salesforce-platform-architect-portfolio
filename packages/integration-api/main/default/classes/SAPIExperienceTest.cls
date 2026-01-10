@@ -6,7 +6,7 @@
  * @Created           : 01/02/2026
  **/
 @IsTest
-private class SAPI_ExperienceTest {
+private class SAPIExperienceTest {
   @TestSetup
   static void setup() {
     Account employer = new Account(Name = 'Salesforce');

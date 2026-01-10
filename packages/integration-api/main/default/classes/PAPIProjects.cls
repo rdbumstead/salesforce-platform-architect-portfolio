@@ -4,10 +4,10 @@
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/05/2025
- * @Test Class        : [PAPI_ProjectsTest]
+ * @Test Class        : [PAPIProjectsTest]
  **/
 @RestResource(urlMapping='/papi/v1/projects/*')
-global with sharing class PAPI_Projects {
+global with sharing class PAPIProjects {
   /**
    * @description GET method to retrieve projects.
    *              /projects/featured - Featured projects only

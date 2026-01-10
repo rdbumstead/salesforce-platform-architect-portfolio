@@ -6,7 +6,7 @@
  * @Created           : 01/02/2026
  **/
 @IsTest
-private class SAPI_SkillTest {
+private class SAPISkillTest {
   @TestSetup
   static void setup() {
     Skill__c s = new Skill__c(

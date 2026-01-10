@@ -6,7 +6,7 @@
  * @Created           : 01/02/2026
  **/
 @IsTest
-private class PAPI_ResumeTest {
+private class PAPIResumeTest {
   @TestSetup
   static void setup() {
     Contact c = new Contact(

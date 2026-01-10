@@ -4,10 +4,10 @@
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/05/2025
- * @Test Class        : [PAPI_ProfileTest]
+ * @Test Class        : [PAPIProfileTest]
  **/
 @RestResource(urlMapping='/papi/v1/profile/*')
-global with sharing class PAPI_Profile {
+global with sharing class PAPIProfile {
   /**
    * @description GET method to retrieve full portfolio or summary based on path.
    *              /profile/full - Complete portfolio payload

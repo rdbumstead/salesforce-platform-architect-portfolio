@@ -319,7 +319,7 @@ The following matrix defines the CRUD and Field Level Security (FLS) settings en
 | **`Portfolio_Config__mdt`**   | CRED / Full    | Read-Only (via App)              | Read-Only              |
 
 > [!NOTE]
-> Guest User access to `Testimonial__c` records is strictly controlled via the `SAPI_Testimonial` Apex class which applies the "Vibe Mode" and "Approved" filters before returning data to the LWR site.
+> Guest User access to `Testimonial__c` records is strictly controlled via the `SAPITestimonial` Apex class which applies the "Vibe Mode" and "Approved" filters before returning data to the LWR site.
 
 ## 5. Solution Components (The Pillars)
 
@@ -343,7 +343,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 
 - **Objective:** Demonstrate Enterprise Integration Patterns and Developer Experience (DX).
 - **Design:** OpenAPI Specification (OAS 3.0) hosted on GitHub.
-- **Implementation:** Native Apex REST Class (`SAPI_Experience`).
+- **Implementation:** Native Apex REST Class (`SAPIExperience`).
 - **Technical Detail:** For the complete breakdown of the caching strategy, caching patterns, and API tooling, refer to the **[Technical Guide: Integration Service Implementation](./04-Technical-Guide.md#1-integration-service-implementation)**.
 
 ### 5.4 Pillar D: AI & Innovation (Agentforce)

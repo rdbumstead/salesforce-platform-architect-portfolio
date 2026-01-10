@@ -4,10 +4,10 @@
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/05/2025
- * @Test Class        : [SAPI_ProjectTest]
+ * @Test Class        : [SAPIProjectTest]
  **/
 @RestResource(urlMapping='/sapi/v1/projects/*')
-global with sharing class SAPI_Project {
+global with sharing class SAPIProject {
   /**
    * @description GET method to retrieve all Project records or a single project by ID.
    *              Implements pagination, filtering, and proper error handling per spec.

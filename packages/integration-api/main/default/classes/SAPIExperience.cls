@@ -4,10 +4,10 @@
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/05/2025
- * @Test Class        : [SAPI_ExperienceTest]
+ * @Test Class        : [SAPIExperienceTest]
  **/
 @RestResource(urlMapping='/sapi/v1/experience/*')
-global with sharing class SAPI_Experience {
+global with sharing class SAPIExperience {
   /**
    * @description GET method to retrieve Experience records with pagination.
    */

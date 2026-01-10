@@ -4,10 +4,10 @@
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/05/2025
- * @Test Class        : [SAPI_ResumeTest]
+ * @Test Class        : [SAPIResumeTest]
  **/
 @RestResource(urlMapping='/sapi/v1/resume/*')
-global with sharing class SAPI_Resume {
+global with sharing class SAPIResume {
   /**
    * @description GET method to retrieve resume highlights filtered by persona.
    */
