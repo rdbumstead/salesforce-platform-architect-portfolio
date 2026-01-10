@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for PAPI_Resume REST resource.
+ * @description       : Unit tests for PAPIResume REST resource.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -77,7 +77,7 @@ private class PAPIResumeTest {
     RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
 
     Test.startTest();
-    PAPI_Resume.getResume();
+    PAPIResume.getResume();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();
@@ -102,7 +102,7 @@ private class PAPIResumeTest {
     );
 
     Test.startTest();
-    PAPI_Resume.getResume();
+    PAPIResume.getResume();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();
@@ -123,7 +123,7 @@ private class PAPIResumeTest {
     );
 
     Test.startTest();
-    PAPI_Resume.getResume();
+    PAPIResume.getResume();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();
@@ -135,7 +135,7 @@ private class PAPIResumeTest {
     RestTestUtil.initGet('/services/apexrest/papi/v1/resume/invalid');
 
     Test.startTest();
-    PAPI_Resume.getResume();
+    PAPIResume.getResume();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();

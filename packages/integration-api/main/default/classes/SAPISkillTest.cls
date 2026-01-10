@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for SAPI_Skill REST resource.
+ * @description       : Unit tests for SAPISkill REST resource.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -30,7 +30,7 @@ private class SAPISkillTest {
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
-      SAPI_Skill.getSkills();
+      SAPISkill.getSkills();
       Test.stopTest();
 
       System.assertEquals(200, res.statusCode, 'Should return 200 OK');
@@ -61,7 +61,7 @@ private class SAPISkillTest {
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
-      SAPI_Skill.getSkills();
+      SAPISkill.getSkills();
       Test.stopTest();
 
       System.assertEquals(200, res.statusCode, 'Should return 200 OK');
@@ -81,7 +81,7 @@ private class SAPISkillTest {
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
-      SAPI_Skill.getSkills();
+      SAPISkill.getSkills();
       Test.stopTest();
 
       System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
@@ -95,10 +95,10 @@ private class SAPISkillTest {
     RestContext.request = req;
     RestContext.response = res;
 
-    SAPI_Skill.throwException = true;
+    SAPISkill.throwException = true;
 
     Test.startTest();
-    SAPI_Skill.getSkills();
+    SAPISkill.getSkills();
     Test.stopTest();
 
     System.assertEquals(

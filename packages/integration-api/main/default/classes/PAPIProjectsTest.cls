@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for PAPI_Projects REST resource.
+ * @description       : Unit tests for PAPIProjects REST resource.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -49,7 +49,7 @@ private class PAPIProjectsTest {
     RestContext.response = res;
 
     Test.startTest();
-    PAPI_Projects.getProjects();
+    PAPIProjects.getProjects();
     Test.stopTest();
 
     System.assertEquals(200, res.statusCode, 'Should return 200 OK');
@@ -73,7 +73,7 @@ private class PAPIProjectsTest {
     RestContext.response = res;
 
     Test.startTest();
-    PAPI_Projects.getProjects();
+    PAPIProjects.getProjects();
     Test.stopTest();
 
     System.assertEquals(200, res.statusCode, 'Should return 200 OK');
@@ -92,7 +92,7 @@ private class PAPIProjectsTest {
     RestContext.response = res;
 
     Test.startTest();
-    PAPI_Projects.getProjects();
+    PAPIProjects.getProjects();
     Test.stopTest();
 
     System.assertEquals(

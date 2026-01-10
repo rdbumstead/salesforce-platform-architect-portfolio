@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for PAPI_Profile REST resource.
+ * @description       : Unit tests for PAPIProfile REST resource.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -67,7 +67,7 @@ private class PAPIProfileTest {
     RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
-    PAPI_Profile.getProfile();
+    PAPIProfile.getProfile();
     Test.stopTest();
 
     String responseBody = res.responseBody != null
@@ -105,7 +105,7 @@ private class PAPIProfileTest {
     RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
-    PAPI_Profile.getProfile();
+    PAPIProfile.getProfile();
     Test.stopTest();
 
     String responseBody = res.responseBody != null
@@ -124,7 +124,7 @@ private class PAPIProfileTest {
     RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
-    PAPI_Profile.getProfile();
+    PAPIProfile.getProfile();
     Test.stopTest();
 
     System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
@@ -142,7 +142,7 @@ private class PAPIProfileTest {
     RestContext.response = res;
 
     Test.startTest();
-    PAPI_Profile.getProfile();
+    PAPIProfile.getProfile();
     Test.stopTest();
 
     System.assertEquals(

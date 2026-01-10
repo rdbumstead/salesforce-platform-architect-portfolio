@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for SAPI_Resume REST resource.
+ * @description       : Unit tests for SAPIResume REST resource.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -44,7 +44,7 @@ private class SAPIResumeTest {
     RestTestUtil.initGet('/services/apexrest/sapi/v1/resume/');
 
     Test.startTest();
-    SAPI_Resume.getResumeData();
+    SAPIResume.getResumeData();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();
@@ -69,7 +69,7 @@ private class SAPIResumeTest {
     );
 
     Test.startTest();
-    SAPI_Resume.getResumeData();
+    SAPIResume.getResumeData();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();
@@ -90,7 +90,7 @@ private class SAPIResumeTest {
     );
 
     Test.startTest();
-    SAPI_Resume.getResumeData();
+    SAPIResume.getResumeData();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();
@@ -110,10 +110,10 @@ private class SAPIResumeTest {
     RestContext.request = req;
     RestContext.response = res;
 
-    SAPI_Resume.throwException = true;
+    SAPIResume.throwException = true;
 
     Test.startTest();
-    SAPI_Resume.getResumeData();
+    SAPIResume.getResumeData();
     Test.stopTest();
 
     System.assertEquals(
