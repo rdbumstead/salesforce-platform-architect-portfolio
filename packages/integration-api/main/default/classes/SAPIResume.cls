@@ -54,7 +54,6 @@ global with sharing class SAPIResume {
             Experience__c,
             Experience__r.Name,
             Experience__r.Employer__r.Name,
-            Experience__r.Position_Title__c,
             Experience__r.Start_Date__c,
             Experience__r.End_Date__c
           FROM Experience_Highlight__c
@@ -73,7 +72,6 @@ global with sharing class SAPIResume {
             Experience__c,
             Experience__r.Name,
             Experience__r.Employer__r.Name,
-            Experience__r.Position_Title__c,
             Experience__r.Start_Date__c,
             Experience__r.End_Date__c
           FROM Experience_Highlight__c
@@ -115,7 +113,7 @@ global with sharing class SAPIResume {
           'experienceId' => h.Experience__c,
           'experienceName' => h.Experience__r?.Name,
           'employerName' => h.Experience__r?.Employer__r?.Name,
-          'role' => h.Experience__r?.Position_Title__c,
+          'role' => h.Experience__r?.Name,
           'startDate' => h.Experience__r?.Start_Date__c != null
             ? String.valueOf(h.Experience__r.Start_Date__c)
             : null,

@@ -27,7 +27,7 @@ private class PAPIProfileTest {
     // Create Experience
     Experience__c exp = new Experience__c(
       Employer__c = employer.Id,
-      Position_Title__c = 'Test Architect',
+      Name = 'Test Architect',
       Start_Date__c = Date.today().addYears(-2),
       Sort_Order__c = 1,
       Is_Current_Role__c = true,

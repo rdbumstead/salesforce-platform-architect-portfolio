@@ -337,7 +337,7 @@ components:
           properties:
             Id: { type: string, readOnly: true }
             Employer__c: { type: string }
-            Position_Title__c: { type: string }
+            role: { type: string }
             Start_Date__c: { type: string, format: date }
             End_Date__c: { type: string, format: date }
             Is_Current_Role__c: { type: boolean, readOnly: true }
