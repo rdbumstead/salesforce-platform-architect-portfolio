@@ -260,7 +260,7 @@ _Design artifacts complete; implementation begins post-launch._
 
 **Phase 3: Integration**
 
-- **Dev:** Implement `SAPI_Experience` Apex Class (System API).
+- **Dev:** Implement `SAPIExperience` Apex Class (System API).
 - **Appendix C:** Configure MuleSoft Governance Policies (Reference Implementation).
 - **Docs:** Upload Redoc documentation as Static Resource.
 - **Dev:** Develop `c-api-tester` LWC with fetch() harness.

@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for PAPI_Health REST resource.
+ * @description       : Unit tests for PAPIHealth REST resource.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -18,7 +18,7 @@ private class PAPIHealthTest {
     RestContext.response = res;
 
     Test.startTest();
-    PAPI_Health.getHealth();
+    PAPIHealth.getHealth();
     Test.stopTest();
 
     System.assertEquals(200, res.statusCode, 'Should return 200 OK');

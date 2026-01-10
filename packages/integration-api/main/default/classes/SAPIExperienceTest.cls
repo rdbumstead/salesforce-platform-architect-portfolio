@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for SAPI_Experience REST resource.
+ * @description       : Unit tests for SAPIExperience REST resource.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -27,7 +27,7 @@ private class SAPIExperienceTest {
     RestTestUtil.initGet('/services/apexrest/sapi/v1/experience/');
 
     Test.startTest();
-    SAPI_Experience.getExperiences();
+    SAPIExperience.getExperiences();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();
@@ -53,7 +53,7 @@ private class SAPIExperienceTest {
     );
 
     Test.startTest();
-    SAPI_Experience.getExperiences();
+    SAPIExperience.getExperiences();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();
@@ -68,7 +68,7 @@ private class SAPIExperienceTest {
     );
 
     Test.startTest();
-    SAPI_Experience.getExperiences();
+    SAPIExperience.getExperiences();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();
@@ -82,7 +82,7 @@ private class SAPIExperienceTest {
     );
 
     Test.startTest();
-    SAPI_Experience.getExperiences();
+    SAPIExperience.getExperiences();
     Test.stopTest();
 
     RestResponse res = RestTestUtil.getResponse();
@@ -102,10 +102,10 @@ private class SAPIExperienceTest {
     RestContext.request = req;
     RestContext.response = res;
 
-    SAPI_Experience.throwException = true;
+    SAPIExperience.throwException = true;
 
     Test.startTest();
-    SAPI_Experience.getExperiences();
+    SAPIExperience.getExperiences();
     Test.stopTest();
 
     System.assertEquals(

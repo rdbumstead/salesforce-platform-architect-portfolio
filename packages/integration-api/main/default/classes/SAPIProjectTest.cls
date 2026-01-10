@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for SAPI_Project REST resource.
+ * @description       : Unit tests for SAPIProject REST resource.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -24,7 +24,7 @@ private class SAPIProjectTest {
     RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
-    SAPI_Project.getProjects();
+    SAPIProject.getProjects();
     Test.stopTest();
 
     String responseBody = res.responseBody != null
@@ -57,7 +57,7 @@ private class SAPIProjectTest {
     RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
-    SAPI_Project.getProjects();
+    SAPIProject.getProjects();
     Test.stopTest();
 
     System.assertEquals(200, res.statusCode, 'Should return 200 OK');
@@ -78,7 +78,7 @@ private class SAPIProjectTest {
     RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
-    SAPI_Project.getProjects();
+    SAPIProject.getProjects();
     Test.stopTest();
 
     System.assertEquals(404, res.statusCode, 'Should return 404 Not Found');
@@ -100,7 +100,7 @@ private class SAPIProjectTest {
     RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
-    SAPI_Project.getProjects();
+    SAPIProject.getProjects();
     Test.stopTest();
 
     System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
@@ -122,7 +122,7 @@ private class SAPIProjectTest {
     RestResponse res = RestTestUtil.getResponse();
 
     Test.startTest();
-    SAPI_Project.getProjects();
+    SAPIProject.getProjects();
     Test.stopTest();
 
     System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
@@ -142,10 +142,10 @@ private class SAPIProjectTest {
     RestContext.request = req;
     RestContext.response = res;
 
-    SAPI_Project.throwException = true;
+    SAPIProject.throwException = true;
 
     Test.startTest();
-    SAPI_Project.getProjects();
+    SAPIProject.getProjects();
     Test.stopTest();
 
     System.assertEquals(

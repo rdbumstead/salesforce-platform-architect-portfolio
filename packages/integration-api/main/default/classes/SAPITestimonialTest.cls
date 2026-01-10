@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for SAPI_Testimonial REST resource.
+ * @description       : Unit tests for SAPITestimonial REST resource.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -31,7 +31,7 @@ private class SAPITestimonialTest {
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
-      SAPI_Testimonial.getTestimonials();
+      SAPITestimonial.getTestimonials();
       Test.stopTest();
 
       if (res.statusCode != 200) {
@@ -65,7 +65,7 @@ private class SAPITestimonialTest {
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
-      SAPI_Testimonial.getTestimonials();
+      SAPITestimonial.getTestimonials();
       Test.stopTest();
 
       System.assertEquals(200, res.statusCode, 'Should return 200 OK');
@@ -85,7 +85,7 @@ private class SAPITestimonialTest {
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
-      SAPI_Testimonial.getTestimonials();
+      SAPITestimonial.getTestimonials();
       Test.stopTest();
 
       System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
@@ -100,10 +100,10 @@ private class SAPITestimonialTest {
     RestContext.request = req;
     RestContext.response = res;
 
-    SAPI_Testimonial.throwException = true;
+    SAPITestimonial.throwException = true;
 
     Test.startTest();
-    SAPI_Testimonial.getTestimonials();
+    SAPITestimonial.getTestimonials();
     Test.stopTest();
 
     System.assertEquals(
