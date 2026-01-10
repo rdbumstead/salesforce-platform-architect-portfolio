@@ -10,19 +10,31 @@ on:
       - "package.json"
 
 jobs:
-  validate:
+  # JOB 1: Fast Quality Gates
+  # Skips on 'labeled' events to avoid redundant scanning when you just want to keep the org alive
+  quality-check:
+    if: github.event.action != 'labeled'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
+      - run: npm ci
+      - name: Run Quality Gates
+        run: |
+          npm run scan:secrets
+          npm run test:unit
+          npm run docs:verify
 
-      - name: Install NPM Dependencies
-        run: npm ci
+  # JOB 2: Salesforce Integration
+  scratch-org-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for Delta generation in Fallback mode
 
       - name: Setup Salesforce & Tools
         uses: ./.github/actions/setup-sf
@@ -31,64 +43,70 @@ jobs:
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
           username: ${{ secrets.SFDX_USERNAME }}
           is_dev_hub: "true"
-
-      - name: Run Quality Gates
-        run: |
-          npm run scan:secrets
-          npm run test:unit
-          npm run scan
-          npm run docs:verify
+          install_code_analyzer: "false"
 
       - name: Create Scratch Org
         id: create_org
         run: |
           echo "ORG_TYPE=scratch" >> $GITHUB_ENV
           set +e
-          # Duration set to 1 day to ensure auto-cleanup if delete is skipped
-          OUTPUT=$(sf org create scratch --target-dev-hub portfolio --definition-file config/project-scratch-def.json --alias ci-org --duration-days 1 --set-default --no-ancestors --wait 30 --json 2>&1)
+          # Attempt to create scratch org. If it fails (limit reached), we catch the exit code.
+          # We capture JSON output to easily parse the Auth URL later.
+          sf org create scratch --target-dev-hub portfolio --definition-file config/project-scratch-def.json --alias ci-org --duration-days 1 --set-default --no-ancestors --wait 30 --json > scratch_info.json
           EXIT_CODE=$?
           set -e
+
           if [ $EXIT_CODE -ne 0 ]; then
              echo "Scratch Org limit reached. Switching to Fallback Mode."
              echo "ORG_TYPE=fallback" >> $GITHUB_ENV
+          else
+             echo "Scratch Org created successfully."
           fi
 
-      - name: Deploy & Test (Scratch Mode)
+      # STRATEGY: FULL DEPLOY
+      # Scratch orgs start empty, so we must deploy the entire codebase to ensure dependencies exist.
+      - name: Deploy & Test (Scratch Mode - FULL)
         if: env.ORG_TYPE == 'scratch'
         run: |
+          # 1. Full Deploy
           sf project deploy start --source-dir packages --target-org ci-org --wait 30
-          sf apex run test --target-org ci-org --code-coverage --result-format human --wait 10
 
-      - name: Deploy & Test (Fallback Mode)
+          # 2. Run All Tests
+          sf apex run test --target-org ci-org --code-coverage --result-format human --wait 20
+
+      # STRATEGY: DELTA VALIDATION
+      # If we fallback to the Persistent Org (Prod/Portfolio), we must use Delta to avoid overwriting unrelated metadata.
+      - name: Deploy & Test (Fallback Mode - DELTA)
         if: env.ORG_TYPE == 'fallback'
         run: |
-          # Dry-run against Prod (Portfolio) if Scratch limit hit
-          sf project deploy start --target-org portfolio --source-dir packages --dry-run --test-level RunLocalTests --wait 30
+          mkdir -p changed
+          # Generate delta between PR branch (HEAD) and the target branch (base_ref/main)
+          sf sgd source delta --to "HEAD" --from "origin/${{ github.base_ref }}" --output changed --source packages --generate-delta
+
+          # Only run validation if actual metadata changed
+          if [ -s changed/package/package.xml ] && grep -q "<types>" changed/package/package.xml; then
+             echo "Validating Delta changes against Production..."
+             sf project deploy start --target-org portfolio --manifest changed/package/package.xml --dry-run --test-level RunLocalTests --wait 30
+          else
+             echo "No metadata changes detected. Skipping validation."
+          fi
 
       - name: Provide Instant Access (If Label Applied)
         if: env.ORG_TYPE == 'scratch' && contains(github.event.pull_request.labels.*.name, 'debug:keep-org')
         run: |
-          # 1. Extract the Auth URL safely
-          sf org display --target-org ci-org --verbose --json | jq -r .result.sfdxAuthUrl > auth_url.txt
+          # Extract the Auth URL from the earlier JSON output
+          cat scratch_info.json | jq -r .result.authFields.sfdxAuthUrl > auth_url.txt
           AUTH_URL=$(cat auth_url.txt)
 
-          # 2. Generate the Developer Summary
           echo "### UAT Environment Ready" >> $GITHUB_STEP_SUMMARY
           echo "> **Status:** Org preserved for 24 hours." >> $GITHUB_STEP_SUMMARY
-          echo "> **Action:** Copy and run the block below to launch the org locally." >> $GITHUB_STEP_SUMMARY
-
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "# 1. Create temporary auth file" >> $GITHUB_STEP_SUMMARY
           echo "echo '${AUTH_URL}' > uat_auth.txt" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# 2. Authenticate & Open" >> $GITHUB_STEP_SUMMARY
           echo "sf org login sfdx-url -f uat_auth.txt --set-alias pr-${{ github.event.number }}-uat" >> $GITHUB_STEP_SUMMARY
           echo "sf org open -o pr-${{ github.event.number }}-uat" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# 3. Cleanup" >> $GITHUB_STEP_SUMMARY
-          echo "rm uat_auth.txt" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Delete Scratch Org
+        # Always delete unless the 'debug:keep-org' label is present
         if: always() && env.ORG_TYPE == 'scratch' && !contains(github.event.pull_request.labels.*.name, 'debug:keep-org')
         run: sf org delete scratch --target-org ci-org --no-prompt || true
