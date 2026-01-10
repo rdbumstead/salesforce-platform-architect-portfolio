@@ -36,11 +36,18 @@ runs:
           npm install @salesforce/cli --global
         fi
 
-    - name: Install Essential Plugins
+    # 1. ALWAYS install the Delta plugin (Fast & Critical for Deployments)
+    - name: Install Delta Plugin
+      shell: bash
+      run: |
+        echo y | sf plugins install sfdx-git-delta
+
+    # 2. ONLY install Analyzer if requested (Slow & Optional)
+    - name: Install Code Analyzer
       if: ${{ inputs.install_code_analyzer == 'true' }}
       shell: bash
       run: |
-        echo y | sf plugins install sfdx-git-delta @salesforce/plugin-code-analyzer
+        echo y | sf plugins install @salesforce/plugin-code-analyzer
 
     - name: Authenticate via JWT
       shell: bash
