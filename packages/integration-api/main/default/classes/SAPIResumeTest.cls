@@ -14,7 +14,7 @@ private class SAPIResumeTest {
 
     Experience__c exp = new Experience__c(
       Employer__c = employer.Id,
-      Position_Title__c = 'Technical Architect',
+      Name = 'Technical Architect',
       Start_Date__c = Date.today(),
       Sort_Order__c = 1
     );

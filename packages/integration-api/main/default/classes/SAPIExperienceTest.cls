@@ -12,9 +12,10 @@ private class SAPIExperienceTest {
     Account employer = new Account(Name = 'Salesforce');
     insert employer;
 
+    // UPDATED: Replaced Position_Title__c with Name
     Experience__c exp = new Experience__c(
       Employer__c = employer.Id,
-      Position_Title__c = 'Technical Architect',
+      Name = 'Technical Architect',
       Start_Date__c = Date.today().addYears(-1),
       Is_Current_Role__c = true,
       Sort_Order__c = 1
@@ -39,9 +40,10 @@ private class SAPIExperienceTest {
     );
 
     String responseJson = res.responseBody.toString();
+    // This assertion works because we mapped Name to the 'name' JSON property in the main class
     System.assert(
       responseJson.contains('Technical Architect'),
-      'Response should contain role'
+      'Response should contain role name'
     );
   }
 
@@ -58,6 +60,7 @@ private class SAPIExperienceTest {
 
     RestResponse res = RestTestUtil.getResponse();
     System.assertEquals(200, res.statusCode, 'Should return 200 OK');
+    // Optional: Add assertion to verify record count > 0 since our setup data matches this filter
   }
 
   @IsTest
@@ -74,6 +77,7 @@ private class SAPIExperienceTest {
     RestResponse res = RestTestUtil.getResponse();
     System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
   }
+
   @IsTest
   static void testGetExperiencesInvalidLimit() {
     RestTestUtil.initGet(
@@ -97,7 +101,6 @@ private class SAPIExperienceTest {
   static void testGetExperiencesInternalError() {
     RestRequest req = new RestRequest();
     RestResponse res = new RestResponse();
-    // req.requestURI = null;
     req.httpMethod = 'GET';
     RestContext.request = req;
     RestContext.response = res;

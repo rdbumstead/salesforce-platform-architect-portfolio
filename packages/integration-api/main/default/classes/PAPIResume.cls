@@ -85,7 +85,7 @@ global with sharing class PAPIResume {
       SELECT
         Id,
         Employer__r.Name,
-        Position_Title__c,
+        Name,
         Start_Date__c,
         End_Date__c,
         Is_Current_Role__c,
@@ -103,9 +103,7 @@ global with sharing class PAPIResume {
       String employer = exp.Employer__r?.Name != null
         ? exp.Employer__r.Name
         : 'Unknown';
-      String role = exp.Position_Title__c != null
-        ? exp.Position_Title__c
-        : 'Role';
+      String role = exp.Name != null ? exp.Name : 'Role';
       resumeText += employer + ' | ' + role + '\n';
       resumeText +=
         PAPITransformer.formatDateRange(exp.Start_Date__c, exp.End_Date__c) +

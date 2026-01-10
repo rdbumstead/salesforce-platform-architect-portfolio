@@ -50,7 +50,7 @@ private class PAPITransformerTest {
 
     Experience__c exp = new Experience__c(
       Employer__c = employer.Id,
-      Position_Title__c = 'Senior Architect',
+      Name = 'Senior Architect',
       Start_Date__c = Date.today().addYears(-5),
       Is_Current_Role__c = true,
       Contact__c = c.Id
@@ -59,7 +59,7 @@ private class PAPITransformerTest {
     insert exp;
 
     List<Experience__c> experiences = [
-      SELECT Id, Start_Date__c, Position_Title__c, Is_Current_Role__c
+      SELECT Id, Start_Date__c, Name, Is_Current_Role__c
       FROM Experience__c
     ];
     */

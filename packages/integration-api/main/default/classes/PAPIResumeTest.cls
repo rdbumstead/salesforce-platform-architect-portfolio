@@ -23,7 +23,7 @@ private class PAPIResumeTest {
 
     Experience__c exp = new Experience__c(
       Employer__c = employer.Id,
-      Position_Title__c = 'Developer',
+      Name = 'Developer',
       Start_Date__c = Date.today().addYears(-1),
       End_Date__c = Date.today(),
       Is_Current_Role__c = false,

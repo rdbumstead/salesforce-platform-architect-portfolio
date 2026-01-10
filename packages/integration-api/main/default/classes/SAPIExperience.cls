@@ -40,7 +40,7 @@ global with sharing class SAPIExperience {
 
       // Build dynamic query
       String baseQuery =
-        'SELECT Id, Name, Employer__c, Employer__r.Name, Position_Title__c, ' +
+        'SELECT Id, Name, Employer__c, Employer__r.Name, ' +
         'Start_Date__c, End_Date__c, Is_Current_Role__c, Is_Remote__c, Sort_Order__c, ' +
         'Contact__c, Contact__r.Name, ' +
         '(SELECT Id, Name, Description__c, Persona_Tag__c, Sort_Order__c FROM Experience_Highlights__r ORDER BY Sort_Order__c ASC) ' +
@@ -53,7 +53,8 @@ global with sharing class SAPIExperience {
         baseQuery += ' AND Employer__r.Name LIKE :employerName';
       }
 
-      baseQuery += ' ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST, Start_Date__c DESC';
+      // Sort by Is_Current_Role__c desc, then by Sort_Order__c, or Date
+      baseQuery += ' ORDER BY Is_Current_Role__c DESC, Sort_Order__c ASC, End_Date__c DESC NULLS FIRST, Start_Date__c DESC';
       baseQuery += ' LIMIT :limitParam OFFSET :offsetParam';
 
       List<Experience__c> experiences = Database.query(baseQuery);
@@ -85,7 +86,7 @@ global with sharing class SAPIExperience {
     for (Experience__c exp : experiences) {
       Map<String, Object> item = new Map<String, Object>{
         'id' => exp.Id,
-        'name' => exp.Position_Title__c,
+        'name' => exp.Name, // UPDATED: Mapped standard Name field
         'employerId' => exp.Employer__c,
         'employerName' => exp.Employer__r?.Name,
         'startDate' => exp.Start_Date__c != null
@@ -111,7 +112,7 @@ global with sharing class SAPIExperience {
           highlights.add(
             new Map<String, Object>{
               'id' => h.Id,
-              'name' => h.Name,
+              'name' => h.Name, // Highlights use Name (auto-number) or custom
               'description' => h.Description__c,
               'personaTag' => h.Persona_Tag__c,
               'sortOrder' => h.Sort_Order__c
