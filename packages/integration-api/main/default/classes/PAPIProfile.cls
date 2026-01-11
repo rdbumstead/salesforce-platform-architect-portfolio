@@ -200,7 +200,7 @@ global with sharing class PAPIProfile {
         Id,
         Issuer__c,
         Issuer__r.Name,
-        Degree__c,
+        Name,
         Field_of_Study__c,
         Graduation_Date__c,
         GPA__c
@@ -215,7 +215,7 @@ global with sharing class PAPIProfile {
         new Map<String, Object>{
           'id' => e.Id,
           'school' => e.Issuer__r.Name,
-          'degree' => e.Degree__c,
+          'degree' => e.Name,
           'fieldOfStudy' => e.Field_of_Study__c,
           'year' => e.Graduation_Date__c != null
             ? String.valueOf(e.Graduation_Date__c.year())

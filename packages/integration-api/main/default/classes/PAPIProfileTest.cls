@@ -59,6 +59,16 @@ private class PAPIProfileTest {
       Sort_Order__c = 1
     );
     insert t;
+    // Create Education
+    Education__c edu = new Education__c(
+      Issuer__c = employer.Id,
+      Contact__c = c.Id,
+      Name = 'Bachelor of Science',
+      Field_of_Study__c = 'Computer Science',
+      Graduation_Date__c = Date.today().addYears(-5),
+      GPA__c = 3.8
+    );
+    insert edu;
   }
 
   @IsTest
@@ -96,6 +106,14 @@ private class PAPIProfileTest {
     System.assert(
       responseJson.contains('experience'),
       'Response should contain experience'
+    );
+    System.assert(
+      responseJson.contains('education'),
+      'Response should contain education'
+    );
+    System.assert(
+      responseJson.contains('Bachelor of Science'),
+      'Response should contain degree name'
     );
   }
 
