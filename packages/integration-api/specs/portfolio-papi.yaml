@@ -1,6 +1,7 @@
 openapi: 3.0.0
 info:
   title: Portfolio Process API (PAPI)
+  version: 1.3.0
   description: |
     A Process API (PAPI) responsible for orchestrating, transforming, and filtering data 
     from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
@@ -35,7 +36,6 @@ info:
     | Project | `dateCompleted` | `completionDate` | JS Convention |
     | Project | `heroImageUrl` | `heroImageUrl` | Passthrough |
 
-  version: 1.2.0
   x-mulesoft-layer: process
   contact:
     name: Ryan Bumstead
@@ -418,6 +418,11 @@ components:
           items:
             type: string
             example: "Apex"
+        pillarLabel:
+          type: string
+          description: "The strategic pillar and pillar description (e.g. Pillar A: Business Architecture)"
+          example: "Pillar A: Business Architecture"
+          nullable: true
         assets:
           type: array
           description: Images, videos, or links related to the project
@@ -508,6 +513,14 @@ components:
           type: string
           description: Short professional bio/objective
           example: "Driving digital transformation through architecture."
+        jiraProjectKey:
+          type: string
+          description: Key for Jira integration
+          example: "SPAP"
+        gitHubRepoPath:
+          type: string
+          description: GitHub Owner/Repo path
+          example: "rdbumstead/salesforce-portfolio"
 
     ContactDetail:
       type: object
@@ -588,6 +601,10 @@ components:
           type: string
           description: Brand color for the category
           example: "#0070d2"
+        categoryOrder:
+          type: number
+          description: Order to display the category in the UI
+          example: 10
 
     EnrichedCertification:
       type: object

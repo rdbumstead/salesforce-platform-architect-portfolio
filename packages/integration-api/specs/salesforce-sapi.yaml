@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Salesforce System API (SAPI)
-  version: 1.2.0
+  version: 1.3.0
   description: |
     System API exposing core Salesforce objects for the Portfolio.
 
@@ -553,9 +553,14 @@ components:
           description: "Code Repository URL"
         pillar:
           type: string
-          example: "Data Architecture"
+          example: "A"
           nullable: true
           description: "Architectural Pillar"
+        pillarLabel:
+          type: string
+          example: "Pillar A: Business Architecture"
+          nullable: true
+          description: "Architectural Pillar Label"
         isFeatured:
           type: boolean
           example: true
@@ -902,6 +907,14 @@ components:
           example: "Looking for Principal Architect roles."
           nullable: true
           description: "Career Objective Text"
+        jiraProjectKey:
+          type: string
+          example: "SPAP"
+          description: "Jira Key for integration"
+        gitHubRepoPath:
+          type: string
+          example: "rdbumstead/salesforce-portfolio"
+          description: "GitHub Owner/Repo path for API calls"
       additionalProperties: true
 
     Account:
@@ -970,6 +983,10 @@ components:
           example: "#0070d2"
           nullable: true
           description: "Category Color Hex"
+        categoryOrder:
+          type: number
+          example: 10
+          description: "Category Order"
       additionalProperties: true
 
     Certification:
