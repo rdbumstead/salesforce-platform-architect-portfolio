@@ -65,7 +65,7 @@ private class PAPIResumeTest {
     Education__c edu = new Education__c(
       Issuer__c = uniAccount.Id,
       Contact__c = c.Id,
-      Degree__c = 'B.S.',
+      Name = 'B.S.',
       Field_of_Study__c = 'Computer Science',
       Graduation_Date__c = Date.today().addYears(-5)
     );

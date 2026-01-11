@@ -183,7 +183,7 @@ global with sharing class PAPIResume {
       SELECT
         Issuer__c,
         Issuer__r.Name,
-        Degree__c,
+        Name,
         Field_of_Study__c,
         Graduation_Date__c
       FROM Education__c
@@ -196,8 +196,8 @@ global with sharing class PAPIResume {
         ? edu.Issuer__r.Name
         : 'Unknown';
       resumeText += schoolName + '\n';
-      if (edu.Degree__c != null) {
-        resumeText += edu.Degree__c;
+      if (edu.Name != null) {
+        resumeText += edu.Name;
         if (edu.Field_of_Study__c != null)
           resumeText += ' in ' + edu.Field_of_Study__c;
         if (edu.Graduation_Date__c != null)

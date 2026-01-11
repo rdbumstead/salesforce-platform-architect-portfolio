@@ -469,7 +469,7 @@ components:
           properties:
             Id: { type: string, readOnly: true }
             School_Name__c: { type: string }
-            Degree__c: { type: string }
+            degree: { type: string }
           additionalProperties: true
 
 paths:
