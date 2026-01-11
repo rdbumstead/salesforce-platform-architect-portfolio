@@ -41,6 +41,9 @@ specs.forEach((specFile) => {
     content = content.trimStart();
 
     fs.writeFileSync(outputPath, content);
+
+    // Run Prettier on the generated file to ensure it matches the repo style and passes CI
+    execSync(`npx prettier --write "${outputPath}"`, { stdio: "inherit" });
   } catch (error) {
     console.error(`Error processing ${specFile}:`, error.message);
     process.exit(1);
