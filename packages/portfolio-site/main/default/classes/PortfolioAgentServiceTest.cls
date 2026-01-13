@@ -1,10 +1,3 @@
-/**
- * @description       : Unit tests for PortfolioAgentService.
- * @author            : Ryan Bumstead
- * @githubRepo        : https://github.com/rdbumstead
- * @portfolio         : https://ryanbumstead.com
- * @Created           : 01/13/2025
- **/
 @IsTest
 private class PortfolioAgentServiceTest {
   @testSetup
@@ -21,13 +14,14 @@ private class PortfolioAgentServiceTest {
     Account employer = new Account(Name = 'Tech Corp');
     insert employer;
 
-    // 3. Experience (Using 'Name' for Title)
+    // 3. Experience
     Experience__c job = new Experience__c(
       Name = 'Senior Dev',
       Contact__c = c.Id,
       Employer__c = employer.Id,
       Start_Date__c = Date.today().addYears(-2),
-      Is_Current_Role__c = true
+      Is_Current_Role__c = true,
+      Sort_Order__c = 1
     );
     insert job;
 
@@ -36,11 +30,12 @@ private class PortfolioAgentServiceTest {
       Name = 'Highlight 1',
       Experience__c = job.Id,
       Description__c = 'Reduced deploy time',
-      Sort_Order__c = 1
+      Sort_Order__c = 1,
+      Persona_Tag__c = 'Developer'
     );
     insert highlight;
 
-    // 5. Education (Using 'Name' for Degree)
+    // 5. Education
     Education__c edu = new Education__c(
       Name = 'BS Computer Science',
       Contact__c = c.Id,
@@ -58,10 +53,15 @@ private class PortfolioAgentServiceTest {
     );
     insert cert;
 
-    // 7. Skill & Project
-    Skill__c apex = new Skill__c(Name = 'Apex', Proficiency__c = 90);
+    // 7. Skill
+    Skill__c apex = new Skill__c(
+      Name = 'Apex',
+      Proficiency__c = 3,
+      Category_Order__c = 1
+    );
     insert apex;
 
+    // 8. Project
     Project__c proj = new Project__c(
       Name = 'Portfolio Site',
       Contact__c = c.Id,
@@ -72,15 +72,15 @@ private class PortfolioAgentServiceTest {
     );
     insert proj;
 
+    // 9. Project Skill
     Project_Skill__c ps = new Project_Skill__c(
       Project__c = proj.Id,
       Skill__c = apex.Id
     );
     insert ps;
 
-    // 8. Testimonial (Using Context__c, not Company__c)
+    // 10. Testimonial
     Testimonial__c t1 = new Testimonial__c(
-      Name = 'T1',
       Contact__c = c.Id,
       Context__c = 'Manager',
       Author_Name__c = 'Jane Doe',
