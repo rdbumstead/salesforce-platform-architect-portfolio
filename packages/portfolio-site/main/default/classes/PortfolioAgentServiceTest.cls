@@ -92,7 +92,7 @@ private class PortfolioAgentServiceTest {
   }
 
   @IsTest
-  static void testGetPortfolioContext_HappyPath() {
+  static void testGetPortfolioContextHappyPath() {
     Contact c = [SELECT Id FROM Contact LIMIT 1];
     PortfolioAgentService.PortfolioContextRequest req = new PortfolioAgentService.PortfolioContextRequest();
     req.contactId = c.Id;
@@ -132,7 +132,7 @@ private class PortfolioAgentServiceTest {
   }
 
   @IsTest
-  static void testGetPortfolioContext_InvalidId() {
+  static void testGetPortfolioContextInvalidId() {
     PortfolioAgentService.PortfolioContextRequest req = new PortfolioAgentService.PortfolioContextRequest();
     req.contactId = '003000000000000AAA'; // Fake ID
 
