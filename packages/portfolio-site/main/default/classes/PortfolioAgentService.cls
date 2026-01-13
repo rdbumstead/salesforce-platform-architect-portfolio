@@ -30,7 +30,6 @@ public with sharing class PortfolioAgentService {
     // =========================================================
     // 1. Fetch Global Configuration
     // =========================================================
-    // Schema Validation: Uses Career_Objective__c instead of Bio__c
     List<Portfolio_Config__mdt> configList = [
       SELECT
         MasterLabel,
