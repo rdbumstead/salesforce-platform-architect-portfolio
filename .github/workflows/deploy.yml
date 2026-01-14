@@ -46,6 +46,7 @@ jobs:
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
           username: ${{ secrets.SFDX_USERNAME }}
           install_delta: "true"
+          alias: "portfolio"
 
       - name: Generate Delta
         if: github.event_name == 'push' || github.event.inputs.deployment_mode == 'delta'
