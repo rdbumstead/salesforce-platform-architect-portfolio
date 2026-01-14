@@ -50,6 +50,7 @@ jobs:
           username: ${{ secrets.SFDX_USERNAME }}
           is_dev_hub: "true"
           install_delta: "true"
+          alias: "portfolio"
 
       - name: Create Scratch Org
         id: create_org
