@@ -21,6 +21,7 @@ jobs:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
           username: ${{ secrets.SFDX_INTEGRATION_USERNAME }}
+          alias: "portfolio"
 
       - name: Execute Heartbeat Query
         run: |
