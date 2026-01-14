@@ -40,12 +40,12 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Salesforce & Tools
-        uses: ./.github/actions/setup-sf
+        uses: rdbumstead/setup-salesforce-action@v1
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
           username: ${{ secrets.SFDX_USERNAME }}
-          install_code_analyzer: "false"
+          install_delta: "true"
 
       - name: Generate Delta
         if: github.event_name == 'push' || github.event.inputs.deployment_mode == 'delta'
