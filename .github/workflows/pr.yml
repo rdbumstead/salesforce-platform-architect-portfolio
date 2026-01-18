@@ -79,7 +79,7 @@ jobs:
         if: env.ORG_TYPE == 'fallback'
         run: |
           mkdir -p changed
-          sf sgd source delta --to "HEAD" --from "origin/${{ github.base_ref }}" --output changed --source packages --generate-delta
+          sf sgd source delta --to "HEAD" --from "origin/${{ github.base_ref }}" --output changed --source packages --generate-delta --ignore .forceignore
 
           if [ -s changed/package/package.xml ] && grep -q "<types>" changed/package/package.xml; then
              echo "Validating Delta changes against Production..."
