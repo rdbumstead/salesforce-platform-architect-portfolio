@@ -33,7 +33,7 @@ jobs:
 
       - name: Run Salesforce Code Analyzer
         run: |
-          sf scanner run --target "packages/**" --format "table" --severity-threshold 3
+          npm run scan
 
   scratch-org-test:
     runs-on: ubuntu-latest
