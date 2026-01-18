@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Environment & Scanner
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           skip_auth: "true"
           install_scanner: "true"
@@ -33,7 +33,7 @@ jobs:
 
       - name: Run Salesforce Code Analyzer
         run: |
-          sf scanner run --target "packages/**" --format "table" --severity-threshold 3
+          npm run scan
 
   scratch-org-test:
     runs-on: ubuntu-latest
@@ -43,7 +43,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Salesforce & Tools
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -79,7 +79,7 @@ jobs:
         if: env.ORG_TYPE == 'fallback'
         run: |
           mkdir -p changed
-          sf sgd source delta --to "HEAD" --from "origin/${{ github.base_ref }}" --output changed --source packages --generate-delta
+          sf sgd source delta --to "HEAD" --from "origin/${{ github.base_ref }}" --output changed --source packages --generate-delta --ignore .forceignore
 
           if [ -s changed/package/package.xml ] && grep -q "<types>" changed/package/package.xml; then
              echo "Validating Delta changes against Production..."
@@ -105,3 +105,37 @@ jobs:
       - name: Delete Scratch Org
         if: always() && env.ORG_TYPE == 'scratch' && !contains(github.event.pull_request.labels.*.name, 'debug:keep-org')
         run: sf org delete scratch --target-org ci-org --no-prompt || true
+
+  pr-status:
+    if: always()
+    needs: [quality-check, scratch-org-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate PR Summary
+        run: |
+          echo "## 🚀 PR Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          FAILED=false
+
+          if [ "${{ needs.quality-check.result }}" = "success" ]; then
+             echo "✅ **Quality Gates**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+             echo "❌ **Quality Gates**: Failed" >> $GITHUB_STEP_SUMMARY
+             FAILED=true
+          fi
+
+          if [ "${{ needs.scratch-org-test.result }}" = "success" ]; then
+             echo "✅ **Scratch Org Deployment**: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.scratch-org-test.result }}" = "skipped" ]; then
+             echo "⚠️ **Scratch Org Deployment**: Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+             echo "❌ **Scratch Org Deployment**: Failed" >> $GITHUB_STEP_SUMMARY
+             FAILED=true
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$FAILED" = true ]; then
+             exit 1
+          fi

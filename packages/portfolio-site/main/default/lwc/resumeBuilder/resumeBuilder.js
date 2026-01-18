@@ -42,7 +42,7 @@ export default class ResumeBuilder extends LightningElement {
     // const doc = new jsPDF();
     // doc.text("Ryan Bumstead", 10, 10);
     // doc.save("Resume.pdf");
-    // eslint-disable-next-line no-console
+
     console.log("Downloading PDF... (Needs jsPDF library)");
   }
 

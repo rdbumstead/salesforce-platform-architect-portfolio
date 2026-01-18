@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Is_Featured__c</fullName>
     <defaultValue>false</defaultValue>
-    <description>If true, project appears in the curated 5-Minute Tour hero section</description>
+    <description
+  >If true, project appears in the curated 5-Minute Tour hero section</description>
     <label>Is Featured</label>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>

@@ -5,17 +5,9 @@ on:
     branches: [main]
     paths:
       - "packages/**"
-      - "!packages/integration-api/specs/**"
-      - "!packages/integration-api/AnypointStudio/**"
-      - "!packages/**/*.md"
-      - "!packages/**/jsconfig.json"
-      - "!packages/**/.gitkeep"
+      - "!packages/integration-api/**"
       - "sfdx-project.json"
       - "package.json"
-      - "package-lock.json"
-      - "scripts/**"
-      - ".github/workflows/deploy.yml"
-      - ".github/actions/**"
   workflow_dispatch:
     inputs:
       deployment_mode:
@@ -40,7 +32,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Salesforce & Tools
-        uses: rdbumstead/setup-salesforce-action@v1
+        uses: rdbumstead/setup-salesforce-action@v2
         with:
           jwt_key: ${{ secrets.SFDX_JWT_KEY }}
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
@@ -49,24 +41,77 @@ jobs:
           alias: "portfolio"
 
       - name: Generate Delta
-        if: github.event_name == 'push' || github.event.inputs.deployment_mode == 'delta'
+        if: github.event_name == 'push' || inputs.deployment_mode == 'delta'
         run: |
           mkdir -p changed
+
           FROM_SHA="${{ github.event.before }}"
           [ -z "$FROM_SHA" ] || [ "$FROM_SHA" = "0000000000000000000000000000000000000000" ] && FROM_SHA="HEAD~1"
-          sf sgd source delta --to "HEAD" --from "$FROM_SHA" --output changed --source packages --generate-delta
+
+          echo "Generating delta from $FROM_SHA to HEAD..."
+
+          sf sgd source delta \
+            --to "HEAD" \
+            --from "$FROM_SHA" \
+            --output-dir changed \
+            --source-dir packages \
+            --generate-delta \
+            --ignore .forceignore
 
       - name: Execute Deployment
         run: |
-          if [ "${{ github.event.inputs.deployment_mode }}" == "full" ]; then
+          # 1. Handle Full Deployment
+          if [ "${{ inputs.deployment_mode }}" == "full" ]; then
+            echo "🚀 Starting FULL deployment..."
             sf project deploy start --source-dir packages --target-org portfolio --wait 60
-          elif { [ -s changed/package/package.xml ] && grep -q "<types>" changed/package/package.xml; } || { [ -s changed/destructiveChanges/destructiveChanges.xml ] && grep -q "<types>" changed/destructiveChanges/destructiveChanges.xml; }; then
-            DESTRUCTIVE_FLAG="--post-destructive-changes"
-            if [ "${{ github.event.inputs.destructive_timing }}" == "pre" ]; then
-               DESTRUCTIVE_FLAG="--pre-destructive-changes"
-            fi
+            exit 0
+          fi
 
-            sf project deploy start --manifest changed/package/package.xml $DESTRUCTIVE_FLAG changed/destructiveChanges/destructiveChanges.xml --target-org portfolio --wait 30
+          # 2. Analyze Delta Artifacts
+          HAS_CHANGES="false"
+          DEPLOY_CMD="sf project deploy start --target-org portfolio --wait 30"
+
+          if [ -s changed/package/package.xml ] && grep -q "<types>" changed/package/package.xml; then
+             echo "📦 Detected Metadata Changes"
+             DEPLOY_CMD="$DEPLOY_CMD --manifest changed/package/package.xml"
+             HAS_CHANGES="true"
+          fi
+
+          if [ -s changed/destructiveChanges/destructiveChanges.xml ] && grep -q "<types>" changed/destructiveChanges/destructiveChanges.xml; then
+             echo "🔥 Detected Destructive Changes"
+             
+             TIMING="${{ inputs.destructive_timing }}"
+             [ -z "$TIMING" ] && TIMING="post"
+             
+             if [ "$TIMING" == "pre" ]; then
+                DEPLOY_CMD="$DEPLOY_CMD --pre-destructive-changes changed/destructiveChanges/destructiveChanges.xml"
+             else
+                DEPLOY_CMD="$DEPLOY_CMD --post-destructive-changes changed/destructiveChanges/destructiveChanges.xml"
+             fi
+             HAS_CHANGES="true"
+          fi
+
+          # 3. Execute or Skip
+          if [ "$HAS_CHANGES" == "true" ]; then
+             echo "🚀 Executing: $DEPLOY_CMD"
+             $DEPLOY_CMD
           else
-            echo "No metadata changes detected."
+             echo "✅ No metadata changes detected. Skipping deployment."
+          fi
+
+  deploy-status:
+    if: always()
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+             echo "✅ **Result**: Deployment Successful (or Skipped safely)" >> $GITHUB_STEP_SUMMARY
+          else
+             echo "❌ **Result**: Deployment Failed" >> $GITHUB_STEP_SUMMARY
+             exit 1
           fi

@@ -6,7 +6,7 @@
   ],
   "overrides": [
     {
-      "files": "**/lwc/**/*.html",
+      "files": "../**/lwc/**/*.html",
       "options": { "parser": "lwc" }
     },
     {

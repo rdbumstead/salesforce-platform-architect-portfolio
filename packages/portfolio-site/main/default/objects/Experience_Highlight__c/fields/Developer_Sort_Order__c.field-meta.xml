@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Developer_Sort_Order__c</fullName>
-    <description>Specific order when resume persona = Developer / Full-Stack</description>
+    <description
+  >Specific order when resume persona = Developer / Full-Stack</description>
     <externalId>false</externalId>
     <label>Developer Sort Order</label>
     <precision>3</precision>

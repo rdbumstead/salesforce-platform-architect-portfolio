@@ -44,7 +44,7 @@ public class HelloWorld {
     // Simple clipboard copy
     navigator.clipboard.writeText(this.codeContent);
     // Show Toast (not available in all contexts, use console for now)
-    // eslint-disable-next-line no-console
+
     console.log("Copied to clipboard");
   }
 }

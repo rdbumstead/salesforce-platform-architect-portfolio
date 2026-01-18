@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Hero_Image_URL__c</fullName>
-    <description>Main card image shown on landing page grid and 5-Minute Tour</description>
+    <description
+  >Main card image shown on landing page grid and 5-Minute Tour</description>
     <label>Hero Image URL</label>
     <required>false</required>
     <trackHistory>false</trackHistory>
