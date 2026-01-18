@@ -125,7 +125,7 @@ test-result/
 **/test-result/
 test-results/
 **/test-results/
-.lighthouseci/**
+.lighthouseci/
 
 # ---------------------------------------------------------------------
 # CI/CD, Delta & Build Artifacts

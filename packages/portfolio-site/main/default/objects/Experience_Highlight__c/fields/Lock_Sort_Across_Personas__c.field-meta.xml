@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Lock_Sort_Across_Personas__c</fullName>
     <defaultValue>true</defaultValue>
-    <description>If checked, changing any persona sort auto-syncs all others (flow-driven)</description>
+    <description
+  >If checked, changing any persona sort auto-syncs all others (flow-driven)</description>
     <label>Lock Sort Across Personas</label>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>

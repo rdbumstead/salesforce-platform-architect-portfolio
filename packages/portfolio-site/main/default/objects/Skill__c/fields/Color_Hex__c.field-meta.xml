@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Color_Hex__c</fullName>
     <defaultValue>&quot;#00A1E0&quot;</defaultValue>
-    <description>Exact color for G6 node fill (bypasses category color)</description>
+    <description
+  >Exact color for G6 node fill (bypasses category color)</description>
     <externalId>false</externalId>
     <label>Color Hex</label>
     <length>7</length>

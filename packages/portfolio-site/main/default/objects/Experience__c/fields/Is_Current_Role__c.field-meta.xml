@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Is_Current_Role__c</fullName>
     <defaultValue>false</defaultValue>
-    <description>If true, End Date is ignored and resume shows “Present”</description>
+    <description
+  >If true, End Date is ignored and resume shows “Present”</description>
     <label>Is Current Role</label>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>

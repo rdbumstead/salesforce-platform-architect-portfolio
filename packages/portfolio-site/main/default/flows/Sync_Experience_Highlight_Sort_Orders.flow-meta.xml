@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>61.0</apiVersion>
     
@@ -25,7 +25,8 @@
         <locationX>264</locationX>
         <locationY>503</locationY>
         <assignmentItems>
-            <assignToReference>$Record.Architect_Sort_Order__c</assignToReference>
+            <assignToReference
+      >$Record.Architect_Sort_Order__c</assignToReference>
             <operator>Assign</operator>
             <value>
                 <elementReference>varUniversalSort</elementReference>
@@ -42,7 +43,8 @@
         <locationX>264</locationX>
         <locationY>803</locationY>
         <assignmentItems>
-            <assignToReference>$Record.Developer_Sort_Order__c</assignToReference>
+            <assignToReference
+      >$Record.Developer_Sort_Order__c</assignToReference>
             <operator>Assign</operator>
             <value>
                 <elementReference>varUniversalSort</elementReference>
@@ -172,7 +174,8 @@
             {!$Record.Sort_Order__c})))</expression>
     </formulas>
 
-    <interviewLabel>Sync Experience Highlight Sort Orders {!$Flow.CurrentDateTime}</interviewLabel>
+    <interviewLabel
+  >Sync Experience Highlight Sort Orders {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Sync Experience Highlight Sort Orders</label>
     <processType>AutoLaunchedFlow</processType>
     

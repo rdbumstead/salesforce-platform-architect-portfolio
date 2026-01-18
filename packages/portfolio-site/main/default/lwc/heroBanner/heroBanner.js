@@ -12,7 +12,6 @@ export default class HeroBanner extends LightningElement {
   heroImageUrl = "";
 
   handleConnect() {
-    // eslint-disable-next-line no-console
     console.log("Hero Banner Loaded");
   }
 }
