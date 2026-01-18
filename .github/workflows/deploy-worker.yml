@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - "scripts/cache-warmer.js"
-      - "wrangler.toml"
+      - "config/wrangler.toml"
   workflow_dispatch:
 
 jobs:
@@ -20,4 +20,4 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: deploy
+          command: deploy --config config/wrangler.toml
