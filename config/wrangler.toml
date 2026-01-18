@@ -1,5 +1,5 @@
 name = "portfolio-cache-warmer"
-main = "scripts/cache-warmer.js"
+main = "../scripts/cache-warmer.js"
 compatibility_date = "2024-01-01"
 account_id = "a5ce6c8f5c4c7ffcb45465a402799984"
 
