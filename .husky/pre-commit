@@ -1,6 +1,4 @@
 #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
 # ----------------------
 # INTELLIGENT HOOK
 # ----------------------
@@ -15,7 +13,8 @@ if [ $? -ne 0 ]; then echo "[ERROR] Hygiene Failed"; exit 1; fi
 # 2. BACKEND VALIDATION (Conditional)
 # ----------------------
 # Trigger: Apex, Objects, Permissions, or Project Config
-BACKEND_PATTERN="\.\(cls\|trigger\|object\|field\|permissionset\|profile\|flow\|rule\)-meta\.xml\|\.cls$\|\.trigger$\|sfdx-project\.json"
+# NOTE: Uses single quotes to preserve regex backslashes
+BACKEND_PATTERN='\.\(cls\|trigger\|object\|field\|permissionset\|profile\|flow\|rule\)-meta\.xml\|\.cls$\|\.trigger$\|sfdx-project\.json'
 
 # Get list of STAGED files
 STAGED_FILES=$(git diff --cached --name-only)
@@ -25,12 +24,14 @@ if echo "$STAGED_FILES" | grep -q "$BACKEND_PATTERN"; then
   echo "       (This ensures your Apex/Metadata compiles before commit)"
   
   # Ensure target org is set
+  # We check for "value" in the JSON output to ensure a target is actually configured
   if ! sf config get target-org --json | grep -q "value"; then
      echo "[ERROR] No default org set. Run 'sf config set target-org=YOUR_ALIAS' first."
      exit 1
   fi
 
   # Run the validation
+  # This uses your package.json script: "sf project deploy validate --source-dir packages --test-level RunLocalTests"
   npm run sf:validate
   if [ $? -ne 0 ]; then echo "[ERROR] Salesforce Validation Failed"; exit 1; fi
 else
