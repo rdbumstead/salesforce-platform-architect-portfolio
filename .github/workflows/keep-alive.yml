@@ -24,7 +24,7 @@ jobs:
           client_id: ${{ secrets.SFDX_CLIENT_ID }}
           username: ${{ secrets.SFDX_INTEGRATION_USERNAME }}
           alias: "portfolio"
-          cli_version: "2.141.9"
+          cli_version: "2.141.6"
 
       - name: Execute Heartbeat Query
         run: |
