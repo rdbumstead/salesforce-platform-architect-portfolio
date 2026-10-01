@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-027](027-platform-native-api-authentication.md) on 2026-10-01. The custom-metadata header validation described below was a stand-in for a MuleSoft policy enforcement point; with MuleSoft removed from the architecture, authentication moved to platform-native OAuth 2.0 (External Client App + Named Credential). The read-only constraint is carried forward unchanged.
 
 ## Context
 
