@@ -1534,7 +1534,7 @@ expire with its 30-minute session. Requests are rate-limited by email and source
 ```json
 {
   "httpStatus": 429,
-  "errorCode": "RATE_LIMITED",
+  "errorCode": "RATE_LIMIT_EXCEEDED",
   "message": "Rate limit exceeded. Retry after 42 seconds.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": true
