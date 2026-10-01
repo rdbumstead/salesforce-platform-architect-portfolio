@@ -164,6 +164,7 @@ deploy/deploy-packages/
 *.ppt
 *.xlsx
 *.xls
+.claude/
 
 # Temporary lock files
 ~$*.doc*
