@@ -19,14 +19,8 @@ private class SAPISkillTest {
 
   @IsTest
   static void testGetSkillsSuccess() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.params = new Map<String, String>();
-
-    req.requestURI = '/services/apexrest/sapi/v1/skills/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/skills/');
+    RestResponse res = RestTestUtil.getResponse();
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
@@ -50,14 +44,11 @@ private class SAPISkillTest {
 
   @IsTest
   static void testGetSkillsWithCategoryFilter() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('category', 'Backend Development');
-
-    req.requestURI = '/services/apexrest/sapi/v1/skills/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/skills/',
+      new Map<String, String>{ 'category' => 'Backend Development' }
+    );
+    RestResponse res = RestTestUtil.getResponse();
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
@@ -70,14 +61,11 @@ private class SAPISkillTest {
 
   @IsTest
   static void testGetSkillsInvalidLimit() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('limit', '300');
-
-    req.requestURI = '/services/apexrest/sapi/v1/skills/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/skills/',
+      new Map<String, String>{ 'limit' => '300' }
+    );
+    RestResponse res = RestTestUtil.getResponse();
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
@@ -89,11 +77,8 @@ private class SAPISkillTest {
   }
   @IsTest
   static void testGetSkillsInternalError() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.requestURI = null;
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/skills/');
+    RestResponse res = RestTestUtil.getResponse();
 
     SAPISkill.throwException = true;
 

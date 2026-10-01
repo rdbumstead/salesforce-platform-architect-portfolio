@@ -92,6 +92,11 @@ private class PAPIResumeTest {
       responseJson.contains('EXPERIENCE'),
       'Response should contain EXPERIENCE section'
     );
+    System.assertEquals(
+      'no-store, no-cache',
+      res.headers.get('Cache-Control'),
+      'Generated resume is no-store'
+    );
   }
 
   @IsTest
@@ -140,5 +145,22 @@ private class PAPIResumeTest {
 
     RestResponse res = RestTestUtil.getResponse();
     System.assertEquals(400, res.statusCode, 'Should return 400 Bad Request');
+  }
+
+  @IsTest
+  static void testGenerateResumeInternalError() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+    PAPIResume.throwException = true;
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    RestResponse res = RestTestUtil.getResponse();
+    System.assertEquals(500, res.statusCode, 'Should return 500');
+    System.assert(
+      res.responseBody.toString().contains('INTERNAL_SERVER_ERROR'),
+      'Should return correct error code'
+    );
   }
 }

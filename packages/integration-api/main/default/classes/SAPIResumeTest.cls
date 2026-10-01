@@ -59,6 +59,11 @@ private class SAPIResumeTest {
       responseJson.contains('Led CI/CD'),
       'Response should contain highlight description'
     );
+    System.assertEquals(
+      'max-age=300, private',
+      res.headers.get('Cache-Control'),
+      'Resume keeps private caching'
+    );
   }
 
   @IsTest
@@ -104,11 +109,8 @@ private class SAPIResumeTest {
   }
   @IsTest
   static void testGetResumeDataInternalError() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.requestURI = null;
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/resume/');
+    RestResponse res = RestTestUtil.getResponse();
 
     SAPIResume.throwException = true;
 

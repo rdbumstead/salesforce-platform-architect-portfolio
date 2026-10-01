@@ -13,17 +13,18 @@ global with sharing class SAPIResume {
    */
   @HttpGet
   global static void getResumeData() {
-    RestRequest req = RestContext.request;
-    RestResponse res = RestContext.response;
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    if (ctx.isRejected()) {
+      return;
+    }
 
     try {
-      addCommonHeaders(res);
       if (Test.isRunningTest() && throwException) {
         throw new CalloutException('Forced Exception');
       }
 
       // Query parameters
-      String persona = req.params.get('persona');
+      String persona = ctx.stringParam('persona');
 
       // Validate persona if provided
       Set<String> validPersonas = new Set<String>{
@@ -32,8 +33,7 @@ global with sharing class SAPIResume {
         'Architect'
       };
       if (String.isNotEmpty(persona) && !validPersonas.contains(persona)) {
-        sendError(
-          res,
+        ctx.error(
           400,
           'BAD_REQUEST',
           'Invalid persona. Valid values: Admin, Developer, Architect'
@@ -80,18 +80,16 @@ global with sharing class SAPIResume {
         ];
       }
 
-      res.addHeader('Cache-Control', 'max-age=300, private');
-      res.statusCode = 200;
-
       Map<String, Object> response = new Map<String, Object>{
         'persona' => persona,
         'totalHighlights' => highlights.size(),
         'highlights' => transformHighlights(highlights)
       };
 
-      res.responseBody = Blob.valueOf(JSON.serialize(response));
+      ctx.cache(ApiRequestContext.CachePolicy.PRIVATE_300);
+      ctx.ok(response);
     } catch (Exception e) {
-      sendError(res, 500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
   }
 
@@ -124,29 +122,6 @@ global with sharing class SAPIResume {
       );
     }
     return result;
-  }
-
-  private static void addCommonHeaders(RestResponse res) {
-    res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
-    res.addHeader('X-API-Version', 'v1');
-  }
-
-  private static void sendError(
-    RestResponse res,
-    Integer statusCode,
-    String errorCode,
-    String message
-  ) {
-    res.statusCode = statusCode;
-    Map<String, Object> error = new Map<String, Object>{
-      'httpStatus' => statusCode,
-      'errorCode' => errorCode,
-      'message' => message,
-      'correlationId' => RequestUtil.getRequestId(),
-      'retryable' => (statusCode >= 500)
-    };
-    res.responseBody = Blob.valueOf(JSON.serialize(error));
   }
 
   @TestVisible

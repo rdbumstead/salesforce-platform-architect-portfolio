@@ -14,33 +14,26 @@ global with sharing class SAPIProject {
    */
   @HttpGet
   global static void getProjects() {
-    RestRequest req = RestContext.request;
-    RestResponse res = RestContext.response;
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    if (ctx.isRejected()) {
+      return;
+    }
 
     try {
-      addCommonHeaders(res);
       if (Test.isRunningTest() && throwException) {
         throw new CalloutException('Forced Exception');
       }
 
-      // Extract path parameter for single record fetch
-      String projectId = extractIdFromPath(req.requestURI, 'projects');
+      // Path parameter for single record fetch (/projects/{id})
+      String projectId = ctx.endpointSegment();
 
-      // Query parameters
-      Integer limitParam = getIntegerParam(req, 'limit', 50);
-      Integer offsetParam = getIntegerParam(req, 'offset', 0);
-      String statusFilter = req.params.get('status');
-      Boolean isFeatured = getBooleanParam(req, 'isFeatured');
-
-      // Validate parameters
-      if (limitParam < 1 || limitParam > 200) {
-        sendError(res, 400, 'BAD_REQUEST', 'Limit must be between 1 and 200.');
+      Integer limitParam = ctx.limitParam();
+      Integer offsetParam = ctx.offsetParam();
+      if (ctx.isRejected()) {
         return;
       }
-      if (offsetParam < 0) {
-        sendError(res, 400, 'BAD_REQUEST', 'Offset cannot be negative.');
-        return;
-      }
+      String statusFilter = ctx.stringParam('status');
+      Boolean isFeatured = ctx.boolParam('isFeatured');
 
       List<Project__c> projects;
 
@@ -69,11 +62,9 @@ global with sharing class SAPIProject {
         ];
 
         if (projects.isEmpty()) {
-          sendError(res, 404, 'NOT_FOUND', 'Project not found: ' + projectId);
+          ctx.error(404, 'NOT_FOUND', 'Project not found: ' + projectId);
           return;
         }
-
-        res.addHeader('Cache-Control', 'max-age=300, public');
       } else {
         // Build dynamic query with filters
         String baseQuery =
@@ -94,21 +85,13 @@ global with sharing class SAPIProject {
 
         projects = Database.query(baseQuery);
 
-        // Pagination headers
-        res.addHeader('X-Total-Count', String.valueOf(countProjects()));
-        res.addHeader(
-          'X-Has-More',
-          String.valueOf(projects.size() == limitParam)
-        );
-        res.addHeader('Cache-Control', 'max-age=300, public');
+        ctx.paginate(countProjects(), projects.size());
       }
 
-      res.statusCode = 200;
-      res.responseBody = Blob.valueOf(
-        JSON.serialize(transformProjects(projects))
-      );
+      ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
+      ctx.ok(transformProjects(projects));
     } catch (Exception e) {
-      sendError(res, 500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
   }
 
@@ -160,59 +143,6 @@ global with sharing class SAPIProject {
           'Active Development'
         )
     ];
-  }
-
-  private static void addCommonHeaders(RestResponse res) {
-    res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
-    res.addHeader('X-API-Version', 'v1');
-  }
-
-  private static String extractIdFromPath(String uri, String resourceName) {
-    Integer idx = uri.lastIndexOf('/');
-    if (idx == -1)
-      return null;
-    String lastSegment = uri.substring(idx + 1);
-    return (lastSegment == resourceName) ? null : lastSegment;
-  }
-
-  private static Integer getIntegerParam(
-    RestRequest req,
-    String param,
-    Integer defaultVal
-  ) {
-    String val = req.params.get(param);
-    if (String.isBlank(val))
-      return defaultVal;
-    try {
-      return Integer.valueOf(val);
-    } catch (Exception e) {
-      return defaultVal;
-    }
-  }
-
-  private static Boolean getBooleanParam(RestRequest req, String param) {
-    String val = req.params.get(param);
-    if (String.isBlank(val))
-      return null;
-    return Boolean.valueOf(val);
-  }
-
-  private static void sendError(
-    RestResponse res,
-    Integer statusCode,
-    String errorCode,
-    String message
-  ) {
-    res.statusCode = statusCode;
-    Map<String, Object> error = new Map<String, Object>{
-      'httpStatus' => statusCode,
-      'errorCode' => errorCode,
-      'message' => message,
-      'correlationId' => RequestUtil.getRequestId(),
-      'retryable' => (statusCode >= 500)
-    };
-    res.responseBody = Blob.valueOf(JSON.serialize(error));
   }
 
   @TestVisible
