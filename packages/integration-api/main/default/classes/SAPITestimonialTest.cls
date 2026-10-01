@@ -21,13 +21,8 @@ private class SAPITestimonialTest {
 
   @IsTest
   static void testGetTestimonialsSuccess() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-
-    req.requestURI = '/services/apexrest/sapi/v1/testimonials/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/testimonials/');
+    RestResponse res = RestTestUtil.getResponse();
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
@@ -49,19 +44,21 @@ private class SAPITestimonialTest {
         responseJson.contains('Jane Doe'),
         'Response should contain author name'
       );
+      System.assertEquals(
+        'no-store, no-cache',
+        res.headers.get('Cache-Control'),
+        'Testimonials are no-store per the spec header reference'
+      );
     }
   }
 
   @IsTest
   static void testGetTestimonialsWithFilter() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('vibeMode', 'Professional');
-
-    req.requestURI = '/services/apexrest/sapi/v1/testimonials/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/testimonials/',
+      new Map<String, String>{ 'vibeMode' => 'Professional' }
+    );
+    RestResponse res = RestTestUtil.getResponse();
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
@@ -74,14 +71,11 @@ private class SAPITestimonialTest {
 
   @IsTest
   static void testGetTestimonialsInvalidLimit() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    req.params.put('limit', '0');
-
-    req.requestURI = '/services/apexrest/sapi/v1/testimonials/';
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/testimonials/',
+      new Map<String, String>{ 'limit' => '0' }
+    );
+    RestResponse res = RestTestUtil.getResponse();
 
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Test.startTest();
@@ -93,12 +87,8 @@ private class SAPITestimonialTest {
   }
   @IsTest
   static void testGetTestimonialsInternalError() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.requestURI = null; // No longer needed
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/testimonials/');
+    RestResponse res = RestTestUtil.getResponse();
 
     SAPITestimonial.throwException = true;
 

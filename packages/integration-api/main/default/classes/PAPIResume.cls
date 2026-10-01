@@ -14,34 +14,33 @@ global with sharing class PAPIResume {
    */
   @HttpGet
   global static void getResume() {
-    RestRequest req = RestContext.request;
-    RestResponse res = RestContext.response;
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    if (ctx.isRejected()) {
+      return;
+    }
 
     try {
-      addCommonHeaders(res);
+      if (Test.isRunningTest() && throwException) {
+        throw new CalloutException('Forced Exception');
+      }
 
-      String endpoint = extractEndpoint(req.requestURI);
-      String persona = req.params.get('persona');
+      String endpoint = ctx.endpointSegment();
+      String persona = ctx.stringParam('persona');
 
       if (endpoint == 'generate') {
-        generateResume(res, persona);
+        generateResume(ctx, persona);
       } else {
-        sendError(
-          res,
-          400,
-          'BAD_REQUEST',
-          'Invalid endpoint. Use /resume/generate'
-        );
+        ctx.error(400, 'BAD_REQUEST', 'Invalid endpoint. Use /resume/generate');
       }
     } catch (Exception e) {
-      sendError(res, 500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
   }
 
   /**
    * @description Generates a plain text resume.
    */
-  private static void generateResume(RestResponse res, String persona) {
+  private static void generateResume(ApiRequestContext ctx, String persona) {
     if (String.isNotBlank(persona)) {
       Set<String> validPersonas = new Set<String>{
         'Admin',
@@ -49,8 +48,7 @@ global with sharing class PAPIResume {
         'Architect'
       };
       if (!validPersonas.contains(persona)) {
-        sendError(
-          res,
+        ctx.error(
           400,
           'BAD_REQUEST',
           'Invalid persona. Valid values: Admin, Developer, Architect'
@@ -213,47 +211,10 @@ global with sharing class PAPIResume {
       'generatedAt' => Datetime.now().formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'')
     };
 
-    res.addHeader('Cache-Control', 'no-cache');
-    res.statusCode = 200;
-    res.responseBody = Blob.valueOf(JSON.serialize(response));
+    ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
+    ctx.ok(response);
   }
 
-  private static String extractEndpoint(String uri) {
-    Integer idx = uri.lastIndexOf('/');
-    if (idx == -1)
-      return '';
-    return uri.substring(idx + 1);
-  }
-
-  private static void addCommonHeaders(RestResponse res) {
-    res.addHeader('Content-Type', 'application/json');
-    String requestId = getRequestId();
-    res.addHeader('X-Request-Id', requestId);
-    res.addHeader('X-API-Version', 'v1');
-  }
-
-  private static String getRequestId() {
-    try {
-      return Request.getCurrent()?.getRequestId();
-    } catch (Exception e) {
-      return 'N/A';
-    }
-  }
-
-  private static void sendError(
-    RestResponse res,
-    Integer statusCode,
-    String errorCode,
-    String message
-  ) {
-    res.statusCode = statusCode;
-    Map<String, Object> error = new Map<String, Object>{
-      'httpStatus' => statusCode,
-      'errorCode' => errorCode,
-      'message' => message,
-      'correlationId' => getRequestId(),
-      'retryable' => (statusCode >= 500)
-    };
-    res.responseBody = Blob.valueOf(JSON.serialize(error));
-  }
+  @TestVisible
+  private static Boolean throwException = false;
 }
