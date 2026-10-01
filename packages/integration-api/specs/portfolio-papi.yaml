@@ -7,8 +7,10 @@ info:
     from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
 
     ### 1. Authentication Strategy
-    - **Frontend → PAPI**: Uses **MuleSoft/Salesforce Client Credentials** (`client_id`, `client_secret`) in headers.
-    - **PAPI → SAPI**: Uses separate internal Client Credentials stored in `configuration.yaml` (or AWS Secrets Manager).
+    - **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.
+    - **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.
+    - **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It and `/health` are the only unauthenticated paths.
+    - **PAPI → SAPI**: in-process Apex (same transaction), not HTTP; see ADR-025 for why fan-out callouts were rejected.
 
     ### 2. Versioning Strategy
     - **Pattern**: Header-based versioning takes precedence.
@@ -36,7 +38,7 @@ info:
     | Project | `dateCompleted` | `completionDate` | JS Convention |
     | Project | `heroImageUrl` | `heroImageUrl` | Passthrough |
 
-  x-mulesoft-layer: process
+  x-api-layer: process
   contact:
     name: Ryan Bumstead
     email: ryan@ryanbumstead.com
@@ -46,12 +48,18 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://api.portfolio.ryanbumstead.com/papi
-    description: Production PAPI Host (Header Versioning)
+  - url: https://{domain}/portfoliovforcesite/services/apexrest/papi/v1
+    description: Salesforce Experience Cloud PAPI Base Path (on-platform Apex REST)
+    variables:
+      domain:
+        default: ryan-bumstead-dev-ed.develop.my.site.com
+        description: The Salesforce Experience Cloud domain.
+        enum:
+          - ryan-bumstead-dev-ed.develop.my.site.com
 
 # Global Rate Limits (Aligned to SAPI capacity)
 x-rate-limit:
-  description: "PAPI rate limits enforced by API Manager"
+  description: "Enforced on-platform by ApiRequestContext (ADR-025), keyed by the calling External Client App; evaluator token vending adds a per-email/IP limit and a daily cap (ADR-028)."
   tiers:
     standard:
       requestsPerMinute: 15
@@ -61,8 +69,8 @@ x-rate-limit:
       description: "Expensive Generative AI calls"
 
 security:
-  - ClientIdAuth: []
-    ClientSecretAuth: []
+  - OAuth2ClientCredentials:
+      - api
 
 tags:
   - name: Orchestration
@@ -73,19 +81,22 @@ tags:
     description: Endpoints that apply business rules and filtering
   - name: Monitoring
     description: Health checks and observability
+  - name: Access
+    description: Evaluator token vending (ADR-028)
 
 components:
   securitySchemes:
-    ClientIdAuth:
-      type: apiKey
-      in: header
-      name: client_id
-      description: MuleSoft/Salesforce Client ID
-    ClientSecretAuth:
-      type: apiKey
-      in: header
-      name: client_secret
-      description: MuleSoft/Salesforce Client Secret (Standard Enforcement Policy)
+    OAuth2ClientCredentials:
+      type: oauth2
+      description: |
+        OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).
+        Tokens run as the read-only integration user. External evaluators obtain a short-lived token
+        from `POST /auth/token` (ADR-028) instead of holding the consumer secret.
+      flows:
+        clientCredentials:
+          tokenUrl: https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/oauth2/token
+          scopes:
+            api: Access Salesforce REST APIs as the integration user
 
   parameters:
     RequestIdParam:
@@ -132,7 +143,7 @@ components:
             retryable: false
 
     Unauthorized:
-      description: Invalid Client Credentials
+      description: Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdHeader"
@@ -143,9 +154,29 @@ components:
           example:
             httpStatus: 401
             errorCode: "UNAUTHORIZED"
-            message: "Invalid client_id or client_secret"
+            message: "Missing or invalid Bearer token"
             correlationId: "123e4567-e89b-12d3-a456-426614174000"
             retryable: false
+
+    TooManyRequests:
+      description: Rate limit or daily cap exceeded (ADR-025, ADR-028)
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdHeader"
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until the window resets.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            httpStatus: 429
+            errorCode: "RATE_LIMITED"
+            message: "Rate limit exceeded. Retry after 42 seconds."
+            correlationId: "123e4567-e89b-12d3-a456-426614174000"
+            retryable: true
 
     InternalServerError:
       description: Internal PAPI error or SAPI communication failure
@@ -665,6 +696,51 @@ components:
           nullable: true
           example: 3.8
 
+    TokenRequest:
+      type: object
+      required:
+        - email
+        - purpose
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          example: "reviewer@example.com"
+        purpose:
+          type: string
+          maxLength: 280
+          description: Free-text reason, stored on the audit record.
+          example: "Evaluating API contract parity"
+
+    TokenResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+        - instance_url
+      properties:
+        access_token:
+          type: string
+          description: OAuth 2.0 Bearer token bound to the read-only integration user.
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Seconds until the integration user session times out (default 1800).
+          example: 1800
+        instance_url:
+          type: string
+          format: uri
+          example: "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest"
+        docs:
+          type: string
+          format: uri
+          description: Link to the rendered API documentation.
+          example: "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi"
+
 paths:
   /health:
     get:
@@ -688,6 +764,51 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /auth/token:
+    post:
+      summary: Request an evaluator access token
+      description: |
+        Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI
+        without holding the External Client App consumer secret (ADR-028). The exchange runs server-side
+        through the `Portfolio_API` Named Credential. Tokens run as the read-only integration user and
+        expire with its 30-minute session. Requests are rate-limited by email and source IP and capped per day.
+      operationId: requestEvaluatorToken
+      security: []
+      tags:
+        - Access
+      parameters:
+        - $ref: "#/components/parameters/RequestIdParam"
+        - $ref: "#/components/parameters/ApiVersionParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+            example:
+              email: "reviewer@example.com"
+              purpose: "Evaluating API contract parity"
+      responses:
+        "200":
+          description: Token issued
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdHeader"
+            Cache-Control:
+              schema:
+                type: string
+                example: "no-store, no-cache"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 

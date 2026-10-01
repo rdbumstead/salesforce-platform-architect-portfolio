@@ -4,12 +4,12 @@
 
 System API exposing core Salesforce objects for the Portfolio.
 
-### Authentication Layers
-1. **System API Authentication**: System-to-system authentication using explicit API Key headers (`client_id`, `client_secret`).
-   - **Enforcement**: Enforced by MuleSoft API Manager policies or Salesforce Apex Custom Metadata validation logic.
-   - **Rationale**: See **ADR-017 (SAS.md)**. API Key enforcement was selected over OAuth2 for parity across implementation stacks and simplified zero-budget governance.
-2. **Backend Integration**: OAuth2 Client Credentials used for API-to-Salesforce connectivity.
-   - **Management**: Managed internally within the runtime engine (MuleSoft/AWS Lambda); credentials are never exposed or stored client-side.
+### Authentication (ADR-027)
+1. **Inbound**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App. Every request carries `Authorization: Bearer <access_token>`. The platform rejects missing, expired or invalid tokens before any Apex executes.
+   - **Run-as identity**: a dedicated integration user holding a single read-only permission set (`Integration_Access`). Authorisation is bounded by that permission set, not by the token.
+   - **Previous design**: `client_id`/`client_secret` headers validated in Apex against Custom Metadata (ADR-017, superseded). Retired when MuleSoft left the architecture.
+2. **On-platform consumers**: the site API Lab proxy and the PAPI health check obtain tokens through the `Portfolio_API` Named Credential (External Credential, Client Credentials principal). No secret is stored in metadata, source, or the browser.
+3. **External evaluators**: request a short-lived token from `POST /papi/v1/auth/token` (see the PAPI specification, ADR-028), then call this API with it.
 
 ### Architecture & Governance
 - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
@@ -31,23 +31,28 @@ System API exposing core Salesforce objects for the Portfolio.
 
 Base URLs:
 
-* <a href="https://{domain}/services/apexrest/sapi/v1">https://{domain}/services/apexrest/sapi/v1</a>
+* <a href="https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1">https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1</a>
 
-    * **domain** - The Salesforce Experience Cloud domain. Default: rbumstead-dev-ed.develop.my.site.com
+    * **domain** - The Salesforce Experience Cloud domain. Default: ryan-bumstead-dev-ed.develop.my.site.com
 
-        * rbumstead-dev-ed.develop.my.site.com
+        * ryan-bumstead-dev-ed.develop.my.site.com
 
 Email: <a href="mailto:ryan@ryanbumstead.com">Ryan Bumstead</a> 
 License: <a href="https://opensource.org/licenses/MIT">MIT</a>
 
 # Authentication
 
-* API Key (ApiClientId)
-    - Parameter Name: **client_id**, in: header. API Client Identifier. Not to be confused with OAuth2 Client ID.
-Enforced via API Manager policies or Salesforce Custom Metadata.
+- oAuth2 authentication. OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).
+Tokens run as the read-only integration user. External evaluators obtain a short-lived token
+from `POST /papi/v1/auth/token` (ADR-028) instead of holding the consumer secret.
 
-* API Key (ApiClientSecret)
-    - Parameter Name: **client_secret**, in: header. API Client Secret. Used in conjunction with `client_id` for system-to-system authentication.
+    - Flow: clientCredentials
+
+    - Token URL = [https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/oauth2/token](https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/oauth2/token)
+
+|Scope|Scope Description|
+|---|---|
+|api|Access Salesforce REST APIs as the integration user|
 
 <h1 id="salesforce-system-api-sapi--monitoring">Monitoring</h1>
 
@@ -65,7 +70,7 @@ const headers = {
   'Accept':'application/json'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/health',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/health',
 {
   method: 'GET',
 
@@ -134,11 +139,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/contacts',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/contacts',
 {
   method: 'GET',
 
@@ -208,8 +212,8 @@ Retrieves the primary contact details for the portfolio owner.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Contact records.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -249,7 +253,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getExperience
@@ -264,11 +268,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/experience',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/experience',
 {
   method: 'GET',
 
@@ -341,8 +344,8 @@ Retrieves professional experience history.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Experience records.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -383,7 +386,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getExperienceHighlights
@@ -398,11 +401,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/experience-highlights',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/experience-highlights',
 {
   method: 'GET',
 
@@ -479,8 +481,8 @@ Examples:
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Experience Highlights.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -524,7 +526,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 <h1 id="salesforce-system-api-sapi--objects">Objects</h1>
@@ -543,11 +545,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/projects',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/projects',
 {
   method: 'GET',
 
@@ -636,8 +637,8 @@ Example Usage: `/projects?isFeatured=true`
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Project records.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -692,7 +693,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getProjectAssets
@@ -707,11 +708,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/project-assets',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/project-assets',
 {
   method: 'GET',
 
@@ -778,8 +778,8 @@ Retrieves assets (images, links) associated with a project.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Project Assets. Returns empty array if none found.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -825,7 +825,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getTestimonials
@@ -840,11 +840,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/testimonials',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/testimonials',
 {
   method: 'GET',
 
@@ -910,8 +909,8 @@ Retrieves received testimonials. Returns only records where Approved__c = true.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Testimonials. Returns empty array if none found.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -960,7 +959,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getAccounts
@@ -975,11 +974,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/accounts',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/accounts',
 {
   method: 'GET',
 
@@ -1042,8 +1040,8 @@ Retrieves related account/employer records.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Account records.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -1076,7 +1074,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getSkills
@@ -1091,11 +1089,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/skills',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/skills',
 {
   method: 'GET',
 
@@ -1163,8 +1160,8 @@ Retrieves technical skills and proficiency scores.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Skill records.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -1202,7 +1199,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getCertifications
@@ -1217,11 +1214,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/certifications',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/certifications',
 {
   method: 'GET',
 
@@ -1289,8 +1285,8 @@ Retrieves professional certifications.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Certification records.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -1326,7 +1322,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getEducation
@@ -1341,11 +1337,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/education',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/education',
 {
   method: 'GET',
 
@@ -1414,8 +1409,8 @@ Retrieves educational background.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Education records.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -1453,7 +1448,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 <h1 id="salesforce-system-api-sapi--junctions">Junctions</h1>
@@ -1472,11 +1467,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/project-skills',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/project-skills',
 {
   method: 'GET',
 
@@ -1542,8 +1536,8 @@ Retrieves junction records linking Projects to Skills.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Project-Skill junctions.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -1579,7 +1573,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getExperienceSkills
@@ -1594,11 +1588,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/experience-skills',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/experience-skills',
 {
   method: 'GET',
 
@@ -1664,8 +1657,8 @@ Retrieves junction records linking Experiences to Skills.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Experience-Skill junctions.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -1701,7 +1694,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getCertificationSkills
@@ -1716,11 +1709,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/certification-skills',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/certification-skills',
 {
   method: 'GET',
 
@@ -1786,8 +1778,8 @@ Retrieves junction records linking Certifications to Skills.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Certification-Skill junctions.|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
 
@@ -1823,7 +1815,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 <h1 id="salesforce-system-api-sapi--configuration">Configuration</h1>
@@ -1842,11 +1834,10 @@ const headers = {
   'Accept':'application/json',
   'X-API-Version':'v1',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/portfolio-config',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/portfolio-config',
 {
   method: 'GET',
 
@@ -1909,8 +1900,8 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Global Configuration.|[PortfolioConfig](#schemaportfolioconfig)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or missing API Client Credentials.|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Insufficient permissions.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The requested resource ID was not found.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
@@ -1930,7 +1921,7 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ApiClientId & ApiClientSecret
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 # Schemas

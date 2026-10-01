@@ -62,12 +62,24 @@ All external API calls originate from a secure **Named Credential** accessed via
 
 ### 1.4 System API Security (The "Twin" Pattern)
 
-This architecture simulates an enterprise API Gateway hand-off:
+The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](../adr/027-platform-native-api-authentication.md)). The earlier design validated `client_id`/`client_secret` headers against Custom Metadata to simulate a MuleSoft policy point; that simulation was retired when MuleSoft left the architecture.
 
-| Role          | Component                | Responsibility                                           | Implementation                                                                                                                           |
-| :------------ | :----------------------- | :------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
-| **Sender**    | PAPI (Integration Layer) | **Secure Storage:** Holds the keys to access Salesforce. | In a real scenario, keys live in AWS Secrets Manager. In this demo, they are configuration properties injected at runtime.               |
-| **Validator** | SAPI (Salesforce Core)   | **Policy Enforcement:** Verifies the keys permit access. | Uses `Portfolio_Config__mdt` to act as a local decision point, rejecting requests with invalid headers before they reach business logic. |
+| Role         | Component                                              | Responsibility                                                          | Implementation                                                                                                                                                                                                               |
+| :----------- | :----------------------------------------------------- | :---------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Provider** | External Client App (Client Credentials flow)          | **Authentication:** issues Bearer tokens; rejects bad callers upstream  | Runs as a dedicated integration user holding `Integration_Access` (read-only objects + execute on `SAPI*`/`PAPI*`). The platform rejects unauthenticated calls before Apex.                                                  |
+| **Consumer** | External Credential + `Portfolio_API` Named Credential | **Secure Storage:** holds the consumer key/secret in the platform vault | Used by `ApiLabController` (site proxy) and the PAPI health check. No secret is ever stored in metadata or source.                                                                                                           |
+| **Vendor**   | `PAPIAuthToken` (`POST /papi/v1/auth/token`)           | **Evaluator access:** exchanges email + purpose for a short-lived token | The only REST class the guest user can execute ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)). Shares `TokenExchangeService` with the proxy.                                                                  |
+| **Context**  | `ApiRequestContext` (shared by every REST class)       | **Contract hygiene:** headers, pagination, errors, cache, rate limits   | Reads/echoes `X-Request-Id` and `X-API-Version`, bounds `limit`/`offset`, emits the `Error` schema, applies `Cache-Control` per resource, enforces [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md) tiers. |
+
+**Deployment prerequisites (per org):**
+
+1. Integration user on a dedicated profile (30-minute session timeout) with `Integration_Access` assigned.
+2. External Client App deployed from source, Client Credentials flow enabled, "run as" set to the integration user.
+3. External Credential principal populated with the app's consumer key/secret (manual, in Setup; never in source).
+4. `Portfolio_API` Named Credential pointing at `https://<my-domain>/services/apexrest`.
+5. Guest profile granted execute access on `PAPIAuthToken` only.
+
+**Operational notes:** rotation and revocation procedures are in the [Maintenance Guide §1.2](./05-Maintenance-Guide.md#12-external-client-app-secret-rotation).
 
 **Interface Definition (IAIGenerationService):**
 

@@ -317,9 +317,12 @@ The following matrix defines the CRUD and Field Level Security (FLS) settings en
 | **`Testimonial__c`**          | CRED / Full    | **No Access** (Handled via Apex) | Read-Only              |
 | **`GitHub_Cache__c`**         | CRED / Full    | **No Access** (System Only)      | No Access              |
 | **`Portfolio_Config__mdt`**   | CRED / Full    | Read-Only (via App)              | Read-Only              |
+| **`API_Access_Request__c`**   | CRED / Full    | **No Access** (Created via Apex) | No Access              |
 
 > [!NOTE]
 > Guest User access to `Testimonial__c` records is strictly controlled via the `SAPITestimonial` Apex class which applies the "Vibe Mode" and "Approved" filters before returning data to the LWR site.
+>
+> The Guest User holds **no execute access** on any `SAPI*` or `PAPI*` REST class except `PAPIAuthToken` ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)). Site components reach data through `@AuraEnabled` controllers or the API Lab proxy. The Integration User is the only identity that executes the REST classes, via OAuth 2.0 Client Credentials ([ADR-027](../adr/027-platform-native-api-authentication.md)).
 
 ## 5. Solution Components (The Pillars)
 
@@ -589,15 +592,15 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 
 **Purpose:** Provides direct access to Salesforce core objects with minimal transformation.
 
-**Base URL:** `https://rbumstead-dev-ed.develop.my.site.com/services/apexrest`
+**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/sapi/v1`
 
-**Version:** 1.2.0
+**Version:** 1.3.0
 
-**Security:** System-to-system API Key headers (`client_id`, `client_secret`) validated via Salesforce Custom Metadata.
+**Security:** OAuth 2.0 Client Credentials issued by an External Client App; every call carries `Authorization: Bearer <token>`. The platform rejects unauthenticated calls before Apex executes. See [ADR-027](../adr/027-platform-native-api-authentication.md) and [B.5](#b5-authentication--evaluator-access).
 
 **Key Design Principles:**
 
-- **Zero Trust Architecture:** All endpoints require explicit API Key validation (`client_id`, `client_secret`) mapped to Custom Metadata permissions
+- **Zero Trust Architecture:** All endpoints require a Bearer token minted by the External Client App; authorisation is bounded by the integration user's single read-only permission set. The guest user holds no execute access on any SAPI class
 - **Distributed Tracing:** Mandatory `X-Request-Id` header (UUID format) in all requests for correlation across log aggregation systems
 - **Contract-First Design:** OpenAPI 3.0 specification defines the interface before implementation
 - **Explicit Caching:** `Cache-Control` headers distinguish between cacheable configuration (`max-age=300`) and dynamic data (`no-store`)
@@ -634,14 +637,14 @@ All list endpoints support:
 
 **Error Handling:**
 
-| Status Code | Meaning                                     | Retryable | Response Header               |
-| :---------- | :------------------------------------------ | :-------- | :---------------------------- |
-| 400         | Bad Request (Invalid parameters)            | No        | `X-Request-Id`                |
-| 401         | Unauthorized (Missing/invalid token)        | No        | `X-Request-Id`                |
-| 403         | Forbidden (Insufficient scope)              | No        | `X-Request-Id`                |
-| 404         | Not Found (Invalid record ID)               | No        | `X-Request-Id`                |
-| 429         | Too Many Requests (Rate limit exceeded)     | Yes       | `X-Request-Id`, `Retry-After` |
-| 500         | Internal Server Error (Apex/Platform fault) | Yes       | `X-Request-Id`                |
+| Status Code | Meaning                                       | Retryable | Response Header               |
+| :---------- | :-------------------------------------------- | :-------- | :---------------------------- |
+| 400         | Bad Request (Invalid parameters)              | No        | `X-Request-Id`                |
+| 401         | Unauthorized (Missing/invalid token)          | No        | `X-Request-Id`                |
+| 403         | Forbidden (Integration user lacks permission) | No        | `X-Request-Id`                |
+| 404         | Not Found (Invalid record ID)                 | No        | `X-Request-Id`                |
+| 429         | Too Many Requests (Rate limit exceeded)       | Yes       | `X-Request-Id`, `Retry-After` |
+| 500         | Internal Server Error (Apex/Platform fault)   | Yes       | `X-Request-Id`                |
 
 **Schema Highlights:**
 
@@ -662,11 +665,13 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Purpose:** Orchestration layer that aggregates and transforms SAPI data for optimized frontend consumption.
 
-**Base URL:** `https://api.portfolio.ryanbumstead.com/papi/v1`
+**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1`
 
-**Version:** 1.2.0
+**Version:** 1.3.0
 
-**Layer Classification:** Process API (MuleSoft API-led connectivity pattern)
+**Layer Classification:** Process API (API-led connectivity pattern, implemented on-platform in Apex REST; see [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md))
+
+**Security:** Same OAuth 2.0 Client Credentials scheme as SAPI ([ADR-027](../adr/027-platform-native-api-authentication.md)). `/health` and `/auth/token` are the only unauthenticated paths.
 
 **Key Design Principles:**
 
@@ -677,13 +682,15 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Core Endpoints:**
 
-| Endpoint             | Purpose                         | Upstream SAPI Calls                                               | Benefit                                                  |
-| :------------------- | :------------------------------ | :---------------------------------------------------------------- | :------------------------------------------------------- |
-| `/profile/full`      | Complete portfolio hydration    | 10+ endpoints (Config, Skills, Tests, etc.)                       | **Single Request** loads entire app state                |
-| `/profile/summary`   | Employment profile only         | 5 (Contact, Experience, Skills, Certifications, Education)        | Lightweight profile for resume generation                |
-| `/resume/generate`   | ATS-optimized plain text resume | 3 (Experience, Experience Highlights filtered by persona, Skills) | Server-side text formatting eliminates client complexity |
-| `/projects/featured` | Enriched project showcase       | 3 (Projects, Project Assets, Project Skills)                      | Pre-joined data structure eliminates N+1 query problem   |
-| `/testimonials/feed` | Curated social proof            | 1 (Testimonials with Vibe Mode filter)                            | Server-side filtering ensures brand consistency          |
+| Endpoint              | Purpose                                                                               | Upstream SAPI Calls                                                                                                     | Benefit                                                                        |
+| :-------------------- | :------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------- |
+| `/profile/full`       | Complete portfolio hydration                                                          | 10+ endpoints (Config, Skills, Tests, etc.)                                                                             | **Single Request** loads entire app state                                      |
+| `/profile/summary`    | Employment profile only                                                               | 5 (Contact, Experience, Skills, Certifications, Education)                                                              | Lightweight profile for resume generation                                      |
+| `/resume/generate`    | ATS-optimized plain text resume                                                       | 3 (Experience, Experience Highlights filtered by persona, Skills)                                                       | Server-side text formatting eliminates client complexity                       |
+| `/projects/featured`  | Enriched project showcase                                                             | 3 (Projects, Project Assets, Project Skills)                                                                            | Pre-joined data structure eliminates N+1 query problem                         |
+| `/testimonials/feed`  | Curated social proof                                                                  | 1 (Testimonials with Vibe Mode filter)                                                                                  | Server-side filtering ensures brand consistency                                |
+| `/ai/generate` (POST) | Generative content (cover letter, bio, skill blurb)                                   | Strategy dispatcher: Agentforce → Gemini → Local Template ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)) | Triple-fallback resilience; `ai` rate tier (10 req/min)                        |
+| `/auth/token` (POST)  | Evaluator token vending ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)) | Server-side client-credentials exchange via `Portfolio_API` Named Credential                                            | External reviewers can `curl` the APIs without ever seeing the consumer secret |
 
 **Transformation Examples:**
 
@@ -751,7 +758,8 @@ The `/testimonials/feed?mode=professional` endpoint applies business logic:
 
 - **Interactive Documentation:** Redoc static HTML hosted as Salesforce Static Resource
 - **Machine-Readable Spec:** `/openapi.json` endpoint returns the complete OpenAPI 3.0 specification for code generation
-- **Developer Console:** Custom `c-api-tester` LWC component provides live endpoint testing with syntax highlighting
+- **Developer Console:** Custom `c-api-tester` LWC component provides live endpoint testing with syntax highlighting. It calls an Apex proxy (`ApiLabController`) that invokes the APIs through the `Portfolio_API` Named Credential, so no secret reaches the browser.
+- **Evaluator Access:** `POST /papi/v1/auth/token` returns a short-lived Bearer token for external testing ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
 
 #### B.4 Reference Implementation
 
@@ -761,10 +769,68 @@ Complete OpenAPI specifications available in repository:
 - `packages/integration-api/specs/portfolio-papi.yaml` - Process API contract
 - `/docs/api-examples/` - Postman collection with pre-configured requests
 
+#### B.5 Authentication & Evaluator Access
+
+Authentication is platform-native on both sides of the API boundary ([ADR-027](../adr/027-platform-native-api-authentication.md)); external reviewers obtain short-lived tokens through a vending endpoint ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
+
+| Side                    | Construct                                                                             | Role                                                                                                               |
+| :---------------------- | :------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------- |
+| **Provider (inbound)**  | External Client App, OAuth 2.0 Client Credentials flow                                | Issues Bearer tokens; runs API calls as a dedicated integration user holding only `Integration_Access` (read-only) |
+| **Consumer (outbound)** | External Credential (Client Credentials principal) + `Portfolio_API` Named Credential | Holds the consumer key/secret in the platform vault; used by the API Lab proxy and the PAPI health check           |
+| **Evaluator**           | `POST /papi/v1/auth/token` (`PAPIAuthToken`)                                          | Only REST class the guest user may execute; performs the exchange server-side and returns a short-lived token      |
+
+> _What this diagram shows: the three ways a request reaches the APIs. The secret never leaves the org; the only thing that crosses the browser boundary is an expiring Bearer token._
+
+```mermaid
+sequenceDiagram
+    participant Reviewer as External Reviewer (curl)
+    participant LWC as c-api-tester (Guest)
+    participant Proxy as ApiLabController / PAPIAuthToken
+    participant NC as Portfolio_API Named Credential
+    participant ECA as External Client App (token endpoint)
+    participant API as SAPI / PAPI (Apex REST, run-as Integration User)
+
+    LWC->>Proxy: invoke(path)
+    Proxy->>NC: callout
+    NC->>ECA: client_credentials (secret from vault)
+    ECA-->>NC: access_token
+    NC->>API: GET /sapi/v1/... Bearer token
+    API-->>LWC: payload + X-Request-Id + X-RateLimit-*
+
+    Reviewer->>Proxy: POST /auth/token {email, purpose}
+    Proxy->>NC: client_credentials exchange
+    NC-->>Reviewer: {access_token, expires_in}
+    Reviewer->>API: GET /sapi/v1/skills Bearer token
+    API-->>Reviewer: payload
+```
+
+**Controls (in order of importance):**
+
+1. **Least privilege:** a client-credentials token is valid for any REST API as the integration user, so the integration user's permission set is the real boundary: read-only on portfolio objects, execute on SAPI/PAPI classes, nothing else.
+2. **Expiry:** the integration user runs under a profile with a 30-minute session timeout.
+3. **Kill switch:** deactivating the External Client App revokes every outstanding token.
+4. **Quota protection:** rate limiting per [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md) plus a daily cap on issued tokens guards the Developer Edition API request limit (15,000/day).
+5. **Audit:** every token request writes an `API_Access_Request__c` record.
+
+**Evaluator flow:**
+
+```bash
+# 1. Request a token (no credentials required)
+curl -s -X POST "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token" \
+  -H "Content-Type: application/json" -H "X-Request-Id: $(uuidgen)" \
+  -d '{"email":"you@example.com","purpose":"Evaluating API design"}'
+
+# 2. Call any endpoint with the returned token
+curl -s "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/sapi/v1/skills?limit=5" \
+  -H "Authorization: Bearer <access_token>" -H "X-API-Version: v1" -H "X-Request-Id: $(uuidgen)"
+```
+
 ### Appendix C: MuleSoft Code, Governance, & Proxy Configuration (Reference)
 
 > [!NOTE]
 > This architecture represents the "Ideal Enterprise State" designed during the Anypoint Platform trial period (November 2025). While the live deployment has expired, the design artifacts, source code, and policy configurations remain as reference implementations demonstrating enterprise API governance practices. The Apex REST implementation functions as a runtime twin within Salesforce.
+>
+> **Superseded controls (2026-10-01):** the Client ID Enforcement policy (C.2 §1) and the `client_id`/`client_secret` CORS headers (C.2 §3) are replaced on-platform by OAuth 2.0 Client Credentials via an External Client App ([ADR-027](../adr/027-platform-native-api-authentication.md)). SLA-based rate limiting (C.2 §2) is enforced in Apex per [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md). This appendix is retained as the reference design it was, not as the current control set.
 
 **C.1 API Proxy Pattern**
 

@@ -5,12 +5,12 @@ info:
   description: |
     System API exposing core Salesforce objects for the Portfolio.
 
-    ### Authentication Layers
-    1. **System API Authentication**: System-to-system authentication using explicit API Key headers (`client_id`, `client_secret`).
-       - **Enforcement**: Enforced by MuleSoft API Manager policies or Salesforce Apex Custom Metadata validation logic.
-       - **Rationale**: See **ADR-017 (SAS.md)**. API Key enforcement was selected over OAuth2 for parity across implementation stacks and simplified zero-budget governance.
-    2. **Backend Integration**: OAuth2 Client Credentials used for API-to-Salesforce connectivity.
-       - **Management**: Managed internally within the runtime engine (MuleSoft/AWS Lambda); credentials are never exposed or stored client-side.
+    ### Authentication (ADR-027)
+    1. **Inbound**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App. Every request carries `Authorization: Bearer <access_token>`. The platform rejects missing, expired or invalid tokens before any Apex executes.
+       - **Run-as identity**: a dedicated integration user holding a single read-only permission set (`Integration_Access`). Authorisation is bounded by that permission set, not by the token.
+       - **Previous design**: `client_id`/`client_secret` headers validated in Apex against Custom Metadata (ADR-017, superseded). Retired when MuleSoft left the architecture.
+    2. **On-platform consumers**: the site API Lab proxy and the PAPI health check obtain tokens through the `Portfolio_API` Named Credential (External Credential, Client Credentials principal). No secret is stored in metadata, source, or the browser.
+    3. **External evaluators**: request a short-lived token from `POST /papi/v1/auth/token` (see the PAPI specification, ADR-028), then call this API with it.
 
     ### Architecture & Governance
     - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
@@ -49,40 +49,38 @@ tags:
     description: Global portfolio settings.
 
 servers:
-  - url: https://{domain}/services/apexrest/sapi/v1
+  - url: https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1
     description: Salesforce Experience Cloud SAPI Base Path
     variables:
       domain:
-        default: rbumstead-dev-ed.develop.my.site.com
+        default: ryan-bumstead-dev-ed.develop.my.site.com
         description: The Salesforce Experience Cloud domain.
         enum:
-          - rbumstead-dev-ed.develop.my.site.com
+          - ryan-bumstead-dev-ed.develop.my.site.com
 
 security:
-  - ApiClientId: []
-    ApiClientSecret: []
+  - OAuth2ClientCredentials:
+      - api
 
 components:
   x-rate-limit:
-    description: "Policy enforced by MuleSoft API Manager or Salesforce Rate Limiting."
+    description: "Enforced on-platform by ApiRequestContext (ADR-025), keyed by the calling External Client App. Emits X-RateLimit-Limit, X-RateLimit-Remaining and Retry-After."
     tier: standard
     requestsPerMinute: 120
     burst: 20
 
   securitySchemes:
-    ApiClientId:
-      type: apiKey
-      in: header
-      name: client_id
+    OAuth2ClientCredentials:
+      type: oauth2
       description: |
-        API Client Identifier. Not to be confused with OAuth2 Client ID.
-        Enforced via API Manager policies or Salesforce Custom Metadata.
-    ApiClientSecret:
-      type: apiKey
-      in: header
-      name: client_secret
-      description: |
-        API Client Secret. Used in conjunction with `client_id` for system-to-system authentication.
+        OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).
+        Tokens run as the read-only integration user. External evaluators obtain a short-lived token
+        from `POST /papi/v1/auth/token` (ADR-028) instead of holding the consumer secret.
+      flows:
+        clientCredentials:
+          tokenUrl: https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/oauth2/token
+          scopes:
+            api: Access Salesforce REST APIs as the integration user
 
   headers:
     RequestIdResponse:
@@ -279,7 +277,7 @@ components:
             $ref: "#/components/schemas/Error"
 
     Unauthorized:
-      description: Invalid or missing API Client Credentials.
+      description: Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
@@ -289,7 +287,7 @@ components:
             $ref: "#/components/schemas/Error"
 
     Forbidden:
-      description: Insufficient permissions.
+      description: The integration user lacks object, field, or Apex class permission for this resource.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
