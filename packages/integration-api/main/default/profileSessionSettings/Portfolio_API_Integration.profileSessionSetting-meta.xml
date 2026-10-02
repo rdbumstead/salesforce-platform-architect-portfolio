@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ProfileSessionSetting xmlns="http://soap.sforce.com/2006/04/metadata">
+    <forceLogout>false</forceLogout>
+    <profile>Portfolio API Integration</profile>
+    <sessionTimeout>30</sessionTimeout>
+</ProfileSessionSetting>

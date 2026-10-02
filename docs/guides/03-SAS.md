@@ -59,7 +59,7 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Date: MVP – Q1 2026
+Date: MVP – Q1 2027
 
 ## 1. System Context & Architecture
 
@@ -118,7 +118,7 @@ graph LR
 > [!TIP]
 > **Scalability Escape Hatch:** While this system is constrained to the Free Tier (Developer Edition), the architecture is designed to scale. If traffic exceeded limits, the **Phase 8** design moves the heavy lifting (Resume Generation, API Gateway) to AWS Serverless equivalents, allowing the Salesforce Core to remain a lightweight orchestration layer. This ensures the system could handle enterprise-scale traffic with minimal refactoring.
 
-**Architecture Implementation Status (MVP – Q1 2026 Launch)**
+**Architecture Implementation Status (MVP – Q1 2027 Launch)**
 
 Live MVP (Door 1)
 
@@ -1060,7 +1060,7 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 | Feature               | Door 1 — Native Salesforce GraphQL (lightning/uiGraphQLApi) | Door 2 — AWS Lambda Polyglot BFF (Function URL)         |
 | :-------------------- | :---------------------------------------------------------- | :------------------------------------------------------ |
-| **Timeline**          | MVP – Q1 2026 (planned)                                     | Phase 8 – Q2 2026 (design complete)                     |
+| **Timeline**          | MVP – Q1 2027 (planned)                                     | Phase 8 – Q2 2026 (design complete)                     |
 | **Primary Consumers** | All internal LWC components (Skill Graph, Roadmap)          | API Lab "Enterprise Mode", future mobile apps           |
 | **Technology**        | lightning/uiGraphQLApi wire adapter                         | Single Lambda Function URL + in-function governance     |
 | **Latency**           | Lowest possible (LDS + UI cache)                            | Single external round-trip                              |

@@ -12,7 +12,7 @@
 > [!IMPORTANT]
 > **Project Status:** Architecture complete (6 enterprise docs, 28 ADRs) • MVP code in development.
 >
-> **Target Launch:** Q1 2026.
+> **Target Launch:** Q1 2027.
 
 **📘 Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 
@@ -60,11 +60,11 @@ Principal-level Salesforce Platform Architecture including:
 | **Multi-Cloud Architecture**    | AWS Lambda BFF + Salesforce LWR hybrid          | [Phase 8 Design](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---q2-2026) • [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)                        | Review FinOps strategy and dual-door pattern                                                                                                                        |
 | **AI/ML Governance**            | Triple-fallback inference with circuit breakers | [AI Strategy Section](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) • [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                                        | Review sequence diagram and failover logic                                                                                                                          |
 | **Security Architecture**       | Zero Trust with Guest User restrictions         | [Data Security Matrix](docs/guides/03-SAS.md#46-data-security-matrix) • [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md) • [ADR-027](docs/adr/027-platform-native-api-authentication.md) | Examine FLS, guest restrictions, and OAuth client-credentials auth                                                                                                  |
-| **Resilience Engineering**      | Circuit breaker pattern with degraded mode      | [Contingency Plans](docs/guides/03-SAS.md#8-contingency--rollback-plans) • [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)                                                | Test resilience simulation toggle (live Q1 2026)                                                                                                                    |
+| **Resilience Engineering**      | Circuit breaker pattern with degraded mode      | [Contingency Plans](docs/guides/03-SAS.md#8-contingency--rollback-plans) • [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)                                                | Test resilience simulation toggle (live Q1 2027)                                                                                                                    |
 | **Performance Optimization**    | Mobile-first with measured LCP targets          | [NFRs Section](docs/guides/03-SAS.md#21-core-nfrs) • [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)                                                                          | Review Lighthouse CI results in Actions                                                                                                                             |
 | **Data Modeling**               | Persona-based resume generation schema          | [ERD Diagram](docs/guides/03-SAS.md#41-logical-data-model-simplified-erd) • [Data Dictionary](docs/guides/03-SAS.md#appendix-d-data-dictionary-detailed-schema)                                          | Examine junction object strategy and filtering logic                                                                                                                |
 | **Cloud FinOps**                | $0.00 forever architecture                      | [FinOps Appendix](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---q2-2026) • [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)                       | Verify Always-Free tier governance model                                                                                                                            |
-| **Observability & Monitoring**  | Real-time telemetry with Glass Box pattern      | [Observability Section](docs/guides/03-SAS.md#9-observability--glass-box-telemetry) • [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                                                  | View Glass Box footer demo (live Q1 2026)                                                                                                                           |
+| **Observability & Monitoring**  | Real-time telemetry with Glass Box pattern      | [Observability Section](docs/guides/03-SAS.md#9-observability--glass-box-telemetry) • [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                                                  | View Glass Box footer demo (live Q1 2027)                                                                                                                           |
 | **Integration Patterns**        | Server-side caching for external APIs           | [GitHub Integration](docs/guides/03-SAS.md#appendix-a-engineering-implementation-notes) • [ADR-007](docs/adr/007-github-api-server-side-caching.md)                                                      | Review Named Credential configuration                                                                                                                               |
 | **Technical Documentation**     | Enterprise-grade architecture suite             | [6 Architecture Guides](#full-architecture-documentation) • [SAS](docs/guides/03-SAS.md)                                                                                                                 | Review documentation structure and C4 model diagrams                                                                                                                |
 
@@ -84,7 +84,7 @@ Principal-level Salesforce Platform Architecture including:
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix) — Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
 - [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) — Triple-fallback inference stack with circuit breakers
 
-**🚧 Available at MVP Launch (Q1 2026):**
+**🚧 Available at MVP Launch (Q1 2027):**
 
 - **Real-time observability** — Glass Box footer showing live Salesforce governor limits (Heap, CPU, SOQL) and AI provider health
 - **Resilience simulation** — Toggle switch to force GitHub/Jira integration failures and observe circuit breaker behavior with cached fallbacks
@@ -93,7 +93,7 @@ Principal-level Salesforce Platform Architecture including:
 
 ---
 
-## Interactive Demonstrations (Live Q1 2026)
+## Interactive Demonstrations (Live Q1 2027)
 
 > [!NOTE]
 > Detailed preview of items from the "Available at Launch" section above. The live site is currently under development.
@@ -244,7 +244,7 @@ graph LR
     linkStyle 0,1,2 stroke:#2ECC71,stroke-width:3px;
 ```
 
-> **Diagram Description (for accessibility):** The diagram shows a user connecting to an Experience Cloud LWR site, which routes data requests through either a native Salesforce GraphQL API (Door 1, live in Q1 2026) or an AWS Lambda Polyglot Backend For Frontend (Door 2, design complete for Q2 2026). The Apex Runtime handles integrations with Jira, GitHub, and Agentforce AI, all backed by custom Salesforce objects.
+> **Diagram Description (for accessibility):** The diagram shows a user connecting to an Experience Cloud LWR site, which routes data requests through either a native Salesforce GraphQL API (Door 1, live in Q1 2027) or an AWS Lambda Polyglot Backend For Frontend (Door 2, design complete for Q2 2026). The Apex Runtime handles integrations with Jira, GitHub, and Agentforce AI, all backed by custom Salesforce objects.
 
 ---
 

@@ -27,7 +27,7 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Date: MVP – Q1 2026
+Date: MVP – Q1 2027
 
 Est. Total Effort: ~70 Hours (MVP Core in ~47 Hours)
 
@@ -48,7 +48,7 @@ This is not a static website. It is a live, observable platform governed by prod
 
 ### 1.3 Current vs. Target Architecture Scope
 
-#### Current MVP State (Q1 2026 Launch)
+#### Current MVP State (Q1 2027 Launch)
 
 - 100% on-platform data access using Apex REST + native Salesforce GraphQL (lightning/uiGraphQLApi)
 - Skill Graph, Roadmap, and Project Gallery all use native wire adapter for sub-250 ms LCP

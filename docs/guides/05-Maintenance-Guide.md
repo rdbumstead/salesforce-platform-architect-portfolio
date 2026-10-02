@@ -29,7 +29,7 @@ Owner: Ryan Bumstead
 
 Version: 1.0
 
-Date: MVP – Q1 2026
+Date: MVP – Q1 2027
 
 This document outlines the operational procedures required to maintain the security, stability, and "Green Build" status of the portfolio architecture.
 

@@ -18,7 +18,7 @@ Owner: Ryan Bumstead
 
 Version: 1.0
 
-Date: MVP – Q1 2026
+Date: MVP – Q1 2027
 
 This document outlines the governance framework and constraint-based design principles that enable the portfolio to operate within zero-budget constraints while maintaining enterprise-grade quality, security, and performance standards.
 
