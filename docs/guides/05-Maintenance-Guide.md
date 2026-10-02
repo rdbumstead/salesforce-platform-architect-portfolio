@@ -4,6 +4,7 @@
 
 - [1. Security Rotation Policy (CI/CD)](#1-security-rotation-policy-cicd)
   - [1.1 Rotation Procedure](#11-rotation-procedure)
+  - [1.2 External Client App Secret Rotation](#12-external-client-app-secret-rotation)
 - [2. Environment Hygiene (The "Clean Sweep")](#2-environment-hygiene-the-clean-sweep)
   - [2.1 Organization Rules](#21-organization-rules)
   - [2.2 Emergency Cleanup Protocol](#22-emergency-cleanup-protocol)
@@ -16,6 +17,7 @@
   - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
   - [4.2 Scenario: Security Misconfiguration (Guest User)](#42-scenario-security-misconfiguration-guest-user)
   - [4.3 Scenario: GitHub Rate Limit Exhaustion](#43-scenario-github-rate-limit-exhaustion)
+  - [4.4 Scenario: Token Vending Abuse](#44-scenario-token-vending-abuse)
 - [5. Observability & Monitoring](#5-observability--monitoring)
   - [5.1 Quota Monitoring (Automated)](#51-quota-monitoring-automated)
 
@@ -76,6 +78,24 @@ openssl req -new -key portfolio.key -x509 -days 400 -out portfolio.crt
 2. Update `SFDX_JWT_KEY` with the content of the _new_ portfolio.key.
 
 **3. Gemini API Key:** Rotate every 90 days. Update Named Credential Gemini_API
+
+### 1.2 External Client App Secret Rotation
+
+The portfolio APIs authenticate with OAuth 2.0 Client Credentials issued by the **Portfolio API** External Client App ([ADR-027](../adr/027-platform-native-api-authentication.md)). The consumer secret lives only in the `Portfolio_API` External Credential principal.
+
+- **Rotation Schedule:** every 90 days, or immediately on suspected exposure.
+- **Blast radius:** rotating the secret invalidates the Named Credential principal only; tokens already issued keep working until their 30-minute session expires.
+
+**Procedure**
+
+1. Setup → **External Client App Manager** → **Portfolio API** → **Settings** → **OAuth Settings** → **Consumer Key and Secret** → **Rotate** (or **Regenerate**). Copy the new secret once.
+2. Setup → **Named Credentials** → **External Credentials** → **Portfolio_API_Auth** → principal **Integration** → **Edit** → paste the new secret → **Save**.
+3. Verify: open the site's API Lab and run `GET /papi/v1/health`; the response must show `dependencies.credential: UP`.
+4. Record the rotation date in the `Portfolio_Config__mdt` `Last_Secret_Rotation__c` field (added with the API foundation release).
+
+**Revocation (kill switch)**
+
+- Setup → **External Client App Manager** → **Portfolio API** → **Deactivate**. Every outstanding Bearer token, including evaluator tokens issued by `POST /papi/v1/auth/token` ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)), stops working immediately. Reactivate after rotating.
 
 ## 2. Environment Hygiene (The "Clean Sweep")
 
@@ -151,6 +171,15 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 ### 4.3 Scenario: GitHub Rate Limit Exhaustion
 
 - The system uses `GitHub_Cache__c` to store API responses. If the API fails (429/500), the Apex `GitHubService` will automatically serve cached data.
+
+### 4.4 Scenario: Token Vending Abuse
+
+- **Symptom:** spike in `API_Access_Request__c` records, `429`/`503` responses from `/papi/v1/auth/token`, or Developer Edition API request usage trending toward the 15,000/day limit (Setup → System Overview).
+- **Immediate mitigation:**
+  1. Deactivate the **Portfolio API** External Client App (see §1.2). All issued tokens die.
+  2. Lower `Token_Daily_Cap__c` in `Portfolio_Config__mdt` (default 50) or set it to 0 to pause vending.
+- **Recovery:** rotate the secret (§1.2), review the audit rows for the offending email/IP, reactivate the app, restore the cap.
+- **Why this is enough:** tokens run as the integration user, whose only permissions are read-only on public portfolio data. The asset at risk is the API quota, not the data.
 
 ## 5. Observability & Monitoring
 

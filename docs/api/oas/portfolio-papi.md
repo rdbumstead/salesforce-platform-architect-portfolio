@@ -6,8 +6,10 @@ A Process API (PAPI) responsible for orchestrating, transforming, and filtering 
 from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
 
 ### 1. Authentication Strategy
-- **Frontend → PAPI**: Uses **MuleSoft/Salesforce Client Credentials** (`client_id`, `client_secret`) in headers.
-- **PAPI → SAPI**: Uses separate internal Client Credentials stored in `configuration.yaml` (or AWS Secrets Manager).
+- **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.
+- **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.
+- **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It and `/health` are the only unauthenticated paths.
+- **PAPI → SAPI**: in-process Apex (same transaction), not HTTP; see ADR-025 for why fan-out callouts were rejected.
 
 ### 2. Versioning Strategy
 - **Pattern**: Header-based versioning takes precedence.
@@ -37,18 +39,28 @@ from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
 
 Base URLs:
 
-* <a href="https://api.portfolio.ryanbumstead.com/papi">https://api.portfolio.ryanbumstead.com/papi</a>
+* <a href="https://{domain}/portfoliovforcesite/services/apexrest/papi/v1">https://{domain}/portfoliovforcesite/services/apexrest/papi/v1</a>
+
+    * **domain** - The Salesforce Experience Cloud domain. Default: ryan-bumstead-dev-ed.develop.my.site.com
+
+        * ryan-bumstead-dev-ed.develop.my.site.com
 
 Email: <a href="mailto:ryan@ryanbumstead.com">Ryan Bumstead</a> Web: <a href="https://ryanbumstead.com">Ryan Bumstead</a> 
 License: <a href="https://opensource.org/licenses/MIT">MIT</a>
 
 # Authentication
 
-* API Key (ClientIdAuth)
-    - Parameter Name: **client_id**, in: header. MuleSoft/Salesforce Client ID
+- oAuth2 authentication. OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).
+Tokens run as the read-only integration user. External evaluators obtain a short-lived token
+from `POST /auth/token` (ADR-028) instead of holding the consumer secret.
 
-* API Key (ClientSecretAuth)
-    - Parameter Name: **client_secret**, in: header. MuleSoft/Salesforce Client Secret (Standard Enforcement Policy)
+    - Flow: clientCredentials
+
+    - Token URL = [https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/oauth2/token](https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/oauth2/token)
+
+|Scope|Scope Description|
+|---|---|
+|api|Access Salesforce REST APIs as the integration user|
 
 <h1 id="portfolio-process-api-papi--orchestration">Orchestration</h1>
 
@@ -66,11 +78,10 @@ const headers = {
   'Accept':'application/json',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
   'X-API-Version':'v1',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://api.portfolio.ryanbumstead.com/papi/profile/full',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/profile/full',
 {
   method: 'GET',
 
@@ -253,7 +264,7 @@ The following groups are executed in parallel:
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid client_id or client_secret",
+  "message": "Missing or invalid Bearer token",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -297,7 +308,7 @@ The following groups are executed in parallel:
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|The complete portfolio payload|[FullPortfolioPayload](#schemafullportfoliopayload)|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid Client Credentials|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
 
@@ -316,7 +327,7 @@ The following groups are executed in parallel:
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ClientIdAuth & ClientSecretAuth
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getProfileSummary
@@ -331,11 +342,10 @@ const headers = {
   'Accept':'application/json',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
   'X-API-Version':'v1',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://api.portfolio.ryanbumstead.com/papi/profile/summary',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/profile/summary',
 {
   method: 'GET',
 
@@ -461,7 +471,7 @@ Stitches junction objects (ExperienceSkill, CertificationSkill) to their parents
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid client_id or client_secret",
+  "message": "Missing or invalid Bearer token",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -505,7 +515,7 @@ Stitches junction objects (ExperienceSkill, CertificationSkill) to their parents
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|A unified profile object|[ProfileSummary](#schemaprofilesummary)|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid Client Credentials|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
 
@@ -523,7 +533,7 @@ Stitches junction objects (ExperienceSkill, CertificationSkill) to their parents
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ClientIdAuth & ClientSecretAuth
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## getFeaturedProjects
@@ -538,11 +548,10 @@ const headers = {
   'Accept':'application/json',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
   'X-API-Version':'v1',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://api.portfolio.ryanbumstead.com/papi/projects/featured',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/projects/featured',
 {
   method: 'GET',
 
@@ -627,7 +636,7 @@ Retrieves projects marked as 'Featured' with nested Skills and Assets.
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid client_id or client_secret",
+  "message": "Missing or invalid Bearer token",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -671,7 +680,7 @@ Retrieves projects marked as 'Featured' with nested Skills and Assets.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|A list of enriched project records|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid Client Credentials|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
 
@@ -723,7 +732,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ClientIdAuth & ClientSecretAuth
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 <h1 id="portfolio-process-api-papi--transformation">Transformation</h1>
@@ -742,11 +751,10 @@ const headers = {
   'Accept':'application/json',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
   'X-API-Version':'v1',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://api.portfolio.ryanbumstead.com/papi/resume/generate',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/resume/generate',
 {
   method: 'GET',
 
@@ -842,7 +850,7 @@ Generates an ATS-optimized plain text resume.
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid client_id or client_secret",
+  "message": "Missing or invalid Bearer token",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -886,7 +894,7 @@ Generates an ATS-optimized plain text resume.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|A JSON object containing the formatted resume text|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid Client Credentials|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
 
@@ -914,7 +922,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ClientIdAuth & ClientSecretAuth
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 <h1 id="portfolio-process-api-papi--logic">Logic</h1>
@@ -933,11 +941,10 @@ const headers = {
   'Accept':'application/json',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
   'X-API-Version':'v1',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://api.portfolio.ryanbumstead.com/papi/testimonials/feed',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/testimonials/feed',
 {
   method: 'GET',
 
@@ -1017,7 +1024,7 @@ Retrieves testimonials with "Vibe Control" logic applied.
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid client_id or client_secret",
+  "message": "Missing or invalid Bearer token",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -1061,7 +1068,7 @@ Retrieves testimonials with "Vibe Control" logic applied.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|A filtered list of testimonials|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid Client Credentials|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
 
@@ -1107,7 +1114,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ClientIdAuth & ClientSecretAuth
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 ## generateAiContent
@@ -1138,11 +1145,10 @@ const headers = {
   'Accept':'application/json',
   'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
   'X-API-Version':'v1',
-  'client_id':'API_KEY',
-  'client_secret':'API_KEY'
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://api.portfolio.ryanbumstead.com/papi/ai/generate',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/ai/generate',
 {
   method: 'POST',
   body: inputBody,
@@ -1261,7 +1267,7 @@ Proxies generative AI requests to LLM providers with circuit breaker pattern.
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Invalid client_id or client_secret",
+  "message": "Missing or invalid Bearer token",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false
 }
@@ -1317,7 +1323,7 @@ Proxies generative AI requests to LLM providers with circuit breaker pattern.
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully generated content|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid Client Credentials|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|Rate limit exceeded (LLM provider quota)|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|All AI providers unavailable|[Error](#schemaerror)|
@@ -1350,7 +1356,7 @@ Status Code **200**
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
-ClientIdAuth & ClientSecretAuth
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 <h1 id="portfolio-process-api-papi--monitoring">Monitoring</h1>
@@ -1369,7 +1375,7 @@ const headers = {
   'Accept':'application/json'
 };
 
-fetch('https://api.portfolio.ryanbumstead.com/papi/health',
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/health',
 {
   method: 'GET',
 
@@ -1428,6 +1434,143 @@ Performs a shallow health check (runtime only). Does not validate SAPI connectiv
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
 |200|Cache-Control|string||none|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|503|Retry-After|integer||Seconds until service may be available|
+
+<aside class="success">
+This operation does not require authentication
+</aside>
+
+<h1 id="portfolio-process-api-papi--access">Access</h1>
+
+Evaluator token vending (ADR-028)
+
+## requestEvaluatorToken
+
+<a id="opIdrequestEvaluatorToken"></a>
+
+> Code samples
+
+```javascript
+const inputBody = '{
+  "email": "reviewer@example.com",
+  "purpose": "Evaluating API contract parity"
+}';
+const headers = {
+  'Content-Type':'application/json',
+  'Accept':'application/json',
+  'X-Request-Id':'497f6eca-6276-4993-bfeb-53cbbbba6f08',
+  'X-API-Version':'v1'
+};
+
+fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/auth/token',
+{
+  method: 'POST',
+  body: inputBody,
+  headers: headers
+})
+.then(function(res) {
+    return res.json();
+}).then(function(body) {
+    console.log(body);
+});
+
+```
+
+`POST /auth/token`
+
+*Request an evaluator access token*
+
+Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI
+without holding the External Client App consumer secret (ADR-028). The exchange runs server-side
+through the `Portfolio_API` Named Credential. Tokens run as the read-only integration user and
+expire with its 30-minute session. Requests are rate-limited by email and source IP and capped per day.
+
+> Body parameter
+
+```json
+{
+  "email": "reviewer@example.com",
+  "purpose": "Evaluating API contract parity"
+}
+```
+
+<h3 id="requestevaluatortoken-parameters">Parameters</h3>
+
+|Name|In|Type|Required|Description|
+|---|---|---|---|---|
+|X-Request-Id|header|string(uuid)|false|Correlation ID propagated to SAPI.|
+|X-API-Version|header|string|true|API Version (e.g., v1).|
+|body|body|[TokenRequest](#schematokenrequest)|true|none|
+
+> Example responses
+
+> 200 Response
+
+```json
+{
+  "access_token": "string",
+  "token_type": "Bearer",
+  "expires_in": 1800,
+  "instance_url": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest",
+  "docs": "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi"
+}
+```
+
+> 400 Response
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Invalid persona value.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false
+}
+```
+
+> 429 Response
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "Rate limit exceeded. Retry after 42 seconds.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
+> 503 Response
+
+```json
+{
+  "httpStatus": 503,
+  "errorCode": "SERVICE_UNAVAILABLE",
+  "message": "Downstream SAPI is currently unavailable",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true
+}
+```
+
+<h3 id="requestevaluatortoken-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Token issued|[TokenResponse](#schematokenresponse)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|Rate limit or daily cap exceeded (ADR-025, ADR-028)|[Error](#schemaerror)|
+|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
+
+### Response Headers
+
+|Status|Header|Type|Format|Description|
+|---|---|---|---|---|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|200|Cache-Control|string||none|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|429|Retry-After|integer||Seconds until the window resets.|
 |503|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
 |503|Retry-After|integer||Seconds until service may be available|
 
@@ -2056,4 +2199,60 @@ Educational background
 |fieldOfStudy|string|false|none|none|
 |year|string|true|none|Graduation Year derived from Graduation Date|
 |gpa|number¦null|false|none|none|
+
+<h2 id="tocS_TokenRequest">TokenRequest</h2>
+<!-- backwards compatibility -->
+<a id="schematokenrequest"></a>
+<a id="schema_TokenRequest"></a>
+<a id="tocStokenrequest"></a>
+<a id="tocstokenrequest"></a>
+
+```json
+{
+  "email": "reviewer@example.com",
+  "purpose": "Evaluating API contract parity"
+}
+
+```
+
+### Properties
+
+|Name|Type|Required|Restrictions|Description|
+|---|---|---|---|---|
+|email|string(email)|true|none|none|
+|purpose|string|true|none|Free-text reason, stored on the audit record.|
+
+<h2 id="tocS_TokenResponse">TokenResponse</h2>
+<!-- backwards compatibility -->
+<a id="schematokenresponse"></a>
+<a id="schema_TokenResponse"></a>
+<a id="tocStokenresponse"></a>
+<a id="tocstokenresponse"></a>
+
+```json
+{
+  "access_token": "string",
+  "token_type": "Bearer",
+  "expires_in": 1800,
+  "instance_url": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest",
+  "docs": "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi"
+}
+
+```
+
+### Properties
+
+|Name|Type|Required|Restrictions|Description|
+|---|---|---|---|---|
+|access_token|string|true|none|OAuth 2.0 Bearer token bound to the read-only integration user.|
+|token_type|string|true|none|none|
+|expires_in|integer|true|none|Seconds until the integration user session times out (default 1800).|
+|instance_url|string(uri)|true|none|none|
+|docs|string(uri)|false|none|Link to the rendered API documentation.|
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|token_type|Bearer|
 
