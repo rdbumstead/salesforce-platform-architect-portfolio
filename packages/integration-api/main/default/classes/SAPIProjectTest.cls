@@ -47,6 +47,11 @@ private class SAPIProjectTest {
       responseJson.contains('Portfolio'),
       'Response should contain project name'
     );
+    System.assertEquals(
+      'max-age=300, public',
+      res.headers.get('Cache-Control'),
+      'Projects are public data'
+    );
   }
 
   @IsTest
@@ -135,12 +140,8 @@ private class SAPIProjectTest {
   }
   @IsTest
   static void testGetProjectsInternalError() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-    // req.requestURI = null;
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/projects/');
+    RestResponse res = RestTestUtil.getResponse();
 
     SAPIProject.throwException = true;
 
@@ -153,5 +154,38 @@ private class SAPIProjectTest {
       res.statusCode,
       'Should return 500 on internal error'
     );
+  }
+
+  @IsTest
+  static void testGetProjectsWithFiltersAndDetailFields() {
+    Project__c proj = [SELECT Id FROM Project__c LIMIT 1];
+    proj.Is_Featured__c = true;
+    proj.Challenge__c = 'Challenge';
+    proj.Solution__c = 'Solution';
+    proj.Business_Value__c = 'Value';
+    proj.Live_URL__c = 'https://example.com';
+    proj.Repository_URL__c = 'https://github.com/example';
+    proj.Date_Completed__c = Date.today();
+    update proj;
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/projects/',
+      new Map<String, String>{
+        'status' => 'Live – In Production',
+        'isFeatured' => 'true'
+      }
+    );
+
+    Test.startTest();
+    SAPIProject.getProjects();
+    Test.stopTest();
+
+    RestResponse res = RestTestUtil.getResponse();
+    System.assertEquals(200, res.statusCode, 'Should return 200 OK');
+    String responseJson = res.responseBody.toString();
+    System.assert(
+      responseJson.contains('repositoryUrl'),
+      'Detail fields should be included'
+    );
+    System.assertEquals('1', res.headers.get('X-Total-Count'), 'Total count');
   }
 }

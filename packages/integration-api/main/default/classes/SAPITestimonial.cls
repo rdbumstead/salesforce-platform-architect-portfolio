@@ -14,32 +14,23 @@ global with sharing class SAPITestimonial {
    */
   @HttpGet
   global static void getTestimonials() {
-    RestRequest req = RestContext.request;
-    RestResponse res = RestContext.response;
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    if (ctx.isRejected()) {
+      return;
+    }
 
     try {
-      addCommonHeaders(res);
       if (Test.isRunningTest() && throwException) {
         throw new CalloutException('Forced Exception');
       }
 
-      // Query parameters
-      Integer limitParam = getIntegerParam(req, 'limit', 50);
-      Integer offsetParam = getIntegerParam(req, 'offset', 0);
-      String vibeMode = req.params != null ? req.params.get('vibeMode') : null;
-      String relationshipType = req.params != null
-        ? req.params.get('relationshipType')
-        : null;
-
-      // Validate parameters
-      if (limitParam < 1 || limitParam > 200) {
-        sendError(res, 400, 'BAD_REQUEST', 'Limit must be between 1 and 200.');
+      Integer limitParam = ctx.limitParam();
+      Integer offsetParam = ctx.offsetParam();
+      if (ctx.isRejected()) {
         return;
       }
-      if (offsetParam < 0) {
-        sendError(res, 400, 'BAD_REQUEST', 'Offset cannot be negative.');
-        return;
-      }
+      String vibeMode = ctx.stringParam('vibeMode');
+      String relationshipType = ctx.stringParam('relationshipType');
 
       // Build dynamic query
       String baseQuery =
@@ -59,20 +50,11 @@ global with sharing class SAPITestimonial {
 
       List<Testimonial__c> testimonials = Database.query(baseQuery);
 
-      // Pagination headers
-      res.addHeader('X-Total-Count', String.valueOf(countTestimonials()));
-      res.addHeader(
-        'X-Has-More',
-        String.valueOf(testimonials.size() == limitParam)
-      );
-      res.addHeader('Cache-Control', 'max-age=300, public');
-
-      res.statusCode = 200;
-      res.responseBody = Blob.valueOf(
-        JSON.serialize(transformTestimonials(testimonials))
-      );
+      ctx.paginate(countTestimonials(), testimonials.size());
+      ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
+      ctx.ok(transformTestimonials(testimonials));
     } catch (Exception e) {
-      sendError(res, 500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
   }
 
@@ -104,46 +86,6 @@ global with sharing class SAPITestimonial {
       FROM Testimonial__c
       WHERE Approved__c = TRUE
     ];
-  }
-
-  private static void addCommonHeaders(RestResponse res) {
-    res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
-    res.addHeader('X-API-Version', 'v1');
-  }
-
-  private static Integer getIntegerParam(
-    RestRequest req,
-    String param,
-    Integer defaultVal
-  ) {
-    if (req.params == null)
-      return defaultVal;
-    String val = req.params.get(param);
-    if (String.isBlank(val))
-      return defaultVal;
-    try {
-      return Integer.valueOf(val);
-    } catch (Exception e) {
-      return defaultVal;
-    }
-  }
-
-  private static void sendError(
-    RestResponse res,
-    Integer statusCode,
-    String errorCode,
-    String message
-  ) {
-    res.statusCode = statusCode;
-    Map<String, Object> error = new Map<String, Object>{
-      'httpStatus' => statusCode,
-      'errorCode' => errorCode,
-      'message' => message,
-      'correlationId' => RequestUtil.getRequestId(),
-      'retryable' => (statusCode >= 500)
-    };
-    res.responseBody = Blob.valueOf(JSON.serialize(error));
   }
 
   @TestVisible

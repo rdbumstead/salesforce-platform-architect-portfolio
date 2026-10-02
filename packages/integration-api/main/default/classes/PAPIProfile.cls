@@ -15,35 +15,38 @@ global with sharing class PAPIProfile {
    */
   @HttpGet
   global static void getProfile() {
-    RestRequest req = RestContext.request;
-    RestResponse res = RestContext.response;
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    if (ctx.isRejected()) {
+      return;
+    }
 
     try {
-      addCommonHeaders(res);
+      if (Test.isRunningTest() && throwException) {
+        throw new CalloutException('Forced Exception');
+      }
 
-      String endpoint = extractEndpoint(req.requestURI);
+      String endpoint = ctx.endpointSegment();
 
       if (endpoint == 'full') {
-        getFullPortfolio(res);
+        getFullPortfolio(ctx);
       } else if (endpoint == 'summary') {
-        getProfileSummary(res);
+        getProfileSummary(ctx);
       } else {
-        sendError(
-          res,
+        ctx.error(
           400,
           'BAD_REQUEST',
           'Invalid endpoint. Use /profile/full or /profile/summary'
         );
       }
     } catch (Exception e) {
-      sendError(res, 500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
   }
 
   /**
    * @description Gets the complete portfolio payload (hydration endpoint).
    */
-  private static void getFullPortfolio(RestResponse res) {
+  private static void getFullPortfolio(ApiRequestContext ctx) {
     Map<String, Object> payload = new Map<String, Object>();
     String integrityNote = 'complete';
 
@@ -251,16 +254,15 @@ global with sharing class PAPIProfile {
     payload.put('integrityNote', integrityNote);
 
     // Apply cache control based on strictest policy (Contact = no-store)
-    res.addHeader('Cache-Control', 'no-store, no-cache');
-    res.addHeader('X-Data-Integrity', integrityNote);
-    res.statusCode = 200;
-    res.responseBody = Blob.valueOf(JSON.serialize(payload));
+    ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
+    ctx.header('X-Data-Integrity', integrityNote);
+    ctx.ok(payload);
   }
 
   /**
    * @description Gets the profile summary (resume page).
    */
-  private static void getProfileSummary(RestResponse res) {
+  private static void getProfileSummary(ApiRequestContext ctx) {
     Map<String, Object> payload = new Map<String, Object>();
 
     // Simplified version - contact + experience + skills + certs + education
@@ -329,9 +331,8 @@ global with sharing class PAPIProfile {
     payload.put('certifications', new List<Map<String, Object>>());
     payload.put('education', new List<Map<String, Object>>());
 
-    res.addHeader('Cache-Control', 'max-age=300, private');
-    res.statusCode = 200;
-    res.responseBody = Blob.valueOf(JSON.serialize(payload));
+    ctx.cache(ApiRequestContext.CachePolicy.PRIVATE_300);
+    ctx.ok(payload);
   }
 
   // --- Helper Methods ---
@@ -422,33 +423,6 @@ global with sharing class PAPIProfile {
     return result;
   }
 
-  private static String extractEndpoint(String uri) {
-    Integer idx = uri.lastIndexOf('/');
-    if (idx == -1)
-      return '';
-    return uri.substring(idx + 1);
-  }
-
-  private static void addCommonHeaders(RestResponse res) {
-    res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
-    res.addHeader('X-API-Version', 'v1');
-  }
-
-  private static void sendError(
-    RestResponse res,
-    Integer statusCode,
-    String errorCode,
-    String message
-  ) {
-    res.statusCode = statusCode;
-    Map<String, Object> error = new Map<String, Object>{
-      'httpStatus' => statusCode,
-      'errorCode' => errorCode,
-      'message' => message,
-      'correlationId' => RequestUtil.getRequestId(),
-      'retryable' => (statusCode >= 500)
-    };
-    res.responseBody = Blob.valueOf(JSON.serialize(error));
-  }
+  @TestVisible
+  private static Boolean throwException = false;
 }

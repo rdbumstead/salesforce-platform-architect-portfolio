@@ -14,28 +14,32 @@ global with sharing class PAPIProjects {
    */
   @HttpGet
   global static void getProjects() {
-    RestRequest req = RestContext.request;
-    RestResponse res = RestContext.response;
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    if (ctx.isRejected()) {
+      return;
+    }
 
     try {
-      addCommonHeaders(res);
+      if (Test.isRunningTest() && throwException) {
+        throw new CalloutException('Forced Exception');
+      }
 
-      String endpoint = extractEndpoint(req.requestURI);
+      String endpoint = ctx.endpointSegment();
 
       if (endpoint == 'featured') {
-        getFeaturedProjects(res);
+        getFeaturedProjects(ctx);
       } else {
-        getAllProjects(res);
+        getAllProjects(ctx);
       }
     } catch (Exception e) {
-      sendError(res, 500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
   }
 
   /**
    * @description Gets featured projects with enrichment.
    */
-  private static void getFeaturedProjects(RestResponse res) {
+  private static void getFeaturedProjects(ApiRequestContext ctx) {
     List<Project__c> projects = [
       SELECT
         Id,
@@ -63,16 +67,15 @@ global with sharing class PAPIProjects {
 
     List<Map<String, Object>> enrichedProjects = enrichProjects(projects);
 
-    res.addHeader('X-Total-Count', String.valueOf(enrichedProjects.size()));
-    res.addHeader('Cache-Control', 'max-age=300, public');
-    res.statusCode = 200;
-    res.responseBody = Blob.valueOf(JSON.serialize(enrichedProjects));
+    ctx.header('X-Total-Count', String.valueOf(enrichedProjects.size()));
+    ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
+    ctx.ok(enrichedProjects);
   }
 
   /**
    * @description Gets all visible projects with enrichment.
    */
-  private static void getAllProjects(RestResponse res) {
+  private static void getAllProjects(ApiRequestContext ctx) {
     List<Project__c> projects = [
       SELECT
         Id,
@@ -99,10 +102,9 @@ global with sharing class PAPIProjects {
 
     List<Map<String, Object>> enrichedProjects = enrichProjects(projects);
 
-    res.addHeader('X-Total-Count', String.valueOf(enrichedProjects.size()));
-    res.addHeader('Cache-Control', 'max-age=300, public');
-    res.statusCode = 200;
-    res.responseBody = Blob.valueOf(JSON.serialize(enrichedProjects));
+    ctx.header('X-Total-Count', String.valueOf(enrichedProjects.size()));
+    ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
+    ctx.ok(enrichedProjects);
   }
 
   /**
@@ -165,33 +167,6 @@ global with sharing class PAPIProjects {
     return result;
   }
 
-  private static String extractEndpoint(String uri) {
-    Integer idx = uri.lastIndexOf('/');
-    if (idx == -1)
-      return '';
-    return uri.substring(idx + 1);
-  }
-
-  private static void addCommonHeaders(RestResponse res) {
-    res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
-    res.addHeader('X-API-Version', 'v1');
-  }
-
-  private static void sendError(
-    RestResponse res,
-    Integer statusCode,
-    String errorCode,
-    String message
-  ) {
-    res.statusCode = statusCode;
-    Map<String, Object> error = new Map<String, Object>{
-      'httpStatus' => statusCode,
-      'errorCode' => errorCode,
-      'message' => message,
-      'correlationId' => RequestUtil.getRequestId(),
-      'retryable' => (statusCode >= 500)
-    };
-    res.responseBody = Blob.valueOf(JSON.serialize(error));
-  }
+  @TestVisible
+  private static Boolean throwException = false;
 }

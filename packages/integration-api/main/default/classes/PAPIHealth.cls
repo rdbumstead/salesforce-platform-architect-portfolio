@@ -13,11 +13,10 @@ global with sharing class PAPIHealth {
    */
   @HttpGet
   global static void getHealth() {
-    RestResponse res = RestContext.response;
-
-    addCommonHeaders(res);
-    res.addHeader('Cache-Control', 'no-store, no-cache');
-    res.statusCode = 200;
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    if (ctx.isRejected()) {
+      return;
+    }
 
     Map<String, Object> healthStatus = new Map<String, Object>{
       'status' => 'UP',
@@ -25,12 +24,7 @@ global with sharing class PAPIHealth {
       'dependencies' => new Map<String, Object>{ 'sapi' => 'not_checked' }
     };
 
-    res.responseBody = Blob.valueOf(JSON.serialize(healthStatus));
-  }
-
-  private static void addCommonHeaders(RestResponse res) {
-    res.addHeader('Content-Type', 'application/json');
-    res.addHeader('X-Request-Id', RequestUtil.getRequestId());
-    res.addHeader('X-API-Version', 'v1');
+    ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
+    ctx.ok(healthStatus);
   }
 }

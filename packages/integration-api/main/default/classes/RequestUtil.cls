@@ -12,11 +12,7 @@ public with sharing class RequestUtil {
    * @return String The request ID or 'N/A' if unavailable.
    */
   public static String getRequestId() {
-    try {
-      String requestId = Request.getCurrent()?.getRequestId();
-      return String.isBlank(requestId) ? 'N/A' : requestId;
-    } catch (Exception e) {
-      return 'N/A';
-    }
+    String requestId = Request.getCurrent()?.getRequestId();
+    return String.isBlank(requestId) ? 'N/A' : requestId;
   }
 }

@@ -115,6 +115,16 @@ private class PAPIProfileTest {
       responseJson.contains('Bachelor of Science'),
       'Response should contain degree name'
     );
+    System.assertEquals(
+      'no-store, no-cache',
+      res.headers.get('Cache-Control'),
+      'Full profile is no-store'
+    );
+    System.assertEquals(
+      'complete',
+      res.headers.get('X-Data-Integrity'),
+      'All sources present'
+    );
   }
 
   @IsTest
@@ -134,6 +144,11 @@ private class PAPIProfileTest {
       res.statusCode,
       'Status should be 200. Error: ' + responseBody
     );
+    System.assertEquals(
+      'max-age=300, private',
+      res.headers.get('Cache-Control'),
+      'Summary is private'
+    );
   }
 
   @IsTest
@@ -150,14 +165,9 @@ private class PAPIProfileTest {
 
   @IsTest
   static void testGetProfileInternalError() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-
-    // Trigger exception by leaving necessary context null or invalid
-    req.requestURI = null;
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+    RestResponse res = RestTestUtil.getResponse();
+    PAPIProfile.throwException = true;
 
     Test.startTest();
     PAPIProfile.getProfile();
@@ -167,6 +177,39 @@ private class PAPIProfileTest {
       500,
       res.statusCode,
       'Should return 500 Internal Server Error'
+    );
+  }
+
+  @IsTest
+  static void testGetFullPortfolioPartialWithJunctions() {
+    delete [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    Experience__c exp = [SELECT Id FROM Experience__c LIMIT 1];
+    Skill__c skill = [SELECT Id FROM Skill__c LIMIT 1];
+    Project__c proj = [SELECT Id FROM Project__c LIMIT 1];
+    insert new Experience_Skill__c(Experience__c = exp.Id, Skill__c = skill.Id);
+    insert new Project_Skill__c(Project__c = proj.Id, Skill__c = skill.Id);
+    insert new Project_Asset__c(
+      Project__c = proj.Id,
+      Name = 'Screenshot',
+      Type__c = 'Image',
+      Alt_Text__c = 'Home page'
+    );
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+    RestResponse res = RestTestUtil.getResponse();
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    System.assertEquals(200, res.statusCode, 'Should return 200 OK');
+    System.assertEquals(
+      'partial',
+      res.headers.get('X-Data-Integrity'),
+      'Missing owner contact makes the payload partial'
+    );
+    System.assert(
+      res.responseBody.toString().contains('Home page'),
+      'Project assets should be included'
     );
   }
 }

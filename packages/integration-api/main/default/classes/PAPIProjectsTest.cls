@@ -59,6 +59,12 @@ private class PAPIProjectsTest {
       responseJson.contains('Featured Project'),
       'Response should contain featured project'
     );
+    System.assertEquals(
+      'max-age=300, public',
+      res.headers.get('Cache-Control'),
+      'Featured projects are public'
+    );
+    System.assertEquals('1', res.headers.get('X-Total-Count'), 'One featured');
   }
 
   @IsTest
@@ -81,15 +87,9 @@ private class PAPIProjectsTest {
 
   @IsTest
   static void testGetProjectsInternalError() {
-    RestRequest req = new RestRequest();
-    RestResponse res = new RestResponse();
-
-    // Leaving requestURI null will cause extractEndpoint to throw NullPointerException
-    // This verifies the catch block and sendError method
-    req.requestURI = null;
-    req.httpMethod = 'GET';
-    RestContext.request = req;
-    RestContext.response = res;
+    RestTestUtil.initGet('/services/apexrest/papi/v1/projects/featured');
+    RestResponse res = RestTestUtil.getResponse();
+    PAPIProjects.throwException = true;
 
     Test.startTest();
     PAPIProjects.getProjects();
@@ -103,6 +103,34 @@ private class PAPIProjectsTest {
     System.assert(
       res.responseBody.toString().contains('INTERNAL_SERVER_ERROR'),
       'Should return correct error code'
+    );
+  }
+
+  @IsTest
+  static void testGetFeaturedProjectsWithAssets() {
+    Project__c proj = [
+      SELECT Id
+      FROM Project__c
+      WHERE Is_Featured__c = TRUE
+      LIMIT 1
+    ];
+    insert new Project_Asset__c(
+      Project__c = proj.Id,
+      Name = 'Screenshot',
+      Type__c = 'Image',
+      Alt_Text__c = 'Architecture diagram'
+    );
+    RestTestUtil.initGet('/services/apexrest/papi/v1/projects/featured');
+    RestResponse res = RestTestUtil.getResponse();
+
+    Test.startTest();
+    PAPIProjects.getProjects();
+    Test.stopTest();
+
+    System.assertEquals(200, res.statusCode, 'Should return 200 OK');
+    System.assert(
+      res.responseBody.toString().contains('Architecture diagram'),
+      'Asset caption should be included'
     );
   }
 }
