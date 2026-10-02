@@ -27,7 +27,7 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Date: MVP – Q1 2026
+Date: MVP – Q1 2027
 
 ## 1. Integration Service Implementation
 
