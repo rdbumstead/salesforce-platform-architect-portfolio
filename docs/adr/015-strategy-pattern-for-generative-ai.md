@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Amended 2026-10-20 (see below).
 
 ## Context
 
@@ -19,3 +19,7 @@ Decouples the UI from the AI provider, allowing seamless failover between Agentf
 ## Implications
 
 Requires maintaining standardized response wrappers across AgentforceService, GeminiService, and LocalTemplateService.
+
+## Amendment (2026-10-20)
+
+**Agentforce is deferred.** `AgentforceService` is a mock: `AgentforceService.generateContent` returns the fixed string `Agentforce response for: <prompt>` and `isAvailable` always returns true. No Agentforce agent, topic or Models API call is built in source, and none is built while the deferral stands. No document may present Agentforce as the primary ("Gold") path, because the only thing that path can return is the mock's string. The Strategy Pattern and the `IAIGenerationService` interface stand; the providers that can serve real content are Gemini (`GeminiService`) and the deterministic Local Template (`LocalTemplateService`).

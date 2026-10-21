@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-10-01). Supersedes [ADR-017](017-system-api-security-and-dual-sided-auth-pattern.md).
+Accepted (2026-10-01). Supersedes [ADR-017](017-system-api-security-and-dual-sided-auth-pattern.md). Amended 2026-10-20 (see below).
 
 ## Context
 
@@ -20,7 +20,7 @@ Salesforce provides a first-class answer to machine-to-machine authentication, a
 
 Authenticate the SAPI and Process API (PAPI) with platform-native OAuth 2.0 on both sides of the boundary:
 
-- **Inbound (provider side):** an **External Client App** (`externalClientApps` metadata, source-tracked) enabled for the **Client Credentials flow**, configured to _run as_ a dedicated integration user. Callers present `Authorization: Bearer <access_token>`. The guest user holds no execute access on any SAPI or PAPI class except the token-vending endpoint defined in [ADR-028](028-evaluator-access-via-token-vending.md).
+- **Inbound (provider side):** an **External Client App** enabled for the **Client Credentials flow**, configured to _run as_ a dedicated integration user. Callers present `Authorization: Bearer <access_token>`. The guest user holds no execute access on any SAPI or PAPI class except the token-vending endpoint defined in [ADR-028](028-evaluator-access-via-token-vending.md).
 - **Outbound (consumer side):** an **External Credential** using the OAuth 2.0 Client Credentials protocol against this org's own token endpoint, holding the External Client App consumer key and secret as its principal, wrapped by a `Portfolio_API` **Named Credential**. Any on-platform consumer (the site's API Lab proxy, the PAPI health check) calls the APIs through that Named Credential.
 - **Authorisation:** the integration user holds a single permission set (`Integration_Access`) granting read-only access to the portfolio objects, execute access on the SAPI and PAPI classes, and nothing else.
 - **Contract:** both OpenAPI specifications replace the two `apiKey` header schemes with one `oauth2` `clientCredentials` security scheme.
@@ -51,3 +51,13 @@ Authenticate the SAPI and Process API (PAPI) with platform-native OAuth 2.0 on b
 - **Licensing:** the integration user consumes one Salesforce user licence in the Developer Edition org.
 - **Documentation:** the SAS (§5.3, Appendix C) and Technical Guide (§1) sections describing `client_id` / `client_secret` validation against `Portfolio_Config__mdt` must be rewritten to match this decision.
 - **Constraints carried forward from ADR-017:** the APIs remain read-only; non-GET methods on data resources return `405 Method Not Allowed`. The only POST endpoints are `/papi/v1/ai/generate` and the token-vending endpoint in ADR-028.
+
+## Amendment (2026-10-20)
+
+**`Integration_Access` is read-only.** The permission set grants read, and only read, on 14 objects: `Account`, `Certification__c`, `Contact`, `Education__c`, `Experience_Highlight__c`, `Experience_Skill__c`, `Experience__c`, `Github_Cache__c`, `Jira_Cache__c`, `Project_Asset__c`, `Project_Skill__c`, `Project__c`, `Skill__c` and `Testimonial__c`. None of its 57 field permissions is editable, and it grants no create, edit, delete, View All or Modify All. Contact field access is limited to the nine fields the API returns: `Career_Objective__c`, `Email`, `GitHub_URL__c`, `Is_Portfolio_Owner__c`, `LinkedIn_URL__c`, `Phone`, `Portfolio_URL__c`, `Title` and `Trailhead_URL__c`. Source: `packages/portfolio-site/main/default/permissionsets/Integration_Access.permissionset-meta.xml`.
+
+Because a vended token works on every REST API as the integration user, this permission set is the security control. It never gains create, edit or delete.
+
+**Run-as profile.** The integration user runs under the `Portfolio API Integration` profile (Salesforce Platform licence). The profile grants API access only and revokes the object permissions the licence adds by default; all data access comes from `Integration_Access`. Its session timeout is 30 minutes (`Portfolio_API_Integration.profileSessionSetting-meta.xml`), which is what makes vended tokens expire ([ADR-028](028-evaluator-access-via-token-vending.md)).
+
+**Where each construct lives.** The `Portfolio_API_Auth` External Credential (OAuth 2.0, client credentials with client secret, named principal `Portfolio_API_Principal`) and the `Portfolio_API` Named Credential (URL: the My Domain root) are in source under `packages/portfolio-site/main/default/`. The **Portfolio API** External Client App and the integration user were created in Setup and are not in source. The consumer key and secret exist only in the External Client App and the External Credential principal.
