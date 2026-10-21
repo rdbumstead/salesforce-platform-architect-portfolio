@@ -55,29 +55,38 @@ All external API calls originate from a secure **Named Credential** accessed via
 > [!NOTE]
 > **Agentforce is deferred** (decision 2026-10-02, recorded in the [ADR-015 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-20)). `AgentforceService` is a mock: `AgentforceService.generateContent` returns the fixed string `Agentforce response for: <prompt>`. Nothing in this guide claims Agentforce as a live provider.
 
-- **Providers that serve real content:** Google Gemini (`GeminiService`, through the `Gemini_API` Named Credential) and the deterministic Local Template (`LocalTemplateService`).
+- **Two dispatch paths** ([ADR-015 amendment (2026-10-21)](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21)):
+  - `ContentGenerationController.generateCoverLetter`, the `@AuraEnabled` method behind the site's cover-letter page, keeps its original chain with Agentforce first (decision 2026-10-20). `AgentforceService.isAvailable` always returns true, so this method always returns the mock text `Agentforce response for: <prompt>`. **That page shows no live AI content** until Agentforce is built.
+  - `ContentGenerationController.generateWithoutAgentforce`, used by `PAPIAiGenerate.generate` (`POST /papi/v1/ai/generate`), tries Gemini, then, for cover letters only, the Local Template. It never consults Agentforce. This is the path that reaches a real model.
+- **Model:** Gemma 4 31B (`gemma-4-31b-it`, `GeminiService.MODEL`) through the Gemini API and the `Gemini_API` Named Credential. The key's free tier allows 30 requests per minute, 16,000 tokens per minute and 14,400 requests per day for this model; `/ai/generate` is also limited to 10 requests per minute by the `papi-ai` tier. When the Gemini API refuses or fails, a cover letter falls back to `LocalTemplateService` and other types answer 503 `ALL_PROVIDERS_UNAVAILABLE`.
 - **Design retained for later:** an Agent Topic grounded on `Project__c` with "Mirror Mode" system instructions. It is not built.
 
 ### 1.4 System API Security (The "Twin" Pattern)
 
 The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](../adr/027-platform-native-api-authentication.md)). The earlier design validated `client_id`/`client_secret` headers against Custom Metadata to simulate a MuleSoft policy point; that simulation was retired when MuleSoft left the architecture.
 
-| Role         | Component                                              | Responsibility                                                          | Implementation                                                                                                                                                                                                               |
-| :----------- | :----------------------------------------------------- | :---------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Provider** | External Client App (Client Credentials flow)          | **Authentication:** issues Bearer tokens; rejects bad callers upstream  | Runs as a dedicated integration user holding `Integration_Access` (read-only objects + execute on `SAPI*`/`PAPI*`). The platform rejects unauthenticated calls before Apex.                                                  |
-| **Consumer** | External Credential + `Portfolio_API` Named Credential | **Secure Storage:** holds the consumer key/secret in the platform vault | Used by `ApiLabController` (site proxy) and the PAPI health check. No secret is ever stored in metadata or source.                                                                                                           |
-| **Vendor**   | `PAPIAuthToken` (`POST /papi/v1/auth/token`)           | **Evaluator access:** exchanges email + purpose for a short-lived token | The only REST class the guest user can execute ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)). Shares `TokenExchangeService` with the proxy.                                                                  |
-| **Context**  | `ApiRequestContext` (shared by every REST class)       | **Contract hygiene:** headers, pagination, errors, cache, rate limits   | Reads/echoes `X-Request-Id` and `X-API-Version`, bounds `limit`/`offset`, emits the `Error` schema, applies `Cache-Control` per resource, enforces [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md) tiers. |
+| Role         | Component                                              | Responsibility                                                          | Implementation                                                                                                                                                                                                                                                                                                                  |
+| :----------- | :----------------------------------------------------- | :---------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Provider** | External Client App (Client Credentials flow)          | **Authentication:** issues Bearer tokens; rejects bad callers upstream  | Runs as a dedicated integration user holding `Integration_Access` (read-only objects + execute on `SAPI*`/`PAPI*`). The platform rejects unauthenticated calls before Apex.                                                                                                                                                     |
+| **Consumer** | External Credential + `Portfolio_API` Named Credential | **Secure Storage:** holds the consumer key/secret in the platform vault | Used by `ApiLabController.invoke` (site proxy) and `PAPIHealth` (credential check). Token vending uses a second pair, `Portfolio_API_Token_Auth` and `Portfolio_API_Token`. No secret is ever stored in metadata or source.                                                                                                     |
+| **Vendor**   | `PAPIAuthToken` (`POST /papi/v1/auth/token`)           | **Evaluator access:** exchanges email + purpose for a short-lived token | The only REST class the guest user can execute ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)). Shares `TokenExchangeService` with the proxy.                                                                                                                                                                     |
+| **Context**  | `ApiRequestContext` (shared by every REST class)       | **Contract hygiene:** headers, pagination, errors, cache, rate limits   | Reads `X-Request-Id` and `X-API-Version` (sets `X-Request-Id` only when it generated one), bounds `limit`/`offset`, emits the `Error` schema, applies `Cache-Control` per resource, and enforces the [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21) tiers through `RateWindowLimiter`. |
+
+**Rate limiting.** Rate limits are enforced in Apex by `RateWindowLimiter`, a custom-object counter: one `API_Rate_Window__c` row per caller key per minute. For SAPI and PAPI requests the caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null; the token endpoint keys by `papi-token:{SHA-256 of lowercase email|source IP}`. Tiers: `sapi` 120, `papi` 15, `papi-ai` (`/papi/v1/ai/*`) 10 requests per minute, over a fixed calendar minute. Request limit + 1 within a minute gets `429` `RATE_LIMIT_EXCEEDED` with `Retry-After` set to the seconds left in the minute. The check (`RateWindowLimiter.checkKey`) reads and locks the row and writes nothing; the count is written with the response (`ApiRequestContext.ok`/`error`) or by `ApiRequestContext.commitRateCounts()` for non-REST callers, so resources may make callouts after `begin()`. Full rules: [ADR-025 amendment (2026-10-21)](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21).
 
 **Deployment prerequisites (per org):**
 
 1. **Integration user** (`portfolio-api@ryanbumstead.com` in the production org) on the **`Portfolio API Integration`** profile. The profile is in source (`packages/integration-api/main/default/profiles/`): Salesforce Platform licence, API access only, the licence's default object permissions revoked, and a 30-minute session timeout (`Portfolio_API_Integration.profileSessionSetting-meta.xml`). The user itself is created in Setup.
-2. **`Integration_Access`** assigned to the integration user. It is the only source of data access: read-only on `Account`, `Certification__c`, `Contact`, `Education__c`, `Experience_Highlight__c`, `Experience_Skill__c`, `Experience__c`, `Github_Cache__c`, `Jira_Cache__c`, `Project_Asset__c`, `Project_Skill__c`, `Project__c`, `Skill__c` and `Testimonial__c`, no editable field, plus execute access on the SAPI and PAPI REST classes ([ADR-027 amendment](../adr/027-platform-native-api-authentication.md#amendment-2026-10-20)).
+2. **`Integration_Access`** assigned to the integration user. It is the only source of data access: read-only on `Account`, `Certification__c`, `Certification_Skill__c`, `Contact`, `Education__c`, `Experience_Highlight__c`, `Experience_Skill__c`, `Experience__c`, `Github_Cache__c`, `Jira_Cache__c`, `Project_Asset__c`, `Project_Skill__c`, `Project__c`, `Skill__c` and `Testimonial__c`, no editable field, plus execute access on the SAPI and PAPI REST classes. Decided for Round 2 and not yet built (build plan WS1b): class access to the ten new SAPI classes, `SAPIHealth`, `PAPITestimonialFeed` and `PAPIAiGenerate`, and principal access to `Portfolio_API_Auth-Portfolio_API_Principal`, without which `PAPIHealth` reports `credential: DOWN` ([ADR-027 amendments](../adr/027-platform-native-api-authentication.md#amendment-2026-10-21)).
 3. **"Portfolio API" External Client App**, created in Setup (it is not in source): Client Credentials flow enabled, "run as" set to the integration user, pre-authorised through `Integration_Access`.
-4. **External Credential principal.** `Portfolio_API_Auth` (in source) has one named principal, `Portfolio_API_Principal`. Enter the app's consumer key and secret on that principal in Setup. They are never in source or custom metadata.
-5. **`Portfolio_API` Named Credential** (in source), URL `https://ryan-bumstead-dev-ed.develop.my.salesforce.com` (the My Domain root), authenticated by `Portfolio_API_Auth`. Callers append `/services/apexrest/...`.
-6. Guest profile granted execute access on `PAPIAuthToken` only.
-7. **Schedule the cache cleanup job.** `CacheCleanupScheduler` is not scheduled by any deploy. `CacheCleanupScheduler.execute` checks `CacheCleanupSettings.isEnabled()` and then calls `CacheCleanupOrchestrator.run()`, which starts `GithubCacheCleanupBatch`. Schedule it once per org from anonymous Apex, as an administrator:
+4. **External Credential principals, two of them.** Enter the values in Setup; they are never in source or custom metadata.
+   - `Portfolio_API_Auth` (OAuth 2.0 client credentials, in source), named principal `Portfolio_API_Principal`: the app's consumer key and secret. Used through the `Portfolio_API` Named Credential.
+   - `Portfolio_API_Token_Auth` (Custom, in source), named principal `Portfolio_API_Token_Principal`: authentication parameters `Client_Id` (the consumer key) and `Client_Secret` (the consumer secret). `TokenExchangeService.exchangeToken` sends them as merge fields in the token request body, because Apex cannot read the secret of an OAuth credential.
+5. **Named Credentials** (both in source, both the My Domain root `https://ryan-bumstead-dev-ed.develop.my.salesforce.com`):
+   - `Portfolio_API`, authenticated by `Portfolio_API_Auth`. Callers append `/services/apexrest/...`.
+   - `Portfolio_API_Token`, using `Portfolio_API_Token_Auth`, merge fields allowed in the body, no generated Authorization header. Used only for `/services/oauth2/token`.
+6. **`Portfolio_Guest` permission set for the site guest user** (decided scope, build plan WS1b, not yet built): class access to `PAPIAuthToken` and `ApiLabController` only; principal access to `Portfolio_API_Auth-Portfolio_API_Principal` and `Portfolio_API_Token_Auth-Portfolio_API_Token_Principal`; read on `UserExternalCredential`; no portfolio object or field grants. Once it is assigned, remove the temporary `Portfolio_API_Access` permission set created in Setup on 2026-10-02.
+7. **Schedule the cache cleanup job daily at 03:00 org time** (decision 2026-10-20). `CacheCleanupScheduler` is not scheduled by any deploy. `CacheCleanupScheduler.execute` checks `CacheCleanupSettings.isEnabled()` and then calls `CacheCleanupOrchestrator.run()`, which starts `GithubCacheCleanupBatch` and, through `CacheCleanupOrchestrator.runRateWindowCleanup()`, `CacheCleanupRateWindowBatch`. That batch deletes `API_Rate_Window__c` rows whose `Window_Start__c` is older than `Cache_Cleanup_Settings__mdt.Rate_Window_Retention_Days__c` (`Default` record: 1 day). Schedule it once per org from anonymous Apex, as an administrator:
 
    ```apex
    System.schedule(
@@ -89,56 +98,23 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 
    Check it with `SELECT CronJobDetail.Name, NextFireTime FROM CronTrigger WHERE CronJobDetail.Name = 'Cache Cleanup Daily'`.
 
+8. **Confirm `SAPIResume` is gone after the Round 2 deploy.** The class and its test were removed from source. A deploy that carries no destructive manifest leaves them in the org. After the deploy, run the Tooling query `SELECT Name FROM ApexClass WHERE Name LIKE 'SAPIResume%'`; if it returns rows, delete both classes with a destructive deploy.
+9. **Token settings.** `Portfolio_Config__mdt.Ryan_Bumstead.Token_Daily_Cap__c` sets the daily evaluator token cap (`TokenExchangeService.dailyCap`, default 50 when blank); `Last_Secret_Rotation__c` records the last rotation date.
+
 **Operational notes:** rotation and revocation procedures are in the [Maintenance Guide §1.2](./05-Maintenance-Guide.md#12-external-client-app-secret-rotation).
 
 **Interface Definition (IAIGenerationService):**
 
 ```apex
 public interface IAIGenerationService {
-  AIResponseWrapper generate(String prompt, String context);
-  String getProviderName(); // e.g., 'Agentforce'
-  Boolean isHealthy(); // Circuit Breaker check
-  Integer getEstimatedLatencyMs(); // For Glass Box Telemetry
+  String generateContent(String prompt, Map<String, Object> context);
+  Boolean isAvailable();
 }
 ```
 
-**Standardized Response Object (AIResponseWrapper):**
+`AgentforceService`, `GeminiService` and `LocalTemplateService` implement it. The API dispatch returns a `ContentGenerationController.GenerationResult` (`content`, `provider` `Gemini` or `Local`, `model`, `fallbackOccurred`); `PAPIAiGenerate.generate` writes those fields to the response.
 
-<details>
-<summary>View AIResponseWrapper.cls</summary>
-
-```apex
-public class AIResponseWrapper {
-  @AuraEnabled
-  public String status; // 'success' | 'fallback' | 'error'
-  @AuraEnabled
-  public String provider; // 'agentforce' | 'gemini' | 'local_template'
-  @AuraEnabled
-  public String content;
-  @AuraEnabled
-  public Integer latencyMs;
-
-  public AIResponseWrapper(
-    String status,
-    String provider,
-    String content,
-    Integer latencyMs
-  ) {
-    this.status = status;
-    this.provider = provider;
-    this.content = content;
-    this.latencyMs = latencyMs;
-  }
-}
-```
-
-</details>
-
-**Gemini Quota Implementation:**
-
-- **Logic:** Check `Cache.Org.getPartition('local.AIMetrics').get('GeminiDailyCount')`.
-- **Threshold:** If count >= 1200, throw custom QuotaExceededException.
-- **Increment:** On success/fail, increment cache key `GeminiDailyCount_{Date}` (TTL: 24h).
+**Gemini Quota Tracking: not built.** The design counted Gemini calls in a Platform Cache partition (`local.AIMetrics`). The org has no Platform Cache partition, and no class reads or writes such a counter. The bounds that do exist are the `papi-ai` rate tier (10 requests per minute) and the Gemini API key's own limits above.
 
 ## 2. Frontend (LWR) Component Logic
 
@@ -222,13 +198,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - [ ] **Analytics:** Verify api_test_executed event fires in GA4 Real-Time view when using the API Tester.
 - [ ] Verify Skill Graph/Roadmap use lightning/uiGraphQLApi (Network tab shows /graphql call to Salesforce domain)
 - [ ] API Lab "Enterprise Mode" tab disabled with clear "Phase 8 – Q2 2026" messaging
-- [ ] **Circuit Breaker Recovery:**
-  - [ ] Trigger 3 Agentforce failures (mock).
-    - PASS: Circuit auto-resets to **Closed**.
-  - [ ] Wait 61 seconds.
-    - PASS: Next request attempts Agentforce.
-  - [ ] Submit new request.
-    - PASS: Nebula logs "Circuit recovered".
+- [ ] **AI fallback:** with the Gemini API unavailable, `POST /papi/v1/ai/generate` with `type: CoverLetter` returns `provider: Local` and `fallbackOccurred: true`. (The circuit-breaker checks this list used to hold are not applicable: no circuit breaker class exists and Agentforce is deferred.)
 
 ## 3.4 Concrete Testing Example
 
