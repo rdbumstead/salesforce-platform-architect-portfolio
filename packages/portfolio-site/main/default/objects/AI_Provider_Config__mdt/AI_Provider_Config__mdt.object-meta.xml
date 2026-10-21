@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >The AI Provider Config type holds one record per content generation provider (Agentforce, Gemini, Local). Enabled is the switch the dispatch reads before it consults a provider. Timeout, hourly budget and model or template sit beside it. Commonly used for switching Agentforce on or off without a code change.</description>
+    <label>AI Provider Config</label>
+    <pluralLabel>AI Provider Configs</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>
