@@ -94,7 +94,7 @@ The portfolio APIs authenticate with OAuth 2.0 Client Credentials issued by the 
 1. Setup → **External Client App Manager** → **Portfolio API** → **Settings** → **OAuth Settings** → **Consumer Key and Secret** → **Rotate** (or **Regenerate**). Copy the new secret once.
 2. Setup → **Named Credentials** → **External Credentials** → **Portfolio_API_Auth** → principal **Portfolio_API_Principal** → **Edit** → paste the new secret → **Save**.
 3. Setup → **Named Credentials** → **External Credentials** → **Portfolio_API_Token_Auth** → principal **Portfolio_API_Token_Principal** → **Edit** → set the `Client_Secret` parameter to the new secret (and `Client_Id`, if the consumer key changed) → **Save**.
-4. Verify the outbound credential: call `GET /papi/v1/health` (from the site's API Lab, or with a Bearer token) and check `dependencies.credential` is `UP`. `PAPIHealth.checkCredential` makes one GET through `Portfolio_API` to `/sapi/v1/health` and reports `UP` only on HTTP 200; on failure `details.credential` holds the HTTP status or exception type. It needs the caller to have principal access to `Portfolio_API_Auth-Portfolio_API_Principal` (granted to the integration user by `Integration_Access` once WS1b lands).
+4. Verify the outbound credential: call `GET /papi/v1/health` (from the site's API Lab, or with a Bearer token) and check `dependencies.credential` is `UP`. `PAPIHealth.checkCredential` makes one GET through `Portfolio_API` to `/sapi/v1/health` and reports `UP` only on HTTP 200; on failure `details.credential` holds the HTTP status or exception type. It needs the caller to have principal access to `Portfolio_API_Auth-Portfolio_API_Principal` (granted to the integration user by `Integration_Access`).
 5. Verify token vending: run `scripts/api-smoke.sh` with your own email; the token request must return 200.
 6. Record the rotation date in `Portfolio_Config__mdt.Ryan_Bumstead.Last_Secret_Rotation__c`.
 
@@ -170,7 +170,7 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 
 - **Symptom:** PMD Scan or Health Check fails due to "Guest User Open Access".
 - **Mitigation:**
-  1. **Immediate Rollback:** Revert the guest permission set `Portfolio_Guest` (added by build plan WS1b) to the previous commit. It must grant only class access to `PAPIAuthToken` and `ApiLabController`, the two External Credential principals and read on `UserExternalCredential`.
+  1. **Immediate Rollback:** Revert the guest permission set `Portfolio_Guest` (`packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`) to the previous commit. It must grant only class access to `PAPIAuthToken` and `ApiLabController`, the two External Credential principals and read on `UserExternalCredential`.
   2. **Nuke & Rebuild:** If unsure, delete the Permission Set from the org (`sf project delete source`) and redeploy the `main` branch version.
 
 ### 4.3 Scenario: GitHub Rate Limit Exhaustion
@@ -183,6 +183,7 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 - **Immediate mitigation:**
   1. Deactivate the **Portfolio API** External Client App (see §1.2). All issued tokens die.
   2. Lower `Token_Daily_Cap__c` on the `Ryan_Bumstead` `Portfolio_Config__mdt` record (default 50 when blank) or set it to 0 to pause vending: `TokenExchangeService.dailyCap` reads it and a cap of 0 answers every token request with 503.
+- **Reading the audit trail:** `API_Access_Request__c` rows (one per token attempt) and the daily cap count are readable by users holding `Portfolio_Admin`, which grants read and View All on `API_Access_Request__c` and `API_Rate_Window__c` and read on their fields. Without it the fields are not readable, so reports and SOQL fail.
 - **Recovery:** rotate the secret (§1.2), review the audit rows (`Email__c`, `Source_IP__c`, `Outcome__c`, `Channel__c`) for the offending email/IP, reactivate the app, restore the cap.
 - **Per-caller limits already in place:** 15 token requests per minute per email and source IP, and the PAPI tier limits (`RateWindowLimiter`, [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)).
 - **Why this is enough:** tokens run as the integration user, whose only permissions are read-only on public portfolio data. The asset at risk is the API quota, not the data.
