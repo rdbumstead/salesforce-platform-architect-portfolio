@@ -149,6 +149,13 @@ private class GeminiServiceTest {
     Assert.areEqual('', result, 'No candidates means no text');
   }
 
+  @isTest
+  static void calloutTimeoutIsTwentySeconds() {
+    // The shipped Gemini record and the fallback both give 20 s (PD-D11).
+    Assert.areEqual(20000, GeminiService.DEFAULT_TIMEOUT_MS, 'Default');
+    Assert.areEqual(20000, GeminiService.timeoutMs(), 'Timeout in use');
+  }
+
   public class MockTrigger implements HttpCalloutMock {
     public HttpResponse respond(HttpRequest req) {
       CalloutException e = (CalloutException) CalloutException.class

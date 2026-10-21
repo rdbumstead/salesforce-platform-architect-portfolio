@@ -1,11 +1,14 @@
 /**
  * @description       : PAPI AI generation endpoint (POST /papi/v1/ai/generate). Validates the
- *                      request against the spec enums and bounds, then dispatches through
- *                      ContentGenerationController with Agentforce skipped (build plan P5):
- *                      Gemini first, the local template as fallback for cover letters. The
- *                      response names the provider that served it. Performs no DML, so the
- *                      provider callout is never preceded by uncommitted work (contract C2).
- *                      The "ai" rate-limit tier applies by path in ApiRequestContext.
+ *                      request against the spec enums and bounds, then calls
+ *                      ContentGenerationController.dispatch: Agentforce only when its switch is
+ *                      on, then Gemini, then the local template for cover letters (P5 as
+ *                      reworded in the Round 3 plan). A cover letter prompt carries portfolio
+ *                      facts from PortfolioGroundingService (PD-D4 a). The response names the
+ *                      provider that served it and adds latencyMs, attempts and promptShown.
+ *                      Performs no DML, so the provider callout is never preceded by
+ *                      uncommitted work (contract C2). The "ai" rate-limit tier applies by
+ *                      path in ApiRequestContext.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -69,10 +72,12 @@ global with sharing class PAPIAiGenerate {
       GenerationRequest request = parse(RestContext.request?.requestBody);
 
       Long startedAt = System.currentTimeMillis();
-      ContentGenerationController.GenerationResult result = ContentGenerationController.generateWithoutAgentforce(
-        request.prompt(),
-        request.providerContext(),
-        request.type == TYPE_COVER_LETTER
+      ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
+        new ContentGenerationController.GenerationRequest(
+          request.prompt(),
+          request.providerContext(),
+          request.type == TYPE_COVER_LETTER
+        )
       );
       Long elapsedMs = System.currentTimeMillis() - startedAt;
 
@@ -87,7 +92,10 @@ global with sharing class PAPIAiGenerate {
           'tone' => request.tone,
           'generatedAt' => Datetime.now()
             .formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\''),
-          'fallbackOccurred' => result.fallbackOccurred
+          'fallbackOccurred' => result.fallbackOccurred,
+          'latencyMs' => result.latencyMs,
+          'attempts' => attemptsBody(result.attempts),
+          'promptShown' => result.promptShown
         }
       );
     } catch (InvalidRequestException e) {
@@ -101,6 +109,22 @@ global with sharing class PAPIAiGenerate {
     } catch (Exception e) {
       ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
+  }
+
+  private static List<Map<String, Object>> attemptsBody(
+    List<ContentGenerationController.Attempt> attempts
+  ) {
+    List<Map<String, Object>> body = new List<Map<String, Object>>();
+    for (ContentGenerationController.Attempt attempt : attempts) {
+      body.add(
+        new Map<String, Object>{
+          'provider' => attempt.provider,
+          'outcome' => attempt.outcome,
+          'ms' => attempt.ms
+        }
+      );
+    }
+    return body;
   }
 
   /**
@@ -239,6 +263,15 @@ global with sharing class PAPIAiGenerate {
           lines.add(key + ': ' + String.valueOf(value));
         }
       }
+      if (type == TYPE_COVER_LETTER) {
+        String grounding = ContentGenerationController.groundingSection(
+          textOf(context.get('role')),
+          textOf(context.get('jobDescription'))
+        );
+        if (grounding != null) {
+          lines.add(grounding);
+        }
+      }
       return String.join(lines, '\n');
     }
 
@@ -254,6 +287,10 @@ global with sharing class PAPIAiGenerate {
       result.put('maxLength', maxLength);
       return result;
     }
+  }
+
+  private static String textOf(Object value) {
+    return value instanceof String ? (String) value : null;
   }
 
   @TestVisible

@@ -1,22 +1,33 @@
 <template>
   <lightning-card title="AI Cover Letter Generator" icon-name="custom:custom15">
-    <div class="slds-p-around_medium">
-      <!-- Configuration Form -->
-      <div class="slds-grid slds-gutters">
-        <div class="slds-col slds-size_1-of-2">
+    <div class="slds-p-around_medium generator">
+      <p class="intro">
+        Enter a job and the page writes a letter grounded on the projects and
+        experience in this portfolio. The badge and the panel below the letter
+        show which provider wrote it.
+      </p>
+
+      <div class="slds-grid slds-wrap slds-gutters">
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
           <lightning-input
             label="Company Name"
             value={companyName}
+            max-length={maxCompanyLength}
             onchange={handleInputChange}
             data-field="companyName"
+            class="company-input"
+            required
           ></lightning-input>
         </div>
-        <div class="slds-col slds-size_1-of-2">
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
           <lightning-input
             label="Job Title"
             value={jobTitle}
+            max-length={maxTitleLength}
             onchange={handleInputChange}
             data-field="jobTitle"
+            class="title-input"
+            required
           ></lightning-input>
         </div>
       </div>
@@ -25,50 +36,101 @@
         <lightning-textarea
           label="Job Description / Key Requirements"
           value={jobDescription}
+          max-length={maxDescriptionLength}
           onchange={handleInputChange}
           data-field="jobDescription"
+          class="description-input"
         ></lightning-textarea>
       </div>
 
       <div class="slds-m-top_medium slds-text-align_right">
         <lightning-button
           variant="brand"
-          label="Generate with Agentforce"
+          label="Generate"
           icon-name="utility:magicwand"
           onclick={handleGenerate}
-          disabled={isLoading}
+          disabled={isGenerateDisabled}
+          class="generate-button"
         ></lightning-button>
       </div>
 
-      <!-- Result Area -->
-      <div
-        if:true={generatedContent}
-        class="slds-m-top_large slds-box slds-theme_shade animate-fade-in"
-      >
-        <div class="slds-text-align_right slds-m-bottom_x-small">
-          <lightning-badge
-            label={generationSource}
-            icon-name="utility:connected_apps"
-          ></lightning-badge>
-        </div>
-        <div class="content-body">
-          <lightning-formatted-text
-            value={generatedContent}
-          ></lightning-formatted-text>
-        </div>
-      </div>
+      <div aria-live="polite" class="slds-m-top_medium">
+        <template lwc:if={isLoading}>
+          <div class="loading-state">
+            <div class="slds-is-relative spinner-holder">
+              <lightning-spinner
+                alternative-text="Writing your letter"
+                size="small"
+              ></lightning-spinner>
+            </div>
+            <p class="loading-text">
+              Writing your letter. This can take up to a minute.
+            </p>
+          </div>
+        </template>
 
-      <!-- Loading State -->
-      <div if:true={isLoading} class="slds-m-top_medium">
-        <lightning-progress-bar
-          value={progress}
-          size="medium"
-        ></lightning-progress-bar>
-        <p
-          class="slds-text-align_center slds-text-color_weak slds-m-top_x-small"
-        >
-          Agentforce is analyzing {jobTitle} requirements...
-        </p>
+        <p lwc:if={error} class="error-text" role="alert">{error}</p>
+
+        <template lwc:if={hasResult}>
+          <div class="result">
+            <p class="provider-line">
+              <span class="provider-caption">Written by</span>
+              <span class="provider-badge" data-id="provider-badge"
+                >{providerLabel}</span
+              >
+            </p>
+            <div class="letter" data-id="letter">{result.content}</div>
+
+            <div class="slds-m-top_small">
+              <button
+                type="button"
+                class="work-toggle"
+                aria-expanded={workExpanded}
+                aria-controls="work-panel"
+                onclick={toggleWork}
+              >
+                {showWorkLabel}
+              </button>
+            </div>
+
+            <template lwc:if={showWork}>
+              <section class="work-panel" id="work-panel" data-id="work-panel">
+                <h3 class="work-heading">Show your work</h3>
+                <dl class="work-list">
+                  <dt>Provider</dt>
+                  <dd data-id="work-provider">{result.provider}</dd>
+                  <dt>Model</dt>
+                  <dd data-id="work-model">{result.model}</dd>
+                  <dt>Fallback used</dt>
+                  <dd data-id="work-fallback">{fallbackText}</dd>
+                  <dt>Round trip</dt>
+                  <dd data-id="work-latency">{latencyText}</dd>
+                  <dt>Generation</dt>
+                  <dd data-id="work-generation">{generationText}</dd>
+                </dl>
+                <template lwc:if={hasAttempts}>
+                  <h4 class="work-subheading">Attempts</h4>
+                  <ol class="attempt-list">
+                    <template for:each={attemptRows} for:item="row">
+                      <li key={row.key} class="attempt-row">{row.text}</li>
+                    </template>
+                  </ol>
+                </template>
+                <h4 class="work-subheading">Prompt sent</h4>
+                <template lwc:if={hasPrompt}>
+                  <pre class="prompt" data-id="prompt">
+{result.promptShown}</pre
+                  >
+                </template>
+                <template lwc:else>
+                  <p class="no-prompt" data-id="no-prompt">
+                    The local template does not use a prompt.
+                  </p>
+                </template>
+              </section>
+            </template>
+          </div>
+        </template>
       </div>
     </div>
   </lightning-card>
