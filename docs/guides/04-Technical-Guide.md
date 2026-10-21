@@ -5,7 +5,7 @@
 - [1. Integration Service Implementation](#1-integration-service-implementation)
   - [1.1 GitHub Integration (Live Feed)](#11-github-integration-live-feed)
   - [1.2 Jira Integration (Roadmap)](#12-jira-integration-roadmap)
-  - [1.3 Agentforce Integration](#13-agentforce-integration)
+  - [1.3 Agentforce Integration (Deferred)](#13-agentforce-integration-deferred)
   - [1.4 System API Security (The "Twin" Pattern)](#14-system-api-security-the-twin-pattern)
 - [2. Frontend (LWR) Component Logic](#2-frontend-lwr-component-logic)
   - [2.1 `c-skill-network` (Visualization)](#21-c-skill-network-visualization)
@@ -50,15 +50,13 @@ All external API calls originate from a secure **Named Credential** accessed via
   - After three consecutive 503 errors, a Circuit Breaker opens for 30 minutes.
   - The user sees a "Roadmap temporarily unavailable" message.
 
-### 1.3 Agentforce Integration
+### 1.3 Agentforce Integration (Deferred)
 
-- **Grounding:** Configure Agent Topic to query `Project__c`.
-- **System Prompt:** Use "Mirror Mode" in system instructions to reveal logic.
-- **Resilience Strategy (Triple Fallback):**
-  1. **Primary:** Call Agentforce (Standard).
-  2. **Secondary:** If timeout/error, call Google Gemini Flash (via Named Credential).
-  3. **Tertiary (Safety Net):** If both fail or quotas exceeded, load "Local Template" from Static Resource (Deterministic JSON).
-- **Fallback Mode:** Configurable via Custom Metadata to force degradation for testing.
+> [!NOTE]
+> **Agentforce is deferred** (decision 2026-10-02, recorded in the [ADR-015 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-20)). `AgentforceService` is a mock: `AgentforceService.generateContent` returns the fixed string `Agentforce response for: <prompt>`. Nothing in this guide claims Agentforce as a live provider.
+
+- **Providers that serve real content:** Google Gemini (`GeminiService`, through the `Gemini_API` Named Credential) and the deterministic Local Template (`LocalTemplateService`).
+- **Design retained for later:** an Agent Topic grounded on `Project__c` with "Mirror Mode" system instructions. It is not built.
 
 ### 1.4 System API Security (The "Twin" Pattern)
 
@@ -73,11 +71,23 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 
 **Deployment prerequisites (per org):**
 
-1. Integration user on a dedicated profile (30-minute session timeout) with `Integration_Access` assigned.
-2. External Client App deployed from source, Client Credentials flow enabled, "run as" set to the integration user.
-3. External Credential principal populated with the app's consumer key/secret (manual, in Setup; never in source).
-4. `Portfolio_API` Named Credential pointing at `https://<my-domain>/services/apexrest`.
-5. Guest profile granted execute access on `PAPIAuthToken` only.
+1. **Integration user** (`portfolio-api@ryanbumstead.com` in the production org) on the **`Portfolio API Integration`** profile. The profile is in source (`packages/integration-api/main/default/profiles/`): Salesforce Platform licence, API access only, the licence's default object permissions revoked, and a 30-minute session timeout (`Portfolio_API_Integration.profileSessionSetting-meta.xml`). The user itself is created in Setup.
+2. **`Integration_Access`** assigned to the integration user. It is the only source of data access: read-only on `Account`, `Certification__c`, `Contact`, `Education__c`, `Experience_Highlight__c`, `Experience_Skill__c`, `Experience__c`, `Github_Cache__c`, `Jira_Cache__c`, `Project_Asset__c`, `Project_Skill__c`, `Project__c`, `Skill__c` and `Testimonial__c`, no editable field, plus execute access on the SAPI and PAPI REST classes ([ADR-027 amendment](../adr/027-platform-native-api-authentication.md#amendment-2026-10-20)).
+3. **"Portfolio API" External Client App**, created in Setup (it is not in source): Client Credentials flow enabled, "run as" set to the integration user, pre-authorised through `Integration_Access`.
+4. **External Credential principal.** `Portfolio_API_Auth` (in source) has one named principal, `Portfolio_API_Principal`. Enter the app's consumer key and secret on that principal in Setup. They are never in source or custom metadata.
+5. **`Portfolio_API` Named Credential** (in source), URL `https://ryan-bumstead-dev-ed.develop.my.salesforce.com` (the My Domain root), authenticated by `Portfolio_API_Auth`. Callers append `/services/apexrest/...`.
+6. Guest profile granted execute access on `PAPIAuthToken` only.
+7. **Schedule the cache cleanup job.** `CacheCleanupScheduler` is not scheduled by any deploy. `CacheCleanupScheduler.execute` checks `CacheCleanupSettings.isEnabled()` and then calls `CacheCleanupOrchestrator.run()`, which starts `GithubCacheCleanupBatch`. Schedule it once per org from anonymous Apex, as an administrator:
+
+   ```apex
+   System.schedule(
+     'Cache Cleanup Daily',
+     '0 0 3 * * ?',
+     new CacheCleanupScheduler()
+   );
+   ```
+
+   Check it with `SELECT CronJobDetail.Name, NextFireTime FROM CronTrigger WHERE CronJobDetail.Name = 'Cache Cleanup Daily'`.
 
 **Operational notes:** rotation and revocation procedures are in the [Maintenance Guide §1.2](./05-Maintenance-Guide.md#12-external-client-app-secret-rotation).
 

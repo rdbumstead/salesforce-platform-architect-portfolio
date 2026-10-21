@@ -81,7 +81,7 @@ openssl req -new -key portfolio.key -x509 -days 400 -out portfolio.crt
 
 ### 1.2 External Client App Secret Rotation
 
-The portfolio APIs authenticate with OAuth 2.0 Client Credentials issued by the **Portfolio API** External Client App ([ADR-027](../adr/027-platform-native-api-authentication.md)). The consumer secret lives only in the `Portfolio_API` External Credential principal.
+The portfolio APIs authenticate with OAuth 2.0 Client Credentials issued by the **Portfolio API** External Client App ([ADR-027](../adr/027-platform-native-api-authentication.md)). The consumer secret lives only in the External Client App and in the `Portfolio_API_Principal` principal of the `Portfolio_API_Auth` External Credential, which the `Portfolio_API` Named Credential uses.
 
 - **Rotation Schedule:** every 90 days, or immediately on suspected exposure.
 - **Blast radius:** rotating the secret invalidates the Named Credential principal only; tokens already issued keep working until their 30-minute session expires.
@@ -89,7 +89,7 @@ The portfolio APIs authenticate with OAuth 2.0 Client Credentials issued by the 
 **Procedure**
 
 1. Setup → **External Client App Manager** → **Portfolio API** → **Settings** → **OAuth Settings** → **Consumer Key and Secret** → **Rotate** (or **Regenerate**). Copy the new secret once.
-2. Setup → **Named Credentials** → **External Credentials** → **Portfolio_API_Auth** → principal **Integration** → **Edit** → paste the new secret → **Save**.
+2. Setup → **Named Credentials** → **External Credentials** → **Portfolio_API_Auth** → principal **Portfolio_API_Principal** → **Edit** → paste the new secret → **Save**.
 3. Verify: open the site's API Lab and run `GET /papi/v1/health`; the response must show `dependencies.credential: UP`.
 4. Record the rotation date in the `Portfolio_Config__mdt` `Last_Secret_Rotation__c` field (added with the API foundation release).
 

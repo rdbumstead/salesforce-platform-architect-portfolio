@@ -233,7 +233,7 @@ The architecture is designed to operate within the specific limits of the Salesf
 - **Injection Attacks:** Mitigated by strict SOQL bind variable usage.
 - **Data Exposure:** Mitigated by enforcing "Guest User" profiles with strict Field Level Security (FLS) and Sharing Rules. Guest users have Read-Only access to specific Custom Objects only.
 - **API Abuse:** Mitigated by read-only endpoints and hardcoded query limits in the SAPI layer.
-- **Service Unavailability (AI):** Mitigated by a "Triple Fallback" Strategy Pattern. Primary (Agentforce) fails over to Secondary (Gemini API), which fails over to Tertiary (Local Metadata Template). This ensures zero "Dead Ends" for the user.
+- **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): the Gemini API fails over to a deterministic Local Template, so the user never reaches a dead end. Agentforce is deferred; `AgentforceService` is a mock and is not a provider ([ADR-015 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-20)).
 
 ## 4. Data Architecture & Schema
 
@@ -351,6 +351,9 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 
 ### 5.4 Pillar D: AI & Innovation (Agentforce)
 
+> [!NOTE]
+> **Agentforce is deferred** (decision 2026-10-02). This section records the target design. Nothing in it is built: `AgentforceService` is a mock that returns a fixed string ([ADR-015 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-20)).
+
 - **Objective:** Demonstrate Hybrid Search (Vector + Keyword) and RAG architecture.
 - **Mechanism:** Agentforce Service Agent grounded on Data 360 DMOs (Data Model Objects) rather than direct CRM objects.
 - **Architecture:**
@@ -370,14 +373,14 @@ To demonstrate practical Application of RAG (Retrieval-Augmented Generation), th
   - **Generation Layer:** The LLM synthesizes the retrieved project data into a 3-paragraph professional narrative.
   - **Generation Strategy**
     - To demonstrate high availability, the generation layer utilizes an Apex interface (IAIGenerationService) with a dispatcher implementing the Strategy Pattern.
-      - **Path 1 (Gold):** Agentforce Service Agent (Data 360 Grounding).
-      - **Path 2 (Silver):** Google Gemini Flash 1.5 API (Fallback if Path 1 times out > 2s).
-      - **Path 3 (Bronze):** Deterministic Local Template (Metadata Fallback if API blackout).
+      - **Agentforce Service Agent (Data 360 Grounding):** deferred, not built. `AgentforceService` is a mock and is never presented as a provider of real content.
+      - **Google Gemini API** (`GeminiService`, through the `Gemini_API` Named Credential).
+      - **Deterministic Local Template** (`LocalTemplateService`), used when the Gemini API is unavailable.
 
 <details>
 <summary>Click to view Sequence Diagram</summary>
 
-> _What This Code Does: This sequence diagram illustrates the "Strategy Pattern" dispatcher logic. It shows how the system attempts the Gold Path (Agentforce) first, fails over to Sliver (Gemini) if necessary, and finally falls back to the Bronze (Local Template) if all APIs are offline._
+> _What This Diagram Shows: the original target design of the "Strategy Pattern" dispatcher, with a circuit breaker per provider. The Agentforce lane is deferred and not live; `AgentforceService` is a mock ([ADR-015 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-20)). Gemini, then the Local Template, are the providers that can serve real content._
 
 ```mermaid
 sequenceDiagram
@@ -396,7 +399,7 @@ sequenceDiagram
         Dispatcher->>Agentforce: generate()
         alt Success
             Agentforce-->>Dispatcher: AIResponseWrapper success agentforce content 850ms
-            Dispatcher-->>UI: Return Path 1 Gold
+            Dispatcher-->>UI: Return Path 1 (deferred)
         else Timeout/Error
             Agentforce-->>Dispatcher: Exception
             CB1->>CB1: recordFailure()
@@ -412,7 +415,7 @@ sequenceDiagram
             Dispatcher->>Gemini: generate()
             alt Success
                 Gemini-->>Dispatcher: AIResponseWrapper success gemini content 1200ms
-                Dispatcher-->>UI: Return Path 2 Silver
+                Dispatcher-->>UI: Return Path 2 Gemini
             else Timeout/Error
                 Gemini-->>Dispatcher: Exception
                 CB2->>CB2: recordFailure()
@@ -426,7 +429,7 @@ sequenceDiagram
     opt If Path 2 Failed or Skipped
         Dispatcher->>Local: generate()
         Local-->>Dispatcher: AIResponseWrapper fallback local_template content 0ms
-        Dispatcher-->>UI: Return Path 3 Bronze
+        Dispatcher-->>UI: Return Path 3 Local Template
         Note over UI: Display Offline Mode Badge
         Note over Dispatcher: Log GA4 Event ai_fallback_usage
     end
@@ -536,6 +539,9 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 
 ### 8.2 Agentforce Unavailable
 
+> [!NOTE]
+> Agentforce is deferred and not built (decision 2026-10-02), so this scenario cannot occur in the current release. It is kept for when the deferral ends.
+
 - **Symptom:** Agentforce Service Agent fails to load or returns generic errors (common in some **Developer Edition** regions).
 - **Detection:** `<agentforce-service-agent>` LWC fails to render during manual testing.
 - **Mitigation:**
@@ -592,7 +598,7 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 
 **Purpose:** Provides direct access to Salesforce core objects with minimal transformation.
 
-**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/sapi/v1`
+**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/apexrest/sapi/v1` (My Domain; Bearer-token callers use the `instance_url` returned with their token)
 
 **Version:** 1.3.0
 
@@ -665,13 +671,13 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Purpose:** Orchestration layer that aggregates and transforms SAPI data for optimized frontend consumption.
 
-**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1`
+**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/apexrest/papi/v1` (My Domain). `POST /auth/token` alone is served on the site domain: `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.
 
 **Version:** 1.3.0
 
 **Layer Classification:** Process API (API-led connectivity pattern, implemented on-platform in Apex REST; see [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md))
 
-**Security:** Same OAuth 2.0 Client Credentials scheme as SAPI ([ADR-027](../adr/027-platform-native-api-authentication.md)). `/health` and `/auth/token` are the only unauthenticated paths.
+**Security:** Same OAuth 2.0 Client Credentials scheme as SAPI ([ADR-027](../adr/027-platform-native-api-authentication.md)). `/auth/token` is the only unauthenticated path; the guest user may execute `PAPIAuthToken` and no other REST class ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
 
 **Key Design Principles:**
 
@@ -814,21 +820,28 @@ sequenceDiagram
 
 **Evaluator flow:**
 
+The token request goes to the Experience Cloud site domain, where Apex REST is served to the guest user under `/portfoliovforcesite/services/apexrest/`. Every other call goes to My Domain, at the `instance_url` returned with the token. [`scripts/api-smoke.sh`](../../scripts/api-smoke.sh) runs the whole flow against every GET path in both specifications.
+
 ```bash
 # 1. Request a token (no credentials required)
 curl -s -X POST "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token" \
   -H "Content-Type: application/json" -H "X-Request-Id: $(uuidgen)" \
   -d '{"email":"you@example.com","purpose":"Evaluating API design"}'
 
-# 2. Call any endpoint with the returned token
-curl -s "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/sapi/v1/skills?limit=5" \
+# 2. Call any endpoint on the returned instance_url with the returned token
+curl -s "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
   -H "Authorization: Bearer <access_token>" -H "X-API-Version: v1" -H "X-Request-Id: $(uuidgen)"
+```
+
+```bash
+# Or run every GET path and print status and key headers per path
+EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scripts/api-smoke.sh
 ```
 
 ### Appendix C: MuleSoft Code, Governance, & Proxy Configuration (Reference)
 
 > [!NOTE]
-> This architecture represents the "Ideal Enterprise State" designed during the Anypoint Platform trial period (November 2025). While the live deployment has expired, the design artifacts, source code, and policy configurations remain as reference implementations demonstrating enterprise API governance practices. The Apex REST implementation functions as a runtime twin within Salesforce.
+> This architecture represents the "Ideal Enterprise State" designed during the Anypoint Platform trial period (November 2025). The live deployment has expired, and the Anypoint Studio project (`packages/integration-api/AnypointStudio`) was removed from the repository on 2026-10-20; it remains in the git history before that change. The design and policy configuration below are kept as a reference for enterprise API governance practice. The Apex REST implementation is the only runtime.
 >
 > **Superseded controls (2026-10-01):** the Client ID Enforcement policy (C.2 §1) and the `client_id`/`client_secret` CORS headers (C.2 §3) are replaced on-platform by OAuth 2.0 Client Credentials via an External Client App ([ADR-027](../adr/027-platform-native-api-authentication.md)). SLA-based rate limiting (C.2 §2) is enforced in Apex per [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md). This appendix is retained as the reference design it was, not as the current control set.
 
@@ -1029,7 +1042,7 @@ Apex → Named Credential → External APIs (Jira/GitHub).
 Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 - `/packages/portfolio-site`: Configurations, declarative, and programmatic resources focused on adding features to the Salesforce Architect Portfolio
-- `/packages/integration-api`: REST resources including Anypoint Studio project files, Anypoint Studio jar files, API specifications, and Salesforce Apex Classes for REST APIs including SAPI and PAPI.
+- `/packages/integration-api`: the OpenAPI specifications (`specs/`), the Apex REST classes for the SAPI and PAPI, and the integration user's profile.
 - `/packages/shared-modules`: Shared modules reusable across packages, for example lightning web components use across the portfolio-site and integration-api focused lightning web components.
 - `/packages/demos/employer-hub`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on building a centralized hub for employers.
 - `/packages/demos/nonprofit-literacy`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on the implementation of nonprofit success pack and the program management module including business analysis on several products including Salesforce Education Cloud.
@@ -1048,13 +1061,9 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 ### Appendix L: Reference Artifacts
 
-- Exchange Portal Screenshot: `/docs/mulesoft/exchange-portal.png`
-- API Manager Policies: `/docs/mulesoft/api-manager-policies.png`
-- SLA Configuration: `/docs/mulesoft/sla-tiers.png`
-- Analytics Dashboard: `/docs/mulesoft/analytics-dashboard.png`
-- OpenAPI Specification: `/mulesoft/src/main/resources/api/salesforce-sapi.yaml`
-- Mule Flow XML: `/mulesoft/src/main/mule/*.xml`
-- DataWeave Queries: `/mulesoft/src/main/resources/queries/*.dwl`
+- OpenAPI Specifications: `packages/integration-api/specs/salesforce-sapi.yaml` and `packages/integration-api/specs/portfolio-papi.yaml`
+- Rendered API documentation: `docs/api/oas/`
+- MuleSoft artifacts (Mule flows, DataWeave, Exchange and API Manager material) from the November 2025 Anypoint trial are no longer in the repository (see Appendix C).
 
 ### Appendix M: Cross-Cutting Pattern - Dual-Door Integration Strategy
 
