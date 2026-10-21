@@ -100,6 +100,26 @@ describe("c-cover-letter-generator", () => {
     jest.clearAllMocks();
   });
 
+  it("marks company and title as required with its own marker and accessible labels", async () => {
+    const element = createComponent();
+    await flushPromises();
+
+    for (const [selector, label, field] of [
+      ["lightning-input.company-input", "Company Name", "companyName"],
+      ["lightning-input.title-input", "Job Title", "jobTitle"]
+    ]) {
+      const input = query(element, selector);
+      // K9: the base asterisk fails contrast on the dark branding, so the base fields
+      // are not flagged required. Their accessible name says it instead.
+      expect(input.label).toBe(`${label} (required)`);
+      expect(input.variant).toBe("label-hidden");
+      expect(input.required).toBeFalsy();
+      expect(query(element, `[data-id="required-${field}"]`).textContent).toBe(
+        "*"
+      );
+    }
+  });
+
   it("keeps Generate disabled until company and title are set", async () => {
     const element = createComponent();
     await flushPromises();
