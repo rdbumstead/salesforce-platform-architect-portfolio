@@ -17,10 +17,17 @@
         default="Source Code"
       />
             <property
-        name="recordId"
+        name="code"
         type="String"
-        label="Record ID"
-        description="Optional: ID to fetch code for"
+        label="Code"
+        description="Source code to display"
+      />
+            <property
+        name="language"
+        type="String"
+        label="Language"
+        default="apex"
+        description="Prism language name, for example apex, javascript, css or markup"
       />
         </targetConfig>
     </targetConfigs>
