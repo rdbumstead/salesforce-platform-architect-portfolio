@@ -8,9 +8,17 @@
  **/
 @RestResource(urlMapping='/papi/v1/resume/*')
 global with sharing class PAPIResume {
+  private static final Set<String> VALID_PERSONAS = new Set<String>{
+    'Admin',
+    'Developer',
+    'Architect'
+  };
+
   /**
    * @description GET method to generate resume.
    *              /resume/generate?persona={Admin|Developer|Architect}
+   *              Each section is read independently: a section that fails is left out of
+   *              the text, X-Data-Integrity becomes "partial" and integrityNote names it.
    */
   @HttpGet
   global static void getResume() {
@@ -38,100 +46,140 @@ global with sharing class PAPIResume {
   }
 
   /**
-   * @description Generates a plain text resume.
+   * @description Generates a plain text resume. Cache-Control is the strictest policy of
+   *              the upstream resources read (Contact makes it no-store).
    */
   private static void generateResume(ApiRequestContext ctx, String persona) {
-    if (String.isNotBlank(persona)) {
-      Set<String> validPersonas = new Set<String>{
-        'Admin',
-        'Developer',
-        'Architect'
-      };
-      if (!validPersonas.contains(persona)) {
-        ctx.error(
-          400,
-          'BAD_REQUEST',
-          'Invalid persona. Valid values: Admin, Developer, Architect'
-        );
-        return;
+    if (String.isNotBlank(persona) && !VALID_PERSONAS.contains(persona)) {
+      ctx.error(
+        400,
+        'BAD_REQUEST',
+        'Invalid persona. Valid values: Admin, Developer, Architect'
+      );
+      return;
+    }
+
+    PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
+    String resumeText =
+      contactSection(agg) +
+      experienceSection(agg, persona) +
+      skillsSection(agg) +
+      certificationsSection(agg) +
+      educationSection(agg);
+
+    Map<String, Object> response = new Map<String, Object>{
+      'generatedText' => resumeText.trim(),
+      'persona' => persona,
+      'generatedAt' => Datetime.now().formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\''),
+      'integrityNote' => agg.integrityNote()
+    };
+
+    ctx.cache(agg.cachePolicy());
+    ctx.header('X-Data-Integrity', agg.integrity());
+    ctx.ok(response);
+  }
+
+  private static String contactSection(PAPITransformer.Aggregation agg) {
+    agg.source('contacts');
+    try {
+      PAPITransformer.guardSection('contacts');
+      List<Contact> contacts = [
+        SELECT Id, Name, Email, Phone, Title, Career_Objective__c
+        FROM Contact
+        WHERE Is_Portfolio_Owner__c = TRUE
+        LIMIT 1
+      ];
+      if (contacts.isEmpty()) {
+        agg.fail('contacts');
+        return '';
       }
-    }
-
-    // Fetch Contact
-    List<Contact> contacts = [
-      SELECT Id, Name, Email, Phone, Title, Career_Objective__c
-      FROM Contact
-      WHERE Is_Portfolio_Owner__c = TRUE
-      LIMIT 1
-    ];
-
-    String resumeText = '';
-
-    if (!contacts.isEmpty()) {
       Contact c = contacts[0];
-      resumeText += c.Name + '\n';
-      resumeText +=
-        (c.Title != null ? c.Title : 'Salesforce Professional') + '\n';
-      resumeText += c.Email + (c.Phone != null ? ' | ' + c.Phone : '') + '\n\n';
+      String text = c.Name + '\n';
+      text += (c.Title != null ? c.Title : 'Salesforce Professional') + '\n';
+      text += c.Email + (c.Phone != null ? ' | ' + c.Phone : '') + '\n\n';
+      return text;
+    } catch (Exception e) {
+      agg.fail('contacts');
+      return '';
+    }
+  }
+
+  private static String experienceSection(
+    PAPITransformer.Aggregation agg,
+    String persona
+  ) {
+    agg.source('experience');
+    agg.source('experience-highlights');
+    List<Experience__c> experiences;
+    try {
+      PAPITransformer.guardSection('experience');
+      // Fetch all highlights; filter in memory when a persona is given.
+      experiences = [
+        SELECT
+          Id,
+          Employer__r.Name,
+          Name,
+          Start_Date__c,
+          End_Date__c,
+          Is_Current_Role__c,
+          (
+            SELECT Description__c, Persona_Tag__c
+            FROM Experience_Highlights__r
+            ORDER BY Sort_Order__c ASC
+          )
+        FROM Experience__c
+        ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
+        LIMIT 10
+      ];
+    } catch (Exception e) {
+      agg.fail('experience');
+      return '';
     }
 
-    // Experience Section
-    resumeText += 'EXPERIENCE\n\n';
-
-    // Build experience query - fetch all highlights, filter in memory if persona provided
-    List<Experience__c> experiences = [
-      SELECT
-        Id,
-        Employer__r.Name,
-        Name,
-        Start_Date__c,
-        End_Date__c,
-        Is_Current_Role__c,
-        (
-          SELECT Description__c, Persona_Tag__c
-          FROM Experience_Highlights__r
-          ORDER BY Sort_Order__c ASC
-        )
-      FROM Experience__c
-      ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
-      LIMIT 10
-    ];
-
+    String text = 'EXPERIENCE\n\n';
     for (Experience__c exp : experiences) {
       String employer = exp.Employer__r?.Name != null
         ? exp.Employer__r.Name
         : 'Unknown';
       String role = exp.Name != null ? exp.Name : 'Role';
-      resumeText += employer + ' | ' + role + '\n';
-      resumeText +=
+      text += employer + ' | ' + role + '\n';
+      text +=
         PAPITransformer.formatDateRange(exp.Start_Date__c, exp.End_Date__c) +
         '\n';
 
       Integer highlightCount = 0;
       for (Experience_Highlight__c h : exp.Experience_Highlights__r) {
-        // Filter by persona if provided, otherwise include all
+        if (highlightCount >= 5) {
+          break; // Limit to 5 highlights per experience
+        }
         if (
           String.isBlank(persona) ||
           (h.Persona_Tag__c != null && h.Persona_Tag__c.contains(persona))
         ) {
-          resumeText += '- ' + h.Description__c + '\n';
+          text += '- ' + h.Description__c + '\n';
           highlightCount++;
-          if (highlightCount >= 5)
-            break; // Limit to 5 highlights per experience
         }
       }
-      resumeText += '\n';
+      text += '\n';
     }
+    return text;
+  }
 
-    // Skills Section
-    resumeText += 'SKILLS\n\n';
-
-    List<Skill__c> skills = [
-      SELECT Name, Category__c, Proficiency__c
-      FROM Skill__c
-      ORDER BY Proficiency__c DESC
-      LIMIT 20
-    ];
+  private static String skillsSection(PAPITransformer.Aggregation agg) {
+    agg.source('skills');
+    List<Skill__c> skills;
+    try {
+      PAPITransformer.guardSection('skills');
+      skills = [
+        SELECT Name, Category__c, Proficiency__c
+        FROM Skill__c
+        ORDER BY Proficiency__c DESC
+        LIMIT 20
+      ];
+    } catch (Exception e) {
+      agg.fail('skills');
+      return '';
+    }
 
     Map<String, List<String>> skillsByCategory = new Map<String, List<String>>();
     for (Skill__c s : skills) {
@@ -142,77 +190,86 @@ global with sharing class PAPIResume {
       skillsByCategory.get(cat).add(s.Name);
     }
 
+    String text = 'SKILLS\n\n';
     for (String cat : skillsByCategory.keySet()) {
-      resumeText +=
-        cat +
-        ': ' +
-        String.join(skillsByCategory.get(cat), ', ') +
-        '\n';
+      text += cat + ': ' + String.join(skillsByCategory.get(cat), ', ') + '\n';
     }
-    resumeText += '\n';
+    return text + '\n';
+  }
 
-    // Certifications Section
-    resumeText += 'CERTIFICATIONS\n\n';
+  private static String certificationsSection(PAPITransformer.Aggregation agg) {
+    agg.source('certifications');
+    List<Certification__c> certs;
+    try {
+      PAPITransformer.guardSection('certifications');
+      certs = [
+        SELECT Name, Issuer__c, Earned_Date__c
+        FROM Certification__c
+        ORDER BY Earned_Date__c DESC
+        LIMIT 10
+      ];
+    } catch (Exception e) {
+      agg.fail('certifications');
+      return '';
+    }
 
-    List<Certification__c> certs = [
-      SELECT Name, Issuer__c, Earned_Date__c
-      FROM Certification__c
-      ORDER BY Earned_Date__c DESC
-      LIMIT 10
-    ];
-
+    String text = 'CERTIFICATIONS\n\n';
     for (Certification__c cert : certs) {
-      resumeText += cert.Name;
-      if (cert.Issuer__c != null)
-        resumeText += ' - ' + cert.Issuer__c;
-      if (cert.Earned_Date__c != null)
-        resumeText +=
+      text += cert.Name;
+      if (cert.Issuer__c != null) {
+        text += ' - ' + cert.Issuer__c;
+      }
+      if (cert.Earned_Date__c != null) {
+        text +=
           ' (' +
           PAPITransformer.formatMonthYear(cert.Earned_Date__c) +
           ')';
-      resumeText += '\n';
+      }
+      text += '\n';
     }
-    resumeText += '\n';
+    return text + '\n';
+  }
 
-    // Education Section
-    resumeText += 'EDUCATION\n\n';
+  private static String educationSection(PAPITransformer.Aggregation agg) {
+    agg.source('education');
+    List<Education__c> education;
+    try {
+      PAPITransformer.guardSection('education');
+      education = [
+        SELECT
+          Issuer__c,
+          Issuer__r.Name,
+          Name,
+          Field_of_Study__c,
+          Graduation_Date__c
+        FROM Education__c
+        ORDER BY Graduation_Date__c DESC
+        LIMIT 5
+      ];
+    } catch (Exception e) {
+      agg.fail('education');
+      return '';
+    }
 
-    List<Education__c> education = [
-      SELECT
-        Issuer__c,
-        Issuer__r.Name,
-        Name,
-        Field_of_Study__c,
-        Graduation_Date__c
-      FROM Education__c
-      ORDER BY Graduation_Date__c DESC
-      LIMIT 5
-    ];
-
+    String text = 'EDUCATION\n\n';
     for (Education__c edu : education) {
       String schoolName = edu.Issuer__r?.Name != null
         ? edu.Issuer__r.Name
         : 'Unknown';
-      resumeText += schoolName + '\n';
+      text += schoolName + '\n';
       if (edu.Name != null) {
-        resumeText += edu.Name;
-        if (edu.Field_of_Study__c != null)
-          resumeText += ' in ' + edu.Field_of_Study__c;
-        if (edu.Graduation_Date__c != null)
-          resumeText += ' (' + edu.Graduation_Date__c.year() + ')';
-        resumeText += '\n';
+        text += edu.Name;
+        if (edu.Field_of_Study__c != null) {
+          text += ' in ' + edu.Field_of_Study__c;
+        }
+        if (edu.Graduation_Date__c != null) {
+          text += ' (' + edu.Graduation_Date__c.year() + ')';
+        }
+        text += '\n';
       }
-      resumeText += '\n';
+      text += '\n';
     }
-
-    Map<String, Object> response = new Map<String, Object>{
-      'generatedText' => resumeText.trim(),
-      'persona' => persona,
-      'generatedAt' => Datetime.now().formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'')
-    };
-
-    ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
-    ctx.ok(response);
+    return text;
   }
 
   @TestVisible

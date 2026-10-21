@@ -85,4 +85,132 @@ private class PAPITransformerTest {
       'Should return default title'
     );
   }
+
+  @IsTest
+  static void strictestOfEmptyListIsNoStore() {
+    Assert.areEqual(
+      ApiRequestContext.CachePolicy.NO_STORE,
+      PAPITransformer.strictest(new List<ApiRequestContext.CachePolicy>()),
+      'No sources means nothing is known to be cacheable'
+    );
+  }
+
+  @IsTest
+  static void strictestPrefersPrivateOverPublic() {
+    Assert.areEqual(
+      ApiRequestContext.CachePolicy.PRIVATE_300,
+      PAPITransformer.strictest(
+        new List<ApiRequestContext.CachePolicy>{
+          ApiRequestContext.CachePolicy.PUBLIC_300,
+          ApiRequestContext.CachePolicy.PRIVATE_300
+        }
+      ),
+      'Any private source makes the response private'
+    );
+  }
+
+  @IsTest
+  static void strictestPrefersShorterPrivateMaxAge() {
+    Assert.areEqual(
+      ApiRequestContext.CachePolicy.PRIVATE_60,
+      PAPITransformer.strictest(
+        new List<ApiRequestContext.CachePolicy>{
+          ApiRequestContext.CachePolicy.PRIVATE_300,
+          ApiRequestContext.CachePolicy.PRIVATE_60
+        }
+      ),
+      'Between private policies the shorter max-age wins'
+    );
+  }
+
+  @IsTest
+  static void strictestPrefersNoStoreOverEverything() {
+    Assert.areEqual(
+      ApiRequestContext.CachePolicy.NO_STORE,
+      PAPITransformer.strictest(
+        new List<ApiRequestContext.CachePolicy>{
+          ApiRequestContext.CachePolicy.PUBLIC_300,
+          ApiRequestContext.CachePolicy.NO_STORE,
+          ApiRequestContext.CachePolicy.PRIVATE_60
+        }
+      ),
+      'Any no-store source makes the response no-store'
+    );
+  }
+
+  @IsTest
+  static void strictestOfPublicOnlyIsPublic() {
+    Assert.areEqual(
+      ApiRequestContext.CachePolicy.PUBLIC_300,
+      PAPITransformer.strictest(
+        new List<ApiRequestContext.CachePolicy>{
+          ApiRequestContext.CachePolicy.PUBLIC_300,
+          ApiRequestContext.CachePolicy.PUBLIC_300
+        }
+      ),
+      'All-public sources stay public'
+    );
+  }
+
+  @IsTest
+  static void aggregationCompleteWhenNothingFails() {
+    PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
+    agg.source('skills');
+    agg.source('projects');
+
+    Assert.isTrue(agg.isComplete(), 'Nothing failed');
+    Assert.areEqual('complete', agg.integrity(), 'Header value');
+    Assert.areEqual('complete', agg.integrityNote(), 'Body value');
+    Assert.areEqual(
+      ApiRequestContext.CachePolicy.PUBLIC_300,
+      agg.cachePolicy(),
+      'Skills and projects are both public'
+    );
+  }
+
+  @IsTest
+  static void aggregationNamesEachFailedSectionOnce() {
+    PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
+    agg.source('certifications');
+    agg.fail('certifications');
+    agg.fail('certifications');
+    agg.fail('education');
+
+    Assert.isFalse(agg.isComplete(), 'Two sections failed');
+    Assert.areEqual('partial', agg.integrity(), 'Header value');
+    Assert.areEqual(
+      'partial: certifications, education unavailable',
+      agg.integrityNote(),
+      'Failed sections are listed once, in order'
+    );
+  }
+
+  @IsTest
+  static void aggregationTreatsUnknownSourceAsNoStore() {
+    PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
+    agg.source('skills');
+    agg.source('not-a-resource');
+
+    Assert.areEqual(
+      ApiRequestContext.CachePolicy.NO_STORE,
+      agg.cachePolicy(),
+      'An unmapped source is assumed to be no-store'
+    );
+  }
+
+  @IsTest
+  static void guardSectionThrowsOnlyForForcedSections() {
+    PAPITransformer.forcedSectionFailures.add('skills');
+
+    PAPITransformer.guardSection('projects');
+    try {
+      PAPITransformer.guardSection('skills');
+      Assert.fail('Expected SectionUnavailableException');
+    } catch (PAPITransformer.SectionUnavailableException e) {
+      Assert.isTrue(
+        e.getMessage().contains('skills'),
+        'Message names the section'
+      );
+    }
+  }
 }

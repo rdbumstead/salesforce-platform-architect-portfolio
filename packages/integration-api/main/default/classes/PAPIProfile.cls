@@ -12,6 +12,8 @@ global with sharing class PAPIProfile {
    * @description GET method to retrieve full portfolio or summary based on path.
    *              /profile/full - Complete portfolio payload
    *              /profile/summary - Employment profile only
+   *              Each section is read independently: a section that fails is returned
+   *              empty, X-Data-Integrity becomes "partial" and integrityNote names it.
    */
   @HttpGet
   global static void getProfile() {
@@ -44,62 +46,133 @@ global with sharing class PAPIProfile {
   }
 
   /**
-   * @description Gets the complete portfolio payload (hydration endpoint).
+   * @description Gets the complete portfolio payload (hydration endpoint). Cache-Control is
+   *              the strictest policy of every upstream resource read.
    */
   private static void getFullPortfolio(ApiRequestContext ctx) {
+    PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
     Map<String, Object> payload = new Map<String, Object>();
-    String integrityNote = 'complete';
 
-    // 1. Fetch Contact
-    List<Contact> contacts = [
-      SELECT
-        Id,
-        Name,
-        Email,
-        Phone,
-        Title,
-        LinkedIn_URL__c,
-        GitHub_URL__c,
-        Trailhead_URL__c,
-        Portfolio_URL__c,
-        Career_Objective__c
-      FROM Contact
-      WHERE Is_Portfolio_Owner__c = TRUE
-      LIMIT 1
-    ];
+    putOwner(payload, agg, true);
+    putExperience(payload, agg);
+    putSkills(payload, agg, 100);
+    putProjects(payload, agg);
+    putCertifications(payload, agg);
+    putEducation(payload, agg);
+    putTestimonials(payload, agg);
 
-    if (!contacts.isEmpty()) {
-      payload.put('contactInfo', PAPITransformer.transformContact(contacts[0]));
-      payload.put('config', buildConfig(contacts[0]));
-    } else {
-      payload.put('contactInfo', new Map<String, Object>());
+    respond(ctx, payload, agg, agg.cachePolicy());
+  }
+
+  /**
+   * @description Gets the profile summary (resume page). Cache-Control is fixed at
+   *              max-age=300, private by the decisions block (build plan Part 2), although
+   *              "strictest policy wins" over Contact and Experience would give no-store.
+   *              The conflict is recorded in the shared log, entry 018.
+   */
+  private static void getProfileSummary(ApiRequestContext ctx) {
+    PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
+    Map<String, Object> payload = new Map<String, Object>();
+
+    putOwner(payload, agg, false);
+    putExperience(payload, agg);
+    putSkills(payload, agg, 50);
+    putCertifications(payload, agg);
+    putEducation(payload, agg);
+
+    respond(ctx, payload, agg, ApiRequestContext.CachePolicy.PRIVATE_300);
+  }
+
+  private static void respond(
+    ApiRequestContext ctx,
+    Map<String, Object> payload,
+    PAPITransformer.Aggregation agg,
+    ApiRequestContext.CachePolicy policy
+  ) {
+    payload.put('integrityNote', agg.integrityNote());
+    ctx.cache(policy);
+    ctx.header('X-Data-Integrity', agg.integrity());
+    ctx.ok(payload);
+  }
+
+  // --- Sections ---
+
+  private static void putOwner(
+    Map<String, Object> payload,
+    PAPITransformer.Aggregation agg,
+    Boolean includeConfig
+  ) {
+    agg.source('contacts');
+    payload.put('contactInfo', new Map<String, Object>());
+    if (includeConfig) {
+      agg.source('portfolio-config');
       payload.put('config', new Map<String, Object>());
-      integrityNote = 'partial';
+    }
+    try {
+      PAPITransformer.guardSection('contacts');
+      List<Contact> contacts = [
+        SELECT
+          Id,
+          Name,
+          Email,
+          Phone,
+          Title,
+          LinkedIn_URL__c,
+          GitHub_URL__c,
+          Trailhead_URL__c,
+          Portfolio_URL__c,
+          Career_Objective__c
+        FROM Contact
+        WHERE Is_Portfolio_Owner__c = TRUE
+        LIMIT 1
+      ];
+      if (contacts.isEmpty()) {
+        agg.fail('contacts');
+        return;
+      }
+      payload.put('contactInfo', PAPITransformer.transformContact(contacts[0]));
+      if (includeConfig) {
+        payload.put('config', buildConfig(contacts[0]));
+      }
+    } catch (Exception e) {
+      agg.fail('contacts');
+    }
+  }
+
+  private static void putExperience(
+    Map<String, Object> payload,
+    PAPITransformer.Aggregation agg
+  ) {
+    agg.source('experience');
+    agg.source('experience-highlights');
+    List<Experience__c> experiences = new List<Experience__c>();
+    try {
+      PAPITransformer.guardSection('experience');
+      experiences = [
+        SELECT
+          Id,
+          Name,
+          Employer__c,
+          Employer__r.Name,
+          Start_Date__c,
+          End_Date__c,
+          Is_Current_Role__c,
+          Is_Remote__c,
+          (
+            SELECT Id, Description__c
+            FROM Experience_Highlights__r
+            ORDER BY Sort_Order__c ASC
+          )
+        FROM Experience__c
+        ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
+        LIMIT 50
+      ];
+    } catch (Exception e) {
+      agg.fail('experience');
+      experiences = new List<Experience__c>();
     }
 
-    // 2. Fetch Experience with Highlights
-    List<Experience__c> experiences = [
-      SELECT
-        Id,
-        Name,
-        Employer__c,
-        Employer__r.Name,
-        Start_Date__c,
-        End_Date__c,
-        Is_Current_Role__c,
-        Is_Remote__c,
-        (
-          SELECT Id, Description__c
-          FROM Experience_Highlights__r
-          ORDER BY Sort_Order__c ASC
-        )
-      FROM Experience__c
-      ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
-      LIMIT 50
-    ];
-
-    // Fetch Experience-Skill junctions
-    Map<Id, List<String>> expSkillsMap = getExperienceSkills(experiences);
+    Map<Id, List<String>> expSkillsMap = getExperienceSkills(experiences, agg);
 
     List<Map<String, Object>> enrichedExperiences = new List<Map<String, Object>>();
     for (Experience__c exp : experiences) {
@@ -116,223 +189,173 @@ global with sharing class PAPIProfile {
     }
     payload.put('experience', enrichedExperiences);
     payload.put('summary', PAPITransformer.calculateSummary(experiences));
-
-    // 3. Fetch Skills
-    List<Skill__c> skills = [
-      SELECT Id, Name, Category__c, Proficiency__c, Icon_Name__c
-      FROM Skill__c
-      ORDER BY Proficiency__c DESC, Name ASC
-      LIMIT 100
-    ];
-
-    List<Map<String, Object>> transformedSkills = new List<Map<String, Object>>();
-    for (Skill__c s : skills) {
-      transformedSkills.add(PAPITransformer.transformSkill(s));
-    }
-    payload.put('skills', transformedSkills);
-
-    // 4. Fetch Projects with Assets
-    List<Project__c> projects = [
-      SELECT
-        Id,
-        Name,
-        Challenge__c,
-        Solution__c,
-        Business_Value__c,
-        Status__c,
-        Hero_Image_URL__c,
-        Live_URL__c,
-        Repository_URL__c,
-        Date_Completed__c,
-        Is_Featured__c
-      FROM Project__c
-      WHERE
-        Status__c IN (
-          'Live – In Production',
-          'Live – Demo / Reference',
-          'Active Development'
-        )
-      ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
-      LIMIT 50
-    ];
-
-    Map<Id, List<String>> projSkillsMap = getProjectSkills(projects);
-    Map<Id, List<Map<String, Object>>> projAssetsMap = getProjectAssets(
-      projects
-    );
-
-    List<Map<String, Object>> enrichedProjects = new List<Map<String, Object>>();
-    for (Project__c p : projects) {
-      List<String> techs = projSkillsMap.containsKey(p.Id)
-        ? projSkillsMap.get(p.Id)
-        : new List<String>();
-      List<Map<String, Object>> assets = projAssetsMap.containsKey(p.Id)
-        ? projAssetsMap.get(p.Id)
-        : new List<Map<String, Object>>();
-      enrichedProjects.add(PAPITransformer.transformProject(p, techs, assets));
-    }
-    payload.put('projects', enrichedProjects);
-
-    // 5. Fetch Certifications
-    List<Certification__c> certs = [
-      SELECT Id, Name, Issuer__c, Earned_Date__c
-      FROM Certification__c
-      ORDER BY Earned_Date__c DESC
-      LIMIT 50
-    ];
-
-    List<Map<String, Object>> transformedCerts = new List<Map<String, Object>>();
-    for (Certification__c c : certs) {
-      transformedCerts.add(
-        new Map<String, Object>{
-          'id' => c.Id,
-          'name' => c.Name,
-          'issuer' => c.Issuer__c,
-          'dateEarned' => c.Earned_Date__c != null
-            ? String.valueOf(c.Earned_Date__c)
-            : null,
-          'skillsUsed' => new List<String>()
-        }
-      );
-    }
-    payload.put('certifications', transformedCerts);
-
-    // 6. Fetch Education
-    List<Education__c> education = [
-      SELECT
-        Id,
-        Issuer__c,
-        Issuer__r.Name,
-        Name,
-        Field_of_Study__c,
-        Graduation_Date__c,
-        GPA__c
-      FROM Education__c
-      ORDER BY Graduation_Date__c DESC
-      LIMIT 10
-    ];
-
-    List<Map<String, Object>> transformedEdu = new List<Map<String, Object>>();
-    for (Education__c e : education) {
-      transformedEdu.add(
-        new Map<String, Object>{
-          'id' => e.Id,
-          'school' => e.Issuer__r.Name,
-          'degree' => e.Name,
-          'fieldOfStudy' => e.Field_of_Study__c,
-          'year' => e.Graduation_Date__c != null
-            ? String.valueOf(e.Graduation_Date__c.year())
-            : null,
-          'gpa' => e.GPA__c
-        }
-      );
-    }
-    payload.put('education', transformedEdu);
-
-    // 7. Fetch Testimonials
-    List<Testimonial__c> testimonials = [
-      SELECT
-        Id,
-        Author_Name__c,
-        Author_Title__c,
-        Relationship_Type__c,
-        Context__c,
-        Vibe_Mode__c,
-        Avatar_URL__c
-      FROM Testimonial__c
-      WHERE Approved__c = TRUE
-      ORDER BY CreatedDate DESC
-      LIMIT 20
-    ];
-
-    List<Map<String, Object>> transformedTestimonials = new List<Map<String, Object>>();
-    for (Testimonial__c t : testimonials) {
-      transformedTestimonials.add(PAPITransformer.transformTestimonial(t));
-    }
-    payload.put('testimonials', transformedTestimonials);
-
-    payload.put('integrityNote', integrityNote);
-
-    // Apply cache control based on strictest policy (Contact = no-store)
-    ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
-    ctx.header('X-Data-Integrity', integrityNote);
-    ctx.ok(payload);
   }
 
-  /**
-   * @description Gets the profile summary (resume page).
-   */
-  private static void getProfileSummary(ApiRequestContext ctx) {
-    Map<String, Object> payload = new Map<String, Object>();
-
-    // Simplified version - contact + experience + skills + certs + education
-    List<Contact> contacts = [
-      SELECT
-        Id,
-        Name,
-        Email,
-        Phone,
-        Title,
-        Career_Objective__c,
-        LinkedIn_URL__c,
-        GitHub_URL__c,
-        Trailhead_URL__c,
-        Portfolio_URL__c
-      FROM Contact
-      WHERE Is_Portfolio_Owner__c = TRUE
-      LIMIT 1
-    ];
-
-    if (!contacts.isEmpty()) {
-      payload.put('contactInfo', PAPITransformer.transformContact(contacts[0]));
-    }
-
-    List<Experience__c> experiences = [
-      SELECT
-        Id,
-        Name,
-        Employer__r.Name,
-        Start_Date__c,
-        End_Date__c,
-        Is_Current_Role__c,
-        Is_Remote__c
-      FROM Experience__c
-      ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
-      LIMIT 20
-    ];
-
-    List<Map<String, Object>> enrichedExperiences = new List<Map<String, Object>>();
-    for (Experience__c exp : experiences) {
-      enrichedExperiences.add(
-        PAPITransformer.transformExperience(
-          exp,
-          new List<String>(),
-          new List<String>()
-        )
-      );
-    }
-    payload.put('experience', enrichedExperiences);
-    payload.put('summary', PAPITransformer.calculateSummary(experiences));
-
-    List<Skill__c> skills = [
-      SELECT Id, Name, Category__c, Proficiency__c, Icon_Name__c
-      FROM Skill__c
-      ORDER BY Proficiency__c DESC
-      LIMIT 50
-    ];
-
+  private static void putSkills(
+    Map<String, Object> payload,
+    PAPITransformer.Aggregation agg,
+    Integer maxRows
+  ) {
+    agg.source('skills');
     List<Map<String, Object>> transformedSkills = new List<Map<String, Object>>();
-    for (Skill__c s : skills) {
-      transformedSkills.add(PAPITransformer.transformSkill(s));
+    try {
+      PAPITransformer.guardSection('skills');
+      for (Skill__c s : [
+        SELECT Id, Name, Category__c, Proficiency__c, Icon_Name__c
+        FROM Skill__c
+        ORDER BY Proficiency__c DESC, Name ASC
+        LIMIT :maxRows
+      ]) {
+        transformedSkills.add(PAPITransformer.transformSkill(s));
+      }
+    } catch (Exception e) {
+      agg.fail('skills');
+      transformedSkills.clear();
     }
     payload.put('skills', transformedSkills);
+  }
 
-    // Certifications and Education omitted for brevity
-    payload.put('certifications', new List<Map<String, Object>>());
-    payload.put('education', new List<Map<String, Object>>());
+  private static void putProjects(
+    Map<String, Object> payload,
+    PAPITransformer.Aggregation agg
+  ) {
+    agg.source('projects');
+    List<Project__c> projects = new List<Project__c>();
+    try {
+      PAPITransformer.guardSection('projects');
+      projects = [
+        SELECT
+          Id,
+          Name,
+          Challenge__c,
+          Solution__c,
+          Business_Value__c,
+          Status__c,
+          Hero_Image_URL__c,
+          Live_URL__c,
+          Repository_URL__c,
+          Date_Completed__c,
+          Is_Featured__c
+        FROM Project__c
+        WHERE
+          Status__c IN (
+            'Live – In Production',
+            'Live – Demo / Reference',
+            'Active Development'
+          )
+        ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
+        LIMIT 50
+      ];
+    } catch (Exception e) {
+      agg.fail('projects');
+      projects = new List<Project__c>();
+    }
+    payload.put('projects', PAPIProjects.enrichProjects(projects, agg));
+  }
 
-    ctx.cache(ApiRequestContext.CachePolicy.PRIVATE_300);
-    ctx.ok(payload);
+  private static void putCertifications(
+    Map<String, Object> payload,
+    PAPITransformer.Aggregation agg
+  ) {
+    agg.source('certifications');
+    List<Map<String, Object>> transformedCerts = new List<Map<String, Object>>();
+    try {
+      PAPITransformer.guardSection('certifications');
+      for (Certification__c c : [
+        SELECT Id, Name, Issuer__c, Earned_Date__c
+        FROM Certification__c
+        ORDER BY Earned_Date__c DESC
+        LIMIT 50
+      ]) {
+        transformedCerts.add(
+          new Map<String, Object>{
+            'id' => c.Id,
+            'name' => c.Name,
+            'issuer' => c.Issuer__c,
+            'dateEarned' => c.Earned_Date__c != null
+              ? String.valueOf(c.Earned_Date__c)
+              : null,
+            'skillsUsed' => new List<String>()
+          }
+        );
+      }
+    } catch (Exception e) {
+      agg.fail('certifications');
+      transformedCerts.clear();
+    }
+    payload.put('certifications', transformedCerts);
+  }
+
+  private static void putEducation(
+    Map<String, Object> payload,
+    PAPITransformer.Aggregation agg
+  ) {
+    agg.source('education');
+    List<Map<String, Object>> transformedEdu = new List<Map<String, Object>>();
+    try {
+      PAPITransformer.guardSection('education');
+      for (Education__c e : [
+        SELECT
+          Id,
+          Issuer__c,
+          Issuer__r.Name,
+          Name,
+          Field_of_Study__c,
+          Graduation_Date__c,
+          GPA__c
+        FROM Education__c
+        ORDER BY Graduation_Date__c DESC
+        LIMIT 10
+      ]) {
+        transformedEdu.add(
+          new Map<String, Object>{
+            'id' => e.Id,
+            'school' => e.Issuer__r?.Name,
+            'degree' => e.Name,
+            'fieldOfStudy' => e.Field_of_Study__c,
+            'year' => e.Graduation_Date__c != null
+              ? String.valueOf(e.Graduation_Date__c.year())
+              : null,
+            'gpa' => e.GPA__c
+          }
+        );
+      }
+    } catch (Exception e) {
+      agg.fail('education');
+      transformedEdu.clear();
+    }
+    payload.put('education', transformedEdu);
+  }
+
+  private static void putTestimonials(
+    Map<String, Object> payload,
+    PAPITransformer.Aggregation agg
+  ) {
+    agg.source('testimonials');
+    List<Map<String, Object>> transformedTestimonials = new List<Map<String, Object>>();
+    try {
+      PAPITransformer.guardSection('testimonials');
+      for (Testimonial__c t : [
+        SELECT
+          Id,
+          Author_Name__c,
+          Author_Title__c,
+          Relationship_Type__c,
+          Context__c,
+          Vibe_Mode__c,
+          Avatar_URL__c
+        FROM Testimonial__c
+        WHERE Approved__c = TRUE
+        ORDER BY CreatedDate DESC
+        LIMIT 20
+      ]) {
+        transformedTestimonials.add(PAPITransformer.transformTestimonial(t));
+      }
+    } catch (Exception e) {
+      agg.fail('testimonials');
+      transformedTestimonials.clear();
+    }
+    payload.put('testimonials', transformedTestimonials);
   }
 
   // --- Helper Methods ---
@@ -350,75 +373,31 @@ global with sharing class PAPIProfile {
   }
 
   private static Map<Id, List<String>> getExperienceSkills(
-    List<Experience__c> experiences
+    List<Experience__c> experiences,
+    PAPITransformer.Aggregation agg
   ) {
+    agg.source('experience-skills');
     Set<Id> expIds = new Set<Id>();
     for (Experience__c e : experiences) {
       expIds.add(e.Id);
     }
 
     Map<Id, List<String>> result = new Map<Id, List<String>>();
-    for (Experience_Skill__c es : [
-      SELECT Experience__c, Skill__r.Name
-      FROM Experience_Skill__c
-      WHERE Experience__c IN :expIds
-    ]) {
-      if (!result.containsKey(es.Experience__c)) {
-        result.put(es.Experience__c, new List<String>());
+    try {
+      PAPITransformer.guardSection('experience-skills');
+      for (Experience_Skill__c es : [
+        SELECT Experience__c, Skill__r.Name
+        FROM Experience_Skill__c
+        WHERE Experience__c IN :expIds
+      ]) {
+        if (!result.containsKey(es.Experience__c)) {
+          result.put(es.Experience__c, new List<String>());
+        }
+        result.get(es.Experience__c).add(es.Skill__r.Name);
       }
-      result.get(es.Experience__c).add(es.Skill__r.Name);
-    }
-    return result;
-  }
-
-  private static Map<Id, List<String>> getProjectSkills(
-    List<Project__c> projects
-  ) {
-    Set<Id> projIds = new Set<Id>();
-    for (Project__c p : projects) {
-      projIds.add(p.Id);
-    }
-
-    Map<Id, List<String>> result = new Map<Id, List<String>>();
-    for (Project_Skill__c ps : [
-      SELECT Project__c, Skill__r.Name
-      FROM Project_Skill__c
-      WHERE Project__c IN :projIds
-    ]) {
-      if (!result.containsKey(ps.Project__c)) {
-        result.put(ps.Project__c, new List<String>());
-      }
-      result.get(ps.Project__c).add(ps.Skill__r.Name);
-    }
-    return result;
-  }
-
-  private static Map<Id, List<Map<String, Object>>> getProjectAssets(
-    List<Project__c> projects
-  ) {
-    Set<Id> projIds = new Set<Id>();
-    for (Project__c p : projects) {
-      projIds.add(p.Id);
-    }
-
-    Map<Id, List<Map<String, Object>>> result = new Map<Id, List<Map<String, Object>>>();
-    for (Project_Asset__c pa : [
-      SELECT Project__c, Name, Type__c, External_URL__c, Alt_Text__c
-      FROM Project_Asset__c
-      WHERE Project__c IN :projIds
-      ORDER BY Sort_Order__c ASC
-    ]) {
-      if (!result.containsKey(pa.Project__c)) {
-        result.put(pa.Project__c, new List<Map<String, Object>>());
-      }
-      result.get(pa.Project__c)
-        .add(
-          new Map<String, Object>{
-            'type' => pa.Type__c,
-            'url' => pa.External_URL__c,
-            'caption' => pa.Alt_Text__c
-          }
-        );
+    } catch (Exception e) {
+      agg.fail('experience-skills');
+      result.clear();
     }
     return result;
   }

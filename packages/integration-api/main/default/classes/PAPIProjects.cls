@@ -40,6 +40,8 @@ global with sharing class PAPIProjects {
    * @description Gets featured projects with enrichment.
    */
   private static void getFeaturedProjects(ApiRequestContext ctx) {
+    PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
+    agg.source('projects');
     List<Project__c> projects = [
       SELECT
         Id,
@@ -65,17 +67,15 @@ global with sharing class PAPIProjects {
       LIMIT 10
     ];
 
-    List<Map<String, Object>> enrichedProjects = enrichProjects(projects);
-
-    ctx.header('X-Total-Count', String.valueOf(enrichedProjects.size()));
-    ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
-    ctx.ok(enrichedProjects);
+    respond(ctx, enrichProjects(projects, agg), agg);
   }
 
   /**
    * @description Gets all visible projects with enrichment.
    */
   private static void getAllProjects(ApiRequestContext ctx) {
+    PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
+    agg.source('projects');
     List<Project__c> projects = [
       SELECT
         Id,
@@ -100,59 +100,50 @@ global with sharing class PAPIProjects {
       LIMIT 50
     ];
 
-    List<Map<String, Object>> enrichedProjects = enrichProjects(projects);
+    respond(ctx, enrichProjects(projects, agg), agg);
+  }
 
+  /**
+   * @description Writes the project list. The body is an array, so the integrity state
+   *              travels in headers: X-Data-Integrity always, X-Integrity-Note when partial.
+   */
+  private static void respond(
+    ApiRequestContext ctx,
+    List<Map<String, Object>> enrichedProjects,
+    PAPITransformer.Aggregation agg
+  ) {
     ctx.header('X-Total-Count', String.valueOf(enrichedProjects.size()));
-    ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
+    ctx.header('X-Data-Integrity', agg.integrity());
+    if (!agg.isComplete()) {
+      ctx.header('X-Integrity-Note', agg.integrityNote());
+    }
+    ctx.cache(agg.cachePolicy());
     ctx.ok(enrichedProjects);
   }
 
   /**
-   * @description Enriches projects with skills and assets.
+   * @description Enriches projects with skills and assets. A failed skills or assets read
+   *              leaves those lists empty and is recorded on the aggregation; it never fails
+   *              the whole response. Shared with PAPIProfile.
+   * @param projects Projects to enrich.
+   * @param agg Aggregation that records sources and failures.
+   * @return List<Map<String, Object>> EnrichedProject maps in the order given.
    */
-  private static List<Map<String, Object>> enrichProjects(
-    List<Project__c> projects
+  public static List<Map<String, Object>> enrichProjects(
+    List<Project__c> projects,
+    PAPITransformer.Aggregation agg
   ) {
     Set<Id> projIds = new Set<Id>();
     for (Project__c p : projects) {
       projIds.add(p.Id);
     }
 
-    // Fetch Project Skills
-    Map<Id, List<String>> skillsMap = new Map<Id, List<String>>();
-    for (Project_Skill__c ps : [
-      SELECT Project__c, Skill__r.Name
-      FROM Project_Skill__c
-      WHERE Project__c IN :projIds
-    ]) {
-      if (!skillsMap.containsKey(ps.Project__c)) {
-        skillsMap.put(ps.Project__c, new List<String>());
-      }
-      skillsMap.get(ps.Project__c).add(ps.Skill__r.Name);
-    }
+    Map<Id, List<String>> skillsMap = getProjectSkills(projIds, agg);
+    Map<Id, List<Map<String, Object>>> assetsMap = getProjectAssets(
+      projIds,
+      agg
+    );
 
-    // Fetch Project Assets
-    Map<Id, List<Map<String, Object>>> assetsMap = new Map<Id, List<Map<String, Object>>>();
-    for (Project_Asset__c pa : [
-      SELECT Project__c, Name, Type__c, External_URL__c, Alt_Text__c
-      FROM Project_Asset__c
-      WHERE Project__c IN :projIds
-      ORDER BY Sort_Order__c ASC
-    ]) {
-      if (!assetsMap.containsKey(pa.Project__c)) {
-        assetsMap.put(pa.Project__c, new List<Map<String, Object>>());
-      }
-      assetsMap.get(pa.Project__c)
-        .add(
-          new Map<String, Object>{
-            'type' => pa.Type__c,
-            'url' => pa.External_URL__c,
-            'caption' => pa.Alt_Text__c
-          }
-        );
-    }
-
-    // Transform projects
     List<Map<String, Object>> result = new List<Map<String, Object>>();
     for (Project__c p : projects) {
       List<String> techs = skillsMap.containsKey(p.Id)
@@ -165,6 +156,64 @@ global with sharing class PAPIProjects {
     }
 
     return result;
+  }
+
+  private static Map<Id, List<String>> getProjectSkills(
+    Set<Id> projIds,
+    PAPITransformer.Aggregation agg
+  ) {
+    agg.source('project-skills');
+    Map<Id, List<String>> skillsMap = new Map<Id, List<String>>();
+    try {
+      PAPITransformer.guardSection('project-skills');
+      for (Project_Skill__c ps : [
+        SELECT Project__c, Skill__r.Name
+        FROM Project_Skill__c
+        WHERE Project__c IN :projIds
+      ]) {
+        if (!skillsMap.containsKey(ps.Project__c)) {
+          skillsMap.put(ps.Project__c, new List<String>());
+        }
+        skillsMap.get(ps.Project__c).add(ps.Skill__r.Name);
+      }
+    } catch (Exception e) {
+      agg.fail('project-skills');
+      skillsMap.clear();
+    }
+    return skillsMap;
+  }
+
+  private static Map<Id, List<Map<String, Object>>> getProjectAssets(
+    Set<Id> projIds,
+    PAPITransformer.Aggregation agg
+  ) {
+    agg.source('project-assets');
+    Map<Id, List<Map<String, Object>>> assetsMap = new Map<Id, List<Map<String, Object>>>();
+    try {
+      PAPITransformer.guardSection('project-assets');
+      for (Project_Asset__c pa : [
+        SELECT Project__c, Name, Type__c, External_URL__c, Alt_Text__c
+        FROM Project_Asset__c
+        WHERE Project__c IN :projIds
+        ORDER BY Sort_Order__c ASC
+      ]) {
+        if (!assetsMap.containsKey(pa.Project__c)) {
+          assetsMap.put(pa.Project__c, new List<Map<String, Object>>());
+        }
+        assetsMap.get(pa.Project__c)
+          .add(
+            new Map<String, Object>{
+              'type' => pa.Type__c,
+              'url' => pa.External_URL__c,
+              'caption' => pa.Alt_Text__c
+            }
+          );
+      }
+    } catch (Exception e) {
+      agg.fail('project-assets');
+      assetsMap.clear();
+    }
+    return assetsMap;
   }
 
   @TestVisible
