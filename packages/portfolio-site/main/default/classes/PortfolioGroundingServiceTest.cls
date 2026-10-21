@@ -170,6 +170,52 @@ private class PortfolioGroundingServiceTest {
   }
 
   @IsTest
+  static void cleanHandlesAVeryLongWordWithAnEmailAndAPhone() {
+    // One 32,000 character word, the Long Text Area maximum, used to hit the regex limit.
+    String text =
+      'Call ' +
+      SENTINEL_PHONE +
+      ' or ' +
+      SENTINEL_EMAIL +
+      ' ' +
+      'y'.repeat(15000) +
+      '@' +
+      'z'.repeat(16900);
+
+    Test.startTest();
+    String cleaned = PortfolioGroundingService.clean(text);
+    Test.stopTest();
+
+    Assert.isTrue(
+      cleaned.length() <= PortfolioGroundingService.MAX_TEXT_CHARS,
+      'Cut to the limit'
+    );
+    Assert.isFalse(cleaned.contains('@'), 'No email survives');
+    Assert.isFalse(PHONE_SHAPE.matcher(cleaned).find(), 'No phone survives');
+    Assert.isTrue(cleaned.startsWith('Call [removed] or [removed]'), cleaned);
+  }
+
+  @IsTest
+  static void buildHandlesVeryLongRecordAndJobText() {
+    insert project(1, 'Apex '.repeat(6000) + 'x'.repeat(2000));
+    String description = 'integration '.repeat(2500) + 'q'.repeat(5000);
+
+    Test.startTest();
+    String grounding = PortfolioGroundingService.build(
+      'Architect',
+      description
+    );
+    Test.stopTest();
+
+    Assert.isNotNull(grounding, 'Facts returned');
+    Assert.isTrue(
+      grounding.length() <= PortfolioGroundingService.MAX_CHARS,
+      'Under the cap'
+    );
+    Assert.isFalse(grounding.contains('@'), 'No email');
+  }
+
+  @IsTest
   static void keywordsDropStopWordsAndShortTokens() {
     Set<String> keywords = PortfolioGroundingService.keywords(
       'The Apex and LWC role at an AI team'

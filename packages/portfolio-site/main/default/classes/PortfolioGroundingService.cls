@@ -65,7 +65,10 @@ public with sharing class PortfolioGroundingService {
     'experience'
   };
 
-  private static final Pattern EMAIL = Pattern.compile('[^\\s@]+@[^\\s@]+');
+  /** Free text is cut to this length before cleaning. Only MAX_TEXT_CHARS survive anyway. */
+  private static final Integer MAX_SCAN_CHARS = 2000;
+  /** Text read for keyword matching is cut to this length, so splitting stays bounded. */
+  private static final Integer MAX_MATCH_CHARS = 8000;
   private static final Pattern PHONE = Pattern.compile(
     '(\\+?\\d{1,2}[\\s.-]?)?\\(?\\d{3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}'
   );
@@ -256,7 +259,9 @@ public with sharing class PortfolioGroundingService {
 
   /**
    * @description Removes email addresses and phone numbers, collapses whitespace and cuts
-   *              the text to MAX_TEXT_CHARS.
+   *              the text to MAX_TEXT_CHARS. The text is first cut to MAX_SCAN_CHARS, and any
+   *              word holding an @ is replaced without a regex, so a long word cannot hit the
+   *              Apex regex limit. Only the bounded phone pattern runs as a regex.
    * @param text Free text from a record.
    * @return String The cleaned text, or null when blank.
    */
@@ -265,10 +270,12 @@ public with sharing class PortfolioGroundingService {
     if (String.isBlank(text)) {
       return null;
     }
-    String result = EMAIL.matcher(text).replaceAll(REMOVED);
-    result = PHONE.matcher(result).replaceAll(REMOVED);
-    result = result.replace('@', ' ').normalizeSpace();
-    return result.abbreviate(MAX_TEXT_CHARS);
+    List<String> words = new List<String>();
+    for (String word : text.left(MAX_SCAN_CHARS).normalizeSpace().split(' ')) {
+      words.add(word.contains('@') ? REMOVED : word);
+    }
+    String result = PHONE.matcher(String.join(words, ' ')).replaceAll(REMOVED);
+    return result.normalizeSpace().abbreviate(MAX_TEXT_CHARS);
   }
 
   private static Integer score(String text, Set<String> keywords) {
@@ -289,7 +296,8 @@ public with sharing class PortfolioGroundingService {
     if (String.isBlank(text)) {
       return result;
     }
-    for (String token : text.toLowerCase().split('[^a-z0-9]+')) {
+    String bounded = text.left(MAX_MATCH_CHARS).toLowerCase();
+    for (String token : bounded.split('[^a-z0-9]+')) {
       if (String.isNotBlank(token)) {
         result.add(token);
       }
