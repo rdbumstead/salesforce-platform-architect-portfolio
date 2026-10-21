@@ -18,9 +18,9 @@ info:
     - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
     ### Non-Functional Requirements (NFRs)
-    - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`).
+    - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`). The platform echoes a caller-supplied value on every response; Apex sets the header only when it generated the value (ADR-026).
     - **Latency**: Target < 500ms for internal processing.
-    - **Resilience**: Rate Limits defined with `429` responses and `Retry-After` headers.
+    - **Resilience**: 120 requests per minute per caller, enforced by `RateWindowLimiter` (ADR-025), with `429` responses and `Retry-After` headers.
     - **Caching Strategy**: 
       - **Public Data** (Skills, Projects, Junctions): `Cache-Control: max-age=300, public`.
       - **Private Data** (Contact, Config): `Cache-Control: max-age=300, private` or `no-store`.
@@ -67,10 +67,9 @@ security:
 
 components:
   x-rate-limit:
-    description: "Enforced on-platform by ApiRequestContext (ADR-025), keyed by the calling External Client App. Emits X-RateLimit-Limit, X-RateLimit-Remaining and Retry-After."
+    description: "Enforced in Apex by RateWindowLimiter (ADR-025), a custom-object counter: one API_Rate_Window__c row per caller key per fixed UTC calendar minute. The caller key is sapi:{SHA-256 hex of the session id}, or sapi:{user id} when the session id is null. Every response carries X-RateLimit-Limit and X-RateLimit-Remaining. Request limit + 1 within the minute gets 429 RATE_LIMIT_EXCEEDED with Retry-After set to the seconds left in the minute. Rejected requests count. No burst allowance."
     tier: standard
     requestsPerMinute: 120
-    burst: 20
 
   securitySchemes:
     OAuth2ClientCredentials:
@@ -87,7 +86,7 @@ components:
 
   headers:
     RequestIdResponse:
-      description: "Echoed correlation ID for distributed tracing and observability."
+      description: "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header)."
       schema:
         type: string
         format: uuid
@@ -306,7 +305,7 @@ components:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
         Retry-After:
-          description: Seconds until the rate limit resets.
+          description: Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).
           schema:
             type: integer
       content:
@@ -421,14 +420,42 @@ components:
           type: string
           format: date-time
           description: "ISO 8601 Timestamp of the health check."
+        orgTimeZone:
+          type: string
+          example: "America/Chicago"
+          description: "Time zone of the running user (org time)."
         dependencies:
           type: object
           description: "Status of downstream systems."
           properties:
             salesforce:
               type: string
-              example: "deferred"
+              example: "UP"
               description: "Status of Salesforce Core."
+        limits:
+          type: object
+          description: "Governor-limit snapshot of the current transaction (`SAPIHealth.buildPayload`)."
+          properties:
+            queries:
+              $ref: "#/components/schemas/LimitUsage"
+            dmlStatements:
+              $ref: "#/components/schemas/LimitUsage"
+            callouts:
+              $ref: "#/components/schemas/LimitUsage"
+            cpuTimeMs:
+              $ref: "#/components/schemas/LimitUsage"
+            heapBytes:
+              $ref: "#/components/schemas/LimitUsage"
+
+    LimitUsage:
+      type: object
+      properties:
+        used:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 100
 
     Contact:
       type: object
@@ -1062,8 +1089,8 @@ paths:
       tags: [Monitoring]
       summary: Health Check
       description: |
-        Current Implementation: Shallow connectivity check (Runtime availability).
-        Future Roadmap: Deep dependency check (Salesforce Connectivity, Cache Availability).
+        Shallow check: runtime availability, the current transaction's governor-limit snapshot and org time
+        (`SAPIHealth.getHealth`, payload from `SAPIHealth.buildPayload`). `checkType` is always SHALLOW.
       operationId: getHealth
       responses:
         "200":
