@@ -286,7 +286,11 @@ public with sharing class ApiRequestContext {
     Boolean idValid =
       !idMissing && UUID_PATTERN.matcher(suppliedId.trim()).matches();
     correlationId = idValid ? suppliedId.trim() : UUID.randomUUID().toString();
-    header(HEADER_REQUEST_ID, correlationId);
+    // The platform echoes a caller-supplied X-Request-Id on every response (Round 2 pre-flight 1),
+    // so Apex sets the header only when it generated the id; setting it too doubles it (id;id).
+    if (!idValid) {
+      header(HEADER_REQUEST_ID, correlationId);
+    }
     header(HEADER_API_VERSION, SUPPORTED_VERSION);
 
     System.debug(

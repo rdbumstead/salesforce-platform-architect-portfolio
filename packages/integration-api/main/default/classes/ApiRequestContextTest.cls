@@ -52,6 +52,23 @@ private class ApiRequestContextTest {
     return RestTestUtil.getResponse().headers.get(name);
   }
 
+  private static String requestHeader(String name) {
+    Map<String, String> sent = RestContext.request.headers;
+    for (String key : sent.keySet()) {
+      if (key.equalsIgnoreCase(name)) {
+        return sent.get(key);
+      }
+    }
+    return null;
+  }
+
+  // The id the client sees: Apex's header when it generated one, else the caller's value,
+  // which the platform echoes.
+  private static String visibleRequestId() {
+    String fromApex = responseHeader('X-Request-Id');
+    return fromApex != null ? fromApex : requestHeader('X-Request-Id');
+  }
+
   private static void assertErrorShape(
     Integer status,
     String errorCode,
@@ -75,7 +92,7 @@ private class ApiRequestContextTest {
     Assert.areEqual(errorCode, body.get('errorCode'), 'errorCode mismatch');
     Assert.areEqual(retryable, body.get('retryable'), 'retryable mismatch');
     Assert.areEqual(
-      responseHeader('X-Request-Id'),
+      visibleRequestId(),
       body.get('correlationId'),
       'correlationId must match the echoed X-Request-Id'
     );
@@ -188,10 +205,9 @@ private class ApiRequestContextTest {
       ctx.correlationId(),
       'Caller id is the correlation id'
     );
-    Assert.areEqual(
-      VALID_ID,
+    Assert.isNull(
       responseHeader('X-Request-Id'),
-      'Caller id echoed'
+      'Apex leaves a valid caller id for the platform to echo'
     );
     Assert.areEqual(
       'application/json',
