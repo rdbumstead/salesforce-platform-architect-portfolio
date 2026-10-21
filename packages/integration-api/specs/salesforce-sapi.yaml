@@ -194,22 +194,13 @@ components:
       in: query
       description: |
         Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).
-        Can be a single value or multiple values (comma-separated or repeated parameters).
+        Takes a single value or a comma-separated list of Admin, Developer and Architect. An unknown value returns 400.
 
         Examples:
         - Single: `?persona=Admin`
         - Multiple (comma): `?persona=Admin,Developer`
-        - Multiple (repeated): `?persona=Admin&persona=Developer`
       schema:
-        oneOf:
-          - type: string
-            enum: [Admin, Developer, Architect]
-          - type: array
-            items:
-              type: string
-              enum: [Admin, Developer, Architect]
-      style: form
-      explode: true
+        type: string
       example: "Admin"
 
     statusParam:
@@ -461,14 +452,6 @@ components:
           type: string
           example: "+1 555-0199"
           description: "Phone Number"
-        accountId:
-          type: string
-          example: "0015e00000A1O3DAAV"
-          description: "Related Account ID"
-        accountName:
-          type: string
-          example: "Salesforce"
-          description: "Related Account Name"
         title:
           type: string
           example: "Platform Architect"
@@ -673,7 +656,9 @@ components:
           example: 1
           description: "Sort Order"
         personaTag:
-          $ref: "#/components/schemas/Persona"
+          type: string
+          example: "Developer;Architect"
+          description: "Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect)."
       additionalProperties: true
 
     ProjectAsset:
@@ -1100,7 +1085,7 @@ paths:
     get:
       tags: [Profile]
       summary: Get Contact records
-      description: Retrieves the primary contact details for the portfolio owner.
+      description: Retrieves the primary contact details for the portfolio owner. Returns only the Contact flagged as the portfolio owner (`Is_Portfolio_Owner__c`).
       operationId: getContacts
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1174,7 +1159,7 @@ paths:
     get:
       tags: [Profile]
       summary: Get Experience Highlights
-      description: Fetches resume bullets. Supports Persona filtering for PAPI optimization.
+      description: Fetches resume bullets. Supports Persona filtering for PAPI optimization. A malformed `experienceId` or an unknown `persona` value returns 400.
       operationId: getExperienceHighlights
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1252,7 +1237,7 @@ paths:
     get:
       tags: [Objects]
       summary: Get Project Assets
-      description: Retrieves assets (images, links) associated with a project.
+      description: Retrieves assets (images, links) associated with a project. A malformed Salesforce Id filter returns 400.
       operationId: getProjectAssets
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1330,7 +1315,7 @@ paths:
         - $ref: "#/components/parameters/requestIdParam"
       responses:
         "200":
-          description: Successful retrieval of Global Configuration.
+          description: Successful retrieval of Global Configuration. Returns an empty object when no configuration record exists.
           headers:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdResponse"
@@ -1345,7 +1330,6 @@ paths:
                 $ref: "#/components/schemas/PortfolioConfig"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1500,7 +1484,7 @@ paths:
     get:
       tags: [Junctions]
       summary: Get Project-Skill Links
-      description: Retrieves junction records linking Projects to Skills.
+      description: Retrieves junction records linking Projects to Skills. A malformed Salesforce Id filter returns 400.
       operationId: getProjectSkills
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1536,7 +1520,7 @@ paths:
     get:
       tags: [Junctions]
       summary: Get Experience-Skill Links
-      description: Retrieves junction records linking Experiences to Skills.
+      description: Retrieves junction records linking Experiences to Skills. A malformed Salesforce Id filter returns 400.
       operationId: getExperienceSkills
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1572,7 +1556,7 @@ paths:
     get:
       tags: [Junctions]
       summary: Get Certification-Skill Links
-      description: Retrieves junction records linking Certifications to Skills.
+      description: Retrieves junction records linking Certifications to Skills. A malformed Salesforce Id filter returns 400.
       operationId: getCertificationSkills
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
