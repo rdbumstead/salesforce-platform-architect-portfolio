@@ -324,9 +324,12 @@ export default class SkillNetwork extends LightningElement {
       },
       modes: { default: ["drag-canvas", "zoom-canvas", "drag-node"] },
       defaultNode: {
-        labelCfg: { position: "bottom", style: { fontSize: 11 } }
+        labelCfg: {
+          position: "bottom",
+          style: { fontSize: 11, fill: "#181818" }
+        }
       },
-      defaultEdge: { style: { stroke: "#c9c9c9", lineWidth: 1 } }
+      defaultEdge: { style: { stroke: "#8c8c8c", lineWidth: 1 } }
     });
     this.graph.data(this.graphData);
     this.graph.render();
