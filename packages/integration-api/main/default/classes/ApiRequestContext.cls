@@ -17,6 +17,7 @@ public with sharing class ApiRequestContext {
   public enum CachePolicy {
     PUBLIC_300,
     PRIVATE_300,
+    PRIVATE_60,
     NO_STORE
   }
 
@@ -42,6 +43,7 @@ public with sharing class ApiRequestContext {
   private static final Map<CachePolicy, String> CACHE_DIRECTIVES = new Map<CachePolicy, String>{
     CachePolicy.PUBLIC_300 => 'max-age=300, public',
     CachePolicy.PRIVATE_300 => 'max-age=300, private',
+    CachePolicy.PRIVATE_60 => 'max-age=60, private',
     CachePolicy.NO_STORE => 'no-store, no-cache'
   };
 
@@ -90,8 +92,9 @@ public with sharing class ApiRequestContext {
 
   /**
    * @description Builds the context for the current REST request and applies the header,
-   *              version and rate-limit rules. Runs no SOQL. Callers must return immediately
-   *              when isRejected() is true.
+   *              version and rate-limit rules. Runs no SOQL on data objects and no DML:
+   *              the only query is the rate limiter's read of its own window row. Callers
+   *              must return immediately when isRejected() is true.
    * @return ApiRequestContext The context for this request.
    */
   public static ApiRequestContext begin() {
@@ -207,10 +210,13 @@ public with sharing class ApiRequestContext {
   }
 
   /**
-   * @description Writes a 200 response with a JSON body.
+   * @description Writes a 200 response with a JSON body. Also writes the rate-limit count
+   *              recorded at begin(); this is the first DML the context performs, so any
+   *              callout a resource makes must happen before ok() or error().
    * @param body Object to serialise.
    */
   public void ok(Object body) {
+    commitRateCounts();
     res.statusCode = 200;
     res.responseBody = Blob.valueOf(JSON.serialize(body));
   }
@@ -222,6 +228,7 @@ public with sharing class ApiRequestContext {
    * @param message Human-readable message.
    */
   public void error(Integer status, String errorCode, String message) {
+    commitRateCounts();
     rejected = true;
     res.statusCode = status;
     res.responseBody = Blob.valueOf(
@@ -279,7 +286,11 @@ public with sharing class ApiRequestContext {
     Boolean idValid =
       !idMissing && UUID_PATTERN.matcher(suppliedId.trim()).matches();
     correlationId = idValid ? suppliedId.trim() : UUID.randomUUID().toString();
-    header(HEADER_REQUEST_ID, correlationId);
+    // The platform echoes a caller-supplied X-Request-Id on every response (Round 2 pre-flight 1),
+    // so Apex sets the header only when it generated the id; setting it too doubles it (id;id).
+    if (!idValid) {
+      header(HEADER_REQUEST_ID, correlationId);
+    }
     header(HEADER_API_VERSION, SUPPORTED_VERSION);
 
     System.debug(
@@ -290,7 +301,7 @@ public with sharing class ApiRequestContext {
         correlationId
     );
 
-    RateDecision decision = limiter()
+    RateDecision decision = rateLimiter()
       .check(tierKeyOf(family, uri), tierLimitOf(family, uri));
     header('X-RateLimit-Limit', String.valueOf(decision.limitPerMinute));
     header(
@@ -354,10 +365,23 @@ public with sharing class ApiRequestContext {
     }
   }
 
-  private static ApiRateLimiter limiter() {
-    return limiterOverride != null
-      ? limiterOverride
-      : new HeadersOnlyRateLimiter();
+  /**
+   * @description Writes the rate-limit counts recorded in this transaction and not yet saved.
+   *              ok() and error() call it; a caller with no REST response (an Aura method
+   *              that used rateLimiter().checkKey) calls it itself, after its last callout.
+   *              No-op when nothing is pending or the active limiter keeps no state.
+   */
+  public static void commitRateCounts() {
+    RateWindowLimiter.commitPending();
+  }
+
+  /**
+   * @description The rate limiter in force: the test override when set, else the default store.
+   *              Callers with their own key (e.g. the token endpoint) use checkKey on it.
+   * @return ApiRateLimiter The limiter.
+   */
+  public static ApiRateLimiter rateLimiter() {
+    return limiterOverride != null ? limiterOverride : new RateWindowLimiter();
   }
 
   private static ApiFamily familyOf(String uri) {

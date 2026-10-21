@@ -1,5 +1,6 @@
 /**
  * @description       : Unit tests for ApiRequestContext, ApiRateLimiter and HeadersOnlyRateLimiter.
+ *                      RateWindowLimiter has its own test class.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -11,6 +12,8 @@ private class ApiRequestContextTest {
   private static final String PAPI_URI = '/services/apexrest/papi/v1/health';
   private static final String PAPI_AI_URI = '/services/apexrest/papi/v1/ai/generate';
   private static final String VALID_ID = '123e4567-e89b-12d3-a456-426614174000';
+  // The default limiter reads its own window row once per request; no data SOQL runs before a rejection.
+  private static final Integer LIMITER_QUERIES = 1;
   private static final Pattern UUID_PATTERN = Pattern.compile(
     '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
   );
@@ -24,6 +27,13 @@ private class ApiRequestContextTest {
       Integer limitPerMinute
     ) {
       return new ApiRequestContext.RateDecision(false, limitPerMinute, 0, 42);
+    }
+
+    public ApiRequestContext.RateDecision checkKey(
+      String callerKey,
+      Integer limitPerMinute
+    ) {
+      return check(callerKey, limitPerMinute);
     }
   }
 
@@ -40,6 +50,23 @@ private class ApiRequestContextTest {
 
   private static String responseHeader(String name) {
     return RestTestUtil.getResponse().headers.get(name);
+  }
+
+  private static String requestHeader(String name) {
+    Map<String, String> sent = RestContext.request.headers;
+    for (String key : sent.keySet()) {
+      if (key.equalsIgnoreCase(name)) {
+        return sent.get(key);
+      }
+    }
+    return null;
+  }
+
+  // The id the client sees: Apex's header when it generated one, else the caller's value,
+  // which the platform echoes.
+  private static String visibleRequestId() {
+    String fromApex = responseHeader('X-Request-Id');
+    return fromApex != null ? fromApex : requestHeader('X-Request-Id');
   }
 
   private static void assertErrorShape(
@@ -65,7 +92,7 @@ private class ApiRequestContextTest {
     Assert.areEqual(errorCode, body.get('errorCode'), 'errorCode mismatch');
     Assert.areEqual(retryable, body.get('retryable'), 'retryable mismatch');
     Assert.areEqual(
-      responseHeader('X-Request-Id'),
+      visibleRequestId(),
       body.get('correlationId'),
       'correlationId must match the echoed X-Request-Id'
     );
@@ -86,7 +113,11 @@ private class ApiRequestContextTest {
     Integer queries = Limits.getQueries();
     Test.stopTest();
 
-    Assert.areEqual(0, queries, 'Rejection must happen before any SOQL');
+    Assert.areEqual(
+      LIMITER_QUERIES,
+      queries,
+      'Only the window read of the rate limiter runs before rejection'
+    );
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
       'X-Request-Id header is required.',
@@ -104,7 +135,11 @@ private class ApiRequestContextTest {
     Integer queries = Limits.getQueries();
     Test.stopTest();
 
-    Assert.areEqual(0, queries, 'Rejection must happen before any SOQL');
+    Assert.areEqual(
+      LIMITER_QUERIES,
+      queries,
+      'Only the window read of the rate limiter runs before rejection'
+    );
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
       'X-Request-Id must be a UUID.',
@@ -170,10 +205,9 @@ private class ApiRequestContextTest {
       ctx.correlationId(),
       'Caller id is the correlation id'
     );
-    Assert.areEqual(
-      VALID_ID,
+    Assert.isNull(
       responseHeader('X-Request-Id'),
-      'Caller id echoed'
+      'Apex leaves a valid caller id for the platform to echo'
     );
     Assert.areEqual(
       'application/json',
@@ -210,7 +244,11 @@ private class ApiRequestContextTest {
     Integer queries = Limits.getQueries();
     Test.stopTest();
 
-    Assert.areEqual(0, queries, 'Rejection must happen before any SOQL');
+    Assert.areEqual(
+      LIMITER_QUERIES,
+      queries,
+      'Only the window read of the rate limiter runs before rejection'
+    );
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
       'Unsupported X-API-Version',
@@ -437,6 +475,7 @@ private class ApiRequestContextTest {
     Map<ApiRequestContext.CachePolicy, String> expected = new Map<ApiRequestContext.CachePolicy, String>{
       ApiRequestContext.CachePolicy.PUBLIC_300 => 'max-age=300, public',
       ApiRequestContext.CachePolicy.PRIVATE_300 => 'max-age=300, private',
+      ApiRequestContext.CachePolicy.PRIVATE_60 => 'max-age=60, private',
       ApiRequestContext.CachePolicy.NO_STORE => 'no-store, no-cache'
     };
     Test.startTest();
@@ -497,16 +536,16 @@ private class ApiRequestContextTest {
     for (String uri : expected.keySet()) {
       RestTestUtil.initGet(uri);
       ApiRequestContext ctx = ApiRequestContext.begin();
-      Assert.isFalse(ctx.isRejected(), 'Headers-only limiter never rejects');
+      Assert.isFalse(ctx.isRejected(), 'First request in the window passes');
       Assert.areEqual(
         String.valueOf(expected.get(uri)),
         responseHeader('X-RateLimit-Limit'),
         'Limit for ' + uri
       );
       Assert.areEqual(
-        String.valueOf(expected.get(uri)),
+        String.valueOf(expected.get(uri) - 1),
         responseHeader('X-RateLimit-Remaining'),
-        'Remaining equals limit for ' + uri
+        'One request used for ' + uri
       );
     }
     Test.stopTest();
@@ -537,6 +576,49 @@ private class ApiRequestContextTest {
   }
 
   @IsTest
+  static void storedLimitReturns429WithOnlyTheLimiterQuery() {
+    RestTestUtil.initGet(SAPI_URI);
+    Datetime now = Datetime.now();
+    insert new API_Rate_Window__c(
+      Key__c = RateWindowLimiter.windowKeyOf(
+        RateWindowLimiter.callerKeyFor('sapi'),
+        now
+      ),
+      Window_Start__c = now,
+      Count__c = ApiRequestContext.SAPI_LIMIT_PER_MINUTE
+    );
+    RateWindowLimiter.nowOverride = now;
+
+    Test.startTest();
+    SAPISkill.getSkills();
+    Integer queries = Limits.getQueries();
+    Integer dml = Limits.getDmlStatements();
+    Test.stopTest();
+
+    Assert.areEqual(
+      LIMITER_QUERIES,
+      queries,
+      'A rate-limited request runs only the window read, no data SOQL'
+    );
+    Assert.areEqual(1, dml, 'Only the window count is written');
+    assertErrorShape(429, 'RATE_LIMIT_EXCEEDED', true);
+    Assert.isNotNull(responseHeader('Retry-After'), 'Retry-After emitted');
+  }
+
+  @IsTest
+  static void defaultLimiterIsRateWindowLimiter() {
+    Test.startTest();
+    ApiRateLimiter active = ApiRequestContext.rateLimiter();
+    Test.stopTest();
+
+    Assert.isInstanceOfType(
+      active,
+      RateWindowLimiter.class,
+      'Custom-object counter is the default store'
+    );
+  }
+
+  @IsTest
   static void headersOnlyLimiterAllows() {
     Test.startTest();
     ApiRequestContext.RateDecision decision = new HeadersOnlyRateLimiter()
@@ -547,5 +629,33 @@ private class ApiRequestContextTest {
     Assert.areEqual(120, decision.limitPerMinute, 'Limit passed through');
     Assert.areEqual(120, decision.remaining, 'Remaining equals limit');
     Assert.areEqual(0, decision.retryAfterSeconds, 'No retry wait');
+  }
+
+  @IsTest
+  static void headersOnlyLimiterAllowsExplicitKey() {
+    Test.startTest();
+    ApiRequestContext.RateDecision decision = new HeadersOnlyRateLimiter()
+      .checkKey('papi-token:abc', 15);
+    Test.stopTest();
+
+    Assert.isTrue(decision.allowed, 'Always allows');
+    Assert.areEqual(15, decision.limitPerMinute, 'Limit passed through');
+    Assert.areEqual(15, decision.remaining, 'Remaining equals limit');
+  }
+
+  @IsTest
+  static void rateLimiterReturnsOverrideWhenSet() {
+    ApiRateLimiter denying = new DenyingLimiter();
+    ApiRequestContext.limiterOverride = denying;
+
+    Test.startTest();
+    ApiRateLimiter active = ApiRequestContext.rateLimiter();
+    Test.stopTest();
+
+    Assert.areEqual(denying, active, 'Override wins');
+    Assert.isFalse(
+      active.checkKey('papi-token:abc', 15).allowed,
+      'Explicit keys go through the same limiter'
+    );
   }
 }

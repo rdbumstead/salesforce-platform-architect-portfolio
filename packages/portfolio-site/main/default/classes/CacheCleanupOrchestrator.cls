@@ -1,5 +1,6 @@
 /**
- * @description       : Orchestrator for cleaning up GitHub and Jira cache records.
+ * @description       : Orchestrator for cleaning up GitHub and Jira cache records and expired
+ *                      API rate-limit windows.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -8,7 +9,7 @@
  **/
 public with sharing class CacheCleanupOrchestrator {
   /**
-   * @description Runs the GitHub cleanup batch.
+   * @description Runs the GitHub cleanup batch (which chains Jira) and the rate-window cleanup batch.
    */
   public void run() {
     if (!CacheCleanupSettings.isEnabled()) {
@@ -17,6 +18,21 @@ public with sharing class CacheCleanupOrchestrator {
 
     Database.executeBatch(
       new GithubCacheCleanupBatch(),
+      CacheCleanupSettings.batchSize()
+    );
+    runRateWindowCleanup();
+  }
+
+  /**
+   * @description Runs the batch that deletes expired API_Rate_Window__c rows.
+   */
+  public static void runRateWindowCleanup() {
+    if (!CacheCleanupSettings.isEnabled()) {
+      return;
+    }
+
+    Database.executeBatch(
+      new CacheCleanupRateWindowBatch(),
       CacheCleanupSettings.batchSize()
     );
   }

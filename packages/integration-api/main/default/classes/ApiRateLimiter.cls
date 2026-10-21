@@ -1,7 +1,7 @@
 /**
  * @description       : Pluggable rate-limit store used by ApiRequestContext (ADR-025 amendment).
- *                      The default implementation emits headers only; a Platform Cache or
- *                      custom-object store can implement this interface without changing the context.
+ *                      The default store is RateWindowLimiter (custom-object counter);
+ *                      HeadersOnlyRateLimiter never rejects and is kept for tests and fallback.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -16,4 +16,16 @@ public interface ApiRateLimiter {
    * @return ApiRequestContext.RateDecision The decision and the values for the rate-limit headers.
    */
   ApiRequestContext.RateDecision check(String tierKey, Integer limitPerMinute);
+
+  /**
+   * @description Records one request against a key the caller built itself, exactly as given
+   *              (no session or user suffix), and decides whether it may proceed.
+   * @param callerKey Complete rate key, e.g. papi-token:<hash>.
+   * @param limitPerMinute Requests allowed per minute for the key.
+   * @return ApiRequestContext.RateDecision The decision and the values for the rate-limit headers.
+   */
+  ApiRequestContext.RateDecision checkKey(
+    String callerKey,
+    Integer limitPerMinute
+  );
 }
