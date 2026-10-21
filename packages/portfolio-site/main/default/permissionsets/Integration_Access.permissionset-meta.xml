@@ -89,7 +89,7 @@
         <name>Portfolio_Config__mdt</name>
     </customMetadataTypeAccesses>
     <description
-  >Access for External Integrations (MuleSoft/GitHub)</description>
+  >The Portfolio API integration user, the account every vended token runs as. Read-only on the portfolio objects, the SAPI and PAPI REST classes, and the credential principals the API calls out through. Never add create, edit or delete here.</description>
     <externalCredentialPrincipalAccesses>
         <enabled>true</enabled>
         <externalCredentialPrincipal

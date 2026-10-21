@@ -1,0 +1,30 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Project__c",
+        "referenceId": "SeedProjectAlphaRef"
+      },
+      "Name": "Seed Project Alpha",
+      "Pillar__c": "C",
+      "Is_Featured__c": true,
+      "Sort_Order__c": 1,
+      "Challenge__c": "Seed challenge text.",
+      "Solution__c": "Seed solution text.",
+      "Business_Value__c": "Seed business value text."
+    },
+    {
+      "attributes": {
+        "type": "Project__c",
+        "referenceId": "SeedProjectBetaRef"
+      },
+      "Name": "Seed Project Beta",
+      "Pillar__c": "E",
+      "Is_Featured__c": false,
+      "Sort_Order__c": 2,
+      "Challenge__c": "Seed challenge text.",
+      "Solution__c": "Seed solution text.",
+      "Business_Value__c": "Seed business value text."
+    }
+  ]
+}

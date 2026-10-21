@@ -1,0 +1,15 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Education__c",
+        "referenceId": "SeedEducationRef"
+      },
+      "Name": "Seed Bachelor of Science",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@SeedInstituteRef",
+      "Graduation_Date__c": "2015-05-01",
+      "Field_of_Study__c": "Seed Computer Science"
+    }
+  ]
+}

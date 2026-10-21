@@ -1,0 +1,20 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Contact",
+        "referenceId": "SeedOwnerRef"
+      },
+      "FirstName": "Seed",
+      "LastName": "Owner",
+      "Title": "Seed Platform Architect",
+      "Career_Objective__c": "Seed career objective for the resume walk.",
+      "LinkedIn_URL__c": "https://www.linkedin.com/in/seed-owner",
+      "GitHub_URL__c": "https://github.com/seed-owner",
+      "Trailhead_URL__c": "https://www.salesforce.com/trailblazer/seed-owner",
+      "Portfolio_URL__c": "https://example.com/seed-owner",
+      "Is_Portfolio_Owner__c": true,
+      "AccountId": "@SeedEmployerRef"
+    }
+  ]
+}
