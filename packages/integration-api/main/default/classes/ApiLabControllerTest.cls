@@ -312,4 +312,100 @@ private class ApiLabControllerTest {
       'SourceIp from the current session'
     );
   }
+
+  private static API_Rate_Window__c tokenWindow() {
+    return [
+      SELECT Key__c, Count__c
+      FROM API_Rate_Window__c
+      WHERE Key__c LIKE 'papi-token:%'
+    ];
+  }
+
+  @IsTest
+  static void shouldWriteAndIncrementRateWindowWhenApiLabRequestsTokens() {
+    // Real default limiter: no limiterOverride. Fixed clock keeps both calls in one window.
+    RateWindowLimiter.nowOverride = Datetime.newInstanceGmt(
+      2026,
+      10,
+      20,
+      12,
+      30,
+      15
+    );
+    Test.setMock(HttpCalloutMock.class, new PortfolioApiCalloutMock());
+    String expectedKey =
+      TokenExchangeService.rateKey(
+        'reviewer@example.com',
+        TokenExchangeService.IP_UNAVAILABLE
+      ) + '|202610201230';
+
+    ApiLabController.TokenResult first = ApiLabController.requestEvaluatorToken(
+      'reviewer@example.com',
+      'API Lab'
+    );
+    API_Rate_Window__c afterFirst = tokenWindow();
+
+    Test.startTest();
+    ApiLabController.TokenResult second = ApiLabController.requestEvaluatorToken(
+      'Reviewer@Example.com',
+      'API Lab again'
+    );
+    Test.stopTest();
+
+    API_Rate_Window__c afterSecond = tokenWindow();
+    Assert.areEqual(200, first.statusCode, 'First token issued');
+    Assert.areEqual(200, second.statusCode, 'Second token issued');
+    Assert.areEqual(
+      expectedKey,
+      afterFirst.Key__c,
+      'Window keyed papi-token:<hash>|minute'
+    );
+    Assert.areEqual(
+      1,
+      afterFirst.Count__c.intValue(),
+      'First call written by commitRateCounts'
+    );
+    Assert.areEqual(afterFirst.Id, afterSecond.Id, 'Same window row');
+    Assert.areEqual(
+      2,
+      afterSecond.Count__c.intValue(),
+      'Second call increments the count'
+    );
+  }
+
+  @IsTest
+  static void shouldRefuse429WhenApiLabCountReachesTokenLimit() {
+    RateWindowLimiter.nowOverride = Datetime.newInstanceGmt(
+      2026,
+      10,
+      20,
+      12,
+      30,
+      15
+    );
+    String windowKey =
+      TokenExchangeService.rateKey(
+        'reviewer@example.com',
+        TokenExchangeService.IP_UNAVAILABLE
+      ) + '|202610201230';
+    insert new API_Rate_Window__c(
+      Key__c = windowKey,
+      Window_Start__c = Datetime.newInstanceGmt(2026, 10, 20, 12, 30, 0),
+      Count__c = TokenExchangeService.TOKEN_REQUESTS_PER_MINUTE
+    );
+
+    Test.startTest();
+    ApiLabController.TokenResult result = ApiLabController.requestEvaluatorToken(
+      'reviewer@example.com',
+      'API Lab'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(429, result.statusCode, 'Limit reached');
+    Assert.areEqual(
+      TokenExchangeService.TOKEN_REQUESTS_PER_MINUTE + 1,
+      tokenWindow().Count__c.intValue(),
+      'Refused request is counted and written'
+    );
+  }
 }
