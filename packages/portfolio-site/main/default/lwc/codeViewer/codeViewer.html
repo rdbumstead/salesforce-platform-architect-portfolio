@@ -1,27 +1,29 @@
 <template>
   <lightning-card title={title} icon-name="utility:code">
-    <div class="slds-p-around_medium">
-      <template if:true={isLoading}>
+    <div class="slds-p-around_medium slds-is-relative">
+      <template lwc:if={isLoading}>
         <lightning-spinner
-          alternative-text="Loading"
+          alternative-text="Loading syntax highlighting"
           size="small"
         ></lightning-spinner>
       </template>
-      <template if:false={isLoading}>
-        <!-- Prism.js requires <pre><code> structure -->
-        <div class="code-container">
-          <pre
-            class="line-numbers"
-          ><code class="language-apex">{codeContent}</code></pre>
-        </div>
-      </template>
-    </div>
-    <div slot="footer">
-      <lightning-button
-        label="Copy to Clipboard"
-        icon-name="utility:copy"
-        onclick={handleCopy}
-      ></lightning-button>
+      <div class="code-container">
+        <pre class={languageClass}><code
+            class="code-block"
+            lwc:dom="manual"
+          ></code></pre>
+      </div>
+      <div class="slds-m-top_small">
+        <lightning-button
+          label="Copy to clipboard"
+          icon-name="utility:copy"
+          onclick={handleCopy}
+          class="copy-code"
+        ></lightning-button>
+        <p aria-live="polite" class="copy-message slds-m-top_x-small">
+          {copyMessage}
+        </p>
+      </div>
     </div>
   </lightning-card>
 </template>

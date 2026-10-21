@@ -9,4 +9,62 @@
 
 pre {
   margin: 0;
+  white-space: pre;
+  color: #000000;
+}
+
+/*
+ * Prism token colours, repeated from Prism_JS/prism.css. loadStyle adds that sheet to
+ * the document, which does not reach inside a native shadow root, so the component
+ * carries the colours itself.
+ */
+.code-block .token.comment,
+.code-block .token.prolog,
+.code-block .token.doctype,
+.code-block .token.cdata {
+  color: #708090;
+}
+
+.code-block .token.punctuation {
+  color: #999999;
+}
+
+.code-block .token.boolean,
+.code-block .token.constant,
+.code-block .token.number,
+.code-block .token.property,
+.code-block .token.symbol,
+.code-block .token.tag {
+  color: #990055;
+}
+
+.code-block .token.attr-name,
+.code-block .token.builtin,
+.code-block .token.char,
+.code-block .token.selector,
+.code-block .token.string {
+  color: #669900;
+}
+
+.code-block .token.operator,
+.code-block .token.entity,
+.code-block .token.url {
+  color: #9a6e3a;
+}
+
+.code-block .token.atrule,
+.code-block .token.attr-value,
+.code-block .token.keyword {
+  color: #0077aa;
+}
+
+.code-block .token.class-name,
+.code-block .token.function {
+  color: #dd4a68;
+}
+
+.code-block .token.regex,
+.code-block .token.important,
+.code-block .token.variable {
+  color: #ee9900;
 }

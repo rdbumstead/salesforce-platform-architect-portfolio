@@ -17,3 +17,10 @@
   margin: 0;
   white-space: pre-wrap;
 }
+
+.header-value,
+.token-value,
+.refusal-value {
+  font-family: "Courier New", Courier, monospace;
+  overflow-wrap: anywhere;
+}
