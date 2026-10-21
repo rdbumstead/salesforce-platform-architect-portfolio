@@ -1,0 +1,28 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Project_Skill__c",
+        "referenceId": "SeedProjSkillAlphaApexRef"
+      },
+      "Project__c": "@SeedProjectAlphaRef",
+      "Skill__c": "@SeedSkillApexRef"
+    },
+    {
+      "attributes": {
+        "type": "Project_Skill__c",
+        "referenceId": "SeedProjSkillAlphaLwcRef"
+      },
+      "Project__c": "@SeedProjectAlphaRef",
+      "Skill__c": "@SeedSkillLWCRef"
+    },
+    {
+      "attributes": {
+        "type": "Project_Skill__c",
+        "referenceId": "SeedProjSkillBetaSoqlRef"
+      },
+      "Project__c": "@SeedProjectBetaRef",
+      "Skill__c": "@SeedSkillSOQLRef"
+    }
+  ]
+}

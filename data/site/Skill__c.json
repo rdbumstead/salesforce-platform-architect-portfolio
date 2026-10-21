@@ -1,0 +1,72 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Skill__c",
+        "referenceId": "SeedSkillApexRef"
+      },
+      "Name": "Seed Apex",
+      "Category__c": "Backend",
+      "Category_Order__c": 1,
+      "Proficiency__c": 5,
+      "Color_Hex__c": "#1B96FF"
+    },
+    {
+      "attributes": {
+        "type": "Skill__c",
+        "referenceId": "SeedSkillSOQLRef"
+      },
+      "Name": "Seed SOQL",
+      "Category__c": "Backend",
+      "Category_Order__c": 1,
+      "Proficiency__c": 4,
+      "Color_Hex__c": "#1B96FF"
+    },
+    {
+      "attributes": {
+        "type": "Skill__c",
+        "referenceId": "SeedSkillIntegrationPatternsRef"
+      },
+      "Name": "Seed Integration Patterns",
+      "Category__c": "Backend",
+      "Category_Order__c": 1,
+      "Proficiency__c": 3,
+      "Color_Hex__c": "#1B96FF",
+      "Display_Name__c": "Seed Integration"
+    },
+    {
+      "attributes": {
+        "type": "Skill__c",
+        "referenceId": "SeedSkillLWCRef"
+      },
+      "Name": "Seed LWC",
+      "Category__c": "Frontend",
+      "Category_Order__c": 2,
+      "Proficiency__c": 5,
+      "Color_Hex__c": "#04844B",
+      "Display_Name__c": "Seed Lightning Web Components"
+    },
+    {
+      "attributes": {
+        "type": "Skill__c",
+        "referenceId": "SeedSkillJavaScriptRef"
+      },
+      "Name": "Seed JavaScript",
+      "Category__c": "Frontend",
+      "Category_Order__c": 2,
+      "Proficiency__c": 4,
+      "Color_Hex__c": "#04844B"
+    },
+    {
+      "attributes": {
+        "type": "Skill__c",
+        "referenceId": "SeedSkillSLDSRef"
+      },
+      "Name": "Seed SLDS",
+      "Category__c": "Frontend",
+      "Category_Order__c": 2,
+      "Proficiency__c": 3,
+      "Color_Hex__c": "#04844B"
+    }
+  ]
+}

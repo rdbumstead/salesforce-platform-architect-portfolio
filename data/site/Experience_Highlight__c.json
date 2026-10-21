@@ -1,0 +1,112 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedCurrentAdminHighlightRef"
+      },
+      "Name": "Seed Current Admin highlight",
+      "Experience__c": "@SeedRoleCurrentRef",
+      "Description__c": "Seed admin highlight for the current role.",
+      "Persona_Tag__c": "Admin",
+      "Sort_Order__c": 1,
+      "Lock_Sort_Across_Personas__c": false,
+      "Admin_Sort_Order__c": 1
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedCurrentDeveloperHighlightRef"
+      },
+      "Name": "Seed Current Developer highlight",
+      "Experience__c": "@SeedRoleCurrentRef",
+      "Description__c": "Seed developer highlight for the current role.",
+      "Persona_Tag__c": "Developer",
+      "Sort_Order__c": 2,
+      "Lock_Sort_Across_Personas__c": false,
+      "Developer_Sort_Order__c": 1
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedCurrentArchitectHighlightRef"
+      },
+      "Name": "Seed Current Architect highlight",
+      "Experience__c": "@SeedRoleCurrentRef",
+      "Description__c": "Seed architect highlight for the current role.",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 3,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 1
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedCurrentSharedHighlightRef"
+      },
+      "Name": "Seed Current shared highlight",
+      "Experience__c": "@SeedRoleCurrentRef",
+      "Description__c": "Seed highlight shared by every persona for the current role.",
+      "Persona_Tag__c": "Admin;Developer;Architect",
+      "Sort_Order__c": 4,
+      "Lock_Sort_Across_Personas__c": false,
+      "Admin_Sort_Order__c": 2,
+      "Developer_Sort_Order__c": 2,
+      "Architect_Sort_Order__c": 2
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedPastAdminHighlightRef"
+      },
+      "Name": "Seed Past Admin highlight",
+      "Experience__c": "@SeedRolePastRef",
+      "Description__c": "Seed admin highlight for the past role.",
+      "Persona_Tag__c": "Admin",
+      "Sort_Order__c": 1,
+      "Lock_Sort_Across_Personas__c": false,
+      "Admin_Sort_Order__c": 1
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedPastDeveloperHighlightRef"
+      },
+      "Name": "Seed Past Developer highlight",
+      "Experience__c": "@SeedRolePastRef",
+      "Description__c": "Seed developer highlight for the past role.",
+      "Persona_Tag__c": "Developer",
+      "Sort_Order__c": 2,
+      "Lock_Sort_Across_Personas__c": false,
+      "Developer_Sort_Order__c": 1
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedPastArchitectHighlightRef"
+      },
+      "Name": "Seed Past Architect highlight",
+      "Experience__c": "@SeedRolePastRef",
+      "Description__c": "Seed architect highlight for the past role.",
+      "Persona_Tag__c": "Architect",
+      "Sort_Order__c": 3,
+      "Lock_Sort_Across_Personas__c": false,
+      "Architect_Sort_Order__c": 1
+    },
+    {
+      "attributes": {
+        "type": "Experience_Highlight__c",
+        "referenceId": "SeedPastSharedHighlightRef"
+      },
+      "Name": "Seed Past shared highlight",
+      "Experience__c": "@SeedRolePastRef",
+      "Description__c": "Seed highlight shared by every persona for the past role.",
+      "Persona_Tag__c": "Admin;Developer;Architect",
+      "Sort_Order__c": 4,
+      "Lock_Sort_Across_Personas__c": false,
+      "Admin_Sort_Order__c": 2,
+      "Developer_Sort_Order__c": 2,
+      "Architect_Sort_Order__c": 2
+    }
+  ]
+}

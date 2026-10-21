@@ -1,0 +1,31 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Experience__c",
+        "referenceId": "SeedRoleCurrentRef"
+      },
+      "Name": "Seed Platform Architect",
+      "Employer__c": "@SeedEmployerRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2023-01-01",
+      "Is_Current_Role__c": true,
+      "Is_Remote__c": true,
+      "Sort_Order__c": 1
+    },
+    {
+      "attributes": {
+        "type": "Experience__c",
+        "referenceId": "SeedRolePastRef"
+      },
+      "Name": "Seed Salesforce Developer",
+      "Employer__c": "@SeedEmployerRef",
+      "Contact__c": "@SeedOwnerRef",
+      "Start_Date__c": "2019-01-01",
+      "End_Date__c": "2022-12-31",
+      "Is_Current_Role__c": false,
+      "Is_Remote__c": false,
+      "Sort_Order__c": 2
+    }
+  ]
+}
