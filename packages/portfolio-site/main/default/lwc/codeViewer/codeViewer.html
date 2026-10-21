@@ -1,6 +1,6 @@
 <template>
   <lightning-card title={title} icon-name="utility:code">
-    <div class="slds-p-around_medium slds-is-relative">
+    <div class="viewer-body slds-p-around_medium slds-is-relative">
       <template lwc:if={isLoading}>
         <lightning-spinner
           alternative-text="Loading syntax highlighting"
@@ -15,6 +15,7 @@
       </div>
       <div class="slds-m-top_small">
         <lightning-button
+          variant="brand"
           label="Copy to clipboard"
           icon-name="utility:copy"
           onclick={handleCopy}

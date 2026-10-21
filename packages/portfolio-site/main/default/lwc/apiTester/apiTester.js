@@ -143,8 +143,8 @@ export default class ApiTester extends LightningElement {
   get statusClass() {
     const code = this.result ? this.result.statusCode : 0;
     return code >= 200 && code < 300
-      ? "status-value slds-text-color_success"
-      : "status-value slds-text-color_error";
+      ? "status-value text-success"
+      : "status-value text-error";
   }
 
   get latencyText() {

@@ -50,21 +50,17 @@
             </div>
           </template>
 
-          <p
-            lwc:if={invokeError}
-            class="invoke-error slds-text-color_error"
-            role="alert"
-          >
+          <p lwc:if={invokeError} class="invoke-error text-error" role="alert">
             {invokeError}
           </p>
 
           <template lwc:if={hasResult}>
             <dl class="slds-list_horizontal slds-wrap result-summary">
-              <dt class="slds-item_label slds-text-color_weak">Status</dt>
+              <dt class="slds-item_label field-label">Status</dt>
               <dd class="slds-item_detail">
                 <span class={statusClass}>{statusText}</span>
               </dd>
-              <dt class="slds-item_label slds-text-color_weak">Latency</dt>
+              <dt class="slds-item_label field-label">Latency</dt>
               <dd class="slds-item_detail latency-value">{latencyText}</dd>
             </dl>
 
@@ -73,7 +69,7 @@
               <template for:each={headerRows} for:item="row">
                 <dt
                   key={row.labelKey}
-                  class="slds-item_label slds-text-color_weak header-name"
+                  class="slds-item_label field-label header-name"
                 >
                   {row.name}
                 </dt>
@@ -123,6 +119,7 @@
           </div>
           <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-6">
             <lightning-button
+              variant="brand"
               label="Request token"
               onclick={handleRequestToken}
               disabled={isTokenDisabled}
@@ -141,25 +138,18 @@
             </div>
           </template>
 
-          <p
-            lwc:if={tokenError}
-            class="token-error slds-text-color_error"
-            role="alert"
-          >
+          <p lwc:if={tokenError} class="token-error text-error" role="alert">
             {tokenError}
           </p>
 
           <template lwc:if={hasTokenResult}>
             <template lwc:if={tokenIssued}>
-              <p class="token-issued slds-text-color_success">
+              <p class="token-issued text-success">
                 Token issued. It is shown once and expires in the time below.
               </p>
               <dl class="slds-list_horizontal slds-wrap token-fields">
                 <template for:each={tokenFields} for:item="field">
-                  <dt
-                    key={field.labelKey}
-                    class="slds-item_label slds-text-color_weak"
-                  >
+                  <dt key={field.labelKey} class="slds-item_label field-label">
                     {field.name}
                   </dt>
                   <dd
@@ -178,10 +168,7 @@
                 role="alert"
               >
                 <template for:each={tokenRefusalFields} for:item="field">
-                  <dt
-                    key={field.labelKey}
-                    class="slds-item_label slds-text-color_weak"
-                  >
+                  <dt key={field.labelKey} class="slds-item_label field-label">
                     {field.name}
                   </dt>
                   <dd

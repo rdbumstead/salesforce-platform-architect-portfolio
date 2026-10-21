@@ -135,6 +135,15 @@ describe("c-code-viewer", () => {
     expect(element.shadowRoot.querySelector("lightning-spinner")).toBeNull();
   });
 
+  it("uses a brand copy button (contract K9)", async () => {
+    const element = createComponent({ code: SOURCE });
+    await flushPromises();
+
+    expect(
+      element.shadowRoot.querySelector("lightning-button.copy-code").variant
+    ).toBe("brand");
+  });
+
   it("copies the raw code to the clipboard", async () => {
     const writeText = jest.fn().mockResolvedValue();
     Object.defineProperty(navigator, "clipboard", {
