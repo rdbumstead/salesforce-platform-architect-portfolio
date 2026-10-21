@@ -88,6 +88,8 @@ curl -si "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
 EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scripts/api-smoke.sh
 ```
 
+**Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in the Round 2 integration scratch org, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. [unverified] Whether an authenticated PAPI response to a request without an id then carries one id or two (the platform's and the UUID Apex generates) is not yet established; check it in the first live smoke. Send your own UUID to get a single, predictable id back.
+
 ---
 
 ### Verification Checklist for Evaluators
