@@ -25,6 +25,7 @@ public with sharing class ContentGenerationController {
   public static final String PROVIDER_AGENTFORCE = 'Agentforce';
   public static final String PROVIDER_GEMINI = 'Gemini';
   public static final String PROVIDER_LOCAL = 'Local';
+  /** Default Gemini model. The model reported is GeminiService.model(), read from its record. */
   public static final String MODEL_GEMINI = GeminiService.MODEL;
   public static final String MODEL_LOCAL = 'local-template';
 
@@ -202,7 +203,7 @@ public with sharing class ContentGenerationController {
       return result(
         text,
         PROVIDER_GEMINI,
-        MODEL_GEMINI,
+        GeminiService.model(),
         request.prompt,
         attempts,
         started
@@ -336,7 +337,7 @@ public with sharing class ContentGenerationController {
         agentforceState,
         1
       ),
-      status(PROVIDER_GEMINI, MODEL_GEMINI, true, STATE_ON, 2),
+      status(PROVIDER_GEMINI, GeminiService.model(), true, STATE_ON, 2),
       status(PROVIDER_LOCAL, MODEL_LOCAL, true, STATE_ON, 3)
     };
   }

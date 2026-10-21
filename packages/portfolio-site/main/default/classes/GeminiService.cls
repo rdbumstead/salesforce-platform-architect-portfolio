@@ -1,5 +1,10 @@
 /**
- * @description       : Gemini implementation of the AI Generation Service.
+ * @description       : Gemini implementation of the AI Generation Service. The model id and
+ *                      the callout timeout come from the Gemini record of
+ *                      AI_Provider_Config__mdt, so a model switch is a record change. A
+ *                      thinking model returns its reasoning as parts marked thought, ahead of
+ *                      the answer. Only the answer parts are returned. A response with no answer
+ *                      text comes back empty, which the dispatch treats as a failed attempt.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -8,8 +13,8 @@
  **/
 public with sharing class GeminiService implements IAIGenerationService {
   /**
-   * @description Model served through the Gemini API (gemini-2.0-flash was shut down on
-   *              2026-06-01). Gemma rejects systemInstruction, so the body carries
+   * @description Model used when the Gemini record names none (gemini-2.0-flash was shut
+   *              down on 2026-06-01). Gemma rejects systemInstruction, so the body carries
    *              contents/parts only.
    */
   public static final String MODEL = 'gemma-4-31b-it';
@@ -21,12 +26,17 @@ public with sharing class GeminiService implements IAIGenerationService {
   public static final String CONFIG_NAME = 'Gemini';
 
   private static final Integer MAX_TIMEOUT_MS = 120000;
+  private static final String ENDPOINT_PREFIX = 'callout:Gemini_API/v1beta/models/';
+  private static final String ENDPOINT_SUFFIX = ':generateContent';
+  /** A model id is one path segment: letters, digits, dot, dash, underscore. */
+  private static final Pattern MODEL_ID = Pattern.compile(
+    '^[A-Za-z0-9._-]{1,100}$'
+  );
 
   @TestVisible
-  private static final String ENDPOINT =
-    'callout:Gemini_API/v1beta/models/' +
-    MODEL +
-    ':generateContent';
+  private static Boolean configOverridden = false;
+  @TestVisible
+  private static AI_Provider_Config__mdt configOverride;
 
   // --- 1. Interface Implementation (Instance Method) ---
   // This allows the Controller to treat this class as an IAIGenerationService
@@ -39,13 +49,18 @@ public with sharing class GeminiService implements IAIGenerationService {
   }
 
   // --- 2. Static Utility Method (Kept for LWC/Tests) ---
+  /**
+   * @description Calls the configured model and returns the answer text.
+   * @param prompt Prompt text.
+   * @return String The answer, an empty string when the response holds no answer, or text
+   *                starting "Error: Unable to generate content." or "Exception: " on failure.
+   */
   public static String generateContentStatic(String prompt) {
     try {
       HttpResponse res = callGemini(prompt);
       if (res.getStatusCode() == 200) {
         return parseResponse(res.getBody());
       }
-      System.debug('Gemini Error: ' + res.getBody());
       return 'Error: Unable to generate content. (Status: ' +
         res.getStatusCode() +
         ')';
@@ -54,16 +69,45 @@ public with sharing class GeminiService implements IAIGenerationService {
     }
   }
 
+  /**
+   * @description Model id in use: Model_Or_Template__c of the Gemini record when it is a
+   *              valid id, else MODEL. The endpoint and the reported model both use it.
+   * @return String The model id.
+   */
+  public static String model() {
+    String configured = config()?.Model_Or_Template__c;
+    if (String.isBlank(configured)) {
+      return MODEL;
+    }
+    String trimmed = configured.trim();
+    return MODEL_ID.matcher(trimmed).matches() ? trimmed : MODEL;
+  }
+
+  /**
+   * @description The generateContent endpoint for the model in use.
+   * @return String Callout URL through the Gemini_API Named Credential.
+   */
+  public static String endpoint() {
+    return ENDPOINT_PREFIX + model() + ENDPOINT_SUFFIX;
+  }
+
   // --- Helpers ---
   private static HttpResponse callGemini(String prompt) {
     RequestWrapper payload = new RequestWrapper(prompt);
     HttpRequest req = new HttpRequest();
-    req.setEndpoint(ENDPOINT);
+    req.setEndpoint(endpoint());
     req.setMethod('POST');
     req.setHeader('Content-Type', 'application/json');
     req.setTimeout(timeoutMs());
     req.setBody(JSON.serialize(payload));
     return new Http().send(req);
+  }
+
+  private static AI_Provider_Config__mdt config() {
+    if (configOverridden) {
+      return configOverride;
+    }
+    return AI_Provider_Config__mdt.getInstance(CONFIG_NAME);
   }
 
   /**
@@ -73,31 +117,49 @@ public with sharing class GeminiService implements IAIGenerationService {
    */
   @TestVisible
   private static Integer timeoutMs() {
-    Decimal configured = AI_Provider_Config__mdt.getInstance(CONFIG_NAME)
-      ?.Timeout_Ms__c;
+    Decimal configured = config()?.Timeout_Ms__c;
     if (configured == null || configured <= 0) {
       return DEFAULT_TIMEOUT_MS;
     }
     return Math.min(configured.intValue(), MAX_TIMEOUT_MS);
   }
 
+  /**
+   * @description Joins, in order, the text of every part of the first candidate that is not
+   *              marked thought. Reasoning is never returned.
+   * @param jsonBody Response body of a 200.
+   * @return String The answer, or an empty string when there is none.
+   */
+  @TestVisible
   private static String parseResponse(String jsonBody) {
     Map<String, Object> root = (Map<String, Object>) JSON.deserializeUntyped(
       jsonBody
     );
     List<Object> candidates = (List<Object>) root.get('candidates');
-    if (candidates != null && !candidates.isEmpty()) {
-      Map<String, Object> firstCandidate = (Map<String, Object>) candidates[0];
-      Map<String, Object> content = (Map<String, Object>) firstCandidate.get(
-        'content'
-      );
-      List<Object> parts = (List<Object>) content.get('parts');
-      if (parts != null && !parts.isEmpty()) {
-        Map<String, Object> firstPart = (Map<String, Object>) parts[0];
-        return (String) firstPart.get('text');
+    if (candidates == null || candidates.isEmpty()) {
+      return '';
+    }
+    Map<String, Object> firstCandidate = (Map<String, Object>) candidates[0];
+    Map<String, Object> content = (Map<String, Object>) firstCandidate.get(
+      'content'
+    );
+    List<Object> parts = (List<Object>) content?.get('parts');
+    if (parts == null) {
+      return '';
+    }
+    List<String> answer = new List<String>();
+    for (Object item : parts) {
+      Map<String, Object> part = (Map<String, Object>) item;
+      Object thought = part.get('thought');
+      Object text = part.get('text');
+      if (thought instanceof Boolean && (Boolean) thought) {
+        continue;
+      }
+      if (text instanceof String) {
+        answer.add((String) text);
       }
     }
-    return '';
+    return String.join(answer, '');
   }
 
   // --- Wrappers ---
