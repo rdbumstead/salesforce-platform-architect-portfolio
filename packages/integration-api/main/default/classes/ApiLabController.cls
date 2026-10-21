@@ -168,6 +168,9 @@ public with sharing class ApiLabController {
         TokenExchangeService.CHANNEL_AURA
       )
     );
+    // An Aura call has no REST response, so ok()/error() never write the email+IP count.
+    // Write it here, after the token callout and the audit row (contracts C2 and C4).
+    ApiRequestContext.commitRateCounts();
     TokenResult tokenResult = new TokenResult();
     tokenResult.correlationId = correlationId;
     tokenResult.statusCode = result.statusCode;
