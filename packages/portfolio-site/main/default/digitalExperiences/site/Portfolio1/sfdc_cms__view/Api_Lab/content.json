@@ -36,6 +36,11 @@
                       "definition": "c:apiTester",
                       "id": "a9a35330-34fb-47d1-9e06-5d548c4da7c7",
                       "type": "component"
+                    },
+                    {
+                      "definition": "c:apiReference",
+                      "id": "88c3220e-dfd1-4ca8-84d3-6bbb9d324b0c",
+                      "type": "component"
                     }
                   ],
                   "id": "02958e17-9dab-483d-a846-c57de2a1b704",

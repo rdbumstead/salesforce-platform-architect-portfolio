@@ -1,0 +1,69 @@
+<template>
+  <lightning-card title="API reference" icon-name="utility:knowledge_base">
+    <div class="reference-body slds-p-around_medium">
+      <p class="reference-intro slds-m-bottom_small">
+        Browse the full OpenAPI contract for the System API and the Process API.
+        The interactive reference loads only when you open it.
+      </p>
+
+      <div
+        class="spec-toggle slds-m-bottom_small"
+        role="group"
+        aria-label="Specification"
+      >
+        <template for:each={specButtons} for:item="spec">
+          <button
+            key={spec.value}
+            type="button"
+            class={spec.cssClass}
+            aria-pressed={spec.pressed}
+            data-spec={spec.value}
+            onclick={handleSpecClick}
+          >
+            {spec.label}
+          </button>
+        </template>
+      </div>
+
+      <lightning-button
+        variant="brand"
+        label={openLabel}
+        icon-name="utility:open"
+        onclick={handleOpen}
+        disabled={openDisabled}
+        class="open-reference"
+      ></lightning-button>
+
+      <div aria-live="polite" class="slds-m-top_small">
+        <template lwc:if={isLoading}>
+          <div class="loading-state slds-is-relative slds-p-around_large">
+            <lightning-spinner
+              alternative-text="Loading the API reference"
+              size="small"
+            ></lightning-spinner>
+          </div>
+        </template>
+
+        <div lwc:if={hasError} class="reference-error" role="alert">
+          <p class="error-text">{errorMessage}</p>
+          <p class="fallback-text">
+            Read the
+            <a
+              class="hosted-link"
+              href={hostedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              >hosted API reference</a
+            >
+            instead.
+          </p>
+        </div>
+      </div>
+
+      <div class={targetClass}>
+        <div class="redoc-styles" lwc:dom="manual"></div>
+        <div class="redoc-target" lwc:dom="manual"></div>
+      </div>
+    </div>
+  </lightning-card>
+</template>
