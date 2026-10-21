@@ -189,8 +189,10 @@ private class PAPIAiGenerateTest {
 
   @IsTest
   static void geminiServesAndIsReportedWithAttempts() {
+    // No Agentforce double: the real AgentforceService runs with its switch off. A double
+    // that answers isAvailable() true replaces the switch and would rightly be served.
     useProviders(
-      new ProviderMock(true, AGENTFORCE_TEXT, false),
+      null,
       new ProviderMock(true, GEMINI_TEXT, false),
       new ProviderMock(true, LOCAL_TEXT, false)
     );
