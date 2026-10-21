@@ -3,7 +3,7 @@
     <apiVersion>62.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Testimonial Submit</masterLabel>
-    <description>Mad Libs style form for submitting reviews</description>
+    <description>Form for submitting a review, stored for approval</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
