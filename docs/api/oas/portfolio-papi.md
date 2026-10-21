@@ -8,18 +8,20 @@ from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
 ### 1. Authentication Strategy
 - **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.
 - **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.
-- **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It and `/health` are the only unauthenticated paths.
+- **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It is the only unauthenticated path, and the only path served on the Experience Cloud site domain (see its `servers` entry). Every other path is called on My Domain with the Bearer token.
 - **PAPI → SAPI**: in-process Apex (same transaction), not HTTP; see ADR-025 for why fan-out callouts were rejected.
 
 ### 2. Versioning Strategy
 - **Pattern**: Header-based versioning takes precedence.
-- **Header**: `X-API-Version: v1` (Required).
+- **Header**: `X-API-Version: v1`. A missing header resolves to `v1`; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026).
+- **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID; a present but non-UUID value returns `400 BAD_REQUEST`. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes a valid caller-supplied `X-Request-Id`, and Apex sets it only when it generated the value (ADR-026).
 - **URL**: Version segments removed from base path to align with SAPI ADR.
 
 ### 3. Rate Limiting & Aggregation Math
 - **SAPI Limit**: 120 requests/minute.
 - **PAPI Aggregation**: A single `/profile/full` call triggers ~8 upstream SAPI calls.
 - **PAPI Limit**: Restricted to **15 requests/minute** (Standard Tier) to prevent cascading rate limit violations on SAPI (15 * 8 = 120).
+- **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. `POST /auth/token` is also limited to 15 requests per minute per email and source IP.
 
 ### 4. Caching Strategy (Aggregation Logic)
 *Note: PAPI cannot pass SAPI headers verbatim due to mixed sensitivity in aggregated payloads.*
@@ -39,11 +41,11 @@ from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
 
 Base URLs:
 
-* <a href="https://{domain}/portfoliovforcesite/services/apexrest/papi/v1">https://{domain}/portfoliovforcesite/services/apexrest/papi/v1</a>
+* <a href="https://{domain}/services/apexrest/papi/v1">https://{domain}/services/apexrest/papi/v1</a>
 
-    * **domain** - The Salesforce Experience Cloud domain. Default: ryan-bumstead-dev-ed.develop.my.site.com
+    * **domain** - The org's My Domain host. Default: ryan-bumstead-dev-ed.develop.my.salesforce.com
 
-        * ryan-bumstead-dev-ed.develop.my.site.com
+        * ryan-bumstead-dev-ed.develop.my.salesforce.com
 
 Email: <a href="mailto:ryan@ryanbumstead.com">Ryan Bumstead</a> Web: <a href="https://ryanbumstead.com">Ryan Bumstead</a> 
 License: <a href="https://opensource.org/licenses/MIT">MIT</a>
@@ -61,6 +63,44 @@ from `POST /auth/token` (ADR-028) instead of holding the consumer secret.
 |Scope|Scope Description|
 |---|---|
 |api|Access Salesforce REST APIs as the integration user|
+
+<h1 id="portfolio-process-api-papi--default">Default</h1>
+
+## servers__auth_token
+
+> Code samples
+
+```javascript
+
+const headers = {
+  'Authorization':'Bearer {access-token}'
+};
+
+fetch('https://{domain}/services/apexrest/papi/v1/auth/token',
+{
+  method: 'SERVERS',
+
+  headers: headers
+})
+.then(function(res) {
+    return res.json();
+}).then(function(body) {
+    console.log(body);
+});
+
+```
+
+`SERVERS /auth/token`
+
+<h3 id="servers__auth_token-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+OAuth2ClientCredentials ( Scopes: api )
+</aside>
 
 <h1 id="portfolio-process-api-papi--orchestration">Orchestration</h1>
 
@@ -81,7 +121,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/profile/full',
+fetch('https://{domain}/services/apexrest/papi/v1/profile/full',
 {
   method: 'GET',
 
@@ -120,8 +160,8 @@ The following groups are executed in parallel:
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID propagated to SAPI.|
-|X-API-Version|header|string|true|API Version (e.g., v1).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 
 > Example responses
 
@@ -242,7 +282,7 @@ The following groups are executed in parallel:
       "avatarUrl": "https://linkedin.com/in/janedoe/photo"
     }
   ],
-  "integrityNote": "Complete"
+  "integrityNote": "complete"
 }
 ```
 
@@ -316,13 +356,13 @@ The following groups are executed in parallel:
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |200|Cache-Control|string||Derived from upstream SAPI resources (Contacts = no-store).|
 |200|X-Data-Integrity|string||Indicates if the payload is complete or has partial missing data.|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
@@ -345,7 +385,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/profile/summary',
+fetch('https://{domain}/services/apexrest/papi/v1/profile/summary',
 {
   method: 'GET',
 
@@ -375,12 +415,15 @@ Stitches junction objects (ExperienceSkill, CertificationSkill) to their parents
 
 **Use Case**: Resume page, profile cards
 
+**Caching**: Cache-Control is fixed at `max-age=300, private` by decision, an explicit exception to
+strictest-policy-wins.
+
 <h3 id="getprofilesummary-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID propagated to SAPI.|
-|X-API-Version|header|string|true|API Version (e.g., v1).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 
 > Example responses
 
@@ -449,7 +492,8 @@ Stitches junction objects (ExperienceSkill, CertificationSkill) to their parents
       "year": "2018",
       "gpa": 3.8
     }
-  ]
+  ],
+  "integrityNote": "complete"
 }
 ```
 
@@ -523,12 +567,13 @@ Stitches junction objects (ExperienceSkill, CertificationSkill) to their parents
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-Data-Integrity|string||none|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
@@ -551,7 +596,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/projects/featured',
+fetch('https://{domain}/services/apexrest/papi/v1/projects/featured',
 {
   method: 'GET',
 
@@ -583,8 +628,8 @@ Retrieves projects marked as 'Featured' with nested Skills and Assets.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID propagated to SAPI.|
-|X-API-Version|header|string|true|API Version (e.g., v1).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 
 > Example responses
 
@@ -721,13 +766,15 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |200|X-Total-Count|integer||none|
+|200|X-Data-Integrity|string||none|
+|200|X-Integrity-Note|string||Present only when partial; names the failed sub-queries, e.g. "partial: project-skills unavailable".|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
@@ -754,7 +801,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/resume/generate',
+fetch('https://{domain}/services/apexrest/papi/v1/resume/generate',
 {
   method: 'GET',
 
@@ -802,8 +849,8 @@ Generates an ATS-optimized plain text resume.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID propagated to SAPI.|
-|X-API-Version|header|string|true|API Version (e.g., v1).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |persona|query|string|false|Target audience for the resume. Omit for all highlights.|
 
 #### Detailed descriptions
@@ -826,6 +873,7 @@ Generates an ATS-optimized plain text resume.
 
 ```json
 {
+  "integrityNote": "complete",
   "generatedText": "Ryan Bumstead\nSalesforce Platform Architect\n\nEXPERIENCE\n\nSalesforce | Senior Technical Architect\nJan 2023 - Present\n- Designed multi-cloud solutions...\n- Led DevOps transformation...\n",
   "persona": "Architect",
   "generatedAt": "2019-08-24T14:15:22Z"
@@ -904,6 +952,7 @@ Status Code **200**
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
+|» integrityNote|string|false|none|"complete", or "partial: <sections> unavailable" naming each upstream section that could not be read.|
 |» generatedText|string|true|none|The complete, formatted resume string ready for clipboard copy|
 |» persona|string|true|none|The persona filter applied|
 |» generatedAt|string(date-time)|true|none|ISO 8601 timestamp of generation|
@@ -912,12 +961,13 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-Data-Integrity|string||none|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
@@ -944,7 +994,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/testimonials/feed',
+fetch('https://{domain}/services/apexrest/papi/v1/testimonials/feed',
 {
   method: 'GET',
 
@@ -973,12 +1023,15 @@ Retrieves testimonials with "Vibe Control" logic applied.
 
 **Use Case**: About page testimonials section
 
+`mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted);
+any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first; at most 200.
+
 <h3 id="gettestimonialfeed-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID propagated to SAPI.|
-|X-API-Version|header|string|true|API Version (e.g., v1).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |mode|query|string|false|Filter testimonials by vibe|
 
 #### Enumerated Values
@@ -1103,13 +1156,13 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |200|X-Total-Count|integer||none|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
@@ -1148,7 +1201,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/ai/generate',
+fetch('https://{domain}/services/apexrest/papi/v1/ai/generate',
 {
   method: 'POST',
   body: inputBody,
@@ -1164,25 +1217,24 @@ fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/ai/generat
 
 `POST /ai/generate`
 
-*Generate AI Content (Multi-Cloud Resilience)*
+*Generate AI Content*
 
-Proxies generative AI requests to LLM providers with circuit breaker pattern.
+Generates content through `PAPIAiGenerate.generate`, which dispatches with
+`ContentGenerationController.generateWithoutAgentforce`.
 
-**Provider Priority Chain**:
-1. **Primary**: Salesforce Agentforce (if available)
-2. **Fallback 1**: Google Gemini Flash 2.0 (via AWS Lambda)
-3. **Fallback 2**: OpenAI GPT-4o-mini (via AWS Lambda)
+**Provider chain**:
+1. Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API (`Gemini_API` Named Credential).
+2. Local template (`Local`), CoverLetter only.
 
-**Circuit Breaker & Limits**:
-- **Rate Limit**: 10 requests per minute (User)
-- **Timeouts**: 2 seconds per provider, 5 seconds total max execution.
-- **Threshold**: Circuit opens after 3 consecutive failures.
-- **Reset**: Circuit attempts reset after 30 seconds.
+Agentforce is deferred and never consulted.
 
-**Security**:
-- API keys for Gemini/OpenAI stored in AWS Secrets Manager
-- Never exposed to frontend or Salesforce
-- Rotated every 90 days via automated Lambda
+**Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allows Gemma 4 31B
+30 requests per minute, 16,000 tokens per minute and 14,400 requests per day. When the Gemini API
+refuses or fails, CoverLetter falls back to the local template and the other types answer
+503 `ALL_PROVIDERS_UNAVAILABLE`.
+
+**Validation**: `type` and `tone` must be enum values, `maxLength` an integer 100 to 1000;
+CoverLetter requires `context.companyName` and `context.role`. Content longer than `maxLength` is cut.
 
 > Body parameter
 
@@ -1209,8 +1261,8 @@ Proxies generative AI requests to LLM providers with circuit breaker pattern.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID propagated to SAPI.|
-|X-API-Version|header|string|true|API Version (e.g., v1).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |body|body|object|true|none|
 |» type|body|string|true|The type of content to generate|
 |» context|body|object|true|Contextual data for generation|
@@ -1241,10 +1293,11 @@ Proxies generative AI requests to LLM providers with circuit breaker pattern.
 ```json
 {
   "content": "Dear Hiring Manager,\n\nI am writing to express my strong interest in the Senior Technical Architect position at Acme Financial...\n",
-  "provider": "Gemini Flash 2.0",
-  "model": "gemini-2.0-flash-exp",
+  "provider": "Gemini",
+  "model": "gemma-4-31b-it",
+  "type": "CoverLetter",
+  "tone": "Professional",
   "generatedAt": "2019-08-24T14:15:22Z",
-  "tokensUsed": 487,
   "fallbackOccurred": false
 }
 ```
@@ -1279,7 +1332,7 @@ Proxies generative AI requests to LLM providers with circuit breaker pattern.
 {
   "httpStatus": 429,
   "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "LLM provider quota exceeded. Retry after 60 seconds.",
+  "message": "Rate limit exceeded. Retry after 60 seconds.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": true
 }
@@ -1324,7 +1377,7 @@ Proxies generative AI requests to LLM providers with circuit breaker pattern.
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully generated content|Inline|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|Rate limit exceeded (LLM provider quota)|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|Rate limit exceeded (ai tier, 10 requests per minute)|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|All AI providers unavailable|[Error](#schemaerror)|
 
@@ -1335,24 +1388,33 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |» content|string|true|none|The generated text content|
-|» provider|string|true|none|LLM provider used|
-|» model|string|false|none|Specific model version|
+|» provider|string|true|none|Provider that served the request|
+|» model|string|false|none|Model identifier (`local-template` when the local template served it)|
+|» type|string|false|none|The requested content type, echoed|
+|» tone|string|false|none|The applied tone, echoed|
 |» generatedAt|string(date-time)|true|none|none|
-|» tokensUsed|integer|false|none|Approximate token count (for cost tracking)|
-|» fallbackOccurred|boolean|false|none|True if primary provider failed|
+|» fallbackOccurred|boolean|false|none|True when the local template served the request|
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|provider|Gemini|
+|provider|Local|
 
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|200|X-AI-Provider|string||Which LLM provider was used|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|200|X-AI-Provider|string||Which provider served the request|
 |200|X-Generation-Time-Ms|integer||Time taken to generate content in milliseconds|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|200|Cache-Control|string||none|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |429|Retry-After|integer||none|
-|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1372,10 +1434,11 @@ Health checks and observability
 ```javascript
 
 const headers = {
-  'Accept':'application/json'
+  'Accept':'application/json',
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/health',
+fetch('https://{domain}/services/apexrest/papi/v1/health',
 {
   method: 'GET',
 
@@ -1393,7 +1456,11 @@ fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/health',
 
 *PAPI Health Check*
 
-Performs a shallow health check (runtime only). Does not validate SAPI connectivity.
+Deep health check (`PAPIHealth.getHealth`). Reads SAPI health in-process (`SAPIHealth.buildPayload`),
+exercises the `Portfolio_API` Named Credential with one GET to `/sapi/v1/health` (`credential` is UP
+only on HTTP 200), and reports presence of the `Jira_API`, `GitHub_API` and `Gemini_API` Named
+Credentials without calling them. `status` is DOWN when SAPI is down, DEGRADED when the credential is
+down or any Named Credential is not CONFIGURED, otherwise UP. Always returns 200.
 
 > Example responses
 
@@ -1402,22 +1469,19 @@ Performs a shallow health check (runtime only). Does not validate SAPI connectiv
 ```json
 {
   "status": "UP",
+  "checkType": "DEEP",
   "timestamp": "2019-08-24T14:15:22Z",
   "dependencies": {
-    "sapi": "not_checked"
+    "sapi": "UP",
+    "credential": "UP",
+    "jira": "CONFIGURED",
+    "github": "CONFIGURED",
+    "gemini": "CONFIGURED"
+  },
+  "details": {
+    "property1": "string",
+    "property2": "string"
   }
-}
-```
-
-> 503 Response
-
-```json
-{
-  "httpStatus": 503,
-  "errorCode": "SERVICE_UNAVAILABLE",
-  "message": "Downstream SAPI is currently unavailable",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
 }
 ```
 
@@ -1426,19 +1490,17 @@ Performs a shallow health check (runtime only). Does not validate SAPI connectiv
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Service is healthy|[HealthStatus](#schemahealthstatus)|
-|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
 
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |200|Cache-Control|string||none|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|503|Retry-After|integer||Seconds until service may be available|
 
-<aside class="success">
-This operation does not require authentication
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 <h1 id="portfolio-process-api-papi--access">Access</h1>
@@ -1463,7 +1525,7 @@ const headers = {
   'X-API-Version':'v1'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/auth/token',
+fetch('https://{domain}/services/apexrest/papi/v1/auth/token',
 {
   method: 'POST',
   body: inputBody,
@@ -1482,9 +1544,28 @@ fetch('https://{domain}/portfoliovforcesite/services/apexrest/papi/v1/auth/token
 *Request an evaluator access token*
 
 Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI
-without holding the External Client App consumer secret (ADR-028). The exchange runs server-side
-through the `Portfolio_API` Named Credential. Tokens run as the read-only integration user and
-expire with its 30-minute session. Requests are rate-limited by email and source IP and capped per day.
+without holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`
+hands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,
+then runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named
+Credential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user
+and expire with its 30-minute session.
+
+- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254
+  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule
+  from `ApiRequestContext` fails.
+- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller
+  key), or 15 requests per minute per email and source IP
+  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,
+  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.
+- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to
+  the next midnight in the running user's time zone; the cap counts audit rows with outcome
+  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the
+  credential is missing or not granted ("Token issuance is not configured."); or the token endpoint
+  fails ("Token issuance is temporarily unavailable.").
+- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.
+
+This is the only path served on the Experience Cloud site domain, not on My Domain:
+`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.
 
 > Body parameter
 
@@ -1499,8 +1580,8 @@ expire with its 30-minute session. Requests are rate-limited by email and source
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID propagated to SAPI.|
-|X-API-Version|header|string|true|API Version (e.g., v1).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |body|body|[TokenRequest](#schematokenrequest)|true|none|
 
 > Example responses
@@ -1512,7 +1593,7 @@ expire with its 30-minute session. Requests are rate-limited by email and source
   "access_token": "string",
   "token_type": "Bearer",
   "expires_in": 1800,
-  "instance_url": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest",
+  "instance_url": "https://ryan-bumstead-dev-ed.develop.my.salesforce.com",
   "docs": "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi"
 }
 ```
@@ -1559,19 +1640,19 @@ expire with its 30-minute session. Requests are rate-limited by email and source
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Token issued|[TokenResponse](#schematokenresponse)|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|Rate limit or daily cap exceeded (ADR-025, ADR-028)|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|Rate limit exceeded (ADR-025, ADR-028)|[Error](#schemaerror)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
 
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |200|Cache-Control|string||none|
-|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
-|429|Retry-After|integer||Seconds until the window resets.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="success">
@@ -1620,9 +1701,18 @@ This operation does not require authentication
 ```json
 {
   "status": "UP",
+  "checkType": "DEEP",
   "timestamp": "2019-08-24T14:15:22Z",
   "dependencies": {
-    "sapi": "not_checked"
+    "sapi": "UP",
+    "credential": "UP",
+    "jira": "CONFIGURED",
+    "github": "CONFIGURED",
+    "gemini": "CONFIGURED"
+  },
+  "details": {
+    "property1": "string",
+    "property2": "string"
   }
 }
 
@@ -1633,9 +1723,16 @@ This operation does not require authentication
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |status|string|false|none|none|
+|checkType|string|false|none|none|
 |timestamp|string(date-time)|false|none|none|
 |dependencies|object|false|none|none|
 |» sapi|string|false|none|none|
+|» credential|string|false|none|UP only when a GET through the Portfolio_API Named Credential to /sapi/v1/health returns HTTP 200.|
+|» jira|string|false|none|Presence of the Jira_API Named Credential; UNKNOWN when NamedCredential cannot be read.|
+|» github|string|false|none|Presence of the GitHub_API Named Credential.|
+|» gemini|string|false|none|Presence of the Gemini_API Named Credential.|
+|details|object|false|none|Diagnostic per dependency, e.g. credential: "HTTP 401" or an exception type name.|
+|» **additionalProperties**|string|false|none|none|
 
 #### Enumerated Values
 
@@ -1644,6 +1741,21 @@ This operation does not require authentication
 |status|UP|
 |status|DOWN|
 |status|DEGRADED|
+|checkType|SHALLOW|
+|checkType|DEEP|
+|sapi|UP|
+|sapi|DOWN|
+|credential|UP|
+|credential|DOWN|
+|jira|CONFIGURED|
+|jira|MISSING|
+|jira|UNKNOWN|
+|github|CONFIGURED|
+|github|MISSING|
+|github|UNKNOWN|
+|gemini|CONFIGURED|
+|gemini|MISSING|
+|gemini|UNKNOWN|
 
 <h2 id="tocS_FullPortfolioPayload">FullPortfolioPayload</h2>
 <!-- backwards compatibility -->
@@ -1764,7 +1876,7 @@ This operation does not require authentication
       "avatarUrl": "https://linkedin.com/in/janedoe/photo"
     }
   ],
-  "integrityNote": "string"
+  "integrityNote": "complete"
 }
 
 ```
@@ -1784,7 +1896,7 @@ The master payload for initial app load
 |certifications|[[EnrichedCertification](#schemaenrichedcertification)]|true|none|[Certification with associated skills]|
 |education|[[SimpleEducation](#schemasimpleeducation)]|true|none|[Educational background]|
 |testimonials|[[EnrichedTestimonial](#schemaenrichedtestimonial)]|true|none|none|
-|integrityNote|string¦null|false|none|Debug info if partial data returned (e.g. 'Certifications Service Unavailable')|
+|integrityNote|string|false|none|"complete", or "partial: <sections> unavailable" naming each upstream section that could not be read (e.g. "partial: certifications unavailable").|
 
 <h2 id="tocS_ProfileSummary">ProfileSummary</h2>
 <!-- backwards compatibility -->
@@ -1856,7 +1968,8 @@ The master payload for initial app load
       "year": "2018",
       "gpa": 3.8
     }
-  ]
+  ],
+  "integrityNote": "complete"
 }
 
 ```
@@ -1871,6 +1984,7 @@ The master payload for initial app load
 |experience|[[EnrichedExperience](#schemaenrichedexperience)]|true|none|[Work Experience enriched with related Skills and Highlights]|
 |certifications|[[EnrichedCertification](#schemaenrichedcertification)]|true|none|[Certification with associated skills]|
 |education|[[SimpleEducation](#schemasimpleeducation)]|true|none|[Educational background]|
+|integrityNote|string|false|none|"complete", or "partial: <sections> unavailable" naming each upstream section that could not be read (e.g. "partial: certifications unavailable").|
 
 <h2 id="tocS_EnrichedExperience">EnrichedExperience</h2>
 <!-- backwards compatibility -->
@@ -2234,7 +2348,7 @@ Educational background
   "access_token": "string",
   "token_type": "Bearer",
   "expires_in": 1800,
-  "instance_url": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest",
+  "instance_url": "https://ryan-bumstead-dev-ed.develop.my.salesforce.com",
   "docs": "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi"
 }
 
@@ -2246,8 +2360,8 @@ Educational background
 |---|---|---|---|---|
 |access_token|string|true|none|OAuth 2.0 Bearer token bound to the read-only integration user.|
 |token_type|string|true|none|none|
-|expires_in|integer|true|none|Seconds until the integration user session times out (default 1800).|
-|instance_url|string(uri)|true|none|none|
+|expires_in|integer|true|none|Always 1800, the integration profile's session timeout. The token endpoint returns no expiry, so this is the profile setting, not a value read from the grant.|
+|instance_url|string(uri)|true|none|The My Domain root, as returned by the token endpoint. Append `/services/apexrest/sapi/v1/...` or `/services/apexrest/papi/v1/...` and send the token as a Bearer credential.|
 |docs|string(uri)|false|none|Link to the rendered API documentation.|
 
 #### Enumerated Values
