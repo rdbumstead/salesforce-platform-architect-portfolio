@@ -164,11 +164,25 @@ describe("c-api-tester", () => {
       params: {}
     });
     expect(query(element, ".status-value").textContent).toBe("429");
-    expect(query(element, ".status-value").className).toContain(
-      "slds-text-color_error"
-    );
+    expect(query(element, ".status-value").className).toContain("text-error");
     expect(headerValue(element, "X-Total-Count")).toBe("(not returned)");
     expect(query(element, ".response-body").textContent).toBe("not json");
+  });
+
+  it("uses brand buttons and no SLDS text colour classes (contract K9)", async () => {
+    invoke.mockResolvedValue(INVOKE_RESULT);
+    const element = createComponent();
+    await flushPromises();
+    query(element, "lightning-button.execute-button").click();
+    await flushPromises();
+
+    expect(query(element, "lightning-button.execute-button").variant).toBe(
+      "brand"
+    );
+    expect(query(element, "lightning-button.token-button").variant).toBe(
+      "brand"
+    );
+    expect(query(element, '[class*="slds-text-color_"]')).toBeNull();
   });
 
   it("shows the controller error when invoke throws", async () => {
