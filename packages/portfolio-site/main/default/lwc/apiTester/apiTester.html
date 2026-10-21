@@ -1,48 +1,202 @@
 <template>
-  <lightning-card title="System API Console" icon-name="utility:apex">
+  <lightning-card title="API Lab" icon-name="utility:apex">
     <div class="slds-p-around_medium console-container">
-      <div class="slds-grid slds-gutters slds-grid_vertical-align-end">
-        <div class="slds-col slds-size_2-of-3">
-          <lightning-combobox
-            name="endpoint"
-            label="Endpoint"
-            value={selectedEndpoint}
-            placeholder="Select an endpoint..."
-            options={endpointOptions}
-            onchange={handleEndpointChange}
-          >
-          </lightning-combobox>
-        </div>
-        <div class="slds-col slds-size_1-of-3">
-          <lightning-button
-            variant="brand"
-            label="Execute GET"
-            title="Execute GET"
-            onclick={handleExecute}
-            class="slds-m-bottom_none"
-            disabled={isLoading}
-          >
-          </lightning-button>
-        </div>
-      </div>
-
-      <div class="slds-m-top_medium result-box">
-        <div if:true={isLoading} class="slds-is-relative slds-p-around_large">
-          <lightning-spinner
-            alternative-text="Loading"
-            size="small"
-          ></lightning-spinner>
-        </div>
-        <div if:false={isLoading}>
-          <pre class="json-viewer">{responseBody}</pre>
-        </div>
-      </div>
-
-      <div class="slds-text-align_right slds-m-top_x-small">
-        <span class="slds-text-body_small slds-text-color_weak"
-          >Status: {responseStatus} | Latency: {latency}ms</span
+      <section class="invoke-section">
+        <h2 class="slds-text-heading_small slds-m-bottom_small">
+          Call the API
+        </h2>
+        <div
+          class="slds-grid slds-wrap slds-gutters slds-grid_vertical-align-end"
         >
-      </div>
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+            <lightning-combobox
+              name="endpoint"
+              label="Endpoint"
+              value={selectedPath}
+              options={endpointOptions}
+              onchange={handleEndpointChange}
+              class="endpoint-picker"
+            >
+            </lightning-combobox>
+          </div>
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+            <lightning-input
+              label="Query parameters (optional)"
+              placeholder="limit=5&amp;offset=0"
+              value={queryText}
+              onchange={handleQueryChange}
+              class="query-input"
+            ></lightning-input>
+          </div>
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-6">
+            <lightning-button
+              variant="brand"
+              label="Execute GET"
+              onclick={handleExecute}
+              disabled={isExecuteDisabled}
+              class="execute-button"
+            >
+            </lightning-button>
+          </div>
+        </div>
+
+        <div aria-live="polite" class="slds-m-top_medium">
+          <template lwc:if={isLoading}>
+            <div class="loading-state slds-is-relative slds-p-around_large">
+              <lightning-spinner
+                alternative-text="Calling the API"
+                size="small"
+              ></lightning-spinner>
+            </div>
+          </template>
+
+          <p
+            lwc:if={invokeError}
+            class="invoke-error slds-text-color_error"
+            role="alert"
+          >
+            {invokeError}
+          </p>
+
+          <template lwc:if={hasResult}>
+            <dl class="slds-list_horizontal slds-wrap result-summary">
+              <dt class="slds-item_label slds-text-color_weak">Status</dt>
+              <dd class="slds-item_detail">
+                <span class={statusClass}>{statusText}</span>
+              </dd>
+              <dt class="slds-item_label slds-text-color_weak">Latency</dt>
+              <dd class="slds-item_detail latency-value">{latencyText}</dd>
+            </dl>
+
+            <h3 class="slds-text-title_caps slds-m-top_small">Headers</h3>
+            <dl class="slds-list_horizontal slds-wrap header-panel">
+              <template for:each={headerRows} for:item="row">
+                <dt
+                  key={row.labelKey}
+                  class="slds-item_label slds-text-color_weak header-name"
+                >
+                  {row.name}
+                </dt>
+                <dd
+                  key={row.valueKey}
+                  class="slds-item_detail header-value"
+                  data-header={row.name}
+                >
+                  {row.value}
+                </dd>
+              </template>
+            </dl>
+
+            <h3 class="slds-text-title_caps slds-m-top_small">Body</h3>
+            <div class="result-box">
+              <pre class="json-viewer response-body">{bodyText}</pre>
+            </div>
+          </template>
+        </div>
+      </section>
+
+      <section class="token-section slds-m-top_large">
+        <h2 class="slds-text-heading_small slds-m-bottom_small">
+          Request an evaluator token
+        </h2>
+        <div
+          class="slds-grid slds-wrap slds-gutters slds-grid_vertical-align-end"
+        >
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+            <lightning-input
+              type="email"
+              label="Email"
+              value={email}
+              onchange={handleTokenInput}
+              data-field="email"
+              class="token-email"
+            ></lightning-input>
+          </div>
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+            <lightning-input
+              label="Purpose"
+              value={purpose}
+              onchange={handleTokenInput}
+              data-field="purpose"
+              class="token-purpose"
+            ></lightning-input>
+          </div>
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-6">
+            <lightning-button
+              label="Request token"
+              onclick={handleRequestToken}
+              disabled={isTokenDisabled}
+              class="token-button"
+            ></lightning-button>
+          </div>
+        </div>
+
+        <div aria-live="polite" class="slds-m-top_medium">
+          <template lwc:if={isRequestingToken}>
+            <div class="slds-is-relative slds-p-around_large">
+              <lightning-spinner
+                alternative-text="Requesting a token"
+                size="small"
+              ></lightning-spinner>
+            </div>
+          </template>
+
+          <p
+            lwc:if={tokenError}
+            class="token-error slds-text-color_error"
+            role="alert"
+          >
+            {tokenError}
+          </p>
+
+          <template lwc:if={hasTokenResult}>
+            <template lwc:if={tokenIssued}>
+              <p class="token-issued slds-text-color_success">
+                Token issued. It is shown once and expires in the time below.
+              </p>
+              <dl class="slds-list_horizontal slds-wrap token-fields">
+                <template for:each={tokenFields} for:item="field">
+                  <dt
+                    key={field.labelKey}
+                    class="slds-item_label slds-text-color_weak"
+                  >
+                    {field.name}
+                  </dt>
+                  <dd
+                    key={field.valueKey}
+                    class="slds-item_detail token-value"
+                    data-field={field.name}
+                  >
+                    {field.value}
+                  </dd>
+                </template>
+              </dl>
+            </template>
+            <template lwc:else>
+              <dl
+                class="slds-list_horizontal slds-wrap token-refusal"
+                role="alert"
+              >
+                <template for:each={tokenRefusalFields} for:item="field">
+                  <dt
+                    key={field.labelKey}
+                    class="slds-item_label slds-text-color_weak"
+                  >
+                    {field.name}
+                  </dt>
+                  <dd
+                    key={field.valueKey}
+                    class="slds-item_detail refusal-value"
+                    data-field={field.name}
+                  >
+                    {field.value}
+                  </dd>
+                </template>
+              </dl>
+            </template>
+          </template>
+        </div>
+      </section>
     </div>
   </lightning-card>
 </template>
