@@ -73,12 +73,8 @@ describe("c-hero-banner", () => {
     cards.forEach((card, index) => {
       const expected = EXPECTED_PILLARS[index];
       expect(card.dataset.key).toBe(expected.key);
-      expect(card.querySelector("h3").textContent).toContain(
-        expected.heading
-      );
-      expect(card.querySelector("a").getAttribute("href")).toBe(
-        expected.href
-      );
+      expect(card.querySelector("h3").textContent).toContain(expected.heading);
+      expect(card.querySelector("a").getAttribute("href")).toBe(expected.href);
     });
   });
 
@@ -111,15 +107,11 @@ describe("c-hero-banner", () => {
     steps.forEach((step, index) => {
       const expected = EXPECTED_PILLARS[index];
       expect(step.dataset.key).toBe(expected.key);
-      expect(step.querySelector("a").getAttribute("href")).toBe(
-        expected.href
-      );
-      expect(step.querySelector(".tour-duration").textContent).toBe(
-        "1 minute"
-      );
-      expect(step.querySelector(".tour-text").textContent.length).toBeGreaterThan(
-        0
-      );
+      expect(step.querySelector("a").getAttribute("href")).toBe(expected.href);
+      expect(step.querySelector(".tour-duration").textContent).toBe("1 minute");
+      expect(
+        step.querySelector(".tour-text").textContent.length
+      ).toBeGreaterThan(0);
     });
   });
 });

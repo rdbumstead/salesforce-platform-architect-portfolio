@@ -40,7 +40,11 @@ describe("c-footer", () => {
       target: a.getAttribute("target")
     }));
     expect(links).toEqual([
-      { text: "GitHub", href: "https://github.com/rdbumstead", target: "_blank" },
+      {
+        text: "GitHub",
+        href: "https://github.com/rdbumstead",
+        target: "_blank"
+      },
       {
         text: "LinkedIn",
         href: "https://linkedin.com/in/ryanbumstead",
