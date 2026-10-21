@@ -32,7 +32,7 @@ Principal-level Salesforce Platform Architecture including:
 - **Multi-Cloud Design** — LWR + AWS Lambda BFF with $0.00-forever architecture.
 - **DevOps Maturity** — Delta deployments, automated quality gates, and JWT-based CI/CD.
 - **Contract-First APIs** — OpenAPI 3.0 specs proving Salesforce/MuleSoft parity.
-- **Applied AI Governance** — Strategy-pattern inference pipeline (Gemini → deterministic Local Template). Agentforce is deferred.
+- **Applied AI Governance** — Strategy-pattern inference pipeline on `POST /papi/v1/ai/generate` (Gemma 4 31B through the Gemini API → deterministic Local Template). Agentforce is deferred, and the site's cover-letter page returns the Agentforce mock text until it is built.
 - **Observability** — Real-time Glass Box telemetry and constraint-aware monitoring.
 
 ### Portfolio Overview
@@ -142,7 +142,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 
 ---
 
-## Phase 8: Multi-Cloud Extension (Design Complete for Q2 2026)
+## Phase 8: Multi-Cloud Extension (Design Complete, Planned 2027-2028)
 
 **AWS Lambda Polyglot BFF (Door 2 Architecture)**
 
@@ -262,7 +262,7 @@ graph LR
     linkStyle 0,1,2 stroke:#2ECC71,stroke-width:3px;
 ```
 
-> **Diagram Description (for accessibility):** The diagram shows a user connecting to an Experience Cloud LWR site, which routes data requests through either a native Salesforce GraphQL API (Door 1, live in Q1 2027) or an AWS Lambda Polyglot Backend For Frontend (Door 2, design complete for Q2 2026). The Apex Runtime handles integrations with Jira, GitHub, and the Gemini AI API (Agentforce is deferred), all backed by custom Salesforce objects.
+> **Diagram Description (for accessibility):** The diagram shows a user connecting to an Experience Cloud LWR site, which routes data requests through either a native Salesforce GraphQL API (Door 1, live in Q1 2027) or an AWS Lambda Polyglot Backend For Frontend (Door 2, design complete, planned 2027-2028). The Apex Runtime handles integrations with Jira, GitHub, and the Gemini AI API (Agentforce is deferred), all backed by custom Salesforce objects.
 
 ---
 

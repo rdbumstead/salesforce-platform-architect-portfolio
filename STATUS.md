@@ -9,4 +9,4 @@
 | API layer          | In active development | Contract v1.3.0: 15 SAPI + 8 PAPI paths, Apex REST, OAuth 2.0 client credentials        |
 | Evaluator access   | In active development | Short-lived tokens from `POST /papi/v1/auth/token`; curl flow in `scripts/api-smoke.sh` |
 | Agentforce         | Deferred              | `AgentforceService` is a mock; no feature or document claims it as a provider           |
-| Phase 8 Lambda BFF | Design complete       | $0.00 forever — activation Q2 2026                                                      |
+| Phase 8 Lambda BFF | Design complete       | $0.00 forever — planned 2027-2028                                                       |
