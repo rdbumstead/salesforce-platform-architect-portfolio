@@ -85,7 +85,12 @@ describe("c-api-tester", () => {
     ).options;
     expect(options.map((option) => option.value)).toEqual(ALLOWED_PATHS);
     expect(ALLOWED_PATHS).toHaveLength(21);
-    expect(ALLOWED_PATHS).not.toContain("/sapi/v1/resume");
+    // SAPIResume was removed in Round 2. No SAPI path may end in /resume.
+    expect(
+      ALLOWED_PATHS.filter(
+        (path) => path.startsWith("/sapi/") && path.endsWith("/resume")
+      )
+    ).toEqual([]);
     expect(ALLOWED_PATHS).toContain("/papi/v1/resume/generate");
   });
 
