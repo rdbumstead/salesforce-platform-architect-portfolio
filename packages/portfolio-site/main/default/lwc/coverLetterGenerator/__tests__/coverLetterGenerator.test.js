@@ -120,6 +120,56 @@ describe("c-cover-letter-generator", () => {
     }
   });
 
+  it("tells the visitor about the wait before they click", async () => {
+    const element = createComponent();
+    await flushPromises();
+
+    const note = query(element, '[data-id="wait-note"]').textContent;
+    expect(note).toContain("about a minute");
+    expect(note).toContain("template letter");
+  });
+
+  it("shows the status line only while loading, inside a polite live region", async () => {
+    let resolveCall;
+    generateCoverLetter.mockReturnValue(
+      new Promise((resolve) => {
+        resolveCall = resolve;
+      })
+    );
+    const element = createComponent();
+    await flushPromises();
+    const region = query(element, '[data-id="status-region"]');
+    expect(region.getAttribute("aria-live")).toBe("polite");
+    expect(query(element, '[data-id="status-line"]')).toBeNull();
+
+    await fillAndGenerate(element);
+    const line = query(element, '[data-id="status-line"]');
+    expect(line.textContent.trim()).toBe(
+      "Writing your letter. This can take about a minute."
+    );
+    expect(region.contains(line)).toBe(true);
+
+    resolveCall(GEMINI_RESULT);
+    await flushPromises();
+    await flushPromises();
+    expect(query(element, '[data-id="status-line"]')).toBeNull();
+  });
+
+  it("explains a template letter only when the local template served", async () => {
+    generateCoverLetter.mockResolvedValue(LOCAL_RESULT);
+    const local = createComponent();
+    await fillAndGenerate(local);
+    expect(query(local, '[data-id="fallback-note"]').textContent).toContain(
+      "busy or too slow"
+    );
+    document.body.removeChild(local);
+
+    generateCoverLetter.mockResolvedValue(GEMINI_RESULT);
+    const live = createComponent();
+    await fillAndGenerate(live);
+    expect(query(live, '[data-id="fallback-note"]')).toBeNull();
+  });
+
   it("keeps Generate disabled until company and title are set", async () => {
     const element = createComponent();
     await flushPromises();

@@ -12,7 +12,7 @@
     </values>
     <values>
         <field>Timeout_Ms__c</field>
-        <value xsi:type="xsd:double">20000</value>
+        <value xsi:type="xsd:double">60000</value>
     </values>
     <values>
         <field>Model_Or_Template__c</field>

@@ -19,8 +19,12 @@ public with sharing class GeminiService implements IAIGenerationService {
    */
   public static final String MODEL = 'gemma-4-31b-it';
 
-  /** Callout timeout when the Gemini config record sets none (PD-D11, 20 s). */
-  public static final Integer DEFAULT_TIMEOUT_MS = 20000;
+  /**
+   * Callout timeout when the Gemini config record sets none: 60 s (owner decision
+   * 2026-10-21, replacing PD-D11's 20 s). Gemma 4 always reasons before it answers, and the
+   * owner measured 28.7 s for a trivial prompt.
+   */
+  public static final Integer DEFAULT_TIMEOUT_MS = 60000;
 
   /** DeveloperName of this provider's AI_Provider_Config__mdt record. */
   public static final String CONFIG_NAME = 'Gemini';
@@ -111,7 +115,7 @@ public with sharing class GeminiService implements IAIGenerationService {
   }
 
   /**
-   * @description Callout timeout: Timeout_Ms__c of the Gemini config record, else 20 s. A
+   * @description Callout timeout: Timeout_Ms__c of the Gemini config record, else 60 s. A
    *              thinking model often needs more than the 10 s platform default (PD-D11).
    * @return Integer Timeout in milliseconds, between 1 and 120000.
    */

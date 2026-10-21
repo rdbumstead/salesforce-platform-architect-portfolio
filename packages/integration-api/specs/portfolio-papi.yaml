@@ -1309,7 +1309,8 @@ paths:
            It ships off, and the provider is not built yet: a switched-on call fails and the chain
            moves on, so `provider` is never `Agentforce` today.
         2. Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API (`Gemini_API` Named Credential),
-           with a 20 second timeout.
+           with a 60 second timeout. Gemma 4 always reasons before it answers, so a response can
+           take up to about a minute.
         3. Local template (`Local`), CoverLetter only.
 
         A CoverLetter prompt also carries facts from featured projects and experience highlights,

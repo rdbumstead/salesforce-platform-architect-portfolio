@@ -5,6 +5,7 @@
  * text, the badge and the prompt are fixed dark panels with light text. Ratios (WCAG):
  * #e2e8f0 on #020617 16.36, #0f172a on #ffffff 17.85, #f8fafc on #1e293b 13.98,
  * #e2e8f0 on #0f172a 14.48, #f87171 on #020617 7.29 (error text and required marker).
+ * The wait note, the status line and the template note use #e2e8f0 on #020617 (16.36).
  * Company and title draw their own label and required marker: the base component's
  * asterisk rendered #c23934 on #020617 (3.77) and no styling hook for it is confirmed.
  */
@@ -19,6 +20,8 @@
 }
 
 .intro,
+.wait-note,
+.fallback-note,
 .loading-text,
 .provider-caption,
 .work-heading,
@@ -41,6 +44,15 @@
   background-color: var(--clg-surface);
   font-weight: 700;
   margin-left: 0.125rem;
+}
+
+.wait-note {
+  margin-top: 0.5rem;
+  text-align: right;
+}
+
+.fallback-note {
+  margin-bottom: 0.5rem;
 }
 
 .loading-state {
