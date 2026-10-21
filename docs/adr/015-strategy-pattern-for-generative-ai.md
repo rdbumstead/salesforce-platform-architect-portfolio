@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Amended 2026-10-20 and 2026-10-21 (see below).
+Accepted. Amended 2026-10-20, 2026-10-21 and again on 2026-10-21 for Round 3 (see below).
 
 ## Context
 
@@ -32,3 +32,17 @@ Requires maintaining standardized response wrappers across AgentforceService, Ge
 - `ContentGenerationController.generateWithoutAgentforce`, used by `PAPIAiGenerate.generate` (`POST /papi/v1/ai/generate`), tries Gemini and then, for cover letters only, the Local Template. It never consults Agentforce. It is the path that reaches a real model.
 
 **Model.** `GeminiService.MODEL` is `gemma-4-31b-it` (Gemma 4 31B through the Gemini API, `Gemini_API` Named Credential; decision 2026-10-20). `gemini-2.0-flash`, the model before, was shut down by Google on 2026-06-01. The key's free tier allows Gemma 4 31B 30 requests per minute, 16,000 tokens per minute and 14,400 requests per day. `GeminiService.generateContent` reports a failure as text starting `Error: Unable to generate content.` or `Exception: ` instead of throwing; `generateWithoutAgentforce` treats such text as a failed attempt.
+
+## Amendment (2026-10-21, Round 3)
+
+**One dispatch replaces both paths.** This supersedes the two-path description in the amendment above.
+
+- `ContentGenerationController.dispatch` is the only provider chain. It tries Agentforce, then Gemini, then the Local Template (cover letters only), and records every attempt with its outcome (`served`, `skipped_off`, `failed`) and elapsed time.
+- **Agentforce is a switch, and the switch is off.** `AgentforceService.isAvailable` reads the `Agentforce` record of the new `AI_Provider_Config__mdt`, which ships with `Enabled__c` false. It is also false when no record exists and for a site guest. Agentforce itself is still not implemented: `AgentforceService.generateContent` throws. So even with the switch on, the dispatch records a failed attempt and Gemini serves. No response names Agentforce unless a real Agentforce call wrote the content.
+- **Gemini** is Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API, with a 20 second callout timeout read from the `Gemini` record.
+- **Local Template** serves cover letters when Gemini fails. Other content types answer 503 `ALL_PROVIDERS_UNAVAILABLE`.
+- `PAPIAiGenerate` (`POST /papi/v1/ai/generate`) calls the dispatch, and its response adds `latencyMs`, `attempts` and `promptShown`.
+- **The cover letter page proxies through the API.** `coverLetterGenerator` calls `ApiLabController.generateCoverLetter`, which posts to `/papi/v1/ai/generate` through the `Portfolio_API` Named Credential with a 60 second timeout. The letter is written by the integration user under the API's validation and its 10 per minute `ai` rate tier, and the site guest needs no AI grant. `generateWithoutAgentforce` is removed, and `generateCoverLetter` on the controller now returns the same result object as the dispatch.
+- **Grounding.** A cover letter prompt carries featured projects and experience highlights from `PortfolioGroundingService`, chosen by keywords from the job. It never includes an email address, a phone number or an owner field, and stays under 8,000 characters.
+- **Show your work.** The page shows the provider and model on a badge read from the response, and a panel the visitor opens to see the fallback flag, latency, the attempts and the prompt that was sent.
+- The metal names for the providers are dropped. The order is first, second and last resort.

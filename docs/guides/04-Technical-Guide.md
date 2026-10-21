@@ -5,7 +5,7 @@
 - [1. Integration Service Implementation](#1-integration-service-implementation)
   - [1.1 GitHub Integration (Live Feed)](#11-github-integration-live-feed)
   - [1.2 Jira Integration (Roadmap)](#12-jira-integration-roadmap)
-  - [1.3 Agentforce Integration (Deferred)](#13-agentforce-integration-deferred)
+  - [1.3 AI Content Generation (Agentforce switch off)](#13-ai-content-generation-agentforce-switch-off)
   - [1.4 System API Security (The "Twin" Pattern)](#14-system-api-security-the-twin-pattern)
 - [2. Frontend (LWR) Component Logic](#2-frontend-lwr-component-logic)
   - [2.1 `c-skill-network` (Visualization)](#21-c-skill-network-visualization)
@@ -50,16 +50,21 @@ All external API calls originate from a secure **Named Credential** accessed via
   - After three consecutive 503 errors, a Circuit Breaker opens for 30 minutes.
   - The user sees a "Roadmap temporarily unavailable" message.
 
-### 1.3 Agentforce Integration (Deferred)
+### 1.3 AI Content Generation (Agentforce switch off)
 
 > [!NOTE]
-> **Agentforce is deferred** (decision 2026-10-02, recorded in the [ADR-015 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-20)). `AgentforceService` is a mock: `AgentforceService.generateContent` returns the fixed string `Agentforce response for: <prompt>`. Nothing in this guide claims Agentforce as a live provider.
+> **Agentforce is not implemented, and its switch ships off** (decision 2026-10-02, [ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)). `AgentforceService.generateContent` throws, so nothing in this guide claims Agentforce as a live provider.
 
-- **Two dispatch paths** ([ADR-015 amendment (2026-10-21)](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21)):
-  - `ContentGenerationController.generateCoverLetter`, the `@AuraEnabled` method behind the site's cover-letter page, keeps its original chain with Agentforce first (decision 2026-10-20). `AgentforceService.isAvailable` always returns true, so this method always returns the mock text `Agentforce response for: <prompt>`. **That page shows no live AI content** until Agentforce is built.
-  - `ContentGenerationController.generateWithoutAgentforce`, used by `PAPIAiGenerate.generate` (`POST /papi/v1/ai/generate`), tries Gemini, then, for cover letters only, the Local Template. It never consults Agentforce. This is the path that reaches a real model.
-- **Model:** Gemma 4 31B (`gemma-4-31b-it`, `GeminiService.MODEL`) through the Gemini API and the `Gemini_API` Named Credential. The key's free tier allows 30 requests per minute, 16,000 tokens per minute and 14,400 requests per day for this model; `/ai/generate` is also limited to 10 requests per minute by the `papi-ai` tier. When the Gemini API refuses or fails, a cover letter falls back to `LocalTemplateService` and other types answer 503 `ALL_PROVIDERS_UNAVAILABLE`.
-- **Design retained for later:** an Agent Topic grounded on `Project__c` with "Mirror Mode" system instructions. It is not built.
+- **One dispatch.** `ContentGenerationController.dispatch` tries Agentforce, then Gemini, then the Local Template (cover letters only), and records every attempt with its outcome and elapsed time.
+  - Agentforce is consulted only when `AgentforceService.isAvailable` is true: the `Agentforce` record of `AI_Provider_Config__mdt` has `Enabled__c` set, and the running user is not a site guest. The record ships with `Enabled__c` false. Switching it on today only adds a failed attempt, because the class throws.
+  - Gemini is Gemma 4 31B (`gemma-4-31b-it`, `GeminiService.MODEL`) through the Gemini API and the `Gemini_API` Named Credential, with a 20 second callout timeout from the `Gemini` record. `GeminiService` reports a failure as text starting `Error: Unable to generate content.` or `Exception: `, which the dispatch treats as a failed attempt.
+  - The Local Template serves a cover letter when Gemini fails. Other content types answer 503 `ALL_PROVIDERS_UNAVAILABLE`.
+- **Callers.** `PAPIAiGenerate.generate` (`POST /papi/v1/ai/generate`) calls the dispatch and returns `provider`, `model`, `fallbackOccurred`, `latencyMs`, `attempts` and `promptShown`. The site's cover letter page (`coverLetterGenerator`) calls `ApiLabController.generateCoverLetter`, which posts to that endpoint through the `Portfolio_API` Named Credential with a 60 second timeout. So the page runs the same dispatch as the integration user, under the `papi-ai` tier of 10 requests per minute, and the guest has no AI grant.
+- **Limits.** The Gemini key's free tier allows Gemma 4 31B 30 requests per minute, 16,000 tokens per minute and 14,400 requests per day.
+- **Grounding.** `PortfolioGroundingService` adds featured projects and experience highlights to a cover letter prompt, ranked by keywords from the job title and description. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and caps the JSON at 8,000 characters (about 2,000 tokens).
+- **Show your work.** The page's badge shows the provider and model from the response. A panel the visitor opens shows the fallback flag, the round trip and generation time, the attempts and the prompt that was sent. The panel is built in Apex and the component, not by asking the model to reveal its prompt.
+- **Footer.** `ContentGenerationController.providerStatus()` returns each provider's switch and state (`on`, `off`, `not built`) for the Round 4 footer.
+- **Not built:** a real Agentforce provider and the hourly budget it needs (`Hourly_Budget__c` is in the config but not read yet).
 
 ### 1.4 System API Security (The "Twin" Pattern)
 

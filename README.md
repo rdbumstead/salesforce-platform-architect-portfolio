@@ -32,7 +32,7 @@ Principal-level Salesforce Platform Architecture including:
 - **Multi-Cloud Design** — LWR + AWS Lambda BFF with $0.00-forever architecture.
 - **DevOps Maturity** — Delta deployments, automated quality gates, and JWT-based CI/CD.
 - **Contract-First APIs** — OpenAPI 3.0 specs proving Salesforce/MuleSoft parity.
-- **Applied AI Governance** — Strategy-pattern inference pipeline on `POST /papi/v1/ai/generate` (Gemma 4 31B through the Gemini API → deterministic Local Template). Agentforce is deferred, and the site's cover-letter page returns the Agentforce mock text until it is built.
+- **Applied AI Governance**: one provider dispatch behind `POST /papi/v1/ai/generate` (Gemma 4 31B through the Gemini API, then a deterministic Local Template), with cover letters grounded on portfolio records. The site's cover letter page reaches it through the API proxy and shows which provider wrote each letter. Agentforce is a switch that ships off and is not implemented.
 - **Observability** — Real-time Glass Box telemetry and constraint-aware monitoring.
 
 ### Portfolio Overview
@@ -58,7 +58,7 @@ Principal-level Salesforce Platform Architecture including:
 | **API Design & Contract-First** | Twin API Pattern with OpenAPI 3.0          | [SAPI Specification](packages/integration-api/specs/salesforce-sapi.yaml) • [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md) • [`scripts/api-smoke.sh`](scripts/api-smoke.sh)           | Review spec vs. Apex parity; run the [evaluator curl flow](#evaluator-curl-flow): a token from `POST /papi/v1/auth/token`, then every GET path ([ADR-028](docs/adr/028-evaluator-access-via-token-vending.md)) |
 | **Enterprise DevOps & CI/CD**   | Delta deployments with quality gates       | [GitHub Actions Workflows](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) • [ADR-006](docs/adr/006-jwt-bearer-flow-for-ci-cd.md)                                         | Check pipeline badges and deployment history                                                                                                                                                                   |
 | **Multi-Cloud Architecture**    | AWS Lambda BFF + Salesforce LWR hybrid     | [Phase 8 Design](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---2027-2028) • [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)                      | Review FinOps strategy and dual-door pattern                                                                                                                                                                   |
-| **AI/ML Governance**            | Strategy-pattern failover, Gemini → Local  | [AI Strategy Section](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) • [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                                        | Review the dispatcher and failover logic (Agentforce deferred)                                                                                                                                                 |
+| **AI/ML Governance**            | One dispatch, Gemini then Local            | [AI Strategy Section](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) • [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                                        | Review the dispatch and failover logic (Agentforce switch off)                                                                                                                                                 |
 | **Security Architecture**       | Zero Trust with Guest User restrictions    | [Data Security Matrix](docs/guides/03-SAS.md#46-data-security-matrix) • [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md) • [ADR-027](docs/adr/027-platform-native-api-authentication.md) | Examine FLS, guest restrictions, and OAuth client-credentials auth                                                                                                                                             |
 | **Resilience Engineering**      | Circuit breaker pattern with degraded mode | [Contingency Plans](docs/guides/03-SAS.md#8-contingency--rollback-plans) • [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)                                                | Test resilience simulation toggle (live Q1 2027)                                                                                                                                                               |
 | **Performance Optimization**    | Mobile-first with measured LCP targets     | [NFRs Section](docs/guides/03-SAS.md#21-core-nfrs) • [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)                                                                          | Review Lighthouse CI results in Actions                                                                                                                                                                        |
@@ -102,7 +102,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 - [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---2027-2028) — $0.00 forever architecture using AWS Always-Free tier
 - [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs) — LCP < 2.5s with static SVG fallback strategy
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix) — Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
-- [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) — Strategy-pattern failover from the Gemini API to a deterministic Local Template (Agentforce deferred)
+- [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine): one dispatch from the Gemini API to a deterministic Local Template, grounded on portfolio records (Agentforce switch off, not implemented)
 
 **🚧 Available at MVP Launch (Q1 2027):**
 
@@ -198,17 +198,17 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 <details>
 <summary><strong>📖 Glossary of Terms</strong> (Click to expand)</summary>
 
-| Term          | Meaning                                                                                                                   | Status                        |
-| :------------ | :------------------------------------------------------------------------------------------------------------------------ | :---------------------------- |
-| **LWR**       | Lightning Web Runtime — Modern Salesforce frontend framework                                                              | Live at MVP                   |
+| Term          | Meaning                                                                                                                   | Status                          |
+| :------------ | :------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |
+| **LWR**       | Lightning Web Runtime — Modern Salesforce frontend framework                                                              | Live at MVP                     |
 | **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (28 records). |
-| **Dual-Door** | Native Salesforce + External API gateway strategy                                                                         | Door 1: MVP / Door 2: Phase 8 |
-| **FinOps**    | Financial Operations — Cloud cost governance and optimization                                                             | Design complete for Phase 8   |
-| **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live at MVP                   |
-| **RAG**       | Retrieval-Augmented Generation — AI grounding technique                                                                   | Deferred with Agentforce      |
-| **BFF**       | Backend For Frontend — Tailored API layer for UI optimization                                                             | Design complete for Phase 8   |
-| **SAPI**      | System API — Direct data access layer (API-led connectivity)                                                              | Live at MVP                   |
-| **PAPI**      | Process API — Orchestration layer (API-led connectivity)                                                                  | Live at MVP                   |
+| **Dual-Door** | Native Salesforce + External API gateway strategy                                                                         | Door 1: MVP / Door 2: Phase 8   |
+| **FinOps**    | Financial Operations — Cloud cost governance and optimization                                                             | Design complete for Phase 8     |
+| **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live at MVP                     |
+| **RAG**       | Retrieval-Augmented Generation, an AI grounding technique                                                                 | Apex grounding on cover letters |
+| **BFF**       | Backend For Frontend — Tailored API layer for UI optimization                                                             | Design complete for Phase 8     |
+| **SAPI**      | System API — Direct data access layer (API-led connectivity)                                                              | Live at MVP                     |
+| **PAPI**      | Process API — Orchestration layer (API-led connectivity)                                                                  | Live at MVP                     |
 
 </details>
 
@@ -234,7 +234,7 @@ graph LR
     GQL[Salesforce<br/>GraphQL]
     Apex[Apex Runtime]
     DB[(Custom Objects)]
-    AI[Gemini AI<br/>Agentforce deferred]
+    AI[Gemini AI<br/>Agentforce switch off]
     Jira[Jira Cloud API]
     GitHub[GitHub API]
     Lambda[AWS Lambda<br/>Phase 8]
@@ -264,7 +264,7 @@ graph LR
     linkStyle 0,1,2 stroke:#2ECC71,stroke-width:3px;
 ```
 
-> **Diagram Description (for accessibility):** The diagram shows a user connecting to an Experience Cloud LWR site, which routes data requests through either a native Salesforce GraphQL API (Door 1, live in Q1 2027) or an AWS Lambda Polyglot Backend For Frontend (Door 2, design complete, planned 2027-2028). The Apex Runtime handles integrations with Jira, GitHub, and the Gemini AI API (Agentforce is deferred), all backed by custom Salesforce objects.
+> **Diagram Description (for accessibility):** The diagram shows a user connecting to an Experience Cloud LWR site, which routes data requests through either a native Salesforce GraphQL API (Door 1, live in Q1 2027) or an AWS Lambda Polyglot Backend For Frontend (Door 2, design complete, planned 2027-2028). The Apex Runtime handles integrations with Jira, GitHub, and the Gemini AI API (the Agentforce switch is off and Agentforce is not implemented), all backed by custom Salesforce objects.
 
 ---
 
