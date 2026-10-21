@@ -14,6 +14,14 @@ public with sharing class GeminiService implements IAIGenerationService {
    */
   public static final String MODEL = 'gemma-4-31b-it';
 
+  /** Callout timeout when the Gemini config record sets none (PD-D11, 20 s). */
+  public static final Integer DEFAULT_TIMEOUT_MS = 20000;
+
+  /** DeveloperName of this provider's AI_Provider_Config__mdt record. */
+  public static final String CONFIG_NAME = 'Gemini';
+
+  private static final Integer MAX_TIMEOUT_MS = 120000;
+
   @TestVisible
   private static final String ENDPOINT =
     'callout:Gemini_API/v1beta/models/' +
@@ -53,8 +61,24 @@ public with sharing class GeminiService implements IAIGenerationService {
     req.setEndpoint(ENDPOINT);
     req.setMethod('POST');
     req.setHeader('Content-Type', 'application/json');
+    req.setTimeout(timeoutMs());
     req.setBody(JSON.serialize(payload));
     return new Http().send(req);
+  }
+
+  /**
+   * @description Callout timeout: Timeout_Ms__c of the Gemini config record, else 20 s. A
+   *              thinking model often needs more than the 10 s platform default (PD-D11).
+   * @return Integer Timeout in milliseconds, between 1 and 120000.
+   */
+  @TestVisible
+  private static Integer timeoutMs() {
+    Decimal configured = AI_Provider_Config__mdt.getInstance(CONFIG_NAME)
+      ?.Timeout_Ms__c;
+    if (configured == null || configured <= 0) {
+      return DEFAULT_TIMEOUT_MS;
+    }
+    return Math.min(configured.intValue(), MAX_TIMEOUT_MS);
   }
 
   private static String parseResponse(String jsonBody) {
