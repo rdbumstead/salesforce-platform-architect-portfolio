@@ -46,7 +46,7 @@
   - [Appendix G: Accessibility Strategy (A11y)](#appendix-g-accessibility-strategy-a11y)
   - [Appendix H: Deployment Architecture View](#appendix-h-deployment-architecture-view)
   - [Appendix I: Org & Package Structure](#appendix-i-org--package-structure)
-  - [Appendix J: Cloud FinOps Strategy (Phase 8 - Q2 2026)](#appendix-j-cloud-finops-strategy-phase-8---q2-2026)
+  - [Appendix J: Cloud FinOps Strategy (Phase 8 - 2027-2028)](#appendix-j-cloud-finops-strategy-phase-8---2027-2028)
   - [Appendix K: Validation Rules & Logic](#appendix-k-validation-rules--logic)
   - [Appendix L: Reference Artifacts](#appendix-l-reference-artifacts)
   - [Appendix M: Cross-Cutting Pattern - Dual-Door Integration Strategy](#appendix-m-cross-cutting-pattern---dual-door-integration-strategy)
@@ -126,11 +126,11 @@ Live MVP (Door 1)
 - Apex REST services
 - Direct integrations (GitHub, Jira via Named Credentials)
 
-Phase 8 – Q2 2026 (Design Complete)
+Phase 8 – 2027-2028 (Design Complete)
 
-| Phase       | Status                                       | Rationale                                                               |
-| :---------- | :------------------------------------------- | :---------------------------------------------------------------------- |
-| **Phase 8** | **Design Complete • Implementation Q2 2026** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
+| Phase       | Status                                         | Rationale                                                               |
+| :---------- | :--------------------------------------------- | :---------------------------------------------------------------------- |
+| **Phase 8** | **Design Complete • Implementation 2027-2028** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
 
 - AWS Lambda Polyglot Gateway (Function URL) — "Door 2"
 - Enterprise API governance layer
@@ -233,7 +233,7 @@ The architecture is designed to operate within the specific limits of the Salesf
 - **Injection Attacks:** Mitigated by strict SOQL bind variable usage.
 - **Data Exposure:** Mitigated by enforcing "Guest User" profiles with strict Field Level Security (FLS) and Sharing Rules. Guest users have Read-Only access to specific Custom Objects only.
 - **API Abuse:** Mitigated by read-only endpoints and hardcoded query limits in the SAPI layer.
-- **Service Unavailability (AI):** Mitigated by a "Triple Fallback" Strategy Pattern. Primary (Agentforce) fails over to Secondary (Gemini API), which fails over to Tertiary (Local Metadata Template). This ensures zero "Dead Ends" for the user.
+- **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): on `POST /papi/v1/ai/generate`, a cover letter falls back from the Gemini API to a deterministic Local Template. Agentforce is deferred; `AgentforceService` is a mock, and the site's cover-letter page, which still calls it first, returns the mock text ([ADR-015 amendment (2026-10-21)](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21)).
 
 ## 4. Data Architecture & Schema
 
@@ -351,6 +351,9 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 
 ### 5.4 Pillar D: AI & Innovation (Agentforce)
 
+> [!NOTE]
+> **Agentforce is deferred** (decision 2026-10-02). This section records the target design. Nothing in it is built: `AgentforceService` is a mock that returns a fixed string ([ADR-015 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-20)).
+
 - **Objective:** Demonstrate Hybrid Search (Vector + Keyword) and RAG architecture.
 - **Mechanism:** Agentforce Service Agent grounded on Data 360 DMOs (Data Model Objects) rather than direct CRM objects.
 - **Architecture:**
@@ -361,75 +364,57 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 
 #### 5.4.1 Feature Spotlight: Generative Cover Letter Engine
 
-To demonstrate practical Application of RAG (Retrieval-Augmented Generation), the portfolio includes a functional tool for recruiters.
+> [!IMPORTANT]
+> **As built, the site's cover-letter page shows no live AI content.** Its Apex entry point, `ContentGenerationController.generateCoverLetter`, keeps its original chain with Agentforce first (decision 2026-10-20). `AgentforceService.isAvailable` always returns true and `AgentforceService.generateContent` returns the mock text `Agentforce response for: <prompt>`, so that page returns the mock until Agentforce is built. The path that reaches a real model is the API: `POST /papi/v1/ai/generate` ([ADR-015 amendment (2026-10-21)](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21)).
+
+The target design, kept for when Agentforce is built:
 
 - **The Concept:** Instead of a static "About Me," recruiters input their Company Name and Job Title. The system generates a custom cover letter explaining why this specific candidate matches that specific role.
 - **The Architecture:**
   - **Input Layer:** LWC Form (`c-cover-letter-generator`) captures context (e.g., "Senior Architect", "Financial Services").
-  - **Retrieval Layer:** Agentforce Topic executes a SOQL query against `Project__c` and `Experience__c` to find records matching the input keywords.
+  - **Retrieval Layer:** Agentforce Topic executes a SOQL query against `Project__c` and `Experience__c` to find records matching the input keywords. Deferred, not built.
   - **Generation Layer:** The LLM synthesizes the retrieved project data into a 3-paragraph professional narrative.
-  - **Generation Strategy**
-    - To demonstrate high availability, the generation layer utilizes an Apex interface (IAIGenerationService) with a dispatcher implementing the Strategy Pattern.
-      - **Path 1 (Gold):** Agentforce Service Agent (Data 360 Grounding).
-      - **Path 2 (Silver):** Google Gemini Flash 1.5 API (Fallback if Path 1 times out > 2s).
-      - **Path 3 (Bronze):** Deterministic Local Template (Metadata Fallback if API blackout).
+
+**Generation strategy as built.** Providers implement `IAIGenerationService` (`generateContent`, `isAvailable`). Two dispatch methods exist on `ContentGenerationController`:
+
+| Method                      | Caller                                                  | Chain                                                                                       | Result today                                                            |
+| :-------------------------- | :------------------------------------------------------ | :------------------------------------------------------------------------------------------ | :---------------------------------------------------------------------- |
+| `generateCoverLetter`       | Site cover-letter page (`@AuraEnabled`)                 | Agentforce (mock) → Gemini → Local Template                                                 | Always the Agentforce mock text                                         |
+| `generateWithoutAgentforce` | `PAPIAiGenerate.generate` (`POST /papi/v1/ai/generate`) | Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API → Local Template (cover letters only) | Gemma output, or the local template, or 503 `ALL_PROVIDERS_UNAVAILABLE` |
+
+No circuit breaker is built; each request tries the chain in order. `GeminiService.generateContent` reports a failure as text starting `Error: Unable to generate content.` or `Exception: `, which `generateWithoutAgentforce` treats as a failed attempt.
 
 <details>
 <summary>Click to view Sequence Diagram</summary>
 
-> _What This Code Does: This sequence diagram illustrates the "Strategy Pattern" dispatcher logic. It shows how the system attempts the Gold Path (Agentforce) first, fails over to Sliver (Gemini) if necessary, and finally falls back to the Bronze (Local Template) if all APIs are offline._
+> _What This Diagram Shows: the `/papi/v1/ai/generate` dispatch as built. Agentforce is never consulted on this path._
 
 ```mermaid
 sequenceDiagram
-    participant UI as LWC
+    participant Client as API caller
+    participant API as PAPIAiGenerate
     participant Dispatcher as ContentGenerationController
-    participant CB1 as CircuitBreaker Agentforce
-    participant CB2 as CircuitBreaker Gemini
-    participant Agentforce
-    participant Gemini
+    participant Gemini as GeminiService (gemma-4-31b-it)
     participant Local as LocalTemplateService
 
-    UI->>Dispatcher: generate(prompt, context)
-    Dispatcher->>CB1: allowRequest()?
-
-    alt Circuit 1 Closed Healthy
-        Dispatcher->>Agentforce: generate()
-        alt Success
-            Agentforce-->>Dispatcher: AIResponseWrapper success agentforce content 850ms
-            Dispatcher-->>UI: Return Path 1 Gold
-        else Timeout/Error
-            Agentforce-->>Dispatcher: Exception
-            CB1->>CB1: recordFailure()
-            Note over Dispatcher: Failover to Path 2
-        end
-    else Circuit 1 Open Broken
-        Note over Dispatcher: Skip Agentforce
-    end
-
-    opt If Path 1 Failed or Skipped
-        Dispatcher->>CB2: allowRequest()?
-        alt Circuit 2 Closed Healthy
-            Dispatcher->>Gemini: generate()
-            alt Success
-                Gemini-->>Dispatcher: AIResponseWrapper success gemini content 1200ms
-                Dispatcher-->>UI: Return Path 2 Silver
-            else Timeout/Error
-                Gemini-->>Dispatcher: Exception
-                CB2->>CB2: recordFailure()
-                Note over Dispatcher: Failover to Path 3
-            end
-        else Circuit 2 Open Broken
-            Note over Dispatcher: Skip Gemini
+    Client->>API: POST /papi/v1/ai/generate
+    API->>Dispatcher: generateWithoutAgentforce(prompt, context, localAllowed)
+    Dispatcher->>Gemini: generateContent()
+    alt Usable text
+        Gemini-->>Dispatcher: content
+        Dispatcher-->>API: provider Gemini
+    else Error text or exception
+        Gemini-->>Dispatcher: failure
+        alt CoverLetter
+            Dispatcher->>Local: generateContent()
+            Local-->>Dispatcher: template text
+            Dispatcher-->>API: provider Local, fallbackOccurred true
+        else Other types
+            Dispatcher-->>API: ContentGenerationException
+            API-->>Client: 503 ALL_PROVIDERS_UNAVAILABLE
         end
     end
-
-    opt If Path 2 Failed or Skipped
-        Dispatcher->>Local: generate()
-        Local-->>Dispatcher: AIResponseWrapper fallback local_template content 0ms
-        Dispatcher-->>UI: Return Path 3 Bronze
-        Note over UI: Display Offline Mode Badge
-        Note over Dispatcher: Log GA4 Event ai_fallback_usage
-    end
+    API-->>Client: 200 content, provider, model, X-AI-Provider
 ```
 
 </details>
@@ -536,6 +521,9 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 
 ### 8.2 Agentforce Unavailable
 
+> [!NOTE]
+> Agentforce is deferred and not built (decision 2026-10-02), so this scenario cannot occur in the current release. It is kept for when the deferral ends.
+
 - **Symptom:** Agentforce Service Agent fails to load or returns generic errors (common in some **Developer Edition** regions).
 - **Detection:** `<agentforce-service-agent>` LWC fails to render during manual testing.
 - **Mitigation:**
@@ -546,7 +534,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 ### 8.3 API Rate Limit Exhaustion
 
 - **Symptom:** GitHub Commits or Portfolio API returns status 429.
-- **Mitigation:** System automatically serves cached responses from `GitHub_Cache__c` (Custom Setting) indefinitely until the limit resets.
+- **Mitigation (GitHub):** System automatically serves cached responses from `GitHub_Cache__c` (Custom Setting) indefinitely until the limit resets.
+- **Mitigation (Portfolio API):** the 429 comes from `RateWindowLimiter` (SAPI 120, PAPI 15, `/ai/*` 10 requests per minute per caller key). The caller waits for `Retry-After`, which is the seconds left in the current minute ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)).
 
 ### 8.4 Resilience Simulation Operations
 
@@ -592,7 +581,7 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 
 **Purpose:** Provides direct access to Salesforce core objects with minimal transformation.
 
-**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/sapi/v1`
+**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/apexrest/sapi/v1` (My Domain; Bearer-token callers use the `instance_url` returned with their token)
 
 **Version:** 1.3.0
 
@@ -665,13 +654,13 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Purpose:** Orchestration layer that aggregates and transforms SAPI data for optimized frontend consumption.
 
-**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1`
+**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/apexrest/papi/v1` (My Domain). `POST /auth/token` alone is served on the site domain: `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.
 
 **Version:** 1.3.0
 
 **Layer Classification:** Process API (API-led connectivity pattern, implemented on-platform in Apex REST; see [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md))
 
-**Security:** Same OAuth 2.0 Client Credentials scheme as SAPI ([ADR-027](../adr/027-platform-native-api-authentication.md)). `/health` and `/auth/token` are the only unauthenticated paths.
+**Security:** Same OAuth 2.0 Client Credentials scheme as SAPI ([ADR-027](../adr/027-platform-native-api-authentication.md)). `/auth/token` is the only unauthenticated path; the guest user may execute `PAPIAuthToken` and no other REST class ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
 
 **Key Design Principles:**
 
@@ -682,15 +671,15 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Core Endpoints:**
 
-| Endpoint              | Purpose                                                                               | Upstream SAPI Calls                                                                                                     | Benefit                                                                        |
-| :-------------------- | :------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------- |
-| `/profile/full`       | Complete portfolio hydration                                                          | 10+ endpoints (Config, Skills, Tests, etc.)                                                                             | **Single Request** loads entire app state                                      |
-| `/profile/summary`    | Employment profile only                                                               | 5 (Contact, Experience, Skills, Certifications, Education)                                                              | Lightweight profile for resume generation                                      |
-| `/resume/generate`    | ATS-optimized plain text resume                                                       | 3 (Experience, Experience Highlights filtered by persona, Skills)                                                       | Server-side text formatting eliminates client complexity                       |
-| `/projects/featured`  | Enriched project showcase                                                             | 3 (Projects, Project Assets, Project Skills)                                                                            | Pre-joined data structure eliminates N+1 query problem                         |
-| `/testimonials/feed`  | Curated social proof                                                                  | 1 (Testimonials with Vibe Mode filter)                                                                                  | Server-side filtering ensures brand consistency                                |
-| `/ai/generate` (POST) | Generative content (cover letter, bio, skill blurb)                                   | Strategy dispatcher: Agentforce → Gemini → Local Template ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)) | Triple-fallback resilience; `ai` rate tier (10 req/min)                        |
-| `/auth/token` (POST)  | Evaluator token vending ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)) | Server-side client-credentials exchange via `Portfolio_API` Named Credential                                            | External reviewers can `curl` the APIs without ever seeing the consumer secret |
+| Endpoint              | Purpose                                                                               | Upstream SAPI Calls                                                                                                                                                                                             | Benefit                                                                        |
+| :-------------------- | :------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------- |
+| `/profile/full`       | Complete portfolio hydration                                                          | 10+ endpoints (Config, Skills, Tests, etc.)                                                                                                                                                                     | **Single Request** loads entire app state                                      |
+| `/profile/summary`    | Employment profile only                                                               | 5 (Contact, Experience, Skills, Certifications, Education)                                                                                                                                                      | Lightweight profile for resume generation                                      |
+| `/resume/generate`    | ATS-optimized plain text resume                                                       | 3 (Experience, Experience Highlights filtered by persona, Skills)                                                                                                                                               | Server-side text formatting eliminates client complexity                       |
+| `/projects/featured`  | Enriched project showcase                                                             | 3 (Projects, Project Assets, Project Skills)                                                                                                                                                                    | Pre-joined data structure eliminates N+1 query problem                         |
+| `/testimonials/feed`  | Curated social proof                                                                  | 1 (Testimonials with Vibe Mode filter)                                                                                                                                                                          | Server-side filtering ensures brand consistency                                |
+| `/ai/generate` (POST) | Generative content (cover letter, bio, skill blurb)                                   | `generateWithoutAgentforce`: Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API → Local Template for cover letters ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)); Agentforce never consulted | Real model output with a deterministic fallback; `ai` rate tier (10 req/min)   |
+| `/auth/token` (POST)  | Evaluator token vending ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)) | Server-side client-credentials exchange via `Portfolio_API` Named Credential                                                                                                                                    | External reviewers can `curl` the APIs without ever seeing the consumer secret |
 
 **Transformation Examples:**
 
@@ -773,11 +762,11 @@ Complete OpenAPI specifications available in repository:
 
 Authentication is platform-native on both sides of the API boundary ([ADR-027](../adr/027-platform-native-api-authentication.md)); external reviewers obtain short-lived tokens through a vending endpoint ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
 
-| Side                    | Construct                                                                             | Role                                                                                                               |
-| :---------------------- | :------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------- |
-| **Provider (inbound)**  | External Client App, OAuth 2.0 Client Credentials flow                                | Issues Bearer tokens; runs API calls as a dedicated integration user holding only `Integration_Access` (read-only) |
-| **Consumer (outbound)** | External Credential (Client Credentials principal) + `Portfolio_API` Named Credential | Holds the consumer key/secret in the platform vault; used by the API Lab proxy and the PAPI health check           |
-| **Evaluator**           | `POST /papi/v1/auth/token` (`PAPIAuthToken`)                                          | Only REST class the guest user may execute; performs the exchange server-side and returns a short-lived token      |
+| Side                    | Construct                                                                             | Role                                                                                                                                                                                                                 |
+| :---------------------- | :------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Provider (inbound)**  | External Client App, OAuth 2.0 Client Credentials flow                                | Issues Bearer tokens; runs API calls as a dedicated integration user holding only `Integration_Access` (read-only)                                                                                                   |
+| **Consumer (outbound)** | External Credential (Client Credentials principal) + `Portfolio_API` Named Credential | Holds the consumer key/secret in the platform vault; used by the API Lab proxy and the PAPI health check                                                                                                             |
+| **Evaluator**           | `POST /papi/v1/auth/token` (`PAPIAuthToken`) + `Portfolio_API_Token` Named Credential | Only REST class the guest user may execute; `TokenExchangeService` performs the exchange server-side with the `Portfolio_API_Token_Auth` principal's `Client_Id` and `Client_Secret` and returns a short-lived token |
 
 > _What this diagram shows: the three ways a request reaches the APIs. The secret never leaves the org; the only thing that crosses the browser boundary is an expiring Bearer token._
 
@@ -786,7 +775,7 @@ sequenceDiagram
     participant Reviewer as External Reviewer (curl)
     participant LWC as c-api-tester (Guest)
     participant Proxy as ApiLabController / PAPIAuthToken
-    participant NC as Portfolio_API Named Credential
+    participant NC as Portfolio_API or Portfolio_API_Token Named Credential
     participant ECA as External Client App (token endpoint)
     participant API as SAPI / PAPI (Apex REST, run-as Integration User)
 
@@ -809,10 +798,12 @@ sequenceDiagram
 1. **Least privilege:** a client-credentials token is valid for any REST API as the integration user, so the integration user's permission set is the real boundary: read-only on portfolio objects, execute on SAPI/PAPI classes, nothing else.
 2. **Expiry:** the integration user runs under a profile with a 30-minute session timeout.
 3. **Kill switch:** deactivating the External Client App revokes every outstanding token.
-4. **Quota protection:** rate limiting per [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md) plus a daily cap on issued tokens guards the Developer Edition API request limit (15,000/day).
+4. **Quota protection:** rate limiting by `RateWindowLimiter` ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)), 15 token requests per minute per email and source IP, and a daily cap on issued tokens (`Token_Daily_Cap__c`, default 50) guard the Developer Edition API request limit (15,000/day).
 5. **Audit:** every token request writes an `API_Access_Request__c` record.
 
 **Evaluator flow:**
+
+The token request goes to the Experience Cloud site domain, where Apex REST is served to the guest user under `/portfoliovforcesite/services/apexrest/`. Every other call goes to My Domain, at the `instance_url` returned with the token. [`scripts/api-smoke.sh`](../../scripts/api-smoke.sh) runs the whole flow against every GET path in both specifications.
 
 ```bash
 # 1. Request a token (no credentials required)
@@ -820,15 +811,22 @@ curl -s -X POST "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforc
   -H "Content-Type: application/json" -H "X-Request-Id: $(uuidgen)" \
   -d '{"email":"you@example.com","purpose":"Evaluating API design"}'
 
-# 2. Call any endpoint with the returned token
-curl -s "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/sapi/v1/skills?limit=5" \
+# 2. Call any endpoint on the returned instance_url with the returned token
+curl -s "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
   -H "Authorization: Bearer <access_token>" -H "X-API-Version: v1" -H "X-Request-Id: $(uuidgen)"
 ```
+
+```bash
+# Or run every GET path and print status and key headers per path
+EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scripts/api-smoke.sh
+```
+
+**Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in the Round 2 integration scratch org, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. [unverified] Whether an authenticated PAPI response to a request without an id then carries one id or two (the platform's and the UUID Apex generates) is not yet established; check it in the first live smoke. Send your own UUID to get a single, predictable id back.
 
 ### Appendix C: MuleSoft Code, Governance, & Proxy Configuration (Reference)
 
 > [!NOTE]
-> This architecture represents the "Ideal Enterprise State" designed during the Anypoint Platform trial period (November 2025). While the live deployment has expired, the design artifacts, source code, and policy configurations remain as reference implementations demonstrating enterprise API governance practices. The Apex REST implementation functions as a runtime twin within Salesforce.
+> This architecture represents the "Ideal Enterprise State" designed during the Anypoint Platform trial period (November 2025). The live deployment has expired, and the Anypoint Studio project (`packages/integration-api/AnypointStudio`) was removed from the repository on 2026-10-20; it remains in the git history before that change. The design and policy configuration below are kept as a reference for enterprise API governance practice. The Apex REST implementation is the only runtime.
 >
 > **Superseded controls (2026-10-01):** the Client ID Enforcement policy (C.2 §1) and the `client_id`/`client_secret` CORS headers (C.2 §3) are replaced on-platform by OAuth 2.0 Client Credentials via an External Client App ([ADR-027](../adr/027-platform-native-api-authentication.md)). SLA-based rate limiting (C.2 §2) is enforced in Apex per [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md). This appendix is retained as the reference design it was, not as the current control set.
 
@@ -1029,12 +1027,12 @@ Apex → Named Credential → External APIs (Jira/GitHub).
 Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 - `/packages/portfolio-site`: Configurations, declarative, and programmatic resources focused on adding features to the Salesforce Architect Portfolio
-- `/packages/integration-api`: REST resources including Anypoint Studio project files, Anypoint Studio jar files, API specifications, and Salesforce Apex Classes for REST APIs including SAPI and PAPI.
+- `/packages/integration-api`: the OpenAPI specifications (`specs/`), the Apex REST classes for the SAPI and PAPI, and the integration user's profile.
 - `/packages/shared-modules`: Shared modules reusable across packages, for example lightning web components use across the portfolio-site and integration-api focused lightning web components.
 - `/packages/demos/employer-hub`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on building a centralized hub for employers.
 - `/packages/demos/nonprofit-literacy`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on the implementation of nonprofit success pack and the program management module including business analysis on several products including Salesforce Education Cloud.
 
-### Appendix J: Cloud FinOps Strategy (Phase 8 - Q2 2026)
+### Appendix J: Cloud FinOps Strategy (Phase 8 - 2027-2028)
 
 - **FinOps Strategy:** Refer to **[Guardrails & Executable Governance: AWS FinOps & Serverless Guardrails](./06-Guardrails-and-Executable-Governance.md#3-aws-finops--serverless-guardrails-phase-8)** for the detailed cost governance model ($0.00 Forever architecture).
 
@@ -1048,19 +1046,15 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 ### Appendix L: Reference Artifacts
 
-- Exchange Portal Screenshot: `/docs/mulesoft/exchange-portal.png`
-- API Manager Policies: `/docs/mulesoft/api-manager-policies.png`
-- SLA Configuration: `/docs/mulesoft/sla-tiers.png`
-- Analytics Dashboard: `/docs/mulesoft/analytics-dashboard.png`
-- OpenAPI Specification: `/mulesoft/src/main/resources/api/salesforce-sapi.yaml`
-- Mule Flow XML: `/mulesoft/src/main/mule/*.xml`
-- DataWeave Queries: `/mulesoft/src/main/resources/queries/*.dwl`
+- OpenAPI Specifications: `packages/integration-api/specs/salesforce-sapi.yaml` and `packages/integration-api/specs/portfolio-papi.yaml`
+- Rendered API documentation: `docs/api/oas/`
+- MuleSoft artifacts (Mule flows, DataWeave, Exchange and API Manager material) from the November 2025 Anypoint trial are no longer in the repository (see Appendix C).
 
 ### Appendix M: Cross-Cutting Pattern - Dual-Door Integration Strategy
 
 | Feature               | Door 1 — Native Salesforce GraphQL (lightning/uiGraphQLApi) | Door 2 — AWS Lambda Polyglot BFF (Function URL)         |
 | :-------------------- | :---------------------------------------------------------- | :------------------------------------------------------ |
-| **Timeline**          | MVP – Q1 2027 (planned)                                     | Phase 8 – Q2 2026 (design complete)                     |
+| **Timeline**          | MVP – Q1 2027 (planned)                                     | Phase 8 – 2027-2028 (design complete)                   |
 | **Primary Consumers** | All internal LWC components (Skill Graph, Roadmap)          | API Lab "Enterprise Mode", future mobile apps           |
 | **Technology**        | lightning/uiGraphQLApi wire adapter                         | Single Lambda Function URL + in-function governance     |
 | **Latency**           | Lowest possible (LDS + UI cache)                            | Single external round-trip                              |

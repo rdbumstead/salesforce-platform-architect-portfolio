@@ -81,17 +81,22 @@ openssl req -new -key portfolio.key -x509 -days 400 -out portfolio.crt
 
 ### 1.2 External Client App Secret Rotation
 
-The portfolio APIs authenticate with OAuth 2.0 Client Credentials issued by the **Portfolio API** External Client App ([ADR-027](../adr/027-platform-native-api-authentication.md)). The consumer secret lives only in the `Portfolio_API` External Credential principal.
+The portfolio APIs authenticate with OAuth 2.0 Client Credentials issued by the **Portfolio API** External Client App ([ADR-027](../adr/027-platform-native-api-authentication.md)). The consumer secret lives in the External Client App and in **two** External Credential principals:
+
+- `Portfolio_API_Principal` of `Portfolio_API_Auth` (OAuth), used by the `Portfolio_API` Named Credential for the API Lab proxy and the `PAPIHealth` credential check;
+- `Portfolio_API_Token_Principal` of `Portfolio_API_Token_Auth` (Custom), whose `Client_Id` and `Client_Secret` parameters `TokenExchangeService.exchangeToken` sends to the token endpoint to vend evaluator tokens ([ADR-028 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21)).
 
 - **Rotation Schedule:** every 90 days, or immediately on suspected exposure.
-- **Blast radius:** rotating the secret invalidates the Named Credential principal only; tokens already issued keep working until their 30-minute session expires.
+- **Blast radius:** rotating the secret invalidates both principals until they are updated; tokens already issued keep working until their 30-minute session expires.
 
 **Procedure**
 
 1. Setup → **External Client App Manager** → **Portfolio API** → **Settings** → **OAuth Settings** → **Consumer Key and Secret** → **Rotate** (or **Regenerate**). Copy the new secret once.
-2. Setup → **Named Credentials** → **External Credentials** → **Portfolio_API_Auth** → principal **Integration** → **Edit** → paste the new secret → **Save**.
-3. Verify: open the site's API Lab and run `GET /papi/v1/health`; the response must show `dependencies.credential: UP`.
-4. Record the rotation date in the `Portfolio_Config__mdt` `Last_Secret_Rotation__c` field (added with the API foundation release).
+2. Setup → **Named Credentials** → **External Credentials** → **Portfolio_API_Auth** → principal **Portfolio_API_Principal** → **Edit** → paste the new secret → **Save**.
+3. Setup → **Named Credentials** → **External Credentials** → **Portfolio_API_Token_Auth** → principal **Portfolio_API_Token_Principal** → **Edit** → set the `Client_Secret` parameter to the new secret (and `Client_Id`, if the consumer key changed) → **Save**.
+4. Verify the outbound credential: call `GET /papi/v1/health` (from the site's API Lab, or with a Bearer token) and check `dependencies.credential` is `UP`. `PAPIHealth.checkCredential` makes one GET through `Portfolio_API` to `/sapi/v1/health` and reports `UP` only on HTTP 200; on failure `details.credential` holds the HTTP status or exception type. It needs the caller to have principal access to `Portfolio_API_Auth-Portfolio_API_Principal` (granted to the integration user by `Integration_Access`).
+5. Verify token vending: run `scripts/api-smoke.sh` with your own email; the token request must return 200.
+6. Record the rotation date in `Portfolio_Config__mdt.Ryan_Bumstead.Last_Secret_Rotation__c`.
 
 **Revocation (kill switch)**
 
@@ -165,7 +170,7 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 
 - **Symptom:** PMD Scan or Health Check fails due to "Guest User Open Access".
 - **Mitigation:**
-  1. **Immediate Rollback:** Revert `force-app/main/default/permissionsets/Guest_User.permissionset-meta.xml` to the previous commit.
+  1. **Immediate Rollback:** Revert the guest permission set `Portfolio_Guest` (`packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`) to the previous commit. It must grant only class access to `PAPIAuthToken` and `ApiLabController`, the two External Credential principals and read on `UserExternalCredential`.
   2. **Nuke & Rebuild:** If unsure, delete the Permission Set from the org (`sf project delete source`) and redeploy the `main` branch version.
 
 ### 4.3 Scenario: GitHub Rate Limit Exhaustion
@@ -177,27 +182,19 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 - **Symptom:** spike in `API_Access_Request__c` records, `429`/`503` responses from `/papi/v1/auth/token`, or Developer Edition API request usage trending toward the 15,000/day limit (Setup → System Overview).
 - **Immediate mitigation:**
   1. Deactivate the **Portfolio API** External Client App (see §1.2). All issued tokens die.
-  2. Lower `Token_Daily_Cap__c` in `Portfolio_Config__mdt` (default 50) or set it to 0 to pause vending.
-- **Recovery:** rotate the secret (§1.2), review the audit rows for the offending email/IP, reactivate the app, restore the cap.
+  2. Lower `Token_Daily_Cap__c` on the `Ryan_Bumstead` `Portfolio_Config__mdt` record (default 50 when blank) or set it to 0 to pause vending: `TokenExchangeService.dailyCap` reads it and a cap of 0 answers every token request with 503.
+- **Reading the audit trail:** `API_Access_Request__c` rows (one per token attempt) and the daily cap count are readable by users holding `Portfolio_Admin`, which grants read and View All on `API_Access_Request__c` and `API_Rate_Window__c` and read on their fields. Without it the fields are not readable, so reports and SOQL fail.
+- **Recovery:** rotate the secret (§1.2), review the audit rows (`Email__c`, `Source_IP__c`, `Outcome__c`, `Channel__c`) for the offending email/IP, reactivate the app, restore the cap.
+- **Per-caller limits already in place:** 15 token requests per minute per email and source IP, and the PAPI tier limits (`RateWindowLimiter`, [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)).
 - **Why this is enough:** tokens run as the integration user, whose only permissions are read-only on public portfolio data. The asset at risk is the API quota, not the data.
 
 ## 5. Observability & Monitoring
 
-### 5.1 Quota Monitoring (Automated)
+### 5.1 Quota Monitoring (Not Built)
 
-- Scheduled Apex Job runs at 23:00 UTC.
-- Logic: Checks `local.AIMetrics`.
-- Alert: Emails `Owner_Email__c` if Gemini usage > 1,000 requests.
+The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed the owner above a threshold. **It is not built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
 
-```apex
-// Check Org Cache for Gemini usage
-Cache.Org orgCache = Cache.Org.getPartition('local.AIMetrics');
-Integer todayCount = (Integer) orgCache.get('GeminiDailyCount_' + System.today().format());
-
-if (todayCount != null && todayCount > 1200) {
-    Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
-    mail.setToAddresses(new String[]{ Portfolio_Config__mdt.getInstance('Default').Owner_Email__c });
-    mail.setSubject('Gemini Quota Alert: ' + todayCount + ' requests today');
-    Messaging.sendEmail(new Messaging.SingleEmailMessage[]{ mail });
-}
-```
+- The Gemini API key's own limits for Gemma 4 31B: 30 requests per minute, 16,000 tokens per minute, 14,400 requests per day (AI Studio). Past them, `/papi/v1/ai/generate` falls back to the local template for cover letters and answers 503 `ALL_PROVIDERS_UNAVAILABLE` otherwise.
+- The `papi-ai` rate tier, 10 requests per minute per caller (`RateWindowLimiter`).
+- The audit object `API_Access_Request__c` for evaluator token requests.
+- Setup → System Overview for the org's daily API request usage (15,000 per day in Developer Edition).

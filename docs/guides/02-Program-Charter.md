@@ -54,7 +54,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - Skill Graph, Roadmap, and Project Gallery all use native wire adapter for sub-250 ms LCP
 - No external dependencies required
 
-#### Target Enterprise State – Phase 8 (Q2 2026) – _Design Complete / Implementation Deferred_
+#### Target Enterprise State – Phase 8 (2027-2028) – _Design Complete / Implementation Deferred_
 
 - AWS Lambda Polyglot Gateway (Function URL) "Door 2" fully designed (see SAS 1.1 & 5.3).
 - Implementation deferred to guarantee on-time MVP launch
@@ -76,7 +76,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and Automated PR Commenting.
 - **External API Integration (GitHub):** Live feed of portfolio repository commits displayed on the site.
 - **External API Integration (Jira):** Live fetch of portfolio roadmap Epics and Stories.
-- **Multi-Cloud Integration patterns using AWS Free Tier (Lambda Function URL, S3, CloudFront) – Phase 8 (Q2 2026) – design complete**
+- **Multi-Cloud Integration patterns using AWS Free Tier (Lambda Function URL, S3, CloudFront) – Phase 8 (2027-2028) – design complete**
 - **Advanced Visualization:** Dynamic Skill Graph using AntV G6 with custom flow animation.
 - **Dynamic ERD Visualizer:** A live-rendered Entity Relationship Diagram utilizing the Schema class and AntV G6 to visualize the actual Org metadata, replacing static architecture diagrams.
 - **Executable Governance:** LWC-based documentation that subscribes to Platform Events to automatically verify its own success criteria (e.g., verifying a "Green Build" checkbox in real-time).
@@ -209,7 +209,7 @@ The delivery is organized into four parallel execution tracks:
 - **System Health Dashboard:** "Glass Box Telemetry" footer.
 - **Smart Documentation:** Implement `c-smart-checklist` using lightning/empApi to listen for Deployment_Event\_\_e and auto-complete governance checklists.
 
-**Phase 8: Multi-Cloud & FinOps – Hybrid GraphQL Strategy (Q2 2026)**
+**Phase 8: Multi-Cloud & FinOps – Hybrid GraphQL Strategy (2027-2028)**
 
 | Phase       | Status                         | Rationale                                                               |
 | :---------- | :----------------------------- | :---------------------------------------------------------------------- |
@@ -220,7 +220,7 @@ _Design artifacts complete; implementation begins post-launch._
 
 - **Native GraphQL Verification:**
   - Confirm `c-skill-network`, `c-roadmap-viewer`, and Project Gallery all use `lightning/uiGraphQLApi`
-- **AWS Lambda Polyglot Gateway:** (Function URL) – "Door 2" – **Designed, not yet implemented** (launching Q2 2026)
+- **AWS Lambda Polyglot Gateway:** (Function URL) – "Door 2" – **Designed, not yet implemented** (planned 2027-2028)
   - Deploy single HTTPS Function URL endpoint (no API Gateway)
   - Support both REST → GraphQL translation and direct GraphQL
   - In-function governance: `x-api-key` validation, tiered rate limiting, CloudWatch metrics
