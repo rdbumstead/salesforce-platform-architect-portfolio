@@ -1219,14 +1219,21 @@ fetch('https://{domain}/services/apexrest/papi/v1/ai/generate',
 
 *Generate AI Content*
 
-Generates content through `PAPIAiGenerate.generate`, which dispatches with
-`ContentGenerationController.generateWithoutAgentforce`.
+Generates content through `PAPIAiGenerate.generate`, which calls the one provider chain,
+`ContentGenerationController.dispatch`.
 
 **Provider chain**:
-1. Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API (`Gemini_API` Named Credential).
-2. Local template (`Local`), CoverLetter only.
+1. Agentforce, only when its switch (`AI_Provider_Config__mdt` record `Agentforce`) is on.
+   It ships off, and the provider is not built yet: a switched-on call fails and the chain
+   moves on, so `provider` is never `Agentforce` today.
+2. Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API (`Gemini_API` Named Credential),
+   with a 20 second timeout.
+3. Local template (`Local`), CoverLetter only.
 
-Agentforce is deferred and never consulted.
+A CoverLetter prompt also carries facts from featured projects and experience highlights,
+chosen by keywords from `role` and `jobDescription`. No email address, phone number or
+owner field is ever included. The API Lab cover letter page calls this endpoint through
+`ApiLabController.generateCoverLetter`.
 
 **Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allows Gemma 4 31B
 30 requests per minute, 16,000 tokens per minute and 14,400 requests per day. When the Gemini API
@@ -1298,7 +1305,21 @@ CoverLetter requires `context.companyName` and `context.role`. Content longer th
   "type": "CoverLetter",
   "tone": "Professional",
   "generatedAt": "2019-08-24T14:15:22Z",
-  "fallbackOccurred": false
+  "fallbackOccurred": false,
+  "latencyMs": 1240,
+  "attempts": [
+    {
+      "provider": "Agentforce",
+      "outcome": "skipped_off",
+      "ms": 0
+    },
+    {
+      "provider": "Gemini",
+      "outcome": "served",
+      "ms": 1236
+    }
+  ],
+  "promptShown": "Write a cover letter for Ryan Bumstead in a professional tone, no longer than 500 characters."
 }
 ```
 
@@ -1393,7 +1414,13 @@ Status Code **200**
 |» type|string|false|none|The requested content type, echoed|
 |» tone|string|false|none|The applied tone, echoed|
 |» generatedAt|string(date-time)|true|none|none|
-|» fallbackOccurred|boolean|false|none|True when the local template served the request|
+|» fallbackOccurred|boolean|false|none|True when the local template served the request or an earlier provider failed|
+|» latencyMs|integer(int64)|true|none|Time the provider chain took, in milliseconds|
+|» attempts|[object]|true|none|Every provider the chain considered, in order, with what happened|
+|»» provider|string|true|none|none|
+|»» outcome|string|true|none|`served` wrote the content, `skipped_off` was switched off or unavailable,<br>`failed` threw or returned no usable text.|
+|»» ms|integer(int64)|true|none|Time spent on this provider, in milliseconds|
+|» promptShown|string¦null|true|none|The prompt sent to the provider that served, as built by Apex, including the<br>portfolio facts for a CoverLetter. Null when the local template served, because<br>it uses no prompt.|
 
 #### Enumerated Values
 
@@ -1401,6 +1428,12 @@ Status Code **200**
 |---|---|
 |provider|Gemini|
 |provider|Local|
+|provider|Agentforce|
+|provider|Gemini|
+|provider|Local|
+|outcome|served|
+|outcome|skipped_off|
+|outcome|failed|
 
 ### Response Headers
 
