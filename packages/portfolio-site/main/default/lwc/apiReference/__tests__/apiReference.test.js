@@ -91,7 +91,8 @@ describe("c-api-reference", () => {
     const [spec, options, target] = window.Redoc.init.mock.calls[0];
     expect(spec).toBe("SAPI_Spec");
     expect(options).toBe(REDOC_OPTIONS);
-    expect(options.disableTelemetry).toBe(true);
+    expect(options.disableSearch).toBe(true);
+    expect(options.disableTelemetry).toBeUndefined();
     expect(options.hideDownloadButton).toBe(true);
     expect(target.classList.contains("redoc-target")).toBe(true);
     expect(query(element, ".redoc-target").textContent).toBe(
@@ -202,6 +203,24 @@ describe("c-api-reference", () => {
     document.head
       .querySelectorAll("style[data-styled]")
       .forEach((style) => style.remove());
+  });
+
+  it("keeps Redoc_Script pinned to the redoc 2.5.4 standalone UMD bundle", () => {
+    const bundle = readFileSync(
+      join(
+        process.cwd(),
+        "packages/portfolio-site/main/default/staticresources/Redoc_Script.js"
+      ),
+      "utf8"
+    );
+    expect(
+      bundle.startsWith(
+        "/*! For license information please see redoc.standalone.js.LICENSE.txt */"
+      )
+    ).toBe(true);
+    expect(bundle).toContain('const Hw="2.5.4"');
+    expect(bundle).toContain("e.Redoc=t(");
+    expect(bundle).not.toContain("export{");
   });
 
   it("keeps the spec static resources byte-identical to the spec files", () => {

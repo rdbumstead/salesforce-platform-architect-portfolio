@@ -28,12 +28,13 @@ const SYSTEM_FONTS =
 const MONO_FONTS = 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace';
 
 /**
- * Redoc options. Nothing here reaches outside the site: system fonts instead of the
- * default web fonts, no download button, native scrollbars inside the component, and
- * telemetry off (Redoc 3 sends traces to Redocly unless disableTelemetry is set).
+ * Redoc 2.5.4 options. System fonts instead of the default web fonts, no download
+ * button, native scrollbars inside the component, and search off because Redoc runs
+ * search in a web worker built from a blob URL, which Lightning Web Security may block.
+ * The 2.5.4 bundle has no telemetry, so no telemetry option is needed.
  */
 export const REDOC_OPTIONS = {
-  disableTelemetry: true,
+  disableSearch: true,
   hideDownloadButton: true,
   nativeScrollbars: true,
   scrollYOffset: 0,
