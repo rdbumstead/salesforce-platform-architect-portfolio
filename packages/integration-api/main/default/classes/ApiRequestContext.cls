@@ -216,7 +216,7 @@ public with sharing class ApiRequestContext {
    * @param body Object to serialise.
    */
   public void ok(Object body) {
-    RateWindowLimiter.commitPending();
+    commitRateCounts();
     res.statusCode = 200;
     res.responseBody = Blob.valueOf(JSON.serialize(body));
   }
@@ -228,7 +228,7 @@ public with sharing class ApiRequestContext {
    * @param message Human-readable message.
    */
   public void error(Integer status, String errorCode, String message) {
-    RateWindowLimiter.commitPending();
+    commitRateCounts();
     rejected = true;
     res.statusCode = status;
     res.responseBody = Blob.valueOf(
@@ -359,6 +359,16 @@ public with sharing class ApiRequestContext {
     } catch (TypeException e) {
       return null;
     }
+  }
+
+  /**
+   * @description Writes the rate-limit counts recorded in this transaction and not yet saved.
+   *              ok() and error() call it; a caller with no REST response (an Aura method
+   *              that used rateLimiter().checkKey) calls it itself, after its last callout.
+   *              No-op when nothing is pending or the active limiter keeps no state.
+   */
+  public static void commitRateCounts() {
+    RateWindowLimiter.commitPending();
   }
 
   /**

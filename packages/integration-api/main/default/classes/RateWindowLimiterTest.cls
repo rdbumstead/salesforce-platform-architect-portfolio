@@ -266,6 +266,43 @@ private class RateWindowLimiterTest {
     Test.stopTest();
   }
 
+  @IsTest
+  static void commitRateCountsWritesWithoutRestResponse() {
+    // Contract C4: an Aura caller has no RestContext and never reaches ok() or error().
+    RateWindowLimiter.nowOverride = FIXED_NOW;
+    RestContext.request = null;
+    RestContext.response = null;
+    Test.setMock(HttpCalloutMock.class, new OkCalloutMock());
+
+    Test.startTest();
+    ApiRequestContext.RateDecision decision = ApiRequestContext.rateLimiter()
+      .checkKey(CALLER_KEY, 15);
+    HttpResponse calloutResponse = callOut();
+    ApiRequestContext.commitRateCounts();
+    Test.stopTest();
+
+    Assert.isTrue(decision.allowed, 'First request allowed');
+    Assert.areEqual(200, calloutResponse.getStatusCode(), 'Callout ran');
+    Assert.areEqual(
+      1,
+      storedWindow(CALLER_KEY).Count__c,
+      'Count written by commitRateCounts()'
+    );
+  }
+
+  @IsTest
+  static void commitRateCountsIsNoOpForStatelessLimiter() {
+    ApiRequestContext.limiterOverride = new HeadersOnlyRateLimiter();
+
+    Test.startTest();
+    ApiRequestContext.rateLimiter().checkKey(CALLER_KEY, 15);
+    ApiRequestContext.commitRateCounts();
+    Integer dml = Limits.getDmlStatements();
+    Test.stopTest();
+
+    Assert.areEqual(0, dml, 'Nothing to write for a stateless limiter');
+  }
+
   // ---------- Concurrency
 
   @IsTest
