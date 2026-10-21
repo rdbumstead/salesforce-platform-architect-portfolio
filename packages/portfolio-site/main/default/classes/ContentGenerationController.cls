@@ -103,4 +103,118 @@ public with sharing class ContentGenerationController {
       );
     }
   }
+
+  // --- API dispatch (PAPI /ai/generate) ---
+
+  public static final String PROVIDER_GEMINI = 'Gemini';
+  public static final String PROVIDER_LOCAL = 'Local';
+  public static final String MODEL_GEMINI = 'gemini-2.0-flash';
+  public static final String MODEL_LOCAL = 'local-template';
+
+  // GeminiService.generateContent reports failure by returning text with these prefixes
+  // instead of throwing, so the dispatch treats such text as a failed attempt.
+  private static final List<String> GEMINI_FAILURE_PREFIXES = new List<String>{
+    'Error: Unable to generate content.',
+    'Exception: '
+  };
+
+  /**
+   * @description Outcome of an API dispatch: the text and which provider produced it.
+   */
+  public class GenerationResult {
+    public final String content;
+    public final String provider;
+    public final String model;
+    public final Boolean fallbackOccurred;
+
+    /**
+     * @description Creates a result.
+     * @param content Generated text.
+     * @param provider PROVIDER_GEMINI or PROVIDER_LOCAL.
+     * @param model Model identifier.
+     * @param fallbackOccurred True when the primary provider did not serve the request.
+     */
+    public GenerationResult(
+      String content,
+      String provider,
+      String model,
+      Boolean fallbackOccurred
+    ) {
+      this.content = content;
+      this.provider = provider;
+      this.model = model;
+      this.fallbackOccurred = fallbackOccurred;
+    }
+  }
+
+  /**
+   * @description Dispatch for the REST API: Gemini first, then the local template. Agentforce
+   *              is never consulted, because it is deferred and AgentforceService is a mock
+   *              (build plan P5). generateCoverLetter keeps its own chain unchanged.
+   * @param prompt Prompt text for the model.
+   * @param context Values for the providers (companyName, jobTitle, jobDescription, ...).
+   * @param localAllowed True when the local template can serve this request type.
+   * @return GenerationResult The content and the provider that served it.
+   * @throws ContentGenerationException When no provider produced usable content.
+   */
+  public static GenerationResult generateWithoutAgentforce(
+    String prompt,
+    Map<String, Object> context,
+    Boolean localAllowed
+  ) {
+    List<String> errorMessages = new List<String>();
+
+    IAIGenerationService gemini = (mockGeminiService != null)
+      ? mockGeminiService
+      : new GeminiService();
+    if (gemini.isAvailable()) {
+      try {
+        String text = gemini.generateContent(prompt, context);
+        if (isUsable(text)) {
+          return new GenerationResult(
+            text,
+            PROVIDER_GEMINI,
+            MODEL_GEMINI,
+            false
+          );
+        }
+        errorMessages.add('Gemini: no usable content');
+      } catch (Exception e) {
+        errorMessages.add('Gemini: ' + e.getMessage());
+      }
+    } else {
+      errorMessages.add('Gemini: unavailable');
+    }
+
+    if (localAllowed == true) {
+      IAIGenerationService local = (mockLocalService != null)
+        ? mockLocalService
+        : new LocalTemplateService();
+      try {
+        String text = local.generateContent(prompt, context);
+        if (String.isNotBlank(text)) {
+          return new GenerationResult(text, PROVIDER_LOCAL, MODEL_LOCAL, true);
+        }
+        errorMessages.add('LocalTemplate: no content');
+      } catch (Exception e) {
+        errorMessages.add('LocalTemplate: ' + e.getMessage());
+      }
+    }
+
+    throw new ContentGenerationException(
+      'Content generation failed. Errors: ' + String.join(errorMessages, '; ')
+    );
+  }
+
+  private static Boolean isUsable(String text) {
+    if (String.isBlank(text)) {
+      return false;
+    }
+    for (String prefix : GEMINI_FAILURE_PREFIXES) {
+      if (text.startsWith(prefix)) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
