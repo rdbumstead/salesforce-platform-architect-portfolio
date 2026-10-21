@@ -12,7 +12,7 @@ public with sharing class GeminiService implements IAIGenerationService {
    *              2026-06-01). Gemma rejects systemInstruction, so the body carries
    *              contents/parts only.
    */
-  public static final String MODEL = 'gemma-3-27b-it';
+  public static final String MODEL = 'gemma-4-31b-it';
 
   @TestVisible
   private static final String ENDPOINT =

@@ -104,7 +104,7 @@ private class GeminiServiceTest {
     GeminiService.generateContentStatic('Define AI');
     Test.stopTest();
 
-    Assert.areEqual('gemma-3-27b-it', GeminiService.MODEL, 'Model id');
+    Assert.areEqual('gemma-4-31b-it', GeminiService.MODEL, 'Model id');
     Assert.areEqual(
       'callout:Gemini_API/v1beta/models/' +
         GeminiService.MODEL +
