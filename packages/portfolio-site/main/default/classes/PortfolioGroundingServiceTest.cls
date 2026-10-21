@@ -26,7 +26,9 @@ private class PortfolioGroundingServiceTest {
       Business_Value__c = 'Value text, call ' +
         SENTINEL_PHONE +
         ' or mail ' +
-        SENTINEL_EMAIL
+        SENTINEL_EMAIL +
+        ' ' +
+        'v'.repeat(700)
     );
   }
 
@@ -39,7 +41,13 @@ private class PortfolioGroundingServiceTest {
     List<Project__c> projects = new List<Project__c>();
     for (Integer i = 0; i < 200; i++) {
       projects.add(
-        project(i, 'Contact ' + SENTINEL_EMAIL + ' about Apex integration')
+        project(
+          i,
+          'Contact ' +
+            SENTINEL_EMAIL +
+            ' about Apex integration ' +
+            'c'.repeat(700)
+        )
       );
     }
     insert projects;
@@ -62,10 +70,12 @@ private class PortfolioGroundingServiceTest {
       'No phone number reaches the prompt'
     );
     List<Object> facts = (List<Object>) parse(grounding).get('projects');
+    // Five full projects run past the cap, so the last ones are dropped to fit.
     Assert.isTrue(
-      facts.size() <= PortfolioGroundingService.MAX_PROJECTS,
-      'At most MAX_PROJECTS'
+      facts.size() < PortfolioGroundingService.MAX_PROJECTS,
+      'Projects dropped to fit the cap: ' + facts.size()
     );
+    Assert.isFalse(facts.isEmpty(), 'Some facts still fit');
   }
 
   @IsTest
