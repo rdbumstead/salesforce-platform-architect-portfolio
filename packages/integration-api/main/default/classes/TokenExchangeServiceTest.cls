@@ -383,6 +383,26 @@ private class TokenExchangeServiceTest {
   }
 
   @IsTest
+  static void shouldReject503WhenPrincipalParameterDoesNotExist() {
+    installLimiter();
+    installMock()
+      .throwing(
+        'Field Portfolio_API_Token_Auth.Client_Id does not exist. Check spelling.'
+      );
+
+    Test.startTest();
+    TokenExchangeService.Result result = TokenExchangeService.requestToken(
+      attempt(EMAIL, PURPOSE)
+    );
+    Test.stopTest();
+
+    Assert.areEqual(503, result.statusCode, 'Not configured');
+    Assert.areEqual('SERVICE_UNAVAILABLE', result.errorCode, 'Code');
+    Assert.areEqual('Token issuance is not configured.', result.message, 'Msg');
+    assertOneRow('Credential_Missing');
+  }
+
+  @IsTest
   static void shouldThrowTypedExceptionWhenCredentialIsMissing() {
     installMock().withTokenResponse(401, '{"error":"invalid_client"}');
 

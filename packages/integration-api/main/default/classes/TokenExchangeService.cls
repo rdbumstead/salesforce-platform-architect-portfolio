@@ -462,8 +462,16 @@ public with sharing class TokenExchangeService {
   }
 
   private static Boolean isCredentialError(String message) {
-    return String.isNotBlank(message) &&
-      message.toLowerCase().contains('credential');
+    if (String.isBlank(message)) {
+      return false;
+    }
+    String lower = message.toLowerCase();
+    // A principal without the Client_Id/Client_Secret parameters fails the merge with
+    // "Field Portfolio_API_Token_Auth.Client_Id does not exist."
+    Boolean missingParameter =
+      lower.contains(EXTERNAL_CREDENTIAL.toLowerCase() + '.') &&
+      lower.contains('does not exist');
+    return lower.contains('credential') || missingParameter;
   }
 
   private static Integer secondsUntilTomorrow() {
