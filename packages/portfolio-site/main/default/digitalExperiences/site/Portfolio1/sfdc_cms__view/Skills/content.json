@@ -1,0 +1,77 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "Skills",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"8d304a66-3e95-422c-91a6-66d32cab51f9\",\"columns\":[{\"UUID\":\"aff39380-cd3f-4af4-b273-6bc286b7d5b6\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "definition": "c:skillNetwork",
+                      "id": "25e605bd-67ac-408d-9a23-732fc6dfba9c",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "aff39380-cd3f-4af4-b273-6bc286b7d5b6",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "8d304a66-3e95-422c-91a6-66d32cab51f9",
+              "type": "component"
+            }
+          ],
+          "id": "fde1b167-1f66-4e9f-8c13-cd97f99193f8",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "An interactive map of Ryan Bumstead's Salesforce skills and the projects and roles where each one was used.",
+                "pageTitle": "Skills | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "b91cbdd0-28d6-469b-b6da-401f758a6aa1",
+              "type": "component"
+            }
+          ],
+          "id": "1a40edf6-e02e-4608-b1af-42b04622f7c0",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "550ac349-f335-4e65-85c6-2ace1ade841b",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-skills"
+  },
+  "urlName": "skills"
+}

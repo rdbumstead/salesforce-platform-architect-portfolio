@@ -1,0 +1,77 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "Testimonials",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"95c22342-31e0-47ce-96ee-51cc8e7c3fa8\",\"columns\":[{\"UUID\":\"75e03986-7647-42c3-b99d-99c32a978f01\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "definition": "c:testimonialSubmit",
+                      "id": "8b7c8415-361d-493e-9d5b-ddbe45cc17ff",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "75e03986-7647-42c3-b99d-99c32a978f01",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "95c22342-31e0-47ce-96ee-51cc8e7c3fa8",
+              "type": "component"
+            }
+          ],
+          "id": "7203c4f5-917a-49a2-be16-24574106b8db",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "Leave a testimonial for Ryan Bumstead. Every submission is reviewed before it appears.",
+                "pageTitle": "Testimonials | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "b310218f-1aac-409d-b222-e2d9ed78b9f6",
+              "type": "component"
+            }
+          ],
+          "id": "993b637c-8b6a-4a21-9f81-a9d57e4fc867",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "19836c59-9a3f-43f7-8ac1-a6d7b2c2ed90",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-testimonials"
+  },
+  "urlName": "testimonials"
+}

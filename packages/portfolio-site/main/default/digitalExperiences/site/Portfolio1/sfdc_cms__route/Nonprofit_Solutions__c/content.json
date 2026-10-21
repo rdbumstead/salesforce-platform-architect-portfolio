@@ -1,0 +1,12 @@
+{
+  "type": "sfdc_cms__route",
+  "title": "Nonprofit Solutions",
+  "contentBody": {
+    "activeViewId": "Nonprofit_Solutions",
+    "configurationTags": [],
+    "pageAccess": "UseParent",
+    "routeType": "custom-nonprofit-solutions",
+    "urlPrefix": "nonprofit-solutions"
+  },
+  "urlName": "nonprofit-solutions"
+}

@@ -1,0 +1,77 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "AI Lab",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"c7c3bee9-43ff-46a9-b678-7dada2c512ee\",\"columns\":[{\"UUID\":\"dcfbaa40-c1b1-4cfd-8d14-08875784ce43\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "definition": "c:coverLetterGenerator",
+                      "id": "e96518b8-43b1-433d-8052-0d8a27e65f1d",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "dcfbaa40-c1b1-4cfd-8d14-08875784ce43",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "c7c3bee9-43ff-46a9-b678-7dada2c512ee",
+              "type": "component"
+            }
+          ],
+          "id": "4bcd3119-e1df-4d90-a5a7-2ee178ff268a",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "Pillar D. Generate a cover letter grounded in Ryan Bumstead's portfolio data.",
+                "pageTitle": "AI Lab | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "f36f5385-f803-4b87-99fc-ed421f2a810a",
+              "type": "component"
+            }
+          ],
+          "id": "964f8570-072f-40b6-9500-ffbeaa52a32d",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "68811f11-7842-428e-9326-1b09029225f2",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-ai-lab"
+  },
+  "urlName": "ai-lab"
+}

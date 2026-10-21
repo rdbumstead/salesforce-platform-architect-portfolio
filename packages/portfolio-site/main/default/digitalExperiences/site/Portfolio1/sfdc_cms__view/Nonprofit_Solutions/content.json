@@ -1,0 +1,81 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "Nonprofit Solutions",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"aadca2a5-226b-4fd4-a564-df9ef500aa89\",\"columns\":[{\"UUID\":\"b149cbf5-e0ad-4204-a97e-38683b5d1ded\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "attributes": {
+                        "imageInfos": "",
+                        "richTextValue": "<h1>Nonprofit Solutions</h1><p>Pillar B: Pre-Sales Consultancy (Nonprofit Literacy Solutions). This page is being built. It will walk through the solution design and the decision matrix behind a platform choice for a nonprofit literacy program.</p>"
+                      },
+                      "definition": "community_builder:richTextEditor",
+                      "id": "6a44653c-40ea-4e8d-9289-6ca1a9369971",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "b149cbf5-e0ad-4204-a97e-38683b5d1ded",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "aadca2a5-226b-4fd4-a564-df9ef500aa89",
+              "type": "component"
+            }
+          ],
+          "id": "ac376f0c-ae84-486f-a706-a870e405d4d9",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "Pillar B. Pre-sales consultancy for a nonprofit literacy program. This page is being built.",
+                "pageTitle": "Nonprofit Solutions | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "4ab50493-fb1c-4ed2-b425-5824c5ee4056",
+              "type": "component"
+            }
+          ],
+          "id": "05203ef5-db9e-48f5-a0a0-d1955050c8d7",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "d4ce893f-1104-4609-a073-51983cb02724",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-nonprofit-solutions"
+  },
+  "urlName": "nonprofit-solutions"
+}

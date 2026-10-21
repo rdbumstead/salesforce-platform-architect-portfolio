@@ -1,0 +1,62 @@
+{
+  "type": "sfdc_cms__themeLayout",
+  "title": "Portfolio Theme Layout",
+  "contentBody": {
+    "component": {
+      "attributes": {},
+      "children": [
+        {
+          "id": "4543cfd5-8967-4ba2-ba0a-1fe2834b3907",
+          "name": "header",
+          "title": "Theme Header",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"5d611bfc-a7e0-4e4b-b60a-788255ba8043\",\"columns\":[{\"UUID\":\"e4662d82-bdcc-4a30-9b9a-b802467098ca\",\"columnName\":\"Theme Footer\",\"columnKey\":\"footerSection\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "definition": "c:footer",
+                      "id": "b051268d-4edc-4e83-bc2c-a75c78c628cd",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "e4662d82-bdcc-4a30-9b9a-b802467098ca",
+                  "name": "footerSection",
+                  "title": "Theme Footer",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "5d611bfc-a7e0-4e4b-b60a-788255ba8043",
+              "type": "component"
+            }
+          ],
+          "id": "afa7faed-8fb9-432c-bf6d-ce9cab4a566d",
+          "name": "footer",
+          "title": "Theme Footer",
+          "type": "region"
+        }
+      ],
+      "definition": "c:portfolioThemeLayout",
+      "id": "a8bd3f42-3aea-4afc-8c90-1e5df63752ee",
+      "type": "component"
+    }
+  },
+  "urlName": "portfolio-theme-layout"
+}

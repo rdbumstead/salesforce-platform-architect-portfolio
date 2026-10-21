@@ -1,0 +1,12 @@
+{
+  "type": "sfdc_cms__route",
+  "title": "API Lab",
+  "contentBody": {
+    "activeViewId": "Api_Lab",
+    "configurationTags": [],
+    "pageAccess": "UseParent",
+    "routeType": "custom-api-lab",
+    "urlPrefix": "api-lab"
+  },
+  "urlName": "api-lab"
+}
