@@ -108,7 +108,7 @@ public with sharing class ContentGenerationController {
 
   public static final String PROVIDER_GEMINI = 'Gemini';
   public static final String PROVIDER_LOCAL = 'Local';
-  public static final String MODEL_GEMINI = 'gemini-2.0-flash';
+  public static final String MODEL_GEMINI = GeminiService.MODEL;
   public static final String MODEL_LOCAL = 'local-template';
 
   // GeminiService.generateContent reports failure by returning text with these prefixes

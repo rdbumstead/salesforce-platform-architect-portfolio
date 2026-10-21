@@ -7,6 +7,19 @@
  * @Test Class        : [GeminiServiceTest]
  **/
 public with sharing class GeminiService implements IAIGenerationService {
+  /**
+   * @description Model served through the Gemini API (gemini-2.0-flash was shut down on
+   *              2026-06-01). Gemma rejects systemInstruction, so the body carries
+   *              contents/parts only.
+   */
+  public static final String MODEL = 'gemma-3-27b-it';
+
+  @TestVisible
+  private static final String ENDPOINT =
+    'callout:Gemini_API/v1beta/models/' +
+    MODEL +
+    ':generateContent';
+
   // --- 1. Interface Implementation (Instance Method) ---
   // This allows the Controller to treat this class as an IAIGenerationService
   public String generateContent(String prompt, Map<String, Object> context) {
@@ -37,9 +50,7 @@ public with sharing class GeminiService implements IAIGenerationService {
   private static HttpResponse callGemini(String prompt) {
     RequestWrapper payload = new RequestWrapper(prompt);
     HttpRequest req = new HttpRequest();
-    req.setEndpoint(
-      'callout:Gemini_API/v1beta/models/gemini-2.0-flash:generateContent'
-    );
+    req.setEndpoint(ENDPOINT);
     req.setMethod('POST');
     req.setHeader('Content-Type', 'application/json');
     req.setBody(JSON.serialize(payload));

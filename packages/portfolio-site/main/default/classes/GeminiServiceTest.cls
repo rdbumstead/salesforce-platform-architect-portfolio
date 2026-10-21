@@ -78,6 +78,77 @@ private class GeminiServiceTest {
     );
   }
 
+  private class CapturingMock implements HttpCalloutMock {
+    public HttpRequest received;
+    private final String body;
+
+    CapturingMock(String body) {
+      this.body = body;
+    }
+
+    public HttpResponse respond(HttpRequest req) {
+      received = req;
+      HttpResponse res = new HttpResponse();
+      res.setStatusCode(200);
+      res.setBody(body);
+      return res;
+    }
+  }
+
+  @isTest
+  static void endpointPathCarriesTheModelConstant() {
+    CapturingMock mock = new CapturingMock(TestFactory.getGeminiResponseJson());
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    GeminiService.generateContentStatic('Define AI');
+    Test.stopTest();
+
+    Assert.areEqual('gemma-3-27b-it', GeminiService.MODEL, 'Model id');
+    Assert.areEqual(
+      'callout:Gemini_API/v1beta/models/' +
+        GeminiService.MODEL +
+        ':generateContent',
+      mock.received.getEndpoint(),
+      'Endpoint is built from the model constant'
+    );
+    Assert.isFalse(
+      mock.received.getBody().contains('systemInstruction'),
+      'Gemma rejects systemInstruction'
+    );
+  }
+
+  @isTest
+  static void interfaceMethodsDelegateToTheStaticCall() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new CapturingMock(TestFactory.getGeminiResponseJson())
+    );
+    GeminiService service = new GeminiService();
+
+    Test.startTest();
+    String result = service.generateContent('Define AI', null);
+    Test.stopTest();
+
+    Assert.isTrue(service.isAvailable(), 'Always offered');
+    Assert.areEqual(
+      'AI is a simulation of human intelligence processes.',
+      result,
+      'Instance call returns the parsed text'
+    );
+  }
+
+  @isTest
+  static void responseWithoutCandidatesYieldsEmptyText() {
+    Test.setMock(HttpCalloutMock.class, new CapturingMock('{"candidates":[]}'));
+
+    Test.startTest();
+    String result = GeminiService.generateContentStatic('Define AI');
+    Test.stopTest();
+
+    Assert.areEqual('', result, 'No candidates means no text');
+  }
+
   public class MockTrigger implements HttpCalloutMock {
     public HttpResponse respond(HttpRequest req) {
       CalloutException e = (CalloutException) CalloutException.class
