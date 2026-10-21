@@ -1,0 +1,375 @@
+/**
+ * @description       : Serves the resume page (Round 3 plan K1). Returns the owner header,
+ *                      roles with persona highlights, skill groups, certifications and education
+ *                      in one fixed shape. Never returns an email, a phone number, an address or
+ *                      any Owner_* value.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 10/21/2026
+ * @Test Class        : [ResumeControllerTest]
+ **/
+public with sharing class ResumeController {
+  @TestVisible
+  private static final String INVALID_PERSONA_MESSAGE = 'Invalid persona. Valid values: Admin, Developer, Architect';
+  private static final List<String> PERSONAS = new List<String>{
+    'Admin',
+    'Developer',
+    'Architect'
+  };
+
+  /**
+   * @description Builds the resume for a persona.
+   * @param persona Blank for every highlight, or one of Admin, Developer, Architect.
+   * @return ResumeData The resume in the K1 shape.
+   * @throws AuraHandledException When the persona is not blank and not a valid value.
+   * @example
+   * ResumeController.ResumeData resume = ResumeController.getResume('Architect');
+   */
+  @AuraEnabled(cacheable=true)
+  public static ResumeData getResume(String persona) {
+    String normalizedPersona = String.isBlank(persona) ? null : persona.trim();
+    if (normalizedPersona != null && !PERSONAS.contains(normalizedPersona)) {
+      throw auraError(INVALID_PERSONA_MESSAGE);
+    }
+
+    ResumeSelector selector = new ResumeSelector();
+    ResumeData resume = new ResumeData();
+    resume.persona = normalizedPersona;
+    resume.header = toHeader(selector.selectOwner());
+    resume.roles = toRoles(selector.selectRoles(), normalizedPersona);
+    resume.skillGroups = toSkillGroups(selector.selectSkills());
+    resume.certifications = toCertifications(selector.selectCertifications());
+    resume.education = toEducation(selector.selectEducation());
+    return resume;
+  }
+
+  private static Header toHeader(Contact owner) {
+    if (owner == null) {
+      return null;
+    }
+    Header header = new Header();
+    header.name = owner.Name;
+    header.title = owner.Title;
+    header.careerObjective = owner.Career_Objective__c;
+    header.linkedInUrl = owner.LinkedIn_URL__c;
+    header.gitHubUrl = owner.GitHub_URL__c;
+    header.trailheadUrl = owner.Trailhead_URL__c;
+    header.portfolioUrl = owner.Portfolio_URL__c;
+    return header;
+  }
+
+  private static List<Role> toRoles(
+    List<Experience__c> experiences,
+    String persona
+  ) {
+    List<Role> roles = new List<Role>();
+    for (Experience__c experience : experiences) {
+      Role role = new Role();
+      role.id = experience.Id;
+      role.title = experience.Name;
+      role.employer = experience.Employer__r?.Name;
+      role.startDate = experience.Start_Date__c;
+      role.endDate = experience.End_Date__c;
+      role.isCurrent = experience.Is_Current_Role__c;
+      role.isRemote = experience.Is_Remote__c;
+      role.highlights = toHighlights(
+        experience.Experience_Highlights__r,
+        persona
+      );
+      roles.add(role);
+    }
+    return roles;
+  }
+
+  private static List<String> toHighlights(
+    List<Experience_Highlight__c> rows,
+    String persona
+  ) {
+    List<HighlightEntry> entries = new List<HighlightEntry>();
+    for (Experience_Highlight__c row : rows) {
+      if (persona == null || hasTag(row.Persona_Tag__c, persona)) {
+        entries.add(new HighlightEntry(row, persona));
+      }
+    }
+    entries.sort();
+    List<String> highlights = new List<String>();
+    for (HighlightEntry entry : entries) {
+      highlights.add(entry.description);
+    }
+    return highlights;
+  }
+
+  private static Boolean hasTag(String tags, String persona) {
+    if (String.isBlank(tags)) {
+      return false;
+    }
+    return new Set<String>(tags.split(';')).contains(persona);
+  }
+
+  private static List<SkillGroup> toSkillGroups(List<Skill__c> skills) {
+    List<SkillGroup> groups = new List<SkillGroup>();
+    Map<String, SkillGroup> groupsByCategory = new Map<String, SkillGroup>();
+    for (Skill__c skill : skills) {
+      SkillGroup skillGroup = groupsByCategory.get(skill.Category__c);
+      if (skillGroup == null) {
+        skillGroup = new SkillGroup();
+        skillGroup.category = skill.Category__c;
+        skillGroup.skills = new List<String>();
+        groupsByCategory.put(skill.Category__c, skillGroup);
+        groups.add(skillGroup);
+      }
+      skillGroup.skills.add(
+        String.isBlank(skill.Display_Name__c)
+          ? skill.Name
+          : skill.Display_Name__c
+      );
+    }
+    return groups;
+  }
+
+  private static List<Credential> toCertifications(
+    List<Certification__c> certifications
+  ) {
+    List<Credential> credentials = new List<Credential>();
+    for (Certification__c certification : certifications) {
+      Credential credential = new Credential();
+      credential.name = certification.Name;
+      credential.issuer = certification.Issuer__r?.Name;
+      credential.dateValue = certification.Earned_Date__c;
+      credentials.add(credential);
+    }
+    return credentials;
+  }
+
+  private static List<Credential> toEducation(List<Education__c> schools) {
+    List<Credential> credentials = new List<Credential>();
+    for (Education__c school : schools) {
+      Credential credential = new Credential();
+      credential.name = school.Name;
+      credential.issuer = school.Issuer__r?.Name;
+      credential.dateValue = school.Graduation_Date__c;
+      credential.detail = school.Field_of_Study__c;
+      credentials.add(credential);
+    }
+    return credentials;
+  }
+
+  private static AuraHandledException auraError(String message) {
+    AuraHandledException error = new AuraHandledException(message);
+    error.setMessage(message);
+    return error;
+  }
+
+  /**
+   * @description Reads every resume record in system mode and without sharing. Guarded by
+   *              Round 3 plan G1: certifications and education are master-detail to Contact and
+   *              roles look up to Account, and the site guest has no Contact or Account access.
+   *              The guest reaches this data only through the fixed, contact-detail-free shape
+   *              the outer class builds. Selects no Email, Phone, address or Owner_* field.
+   */
+  private without sharing class ResumeSelector {
+    private Contact selectOwner() {
+      List<Contact> owners = [
+        SELECT
+          Name,
+          Title,
+          Career_Objective__c,
+          LinkedIn_URL__c,
+          GitHub_URL__c,
+          Trailhead_URL__c,
+          Portfolio_URL__c
+        FROM Contact
+        WHERE Is_Portfolio_Owner__c = TRUE
+        WITH SYSTEM_MODE
+        ORDER BY CreatedDate ASC
+        LIMIT 1
+      ];
+      return owners.isEmpty() ? null : owners[0];
+    }
+
+    private List<Experience__c> selectRoles() {
+      return [
+        SELECT
+          Id,
+          Name,
+          Employer__r.Name,
+          Start_Date__c,
+          End_Date__c,
+          Is_Current_Role__c,
+          Is_Remote__c,
+          (
+            SELECT
+              Description__c,
+              Persona_Tag__c,
+              Sort_Order__c,
+              Admin_Sort_Order__c,
+              Developer_Sort_Order__c,
+              Architect_Sort_Order__c,
+              Lock_Sort_Across_Personas__c
+            FROM Experience_Highlights__r
+          )
+        FROM Experience__c
+        WITH SYSTEM_MODE
+        ORDER BY
+          Is_Current_Role__c DESC,
+          End_Date__c DESC NULLS FIRST,
+          Sort_Order__c ASC
+      ];
+    }
+
+    private List<Skill__c> selectSkills() {
+      return [
+        SELECT Name, Display_Name__c, Category__c
+        FROM Skill__c
+        WITH SYSTEM_MODE
+        ORDER BY Category_Order__c ASC, Proficiency__c DESC NULLS LAST, Name ASC
+      ];
+    }
+
+    private List<Certification__c> selectCertifications() {
+      return [
+        SELECT Name, Issuer__r.Name, Earned_Date__c
+        FROM Certification__c
+        WITH SYSTEM_MODE
+        ORDER BY Earned_Date__c DESC NULLS LAST, Name ASC
+      ];
+    }
+
+    private List<Education__c> selectEducation() {
+      return [
+        SELECT Name, Issuer__r.Name, Graduation_Date__c, Field_of_Study__c
+        FROM Education__c
+        WITH SYSTEM_MODE
+        ORDER BY Graduation_Date__c DESC NULLS LAST, Name ASC
+      ];
+    }
+  }
+
+  /**
+   * @description Orders highlights for one persona. A row sorts by its persona sort order with
+   *              blanks last, then by Sort_Order__c. A row locked across personas, and every
+   *              row when no persona is given, sorts by Sort_Order__c alone.
+   */
+  private class HighlightEntry implements Comparable {
+    private String description;
+    private Decimal primaryKey;
+    private Decimal secondaryKey;
+
+    private HighlightEntry(Experience_Highlight__c row, String persona) {
+      this.description = row.Description__c;
+      this.secondaryKey = row.Sort_Order__c;
+      Boolean usesBaseOrder =
+        persona == null ||
+        row.Lock_Sort_Across_Personas__c == true;
+      this.primaryKey = usesBaseOrder
+        ? row.Sort_Order__c
+        : (Decimal) row.get(persona + '_Sort_Order__c');
+    }
+
+    public Integer compareTo(Object other) {
+      HighlightEntry that = (HighlightEntry) other;
+      Integer byPrimary = compareNullsLast(this.primaryKey, that.primaryKey);
+      return byPrimary != 0
+        ? byPrimary
+        : compareNullsLast(this.secondaryKey, that.secondaryKey);
+    }
+
+    private Integer compareNullsLast(Decimal left, Decimal right) {
+      if (left == right) {
+        return 0;
+      }
+      if (left == null) {
+        return 1;
+      }
+      if (right == null) {
+        return -1;
+      }
+      return left < right ? -1 : 1;
+    }
+  }
+
+  /**
+   * @description The whole resume.
+   */
+  public class ResumeData {
+    @AuraEnabled
+    public String persona;
+    @AuraEnabled
+    public Header header;
+    @AuraEnabled
+    public List<Role> roles;
+    @AuraEnabled
+    public List<SkillGroup> skillGroups;
+    @AuraEnabled
+    public List<Credential> certifications;
+    @AuraEnabled
+    public List<Credential> education;
+  }
+
+  /**
+   * @description The owner header. Holds public profile links only.
+   */
+  public class Header {
+    @AuraEnabled
+    public String name;
+    @AuraEnabled
+    public String title;
+    @AuraEnabled
+    public String careerObjective;
+    @AuraEnabled
+    public String linkedInUrl;
+    @AuraEnabled
+    public String gitHubUrl;
+    @AuraEnabled
+    public String trailheadUrl;
+    @AuraEnabled
+    public String portfolioUrl;
+  }
+
+  /**
+   * @description One role with its highlights for the persona.
+   */
+  public class Role {
+    @AuraEnabled
+    public Id id;
+    @AuraEnabled
+    public String title;
+    @AuraEnabled
+    public String employer;
+    @AuraEnabled
+    public Date startDate;
+    @AuraEnabled
+    public Date endDate;
+    @AuraEnabled
+    public Boolean isCurrent;
+    @AuraEnabled
+    public Boolean isRemote;
+    @AuraEnabled
+    public List<String> highlights;
+  }
+
+  /**
+   * @description Skills in one category, strongest first.
+   */
+  public class SkillGroup {
+    @AuraEnabled
+    public String category;
+    @AuraEnabled
+    public List<String> skills;
+  }
+
+  /**
+   * @description A certification or an education entry.
+   */
+  public class Credential {
+    @AuraEnabled
+    public String name;
+    @AuraEnabled
+    public String issuer;
+    @AuraEnabled
+    public Date dateValue;
+    @AuraEnabled
+    public String detail;
+  }
+}
