@@ -15,10 +15,10 @@ info:
     ### Architecture & Governance
     - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
     - **ID Strategy**: All `id` fields utilize strictly **18-character Salesforce Case-Insensitive IDs**.
-    - **Traceability**: Each API resource maps 1:1 to a corresponding DataWeave Logic (DWL) file.
+    - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
     ### Non-Functional Requirements (NFRs)
-    - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing.
+    - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`).
     - **Latency**: Target < 500ms for internal processing.
     - **Resilience**: Rate Limits defined with `429` responses and `Retry-After` headers.
     - **Caching Strategy**: 
@@ -28,7 +28,7 @@ info:
     ### Design Constraints & Trade-offs
     - **Pagination**: Offset-based pagination implemented for simplicity (<200 records). 
       - *Enterprise Note*: For volumes >2,000, this would be refactored to **Keyset/Cursor Pagination** (`WHERE Id > lastSeenId`).
-    - **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning.
+    - **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning. A missing header resolves to `v1`; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
   contact:
     name: Ryan Bumstead
     email: ryan@ryanbumstead.com
@@ -49,14 +49,17 @@ tags:
     description: Global portfolio settings.
 
 servers:
-  - url: https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1
-    description: Salesforce Experience Cloud SAPI Base Path
+  - url: https://{domain}/services/apexrest/sapi/v1
+    description: |
+      Salesforce My Domain (authenticated Apex REST). Bearer-token callers use the `instance_url`
+      returned with their token. The Experience Cloud site domain serves Apex REST to the guest
+      user only, and the only guest-callable path is PAPI `POST /auth/token`.
     variables:
       domain:
-        default: ryan-bumstead-dev-ed.develop.my.site.com
-        description: The Salesforce Experience Cloud domain.
+        default: ryan-bumstead-dev-ed.develop.my.salesforce.com
+        description: The org's My Domain host.
         enum:
-          - ryan-bumstead-dev-ed.develop.my.site.com
+          - ryan-bumstead-dev-ed.develop.my.salesforce.com
 
 security:
   - OAuth2ClientCredentials:
@@ -115,8 +118,8 @@ components:
     apiVersionParam:
       name: X-API-Version
       in: header
-      required: true
-      description: "API Contract Version (e.g., v1)."
+      required: false
+      description: "API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026)."
       schema:
         type: string
         example: "v1"
@@ -125,7 +128,7 @@ components:
       name: X-Request-Id
       in: header
       required: true
-      description: "Correlation ID for distributed tracing (Logs/Splunk). Must be UUID."
+      description: "Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026)."
       schema:
         type: string
         format: uuid
@@ -321,7 +324,7 @@ components:
             $ref: "#/components/schemas/Error"
 
     ServerError:
-      description: Internal platform error (Apex/MuleSoft Fault).
+      description: Internal platform error (unhandled Apex exception).
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
@@ -1077,7 +1080,6 @@ paths:
         Current Implementation: Shallow connectivity check (Runtime availability).
         Future Roadmap: Deep dependency check (Salesforce Connectivity, Cache Availability).
       operationId: getHealth
-      security: []
       responses:
         "200":
           description: Service is UP.
@@ -1088,7 +1090,7 @@ paths:
               description: "No-cache for health checks."
               schema:
                 type: string
-                example: "no-store"
+                example: "no-store, no-cache"
           content:
             application/json:
               schema:
@@ -1333,7 +1335,10 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdResponse"
             Cache-Control:
-              $ref: "#/components/headers/CacheControlResponse"
+              description: "Private configuration data; shared caches must not store it."
+              schema:
+                type: string
+                example: "max-age=300, private"
           content:
             application/json:
               schema:

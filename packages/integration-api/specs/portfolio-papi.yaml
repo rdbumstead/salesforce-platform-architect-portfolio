@@ -9,12 +9,13 @@ info:
     ### 1. Authentication Strategy
     - **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.
     - **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.
-    - **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It and `/health` are the only unauthenticated paths.
+    - **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It is the only unauthenticated path, and the only path served on the Experience Cloud site domain (see its `servers` entry). Every other path is called on My Domain with the Bearer token.
     - **PAPI → SAPI**: in-process Apex (same transaction), not HTTP; see ADR-025 for why fan-out callouts were rejected.
 
     ### 2. Versioning Strategy
     - **Pattern**: Header-based versioning takes precedence.
-    - **Header**: `X-API-Version: v1` (Required).
+    - **Header**: `X-API-Version: v1`. A missing header resolves to `v1`; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026).
+    - **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID; a present but non-UUID value returns `400 BAD_REQUEST`. Both headers are echoed on every response (`ApiRequestContext.applyRequestRules`).
     - **URL**: Version segments removed from base path to align with SAPI ADR.
 
     ### 3. Rate Limiting & Aggregation Math
@@ -48,14 +49,16 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://{domain}/portfoliovforcesite/services/apexrest/papi/v1
-    description: Salesforce Experience Cloud PAPI Base Path (on-platform Apex REST)
+  - url: https://{domain}/services/apexrest/papi/v1
+    description: |
+      Salesforce My Domain (authenticated Apex REST). Bearer-token callers use the `instance_url`
+      returned with their token. `POST /auth/token` overrides this with the site domain.
     variables:
       domain:
-        default: ryan-bumstead-dev-ed.develop.my.site.com
-        description: The Salesforce Experience Cloud domain.
+        default: ryan-bumstead-dev-ed.develop.my.salesforce.com
+        description: The org's My Domain host.
         enum:
-          - ryan-bumstead-dev-ed.develop.my.site.com
+          - ryan-bumstead-dev-ed.develop.my.salesforce.com
 
 # Global Rate Limits (Aligned to SAPI capacity)
 x-rate-limit:
@@ -103,7 +106,7 @@ components:
       name: X-Request-Id
       in: header
       required: false
-      description: Correlation ID propagated to SAPI.
+      description: Correlation ID. When missing, a generated UUID is used and echoed; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).
       schema:
         type: string
         format: uuid
@@ -111,8 +114,8 @@ components:
     ApiVersionParam:
       name: X-API-Version
       in: header
-      required: true
-      description: API Version (e.g., v1).
+      required: false
+      description: API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).
       schema:
         type: string
         default: v1
@@ -747,7 +750,6 @@ paths:
       summary: PAPI Health Check
       description: Performs a shallow health check (runtime only). Does not validate SAPI connectivity.
       operationId: getHealth
-      security: []
       tags:
         - Monitoring
       responses:
@@ -768,6 +770,15 @@ paths:
           $ref: "#/components/responses/ServiceUnavailable"
 
   /auth/token:
+    servers:
+      - url: https://{domain}/portfoliovforcesite/services/apexrest/papi/v1
+        description: Experience Cloud site domain. Apex REST is served to the guest user under `/portfoliovforcesite/services/apexrest/`.
+        variables:
+          domain:
+            default: ryan-bumstead-dev-ed.develop.my.site.com
+            description: The Salesforce Experience Cloud domain.
+            enum:
+              - ryan-bumstead-dev-ed.develop.my.site.com
     post:
       summary: Request an evaluator access token
       description: |
@@ -775,6 +786,9 @@ paths:
         without holding the External Client App consumer secret (ADR-028). The exchange runs server-side
         through the `Portfolio_API` Named Credential. Tokens run as the read-only integration user and
         expire with its 30-minute session. Requests are rate-limited by email and source IP and capped per day.
+
+        This is the only path served on the Experience Cloud site domain, not on My Domain:
+        `POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.
       operationId: requestEvaluatorToken
       security: []
       tags:
@@ -1055,7 +1069,7 @@ paths:
             Cache-Control:
               schema:
                 type: string
-                example: "no-cache"
+                example: "no-store, no-cache"
           content:
             application/json:
               schema:
