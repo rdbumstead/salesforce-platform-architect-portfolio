@@ -46,7 +46,7 @@
   - [Appendix G: Accessibility Strategy (A11y)](#appendix-g-accessibility-strategy-a11y)
   - [Appendix H: Deployment Architecture View](#appendix-h-deployment-architecture-view)
   - [Appendix I: Org & Package Structure](#appendix-i-org--package-structure)
-  - [Appendix J: Cloud FinOps Strategy (Phase 8 - Q2 2026)](#appendix-j-cloud-finops-strategy-phase-8---q2-2026)
+  - [Appendix J: Cloud FinOps Strategy (Phase 8 - 2027-2028)](#appendix-j-cloud-finops-strategy-phase-8---2027-2028)
   - [Appendix K: Validation Rules & Logic](#appendix-k-validation-rules--logic)
   - [Appendix L: Reference Artifacts](#appendix-l-reference-artifacts)
   - [Appendix M: Cross-Cutting Pattern - Dual-Door Integration Strategy](#appendix-m-cross-cutting-pattern---dual-door-integration-strategy)
@@ -126,11 +126,11 @@ Live MVP (Door 1)
 - Apex REST services
 - Direct integrations (GitHub, Jira via Named Credentials)
 
-Phase 8 – Q2 2026 (Design Complete)
+Phase 8 – 2027-2028 (Design Complete)
 
-| Phase       | Status                                       | Rationale                                                               |
-| :---------- | :------------------------------------------- | :---------------------------------------------------------------------- |
-| **Phase 8** | **Design Complete • Implementation Q2 2026** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
+| Phase       | Status                                         | Rationale                                                               |
+| :---------- | :--------------------------------------------- | :---------------------------------------------------------------------- |
+| **Phase 8** | **Design Complete • Implementation 2027-2028** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
 
 - AWS Lambda Polyglot Gateway (Function URL) — "Door 2"
 - Enterprise API governance layer
@@ -1030,7 +1030,7 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 - `/packages/demos/employer-hub`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on building a centralized hub for employers.
 - `/packages/demos/nonprofit-literacy`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on the implementation of nonprofit success pack and the program management module including business analysis on several products including Salesforce Education Cloud.
 
-### Appendix J: Cloud FinOps Strategy (Phase 8 - Q2 2026)
+### Appendix J: Cloud FinOps Strategy (Phase 8 - 2027-2028)
 
 - **FinOps Strategy:** Refer to **[Guardrails & Executable Governance: AWS FinOps & Serverless Guardrails](./06-Guardrails-and-Executable-Governance.md#3-aws-finops--serverless-guardrails-phase-8)** for the detailed cost governance model ($0.00 Forever architecture).
 
@@ -1052,7 +1052,7 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 | Feature               | Door 1 — Native Salesforce GraphQL (lightning/uiGraphQLApi) | Door 2 — AWS Lambda Polyglot BFF (Function URL)         |
 | :-------------------- | :---------------------------------------------------------- | :------------------------------------------------------ |
-| **Timeline**          | MVP – Q1 2027 (planned)                                     | Phase 8 – Q2 2026 (design complete)                     |
+| **Timeline**          | MVP – Q1 2027 (planned)                                     | Phase 8 – 2027-2028 (design complete)                   |
 | **Primary Consumers** | All internal LWC components (Skill Graph, Roadmap)          | API Lab "Enterprise Mode", future mobile apps           |
 | **Technology**        | lightning/uiGraphQLApi wire adapter                         | Single Lambda Function URL + in-function governance     |
 | **Latency**           | Lowest possible (LDS + UI cache)                            | Single external round-trip                              |

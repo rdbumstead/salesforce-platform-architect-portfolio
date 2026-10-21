@@ -198,7 +198,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - [ ] **Limit Visibility:** Verify "Glass Box Telemetry" footer accurately reflects Heap Size changes after running a heavy operation.
 - [ ] **Analytics:** Verify api_test_executed event fires in GA4 Real-Time view when using the API Tester.
 - [ ] Verify Skill Graph/Roadmap use lightning/uiGraphQLApi (Network tab shows /graphql call to Salesforce domain)
-- [ ] API Lab "Enterprise Mode" tab disabled with clear "Phase 8 – Q2 2026" messaging
+- [ ] API Lab "Enterprise Mode" tab disabled with clear "Phase 8 – 2027-2028" messaging
 - [ ] **AI fallback:** with the Gemini API unavailable, `POST /papi/v1/ai/generate` with `type: CoverLetter` returns `provider: Local` and `fallbackOccurred: true`. (The circuit-breaker checks this list used to hold are not applicable: no circuit breaker class exists and Agentforce is deferred.)
 
 ## 3.4 Concrete Testing Example
