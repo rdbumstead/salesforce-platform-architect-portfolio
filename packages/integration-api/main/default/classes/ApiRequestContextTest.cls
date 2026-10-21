@@ -25,6 +25,13 @@ private class ApiRequestContextTest {
     ) {
       return new ApiRequestContext.RateDecision(false, limitPerMinute, 0, 42);
     }
+
+    public ApiRequestContext.RateDecision checkKey(
+      String callerKey,
+      Integer limitPerMinute
+    ) {
+      return check(callerKey, limitPerMinute);
+    }
   }
 
   private static Map<String, String> headers(String requestId, String version) {
@@ -437,6 +444,7 @@ private class ApiRequestContextTest {
     Map<ApiRequestContext.CachePolicy, String> expected = new Map<ApiRequestContext.CachePolicy, String>{
       ApiRequestContext.CachePolicy.PUBLIC_300 => 'max-age=300, public',
       ApiRequestContext.CachePolicy.PRIVATE_300 => 'max-age=300, private',
+      ApiRequestContext.CachePolicy.PRIVATE_60 => 'max-age=60, private',
       ApiRequestContext.CachePolicy.NO_STORE => 'no-store, no-cache'
     };
     Test.startTest();
@@ -547,5 +555,33 @@ private class ApiRequestContextTest {
     Assert.areEqual(120, decision.limitPerMinute, 'Limit passed through');
     Assert.areEqual(120, decision.remaining, 'Remaining equals limit');
     Assert.areEqual(0, decision.retryAfterSeconds, 'No retry wait');
+  }
+
+  @IsTest
+  static void headersOnlyLimiterAllowsExplicitKey() {
+    Test.startTest();
+    ApiRequestContext.RateDecision decision = new HeadersOnlyRateLimiter()
+      .checkKey('papi-token:abc', 15);
+    Test.stopTest();
+
+    Assert.isTrue(decision.allowed, 'Always allows');
+    Assert.areEqual(15, decision.limitPerMinute, 'Limit passed through');
+    Assert.areEqual(15, decision.remaining, 'Remaining equals limit');
+  }
+
+  @IsTest
+  static void rateLimiterReturnsOverrideWhenSet() {
+    ApiRateLimiter denying = new DenyingLimiter();
+    ApiRequestContext.limiterOverride = denying;
+
+    Test.startTest();
+    ApiRateLimiter active = ApiRequestContext.rateLimiter();
+    Test.stopTest();
+
+    Assert.areEqual(denying, active, 'Override wins');
+    Assert.isFalse(
+      active.checkKey('papi-token:abc', 15).allowed,
+      'Explicit keys go through the same limiter'
+    );
   }
 }

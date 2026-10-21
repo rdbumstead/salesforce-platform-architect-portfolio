@@ -16,4 +16,16 @@ public interface ApiRateLimiter {
    * @return ApiRequestContext.RateDecision The decision and the values for the rate-limit headers.
    */
   ApiRequestContext.RateDecision check(String tierKey, Integer limitPerMinute);
+
+  /**
+   * @description Records one request against a key the caller built itself, exactly as given
+   *              (no session or user suffix), and decides whether it may proceed.
+   * @param callerKey Complete rate key, e.g. papi-token:<hash>.
+   * @param limitPerMinute Requests allowed per minute for the key.
+   * @return ApiRequestContext.RateDecision The decision and the values for the rate-limit headers.
+   */
+  ApiRequestContext.RateDecision checkKey(
+    String callerKey,
+    Integer limitPerMinute
+  );
 }

@@ -17,6 +17,7 @@ public with sharing class ApiRequestContext {
   public enum CachePolicy {
     PUBLIC_300,
     PRIVATE_300,
+    PRIVATE_60,
     NO_STORE
   }
 
@@ -42,6 +43,7 @@ public with sharing class ApiRequestContext {
   private static final Map<CachePolicy, String> CACHE_DIRECTIVES = new Map<CachePolicy, String>{
     CachePolicy.PUBLIC_300 => 'max-age=300, public',
     CachePolicy.PRIVATE_300 => 'max-age=300, private',
+    CachePolicy.PRIVATE_60 => 'max-age=60, private',
     CachePolicy.NO_STORE => 'no-store, no-cache'
   };
 
@@ -290,7 +292,7 @@ public with sharing class ApiRequestContext {
         correlationId
     );
 
-    RateDecision decision = limiter()
+    RateDecision decision = rateLimiter()
       .check(tierKeyOf(family, uri), tierLimitOf(family, uri));
     header('X-RateLimit-Limit', String.valueOf(decision.limitPerMinute));
     header(
@@ -354,7 +356,12 @@ public with sharing class ApiRequestContext {
     }
   }
 
-  private static ApiRateLimiter limiter() {
+  /**
+   * @description The rate limiter in force: the test override when set, else the default store.
+   *              Callers with their own key (e.g. the token endpoint) use checkKey on it.
+   * @return ApiRateLimiter The limiter.
+   */
+  public static ApiRateLimiter rateLimiter() {
     return limiterOverride != null
       ? limiterOverride
       : new HeadersOnlyRateLimiter();

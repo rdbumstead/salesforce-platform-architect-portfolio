@@ -26,4 +26,17 @@ public with sharing class HeadersOnlyRateLimiter implements ApiRateLimiter {
       0
     );
   }
+
+  /**
+   * @description Always allows the request and reports remaining capacity equal to the limit.
+   * @param callerKey Rate key (unused by this store).
+   * @param limitPerMinute Requests allowed per minute for the key.
+   * @return ApiRequestContext.RateDecision An allowing decision.
+   */
+  public ApiRequestContext.RateDecision checkKey(
+    String callerKey,
+    Integer limitPerMinute
+  ) {
+    return check(callerKey, limitPerMinute);
+  }
 }
