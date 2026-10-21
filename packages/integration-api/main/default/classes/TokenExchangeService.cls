@@ -13,10 +13,10 @@
  **/
 public with sharing class TokenExchangeService {
   /**
-   * @description Requests allowed per minute per email+IP key. Pending a decision on the
-   *              value; set to the PAPI tier until one is made.
+   * @description Requests allowed per minute per email+IP key (decision 2026-10-20).
+   *              Deliberately a literal, independent of the PAPI tier limit.
    */
-  public static final Integer TOKEN_REQUESTS_PER_MINUTE = ApiRequestContext.PAPI_LIMIT_PER_MINUTE;
+  public static final Integer TOKEN_REQUESTS_PER_MINUTE = 15;
   public static final Integer DEFAULT_DAILY_CAP = 50;
   public static final Integer EMAIL_MAX_LENGTH = 254;
   public static final Integer PURPOSE_MAX_LENGTH = 280;
