@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for PAPIAiGenerate REST resource. Providers are always
- *                      mocked; no test calls Gemini.
+ *                      mocked and the Agentforce switch is set in memory. No test calls Gemini.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -21,6 +21,7 @@ private class PAPIAiGenerateTest {
     private final String response;
     private final Boolean fail;
     public Integer calls = 0;
+    public String lastPrompt;
 
     ProviderMock(Boolean available, String response, Boolean fail) {
       this.available = available;
@@ -29,17 +30,26 @@ private class PAPIAiGenerateTest {
     }
 
     public Boolean isAvailable() {
-      calls++;
       return available;
     }
 
     public String generateContent(String prompt, Map<String, Object> context) {
       calls++;
+      lastPrompt = prompt;
       if (fail) {
         throw new CalloutException('Provider down');
       }
       return response;
     }
+  }
+
+  private static void switchAgentforce(Boolean enabled) {
+    AgentforceService.configOverridden = true;
+    AgentforceService.configOverride = (AI_Provider_Config__mdt) JSON.deserialize(
+      '{"DeveloperName":"Agentforce","Enabled__c":' + enabled + '}',
+      AI_Provider_Config__mdt.class
+    );
+    AgentforceService.guestOverride = false;
   }
 
   private static void initPost(String body) {
@@ -67,6 +77,7 @@ private class PAPIAiGenerateTest {
     ProviderMock gemini,
     ProviderMock local
   ) {
+    switchAgentforce(false);
     ContentGenerationController.mockAgentforceService = agentforce;
     ContentGenerationController.mockGeminiService = gemini;
     ContentGenerationController.mockLocalService = local;
@@ -177,7 +188,7 @@ private class PAPIAiGenerateTest {
   // --- Dispatch ---
 
   @IsTest
-  static void geminiServesAndIsReported() {
+  static void geminiServesAndIsReportedWithAttempts() {
     useProviders(
       new ProviderMock(true, AGENTFORCE_TEXT, false),
       new ProviderMock(true, GEMINI_TEXT, false),
@@ -204,11 +215,23 @@ private class PAPIAiGenerateTest {
       res.headers.get('X-RateLimit-Limit'),
       'The ai tier applies by path'
     );
+    Assert.isNotNull(body.get('latencyMs'), 'Dispatch time in the body');
+    Assert.isTrue(
+      ((String) body.get('promptShown')).contains('companyName: Acme'),
+      'Prompt sent to Gemini is returned'
+    );
+    List<Object> attempts = (List<Object>) body.get('attempts');
+    Assert.areEqual(2, attempts.size(), 'Agentforce skipped, Gemini served');
+    Map<String, Object> skipped = (Map<String, Object>) attempts[0];
+    Assert.areEqual('Agentforce', skipped.get('provider'), 'First attempt');
+    Assert.areEqual('skipped_off', skipped.get('outcome'), 'Switch is off');
+    Map<String, Object> served = (Map<String, Object>) attempts[1];
+    Assert.areEqual('served', served.get('outcome'), 'Gemini served');
   }
 
   @IsTest
-  static void providerNeverReadsAgentforce() {
-    ProviderMock agentforce = new ProviderMock(true, AGENTFORCE_TEXT, false);
+  static void switchedOffAgentforceIsNeverAskedToGenerate() {
+    ProviderMock agentforce = new ProviderMock(false, AGENTFORCE_TEXT, false);
     useProviders(
       agentforce,
       new ProviderMock(false, null, false),
@@ -220,17 +243,50 @@ private class PAPIAiGenerateTest {
     Map<String, Object> body = RestTestUtil.getBodyAsMap();
     Assert.areEqual(200, res.statusCode, res.responseBody.toString());
     Assert.areEqual('Local', body.get('provider'), 'Local fallback served');
-    Assert.areNotEqual(
-      AGENTFORCE_TEXT,
-      body.get('content'),
-      'Agentforce text never returned'
-    );
-    Assert.areEqual(
-      0,
-      agentforce.calls,
-      'Agentforce is never consulted, even when it claims availability'
-    );
+    Assert.areEqual(0, agentforce.calls, 'Agentforce never generated');
     Assert.areEqual(true, body.get('fallbackOccurred'), 'Fallback flagged');
+    Assert.isNull(body.get('promptShown'), 'The template uses no prompt');
+  }
+
+  @IsTest
+  static void productionAgentforceIsNeverReportedEvenWhenSwitchedOn() {
+    useProviders(
+      null,
+      new ProviderMock(true, GEMINI_TEXT, false),
+      new ProviderMock(true, LOCAL_TEXT, false)
+    );
+    switchAgentforce(true);
+
+    RestResponse res = post(coverLetter());
+
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Assert.areEqual(200, res.statusCode, res.responseBody.toString());
+    Assert.areEqual('Gemini', body.get('provider'), 'Spec enum holds');
+    Assert.areEqual('Gemini', res.headers.get('X-AI-Provider'), 'Header');
+    Map<String, Object> first = (Map<String, Object>) ((List<Object>) body.get(
+      'attempts'
+    ))[0];
+    Assert.areEqual('failed', first.get('outcome'), 'The mock throws');
+    Assert.areEqual(true, body.get('fallbackOccurred'), 'Earlier failure');
+  }
+
+  @IsTest
+  static void coverLetterPromptIsGroundedOnFeaturedProjects() {
+    insert new Project__c(
+      Name = 'Grounding Sentinel Project',
+      Sort_Order__c = 1,
+      Is_Featured__c = true,
+      Status__c = 'Active Development'
+    );
+    ProviderMock gemini = new ProviderMock(true, GEMINI_TEXT, false);
+    useProviders(null, gemini, new ProviderMock(true, LOCAL_TEXT, false));
+
+    post(coverLetter());
+
+    Assert.isTrue(
+      gemini.lastPrompt.contains('Grounding Sentinel Project'),
+      gemini.lastPrompt
+    );
   }
 
   @IsTest
@@ -255,7 +311,8 @@ private class PAPIAiGenerateTest {
   @IsTest
   static void nonCoverLetterWithGeminiDownIs503() {
     ProviderMock local = new ProviderMock(true, LOCAL_TEXT, false);
-    useProviders(null, new ProviderMock(true, null, true), local);
+    ProviderMock gemini = new ProviderMock(true, null, true);
+    useProviders(null, gemini, local);
     Map<String, Object> body = coverLetter();
     body.put('type', 'BioSummary');
 
@@ -271,6 +328,10 @@ private class PAPIAiGenerateTest {
       0,
       local.calls,
       'The cover-letter template is not used for other types'
+    );
+    Assert.isFalse(
+      gemini.lastPrompt.contains('Facts about'),
+      'Only cover letters are grounded'
     );
   }
 
