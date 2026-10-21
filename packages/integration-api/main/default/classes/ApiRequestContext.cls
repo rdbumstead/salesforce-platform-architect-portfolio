@@ -92,8 +92,9 @@ public with sharing class ApiRequestContext {
 
   /**
    * @description Builds the context for the current REST request and applies the header,
-   *              version and rate-limit rules. Runs no SOQL. Callers must return immediately
-   *              when isRejected() is true.
+   *              version and rate-limit rules. Runs no SOQL on data objects and no DML:
+   *              the only query is the rate limiter's read of its own window row. Callers
+   *              must return immediately when isRejected() is true.
    * @return ApiRequestContext The context for this request.
    */
   public static ApiRequestContext begin() {
@@ -209,10 +210,13 @@ public with sharing class ApiRequestContext {
   }
 
   /**
-   * @description Writes a 200 response with a JSON body.
+   * @description Writes a 200 response with a JSON body. Also writes the rate-limit count
+   *              recorded at begin(); this is the first DML the context performs, so any
+   *              callout a resource makes must happen before ok() or error().
    * @param body Object to serialise.
    */
   public void ok(Object body) {
+    RateWindowLimiter.commitPending();
     res.statusCode = 200;
     res.responseBody = Blob.valueOf(JSON.serialize(body));
   }
@@ -224,6 +228,7 @@ public with sharing class ApiRequestContext {
    * @param message Human-readable message.
    */
   public void error(Integer status, String errorCode, String message) {
+    RateWindowLimiter.commitPending();
     rejected = true;
     res.statusCode = status;
     res.responseBody = Blob.valueOf(
@@ -362,9 +367,7 @@ public with sharing class ApiRequestContext {
    * @return ApiRateLimiter The limiter.
    */
   public static ApiRateLimiter rateLimiter() {
-    return limiterOverride != null
-      ? limiterOverride
-      : new HeadersOnlyRateLimiter();
+    return limiterOverride != null ? limiterOverride : new RateWindowLimiter();
   }
 
   private static ApiFamily familyOf(String uri) {

@@ -1,5 +1,6 @@
 /**
  * @description       : Unit tests for ApiRequestContext, ApiRateLimiter and HeadersOnlyRateLimiter.
+ *                      RateWindowLimiter has its own test class.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -11,6 +12,8 @@ private class ApiRequestContextTest {
   private static final String PAPI_URI = '/services/apexrest/papi/v1/health';
   private static final String PAPI_AI_URI = '/services/apexrest/papi/v1/ai/generate';
   private static final String VALID_ID = '123e4567-e89b-12d3-a456-426614174000';
+  // The default limiter reads its own window row once per request; no data SOQL runs before a rejection.
+  private static final Integer LIMITER_QUERIES = 1;
   private static final Pattern UUID_PATTERN = Pattern.compile(
     '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
   );
@@ -93,7 +96,11 @@ private class ApiRequestContextTest {
     Integer queries = Limits.getQueries();
     Test.stopTest();
 
-    Assert.areEqual(0, queries, 'Rejection must happen before any SOQL');
+    Assert.areEqual(
+      LIMITER_QUERIES,
+      queries,
+      'Only the window read of the rate limiter runs before rejection'
+    );
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
       'X-Request-Id header is required.',
@@ -111,7 +118,11 @@ private class ApiRequestContextTest {
     Integer queries = Limits.getQueries();
     Test.stopTest();
 
-    Assert.areEqual(0, queries, 'Rejection must happen before any SOQL');
+    Assert.areEqual(
+      LIMITER_QUERIES,
+      queries,
+      'Only the window read of the rate limiter runs before rejection'
+    );
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
       'X-Request-Id must be a UUID.',
@@ -217,7 +228,11 @@ private class ApiRequestContextTest {
     Integer queries = Limits.getQueries();
     Test.stopTest();
 
-    Assert.areEqual(0, queries, 'Rejection must happen before any SOQL');
+    Assert.areEqual(
+      LIMITER_QUERIES,
+      queries,
+      'Only the window read of the rate limiter runs before rejection'
+    );
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
       'Unsupported X-API-Version',
@@ -505,16 +520,16 @@ private class ApiRequestContextTest {
     for (String uri : expected.keySet()) {
       RestTestUtil.initGet(uri);
       ApiRequestContext ctx = ApiRequestContext.begin();
-      Assert.isFalse(ctx.isRejected(), 'Headers-only limiter never rejects');
+      Assert.isFalse(ctx.isRejected(), 'First request in the window passes');
       Assert.areEqual(
         String.valueOf(expected.get(uri)),
         responseHeader('X-RateLimit-Limit'),
         'Limit for ' + uri
       );
       Assert.areEqual(
-        String.valueOf(expected.get(uri)),
+        String.valueOf(expected.get(uri) - 1),
         responseHeader('X-RateLimit-Remaining'),
-        'Remaining equals limit for ' + uri
+        'One request used for ' + uri
       );
     }
     Test.stopTest();
@@ -542,6 +557,49 @@ private class ApiRequestContextTest {
       'Nothing remaining'
     );
     Assert.areEqual('120', responseHeader('X-RateLimit-Limit'), 'SAPI tier');
+  }
+
+  @IsTest
+  static void storedLimitReturns429WithOnlyTheLimiterQuery() {
+    RestTestUtil.initGet(SAPI_URI);
+    Datetime now = Datetime.now();
+    insert new API_Rate_Window__c(
+      Key__c = RateWindowLimiter.windowKeyOf(
+        RateWindowLimiter.callerKeyFor('sapi'),
+        now
+      ),
+      Window_Start__c = now,
+      Count__c = ApiRequestContext.SAPI_LIMIT_PER_MINUTE
+    );
+    RateWindowLimiter.nowOverride = now;
+
+    Test.startTest();
+    SAPISkill.getSkills();
+    Integer queries = Limits.getQueries();
+    Integer dml = Limits.getDmlStatements();
+    Test.stopTest();
+
+    Assert.areEqual(
+      LIMITER_QUERIES,
+      queries,
+      'A rate-limited request runs only the window read, no data SOQL'
+    );
+    Assert.areEqual(1, dml, 'Only the window count is written');
+    assertErrorShape(429, 'RATE_LIMIT_EXCEEDED', true);
+    Assert.isNotNull(responseHeader('Retry-After'), 'Retry-After emitted');
+  }
+
+  @IsTest
+  static void defaultLimiterIsRateWindowLimiter() {
+    Test.startTest();
+    ApiRateLimiter active = ApiRequestContext.rateLimiter();
+    Test.stopTest();
+
+    Assert.isInstanceOfType(
+      active,
+      RateWindowLimiter.class,
+      'Custom-object counter is the default store'
+    );
   }
 
   @IsTest

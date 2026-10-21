@@ -1,7 +1,7 @@
 /**
  * @description       : Pluggable rate-limit store used by ApiRequestContext (ADR-025 amendment).
- *                      The default implementation emits headers only; a Platform Cache or
- *                      custom-object store can implement this interface without changing the context.
+ *                      The default store is RateWindowLimiter (custom-object counter);
+ *                      HeadersOnlyRateLimiter never rejects and is kept for tests and fallback.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

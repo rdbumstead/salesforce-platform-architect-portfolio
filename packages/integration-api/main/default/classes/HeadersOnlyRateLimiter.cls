@@ -1,7 +1,7 @@
 /**
- * @description       : Default rate limiter. Reports the tier limit with full remaining capacity
- *                      and never rejects. Enforcement is deferred until a counter store is chosen
- *                      (ADR-025 amendment: Platform Cache trial, custom-object counter, or headers only).
+ * @description       : Rate limiter that reports the tier limit with full remaining capacity and
+ *                      never rejects. No longer the default (RateWindowLimiter is); kept as a
+ *                      store-free implementation for tests and as a fallback.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
