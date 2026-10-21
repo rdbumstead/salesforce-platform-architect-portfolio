@@ -129,7 +129,7 @@ private class ContentGenerationControllerTest {
     Assert.areEqual(0, spy.generateCalls, 'Agentforce generate never runs');
     Assert.areEqual('Gemini', result.provider, 'Gemini serves');
     Assert.areEqual(GEMINI_TEXT, result.content, 'Gemini text');
-    Assert.areEqual(GeminiService.MODEL, result.model, 'Gemini model');
+    Assert.areEqual(GeminiService.model(), result.model, 'Gemini model');
     Assert.isFalse(
       result.fallbackOccurred,
       'A skipped provider is no fallback'
@@ -545,7 +545,7 @@ private class ContentGenerationControllerTest {
     Assert.isFalse(rows[0].enabled, 'Flag value');
     Assert.areEqual('Gemini', rows[1].provider, 'Second');
     Assert.areEqual('on', rows[1].state, 'Gemini on');
-    Assert.areEqual(GeminiService.MODEL, rows[1].model, 'Gemini model');
+    Assert.areEqual(GeminiService.model(), rows[1].model, 'Gemini model');
     Assert.areEqual('Local', rows[2].provider, 'Last');
     Assert.areEqual(3, rows[2].sortOrder, 'Sort order');
   }
