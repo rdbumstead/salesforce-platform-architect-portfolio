@@ -212,6 +212,18 @@ describe("c-resume-builder", () => {
     expect(query(element, ".resume-name")).not.toBeNull();
   });
 
+  it("uses brand buttons and no light SLDS theme panel (contract K9)", async () => {
+    const element = createComponent();
+    getResume.emit(RESUME);
+    await flushPromises();
+
+    expect(button(element, "download-pdf").variant).toBe("brand");
+    expect(button(element, "copy-ats").variant).toBe("brand");
+    expect(query(element, ".config-panel")).not.toBeNull();
+    expect(query(element, '[class*="slds-theme_"]')).toBeNull();
+    expect(query(element, '[class*="slds-text-color_"]')).toBeNull();
+  });
+
   it("shows the controller message in the error state", async () => {
     const element = createComponent();
     getResume.error({

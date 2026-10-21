@@ -1,11 +1,11 @@
 <template>
   <lightning-card title="Resume Generator" icon-name="doctype:pdf">
-    <div class="slds-p-around_medium">
+    <div class="builder-body slds-p-around_medium">
       <div class="slds-grid slds-wrap slds-gutters">
         <div
           class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3 slds-m-bottom_medium"
         >
-          <div class="slds-box slds-theme_shade">
+          <div class="config-panel slds-box">
             <h2 class="slds-text-heading_small slds-m-bottom_medium">
               Configuration
             </h2>
@@ -48,6 +48,7 @@
               >
               </lightning-button>
               <lightning-button
+                variant="brand"
                 label="Copy ATS text"
                 icon-name="utility:copy"
                 onclick={handleCopyText}
@@ -58,16 +59,10 @@
             </div>
 
             <div aria-live="polite" class="slds-m-top_small">
-              <p
-                lwc:if={exportMessage}
-                class="export-message slds-text-color_success"
-              >
+              <p lwc:if={exportMessage} class="export-message text-success">
                 {exportMessage}
               </p>
-              <p
-                lwc:if={exportError}
-                class="export-error slds-text-color_error"
-              >
+              <p lwc:if={exportError} class="export-error text-error">
                 {exportError}
               </p>
             </div>
@@ -89,7 +84,7 @@
 
             <template lwc:if={hasError}>
               <div
-                class="error-state slds-text-color_error slds-p-around_medium"
+                class="error-state paper-error slds-p-around_medium"
                 role="alert"
               >
                 <p>The resume could not be loaded.</p>
@@ -98,7 +93,7 @@
             </template>
 
             <template lwc:if={isEmpty}>
-              <p class="empty-state slds-text-color_weak slds-p-around_medium">
+              <p class="empty-state paper-muted slds-p-around_medium">
                 No resume content is available for this persona yet.
               </p>
             </template>
