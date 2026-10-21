@@ -11,14 +11,14 @@
       </template>
 
       <template lwc:elseif={hasError}>
-        <div class="state state-error slds-text-color_error" role="alert">
-          <p>The skill network could not be loaded.</p>
+        <div class="state state-error" role="alert">
+          <p class="state-title">The skill network could not be loaded.</p>
           <p class="slds-text-body_small">{errorMessage}</p>
         </div>
       </template>
 
       <template lwc:elseif={isEmpty}>
-        <div class="state state-empty slds-text-color_weak">
+        <div class="state state-empty">
           <p>No skills to show yet.</p>
         </div>
       </template>
@@ -52,9 +52,7 @@
 
         <template lwc:if={showSvg}>
           <template lwc:if={graphErrorMessage}>
-            <p class="graph-error slds-text-body_small slds-text-color_weak">
-              {graphErrorMessage}
-            </p>
+            <p class="graph-error slds-text-body_small">{graphErrorMessage}</p>
           </template>
           <div class="svg-wrapper">
             <svg
