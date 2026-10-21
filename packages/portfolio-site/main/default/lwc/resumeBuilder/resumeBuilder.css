@@ -1,14 +1,20 @@
 .preview-paper {
-  background-color: white;
-  border: 1px solid #d8dde6;
+  background-color: var(--slds-g-color-surface-container-1, #ffffff);
+  border: 1px solid var(--slds-g-color-border-1, #d8dde6);
   min-height: 500px;
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
 }
 
 .section-title {
   text-transform: uppercase;
-  border-bottom: 2px solid #000;
+  border-bottom: 2px solid currentColor;
   margin-bottom: 0.5rem;
   font-weight: bold;
   font-size: 0.9rem;
+}
+
+.resume-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 }
