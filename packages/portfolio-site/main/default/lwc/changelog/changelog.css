@@ -1,3 +1,117 @@
-.slds-timeline__item_task:before {
-  background-color: var(--lwc-colorBackgroundAlt, #ffffff);
+/*
+ * Contract K9: the site branding is dark. Every element here that sets a background
+ * also sets its text colour. The feed sits on the site root surface with the DXP root
+ * tokens. The badges are fixed colour pairs with their own dark text. Fallbacks are the
+ * values the Portfolio branding set renders.
+ */
+:host {
+  display: block;
+  --feed-surface: var(--dxp-g-root, #020617);
+  --feed-text: var(--dxp-g-root-contrast, #e2e8f0);
+  --feed-muted: #94a3b8;
+  --feed-border: var(--dxp-g-neutral-3, #475569);
+}
+
+.changelog {
+  background-color: var(--feed-surface);
+  color: var(--feed-text);
+  padding: 1rem;
+  border: 1px solid var(--feed-border);
+  border-radius: 0.25rem;
+  overflow-wrap: anywhere;
+}
+
+.changelog-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.changelog-title {
+  color: var(--feed-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.changelog-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.age-label {
+  color: var(--feed-muted);
+  background-color: var(--feed-surface);
+  font-size: 0.875rem;
+}
+
+.age-stale {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-simulated {
+  background-color: #7dd3fc;
+  color: #020617;
+}
+
+.badge-degraded {
+  background-color: #fbbf24;
+  color: #020617;
+}
+
+.changelog-message {
+  color: var(--feed-text);
+  margin: 0;
+  padding: 0.5rem 0;
+}
+
+.commit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.commit-item {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--feed-border);
+}
+
+.commit-message {
+  color: var(--feed-text);
+  margin: 0 0 0.25rem;
+}
+
+.commit-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--feed-muted);
+  font-size: 0.875rem;
+}
+
+.commit-link {
+  color: #38bdf8;
+  font-family: "Courier New", Courier, monospace;
+  text-decoration: underline;
+}
+
+.commit-author,
+.commit-date {
+  color: var(--feed-muted);
 }

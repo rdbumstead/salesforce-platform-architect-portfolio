@@ -1,55 +1,50 @@
 <template>
-  <lightning-card title="Latest Updates" icon-name="standard:feed">
-    <div class="slds-p-horizontal_medium">
-      <template if:true={commits}>
-        <ul class="slds-timeline">
-          <template for:each={commits} for:item="commit">
-            <li
-              key={commit.sha}
-              class="slds-timeline__item_expandable slds-timeline__item_task"
-            >
-              <div class="slds-media">
-                <div class="slds-media__figure">
-                  <lightning-icon
-                    icon-name="utility:git_merge"
-                    size="x-small"
-                  ></lightning-icon>
-                </div>
-                <div class="slds-media__body">
-                  <div
-                    class="slds-grid slds-grid_align-spread slds-timeline__trigger"
-                  >
-                    <div
-                      class="slds-grid slds-grid_vertical-align-center slds-truncate_container_75 slds-no-space"
-                    >
-                      <h3 class="slds-truncate" title={commit.message}>
-                        <a href={commit.url} target="_blank"
-                          >{commit.message}</a
-                        >
-                      </h3>
-                    </div>
-                    <div
-                      class="slds-timeline__actions slds-timeline__actions_inline"
-                    >
-                      <p class="slds-timeline__date">{commit.date}</p>
-                    </div>
-                  </div>
-                  <p class="slds-m-horizontal_xx-small">
-                    <span class="slds-truncate" title={commit.author}
-                      >Author: {commit.author}</span
-                    >
-                  </p>
-                </div>
-              </div>
-            </li>
-          </template>
-        </ul>
-      </template>
-      <template if:false={commits}>
-        <div class="slds-text-align_center slds-p-around_medium">
-          <p>No recent updates found.</p>
-        </div>
-      </template>
-    </div>
-  </lightning-card>
+  <section class="changelog" aria-labelledby="changelog-heading">
+    <header class="changelog-header">
+      <h2 id="changelog-heading" class="changelog-title">Latest Updates</h2>
+      <div class="changelog-meta">
+        <template lwc:if={statusBadge}>
+          <span class={statusBadge.className} data-id="status-badge"
+            >{statusBadge.label}</span
+          >
+        </template>
+        <template lwc:if={ageText}>
+          <span class={ageClass} data-id="age-label">{ageText}</span>
+        </template>
+      </div>
+    </header>
+
+    <template lwc:if={isLoading}>
+      <p class="changelog-message" data-id="loading">Loading recent updates</p>
+    </template>
+
+    <template lwc:if={hasCommits}>
+      <ul class="commit-list">
+        <template for:each={commits} for:item="commit">
+          <li key={commit.sha} class="commit-item" data-sha={commit.sha}>
+            <p class="commit-message" data-id="message">{commit.message}</p>
+            <p class="commit-details">
+              <a
+                class="commit-link"
+                href={commit.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={commit.linkLabel}
+                data-id="link"
+                >{commit.shortSha}</a
+              >
+              <span class="commit-author" data-id="author"
+                >{commit.authorName}</span
+              >
+              <span class="commit-date" data-id="date">{commit.date}</span>
+            </p>
+          </li>
+        </template>
+      </ul>
+    </template>
+
+    <template lwc:if={showEmpty}>
+      <p class="changelog-message" data-id="empty">No recent updates found.</p>
+    </template>
+  </section>
 </template>
