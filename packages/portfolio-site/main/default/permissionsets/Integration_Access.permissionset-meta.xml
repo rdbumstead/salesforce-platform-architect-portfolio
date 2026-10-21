@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
     <classAccesses>
+        <apexClass>PAPIAiGenerate</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>PAPIHealth</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -17,11 +21,59 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>PAPITestimonialFeed</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SAPIAccount</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SAPICertification</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SAPICertificationSkill</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SAPIContact</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SAPIEducation</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>SAPIExperience</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>SAPIExperienceHighlight</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SAPIExperienceSkill</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SAPIHealth</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SAPIPortfolioConfig</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>SAPIProject</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SAPIProjectAsset</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SAPIProjectSkill</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
@@ -52,6 +104,11 @@
         <enabled>true</enabled>
         <externalCredentialPrincipal
     >Jira_Auth-Jira_Principal</externalCredentialPrincipal>
+    </externalCredentialPrincipalAccesses>
+    <externalCredentialPrincipalAccesses>
+        <enabled>true</enabled>
+        <externalCredentialPrincipal
+    >Portfolio_API_Auth-Portfolio_API_Principal</externalCredentialPrincipal>
     </externalCredentialPrincipalAccesses>
     <fieldPermissions>
         <editable>false</editable>
