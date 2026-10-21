@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The API Rate Window object holds one request counter per API caller key per minute for the SAPI and PAPI rate limiter. It captures Key (unique, external ID), Window Start and Count. Rows are written only by RateWindowLimiter and removed by the cache cleanup job. Admin-only counter state.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>false</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>API Rate Window</label>
+    <nameField>
+        <displayFormat>RW-{000000}</displayFormat>
+        <label>API Rate Window Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>API Rate Windows</pluralLabel>
+    <searchLayouts />
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

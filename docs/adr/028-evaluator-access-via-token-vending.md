@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-10-01). Depends on [ADR-027](027-platform-native-api-authentication.md).
+Accepted (2026-10-01). Depends on [ADR-027](027-platform-native-api-authentication.md). Amended 2026-10-21 (see below).
 
 ## Context
 
@@ -58,3 +58,16 @@ Behaviour:
 - **README / Evidence Matrix:** the verification method for API design changes from "call the endpoints" to "request a token, then call the endpoints", with the flow documented inline.
 - **Operations (Maintenance Guide):** rotation runbook for the consumer secret, the daily cap setting, and the procedure for revoking access (deactivate the app, re-enable after rotation).
 - **Risk accepted:** an email address is low friction. For read-only public data this is proportionate; if abuse appears, the cap and the kill switch are the response, not a redesign.
+
+## Amendment (2026-10-21)
+
+Behaviour as built in `PAPIAuthToken.requestToken` and `TokenExchangeService.requestToken`:
+
+1. **Validation (400).** The body must be a JSON object of strings. `email` must be a valid address of at most 254 characters; `purpose` is required, at most 280 characters. Disposable addresses are **not** rejected: no list of disposable domains exists, so item 1 of the decision is implemented for malformed addresses only.
+2. **Rate limit (429).** 15 requests per minute per email and source IP (`TokenExchangeService.TOKEN_REQUESTS_PER_MINUTE`, decision 2026-10-20), keyed `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}` through `ApiRateLimiter.checkKey`, on top of the PAPI tier limit applied by `ApiRequestContext.begin`. See the [ADR-025 amendment (2026-10-21)](025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21).
+3. **Daily cap (503).** `TokenExchangeService.dailyCap` reads `Portfolio_Config__mdt.Token_Daily_Cap__c` on the `Ryan_Bumstead` record, default 50. The cap counts audit rows with outcome `Issued` created today; once reached, the response is 503 with `Retry-After` set to the seconds until the next midnight in the running user's time zone. A cap of 0 refuses every request.
+4. **Audit.** Every attempt, including those `ApiRequestContext` rejects before the service runs (`TokenExchangeService.recordRejected`), writes one `API_Access_Request__c` row with `Email__c`, `Purpose__c`, `Source_IP__c`, `Correlation_Id__c`, `Channel__c` (`REST` or `Aura`) and `Outcome__c` (`Issued`, `Invalid_Request`, `Rate_Limited`, `Cap_Reached`, `Credential_Missing`, `Failed`). When the token callout runs, the row is written after it (contract C2).
+5. **Exchange.** Through the `Portfolio_API_Token` Named Credential, not `Portfolio_API` (Apex cannot read the secret of the OAuth credential; see the [ADR-027 amendment (2026-10-21)](027-platform-native-api-authentication.md#amendment-2026-10-21)). A missing or ungranted credential, or `invalid_client_id`, answers 503 "Token issuance is not configured."; any other failure answers 503 "Token issuance is temporarily unavailable."
+6. **Response.** `expires_in` is always 1800 (the integration profile's session timeout; the token endpoint returns no expiry). `instance_url` is the My Domain root returned by the token endpoint; evaluators call `{instance_url}/services/apexrest/...`. The token request itself goes to the site domain under `/portfoliovforcesite/services/apexrest/`.
+
+The API Lab's `ApiLabController.requestEvaluatorToken` runs the same service, then calls `ApiRequestContext.commitRateCounts()` to write its rate count. An Aura call has no REST request, so the source IP comes from the current session when one exists and is otherwise the literal `unavailable`, which makes that key effectively per email. Whether each vended token is its own session, which the P2 rate key relies on, is unverified until the live smoke.

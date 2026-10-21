@@ -1,7 +1,7 @@
 /**
- * @description       : Default rate limiter. Reports the tier limit with full remaining capacity
- *                      and never rejects. Enforcement is deferred until a counter store is chosen
- *                      (ADR-025 amendment: Platform Cache trial, custom-object counter, or headers only).
+ * @description       : Rate limiter that reports the tier limit with full remaining capacity and
+ *                      never rejects. No longer the default (RateWindowLimiter is); kept as a
+ *                      store-free implementation for tests and as a fallback.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -25,5 +25,18 @@ public with sharing class HeadersOnlyRateLimiter implements ApiRateLimiter {
       limitPerMinute,
       0
     );
+  }
+
+  /**
+   * @description Always allows the request and reports remaining capacity equal to the limit.
+   * @param callerKey Rate key (unused by this store).
+   * @param limitPerMinute Requests allowed per minute for the key.
+   * @return ApiRequestContext.RateDecision An allowing decision.
+   */
+  public ApiRequestContext.RateDecision checkKey(
+    String callerKey,
+    Integer limitPerMinute
+  ) {
+    return check(callerKey, limitPerMinute);
   }
 }

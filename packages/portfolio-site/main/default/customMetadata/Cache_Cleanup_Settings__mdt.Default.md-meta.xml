@@ -21,4 +21,8 @@
         <field>Max_Batch_Size__c</field>
         <value xsi:type="xsd:double">200</value>
     </values>
+    <values>
+        <field>Rate_Window_Retention_Days__c</field>
+        <value xsi:type="xsd:double">1</value>
+    </values>
 </CustomMetadata>

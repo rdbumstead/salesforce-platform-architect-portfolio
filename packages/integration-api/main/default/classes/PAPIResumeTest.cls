@@ -163,4 +163,98 @@ private class PAPIResumeTest {
       'Should return correct error code'
     );
   }
+
+  @IsTest
+  static void completeResumeReportsCompleteAndNoStore() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    RestResponse res = RestTestUtil.getResponse();
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Assert.areEqual(200, res.statusCode, 'Should return 200 OK');
+    Assert.areEqual('complete', body.get('integrityNote'), 'Nothing failed');
+    Assert.areEqual(
+      'complete',
+      res.headers.get('X-Data-Integrity'),
+      'Header matches the note'
+    );
+    Assert.areEqual(
+      'no-store, no-cache',
+      res.headers.get('Cache-Control'),
+      'Contact makes the strictest policy no-store'
+    );
+  }
+
+  @IsTest
+  static void failedSkillsSectionIsOmittedAndNamed() {
+    PAPITransformer.forcedSectionFailures.add('skills');
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    RestResponse res = RestTestUtil.getResponse();
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    String text = (String) body.get('generatedText');
+    Assert.areEqual(200, res.statusCode, 'A section failure is not a 500');
+    Assert.areEqual(
+      'partial: skills unavailable',
+      body.get('integrityNote'),
+      'The note names the failed section'
+    );
+    Assert.areEqual(
+      'partial',
+      res.headers.get('X-Data-Integrity'),
+      'Header is partial'
+    );
+    Assert.isFalse(text.contains('SKILLS'), 'Skills section is left out');
+    Assert.isTrue(text.contains('EXPERIENCE'), 'Other sections remain');
+  }
+
+  @IsTest
+  static void everySectionFailingStillAnswers200() {
+    PAPITransformer.forcedSectionFailures.addAll(
+      new Set<String>{
+        'contacts',
+        'experience',
+        'skills',
+        'certifications',
+        'education'
+      }
+    );
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Assert.areEqual(200, RestTestUtil.getResponse().statusCode, 'Best effort');
+    Assert.areEqual(
+      'partial: contacts, experience, skills, certifications, education unavailable',
+      body.get('integrityNote'),
+      'Every failed section is named in read order'
+    );
+    Assert.areEqual('', body.get('generatedText'), 'No text without data');
+  }
+
+  @IsTest
+  static void missingOwnerContactMarksPartial() {
+    delete [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    Assert.areEqual(
+      'partial: contacts unavailable',
+      RestTestUtil.getBodyAsMap().get('integrityNote'),
+      'No owner contact is reported as a partial resume'
+    );
+  }
 }

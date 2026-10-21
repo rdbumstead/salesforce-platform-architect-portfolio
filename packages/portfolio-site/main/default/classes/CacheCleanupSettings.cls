@@ -7,6 +7,8 @@
  * @Test Class        : [CacheCleanupSettingsTest]
  **/
 public with sharing class CacheCleanupSettings {
+  public static final Integer DEFAULT_RATE_WINDOW_RETENTION_DAYS = 1;
+
   @TestVisible
   private static Boolean testOverrideEnabled;
 
@@ -34,6 +36,19 @@ public with sharing class CacheCleanupSettings {
     }
     Integer size = Integer.valueOf(s.Max_Batch_Size__c);
     return size > 0 ? size : 200;
+  }
+
+  /**
+   * @description Days an API_Rate_Window__c row is kept after its window starts.
+   * @return Integer Rate_Window_Retention_Days__c, or 1 when blank or below 1.
+   */
+  public static Integer rateWindowRetentionDays() {
+    Cache_Cleanup_Settings__mdt s = settings();
+    if (s == null || s.Rate_Window_Retention_Days__c == null) {
+      return DEFAULT_RATE_WINDOW_RETENTION_DAYS;
+    }
+    Integer days = Integer.valueOf(s.Rate_Window_Retention_Days__c);
+    return days >= 1 ? days : DEFAULT_RATE_WINDOW_RETENTION_DAYS;
   }
 
   @TestVisible

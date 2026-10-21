@@ -212,4 +212,145 @@ private class PAPIProfileTest {
       'Project assets should be included'
     );
   }
+
+  @IsTest
+  static void completeFullPortfolioHasCompleteNote() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    Assert.areEqual(
+      'complete',
+      RestTestUtil.getBodyAsMap().get('integrityNote'),
+      'Every section was read'
+    );
+  }
+
+  @IsTest
+  static void forcedCertificationsFailureReturnsPartialWithNote() {
+    PAPITransformer.forcedSectionFailures.add('certifications');
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+    RestResponse res = RestTestUtil.getResponse();
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Assert.areEqual(200, res.statusCode, 'A section failure is not a 500');
+    Assert.areEqual(
+      'partial: certifications unavailable',
+      body.get('integrityNote'),
+      'The note names the failed sub-query'
+    );
+    Assert.areEqual(
+      'partial',
+      res.headers.get('X-Data-Integrity'),
+      'Header is partial'
+    );
+    Assert.areEqual(
+      0,
+      ((List<Object>) body.get('certifications')).size(),
+      'The failed section is returned empty'
+    );
+    Assert.areEqual(
+      1,
+      ((List<Object>) body.get('education')).size(),
+      'Other sections are unaffected'
+    );
+    Assert.areEqual(
+      'no-store, no-cache',
+      res.headers.get('Cache-Control'),
+      'Strictest upstream policy (Contact) wins'
+    );
+  }
+
+  @IsTest
+  static void everySectionFailingStillAnswers200() {
+    PAPITransformer.forcedSectionFailures.addAll(
+      new Set<String>{
+        'contacts',
+        'experience',
+        'experience-skills',
+        'skills',
+        'projects',
+        'project-skills',
+        'project-assets',
+        'certifications',
+        'education',
+        'testimonials'
+      }
+    );
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+    RestResponse res = RestTestUtil.getResponse();
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Assert.areEqual(200, res.statusCode, 'Best effort aggregation');
+    Assert.areEqual(
+      'partial: contacts, experience, experience-skills, skills, projects, project-skills, project-assets, certifications, education, testimonials unavailable',
+      body.get('integrityNote'),
+      'Every failed section is named in read order'
+    );
+    Assert.areEqual(
+      0,
+      ((List<Object>) body.get('projects')).size(),
+      'Projects are empty'
+    );
+  }
+
+  @IsTest
+  static void summaryIncludesCertificationsAndStaysPrivate() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/summary');
+    RestResponse res = RestTestUtil.getResponse();
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Assert.areEqual('complete', body.get('integrityNote'), 'Nothing failed');
+    Assert.areEqual(
+      1,
+      ((List<Object>) body.get('education')).size(),
+      'Summary now reads education'
+    );
+    Assert.areEqual(
+      'max-age=300, private',
+      res.headers.get('Cache-Control'),
+      'Decisions block fixes summary at max-age=300, private'
+    );
+  }
+
+  @IsTest
+  static void summaryForcedEducationFailureIsPartialAndStaysPrivate() {
+    PAPITransformer.forcedSectionFailures.add('education');
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/summary');
+    RestResponse res = RestTestUtil.getResponse();
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    Assert.areEqual(
+      'partial: education unavailable',
+      RestTestUtil.getBodyAsMap().get('integrityNote'),
+      'The note names the failed section'
+    );
+    Assert.areEqual(
+      'partial',
+      res.headers.get('X-Data-Integrity'),
+      'Header is partial'
+    );
+    Assert.areEqual(
+      'max-age=300, private',
+      res.headers.get('Cache-Control'),
+      'A failure does not change the summary policy'
+    );
+  }
 }

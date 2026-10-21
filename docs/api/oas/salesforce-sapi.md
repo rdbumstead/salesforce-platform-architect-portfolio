@@ -14,12 +14,12 @@ System API exposing core Salesforce objects for the Portfolio.
 ### Architecture & Governance
 - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
 - **ID Strategy**: All `id` fields utilize strictly **18-character Salesforce Case-Insensitive IDs**.
-- **Traceability**: Each API resource maps 1:1 to a corresponding DataWeave Logic (DWL) file.
+- **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
 ### Non-Functional Requirements (NFRs)
-- **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing.
+- **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`). The platform echoes a caller-supplied value on every response; Apex sets the header only when it generated the value (ADR-026).
 - **Latency**: Target < 500ms for internal processing.
-- **Resilience**: Rate Limits defined with `429` responses and `Retry-After` headers.
+- **Resilience**: 120 requests per minute per caller, enforced by `RateWindowLimiter` (ADR-025), with `429` responses and `Retry-After` headers.
 - **Caching Strategy**: 
   - **Public Data** (Skills, Projects, Junctions): `Cache-Control: max-age=300, public`.
   - **Private Data** (Contact, Config): `Cache-Control: max-age=300, private` or `no-store`.
@@ -27,15 +27,15 @@ System API exposing core Salesforce objects for the Portfolio.
 ### Design Constraints & Trade-offs
 - **Pagination**: Offset-based pagination implemented for simplicity (<200 records). 
   - *Enterprise Note*: For volumes >2,000, this would be refactored to **Keyset/Cursor Pagination** (`WHERE Id > lastSeenId`).
-- **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning.
+- **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning. A missing header resolves to `v1`; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
 
 Base URLs:
 
-* <a href="https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1">https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1</a>
+* <a href="https://{domain}/services/apexrest/sapi/v1">https://{domain}/services/apexrest/sapi/v1</a>
 
-    * **domain** - The Salesforce Experience Cloud domain. Default: ryan-bumstead-dev-ed.develop.my.site.com
+    * **domain** - The org's My Domain host. Default: ryan-bumstead-dev-ed.develop.my.salesforce.com
 
-        * ryan-bumstead-dev-ed.develop.my.site.com
+        * ryan-bumstead-dev-ed.develop.my.salesforce.com
 
 Email: <a href="mailto:ryan@ryanbumstead.com">Ryan Bumstead</a> 
 License: <a href="https://opensource.org/licenses/MIT">MIT</a>
@@ -67,10 +67,11 @@ Health checks and observability endpoints.
 ```javascript
 
 const headers = {
-  'Accept':'application/json'
+  'Accept':'application/json',
+  'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/health',
+fetch('https://{domain}/services/apexrest/sapi/v1/health',
 {
   method: 'GET',
 
@@ -88,8 +89,8 @@ fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/health',
 
 *Health Check*
 
-Current Implementation: Shallow connectivity check (Runtime availability).
-Future Roadmap: Deep dependency check (Salesforce Connectivity, Cache Availability).
+Shallow check: runtime availability, the current transaction's governor-limit snapshot and org time
+(`SAPIHealth.getHealth`, payload from `SAPIHealth.buildPayload`). `checkType` is always SHALLOW.
 
 > Example responses
 
@@ -100,8 +101,31 @@ Future Roadmap: Deep dependency check (Salesforce Connectivity, Cache Availabili
   "status": "UP",
   "checkType": "SHALLOW",
   "timestamp": "2019-08-24T14:15:22Z",
+  "orgTimeZone": "America/Chicago",
   "dependencies": {
-    "salesforce": "deferred"
+    "salesforce": "UP"
+  },
+  "limits": {
+    "queries": {
+      "used": 1,
+      "limit": 100
+    },
+    "dmlStatements": {
+      "used": 1,
+      "limit": 100
+    },
+    "callouts": {
+      "used": 1,
+      "limit": 100
+    },
+    "cpuTimeMs": {
+      "used": 1,
+      "limit": 100
+    },
+    "heapBytes": {
+      "used": 1,
+      "limit": 100
+    }
   }
 }
 ```
@@ -116,11 +140,12 @@ Future Roadmap: Deep dependency check (Salesforce Connectivity, Cache Availabili
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|Cache-Control|string||No-cache for health checks.|
 
-<aside class="success">
-This operation does not require authentication
+<aside class="warning">
+To perform this operation, you must be authenticated by means of one of the following methods:
+OAuth2ClientCredentials ( Scopes: api )
 </aside>
 
 <h1 id="salesforce-system-api-sapi--profile">Profile</h1>
@@ -142,7 +167,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/contacts',
+fetch('https://{domain}/services/apexrest/sapi/v1/contacts',
 {
   method: 'GET',
 
@@ -160,14 +185,14 @@ fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/contacts',
 
 *Get Contact records*
 
-Retrieves the primary contact details for the portfolio owner.
+Retrieves the primary contact details for the portfolio owner. Returns only the Contact flagged as the portfolio owner (`Is_Portfolio_Owner__c`).
 
 <h3 id="getcontacts-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
@@ -183,8 +208,6 @@ Retrieves the primary contact details for the portfolio owner.
     "name": "Ryan Bumstead",
     "email": "ryan@ryanbumstead.com",
     "phone": "+1 555-0199",
-    "accountId": "0015e00000A1O3DAAV",
-    "accountName": "Salesforce",
     "title": "Platform Architect",
     "trailhead": "https://trailblazer.me/id/rbumstead",
     "careerObjective": "Driving digital transformation...",
@@ -215,7 +238,7 @@ Retrieves the primary contact details for the portfolio owner.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getcontacts-responseschema">Response Schema</h3>
 
@@ -228,8 +251,6 @@ Status Code **200**
 |» name|string|false|none|Full Name|
 |» email|string(email)|false|none|Email Address|
 |» phone|string|false|none|Phone Number|
-|» accountId|string|false|none|Related Account ID|
-|» accountName|string|false|none|Related Account Name|
 |» title|string|false|none|Job Title|
 |» trailhead|string(uri)¦null|false|none|Trailhead Profile URL|
 |» careerObjective|string¦null|false|none|Short Professional Summary|
@@ -240,16 +261,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -271,7 +292,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/experience',
+fetch('https://{domain}/services/apexrest/sapi/v1/experience',
 {
   method: 'GET',
 
@@ -295,8 +316,8 @@ Retrieves professional experience history.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |employerName|query|string|false|Filter by Employer Name.|
 |currentlyEmployed|query|boolean|false|Filter by active employment status.|
@@ -347,7 +368,7 @@ Retrieves professional experience history.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getexperience-responseschema">Response Schema</h3>
 
@@ -373,16 +394,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -404,7 +425,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/experience-highlights',
+fetch('https://{domain}/services/apexrest/sapi/v1/experience-highlights',
 {
   method: 'GET',
 
@@ -422,28 +443,27 @@ fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/experience
 
 *Get Experience Highlights*
 
-Fetches resume bullets. Supports Persona filtering for PAPI optimization.
+Fetches resume bullets. Supports Persona filtering for PAPI optimization. A malformed `experienceId` or an unknown `persona` value returns 400.
 
 <h3 id="getexperiencehighlights-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |experienceId|query|string|false|Filter by Experience Salesforce ID.|
-|persona|query|any|false|Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).|
+|persona|query|string|false|Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 
 #### Detailed descriptions
 
 **persona**: Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).
-Can be a single value or multiple values (comma-separated or repeated parameters).
+Takes a single value or a comma-separated list of Admin, Developer and Architect. An unknown value returns 400.
 
 Examples:
 - Single: `?persona=Admin`
 - Multiple (comma): `?persona=Admin,Developer`
-- Multiple (repeated): `?persona=Admin&persona=Developer`
 
 > Example responses
 
@@ -458,7 +478,7 @@ Examples:
     "name": "DevOps Transformation",
     "description": "Implemented CI/CD pipelines reducing deployment time by 80%.",
     "sortOrder": 1,
-    "personaTag": "Architect"
+    "personaTag": "Developer;Architect"
   }
 ]
 ```
@@ -484,7 +504,7 @@ Examples:
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getexperiencehighlights-responseschema">Response Schema</h3>
 
@@ -499,30 +519,22 @@ Status Code **200**
 |» name|string|false|none|Highlight Title|
 |» description|string|false|none|Detailed Description|
 |» sortOrder|number|false|none|Sort Order|
-|» personaTag|[Persona](#schemapersona)|false|none|Target audience for content filtering.|
-
-#### Enumerated Values
-
-|Property|Value|
-|---|---|
-|personaTag|Admin|
-|personaTag|Developer|
-|personaTag|Architect|
+|» personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect).|
 
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -548,7 +560,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/projects',
+fetch('https://{domain}/services/apexrest/sapi/v1/projects',
 {
   method: 'GET',
 
@@ -573,8 +585,8 @@ Example Usage: `/projects?isFeatured=true`
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |status|query|[ProjectStatus](#schemaprojectstatus)|false|Filter by Project Status.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
@@ -640,7 +652,7 @@ Example Usage: `/projects?isFeatured=true`
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getprojects-responseschema">Response Schema</h3>
 
@@ -680,16 +692,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -711,7 +723,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/project-assets',
+fetch('https://{domain}/services/apexrest/sapi/v1/project-assets',
 {
   method: 'GET',
 
@@ -729,14 +741,14 @@ fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/project-as
 
 *Get Project Assets*
 
-Retrieves assets (images, links) associated with a project.
+Retrieves assets (images, links) associated with a project. A malformed Salesforce Id filter returns 400.
 
 <h3 id="getprojectassets-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |projectId|query|string|false|Filter by Project Salesforce ID.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
@@ -781,7 +793,7 @@ Retrieves assets (images, links) associated with a project.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getprojectassets-responseschema">Response Schema</h3>
 
@@ -812,16 +824,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -843,7 +855,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/testimonials',
+fetch('https://{domain}/services/apexrest/sapi/v1/testimonials',
 {
   method: 'GET',
 
@@ -867,8 +879,8 @@ Retrieves received testimonials. Returns only records where Approved__c = true.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 
@@ -912,7 +924,7 @@ Retrieves received testimonials. Returns only records where Approved__c = true.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="gettestimonials-responseschema">Response Schema</h3>
 
@@ -946,16 +958,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -977,7 +989,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/accounts',
+fetch('https://{domain}/services/apexrest/sapi/v1/accounts',
 {
   method: 'GET',
 
@@ -1001,8 +1013,8 @@ Retrieves related account/employer records.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |accountName|query|string|false|Filter by Account Name.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
@@ -1043,7 +1055,7 @@ Retrieves related account/employer records.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getaccounts-responseschema">Response Schema</h3>
 
@@ -1061,16 +1073,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1092,7 +1104,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/skills',
+fetch('https://{domain}/services/apexrest/sapi/v1/skills',
 {
   method: 'GET',
 
@@ -1116,8 +1128,8 @@ Retrieves technical skills and proficiency scores.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |category|query|string|false|Filter skills by Category (e.g., 'Development', 'Architecture')|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
@@ -1163,7 +1175,7 @@ Retrieves technical skills and proficiency scores.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getskills-responseschema">Response Schema</h3>
 
@@ -1186,16 +1198,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1217,7 +1229,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/certifications',
+fetch('https://{domain}/services/apexrest/sapi/v1/certifications',
 {
   method: 'GET',
 
@@ -1241,8 +1253,8 @@ Retrieves professional certifications.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |issuerName|query|string|false|Filter by Issuer Name.|
 |certificationName|query|string|false|Filter by Certification Name.|
@@ -1288,7 +1300,7 @@ Retrieves professional certifications.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getcertifications-responseschema">Response Schema</h3>
 
@@ -1309,16 +1321,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1340,7 +1352,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/education',
+fetch('https://{domain}/services/apexrest/sapi/v1/education',
 {
   method: 'GET',
 
@@ -1364,8 +1376,8 @@ Retrieves educational background.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |issuerName|query|string|false|Filter by Issuer Name.|
 |limit|query|integer|false|Maximum number of records to return.|
@@ -1412,7 +1424,7 @@ Retrieves educational background.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="geteducation-responseschema">Response Schema</h3>
 
@@ -1435,16 +1447,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1470,7 +1482,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/project-skills',
+fetch('https://{domain}/services/apexrest/sapi/v1/project-skills',
 {
   method: 'GET',
 
@@ -1488,14 +1500,14 @@ fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/project-sk
 
 *Get Project-Skill Links*
 
-Retrieves junction records linking Projects to Skills.
+Retrieves junction records linking Projects to Skills. A malformed Salesforce Id filter returns 400.
 
 <h3 id="getprojectskills-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |projectId|query|string|false|Filter by Project Salesforce ID.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
@@ -1539,7 +1551,7 @@ Retrieves junction records linking Projects to Skills.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getprojectskills-responseschema">Response Schema</h3>
 
@@ -1560,16 +1572,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1591,7 +1603,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/experience-skills',
+fetch('https://{domain}/services/apexrest/sapi/v1/experience-skills',
 {
   method: 'GET',
 
@@ -1609,14 +1621,14 @@ fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/experience
 
 *Get Experience-Skill Links*
 
-Retrieves junction records linking Experiences to Skills.
+Retrieves junction records linking Experiences to Skills. A malformed Salesforce Id filter returns 400.
 
 <h3 id="getexperienceskills-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |experienceId|query|string|false|Filter by Experience Salesforce ID.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
@@ -1660,7 +1672,7 @@ Retrieves junction records linking Experiences to Skills.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getexperienceskills-responseschema">Response Schema</h3>
 
@@ -1681,16 +1693,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1712,7 +1724,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/certification-skills',
+fetch('https://{domain}/services/apexrest/sapi/v1/certification-skills',
 {
   method: 'GET',
 
@@ -1730,14 +1742,14 @@ fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/certificat
 
 *Get Certification-Skill Links*
 
-Retrieves junction records linking Certifications to Skills.
+Retrieves junction records linking Certifications to Skills. A malformed Salesforce Id filter returns 400.
 
 <h3 id="getcertificationskills-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |certificationId|query|string|false|Filter by Certification Salesforce ID.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
@@ -1781,7 +1793,7 @@ Retrieves junction records linking Certifications to Skills.
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 <h3 id="getcertificationskills-responseschema">Response Schema</h3>
 
@@ -1802,16 +1814,16 @@ Status Code **200**
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|400|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1837,7 +1849,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1/portfolio-config',
+fetch('https://{domain}/services/apexrest/sapi/v1/portfolio-config',
 {
   method: 'GET',
 
@@ -1861,8 +1873,8 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|true|API Contract Version (e.g., v1).|
-|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing (Logs/Splunk). Must be UUID.|
+|X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 
 > Example responses
 
@@ -1899,25 +1911,23 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Global Configuration.|[PortfolioConfig](#schemaportfolioconfig)|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Global Configuration. Returns an empty object when no configuration record exists.|[PortfolioConfig](#schemaportfolioconfig)|
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
 |403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The requested resource ID was not found.|[Error](#schemaerror)|
 |429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (Apex/MuleSoft Fault).|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
 
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
-|200|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
-|401|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|403|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|404|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
-|429|Retry-After|integer||Seconds until the rate limit resets.|
-|500|X-Request-Id|string|uuid|Echoed correlation ID for distributed tracing and observability.|
+|200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|200|Cache-Control|string||Private configuration data; shared caches must not store it.|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -2125,8 +2135,31 @@ Tone/Style Category
   "status": "UP",
   "checkType": "SHALLOW",
   "timestamp": "2019-08-24T14:15:22Z",
+  "orgTimeZone": "America/Chicago",
   "dependencies": {
-    "salesforce": "deferred"
+    "salesforce": "UP"
+  },
+  "limits": {
+    "queries": {
+      "used": 1,
+      "limit": 100
+    },
+    "dmlStatements": {
+      "used": 1,
+      "limit": 100
+    },
+    "callouts": {
+      "used": 1,
+      "limit": 100
+    },
+    "cpuTimeMs": {
+      "used": 1,
+      "limit": 100
+    },
+    "heapBytes": {
+      "used": 1,
+      "limit": 100
+    }
   }
 }
 
@@ -2141,8 +2174,15 @@ API Health Status Schema.
 |status|string|false|none|Overall API Availability.|
 |checkType|string|false|none|SHALLOW = Runtime only. DEEP = Includes downstream dependencies.|
 |timestamp|string(date-time)|false|none|ISO 8601 Timestamp of the health check.|
+|orgTimeZone|string|false|none|Time zone of the running user (org time).|
 |dependencies|object|false|none|Status of downstream systems.|
 |» salesforce|string|false|none|Status of Salesforce Core.|
+|limits|object|false|none|Governor-limit snapshot of the current transaction (`SAPIHealth.buildPayload`).|
+|» queries|[LimitUsage](#schemalimitusage)|false|none|none|
+|» dmlStatements|[LimitUsage](#schemalimitusage)|false|none|none|
+|» callouts|[LimitUsage](#schemalimitusage)|false|none|none|
+|» cpuTimeMs|[LimitUsage](#schemalimitusage)|false|none|none|
+|» heapBytes|[LimitUsage](#schemalimitusage)|false|none|none|
 
 #### Enumerated Values
 
@@ -2153,6 +2193,28 @@ API Health Status Schema.
 |status|DEGRADED|
 |checkType|SHALLOW|
 |checkType|DEEP|
+
+<h2 id="tocS_LimitUsage">LimitUsage</h2>
+<!-- backwards compatibility -->
+<a id="schemalimitusage"></a>
+<a id="schema_LimitUsage"></a>
+<a id="tocSlimitusage"></a>
+<a id="tocslimitusage"></a>
+
+```json
+{
+  "used": 1,
+  "limit": 100
+}
+
+```
+
+### Properties
+
+|Name|Type|Required|Restrictions|Description|
+|---|---|---|---|---|
+|used|integer|false|none|none|
+|limit|integer|false|none|none|
 
 <h2 id="tocS_Contact">Contact</h2>
 <!-- backwards compatibility -->
@@ -2167,8 +2229,6 @@ API Health Status Schema.
   "name": "Ryan Bumstead",
   "email": "ryan@ryanbumstead.com",
   "phone": "+1 555-0199",
-  "accountId": "0015e00000A1O3DAAV",
-  "accountName": "Salesforce",
   "title": "Platform Architect",
   "trailhead": "https://trailblazer.me/id/rbumstead",
   "careerObjective": "Driving digital transformation...",
@@ -2188,8 +2248,6 @@ Contact Information Schema.
 |name|string|false|none|Full Name|
 |email|string(email)|false|none|Email Address|
 |phone|string|false|none|Phone Number|
-|accountId|string|false|none|Related Account ID|
-|accountName|string|false|none|Related Account Name|
 |title|string|false|none|Job Title|
 |trailhead|string(uri)¦null|false|none|Trailhead Profile URL|
 |careerObjective|string¦null|false|none|Short Professional Summary|
@@ -2307,7 +2365,7 @@ Professional Experience Schema.
   "name": "DevOps Transformation",
   "description": "Implemented CI/CD pipelines reducing deployment time by 80%.",
   "sortOrder": 1,
-  "personaTag": "Architect"
+  "personaTag": "Developer;Architect"
 }
 
 ```
@@ -2324,7 +2382,7 @@ Experience Bullet Point Schema.
 |name|string|false|none|Highlight Title|
 |description|string|false|none|Detailed Description|
 |sortOrder|number|false|none|Sort Order|
-|personaTag|[Persona](#schemapersona)|false|none|Target audience for content filtering.|
+|personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect).|
 
 <h2 id="tocS_ProjectAsset">ProjectAsset</h2>
 <!-- backwards compatibility -->

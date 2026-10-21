@@ -72,4 +72,59 @@ private class CacheCleanupSettingsTest {
     System.assertEquals(200, size, 'Should default to 200');
     System.assertEquals(true, enabled, 'Should default to true');
   }
+
+  @IsTest
+  static void rateWindowRetentionDefaultsToOneDay() {
+    CacheCleanupSettings.useMockSettings = true;
+    CacheCleanupSettings.mockSettings = null;
+
+    Test.startTest();
+    Integer days = CacheCleanupSettings.rateWindowRetentionDays();
+    Test.stopTest();
+
+    Assert.areEqual(1, days, 'Missing settings mean one day');
+  }
+
+  @IsTest
+  static void rateWindowRetentionReadsSetting() {
+    CacheCleanupSettings.useMockSettings = true;
+    CacheCleanupSettings.mockSettings = new Cache_Cleanup_Settings__mdt(
+      Rate_Window_Retention_Days__c = 7
+    );
+
+    Test.startTest();
+    Integer days = CacheCleanupSettings.rateWindowRetentionDays();
+    Test.stopTest();
+
+    Assert.areEqual(7, days, 'Configured retention is used');
+  }
+
+  @IsTest
+  static void rateWindowRetentionBelowOneUsesDefault() {
+    CacheCleanupSettings.useMockSettings = true;
+    CacheCleanupSettings.mockSettings = new Cache_Cleanup_Settings__mdt(
+      Rate_Window_Retention_Days__c = 0
+    );
+
+    Test.startTest();
+    Integer days = CacheCleanupSettings.rateWindowRetentionDays();
+    Test.stopTest();
+
+    Assert.areEqual(1, days, 'Zero falls back to one day');
+  }
+
+  @IsTest
+  static void deployedDefaultRecordKeepsWindowsOneDay() {
+    Test.startTest();
+    Integer days = CacheCleanupSettings.rateWindowRetentionDays();
+    Test.stopTest();
+
+    Assert.areEqual(
+      1,
+      Cache_Cleanup_Settings__mdt.getInstance('Default')
+        .Rate_Window_Retention_Days__c,
+      'Default record sets one day'
+    );
+    Assert.areEqual(1, days, 'Accessor reads the Default record');
+  }
 }

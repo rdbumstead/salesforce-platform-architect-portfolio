@@ -133,4 +133,77 @@ private class PAPIProjectsTest {
       'Asset caption should be included'
     );
   }
+
+  @IsTest
+  static void completeResponseIsPublicWithoutIntegrityNote() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/projects/featured');
+    RestResponse res = RestTestUtil.getResponse();
+
+    Test.startTest();
+    PAPIProjects.getProjects();
+    Test.stopTest();
+
+    Assert.areEqual(200, res.statusCode, 'Should return 200 OK');
+    Assert.areEqual(
+      'complete',
+      res.headers.get('X-Data-Integrity'),
+      'Every sub-query succeeded'
+    );
+    Assert.isNull(res.headers.get('X-Integrity-Note'), 'No note when complete');
+    Assert.areEqual(
+      'max-age=300, public',
+      res.headers.get('Cache-Control'),
+      'Projects, project-skills and project-assets are all public'
+    );
+  }
+
+  @IsTest
+  static void failedSkillsSubQueryReturnsPartialWithNote() {
+    PAPITransformer.forcedSectionFailures.add('project-skills');
+    RestTestUtil.initGet('/services/apexrest/papi/v1/projects/featured');
+    RestResponse res = RestTestUtil.getResponse();
+
+    Test.startTest();
+    PAPIProjects.getProjects();
+    Test.stopTest();
+
+    Assert.areEqual(200, res.statusCode, 'A sub-query failure is not a 500');
+    Assert.areEqual(
+      'partial',
+      res.headers.get('X-Data-Integrity'),
+      'Skills could not be read'
+    );
+    Assert.areEqual(
+      'partial: project-skills unavailable',
+      res.headers.get('X-Integrity-Note'),
+      'The note names the failed sub-query'
+    );
+    List<Object> body = (List<Object>) JSON.deserializeUntyped(
+      res.responseBody.toString()
+    );
+    Map<String, Object> project = (Map<String, Object>) body[0];
+    Assert.areEqual(
+      0,
+      ((List<Object>) project.get('technologies')).size(),
+      'Technologies are empty when the skills read fails'
+    );
+  }
+
+  @IsTest
+  static void failedAssetsSubQueryReturnsPartial() {
+    PAPITransformer.forcedSectionFailures.add('project-assets');
+    RestTestUtil.initGet('/services/apexrest/papi/v1/projects/');
+    RestResponse res = RestTestUtil.getResponse();
+
+    Test.startTest();
+    PAPIProjects.getProjects();
+    Test.stopTest();
+
+    Assert.areEqual(200, res.statusCode, 'A sub-query failure is not a 500');
+    Assert.areEqual(
+      'partial: project-assets unavailable',
+      res.headers.get('X-Integrity-Note'),
+      'The note names the failed sub-query'
+    );
+  }
 }

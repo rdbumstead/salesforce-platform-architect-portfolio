@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Outcome__c</fullName>
+    <description
+  >Result of the attempt. Issued rows count toward the daily issuance cap.</description>
+    <label>Outcome</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Issued</fullName><default>false</default><label
+        >Issued</label></value>
+            <value><fullName>Invalid_Request</fullName><default
+        >false</default><label>Invalid Request</label></value>
+            <value><fullName>Rate_Limited</fullName><default
+        >false</default><label>Rate Limited</label></value>
+            <value><fullName>Cap_Reached</fullName><default
+        >false</default><label>Cap Reached</label></value>
+            <value><fullName>Credential_Missing</fullName><default
+        >false</default><label>Credential Missing</label></value>
+            <value><fullName>Failed</fullName><default>false</default><label
+        >Failed</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

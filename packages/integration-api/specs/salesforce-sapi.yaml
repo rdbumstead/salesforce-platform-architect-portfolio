@@ -15,12 +15,12 @@ info:
     ### Architecture & Governance
     - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
     - **ID Strategy**: All `id` fields utilize strictly **18-character Salesforce Case-Insensitive IDs**.
-    - **Traceability**: Each API resource maps 1:1 to a corresponding DataWeave Logic (DWL) file.
+    - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
     ### Non-Functional Requirements (NFRs)
-    - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing.
+    - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`). The platform echoes a caller-supplied value on every response; Apex sets the header only when it generated the value (ADR-026).
     - **Latency**: Target < 500ms for internal processing.
-    - **Resilience**: Rate Limits defined with `429` responses and `Retry-After` headers.
+    - **Resilience**: 120 requests per minute per caller, enforced by `RateWindowLimiter` (ADR-025), with `429` responses and `Retry-After` headers.
     - **Caching Strategy**: 
       - **Public Data** (Skills, Projects, Junctions): `Cache-Control: max-age=300, public`.
       - **Private Data** (Contact, Config): `Cache-Control: max-age=300, private` or `no-store`.
@@ -28,7 +28,7 @@ info:
     ### Design Constraints & Trade-offs
     - **Pagination**: Offset-based pagination implemented for simplicity (<200 records). 
       - *Enterprise Note*: For volumes >2,000, this would be refactored to **Keyset/Cursor Pagination** (`WHERE Id > lastSeenId`).
-    - **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning.
+    - **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning. A missing header resolves to `v1`; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
   contact:
     name: Ryan Bumstead
     email: ryan@ryanbumstead.com
@@ -49,14 +49,17 @@ tags:
     description: Global portfolio settings.
 
 servers:
-  - url: https://{domain}/portfoliovforcesite/services/apexrest/sapi/v1
-    description: Salesforce Experience Cloud SAPI Base Path
+  - url: https://{domain}/services/apexrest/sapi/v1
+    description: |
+      Salesforce My Domain (authenticated Apex REST). Bearer-token callers use the `instance_url`
+      returned with their token. The Experience Cloud site domain serves Apex REST to the guest
+      user only, and the only guest-callable path is PAPI `POST /auth/token`.
     variables:
       domain:
-        default: ryan-bumstead-dev-ed.develop.my.site.com
-        description: The Salesforce Experience Cloud domain.
+        default: ryan-bumstead-dev-ed.develop.my.salesforce.com
+        description: The org's My Domain host.
         enum:
-          - ryan-bumstead-dev-ed.develop.my.site.com
+          - ryan-bumstead-dev-ed.develop.my.salesforce.com
 
 security:
   - OAuth2ClientCredentials:
@@ -64,10 +67,9 @@ security:
 
 components:
   x-rate-limit:
-    description: "Enforced on-platform by ApiRequestContext (ADR-025), keyed by the calling External Client App. Emits X-RateLimit-Limit, X-RateLimit-Remaining and Retry-After."
+    description: "Enforced in Apex by RateWindowLimiter (ADR-025), a custom-object counter: one API_Rate_Window__c row per caller key per fixed UTC calendar minute. The caller key is sapi:{SHA-256 hex of the session id}, or sapi:{user id} when the session id is null. Every response carries X-RateLimit-Limit and X-RateLimit-Remaining. Request limit + 1 within the minute gets 429 RATE_LIMIT_EXCEEDED with Retry-After set to the seconds left in the minute. Rejected requests count. No burst allowance."
     tier: standard
     requestsPerMinute: 120
-    burst: 20
 
   securitySchemes:
     OAuth2ClientCredentials:
@@ -84,7 +86,7 @@ components:
 
   headers:
     RequestIdResponse:
-      description: "Echoed correlation ID for distributed tracing and observability."
+      description: "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header)."
       schema:
         type: string
         format: uuid
@@ -115,8 +117,8 @@ components:
     apiVersionParam:
       name: X-API-Version
       in: header
-      required: true
-      description: "API Contract Version (e.g., v1)."
+      required: false
+      description: "API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026)."
       schema:
         type: string
         example: "v1"
@@ -125,7 +127,7 @@ components:
       name: X-Request-Id
       in: header
       required: true
-      description: "Correlation ID for distributed tracing (Logs/Splunk). Must be UUID."
+      description: "Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026)."
       schema:
         type: string
         format: uuid
@@ -191,22 +193,13 @@ components:
       in: query
       description: |
         Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).
-        Can be a single value or multiple values (comma-separated or repeated parameters).
+        Takes a single value or a comma-separated list of Admin, Developer and Architect. An unknown value returns 400.
 
         Examples:
         - Single: `?persona=Admin`
         - Multiple (comma): `?persona=Admin,Developer`
-        - Multiple (repeated): `?persona=Admin&persona=Developer`
       schema:
-        oneOf:
-          - type: string
-            enum: [Admin, Developer, Architect]
-          - type: array
-            items:
-              type: string
-              enum: [Admin, Developer, Architect]
-      style: form
-      explode: true
+        type: string
       example: "Admin"
 
     statusParam:
@@ -312,7 +305,7 @@ components:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
         Retry-After:
-          description: Seconds until the rate limit resets.
+          description: Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).
           schema:
             type: integer
       content:
@@ -321,7 +314,7 @@ components:
             $ref: "#/components/schemas/Error"
 
     ServerError:
-      description: Internal platform error (Apex/MuleSoft Fault).
+      description: Internal platform error (unhandled Apex exception).
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
@@ -427,14 +420,42 @@ components:
           type: string
           format: date-time
           description: "ISO 8601 Timestamp of the health check."
+        orgTimeZone:
+          type: string
+          example: "America/Chicago"
+          description: "Time zone of the running user (org time)."
         dependencies:
           type: object
           description: "Status of downstream systems."
           properties:
             salesforce:
               type: string
-              example: "deferred"
+              example: "UP"
               description: "Status of Salesforce Core."
+        limits:
+          type: object
+          description: "Governor-limit snapshot of the current transaction (`SAPIHealth.buildPayload`)."
+          properties:
+            queries:
+              $ref: "#/components/schemas/LimitUsage"
+            dmlStatements:
+              $ref: "#/components/schemas/LimitUsage"
+            callouts:
+              $ref: "#/components/schemas/LimitUsage"
+            cpuTimeMs:
+              $ref: "#/components/schemas/LimitUsage"
+            heapBytes:
+              $ref: "#/components/schemas/LimitUsage"
+
+    LimitUsage:
+      type: object
+      properties:
+        used:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 100
 
     Contact:
       type: object
@@ -458,14 +479,6 @@ components:
           type: string
           example: "+1 555-0199"
           description: "Phone Number"
-        accountId:
-          type: string
-          example: "0015e00000A1O3DAAV"
-          description: "Related Account ID"
-        accountName:
-          type: string
-          example: "Salesforce"
-          description: "Related Account Name"
         title:
           type: string
           example: "Platform Architect"
@@ -670,7 +683,9 @@ components:
           example: 1
           description: "Sort Order"
         personaTag:
-          $ref: "#/components/schemas/Persona"
+          type: string
+          example: "Developer;Architect"
+          description: "Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect)."
       additionalProperties: true
 
     ProjectAsset:
@@ -1074,10 +1089,9 @@ paths:
       tags: [Monitoring]
       summary: Health Check
       description: |
-        Current Implementation: Shallow connectivity check (Runtime availability).
-        Future Roadmap: Deep dependency check (Salesforce Connectivity, Cache Availability).
+        Shallow check: runtime availability, the current transaction's governor-limit snapshot and org time
+        (`SAPIHealth.getHealth`, payload from `SAPIHealth.buildPayload`). `checkType` is always SHALLOW.
       operationId: getHealth
-      security: []
       responses:
         "200":
           description: Service is UP.
@@ -1088,7 +1102,7 @@ paths:
               description: "No-cache for health checks."
               schema:
                 type: string
-                example: "no-store"
+                example: "no-store, no-cache"
           content:
             application/json:
               schema:
@@ -1098,7 +1112,7 @@ paths:
     get:
       tags: [Profile]
       summary: Get Contact records
-      description: Retrieves the primary contact details for the portfolio owner.
+      description: Retrieves the primary contact details for the portfolio owner. Returns only the Contact flagged as the portfolio owner (`Is_Portfolio_Owner__c`).
       operationId: getContacts
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1172,7 +1186,7 @@ paths:
     get:
       tags: [Profile]
       summary: Get Experience Highlights
-      description: Fetches resume bullets. Supports Persona filtering for PAPI optimization.
+      description: Fetches resume bullets. Supports Persona filtering for PAPI optimization. A malformed `experienceId` or an unknown `persona` value returns 400.
       operationId: getExperienceHighlights
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1250,7 +1264,7 @@ paths:
     get:
       tags: [Objects]
       summary: Get Project Assets
-      description: Retrieves assets (images, links) associated with a project.
+      description: Retrieves assets (images, links) associated with a project. A malformed Salesforce Id filter returns 400.
       operationId: getProjectAssets
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1328,19 +1342,21 @@ paths:
         - $ref: "#/components/parameters/requestIdParam"
       responses:
         "200":
-          description: Successful retrieval of Global Configuration.
+          description: Successful retrieval of Global Configuration. Returns an empty object when no configuration record exists.
           headers:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdResponse"
             Cache-Control:
-              $ref: "#/components/headers/CacheControlResponse"
+              description: "Private configuration data; shared caches must not store it."
+              schema:
+                type: string
+                example: "max-age=300, private"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PortfolioConfig"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1495,7 +1511,7 @@ paths:
     get:
       tags: [Junctions]
       summary: Get Project-Skill Links
-      description: Retrieves junction records linking Projects to Skills.
+      description: Retrieves junction records linking Projects to Skills. A malformed Salesforce Id filter returns 400.
       operationId: getProjectSkills
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1531,7 +1547,7 @@ paths:
     get:
       tags: [Junctions]
       summary: Get Experience-Skill Links
-      description: Retrieves junction records linking Experiences to Skills.
+      description: Retrieves junction records linking Experiences to Skills. A malformed Salesforce Id filter returns 400.
       operationId: getExperienceSkills
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1567,7 +1583,7 @@ paths:
     get:
       tags: [Junctions]
       summary: Get Certification-Skill Links
-      description: Retrieves junction records linking Certifications to Skills.
+      description: Retrieves junction records linking Certifications to Skills. A malformed Salesforce Id filter returns 400.
       operationId: getCertificationSkills
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"

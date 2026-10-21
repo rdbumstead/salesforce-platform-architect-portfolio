@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The API Access Request object is the audit trail for evaluator token vending (ADR-028). One record per attempt captures Email, Purpose, Source IP, Correlation Id, Channel and Outcome (restricted picklist). Admin-only: no guest or integration access. Commonly used for usage review and abuse response.</description>
+    <enableReports>true</enableReports>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>API Access Request</label>
+    <nameField>
+        <displayFormat>AAR-{000000}</displayFormat>
+        <label>Request Number</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>API Access Requests</pluralLabel>
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

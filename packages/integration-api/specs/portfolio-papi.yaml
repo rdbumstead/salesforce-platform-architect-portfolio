@@ -9,18 +9,20 @@ info:
     ### 1. Authentication Strategy
     - **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.
     - **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.
-    - **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It and `/health` are the only unauthenticated paths.
+    - **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It is the only unauthenticated path, and the only path served on the Experience Cloud site domain (see its `servers` entry). Every other path is called on My Domain with the Bearer token.
     - **PAPI → SAPI**: in-process Apex (same transaction), not HTTP; see ADR-025 for why fan-out callouts were rejected.
 
     ### 2. Versioning Strategy
     - **Pattern**: Header-based versioning takes precedence.
-    - **Header**: `X-API-Version: v1` (Required).
+    - **Header**: `X-API-Version: v1`. A missing header resolves to `v1`; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026).
+    - **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID; a present but non-UUID value returns `400 BAD_REQUEST`. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes a valid caller-supplied `X-Request-Id`, and Apex sets it only when it generated the value (ADR-026).
     - **URL**: Version segments removed from base path to align with SAPI ADR.
 
     ### 3. Rate Limiting & Aggregation Math
     - **SAPI Limit**: 120 requests/minute.
     - **PAPI Aggregation**: A single `/profile/full` call triggers ~8 upstream SAPI calls.
     - **PAPI Limit**: Restricted to **15 requests/minute** (Standard Tier) to prevent cascading rate limit violations on SAPI (15 * 8 = 120).
+    - **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. `POST /auth/token` is also limited to 15 requests per minute per email and source IP.
 
     ### 4. Caching Strategy (Aggregation Logic)
     *Note: PAPI cannot pass SAPI headers verbatim due to mixed sensitivity in aggregated payloads.*
@@ -48,25 +50,30 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://{domain}/portfoliovforcesite/services/apexrest/papi/v1
-    description: Salesforce Experience Cloud PAPI Base Path (on-platform Apex REST)
+  - url: https://{domain}/services/apexrest/papi/v1
+    description: |
+      Salesforce My Domain (authenticated Apex REST). Bearer-token callers use the `instance_url`
+      returned with their token. `POST /auth/token` overrides this with the site domain.
     variables:
       domain:
-        default: ryan-bumstead-dev-ed.develop.my.site.com
-        description: The Salesforce Experience Cloud domain.
+        default: ryan-bumstead-dev-ed.develop.my.salesforce.com
+        description: The org's My Domain host.
         enum:
-          - ryan-bumstead-dev-ed.develop.my.site.com
+          - ryan-bumstead-dev-ed.develop.my.salesforce.com
 
 # Global Rate Limits (Aligned to SAPI capacity)
 x-rate-limit:
-  description: "Enforced on-platform by ApiRequestContext (ADR-025), keyed by the calling External Client App; evaluator token vending adds a per-email/IP limit and a daily cap (ADR-028)."
+  description: "Enforced in Apex by RateWindowLimiter (ADR-025), a custom-object counter: one API_Rate_Window__c row per caller key per fixed UTC calendar minute. The caller key is {tier}:{SHA-256 hex of the session id}, or {tier}:{user id} when the session id is null. Every response carries X-RateLimit-Limit and X-RateLimit-Remaining; request limit + 1 within the minute gets 429 RATE_LIMIT_EXCEEDED with Retry-After set to the seconds left in the minute. Rejected requests count. Evaluator token vending adds a per-email and source IP limit and a daily cap (ADR-028)."
   tiers:
     standard:
       requestsPerMinute: 15
       description: "Conservative limit to protect SAPI (1 PAPI req = 8 SAPI reqs)"
     ai:
       requestsPerMinute: 10
-      description: "Expensive Generative AI calls"
+      description: "Expensive Generative AI calls (/ai/*)"
+    token:
+      requestsPerMinute: 15
+      description: "POST /auth/token, per email and source IP (TokenExchangeService.TOKEN_REQUESTS_PER_MINUTE)"
 
 security:
   - OAuth2ClientCredentials:
@@ -103,7 +110,7 @@ components:
       name: X-Request-Id
       in: header
       required: false
-      description: Correlation ID propagated to SAPI.
+      description: Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).
       schema:
         type: string
         format: uuid
@@ -111,8 +118,8 @@ components:
     ApiVersionParam:
       name: X-API-Version
       in: header
-      required: true
-      description: API Version (e.g., v1).
+      required: false
+      description: API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).
       schema:
         type: string
         default: v1
@@ -120,7 +127,7 @@ components:
 
   headers:
     RequestIdHeader:
-      description: Correlation ID for distributed tracing
+      description: Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.
       schema:
         type: string
         format: uuid
@@ -159,14 +166,14 @@ components:
             retryable: false
 
     TooManyRequests:
-      description: Rate limit or daily cap exceeded (ADR-025, ADR-028)
+      description: Rate limit exceeded (ADR-025, ADR-028)
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdHeader"
         Retry-After:
           schema:
             type: integer
-          description: Seconds until the window resets.
+          description: Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait.
       content:
         application/json:
           schema:
@@ -260,6 +267,10 @@ components:
           type: string
           enum: [UP, DOWN, DEGRADED]
           example: "UP"
+        checkType:
+          type: string
+          enum: [SHALLOW, DEEP]
+          example: "DEEP"
         timestamp:
           type: string
           format: date-time
@@ -268,7 +279,30 @@ components:
           properties:
             sapi:
               type: string
-              example: "not_checked"
+              enum: [UP, DOWN]
+              example: "UP"
+            credential:
+              type: string
+              enum: [UP, DOWN]
+              example: "UP"
+              description: "UP only when a GET through the Portfolio_API Named Credential to /sapi/v1/health returns HTTP 200."
+            jira:
+              type: string
+              enum: [CONFIGURED, MISSING, UNKNOWN]
+              description: "Presence of the Jira_API Named Credential; UNKNOWN when NamedCredential cannot be read."
+            github:
+              type: string
+              enum: [CONFIGURED, MISSING, UNKNOWN]
+              description: "Presence of the GitHub_API Named Credential."
+            gemini:
+              type: string
+              enum: [CONFIGURED, MISSING, UNKNOWN]
+              description: "Presence of the Gemini_API Named Credential."
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          description: 'Diagnostic per dependency, e.g. credential: "HTTP 401" or an exception type name.'
 
     # --- Orchestrated Response Objects ---
     FullPortfolioPayload:
@@ -318,8 +352,8 @@ components:
             $ref: "#/components/schemas/EnrichedTestimonial"
         integrityNote:
           type: string
-          description: "Debug info if partial data returned (e.g. 'Certifications Service Unavailable')"
-          nullable: true
+          description: '"complete", or "partial: <sections> unavailable" naming each upstream section that could not be read (e.g. "partial: certifications unavailable").'
+          example: "complete"
 
     ProfileSummary:
       type: object
@@ -352,6 +386,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SimpleEducation"
+        integrityNote:
+          type: string
+          description: '"complete", or "partial: <sections> unavailable" naming each upstream section that could not be read (e.g. "partial: certifications unavailable").'
+          example: "complete"
 
     EnrichedExperience:
       type: object
@@ -729,12 +767,13 @@ components:
           enum: [Bearer]
         expires_in:
           type: integer
-          description: Seconds until the integration user session times out (default 1800).
+          description: Always 1800, the integration profile's session timeout. The token endpoint returns no expiry, so this is the profile setting, not a value read from the grant.
           example: 1800
         instance_url:
           type: string
           format: uri
-          example: "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest"
+          description: The My Domain root, as returned by the token endpoint. Append `/services/apexrest/sapi/v1/...` or `/services/apexrest/papi/v1/...` and send the token as a Bearer credential.
+          example: "https://ryan-bumstead-dev-ed.develop.my.salesforce.com"
         docs:
           type: string
           format: uri
@@ -745,9 +784,13 @@ paths:
   /health:
     get:
       summary: PAPI Health Check
-      description: Performs a shallow health check (runtime only). Does not validate SAPI connectivity.
+      description: |
+        Deep health check (`PAPIHealth.getHealth`). Reads SAPI health in-process (`SAPIHealth.buildPayload`),
+        exercises the `Portfolio_API` Named Credential with one GET to `/sapi/v1/health` (`credential` is UP
+        only on HTTP 200), and reports presence of the `Jira_API`, `GitHub_API` and `Gemini_API` Named
+        Credentials without calling them. `status` is DOWN when SAPI is down, DEGRADED when the credential is
+        down or any Named Credential is not CONFIGURED, otherwise UP. Always returns 200.
       operationId: getHealth
-      security: []
       tags:
         - Monitoring
       responses:
@@ -764,17 +807,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
-        "503":
-          $ref: "#/components/responses/ServiceUnavailable"
 
   /auth/token:
+    servers:
+      - url: https://{domain}/portfoliovforcesite/services/apexrest/papi/v1
+        description: Experience Cloud site domain. Apex REST is served to the guest user under `/portfoliovforcesite/services/apexrest/`.
+        variables:
+          domain:
+            default: ryan-bumstead-dev-ed.develop.my.site.com
+            description: The Salesforce Experience Cloud domain.
+            enum:
+              - ryan-bumstead-dev-ed.develop.my.site.com
     post:
       summary: Request an evaluator access token
       description: |
         Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI
-        without holding the External Client App consumer secret (ADR-028). The exchange runs server-side
-        through the `Portfolio_API` Named Credential. Tokens run as the read-only integration user and
-        expire with its 30-minute session. Requests are rate-limited by email and source IP and capped per day.
+        without holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`
+        hands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,
+        then runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named
+        Credential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user
+        and expire with its 30-minute session.
+
+        - **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254
+          characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule
+          from `ApiRequestContext` fails.
+        - **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller
+          key), or 15 requests per minute per email and source IP
+          (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,
+          `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.
+        - **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to
+          the next midnight in the running user's time zone; the cap counts audit rows with outcome
+          `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the
+          credential is missing or not granted ("Token issuance is not configured."); or the token endpoint
+          fails ("Token issuance is temporarily unavailable.").
+        - Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.
+
+        This is the only path served on the Experience Cloud site domain, not on My Domain:
+        `POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.
       operationId: requestEvaluatorToken
       security: []
       tags:
@@ -947,7 +1016,7 @@ paths:
                     quote: "Ryan is a beast at architecture."
                     vibe: "Professional"
                     avatarUrl: "https://linkedin.com/in/janedoe/photo"
-                integrityNote: "Complete"
+                integrityNote: "complete"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -974,6 +1043,9 @@ paths:
         - `GET /education`
 
         **Use Case**: Resume page, profile cards
+
+        **Caching**: Cache-Control is fixed at `max-age=300, private` by decision, an explicit exception to
+        strictest-policy-wins.
       operationId: getProfileSummary
       parameters:
         - $ref: "#/components/parameters/RequestIdParam"
@@ -984,6 +1056,10 @@ paths:
           headers:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdHeader"
+            X-Data-Integrity:
+              schema:
+                type: string
+                enum: [complete, partial]
             Cache-Control:
               schema:
                 type: string
@@ -1052,10 +1128,14 @@ paths:
           headers:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdHeader"
+            X-Data-Integrity:
+              schema:
+                type: string
+                enum: [complete, partial]
             Cache-Control:
               schema:
                 type: string
-                example: "no-cache"
+                example: "no-store, no-cache"
           content:
             application/json:
               schema:
@@ -1065,6 +1145,10 @@ paths:
                   - persona
                   - generatedAt
                 properties:
+                  integrityNote:
+                    type: string
+                    description: '"complete", or "partial: <sections> unavailable" naming each upstream section that could not be read.'
+                    example: "complete"
                   generatedText:
                     type: string
                     description: The complete, formatted resume string ready for clipboard copy
@@ -1124,6 +1208,14 @@ paths:
               schema:
                 type: integer
                 description: Total number of featured projects
+            X-Data-Integrity:
+              schema:
+                type: string
+                enum: [complete, partial]
+            X-Integrity-Note:
+              description: 'Present only when partial; names the failed sub-queries, e.g. "partial: project-skills unavailable".'
+              schema:
+                type: string
             Cache-Control:
               schema:
                 type: string
@@ -1159,6 +1251,9 @@ paths:
         - `casual`: Returns all approved testimonials, regardless of relationship type or vibe (includes 'Casual' vibe and 'Fan' relationships).
 
         **Use Case**: About page testimonials section
+
+        `mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted);
+        any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first; at most 200.
       operationId: getTestimonialFeed
       parameters:
         - $ref: "#/components/parameters/RequestIdParam"
@@ -1204,25 +1299,24 @@ paths:
     post:
       tags:
         - Logic
-      summary: Generate AI Content (Multi-Cloud Resilience)
+      summary: Generate AI Content
       description: |
-        Proxies generative AI requests to LLM providers with circuit breaker pattern.
+        Generates content through `PAPIAiGenerate.generate`, which dispatches with
+        `ContentGenerationController.generateWithoutAgentforce`.
 
-        **Provider Priority Chain**:
-        1. **Primary**: Salesforce Agentforce (if available)
-        2. **Fallback 1**: Google Gemini Flash 2.0 (via AWS Lambda)
-        3. **Fallback 2**: OpenAI GPT-4o-mini (via AWS Lambda)
+        **Provider chain**:
+        1. Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API (`Gemini_API` Named Credential).
+        2. Local template (`Local`), CoverLetter only.
 
-        **Circuit Breaker & Limits**:
-        - **Rate Limit**: 10 requests per minute (User)
-        - **Timeouts**: 2 seconds per provider, 5 seconds total max execution.
-        - **Threshold**: Circuit opens after 3 consecutive failures.
-        - **Reset**: Circuit attempts reset after 30 seconds.
+        Agentforce is deferred and never consulted.
 
-        **Security**:
-        - API keys for Gemini/OpenAI stored in AWS Secrets Manager
-        - Never exposed to frontend or Salesforce
-        - Rotated every 90 days via automated Lambda
+        **Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allows Gemma 4 31B
+        30 requests per minute, 16,000 tokens per minute and 14,400 requests per day. When the Gemini API
+        refuses or fails, CoverLetter falls back to the local template and the other types answer
+        503 `ALL_PROVIDERS_UNAVAILABLE`.
+
+        **Validation**: `type` and `tone` must be enum values, `maxLength` an integer 100 to 1000;
+        CoverLetter requires `context.companyName` and `context.role`. Content longer than `maxLength` is cut.
       operationId: generateAiContent
       parameters:
         - $ref: "#/components/parameters/RequestIdParam"
@@ -1294,15 +1388,20 @@ paths:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdHeader"
             X-AI-Provider:
-              description: Which LLM provider was used
+              description: Which provider served the request
               schema:
                 type: string
-                example: "Gemini Flash 2.0"
+                enum: [Gemini, Local]
+                example: "Gemini"
             X-Generation-Time-Ms:
               description: Time taken to generate content in milliseconds
               schema:
                 type: integer
                 example: 1247
+            Cache-Control:
+              schema:
+                type: string
+                example: "no-store, no-cache"
           content:
             application/json:
               schema:
@@ -1321,29 +1420,34 @@ paths:
                       I am writing to express my strong interest in the Senior Technical Architect position at Acme Financial...
                   provider:
                     type: string
-                    description: LLM provider used
-                    example: "Gemini Flash 2.0"
+                    enum: [Gemini, Local]
+                    description: Provider that served the request
+                    example: "Gemini"
                   model:
                     type: string
-                    description: Specific model version
-                    example: "gemini-2.0-flash-exp"
+                    description: Model identifier (`local-template` when the local template served it)
+                    example: "gemma-4-31b-it"
+                  type:
+                    type: string
+                    description: The requested content type, echoed
+                    example: "CoverLetter"
+                  tone:
+                    type: string
+                    description: The applied tone, echoed
+                    example: "Professional"
                   generatedAt:
                     type: string
                     format: date-time
-                  tokensUsed:
-                    type: integer
-                    description: Approximate token count (for cost tracking)
-                    example: 487
                   fallbackOccurred:
                     type: boolean
-                    description: True if primary provider failed
+                    description: True when the local template served the request
                     example: false
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "429":
-          description: Rate limit exceeded (LLM provider quota)
+          description: Rate limit exceeded (ai tier, 10 requests per minute)
           headers:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdHeader"
@@ -1358,7 +1462,7 @@ paths:
               example:
                 httpStatus: 429
                 errorCode: "RATE_LIMIT_EXCEEDED"
-                message: "LLM provider quota exceeded. Retry after 60 seconds."
+                message: "Rate limit exceeded. Retry after 60 seconds."
                 correlationId: "123e4567-e89b-12d3-a456-426614174000"
                 retryable: true
         "500":
