@@ -1,62 +1,55 @@
 <template>
   <div class="hero-container">
-    <div class="slds-grid slds-wrap slds-grid_vertical-align-center">
-      <!-- Left: Text Content -->
-      <div
-        class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-around_large"
-      >
-        <h1
-          class="slds-text-heading_large slds-m-bottom_medium animate-slide-up"
-        >
-          Hello, I'm <span class="highlight">Ryan Bumstead</span>.
-        </h1>
-        <p
-          class="slds-text-body_regular slds-text-color_weak slds-m-bottom_large animate-slide-up delay-1"
-        >
-          Salesforce Technical Architect | Multi-Cloud Strategist
-        </p>
-        <div
-          class="guidance-box slds-box slds-theme_shade animate-slide-up delay-2"
-        >
-          <h2 class="slds-text-heading_small slds-m-bottom_small">
-            <lightning-icon
-              icon-name="utility:info"
-              size="x-small"
-              class="slds-m-right_x-small"
-            ></lightning-icon>
-            How to Evaluate Me
-          </h2>
-          <ul class="slds-list_dotted">
-            <li>
-              <strong>For Recruiters:</strong> Check the "Resume" tab for a
-              tailored summary.
-            </li>
-            <li>
-              <strong>For Architects:</strong> Explore the "Architecture" tab
-              for C4 diagrams.
-            </li>
-            <li>
-              <strong>For Developers:</strong> See "Git Log" for real-time
-              commits.
-            </li>
-          </ul>
-        </div>
-      </div>
-      <!-- Right: Hero Image (Placeholder for now) -->
-      <div
-        class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-around_large slds-text-align_center"
-      >
-        <div class="hero-image-placeholder animate-fade-in">
-          <!-- Future: <img src={heroImageUrl} /> -->
-          <div class="placeholder-circle">
-            <lightning-icon
-              icon-name="standard:user"
-              size="large"
-              alternative-text="Ryan Bumstead"
-            ></lightning-icon>
-          </div>
-        </div>
-      </div>
+    <div class="hero-intro animate-slide-up">
+      <h1 class="hero-title">
+        Hello, I'm <span class="highlight">Ryan Bumstead</span>.
+      </h1>
+      <p class="hero-tagline">
+        Salesforce Technical Architect | Multi-Cloud Strategist
+      </p>
     </div>
+
+    <section
+      class="pillar-section animate-slide-up delay-1"
+      aria-labelledby="pillar-heading"
+    >
+      <h2 id="pillar-heading" class="section-heading">The five pillars</h2>
+      <ul class="pillar-grid" data-id="pillar-nav">
+        <template for:each={pillars} for:item="pillar">
+          <li key={pillar.key} class="pillar-card" data-key={pillar.key}>
+            <h3 class="pillar-heading">
+              <span class="pillar-letter" aria-hidden="true"
+                >{pillar.letter}</span
+              >
+              {pillar.heading}
+            </h3>
+            <p class="pillar-summary">{pillar.summary}</p>
+            <template lwc:if={pillar.inProgress}>
+              <p class="pillar-status">Being built</p>
+            </template>
+            <a class="pillar-link" href={pillar.href}>{pillar.linkLabel}</a>
+          </li>
+        </template>
+      </ul>
+    </section>
+
+    <section
+      class="guidance-box animate-slide-up delay-2"
+      aria-labelledby="tour-heading"
+    >
+      <h2 id="tour-heading" class="section-heading">How to Evaluate Me</h2>
+      <p class="tour-intro">
+        A {tourMinutes} minute tour, one stop per pillar.
+      </p>
+      <ol class="tour-list" data-id="tour">
+        <template for:each={tourSteps} for:item="step">
+          <li key={step.key} class="tour-step" data-key={step.key}>
+            <a class="tour-link" href={step.href}>{step.title}</a>
+            <span class="tour-duration">{step.duration}</span>
+            <p class="tour-text">{step.text}</p>
+          </li>
+        </template>
+      </ol>
+    </section>
   </div>
 </template>

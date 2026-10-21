@@ -1,0 +1,12 @@
+{
+  "type": "sfdc_cms__route",
+  "title": "Resume",
+  "contentBody": {
+    "activeViewId": "Resume",
+    "configurationTags": [],
+    "pageAccess": "UseParent",
+    "routeType": "custom-resume",
+    "urlPrefix": "resume"
+  },
+  "urlName": "resume"
+}

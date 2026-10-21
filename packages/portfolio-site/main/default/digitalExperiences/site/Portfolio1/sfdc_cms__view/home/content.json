@@ -24,9 +24,8 @@
                 {
                   "children": [
                     {
-                      "attributes": {},
-                      "definition": "c:placeholderTerminal",
-                      "id": "23be2df0-1152-44d6-a2dc-7c74fd0cad04",
+                      "definition": "c:heroBanner",
+                      "id": "0cd35ab6-db3d-499b-ab36-5c8f026b5a31",
                       "type": "component"
                     }
                   ],
@@ -51,8 +50,8 @@
             {
               "attributes": {
                 "customHeadTags": "",
-                "description": "",
-                "pageTitle": "Home",
+                "description": "Salesforce platform architecture portfolio by Ryan Bumstead, with a live API lab, an AI lab, the delivery roadmap and a five-minute tour of all five pillars.",
+                "pageTitle": "Ryan Bumstead | Salesforce Platform Architect",
                 "recordId": "{!recordId}"
               },
               "definition": "community_builder:seoAssistant",
@@ -71,7 +70,7 @@
       "type": "component"
     },
     "dataProviders": [],
-    "themeLayoutType": "Inner",
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
     "viewType": "home"
   },
   "urlName": "home"

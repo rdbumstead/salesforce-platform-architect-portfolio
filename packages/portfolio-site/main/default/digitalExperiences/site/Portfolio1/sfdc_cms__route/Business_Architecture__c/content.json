@@ -1,0 +1,12 @@
+{
+  "type": "sfdc_cms__route",
+  "title": "Business Architecture",
+  "contentBody": {
+    "activeViewId": "Business_Architecture",
+    "configurationTags": [],
+    "pageAccess": "UseParent",
+    "routeType": "custom-business-architecture",
+    "urlPrefix": "business-architecture"
+  },
+  "urlName": "business-architecture"
+}

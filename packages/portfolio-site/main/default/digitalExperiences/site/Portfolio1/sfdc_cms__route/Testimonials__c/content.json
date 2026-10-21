@@ -1,0 +1,12 @@
+{
+  "type": "sfdc_cms__route",
+  "title": "Testimonials",
+  "contentBody": {
+    "activeViewId": "Testimonials",
+    "configurationTags": [],
+    "pageAccess": "UseParent",
+    "routeType": "custom-testimonials",
+    "urlPrefix": "testimonials"
+  },
+  "urlName": "testimonials"
+}
