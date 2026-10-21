@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Token_Daily_Cap__c</fullName>
+    <defaultValue>50</defaultValue>
+    <description
+  >Evaluator tokens /papi/v1/auth/token may issue per day (ADR-028). Blank means 50.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Token Daily Cap</label>
+    <precision>5</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>
