@@ -153,4 +153,150 @@ public with sharing class PAPITransformer {
 
     return years + '+ Years of Experience as a ' + roleTitle;
   }
+
+  // --- Aggregation: partial-failure tracking and "strictest cache wins" ---
+
+  public static final String INTEGRITY_COMPLETE = 'complete';
+  public static final String INTEGRITY_PARTIAL = 'partial';
+
+  /**
+   * @description Cache policy of each upstream SAPI resource, from the decisions block
+   *              (build plan Part 2, "Cache-Control by path").
+   */
+  public static final Map<String, ApiRequestContext.CachePolicy> UPSTREAM_CACHE = new Map<String, ApiRequestContext.CachePolicy>{
+    'contacts' => ApiRequestContext.CachePolicy.NO_STORE,
+    'portfolio-config' => ApiRequestContext.CachePolicy.PRIVATE_300,
+    'experience' => ApiRequestContext.CachePolicy.NO_STORE,
+    'experience-highlights' => ApiRequestContext.CachePolicy.NO_STORE,
+    'experience-skills' => ApiRequestContext.CachePolicy.PUBLIC_300,
+    'testimonials' => ApiRequestContext.CachePolicy.NO_STORE,
+    'skills' => ApiRequestContext.CachePolicy.PUBLIC_300,
+    'projects' => ApiRequestContext.CachePolicy.PUBLIC_300,
+    'project-skills' => ApiRequestContext.CachePolicy.PUBLIC_300,
+    'project-assets' => ApiRequestContext.CachePolicy.PUBLIC_300,
+    'certifications' => ApiRequestContext.CachePolicy.PUBLIC_300,
+    'education' => ApiRequestContext.CachePolicy.PUBLIC_300
+  };
+
+  // Higher is stricter: no-store beats private, private beats public, then the shorter max-age.
+  private static final Map<ApiRequestContext.CachePolicy, Integer> STRICTNESS = new Map<ApiRequestContext.CachePolicy, Integer>{
+    ApiRequestContext.CachePolicy.PUBLIC_300 => 1,
+    ApiRequestContext.CachePolicy.PRIVATE_300 => 2,
+    ApiRequestContext.CachePolicy.PRIVATE_60 => 3,
+    ApiRequestContext.CachePolicy.NO_STORE => 4
+  };
+
+  @TestVisible
+  private static Set<String> forcedSectionFailures = new Set<String>();
+
+  /**
+   * @description Raised when an aggregated section cannot be read.
+   */
+  public class SectionUnavailableException extends Exception {
+  }
+
+  /**
+   * @description Returns the strictest of the given cache policies ("strictest policy wins",
+   *              PAPI spec section 4). An empty list, or a policy without a known rank,
+   *              resolves to NO_STORE.
+   * @param policies Upstream policies that contributed to a response.
+   * @return ApiRequestContext.CachePolicy The policy to emit.
+   */
+  public static ApiRequestContext.CachePolicy strictest(
+    List<ApiRequestContext.CachePolicy> policies
+  ) {
+    if (policies == null || policies.isEmpty()) {
+      return ApiRequestContext.CachePolicy.NO_STORE;
+    }
+    ApiRequestContext.CachePolicy result = policies[0];
+    for (ApiRequestContext.CachePolicy policy : policies) {
+      if (!STRICTNESS.containsKey(policy)) {
+        return ApiRequestContext.CachePolicy.NO_STORE;
+      }
+      if (STRICTNESS.get(policy) > STRICTNESS.get(result)) {
+        result = policy;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * @description Test seam for partial-failure paths: throws when a test has marked the
+   *              section as failing. Does nothing outside tests.
+   * @param section Upstream resource name, e.g. "certifications".
+   */
+  public static void guardSection(String section) {
+    if (Test.isRunningTest() && forcedSectionFailures.contains(section)) {
+      throw new SectionUnavailableException(
+        'Forced failure for section ' + section
+      );
+    }
+  }
+
+  /**
+   * @description Tracks which upstream resources an aggregated response read, which of
+   *              them failed, and derives the integrity note and cache policy.
+   */
+  public class Aggregation {
+    private final List<String> failedSections = new List<String>();
+    private final List<ApiRequestContext.CachePolicy> policies = new List<ApiRequestContext.CachePolicy>();
+
+    /**
+     * @description Records that the response draws on an upstream resource.
+     * @param section Upstream resource name, a key of UPSTREAM_CACHE.
+     */
+    public void source(String section) {
+      ApiRequestContext.CachePolicy policy = UPSTREAM_CACHE.get(section);
+      policies.add(
+        policy == null ? ApiRequestContext.CachePolicy.NO_STORE : policy
+      );
+    }
+
+    /**
+     * @description Records that an upstream resource could not be read.
+     * @param section Upstream resource name.
+     */
+    public void fail(String section) {
+      if (!failedSections.contains(section)) {
+        failedSections.add(section);
+      }
+    }
+
+    /**
+     * @description True when every section was read.
+     * @return Boolean True when nothing failed.
+     */
+    public Boolean isComplete() {
+      return failedSections.isEmpty();
+    }
+
+    /**
+     * @description Value for the X-Data-Integrity header.
+     * @return String "complete" or "partial".
+     */
+    public String integrity() {
+      return isComplete() ? INTEGRITY_COMPLETE : INTEGRITY_PARTIAL;
+    }
+
+    /**
+     * @description Value for the integrityNote body field.
+     * @return String "complete", or "partial: <sections> unavailable".
+     */
+    public String integrityNote() {
+      return isComplete()
+        ? INTEGRITY_COMPLETE
+        : INTEGRITY_PARTIAL +
+          ': ' +
+          String.join(failedSections, ', ') +
+          ' unavailable';
+    }
+
+    /**
+     * @description The strictest policy among the recorded sources.
+     * @return ApiRequestContext.CachePolicy The policy to emit.
+     */
+    public ApiRequestContext.CachePolicy cachePolicy() {
+      return strictest(policies);
+    }
+  }
 }
