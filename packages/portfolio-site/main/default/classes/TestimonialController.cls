@@ -81,7 +81,9 @@ public with sharing class TestimonialController {
       Vibe_Mode__c = vibeMode,
       Context__c = context.trim()
     );
-    applyVibeGate(testimonial);
+    // The vibe is stored as submitted. The Vibe-Gate is applied on read: PAPITestimonialFeed in
+    // professional mode returns only approved Manager, Client or Peer rows with the
+    // Professional vibe (owner decision V1 (a), Round 3 plan section 10).
 
     try {
       if (forceSaveFailure) {
@@ -134,16 +136,6 @@ public with sharing class TestimonialController {
         ' characters.';
     }
     return null;
-  }
-
-  /**
-   * @description Placeholder for the Vibe-Gate rule, which is held for the owner (Round 3 plan
-   *              section 8, decision V1). It changes nothing until that decision is made and an
-   *              orchestrator log entry releases the exact rule.
-   * @param testimonial The record about to be inserted.
-   */
-  @SuppressWarnings('PMD.EmptyStatementBlock,PMD.UnusedFormalParameter')
-  private static void applyVibeGate(Testimonial__c testimonial) {
   }
 
   private static AuraHandledException auraError(String message) {

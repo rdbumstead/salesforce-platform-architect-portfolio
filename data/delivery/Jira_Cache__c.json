@@ -1,0 +1,11 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Jira_Cache__c",
+        "referenceId": "SeedJiraCacheRef"
+      },
+      "JSON_Payload__c": "{\"schemaVersion\":1,\"items\":[{\"key\":\"SPAP-901\",\"summary\":\"Seed roadmap item to do\",\"status\":\"To Do\",\"statusCategory\":\"new\",\"type\":\"Story\",\"epicKey\":\"SPAP-900\",\"updatedAt\":\"2026-10-21T08:00:00.000Z\"},{\"key\":\"SPAP-902\",\"summary\":\"Seed roadmap item in progress\",\"status\":\"In Progress\",\"statusCategory\":\"indeterminate\",\"type\":\"Story\",\"epicKey\":\"SPAP-900\",\"updatedAt\":\"2026-10-21T08:00:00.000Z\"},{\"key\":\"SPAP-903\",\"summary\":\"Seed roadmap item done\",\"status\":\"Done\",\"statusCategory\":\"done\",\"type\":\"Epic\",\"epicKey\":null,\"updatedAt\":\"2026-10-21T08:00:00.000Z\"}]}"
+    }
+  ]
+}

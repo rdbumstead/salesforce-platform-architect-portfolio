@@ -1,0 +1,14 @@
+[
+  {
+    "sobject": "Github_Cache__c",
+    "saveRefs": false,
+    "resolveRefs": false,
+    "files": ["Github_Cache__c.json"]
+  },
+  {
+    "sobject": "Jira_Cache__c",
+    "saveRefs": false,
+    "resolveRefs": false,
+    "files": ["Jira_Cache__c.json"]
+  }
+]
