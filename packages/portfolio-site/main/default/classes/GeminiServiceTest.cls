@@ -159,8 +159,8 @@ private class GeminiServiceTest {
     Integer fallback = GeminiService.timeoutMs();
 
     Assert.areEqual(45000, configured, 'Timeout_Ms__c is used');
-    Assert.areEqual(20000, GeminiService.DEFAULT_TIMEOUT_MS, 'Default');
-    Assert.areEqual(20000, fallback, 'No record means 20 s (PD-D11)');
+    Assert.areEqual(60000, GeminiService.DEFAULT_TIMEOUT_MS, 'Default');
+    Assert.areEqual(60000, fallback, 'No record means 60 s');
   }
 
   // --- Thinking models and the configured model (WS5b) ---

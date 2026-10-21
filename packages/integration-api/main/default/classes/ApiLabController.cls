@@ -56,8 +56,12 @@ public with sharing class ApiLabController {
   /** The one POST path generateCoverLetter() calls. Not part of the GET allowlist. */
   public static final String AI_GENERATE_PATH = '/papi/v1/ai/generate';
 
-  /** Proxy callout timeout (PD-D11, 60 s). The dispatch behind it stays under 60 s. */
-  public static final Integer AI_TIMEOUT_MS = 60000;
+  /**
+   * Proxy callout timeout, 90 s. It must outlast the Gemini callout timeout (60 s) plus the
+   * PAPI overhead, so a slow model falls through to the local template inside PAPI and the
+   * page still gets a letter, instead of this callout failing first. Apex allows 120 s.
+   */
+  public static final Integer AI_TIMEOUT_MS = 90000;
 
   /** Cover letter length asked of the API, the spec maximum. */
   public static final Integer COVER_LETTER_MAX_LENGTH = 1000;
