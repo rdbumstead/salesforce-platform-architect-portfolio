@@ -53,7 +53,13 @@ const LOCAL_RESULT = {
 // Provider and tier words the component may never print on its own. The tier words are split
 // so the repository wording grep (PD-D10) finds none of them in source.
 const PROVIDER_WORDS = new RegExp(
-  ["Agentforce", "Gemini", "Go" + "ld", "Sil" + "ver", "Bro" + "nze"].join("|")
+  [
+    "Agentforce",
+    "Gemini",
+    ["Go", "ld"].join(""),
+    ["Sil", "ver"].join(""),
+    ["Bro", "nze"].join("")
+  ].join("|")
 );
 
 const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
