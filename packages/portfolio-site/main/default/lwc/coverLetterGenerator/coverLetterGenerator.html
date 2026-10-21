@@ -65,22 +65,31 @@
           class="generate-button"
         ></lightning-button>
       </div>
+      <p class="wait-note" data-id="wait-note">
+        Letters are written by Gemma 4, which reasons before it answers, so a
+        letter can take about a minute. If the model is busy, you get a template
+        letter instead, and the panel below says which.
+      </p>
 
-      <div aria-live="polite" class="slds-m-top_medium">
+      <div class="loading-state slds-m-top_medium">
         <template lwc:if={isLoading}>
-          <div class="loading-state">
-            <div class="slds-is-relative spinner-holder">
-              <lightning-spinner
-                alternative-text="Writing your letter"
-                size="small"
-              ></lightning-spinner>
-            </div>
-            <p class="loading-text">
-              Writing your letter. This can take up to a minute.
-            </p>
+          <div class="slds-is-relative spinner-holder">
+            <lightning-spinner
+              alternative-text="Writing your letter"
+              size="small"
+            ></lightning-spinner>
           </div>
         </template>
+        <div class="status-region" aria-live="polite" data-id="status-region">
+          <template lwc:if={isLoading}>
+            <p class="loading-text" data-id="status-line">
+              Writing your letter. This can take about a minute.
+            </p>
+          </template>
+        </div>
+      </div>
 
+      <div class="slds-m-top_medium">
         <p lwc:if={error} class="error-text" role="alert">{error}</p>
 
         <template lwc:if={hasResult}>
@@ -90,6 +99,14 @@
               <span class="provider-badge" data-id="provider-badge"
                 >{providerLabel}</span
               >
+            </p>
+            <p
+              lwc:if={isLocalTemplate}
+              class="fallback-note"
+              data-id="fallback-note"
+            >
+              The AI model was busy or too slow, so the template letter was
+              used.
             </p>
             <div class="letter" data-id="letter">{result.content}</div>
 

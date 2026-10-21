@@ -15,6 +15,8 @@ import generateCoverLetter from "@salesforce/apex/ApiLabController.generateCover
 export const MAX_COMPANY_LENGTH = 120;
 export const MAX_TITLE_LENGTH = 120;
 export const MAX_DESCRIPTION_LENGTH = 4000;
+/** Provider value the API returns when the local template wrote the letter. */
+const LOCAL_PROVIDER = "Local";
 
 export default class CoverLetterGenerator extends LightningElement {
   companyName = "";
@@ -51,6 +53,10 @@ export default class CoverLetterGenerator extends LightningElement {
     return this.result.model
       ? `${this.result.provider} (${this.result.model})`
       : this.result.provider;
+  }
+
+  get isLocalTemplate() {
+    return this.result?.provider === LOCAL_PROVIDER;
   }
 
   get fallbackText() {
