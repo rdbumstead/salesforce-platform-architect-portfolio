@@ -1,40 +1,196 @@
-.kanban-column {
-  background-color: var(--lwc-colorBackgroundStencil, #f3f3f3);
-  padding: 0.5rem;
-  border-radius: 4px;
-  min-height: 300px;
+/*
+ * Contract K9: the site branding is dark. Every element here that sets a background
+ * also sets its text colour. The board sits on the site root surface, each card on the
+ * DXP neutral surface with its own text colour, and the badges are fixed colour pairs
+ * with dark text. Fallbacks are the values the Portfolio branding set renders.
+ */
+:host {
+  display: block;
+  --board-surface: var(--dxp-g-root, #020617);
+  --board-text: var(--dxp-g-root-contrast, #e2e8f0);
+  --board-muted: #94a3b8;
+  --board-border: var(--dxp-g-neutral-3, #475569);
+  --card-surface: var(--dxp-g-neutral, #0f172a);
+  --card-text: var(--dxp-g-neutral-contrast, #ffffff);
+  --card-muted: #cbd5e1;
 }
 
-.kanban-card {
-  background-color: var(--lwc-colorBackgroundAlt, #ffffff);
-  border-left: 4px solid transparent;
-  transition: transform 0.2s;
+.roadmap {
+  background-color: var(--board-surface);
+  color: var(--board-text);
+  padding: 1rem;
+  border: 1px solid var(--board-border);
+  border-radius: 0.25rem;
+  overflow-wrap: anywhere;
 }
 
-.kanban-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.roadmap-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.ticket-id {
+.roadmap-title {
+  color: var(--board-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.roadmap-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.age-label {
+  color: var(--board-muted);
+  background-color: var(--board-surface);
+  font-size: 0.875rem;
+}
+
+.age-stale {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.75rem;
   font-size: 0.75rem;
-  color: var(--lwc-colorTextWeak, #696969);
-  font-weight: bold;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
-.border-left-todo {
-  border-left: 4px solid #747474;
-  padding-left: 8px;
-}
-.border-left-progress {
-  border-left: 4px solid #0176d3;
-  padding-left: 8px;
-}
-.border-left-done {
-  border-left: 4px solid #2e844a;
-  padding-left: 8px;
+.badge-simulated {
+  background-color: #7dd3fc;
+  color: #020617;
 }
 
-.done-card {
-  opacity: 0.8;
+.badge-degraded {
+  background-color: #fbbf24;
+  color: #020617;
+}
+
+.roadmap-message {
+  color: var(--board-text);
+  margin: 0;
+  padding: 0.5rem 0;
+}
+
+/* Three equal columns on a wide screen. Below 768px they stack into one column, so
+   every column shares the same left edge and nothing scrolls sideways. */
+.roadmap-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 767px) {
+  .roadmap-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.roadmap-column {
+  min-width: 0;
+  background-color: var(--board-surface);
+  color: var(--board-text);
+  border: 1px solid var(--board-border);
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+}
+
+.roadmap-column[data-category="new"] {
+  border-top: 4px solid #94a3b8;
+}
+
+.roadmap-column[data-category="indeterminate"] {
+  border-top: 4px solid #38bdf8;
+}
+
+.roadmap-column[data-category="done"] {
+  border-top: 4px solid #4ade80;
+}
+
+.column-title {
+  color: var(--board-text);
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.column-count {
+  margin-left: 0.25rem;
+  color: var(--board-muted);
+  font-weight: 400;
+}
+
+.column-empty {
+  color: var(--board-muted);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.roadmap-card {
+  background-color: var(--card-surface);
+  color: var(--card-text);
+  border: 1px solid var(--board-border);
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-epic {
+  border-left: 4px solid #c4b5fd;
+}
+
+.card-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-key {
+  color: var(--card-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.card-type {
+  color: var(--card-muted);
+  font-size: 0.75rem;
+}
+
+.epic-label {
+  background-color: #c4b5fd;
+  color: #1e1b4b;
+  border-radius: 0.75rem;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.card-summary {
+  color: var(--card-text);
+  margin: 0.25rem 0 0;
+}
+
+.card-parent {
+  color: var(--card-muted);
+  font-size: 0.75rem;
+  margin: 0.25rem 0 0;
 }

@@ -1,67 +1,122 @@
 <template>
-  <div class="slds-box slds-theme_default">
-    <h2 class="slds-text-heading_medium slds-m-bottom_medium">
-      Leave a Review
-    </h2>
+  <section class="testimonial" aria-labelledby="testimonial-heading">
+    <h2 id="testimonial-heading" class="testimonial-title">Leave a Review</h2>
+    <p class="testimonial-intro">
+      Every review is read before it appears on the site.
+    </p>
 
-    <div class="mad-libs-container slds-text-heading_small">
-      <p>
-        I am a
-        <lightning-combobox
-          name="relationship"
-          variant="label-hidden"
-          options={relationshipOptions}
-          placeholder="select role"
-          class="inline-input"
-          onchange={handleChange}
-        >
-        </lightning-combobox>
-        and I think Ryan is
-        <lightning-input
-          name="context"
-          variant="label-hidden"
-          placeholder="describe in 3 words"
-          class="inline-input-text"
-          onchange={handleChange}
-        >
-        </lightning-input
-        >.
-      </p>
-      <p class="slds-m-top_small">
-        My name is
-        <lightning-input
+    <form class="testimonial-form" onsubmit={handleSubmit} novalidate>
+      <div class="field">
+        <label class="field-label" for="authorName">Your name</label>
+        <input
+          id="authorName"
+          class="field-input"
           name="authorName"
-          variant="label-hidden"
-          placeholder="Enter Name"
-          class="inline-input-text"
-          onchange={handleChange}
+          type="text"
+          required
+          autocomplete="name"
+          maxlength={maxNameLength}
+          value={form.authorName}
+          oninput={handleInput}
+        />
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="authorTitle"
+          >Your title (optional)</label
         >
-        </lightning-input
-        >.
-      </p>
-    </div>
+        <input
+          id="authorTitle"
+          class="field-input"
+          name="authorTitle"
+          type="text"
+          autocomplete="organization-title"
+          maxlength={maxTitleLength}
+          value={form.authorTitle}
+          oninput={handleInput}
+        />
+      </div>
 
-    <div class="slds-m-top_medium">
-      <lightning-input
-        type="toggle"
-        label="Vibe Mode"
-        name="vibeMode"
-        checked={isCasual}
-        message-toggle-active="Casual"
-        message-toggle-inactive="Professional"
-        onchange={handleVibeToggle}
-      >
-      </lightning-input>
-    </div>
+      <div class="field">
+        <label class="field-label" for="relationship"
+          >How do you know Ryan?</label
+        >
+        <select
+          id="relationship"
+          class="field-input"
+          name="relationship"
+          required
+          onchange={handleInput}
+        >
+          <option value="" selected={noRelationship}>Choose one</option>
+          <template for:each={relationshipOptions} for:item="option">
+            <option
+              key={option.value}
+              value={option.value}
+              selected={option.selected}
+            >
+              {option.label}
+            </option>
+          </template>
+        </select>
+      </div>
 
-    <div class="slds-m-top_large slds-text-align_right">
-      <lightning-button
-        label="Submit Review"
-        variant="brand"
-        onclick={handleSubmit}
-        disabled={isSubmitDisabled}
-      >
-      </lightning-button>
-    </div>
-  </div>
+      <div class="field">
+        <label class="field-label" for="context">Your review</label>
+        <textarea
+          id="context"
+          class="field-input field-textarea"
+          name="context"
+          required
+          rows="4"
+          maxlength={maxContextLength}
+          aria-describedby="context-count"
+          oninput={handleInput}
+        ></textarea>
+        <p id="context-count" class="field-hint">{contextCount}</p>
+      </div>
+
+      <div class="field vibe-field">
+        <span class="field-label" id="vibe-label">Vibe</span>
+        <button
+          type="button"
+          class="vibe-toggle"
+          role="switch"
+          aria-checked={vibeChecked}
+          aria-labelledby="vibe-label vibe-value"
+          onclick={handleVibeToggle}
+          data-id="vibe-toggle"
+        >
+          <span class="vibe-track" aria-hidden="true"
+            ><span class="vibe-thumb"></span
+          ></span>
+          <span class="vibe-value" id="vibe-value">{vibeLabel}</span>
+        </button>
+      </div>
+
+      <div class="actions">
+        <button
+          type="submit"
+          class="submit-button"
+          disabled={isSubmitDisabled}
+          data-id="submit"
+        >
+          {submitLabel}
+        </button>
+      </div>
+
+      <div aria-live="polite">
+        <template lwc:if={successMessage}>
+          <p class="message message-success" data-id="success">
+            {successMessage}
+          </p>
+        </template>
+        <template lwc:if={serverError}>
+          <p class="message message-error" role="alert" data-id="error">
+            {serverError}
+          </p>
+        </template>
+      </div>
+    </form>
+  </section>
 </template>
