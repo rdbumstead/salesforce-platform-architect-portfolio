@@ -1,0 +1,174 @@
+{
+  "uiapi": {
+    "query": {
+      "Skill__c": {
+        "edges": [
+          {
+            "node": {
+              "Id": "a01SKILL1",
+              "Name": {
+                "value": "Apex"
+              },
+              "Category__c": {
+                "value": "Backend"
+              },
+              "Display_Name__c": {
+                "value": null
+              },
+              "Proficiency__c": {
+                "value": 5
+              },
+              "Color_Hex__c": {
+                "value": "#123abc"
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a01SKILL2",
+              "Name": {
+                "value": "LWC"
+              },
+              "Category__c": {
+                "value": "Frontend"
+              },
+              "Display_Name__c": {
+                "value": "Lightning Web Components"
+              },
+              "Proficiency__c": {
+                "value": 4
+              },
+              "Color_Hex__c": {
+                "value": "red;stroke:url(x)"
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a01SKILL3",
+              "Name": {
+                "value": "Data Cloud"
+              },
+              "Category__c": {
+                "value": "Data"
+              },
+              "Display_Name__c": {
+                "value": null
+              },
+              "Proficiency__c": {
+                "value": null
+              },
+              "Color_Hex__c": {
+                "value": null
+              }
+            }
+          }
+        ]
+      },
+      "Project_Skill__c": {
+        "edges": [
+          {
+            "node": {
+              "Id": "a02PS1",
+              "Project__c": {
+                "value": "a03PROJ1"
+              },
+              "Skill__c": {
+                "value": "a01SKILL1"
+              },
+              "Project__r": {
+                "Name": {
+                  "value": "Portfolio Site"
+                }
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a02PS2",
+              "Project__c": {
+                "value": "a03PROJ1"
+              },
+              "Skill__c": {
+                "value": "a01SKILL2"
+              },
+              "Project__r": {
+                "Name": {
+                  "value": "Portfolio Site"
+                }
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a02PS3",
+              "Project__c": {
+                "value": "a03PROJ2"
+              },
+              "Skill__c": {
+                "value": "a01SKILL1"
+              },
+              "Project__r": {
+                "Name": {
+                  "value": "Employer Hub"
+                }
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a02PS4",
+              "Project__c": {
+                "value": "a03PROJ2"
+              },
+              "Skill__c": {
+                "value": "a01SKILLX"
+              },
+              "Project__r": {
+                "Name": {
+                  "value": "Employer Hub"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Experience_Skill__c": {
+        "edges": [
+          {
+            "node": {
+              "Id": "a04ES1",
+              "Experience__c": {
+                "value": "a05EXP1"
+              },
+              "Skill__c": {
+                "value": "a01SKILL1"
+              },
+              "Experience__r": {
+                "Name": {
+                  "value": "Platform Architect"
+                }
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a04ES2",
+              "Experience__c": {
+                "value": "a05EXP1"
+              },
+              "Skill__c": {
+                "value": "a01SKILL3"
+              },
+              "Experience__r": {
+                "Name": {
+                  "value": "Platform Architect"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
