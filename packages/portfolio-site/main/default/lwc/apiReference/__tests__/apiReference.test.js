@@ -388,6 +388,9 @@ describe("c-api-reference", () => {
     const options = window.Redoc.init.mock.calls[0][1];
     expect(REDOC_LINK_COLOR).toBe("#2563EB");
     expect(options.theme.colors.primary.main).toBe(REDOC_LINK_COLOR);
+    expect(options.theme.colors.tonalOffset).toBe(0);
+    expect(options.theme.colors.primary.light).toBe(REDOC_LINK_COLOR);
+    expect(options.theme.colors.primary.dark).toBe(REDOC_LINK_COLOR);
     expect(options.theme.typography.links.color).toBe(REDOC_LINK_COLOR);
     expect(options.theme.typography.links.visited).toBe(REDOC_LINK_COLOR);
     expect(options.theme.typography.links.hover).toBe(REDOC_LINK_COLOR);

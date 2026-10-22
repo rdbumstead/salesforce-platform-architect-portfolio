@@ -62,7 +62,13 @@ export const REDOC_OPTIONS = {
   expandResponses: "200",
   theme: {
     colors: {
-      primary: { main: REDOC_LINK_COLOR }
+      // No lightened or darkened shades: Redoc's lightened primary was 2.41:1 on white.
+      tonalOffset: 0,
+      primary: {
+        main: REDOC_LINK_COLOR,
+        light: REDOC_LINK_COLOR,
+        dark: REDOC_LINK_COLOR
+      }
     },
     typography: {
       fontFamily: SYSTEM_FONTS,
