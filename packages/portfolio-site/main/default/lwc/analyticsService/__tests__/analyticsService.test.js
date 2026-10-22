@@ -19,7 +19,8 @@ const L4_NAMES = [
   "changelog_commit_clicked",
   "governance_run_link_clicked",
   "finops_quota_visibility",
-  "theme_changed"
+  "theme_changed",
+  "resilience_test_triggered"
 ];
 
 describe("c/analyticsService", () => {

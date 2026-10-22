@@ -20,7 +20,8 @@ export const EVENTS = Object.freeze({
   CHANGELOG_COMMIT_CLICKED: "changelog_commit_clicked", // sha
   GOVERNANCE_RUN_LINK_CLICKED: "governance_run_link_clicked", // workflow
   FINOPS_QUOTA_VISIBILITY: "finops_quota_visibility", // none
-  THEME_CHANGED: "theme_changed" // theme
+  THEME_CHANGED: "theme_changed", // theme
+  RESILIENCE_TEST_TRIGGERED: "resilience_test_triggered" // source: changelog or roadmap
 });
 
 /**
