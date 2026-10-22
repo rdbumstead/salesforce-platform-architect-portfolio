@@ -36,8 +36,7 @@ public with sharing class GitHubCacheRefreshJob implements Queueable, Database.A
   public static String refresh() {
     Portfolio_Config__mdt config = config();
     if (config == null || String.isBlank(config.GitHub_Repo_Path__c)) {
-      System.debug(
-        LoggingLevel.WARN,
+      PortfolioLog.info(
         'GitHubCacheRefreshJob: no Portfolio_Config__mdt record with a GitHub_Repo_Path__c, nothing refreshed.'
       );
       return OUTCOME_NO_CONFIG;
@@ -51,10 +50,7 @@ public with sharing class GitHubCacheRefreshJob implements Queueable, Database.A
       items = GitHubService.fetchRecentCommits(config.GitHub_Repo_Path__c);
     } catch (Exception e) {
       // Recovered on purpose: the newest good row keeps serving and the breaker counts it.
-      System.debug(
-        LoggingLevel.WARN,
-        'GitHubCacheRefreshJob failed: ' + e.getTypeName()
-      );
+      PortfolioLog.info('GitHubCacheRefreshJob failed: ' + e.getTypeName());
       CircuitBreaker.recordFailure(CircuitBreaker.KEY_GITHUB);
       return OUTCOME_FAILED;
     }
