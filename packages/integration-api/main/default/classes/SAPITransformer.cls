@@ -244,6 +244,8 @@ public with sharing class SAPITransformer {
 
   /**
    * @description Maps the Portfolio_Config__mdt record to the PortfolioConfig schema.
+   *              Owner_Email__c and Owner_Phone__c are never returned (owner decision,
+   *              log 155).
    * @param config The configuration record; null yields an empty object.
    * @return Map<String, Object> PortfolioConfig schema object.
    */
@@ -254,8 +256,6 @@ public with sharing class SAPITransformer {
       return new Map<String, Object>();
     }
     return new Map<String, Object>{
-      'ownerEmail' => config.Owner_Email__c,
-      'ownerPhone' => config.Owner_Phone__c,
       'linkedInUrl' => config.LinkedIn_URL__c,
       'gitHubProfileUrl' => config.GitHub_Profile_URL__c,
       'calendlyUrl' => config.Calendly_URL__c,

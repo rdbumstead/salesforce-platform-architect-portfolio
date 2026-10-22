@@ -113,9 +113,8 @@ public class SapiTestData {
     'skillCategory',
     'skillProficiencyScore'
   };
+  // No owner email or phone: never returned (owner decision, log 155).
   public static final Set<String> PORTFOLIO_CONFIG_KEYS = new Set<String>{
-    'ownerEmail',
-    'ownerPhone',
     'linkedInUrl',
     'gitHubProfileUrl',
     'calendlyUrl',

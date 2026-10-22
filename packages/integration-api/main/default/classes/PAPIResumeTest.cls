@@ -13,8 +13,12 @@ private class PAPIResumeTest {
       FirstName = 'Test',
       LastName = 'User',
       Email = 'test@test.com',
+      Phone = '(555) 014-2424',
+      MobilePhone = '555-014-2425',
       Is_Portfolio_Owner__c = true,
-      Title = 'Architect'
+      Title = 'Architect',
+      LinkedIn_URL__c = 'https://www.linkedin.com/in/test-user',
+      Portfolio_URL__c = 'https://example.com/portfolio'
     );
     insert c;
 
@@ -255,6 +259,31 @@ private class PAPIResumeTest {
       'partial: contacts unavailable',
       RestTestUtil.getBodyAsMap().get('integrityNote'),
       'No owner contact is reported as a partial resume'
+    );
+  }
+
+  private static final Pattern PHONE_SHAPE = Pattern.compile(
+    '\\(?\\d{3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}'
+  );
+
+  @IsTest
+  static void resumeHasNoEmailOrPhoneAndEndsWithTheLinks() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    String text = (String) body.get('generatedText');
+    Assert.isFalse(text.contains('@'), 'No email in the resume text');
+    Assert.isFalse(PHONE_SHAPE.matcher(text).find(), 'No phone in the text');
+    Assert.isTrue(
+      text.endsWith(
+        'LinkedIn: https://www.linkedin.com/in/test-user\n' +
+        'Portfolio: https://example.com/portfolio'
+      ),
+      'Ends with the LinkedIn and portfolio links: ' + text.right(120)
     );
   }
 }

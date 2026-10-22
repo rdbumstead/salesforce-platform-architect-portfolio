@@ -14,6 +14,7 @@ private class PAPIProfileTest {
       FirstName = 'Ryan',
       LastName = 'Bumstead',
       Email = 'ryan@test.com',
+      Phone = '(555) 014-2424',
       Is_Portfolio_Owner__c = true,
       LinkedIn_URL__c = 'https://linkedin.com/in/test',
       Career_Objective__c = 'Test objective'
@@ -352,5 +353,27 @@ private class PAPIProfileTest {
       res.headers.get('Cache-Control'),
       'A failure does not change the summary policy'
     );
+  }
+
+  @IsTest
+  static void fullProfileReturnsNoOwnerEmailOrPhone() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    String raw = RestTestUtil.getResponse().responseBody.toString();
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Map<String, Object> contactInfo = (Map<String, Object>) body.get(
+      'contactInfo'
+    );
+    Assert.areEqual('Ryan Bumstead', contactInfo.get('fullName'), 'Name kept');
+    Assert.isFalse(contactInfo.containsKey('email'), 'No email key');
+    Assert.isFalse(contactInfo.containsKey('phone'), 'No phone key');
+    Assert.isFalse(raw.contains('ryan@test.com'), 'Email never leaks');
+    Assert.isFalse(raw.contains('014-2424'), 'Phone never leaks');
+    Assert.isFalse(raw.contains('ownerEmail'), 'No ownerEmail key');
+    Assert.isFalse(raw.contains('ownerPhone'), 'No ownerPhone key');
   }
 }

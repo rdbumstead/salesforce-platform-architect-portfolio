@@ -60,12 +60,14 @@ global with sharing class PAPIResume {
     }
 
     PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
+    Contact owner = ownerContact(agg);
     String resumeText =
-      contactSection(agg) +
+      contactSection(owner) +
       experienceSection(agg, persona) +
       skillsSection(agg) +
       certificationsSection(agg) +
-      educationSection(agg);
+      educationSection(agg) +
+      linksSection(owner);
 
     Map<String, Object> response = new Map<String, Object>{
       'generatedText' => resumeText.trim(),
@@ -79,29 +81,52 @@ global with sharing class PAPIResume {
     ctx.ok(response);
   }
 
-  private static String contactSection(PAPITransformer.Aggregation agg) {
+  // The owner Contact without email, phone or address: the resume never prints them
+  // (owner decision, log 155). Null when there is none.
+  private static Contact ownerContact(PAPITransformer.Aggregation agg) {
     agg.source('contacts');
     try {
       PAPITransformer.guardSection('contacts');
       List<Contact> contacts = [
-        SELECT Id, Name, Email, Phone, Title, Career_Objective__c
+        SELECT Id, Name, Title, LinkedIn_URL__c, Portfolio_URL__c
         FROM Contact
         WHERE Is_Portfolio_Owner__c = TRUE
         LIMIT 1
       ];
       if (contacts.isEmpty()) {
         agg.fail('contacts');
-        return '';
+        return null;
       }
-      Contact c = contacts[0];
-      String text = c.Name + '\n';
-      text += (c.Title != null ? c.Title : 'Salesforce Professional') + '\n';
-      text += c.Email + (c.Phone != null ? ' | ' + c.Phone : '') + '\n\n';
-      return text;
+      return contacts[0];
     } catch (Exception e) {
       agg.fail('contacts');
+      return null;
+    }
+  }
+
+  private static String contactSection(Contact c) {
+    if (c == null) {
       return '';
     }
+    String text = c.Name + '\n';
+    text += (c.Title != null ? c.Title : 'Salesforce Professional') + '\n\n';
+    return text;
+  }
+
+  // The closing lines: the LinkedIn and portfolio links, in place of the email and phone
+  // the resume used to print.
+  private static String linksSection(Contact c) {
+    if (c == null) {
+      return '';
+    }
+    String text = '';
+    if (String.isNotBlank(c.LinkedIn_URL__c)) {
+      text += 'LinkedIn: ' + c.LinkedIn_URL__c + '\n';
+    }
+    if (String.isNotBlank(c.Portfolio_URL__c)) {
+      text += 'Portfolio: ' + c.Portfolio_URL__c + '\n';
+    }
+    return text;
   }
 
   private static String experienceSection(

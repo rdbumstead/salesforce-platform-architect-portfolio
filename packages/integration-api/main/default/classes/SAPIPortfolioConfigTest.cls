@@ -39,7 +39,11 @@ private class SAPIPortfolioConfigTest {
       body.keySet(),
       'Keys must equal the PortfolioConfig schema keys'
     );
-    Assert.areEqual('owner@example.com', body.get('ownerEmail'), 'ownerEmail');
+    Assert.isFalse(body.containsKey('ownerEmail'), 'No owner email');
+    Assert.isFalse(body.containsKey('ownerPhone'), 'No owner phone');
+    String raw = RestTestUtil.getResponse().responseBody.toString();
+    Assert.isFalse(raw.contains('owner@example.com'), 'Email never leaks');
+    Assert.isFalse(raw.contains('555-0199'), 'Phone never leaks');
     Assert.areEqual('SPAP', body.get('jiraProjectKey'), 'jiraProjectKey');
     SapiTestData.assertCache('max-age=300, private');
   }
