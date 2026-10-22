@@ -36,8 +36,8 @@ _Target Audience: Architects, Developers_
 - [ADR-004: Static Resource Code Rendering](adr/004-static-resource-code-rendering.md)
 - [ADR-005: Gamified Testimonial UI](adr/005-gamified-testimonial-ui.md)
 - [ADR-009: Granular Resume Data Model](adr/009-granular-resume-data-model.md)
-- [ADR-010: Visualization Engine (Vis.js vs. AntV G6)](adr/010-visualization-engine-vis-js-vs-antv-g6.md)
-- [ADR-020: Mobile Performance (SVG Fallback)](adr/020-mobile-performance-static-svg-fallback-strategy.md)
+- [ADR-010: Visualization Engine (Vis.js vs. AntV G6, now D3)](adr/010-visualization-engine-vis-js-vs-antv-g6.md)
+- [ADR-020: Mobile Performance (matrix first, graph on open)](adr/020-mobile-performance-static-svg-fallback-strategy.md)
 - [ADR-021: Native GraphQL vs. Apex REST](adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)
 - [ADR-023: Client-Side PDF Generation](adr/023-client-side-pdf-generation-jspdf-for-mvp.md)
 
@@ -54,6 +54,8 @@ _Target Audience: Architects, Developers_
 - [ADR-026: Header-Based API Versioning](adr/026-header-based-api-versioning-strategy.md)
 - [ADR-027: Platform-Native API Authentication (ECA + Named Credential)](adr/027-platform-native-api-authentication.md) — supersedes ADR-017
 - [ADR-028: Evaluator Access via Token Vending](adr/028-evaluator-access-via-token-vending.md)
+- [ADR-029: Schema Visualizer Scope, Discovery and Caching](adr/029-schema-visualizer-scope-discovery-and-caching.md)
+- [ADR-030: Decision Matrix as Custom Metadata](adr/030-decision-matrix-as-custom-metadata.md)
 
 **AI, Data & FinOps**
 

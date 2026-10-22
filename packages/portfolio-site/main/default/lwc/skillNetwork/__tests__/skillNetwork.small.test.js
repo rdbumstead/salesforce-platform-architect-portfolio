@@ -1,5 +1,6 @@
 /**
- * @description       : Unit tests for skillNetwork LWC on the Small form factor (static SVG, no G6).
+ * @description       : Unit tests for skillNetwork LWC on the Small form factor: the matrix only, no view
+ *                      switch, and no request for the graph engine (Round 5 plan M2).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -10,27 +11,12 @@ import SkillNetwork from "c/skillNetwork";
 // Same module as the component, which the Round 3 plan pins.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { graphql } from "lightning/uiGraphQLApi";
-import { loadG6 } from "c/g6Loader";
+import { loadGraphEngine, layoutGraph } from "c/graphEngine";
 
 const PAYLOAD = require("./data/skillNetworkPayload.json");
 
-// Three skills, two projects and one experience. Five junction rows have both
-// ends, and one Project_Skill__c row points at a skill outside the result.
-const EXPECTED = { nodes: 6, edges: 5 };
-
-function buildPayload({ empty = false } = {}) {
-  const data = JSON.parse(JSON.stringify(PAYLOAD));
-  if (empty) {
-    data.uiapi.query.Skill__c.edges = [];
-  }
-  return data;
-}
-
-// config/jest.config.js maps every lightning/* import to one universal mock
-// component, and Jest keys mocks by the resolved file, so mocking one lightning
-// module mocks them all. The factory keeps the universal component as the default
-// export (lightning-card, lightning-spinner and friends still render) and adds a
-// test wire adapter for graphql.
+// config/jest.config.js maps every lightning/* import to one universal mock component, so the
+// factory keeps it as the default export and adds a test wire adapter for graphql.
 jest.mock(
   "lightning/uiGraphQLApi",
   () => {
@@ -48,7 +34,23 @@ jest.mock(
   { virtual: true }
 );
 
-jest.mock("c/g6Loader", () => ({ loadG6: jest.fn() }));
+jest.mock(
+  "c/graphEngine",
+  () => ({ loadGraphEngine: jest.fn(), layoutGraph: jest.fn() }),
+  { virtual: true }
+);
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    trackEvent: jest.fn(),
+    EVENTS: {
+      SKILLS_VIEW_CHANGED: "skills_view_changed",
+      SKILL_SELECTED: "skill_selected"
+    }
+  }),
+  { virtual: true }
+);
 
 // The Jest transformer defaults formFactor to Large. This file runs as a phone.
 jest.mock("@salesforce/client/formFactor", () => ({ default: "Small" }), {
@@ -61,9 +63,14 @@ async function flushPromises() {
   }
 }
 
-function mount() {
+async function mountWithData() {
   const element = createElement("c-skill-network", { is: SkillNetwork });
   document.body.appendChild(element);
+  graphql.emit({
+    data: JSON.parse(JSON.stringify(PAYLOAD)),
+    errors: undefined
+  });
+  await flushPromises();
   return element;
 }
 
@@ -75,55 +82,31 @@ describe("c-skill-network (Small form factor)", () => {
     jest.clearAllMocks();
   });
 
-  it("renders a static SVG from the same data and never calls loadG6", async () => {
-    const element = mount();
-    graphql.emit({ data: buildPayload(), errors: undefined });
-    await flushPromises();
+  it("shows the matrix with no view switch and never requests the engine", async () => {
+    const element = await mountWithData();
 
-    const svg = element.shadowRoot.querySelector("svg.network-svg");
-    expect(svg).not.toBeNull();
-    expect(svg.querySelectorAll("circle")).toHaveLength(EXPECTED.nodes);
-    expect(svg.querySelectorAll("line")).toHaveLength(EXPECTED.edges);
-    expect(svg.querySelectorAll("g.svg-skill")).toHaveLength(3);
-    expect(svg.querySelectorAll("g.svg-work")).toHaveLength(3);
-    expect(element.shadowRoot.querySelector(".graph-container")).toBeNull();
-    expect(element.shadowRoot.querySelector(".pause-toggle")).toBeNull();
-    expect(loadG6).not.toHaveBeenCalled();
+    expect(element.shadowRoot.querySelector(".view-switch")).toBeNull();
+    expect(element.shadowRoot.querySelectorAll(".matrix-row")).toHaveLength(3);
+    expect(element.shadowRoot.querySelectorAll("button.chip")).toHaveLength(5);
+    expect(element.shadowRoot.querySelector(".graph-view")).toBeNull();
+    expect(loadGraphEngine).not.toHaveBeenCalled();
+    expect(layoutGraph).not.toHaveBeenCalled();
   });
 
-  it("keeps a safe colour when Color_Hex__c is not a hex value", async () => {
-    const element = mount();
-    graphql.emit({ data: buildPayload(), errors: undefined });
-    await flushPromises();
+  it("still selects a chip and lists where it was used", async () => {
+    const element = await mountWithData();
 
-    const fills = Array.from(
-      element.shadowRoot.querySelectorAll("g.svg-skill circle")
-    ).map((circle) => circle.getAttribute("fill"));
-    expect(fills).toEqual(["#123abc", "#0176d3", "#3a49da"]);
-  });
-
-  it("lists every node and connection for screen readers", async () => {
-    const element = mount();
-    graphql.emit({ data: buildPayload(), errors: undefined });
-    await flushPromises();
-
-    const items = element.shadowRoot.querySelectorAll(
-      ".network-list li.network-node"
+    const chip = [...element.shadowRoot.querySelectorAll("button.chip")].find(
+      (button) =>
+        button.querySelector(".chip-name").textContent === "Data Cloud"
     );
-    expect(items).toHaveLength(EXPECTED.nodes);
-    expect(
-      element.shadowRoot.querySelector(".network-summary").textContent
-    ).toBe(`${EXPECTED.nodes} items and ${EXPECTED.edges} connections.`);
-    expect(loadG6).not.toHaveBeenCalled();
-  });
-
-  it("renders the error state and never calls loadG6", async () => {
-    const element = mount();
-    graphql.emit({ data: undefined, errors: [{ message: "Access denied" }] });
+    chip.click();
     await flushPromises();
 
-    expect(element.shadowRoot.querySelector(".state-error")).not.toBeNull();
-    expect(element.shadowRoot.querySelector("svg")).toBeNull();
-    expect(loadG6).not.toHaveBeenCalled();
+    const panel = element.shadowRoot.querySelector(".selection-panel");
+    expect(panel.querySelector(".selection-roles").textContent).toContain(
+      "Analyst"
+    );
+    expect(loadGraphEngine).not.toHaveBeenCalled();
   });
 });

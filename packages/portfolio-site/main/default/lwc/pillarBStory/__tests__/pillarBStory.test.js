@@ -1,0 +1,126 @@
+/**
+ * @description       : Unit tests for pillarBStory: the six sections, captioned tables, the
+ *                      pre-sales framing (D3), no video prototype (D8), the architecture image
+ *                      and its alt text, and tokens only in the CSS.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 10/22/2026
+ **/
+import { readFileSync } from "fs";
+import { join } from "path";
+import { createElement } from "@lwc/engine-dom";
+import PillarBStory from "c/pillarBStory";
+
+const HEADINGS = [
+  "1. The client",
+  "2. Discovery",
+  "3. The decision matrix",
+  "4. ROI and cost",
+  "5. Solution design",
+  "6. Outcome"
+];
+
+function createComponent() {
+  const element = createElement("c-pillar-b-story", { is: PillarBStory });
+  document.body.appendChild(element);
+  return element;
+}
+
+const q = (element, selector) => element.shadowRoot.querySelector(selector);
+const qa = (element, selector) =>
+  Array.from(element.shadowRoot.querySelectorAll(selector));
+const text = (node) => node.textContent.replace(/\s+/g, " ").trim();
+
+describe("c-pillar-b-story", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    jest.clearAllMocks();
+  });
+
+  it("renders the six section headings in order", () => {
+    const element = createComponent();
+    expect(qa(element, "h2.section-heading").map(text)).toEqual(HEADINGS);
+  });
+
+  it("gives both tables a caption and header cells with scope", () => {
+    const element = createComponent();
+    const tables = qa(element, "table");
+    expect(tables).toHaveLength(2);
+    tables.forEach((table) => {
+      expect(text(table.querySelector("caption")).length).toBeGreaterThan(0);
+      expect(table.querySelectorAll('th[scope="col"]').length).toBeGreaterThan(
+        0
+      );
+      expect(table.querySelectorAll('th[scope="row"]').length).toBeGreaterThan(
+        0
+      );
+    });
+    expect(text(tables[0].querySelector("caption"))).toBe(
+      "Lifecycle concepts mapped to each option's objects"
+    );
+    expect(tables[1].querySelectorAll("tbody tr")).toHaveLength(3);
+  });
+
+  it("marks Education Cloud names as not verified in an org", () => {
+    const element = createComponent();
+    expect(text(q(element, ".footnote"))).toContain(
+      "They are not verified in an org."
+    );
+  });
+
+  it("names a public source on every ROI row", () => {
+    const element = createComponent();
+    const rows = qa(element, "table")[1].querySelectorAll("tbody tr");
+    rows.forEach((row) => {
+      const links = row.querySelectorAll("a[href^='https://']");
+      expect(links.length).toBeGreaterThan(0);
+      links.forEach((a) => expect(a.rel).toBe("noopener noreferrer"));
+    });
+  });
+
+  it("opens section 2 by framing the work as pre-sales (D3)", () => {
+    const element = createComponent();
+    const discovery = q(element, '[data-section="discovery"]');
+    const first = discovery.querySelector("p");
+    expect(first.dataset.id).toBe("framing");
+    expect(text(first)).toBe(
+      "This work was done in pre-sales, before the nonprofit chose a platform and before any build began."
+    );
+  });
+
+  it("has no video prototype section and no D3 or D8 placeholder (D8)", () => {
+    const element = createComponent();
+    expect(q(element, '[data-section="video"]')).toBeNull();
+    expect(q(element, '[data-placeholder="D3"]')).toBeNull();
+    expect(q(element, '[data-placeholder="D8"]')).toBeNull();
+    expect(text(q(element, "article"))).not.toMatch(/video/i);
+  });
+
+  it("shows the redrawn architecture from NL_Assets with alt text", () => {
+    const element = createComponent();
+    const img = q(element, "img.architecture-image");
+    expect(img.getAttribute("src")).toContain(
+      "NL_Assets/minimalist-architecture.svg"
+    );
+    expect(img.getAttribute("alt")).toContain("Object model");
+    expect(text(q(element, "figcaption"))).toBe(
+      "Minimalist architecture, redrawn from public object names."
+    );
+    expect(qa(element, "ul.decisions li")).toHaveLength(8);
+  });
+
+  it("never names the client", () => {
+    const element = createComponent();
+    const all = text(q(element, "article"));
+    expect(all).toContain("regional adult literacy nonprofit");
+    expect(all).not.toMatch(/Greenville|GLA\b|Literacy Association/);
+  });
+
+  it("styles only with design tokens, never a hex colour", () => {
+    const css = readFileSync(join(__dirname, "..", "pillarBStory.css"), "utf8");
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+});

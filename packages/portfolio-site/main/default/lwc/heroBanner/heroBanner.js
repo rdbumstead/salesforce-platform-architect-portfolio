@@ -3,7 +3,8 @@
  *                      direct link to the resume, profile links), the live pillar cards, an honest
  *                      line for the pillars that are coming, and the "How to evaluate me" tour.
  *                      Name, title, location and photo are static so they paint without waiting on
- *                      Apex. The bio and profile links come from the ResumeController header wire.
+ *                      Apex. The bio and profile links come from ResumeController.getHeader, which
+ *                      reads only the owner Contact, so the bio does not wait on the full resume.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -11,15 +12,12 @@
  **/
 import { LightningElement, wire } from "lwc";
 import basePath from "@salesforce/community/basePath";
-import getResume from "@salesforce/apex/ResumeController.getResume";
+import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import HEADSHOT from "@salesforce/resourceUrl/Portfolio_Headshot";
 import { LIVE_PILLARS, COMING_PILLARS } from "c/pillarData";
 import { toExternalUrl } from "c/externalUrl";
 
 const MINUTES_PER_STEP = 1;
-// The resume page opens on this persona, so the home page asks for the same one and the
-// two share one cached response.
-const HEADER_PERSONA = "Architect";
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -64,10 +62,10 @@ export default class HeroBanner extends LightningElement {
   location = "Greater Toledo, Ohio";
   header;
 
-  @wire(getResume, { persona: HEADER_PERSONA })
-  wiredResume({ data }) {
+  @wire(getHeader)
+  wiredHeader({ data }) {
     // An error or an empty header renders nothing extra: never a placeholder sentence.
-    this.header = data && data.header ? data.header : undefined;
+    this.header = data || undefined;
   }
 
   get bio() {

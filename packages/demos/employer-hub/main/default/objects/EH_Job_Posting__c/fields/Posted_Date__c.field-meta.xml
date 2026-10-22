@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Posted_Date__c</fullName>
+    <description>The date the posting went live for students.</description>
+    <inlineHelpText>Enter the date the posting was published.</inlineHelpText>
+    <label>Posted Date</label>
+    <required>false</required>
+    <type>Date</type>
+</CustomField>

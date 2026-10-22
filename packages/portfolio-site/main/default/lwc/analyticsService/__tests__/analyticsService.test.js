@@ -23,13 +23,26 @@ const L4_NAMES = [
   "resilience_test_triggered"
 ];
 
+// Round 5 plan M6, appended in WS1's first commit.
+const M6_NAMES = [
+  "skills_view_changed",
+  "skill_selected",
+  "erd_scope_changed",
+  "erd_node_selected",
+  "gallery_asset_opened",
+  "matrix_weight_changed",
+  "matrix_reset"
+];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
   });
 
-  it("lists exactly the L4 event names", () => {
-    expect(Object.values(EVENTS).sort()).toEqual([...L4_NAMES].sort());
+  it("lists exactly the L4 and M6 event names", () => {
+    expect(Object.values(EVENTS).sort()).toEqual(
+      [...L4_NAMES, ...M6_NAMES].sort()
+    );
   });
 
   it("cannot be changed at runtime", () => {

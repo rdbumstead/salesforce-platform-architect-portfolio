@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Lead_Department__c</fullName>
+    <description
+  >The department that owns the relationship and routes requests.</description>
+    <inlineHelpText
+  >Choose the department that leads this engagement.</inlineHelpText>
+    <label>Lead Department</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Workforce Development</fullName>
+                <default>false</default>
+                <label>Workforce Development</label>
+            </value>
+            <value>
+                <fullName>Career Services</fullName>
+                <default>false</default>
+                <label>Career Services</label>
+            </value>
+            <value>
+                <fullName>Foundation</fullName>
+                <default>false</default>
+                <label>Foundation</label>
+            </value>
+            <value>
+                <fullName>Continuing Education</fullName>
+                <default>false</default>
+                <label>Continuing Education</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

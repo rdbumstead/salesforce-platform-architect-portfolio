@@ -1,0 +1,129 @@
+/*
+ * Round 4 plan L1: colours, fonts, radii and spacing come only from the --pf- design tokens,
+ * so the story follows the light and dark themes. Every element that sets a background also
+ * sets its text colour. The architecture image carries its own light panel, so it reads in
+ * both themes. Section numbers use the mono font like the other pillar labels.
+ */
+:host {
+  display: block;
+}
+
+.story {
+  color: var(--pf-body);
+  font-family: var(--pf-font-sans);
+  line-height: 1.6;
+}
+
+.story-section {
+  background-color: var(--pf-surface);
+  color: var(--pf-body);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  padding: var(--pf-space-4);
+  margin-bottom: var(--pf-space-4);
+}
+
+.section-heading {
+  color: var(--pf-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 var(--pf-space-3);
+}
+
+.sub-heading {
+  color: var(--pf-text);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: var(--pf-space-4) 0 var(--pf-space-2);
+}
+
+.facts,
+.decisions,
+.not-built {
+  margin: var(--pf-space-2) 0 0;
+  padding-left: var(--pf-space-5);
+}
+
+.facts li,
+.decisions li,
+.not-built li {
+  margin-bottom: var(--pf-space-1);
+}
+
+.placeholder {
+  background-color: var(--pf-warn);
+  color: var(--pf-warn-text);
+  border-radius: var(--pf-radius-sm);
+  padding: var(--pf-space-2) var(--pf-space-3);
+  font-weight: 600;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  margin: var(--pf-space-3) 0;
+}
+
+.story-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--pf-body);
+  font-size: 0.875rem;
+}
+
+.story-table caption {
+  text-align: left;
+  color: var(--pf-muted);
+  padding-bottom: var(--pf-space-2);
+}
+
+.story-table th,
+.story-table td {
+  border-bottom: 1px solid var(--pf-border);
+  padding: var(--pf-space-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.story-table thead th {
+  background-color: var(--pf-subtle);
+  color: var(--pf-text);
+}
+
+.story-table tbody th {
+  color: var(--pf-text);
+  font-weight: 600;
+}
+
+.story-table a {
+  color: var(--pf-accent);
+  display: inline-block;
+  min-height: 24px;
+}
+
+.story-table a:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+.footnote {
+  color: var(--pf-muted);
+  font-size: 0.8125rem;
+}
+
+.architecture {
+  margin: 0;
+}
+
+.architecture-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+}
+
+.architecture figcaption {
+  color: var(--pf-muted);
+  font-size: 0.8125rem;
+  margin-top: var(--pf-space-2);
+}

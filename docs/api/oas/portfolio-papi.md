@@ -188,7 +188,7 @@ The following groups are executed in parallel:
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
-  "summary": "7+ Years of Experience as a Salesforce Platform Architect specializing in API-led connectivity and DevOps.",
+  "summary": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education",
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",
@@ -438,7 +438,7 @@ strictest-policy-wins.
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
-  "summary": "7+ years of experience as a Salesforce Platform Architect",
+  "summary": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education",
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",
@@ -840,6 +840,12 @@ Generates an ATS-optimized plain text resume.
 - PAPI persona values are passed directly to SAPI `/experience-highlights?persona={value}`
 - If persona is omitted, all highlights are returned (no filtering)
 
+**Response format**:
+- When the first media type in the `Accept` header is `text/plain`, a 200 answer is the generated text alone, with `Content-Type: text/plain; charset=UTF-8`. Parameters after a semicolon are ignored and the header name matches in any case.
+- With no `Accept` header, `*/*`, `application/json` or any other first type, the answer is the JSON object below.
+- Every other response header, the rate count and the cache directive are the same in both forms. Errors are always JSON, whatever `Accept` says.
+- Example: `curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/services/apexrest/papi/v1/resume/generate?persona=Architect"`
+
 <h3 id="generateresume-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
@@ -873,6 +879,10 @@ Generates an ATS-optimized plain text resume.
   "persona": "Architect",
   "generatedAt": "2019-08-24T14:15:22Z"
 }
+```
+
+```
+"Ryan Bumstead Salesforce Platform Architect\nEXPERIENCE\nSalesforce | Senior Technical Architect Jan 2023 - Present - Designed multi-cloud solutions... - Led DevOps transformation..."
 ```
 
 > 400 Response
@@ -935,22 +945,11 @@ Generates an ATS-optimized plain text resume.
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|A JSON object containing the formatted resume text|Inline|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|The formatted resume text, as a JSON object by default, or as plain text when the first media type in `Accept` is `text/plain`|string|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
 |401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
 |503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
-
-<h3 id="generateresume-responseschema">Response Schema</h3>
-
-Status Code **200**
-
-|Name|Type|Required|Restrictions|Description|
-|---|---|---|---|---|
-|» integrityNote|string|false|none|"complete", or "partial: <sections> unavailable" naming each upstream section that could not be read.|
-|» generatedText|string|true|none|The complete, formatted resume string ready for clipboard copy|
-|» persona|string|true|none|The persona filter applied|
-|» generatedAt|string(date-time)|true|none|ISO 8601 timestamp of generation|
 
 ### Response Headers
 
@@ -1183,7 +1182,7 @@ const inputBody = '{
       "LWC",
       "Integration Architecture"
     ],
-    "experienceSummary": "7+ years as Salesforce Architect"
+    "experienceSummary": "Nearly a decade on the Salesforce platform"
   },
   "tone": "Professional",
   "maxLength": 500
@@ -1255,7 +1254,7 @@ CoverLetter requires `context.companyName` and `context.role`. Content longer th
       "LWC",
       "Integration Architecture"
     ],
-    "experienceSummary": "7+ years as Salesforce Architect"
+    "experienceSummary": "Nearly a decade on the Salesforce platform"
   },
   "tone": "Professional",
   "maxLength": 500
@@ -1819,7 +1818,7 @@ This operation does not require authentication
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
-  "summary": "7+ years of experience as a Salesforce Platform Architect",
+  "summary": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education",
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",
@@ -1946,7 +1945,7 @@ The master payload for initial app load
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
-  "summary": "7+ years of experience as a Salesforce Platform Architect",
+  "summary": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education",
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",

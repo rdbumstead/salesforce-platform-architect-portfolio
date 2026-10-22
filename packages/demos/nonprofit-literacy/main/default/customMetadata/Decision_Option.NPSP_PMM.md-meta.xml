@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>NPSP and PMM</label>
+    <protected>false</protected>
+    <values>
+        <field>Summary__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Nonprofit Success Pack with the Program Management Module, and Volunteers for Salesforce (V4S) for tutors. Free packages on Power of Us licences. The client chose this option.</value>
+    </values>
+    <values>
+        <field>Sort_Order__c</field>
+        <value xsi:type="xsd:double">1</value>
+    </values>
+</CustomMetadata>

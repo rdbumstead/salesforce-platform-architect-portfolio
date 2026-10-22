@@ -1,0 +1,63 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "PillarAAsset1Ref"
+      },
+      "Name": "Process flow, part 1: Initial inquiry and routing",
+      "Project__c": "@PillarAProjectRef",
+      "Type__c": "Image",
+      "Alt_Text__c": "Process flow, part 1: the web form finds or creates the Account and Contact, creates a Case per request, routes each Case to a queue by academic focus area, and a queue member reviews it.",
+      "Sort_Order__c": 1,
+      "External_URL__c": "resource:EH_Assets/flow-part-1.svg"
+    },
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "PillarAAsset2Ref"
+      },
+      "Name": "Process flow, part 2: Monetary and service paths",
+      "Project__c": "@PillarAProjectRef",
+      "Type__c": "Image",
+      "Alt_Text__c": "Process flow, part 2: a service request is fulfilled in a screen flow and the Case closes. A monetary request becomes an Opportunity, and once Closed Won a Task leads to the Contract.",
+      "Sort_Order__c": 2,
+      "External_URL__c": "resource:EH_Assets/flow-part-2.svg"
+    },
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "PillarAAsset3Ref"
+      },
+      "Name": "Operations dashboard",
+      "Project__c": "@PillarAProjectRef",
+      "Type__c": "Image",
+      "Alt_Text__c": "Operations dashboard with sample values: open inquiries by queue as a donut chart, and a table of neglected inquiries with queue, employer, subject and age.",
+      "Sort_Order__c": 3,
+      "External_URL__c": "resource:EH_Assets/dashboard-operations.svg"
+    },
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "PillarAAsset4Ref"
+      },
+      "Name": "Executive dashboard",
+      "Project__c": "@PillarAProjectRef",
+      "Type__c": "Image",
+      "Alt_Text__c": "Executive dashboard with sample values: top employer partners by won opportunity amount, and the opportunity pipeline as a funnel from Needs Analysis to Closed Won.",
+      "Sort_Order__c": 4,
+      "External_URL__c": "resource:EH_Assets/dashboard-executive.svg"
+    },
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "PillarAAsset5Ref"
+      },
+      "Name": "Employer Hub demo deck",
+      "Project__c": "@PillarAProjectRef",
+      "Type__c": "Document",
+      "Alt_Text__c": "Employer Hub demo deck",
+      "Sort_Order__c": 5
+    }
+  ]
+}

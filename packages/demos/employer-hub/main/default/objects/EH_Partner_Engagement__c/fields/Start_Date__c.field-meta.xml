@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Start_Date__c</fullName>
+    <description>The date the engagement began.</description>
+    <inlineHelpText
+  >Enter the date the college first engaged this partner.</inlineHelpText>
+    <label>Start Date</label>
+    <required>false</required>
+    <type>Date</type>
+</CustomField>

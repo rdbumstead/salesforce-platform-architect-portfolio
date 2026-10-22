@@ -32,8 +32,7 @@ public with sharing class JiraCacheRefreshJob implements Queueable, Database.All
   public static String refresh() {
     Portfolio_Config__mdt config = config();
     if (config == null) {
-      System.debug(
-        LoggingLevel.WARN,
+      PortfolioLog.info(
         'JiraCacheRefreshJob: no Portfolio_Config__mdt record, nothing refreshed.'
       );
       return GitHubCacheRefreshJob.OUTCOME_NO_CONFIG;
@@ -47,10 +46,7 @@ public with sharing class JiraCacheRefreshJob implements Queueable, Database.All
       items = JiraService.fetchRoadmap(JiraService.projectKey(config));
     } catch (Exception e) {
       // Recovered on purpose: the newest good row keeps serving and the breaker counts it.
-      System.debug(
-        LoggingLevel.WARN,
-        'JiraCacheRefreshJob failed: ' + e.getTypeName()
-      );
+      PortfolioLog.info('JiraCacheRefreshJob failed: ' + e.getTypeName());
       CircuitBreaker.recordFailure(CircuitBreaker.KEY_JIRA);
       return GitHubCacheRefreshJob.OUTCOME_FAILED;
     }

@@ -21,7 +21,14 @@ export const EVENTS = Object.freeze({
   GOVERNANCE_RUN_LINK_CLICKED: "governance_run_link_clicked", // workflow
   FINOPS_QUOTA_VISIBILITY: "finops_quota_visibility", // none
   THEME_CHANGED: "theme_changed", // theme
-  RESILIENCE_TEST_TRIGGERED: "resilience_test_triggered" // source: changelog or roadmap
+  RESILIENCE_TEST_TRIGGERED: "resilience_test_triggered", // source: changelog or roadmap
+  SKILLS_VIEW_CHANGED: "skills_view_changed", // view
+  SKILL_SELECTED: "skill_selected", // skill, years
+  ERD_SCOPE_CHANGED: "erd_scope_changed", // scope
+  ERD_NODE_SELECTED: "erd_node_selected", // object
+  GALLERY_ASSET_OPENED: "gallery_asset_opened", // type, pillar
+  MATRIX_WEIGHT_CHANGED: "matrix_weight_changed", // criterion
+  MATRIX_RESET: "matrix_reset" // none
 });
 
 /**

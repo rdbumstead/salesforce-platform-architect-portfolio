@@ -366,4 +366,245 @@ private class PAPIResumeTest {
     Assert.isFalse(text.contains('SKILLS'), 'No linked skill, no section');
     Assert.isTrue(text.contains('EXPERIENCE'), 'Other sections remain');
   }
+
+  // Accept: text/plain on /resume/generate (Round 5 plan §5 WS3, owner feedback 3).
+
+  private static final String GENERATE_URI = '/services/apexrest/papi/v1/resume/generate';
+
+  private class DenyingLimiter implements ApiRateLimiter {
+    public ApiRequestContext.RateDecision check(
+      String tierKey,
+      Integer limitPerMinute
+    ) {
+      return new ApiRequestContext.RateDecision(false, limitPerMinute, 0, 42);
+    }
+
+    public ApiRequestContext.RateDecision checkKey(
+      String callerKey,
+      Integer limitPerMinute
+    ) {
+      return check(callerKey, limitPerMinute);
+    }
+  }
+
+  private static void initWithAccept(
+    String headerName,
+    String accept,
+    Map<String, String> params
+  ) {
+    Map<String, String> headers = new Map<String, String>{
+      'X-Request-Id' => UUID.randomUUID().toString(),
+      'X-API-Version' => 'v1'
+    };
+    if (headerName != null) {
+      headers.put(headerName, accept);
+    }
+    RestTestUtil.initGetRaw(GENERATE_URI, headers, params);
+  }
+
+  private static String generateJsonText() {
+    initWithAccept(null, null, null);
+    PAPIResume.getResume();
+    return (String) RestTestUtil.getBodyAsMap().get('generatedText');
+  }
+
+  private static void assertJsonAnswer(RestResponse res, String context) {
+    Assert.areEqual(200, res.statusCode, context + ': 200');
+    Assert.areEqual(
+      'application/json',
+      res.headers.get('Content-Type'),
+      context + ': JSON content type'
+    );
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Assert.isTrue(
+      body.containsKey('generatedText'),
+      context + ': JSON body with generatedText'
+    );
+  }
+
+  @IsTest
+  static void plainTextAcceptReturnsTheTextAlone() {
+    String jsonText = generateJsonText();
+    initWithAccept('Accept', 'text/plain', null);
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    RestResponse res = RestTestUtil.getResponse();
+    Assert.areEqual(200, res.statusCode, 'Plain text is still a 200');
+    Assert.areEqual(
+      PAPIResume.PLAIN_TEXT_CONTENT_TYPE,
+      res.headers.get('Content-Type'),
+      'Content type is text/plain with UTF-8'
+    );
+    Assert.areEqual(
+      'text/plain; charset=UTF-8',
+      PAPIResume.PLAIN_TEXT_CONTENT_TYPE,
+      'The exact content type string'
+    );
+    Assert.areEqual(
+      jsonText,
+      res.responseBody.toString(),
+      'The body is the generated text alone, the same text the JSON carries'
+    );
+    Assert.isTrue(
+      res.responseBody.toString().startsWith('Test User\n'),
+      'Real line breaks, no JSON escaping'
+    );
+  }
+
+  @IsTest
+  static void plainTextKeepsEveryStandardHeader() {
+    initWithAccept('Accept', 'text/plain', null);
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    RestResponse res = RestTestUtil.getResponse();
+    Assert.areEqual(
+      'no-store, no-cache',
+      res.headers.get('Cache-Control'),
+      'Cache-Control unchanged'
+    );
+    Assert.areEqual(
+      'v1',
+      res.headers.get('X-API-Version'),
+      'Version header unchanged'
+    );
+    Assert.areEqual(
+      String.valueOf(ApiRequestContext.PAPI_LIMIT_PER_MINUTE),
+      res.headers.get('X-RateLimit-Limit'),
+      'Rate limit header unchanged'
+    );
+    Assert.isNotNull(
+      res.headers.get('X-RateLimit-Remaining'),
+      'Remaining header unchanged'
+    );
+    Assert.areEqual(
+      'complete',
+      res.headers.get('X-Data-Integrity'),
+      'Integrity header unchanged'
+    );
+    Assert.isFalse(
+      res.headers.containsKey('X-Request-Id'),
+      'A valid caller id is echoed by the platform, never by Apex, as for JSON'
+    );
+  }
+
+  @IsTest
+  static void lowerCaseAcceptWithParametersAndAListIsPlainText() {
+    initWithAccept('accept', ' text/plain;q=0.9 , application/json', null);
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    RestResponse res = RestTestUtil.getResponse();
+    Assert.areEqual(
+      PAPIResume.PLAIN_TEXT_CONTENT_TYPE,
+      res.headers.get('Content-Type'),
+      'First media type wins, parameters ignored, name matched in any case'
+    );
+    Assert.isFalse(res.responseBody.toString().startsWith('{'), 'No JSON body');
+  }
+
+  @IsTest
+  static void noAcceptHeaderKeepsJson() {
+    initWithAccept(null, null, null);
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    assertJsonAnswer(RestTestUtil.getResponse(), 'No Accept');
+  }
+
+  @IsTest
+  static void anyMediaTypeAcceptKeepsJson() {
+    initWithAccept('Accept', '*/*', null);
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    assertJsonAnswer(RestTestUtil.getResponse(), 'Accept */*');
+  }
+
+  @IsTest
+  static void jsonAcceptKeepsJson() {
+    initWithAccept('Accept', 'application/json', null);
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    assertJsonAnswer(RestTestUtil.getResponse(), 'Accept application/json');
+  }
+
+  @IsTest
+  static void plainTextSecondInTheListKeepsJson() {
+    initWithAccept('Accept', 'application/json, text/plain', null);
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    assertJsonAnswer(RestTestUtil.getResponse(), 'text/plain second');
+  }
+
+  @IsTest
+  static void badRequestWithPlainTextAcceptStaysJson() {
+    initWithAccept(
+      'Accept',
+      'text/plain',
+      new Map<String, String>{ 'persona' => 'InvalidPersona' }
+    );
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    assertJsonError(400, 'BAD_REQUEST');
+  }
+
+  @IsTest
+  static void serverErrorWithPlainTextAcceptStaysJson() {
+    initWithAccept('Accept', 'text/plain', null);
+    PAPIResume.throwException = true;
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    assertJsonError(500, 'INTERNAL_SERVER_ERROR');
+  }
+
+  @IsTest
+  static void rateLimitWithPlainTextAcceptStaysJson() {
+    initWithAccept('Accept', 'text/plain', null);
+    ApiRequestContext.limiterOverride = new DenyingLimiter();
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    assertJsonError(429, 'RATE_LIMIT_EXCEEDED');
+  }
+
+  private static void assertJsonError(Integer status, String errorCode) {
+    RestResponse res = RestTestUtil.getResponse();
+    Assert.areEqual(status, res.statusCode, 'Error status');
+    Assert.areEqual(
+      'application/json',
+      res.headers.get('Content-Type'),
+      'Errors stay JSON whatever Accept says'
+    );
+    Assert.areEqual(
+      errorCode,
+      RestTestUtil.getBodyAsMap().get('errorCode'),
+      'The standard Error payload'
+    );
+  }
 }

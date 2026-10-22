@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Score__c</fullName>
+    <description
+  >How well the option meets the criterion, from 1 (poor fit) to 5 (strong fit). The matrix multiplies it by the criterion weight.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>Whole number from 1 to 5.</inlineHelpText>
+    <label>Score</label>
+    <precision>1</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <type>Number</type>
+</CustomField>

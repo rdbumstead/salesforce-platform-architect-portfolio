@@ -180,12 +180,12 @@ graph TD
 
 Why specific technologies were chosen over alternatives.
 
-| Requirement             | Finalist Options      | Selected    | Rejection Reason                                                     |
-| :---------------------- | :-------------------- | :---------- | :------------------------------------------------------------------- |
-| **Frontend Framework**  | Aura vs. LWR          | **LWR**     | Aura's 3-5s LCP violates UX requirements for public sites.           |
-| **Graph Visualization** | Vis.js vs. G6         | **AntV G6** | Vis.js lacks native animation API for flow lines ("running edge").   |
-| **API Documentation**   | Swagger UI vs. Redoc  | **Redoc**   | Redoc's single-file static HTML works without Node.js server.        |
-| **CI/CD Auth**          | Username/Pass vs. JWT | **JWT**     | Username/Password is fragile and requires rotation; JWT is headless. |
+| Requirement             | Finalist Options      | Selected            | Rejection Reason                                                                                                                                                                                                                                                                                      |
+| :---------------------- | :-------------------- | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Frontend Framework**  | Aura vs. LWR          | **LWR**             | Aura's 3-5s LCP violates UX requirements for public sites.                                                                                                                                                                                                                                            |
+| **Graph Visualization** | Vis.js vs. G6 vs. D3  | **D3** (`d3-force`) | G6 is 1.57 MB and its force layout tangled 59 skills. Four D3 modules are about 18.5 KB and draw both the skills graph and the ERD ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)). |
+| **API Documentation**   | Swagger UI vs. Redoc  | **Redoc**           | Redoc's single-file static HTML works without Node.js server.                                                                                                                                                                                                                                         |
+| **CI/CD Auth**          | Username/Pass vs. JWT | **JWT**             | Username/Password is fragile and requires rotation. JWT is headless.                                                                                                                                                                                                                                  |
 
 ### 1.4 Visual Architecture Standard (C4 Model)
 
@@ -213,6 +213,7 @@ Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Disciplin
   - **Latency:** LCP < 2.5s on 4G networks.
   - **AI Generation Timeout:** 60 seconds for the Gemini callout, read from the `Gemini` record of `AI_Provider_Config__mdt` (`Timeout_Ms__c`, owner decision 2026-10-21). Gemma 4 reasons before it answers, so a cover letter can take up to about a minute. The earlier 2 second hard stop was dropped because a reasoning model almost never answers inside it.
   - **Total CPU Budget:** < 5000ms per request (Allocating 50% of the 10,000ms Synchronous Limit to ensure headroom for platform overhead).
+  - **Schema describe budget:** an uncached `SchemaService.getSchemaGraph` call stays under 1,000 ms of CPU per scope. Measured in a scratch org on 2026-10-22: 141 ms for the portfolio scope and 96 ms for the Employer Hub scope, asserted by `SchemaServiceTest.eachScopeStaysUnderTheCpuBudget` ([ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)).
 - **Security:** Public access restricted strictly to custom objects. No PII stored.
 - **Scalability:** Data model supports 10,000+ records via indexed Junction Objects.
 
@@ -288,7 +289,7 @@ erDiagram
 
 ### 4.3 Junction Objects (The Glue)
 
-- **`Project_Skill__c`:** Connects Skills to Projects (e.g., linking "Flow" to "MCC Employer Hub").
+- **`Project_Skill__c`:** Connects Skills to Projects (for example, linking "Flow" to the Employer Hub project).
 - **`Experience_Skill__c`:** Connects Skills to Job History.
 
 ### 4.4 Asset Management
@@ -330,17 +331,28 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 
 ### 5.1 Pillar A: Business Architecture (Employer Hub)
 
+> [!NOTE]
+> **Built in Round 5, awaiting the Round 5 pull request and the owner's deploy.** The process flows and dashboards on the page are redrawn from the original demo deck with no names, and the dashboards carry sample values. The client is described as "a community college" and never named (owner decision D4 b).
+
 - **Objective:** Demonstrate Business Analysis and Process Mapping.
-- **Artifacts:** Sanitized Process Flow Diagrams and Executive Dashboard mockups.
-- **Integration:** Assets mapped via `Project_Asset__c` for gallery rendering.
-- **Component:** `c-schema-visualizer`
-- **Data Source:** Apex Schema.getGlobalDescribe() ensures the diagram never drifts from the actual deployment.
-- **Reuse Signal:** Reuses the **AntV G6** library imported for Pillar D, demonstrating efficient asset management and component reusability.
+- **Page:** `/business-architecture`. An introduction to the problem (departments of a community college shared employer partners with no shared view) and the Employer Hub, a working demo built to extend the workforce org already delivered for the college, that centralizes, routes and reports on the relationship, then the process map and dashboard gallery, then the live data model, then an eight step walkthrough of a partner inquiry.
+- **Artifacts:** Sanitized Process Flow Diagrams and Executive Dashboard mockups, rendered by `c-project-asset-gallery` from the `Project_Asset__c` rows of the Pillar A project. The images ship in the `EH_Assets` static resource and are addressed as `resource:EH_Assets/<file>` (Technical Guide section 2.10).
+- **Component:** `c-schema-visualizer`, fed by `SchemaService.getSchemaGraph(scope)`.
+- **Data Source:** Apex `Schema.getGlobalDescribe()` ensures the diagram never drifts from the actual deployment. A two-button toggle switches between the Employer Hub schema (the default on this page) and the portfolio's own schema. The internal objects `API_Rate_Window__c`, `API_Access_Request__c`, `Github_Cache__c` and `Jira_Cache__c` are hidden by `Schema_Visualizer_Object__mdt` records. There is no Platform Cache: the only cache is the browser's, through `cacheable=true` ([ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)).
+- **Reuse Signal:** the diagram draws with the same D3 engine as the skills page (`c/graphEngine` and the `D3_Library` static resource), loaded only on desktop and tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
 
 ### 5.2 Pillar B: Pre-Sales Consultancy (Nonprofit Literacy Solutions)
 
+> [!NOTE]
+> **Built in Round 5, awaiting the Round 5 pull request and the owner's deploy.** Every score and weight in the matrix is a placeholder until the owner reviews it, and the page says so in a banner. The client is described as "a regional adult literacy nonprofit" and never named (owner decision D4 b). Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production (owner decision D1 a).
+
 - **Objective:** Demonstrate ROI analysis and Solution Design.
-- **Artifacts:** Comparative Decision Matrix (NPSP + PMM vs. Education Cloud) and Video Prototype.
+- **Page:** `/nonprofit-solutions`. `c-pillar-b-story` tells the pre-sales story in six sections (the client, discovery, the decision matrix, ROI and cost, solution design, the outcome), then `c-decision-matrix`, then `c-project-asset-gallery` for the Pillar B media.
+- **Comparative Decision Matrix:** three-way, NPSP with the Program Management Module, Education Cloud, and Nonprofit Cloud (owner decision D2 b). The client's own two-way decision (NPSP and PMM against Education Cloud, which chose NPSP and PMM) is the dated baseline, and its weights are the starting weights. Options, criteria and scores are Custom Metadata in the `nonprofit-literacy` package, read once by `DecisionMatrixController.getMatrix()`. The visitor moves labelled weight sliders, and the browser recomputes the ranking and a sensitivity line naming the single weight change that would swap the top two. "Reset to the client's weights" restores the baseline ([ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)).
+- **ROI analysis:** a cost and effort table built from public licence facts only, with a source per row. Effort is a relative band, and no client rates or totals appear (owner decision D9 a).
+- **Solution design:** the minimalist object model redrawn from public object names (`NL_Assets` static resource), one line per architecture decision, and what was deliberately not built.
+- **No video prototype.** None was recorded (owner, decision D8, 2026-10-22), so the page has no video section and no video row is loaded.
+- **Framing of the comparison:** pre-sales. The comparison was made before the nonprofit chose a platform and before any build began, and the page says so at the start of the discovery section (owner, decision D3, 2026-10-22).
 
 ### 5.3 Pillar C: Work Experience Verification API (Twin API Pattern)
 
@@ -352,14 +364,12 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.4 Pillar D: AI & Innovation (Agentforce)
 
 > [!NOTE]
-> **Agentforce is not implemented, and its switch ships off** (decision 2026-10-02, [ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)). `ContentGenerationController.dispatch` consults Agentforce only when the `Agentforce` record of `AI_Provider_Config__mdt` is switched on, and never for a site guest. Retrieval for the cover letter is built in Apex (`PortfolioGroundingService`, section 5.4.1). The Data 360 design in the next list is the target design. None of it is built.
+> **Agentforce is not implemented, and its switch ships off** (decision 2026-10-02, [ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)). `ContentGenerationController.dispatch` consults Agentforce only when the `Agentforce` record of `AI_Provider_Config__mdt` is switched on, and never for a site guest. Grounding is built in Apex and reads the CRM directly (`PortfolioGroundingService.build`, section 5.4.1). Data 360 grounding is deferred ([ADR-011 amendment, 2026-10-22](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md#amendment-2026-10-22-deferred)), and nothing in the site or the API reads Data 360.
 
-- **Objective:** Demonstrate Hybrid Search (Vector + Keyword) and RAG architecture.
-- **Mechanism:** Agentforce Service Agent grounded on Data 360 DMOs (Data Model Objects) rather than direct CRM objects.
-- **Architecture:**
-  - **Ingestion:** `Project__c` and `Experience__c` records are ingested into Data 360 via CRM Connector.
-  - **Context Layer:** A specific "Portfolio Context" Search Index is built from these DMOs.
-  - **Retrieval:** Agentforce queries the Search Index to generate responses, decoupling the AI reasoning layer from the transactional database (See ADR-011).
+- **Objective:** Demonstrate grounded generation with a visible fallback chain. The original objective, hybrid search (vector and keyword) over Data 360, is deferred with ADR-011.
+- **Mechanism as built:** `PortfolioGroundingService.build` ranks featured `Project__c` rows and `Experience_Highlight__c` text by keywords from the job title and description and passes them to the prompt as JSON (section 5.4.1).
+- **Data 360 today:** the production org has 14 data streams, one per portfolio object, fed by the CRM connector. It has no search index and no retriever, so no prompt is grounded on Data 360 (read-only queries on `DataStream` and `DataSemanticSearch`, 2026-10-22).
+- **What would reopen it:** a real Agentforce provider and a need to search text that keyword ranking cannot reach (ADR-011 amendment).
 - **Show your work** (formerly "Mirror Mode"): a panel under the letter, off until the visitor opens it, shows the serving provider and model, the latency, every attempt and the prompt that was sent. Apex and the component fill it from the generation result (`ContentGenerationController.GenerationResult`). The model is never asked to reveal its own prompt, because that is unreliable and invites prompt injection.
 
 #### 5.4.1 Feature Spotlight: Generative Cover Letter Engine
@@ -370,7 +380,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 - **The Concept:** Instead of a static "About Me," recruiters enter a company name, a job title and, optionally, the job description. The system writes a cover letter explaining why this candidate fits that role.
 - **The Architecture as built:**
   - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`, which checks the AI tier limit on the key `papi-ai:site-cover-letter` (10 requests per minute, one bucket shared by every site visitor), runs `ContentGenerationController.dispatch` in process as the site guest, and writes the count afterwards. The guest holds the `Gemini_Auth-Gemini_Principal` principal for this and no other AI grant. The page used to call `/papi/v1/ai/generate` through the `Portfolio_API` Named Credential, but a request that arrives as a callout from the same org may not call out again, so Gemini could never answer it ([ADR-015 Round 4 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-4)). `/papi/v1/ai/generate` stays for outside callers.
-  - **Retrieval Layer:** `PortfolioGroundingService` reads featured `Project__c` records (name, challenge, solution, business value, skills) and `Experience_Highlight__c` text with its role and employer, ranks them by keywords from the job title and description, and adds them to the prompt as JSON. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and stays under 8,000 characters. Its reads go through a `without sharing` selector with a fixed field list, because the site guest sees only rows shared to it. This is direct CRM retrieval in Apex, not the Data 360 search index of section 5.4.
+  - **Retrieval Layer:** `PortfolioGroundingService` reads featured `Project__c` records (name, challenge, solution, business value, skills) and `Experience_Highlight__c` text with its role and employer, ranks them by keywords from the job title and description, and adds them to the prompt as JSON. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and stays under 8,000 characters. Its reads go through a `without sharing` selector with a fixed field list, because the site guest sees only rows shared to it. This is direct CRM retrieval in Apex. No Data 360 index exists (section 5.4).
   - **Generation Layer:** `ContentGenerationController.dispatch`, described below.
   - **Show your work:** the page's badge shows the provider and model from the response. A panel the visitor opens shows whether a fallback happened, the round trip and generation time, every attempt and the prompt that was sent.
 
@@ -467,12 +477,15 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-testimonial-submit`:** "Mad Libs" style sentence builder.
 - **`c-api-tester`:** Developer console LWC utilizing fetch() to exercise endpoints.
 - **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
-- **`c-skill-network`:** Visualizes Junction Objects via AntV G6.
+- **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with D3 that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
 - **`c-code-viewer`:** Fetches raw source code via Prism.js.
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
 - **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category. It makes no callout.
 - **`c-footer`:** Contains the GitHub Actions deploy badge and the Glass Box telemetry (section 9).
 - **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
+- **`c-schema-visualizer`:** The live ERD on the Pillar A page, drawn with the shared D3 engine (section 5.1).
+- **`c-project-asset-gallery`:** The image, document, video and link gallery for any pillar's project, from `Project_Asset__c`.
+- **`c-decision-matrix`** and **`c-pillar-b-story`:** The Pillar B story and the reweightable matrix (section 5.2).
 
 > [!TIP]
 > **Technical Implementation:** For detailed performance strategies (lazy-loading), mobile fallbacks, and accessibility patterns for these components, please refer to the **[Technical Guide: Frontend Component Logic](./04-Technical-Guide.md#2-frontend-lwr-component-logic)**.
@@ -495,8 +508,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-007](../adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching                                  | Accepted                 |
 | [ADR-008](../adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Agile Accelerator                          | Accepted                 |
 | [ADR-009](../adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model                                      | Accepted                 |
-| [ADR-010](../adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Visualization Engine (Vis.js vs. AntV G6)                       | Accepted                 |
-| [ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Context Grounding Strategy (Direct CRM vs. Data 360)            | Accepted                 |
+| [ADR-010](../adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Visualization Engine (Vis.js vs. AntV G6)                       | Revisited 2026-10-22: D3 |
+| [ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Context Grounding Strategy (Direct CRM vs. Data 360)            | Deferred (2026-10-22)    |
 | [ADR-012](../adr/012-guest-user-security-restriction-rules.md)                         | Guest User Security (Restriction Rules)                         | Accepted                 |
 | [ADR-013](../adr/013-structured-logging-framework-nebula-logger.md)                    | Structured Logging Framework (Nebula Logger)                    | Accepted                 |
 | [ADR-014](../adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading (Performance)                        | Accepted                 |
@@ -505,7 +518,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-017](../adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | System API Security & Dual-Sided Auth Pattern                   | Superseded (ADR-027)     |
 | [ADR-018](../adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | FinOps Constraint – AWS Lambda Function URLs vs. API Gateway    | Accepted                 |
 | [ADR-019](../adr/019-executable-governance-platform-events-for-documentation-logic.md) | Executable Governance – Platform Events for Documentation Logic | Accepted                 |
-| [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Accepted                 |
+| [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Amended 2026-10-22       |
 | [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Accepted                 |
 | [ADR-022](../adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Engineering – Resilience Simulation Toggle           | Accepted                 |
 | [ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF) for MVP                      | Accepted (Transitionary) |
@@ -514,6 +527,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-026](../adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning Strategy                            | Accepted (Amended)       |
 | [ADR-027](../adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication (ECA + Named Credential)     | Accepted                 |
 | [ADR-028](../adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending                              | Accepted                 |
+| [ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema Visualizer Scope, Discovery and Caching                  | Accepted (2026-10-22)    |
+| [ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)                            | Decision Matrix as Custom Metadata                              | Accepted (2026-10-22)    |
 
 </details>
 
@@ -551,13 +566,13 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 
 Ensuring the system fails gracefully during outage events ([ADR-022 Round 4 amendment](../adr/022-resilience-engineering-resilience-simulation-toggle.md#amendment-2026-10-21-round-4)).
 
-| Failure Scenario                 | Detection Method                                                                                 | User Experience                                                                                                                                   | Auto-Recovery                                                                                                     |
-| :------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------- |
-| **GitHub or Jira refresh fails** | The refresh job's callout fails. Three in a row open that source's breaker                       | The last good commits or roadmap with its age. `DEGRADED` while the breaker is open                                                               | After 30 minutes the next refresh is tried. A success closes the breaker, a failure keeps it open 30 more minutes |
-| **No usable cache row**          | `DeliveryController` finds no row, or a payload that does not parse                              | "No recent updates found." or "Roadmap temporarily unavailable"                                                                                   | The next successful refresh                                                                                       |
-| **Gemini fails**                 | An error, an exception or a timeout in `GeminiService`. Three in a row open the `gemini` breaker | The cover letter comes from the Local Template, and the attempts list shows why                                                                   | After 30 minutes the next letter tries Gemini again. A success closes the breaker                                 |
-| **G6 Library 404**               | `loadScript()` Promise rejection in `c/g6Loader`                                                 | The inline SVG built from the same live data, with "The interactive graph could not load, so a static view is shown." Small screens never load G6 | The next page load tries again                                                                                    |
-| **User-Triggered Simulation**    | The "Simulate an outage" switch on the changelog or the roadmap passes `simulate`                | The cached data with a "Simulated" badge (status `SIMULATED`). No callout, nothing stored                                                         | Switch it off                                                                                                     |
+| Failure Scenario                 | Detection Method                                                                                 | User Experience                                                                                                                                                                      | Auto-Recovery                                                                                                     |
+| :------------------------------- | :----------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------- |
+| **GitHub or Jira refresh fails** | The refresh job's callout fails. Three in a row open that source's breaker                       | The last good commits or roadmap with its age. `DEGRADED` while the breaker is open                                                                                                  | After 30 minutes the next refresh is tried. A success closes the breaker, a failure keeps it open 30 more minutes |
+| **No usable cache row**          | `DeliveryController` finds no row, or a payload that does not parse                              | "No recent updates found." or "Roadmap temporarily unavailable"                                                                                                                      | The next successful refresh                                                                                       |
+| **Gemini fails**                 | An error, an exception or a timeout in `GeminiService`. Three in a row open the `gemini` breaker | The cover letter comes from the Local Template, and the attempts list shows why                                                                                                      | After 30 minutes the next letter tries Gemini again. A success closes the breaker                                 |
+| **Graph engine fails to load**   | `loadScript()` Promise rejection in `c/graphEngine.loadGraphEngine`                              | Skills page: "The graph could not load. The matrix still shows every skill." ERD: "The diagram could not load, so the object list is shown instead." Phones never request the engine | The next open of the graph view tries again, because a failed load is not cached                                  |
+| **User-Triggered Simulation**    | The "Simulate an outage" switch on the changelog or the roadmap passes `simulate`                | The cached data with a "Simulated" badge (status `SIMULATED`). No callout, nothing stored                                                                                            | Switch it off                                                                                                     |
 
 ## 9. Observability & Glass Box Telemetry
 
@@ -582,9 +597,9 @@ The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box T
 - **A.7 Architecture Diagram Hosting:** Export C4 diagram and upload as Static Resource.
 - **A.8 Jira Integration:** Endpoint: ryanbumstead.atlassian.net. Auth: Basic Auth with Named Credential.
 - **A.9 Advanced Visualization Strategy:**
-  - **Mobile Guardrail:** Check FORM_FACTOR. Render static SVG if mobile.
-  - **Lazy Loading:** Dynamic import of G6 inside renderedCallback.
-  - **Library Version:** AntV G6 v4.8.x.
+  - **Mobile Guardrail:** on `FORM_FACTOR` `Small` or a viewport under 768 px the skills page shows its matrix and the ERD its accessible list, and neither requests the graph engine.
+  - **Lazy Loading:** `c/graphEngine.loadGraphEngine` loads the `D3_Library` static resource through `loadScript` the first time a graph view opens, once per page. A failed load is not cached.
+  - **Library Version:** d3-force 3.0.0 with d3-dispatch, d3-quadtree and d3-timer 3.0.1 (G6 was removed in Round 5).
 
 ### Appendix B: API Specification (OpenAPI/Swagger)
 
@@ -954,7 +969,7 @@ Global configuration settings.
 
 #### D.7 Object: `Project_Skill__c` (Junction)
 
-Links Projects to Skills for the G6 Graph.
+Links Projects to Skills for the skills matrix and graph.
 
 | Field Label | API Name     | Type                        | Required | Description       |
 | :---------- | :----------- | :-------------------------- | :------- | :---------------- |
@@ -983,24 +998,28 @@ Competency library.
 
 #### D.10 Object: `Project_Asset__c`
 
-Media gallery assets.
+Media gallery assets, read by `c-project-asset-gallery`.
 
-| Field Label      | API Name          | Type          | Length | Required | Description                     |
-| :--------------- | :---------------- | :------------ | :----- | :------- | :------------------------------ |
-| **Asset Name**   | `Name`            | Text          | 80     | Yes      | Descriptive label.              |
-| **Project**      | `Project__c`      | Master-Detail | -      | Yes      | Parent Project.                 |
-| **Type**         | `Type__c`         | Picklist      | -      | Yes      | "Image, Video, Document, Link." |
-| **External URL** | `External_URL__c` | URL           | 255    | Yes      | CDN or S3 location.             |
+| Field Label      | API Name          | Type          | Length | Required | Description                                                                                                                                                |
+| :--------------- | :---------------- | :------------ | :----- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Asset Name**   | `Name`            | Text          | 80     | Yes      | Descriptive label.                                                                                                                                         |
+| **Project**      | `Project__c`      | Master-Detail | -      | Yes      | Parent Project.                                                                                                                                            |
+| **Type**         | `Type__c`         | Picklist      | -      | No       | Image, Video, Link, Document.                                                                                                                              |
+| **External URL** | `External_URL__c` | URL           | 255    | No       | An `http` or `https` address, or `resource:<Static Resource>/<path>` for a file shipped in a static resource. A row with no URL shows "Not available yet". |
+| **Alt Text**     | `Alt_Text__c`     | Text          | 255    | Yes      | Alternative text for an image.                                                                                                                             |
+| **Sort Order**   | `Sort_Order__c`   | Number        | -      | No       | Order in the gallery.                                                                                                                                      |
 
 #### D.11 Picklist Value Enumeration
 
-| Field                  | Object                    | Values                                                                               |
-| :--------------------- | :------------------------ | :----------------------------------------------------------------------------------- |
-| `Persona_Tag__c`       | `Experience_Highlight__c` | Admin, Developer, Architect, General                                                 |
-| `Relationship_Type__c` | `Testimonial__c`          | Manager, Peer, Client, Recruiter, Fan                                                |
-| `Vibe_Mode__c`         | `Testimonial__c`          | Professional (Clean/Corporate), Casual (Fun/Raw)                                     |
-| `Status__c`            | `Project__c`              | Live - In Production, Live - Demo / Reference, Active Development, On Hold, Archived |
-| `Pillar__c`            | `Project__c`              | Business, Consulting, Integration, AI, DevOps                                        |
+| Field                       | Object                    | Values                                                                               |
+| :-------------------------- | :------------------------ | :----------------------------------------------------------------------------------- |
+| `Persona_Tag__c`            | `Experience_Highlight__c` | Admin, Developer, Architect, General                                                 |
+| `Relationship_Type__c`      | `Testimonial__c`          | Manager, Peer, Client, Recruiter, Fan                                                |
+| `Vibe_Mode__c`              | `Testimonial__c`          | Professional (Clean/Corporate), Casual (Fun/Raw)                                     |
+| `Status__c`                 | `Project__c`              | Live - In Production, Live - Demo / Reference, Active Development, On Hold, Archived |
+| `Pillar__c`                 | `Project__c`              | A, B, C, D, E (Business, Consulting, Integration, AI, DevOps)                        |
+| `Type__c`                   | `Project_Asset__c`        | Image, Video, Link, Document                                                         |
+| `EH_Academic_Focus_Area__c` | `Account`                 | Business, Health Sciences, Information Technology, Skilled Trades, General Studies   |
 
 #### D.12 Index & Query Optimization
 
@@ -1022,10 +1041,11 @@ To support high-volume queries during traffic spikes (e.g., LinkedIn post viral 
 
 ### Appendix G: Accessibility Strategy (A11y)
 
-- **G.1 The "Shadow Structure" Pattern:** Visually hidden `<ul>` renders alongside the graph for screen readers.
-- **G.2 Motion Sensitivity:** Auto-detects prefers-reduced-motion and initializes graph in PAUSED state.
-- **G.3 Keyboard Navigation:** Focus management via Shadow List. Skip links function normally.
-- **G.4 Compliance Checklist:** (WCAG 2.1 AA compliant).
+- **G.1 The "Shadow Structure" Pattern:** every graph has a list beside it that holds the same content. On the skills page the graph's SVG is `aria-hidden` and a visually hidden list names every node and its connections, so its length equals the node count. On the Pillar A page the object list mirrors every node and edge, and on phones it is the visible view. The skills matrix itself is native buttons (`aria-pressed`) in rows by category.
+- **G.2 Motion Sensitivity:** nothing animates. The D3 layout runs to completion before anything is drawn, so `prefers-reduced-motion` needs no special case and no pause control.
+- **G.3 Keyboard Navigation:** the "Matrix | Graph" switch is two 44 px buttons in a labelled group. Skill chips, the ERD's object list, the scope toggle and the gallery links are reachable by keyboard. Skip links function normally.
+- **G.4 Decision matrix:** a table with a caption, `scope` on every header, and a labelled range slider per criterion ("Weight for" and the criterion, 0 to 10). The ranking and the sensitivity line are text, not colour.
+- **G.5 Compliance Checklist:** (WCAG 2.1 AA compliant).
 
 ### Appendix H: Deployment Architecture View
 
@@ -1039,11 +1059,11 @@ Apex → Named Credential → External APIs (Jira/GitHub).
 
 Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
-- `/packages/portfolio-site`: Configurations, declarative, and programmatic resources focused on adding features to the Salesforce Architect Portfolio
+- `/packages/portfolio-site`: Configurations, declarative, and programmatic resources focused on adding features to the Salesforce Architect Portfolio. Every pillar component and class lives here too (`SchemaService`, `DecisionMatrixController`, `c-schema-visualizer`, `c-project-asset-gallery`, `c-decision-matrix`, `c-pillar-b-story`), because Jest runs only on this package (Round 5 plan reading R1).
 - `/packages/integration-api`: the OpenAPI specifications (`specs/`), the Apex REST classes for the SAPI and PAPI, and the integration user's profile.
 - `/packages/shared-modules`: Shared modules reusable across packages, for example lightning web components use across the portfolio-site and integration-api focused lightning web components.
-- `/packages/demos/employer-hub`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on building a centralized hub for employers.
-- `/packages/demos/nonprofit-literacy`: Salesforce metadata and presentation documentation for a demonstration provided to a client focused on the implementation of nonprofit success pack and the program management module including business analysis on several products including Salesforce Education Cloud.
+- `/packages/demos/employer-hub`: the inert Employer Hub data model of a demonstration built for a community college: `EH_Partner_Engagement__c`, `EH_Job_Posting__c` (master-detail to Partner Engagement), `EH_Sponsorship__c` and `EH_Letter_of_Support__c`, with lookups to Account, Contact, Case, Opportunity and Contract, and the Account picklist `EH_Academic_Focus_Area__c`. No automation, tabs, layouts or records. Also the `EH_Demo_Read` permission set (read on the four objects, optional for administrators) and the `EH_Assets` static resource (two process flows and two dashboards, labelled placeholders until the sanitized material arrives).
+- `/packages/demos/nonprofit-literacy`: the analysis of a platform choice for a regional adult literacy nonprofit: the three decision matrix Custom Metadata Types (`Decision_Option__mdt`, `Decision_Criterion__mdt`, `Decision_Score__mdt`), their 43 records, and the `NL_Assets` static resource with the redrawn object model. It references no managed package, so it deploys to production and to CI's scratch orgs unchanged.
 
 ### Appendix J: Cloud FinOps Strategy (Phase 8 - 2027-2028)
 

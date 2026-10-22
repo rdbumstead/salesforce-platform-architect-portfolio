@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Rationale__c</fullName>
+    <description
+  >Why the option earns this score, shown when a visitor opens the cell. Begins PLACEHOLDER: until the owner reviews it.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >One or two plain sentences. Keep client names and rates out.</inlineHelpText>
+    <label>Rationale</label>
+    <length>32768</length>
+    <visibleLines>3</visibleLines>
+    <type>LongTextArea</type>
+</CustomField>

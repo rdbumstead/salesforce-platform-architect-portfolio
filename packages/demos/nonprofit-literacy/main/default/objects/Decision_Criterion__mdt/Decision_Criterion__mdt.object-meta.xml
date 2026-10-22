@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >The Decision Criterion type holds one row of the Pillar B decision matrix: a Description, the client's Default Weight (0 to 10) and a Sort Order. Read by DecisionMatrixController. Commonly used for setting the weights the reset button restores.</description>
+    <label>Decision Criterion</label>
+    <pluralLabel>Decision Criteria</pluralLabel>
+    <validationRules>
+        <fullName>Default_Weight_Between_0_And_10</fullName>
+        <active>true</active>
+        <description
+    >The matrix sliders run from 0 to 10, so the default weight must sit inside that range.</description>
+        <errorConditionFormula
+    >OR(ISBLANK(Default_Weight__c), Default_Weight__c &lt; 0, Default_Weight__c &gt; 10)</errorConditionFormula>
+        <errorMessage
+    >Default Weight must be a number from 0 to 10.</errorMessage>
+    </validationRules>
+    <visibility>Public</visibility>
+</CustomObject>
