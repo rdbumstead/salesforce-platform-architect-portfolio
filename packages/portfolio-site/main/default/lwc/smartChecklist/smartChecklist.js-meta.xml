@@ -3,7 +3,8 @@
     <apiVersion>62.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Governance Checklist</masterLabel>
-    <description>Real-time deployment checklist</description>
+    <description
+  >Pipeline checklist fed by a platform event. Reads on view and when the tab is shown again.</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
