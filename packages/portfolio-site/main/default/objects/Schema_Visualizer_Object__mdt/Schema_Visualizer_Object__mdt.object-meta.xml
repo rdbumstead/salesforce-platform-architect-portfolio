@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
-<description>The Schema Visualizer Object type holds one record per object whose place in the ERD differs from the discovery rules in SchemaService. A record moves an object to the portfolio or Employer Hub scope, or hides it. Commonly used for hiding internal objects from the public schema view.</description>
-<label>Schema Visualizer Object</label>
-<pluralLabel>Schema Visualizer Objects</pluralLabel>
-<visibility>Public</visibility>
+    <description
+  >The Schema Visualizer Object type holds one record per object whose place in the ERD differs from the discovery rules in SchemaService. A record moves an object to the portfolio or Employer Hub scope, or hides it. Commonly used for hiding internal objects from the public schema view.</description>
+    <label>Schema Visualizer Object</label>
+    <pluralLabel>Schema Visualizer Objects</pluralLabel>
+    <visibility>Public</visibility>
 </CustomObject>
