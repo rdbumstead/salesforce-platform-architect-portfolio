@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Scope__c</fullName>
+    <description
+  >The ERD scope the object belongs to. Blank keeps the scope the discovery rules give it.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >Choose portfolio or employerHub, or leave blank to keep the discovered scope.</inlineHelpText>
+    <label>Scope</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>portfolio</fullName>
+                <default>false</default>
+                <label>portfolio</label>
+            </value>
+            <value>
+                <fullName>employerHub</fullName>
+                <default>false</default>
+                <label>employerHub</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

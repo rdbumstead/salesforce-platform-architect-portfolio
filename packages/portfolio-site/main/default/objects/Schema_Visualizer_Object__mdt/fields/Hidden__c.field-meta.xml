@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Hidden__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >When true the object is left out of every ERD scope.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >Tick to hide the object from the schema visualizer.</inlineHelpText>
+    <label>Hidden</label>
+    <type>Checkbox</type>
+</CustomField>
