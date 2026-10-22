@@ -326,4 +326,55 @@ describe("c-api-reference", () => {
       expect(copy.equals(source)).toBe(true);
     });
   });
+
+  it("fills the page and opens without a click on its own page", async () => {
+    const element = createElement("c-api-reference", { is: ApiReference });
+    element.fullWidth = true;
+    element.openOnLoad = true;
+    document.body.appendChild(element);
+    await flushPromises();
+    await flushPromises();
+
+    expect(loadScript).toHaveBeenCalledTimes(1);
+    expect(window.Redoc.init).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("api_reference_opened", {
+      spec: "sapi"
+    });
+    expect(
+      query(element, ".reference-body").classList.contains(
+        "reference-body_full"
+      )
+    ).toBe(true);
+    const panel = query(element, ".redoc-target").parentElement;
+    expect(panel.classList.contains("redoc-panel_full")).toBe(true);
+    expect(panel.classList.contains("slds-hide")).toBe(false);
+    expect(specButton(element, "papi")).not.toBeNull();
+
+    specButton(element, "papi").click();
+    await flushPromises();
+    expect(window.Redoc.init).toHaveBeenCalledTimes(2);
+    expect(window.Redoc.init.mock.calls[1][0]).toBe("PAPI_Spec");
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the boxed layout and waits for a click by default", async () => {
+    const element = createComponent();
+    await flushPromises();
+
+    expect(
+      query(element, ".reference-body").classList.contains(
+        "reference-body_full"
+      )
+    ).toBe(false);
+    expect(loadScript).not.toHaveBeenCalled();
+  });
+
+  it("exposes fullWidth and openOnLoad to the site builder", () => {
+    const meta = readFileSync(
+      join(__dirname, "..", "apiReference.js-meta.xml"),
+      "utf8"
+    );
+    expect(meta).toMatch(/name="fullWidth"/);
+    expect(meta).toMatch(/name="openOnLoad"/);
+  });
 });

@@ -6,10 +6,24 @@
  * site theme, so its panel stays white with black text in both themes. No L1 token is
  * light in the dark theme, so the panel uses the white and black keywords.
  */
+:host {
+  display: block;
+  width: 100%;
+}
+
 .reference-body {
   background-color: var(--pf-surface);
   color: var(--pf-text);
   font-family: var(--pf-font-sans);
+}
+
+.reference-body_full .spec-toggle {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--pf-space-2) 0;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
 }
 
 .reference-intro {
@@ -93,4 +107,9 @@
   border-radius: var(--pf-radius-sm);
   max-height: 80vh;
   overflow: auto;
+}
+
+.redoc-panel_full {
+  max-height: none;
+  overflow: visible;
 }

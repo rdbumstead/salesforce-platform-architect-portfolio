@@ -6,12 +6,16 @@
  *                      reference link instead, and so does a render that has not finished 15 s
  *                      after the visitor opened it (Redoc never finishes under the site runtime
  *                      in WebKit, trap 32). Sends api_reference_opened on open (contract L4).
+ *                      On its own page (route Api_Reference, api-lab/reference) the builder
+ *                      sets fullWidth and openOnLoad: the reference then fills the page width
+ *                      with no height cap and opens without a click, the SAPI and PAPI switch
+ *                      staying at the top.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/21/2026
  **/
-import { LightningElement } from "lwc";
+import { LightningElement, api } from "lwc";
 import { loadScript } from "lightning/platformResourceLoader";
 import REDOC_SCRIPT from "@salesforce/resourceUrl/Redoc_Script";
 import SAPI_SPEC from "@salesforce/resourceUrl/SAPI_Spec";
@@ -72,7 +76,13 @@ function reduceError(error) {
 }
 
 export default class ApiReference extends LightningElement {
+  /** Fill the page width with no height cap (the dedicated reference page). */
+  @api fullWidth = false;
+  /** Open the reference without a click (the dedicated reference page). */
+  @api openOnLoad = false;
+
   selectedSpec = "sapi";
+  autoOpened = false;
   isOpen = false;
   isLoading = false;
   errorMessage = "";
@@ -99,10 +109,26 @@ export default class ApiReference extends LightningElement {
     return Boolean(this.errorMessage);
   }
 
+  get bodyClass() {
+    return this.fullWidth
+      ? "reference-body reference-body_full slds-p-around_medium"
+      : "reference-body slds-p-around_medium";
+  }
+
   get targetClass() {
-    return this.isOpen && !this.errorMessage
-      ? "redoc-panel"
-      : "redoc-panel slds-hide";
+    const panel = this.fullWidth
+      ? "redoc-panel redoc-panel_full"
+      : "redoc-panel";
+    return this.isOpen && !this.errorMessage ? panel : `${panel} slds-hide`;
+  }
+
+  renderedCallback() {
+    // The Redoc target must be in the DOM before the first render, so the automatic
+    // open waits for the first renderedCallback and runs once.
+    if (this.openOnLoad && !this.autoOpened) {
+      this.autoOpened = true;
+      this.handleOpen();
+    }
   }
 
   get openDisabled() {
