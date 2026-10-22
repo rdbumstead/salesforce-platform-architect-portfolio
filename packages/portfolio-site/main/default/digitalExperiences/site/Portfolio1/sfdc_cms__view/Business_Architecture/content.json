@@ -26,7 +26,7 @@
                     {
                       "attributes": {
                         "imageInfos": "",
-                        "richTextValue": "<h1>Business Architecture</h1><p>A community college had several departments working with the same employer partners, and none of them could see what the others had agreed. The Employer Hub gave each partner relationship one home in Salesforce, routed every request to the right department automatically and reported on the results. This page shows the process maps, the live data model behind the hub and a walkthrough of how a partner inquiry moves through it.</p>"
+                        "richTextValue": "<h1>Business Architecture</h1><p>A community college had several departments working with the same employer partners, and none of them could see what the others had agreed. The Employer Hub is a working demo of the fix, built to extend the Salesforce org I had already delivered for the college's workforce programs. It gives each partner relationship one home, routes every request to the right department automatically and reports on the results. This page shows the process maps, the live data model behind the hub and a walkthrough of how a partner inquiry moves through it.</p>"
                       },
                       "definition": "community_builder:richTextEditor",
                       "id": "e250f3b0-c8c8-4ac1-a615-5ef76bc17d0e",

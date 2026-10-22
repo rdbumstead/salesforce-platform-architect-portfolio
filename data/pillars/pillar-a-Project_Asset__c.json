@@ -8,7 +8,7 @@
       "Name": "Process flow, part 1: Initial inquiry and routing",
       "Project__c": "@PillarAProjectRef",
       "Type__c": "Image",
-      "Alt_Text__c": "Process flow, part 1: an employer submits the web form, the hub finds or creates the Account and the Contact and links them, creates one Case for each kind of help asked for, routes each Case to a queue by the Account's academic focus area and notifies the queue, and a queue member reviews the Case.",
+      "Alt_Text__c": "Process flow, part 1: the web form finds or creates the Account and Contact, creates a Case per request, routes each Case to a queue by academic focus area, and a queue member reviews it.",
       "Sort_Order__c": 1,
       "External_URL__c": "resource:EH_Assets/flow-part-1.svg"
     },
@@ -20,7 +20,7 @@
       "Name": "Process flow, part 2: Monetary and service paths",
       "Project__c": "@PillarAProjectRef",
       "Type__c": "Image",
-      "Alt_Text__c": "Process flow, part 2: a service request is handled in a screen flow and the Case closes. A monetary request is converted to an Opportunity and the Case closes, the Opportunity follows the sales stages to Closed Won, an automation creates a Task for the contract, and the user creates the Contract with its file.",
+      "Alt_Text__c": "Process flow, part 2: a service request is fulfilled in a screen flow and the Case closes. A monetary request becomes an Opportunity, and once Closed Won a Task leads to the Contract.",
       "Sort_Order__c": 2,
       "External_URL__c": "resource:EH_Assets/flow-part-2.svg"
     },
@@ -32,7 +32,7 @@
       "Name": "Operations dashboard",
       "Project__c": "@PillarAProjectRef",
       "Type__c": "Image",
-      "Alt_Text__c": "Operations dashboard with sample values: a donut chart of 22 open inquiries by queue across three academic focus areas, and a table of neglected inquiries with the queue, employer, subject and age.",
+      "Alt_Text__c": "Operations dashboard with sample values: open inquiries by queue as a donut chart, and a table of neglected inquiries with queue, employer, subject and age.",
       "Sort_Order__c": 3,
       "External_URL__c": "resource:EH_Assets/dashboard-operations.svg"
     },
@@ -44,7 +44,7 @@
       "Name": "Executive dashboard",
       "Project__c": "@PillarAProjectRef",
       "Type__c": "Image",
-      "Alt_Text__c": "Executive dashboard with sample values: the top employer partners by won opportunity amount, and the opportunity pipeline as a funnel from Needs Analysis to Closed Won.",
+      "Alt_Text__c": "Executive dashboard with sample values: top employer partners by won opportunity amount, and the opportunity pipeline as a funnel from Needs Analysis to Closed Won.",
       "Sort_Order__c": 4,
       "External_URL__c": "resource:EH_Assets/dashboard-executive.svg"
     },

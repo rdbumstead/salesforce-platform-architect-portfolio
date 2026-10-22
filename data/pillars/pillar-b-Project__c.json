@@ -11,7 +11,7 @@
       "Sort_Order__c": 20,
       "Challenge__c": "A regional adult literacy nonprofit with a small staff needed one platform for its classes, attendance and learner outcomes. Instructors and learners hold no licences, so only staff enter data. Donations and state reporting already run in other systems, so the platform had to fit around them.",
       "Solution__c": "A minimalist model on NPSP with the Program Management Module, sized for a staff with no full-time admin. Classes, sessions and attendance use the native program objects, with three small custom objects for assessments, employment and partner referrals. Fundraising and state filing stay in the systems that already do them.",
-      "Business_Value__c": "Staff record classes, sessions and attendance in one place. Learner outcomes sit on the learner's record, ready for the state report. The platform runs on free nonprofit licences and a model a small team can keep running."
+      "Business_Value__c": "Built so staff record classes, sessions and attendance in one place, learner outcomes sit on the learner's record ready for the state report, and the platform runs on free nonprofit licences and a model a small team can keep running. In user acceptance testing, preparing for production."
     }
   ]
 }

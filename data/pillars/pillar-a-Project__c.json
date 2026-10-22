@@ -11,8 +11,8 @@
       "Sort_Order__c": 1,
       "Is_Featured__c": false,
       "Challenge__c": "Several departments at a community college worked with the same employer partners, each from its own inbox and spreadsheet. Partners repeated themselves, and nobody could see the whole relationship. Leadership had no shared numbers for engagement, sponsorship or hiring.",
-      "Solution__c": "One Employer Hub in Salesforce captures every inquiry once, triages it and routes it to the right department. Partner engagements, job postings, sponsorships and letters of support sit on the partner's account. Operations and executive dashboards report from the same records.",
-      "Business_Value__c": "Employer partners get one front door and a faster answer. Departments stop duplicating outreach and can see each other's work with a partner. Leadership can report on the employer relationship as a whole for the first time."
+      "Solution__c": "A working Employer Hub demo, built to extend the Salesforce org already delivered for the college's workforce programs. Every inquiry is captured once from a web form, matched to the partner's account and routed by academic focus area. Service requests are fulfilled from the case, and monetary requests run through an opportunity to a contract. Operations and executive dashboards report from the same records.",
+      "Business_Value__c": "Designed so that employer partners get one front door and a faster answer, departments stop duplicating outreach and see each other's work with a partner, and leadership can report on the employer relationship as a whole."
     }
   ]
 }
