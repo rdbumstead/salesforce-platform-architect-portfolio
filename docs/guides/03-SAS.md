@@ -437,9 +437,12 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 - **Objective:** Demonstrate ALM, CI/CD Maturity, and External System Integration.
 - **Tooling:** Atlassian Jira + GitHub Actions (CI/CD).
 - **Technical Detail:** For the integration architecture (JiraService) and Platform Event subscription model, refer to the **[Technical Guide: Jira Integration](./04-Technical-Guide.md#12-jira-integration-roadmap)**.
-- **Mechanism:** The `c-smart-checklist` component subscribes to the `Governance_Event__e` Platform Event.
-- **Workflow:** When the CI/CD pipeline (GitHub Actions) completes a successful deployment, it upserts a record or publishes an event via the Salesforce CLI. The LWC receives this event and automatically checks the "Green Build Badge" box on the UI.
-- **Architectural Signal:** This proves the candidate understands the Streaming API and Event-Driven Architecture.
+- **Mechanism:** the CI/CD pipeline publishes the `Governance_Event__e` platform event, an Apex trigger persists it as a `Pipeline_Run__c` record, and the `c-smart-checklist` component reads the result through cacheable Apex ([ADR-019 Round 4 amendment](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-21-round-4)).
+- **Workflow:** after a production deploy (`deploy.yml`) and after the daily heartbeat (`keep-alive.yml`), the workflow's existing JWT user publishes one event with the run's status, id, URL, commit and time. The trigger upserts `Pipeline_Run__c` by `Run_Key__c`, so a replayed event changes nothing. The component reads `GovernanceController.getPipelineStatus()` when the page is viewed and again when the tab becomes visible. There is no timer and no polling. Each item shows its evidence (the commit linking to the run, and the time), and an item with no data shows "No signal yet".
+- **What it claims:** the production deploy is green, the heartbeat ran in the last 26 hours, and the integration caches are under 30 minutes old.
+- **Why no browser subscription:** `lightning-emp-api` is unsupported in LWR sites, and each subscribed browser would count against the org's 20 concurrent streaming clients. The event-driven part is server-side: publish, an asynchronous subscriber and idempotent handling of a replayed event.
+- **Roadmap and changelog:** `c-roadmap-viewer` and `c-changelog` read cached Jira and GitHub data through `DeliveryController` (cacheable Apex). Scheduled Queueable jobs refresh the caches every 15 minutes, so a visitor never triggers a callout ([ADR-007 Round 4 amendment](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-round-4)). The roadmap shows only `SPAP` issues labelled `portfolio-roadmap`.
+- **Architectural Signal:** event-driven architecture with a server-side subscriber, and external system integration through Named Credentials.
 
 #### 5.5.1 The Governance Model
 
@@ -464,12 +467,13 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-hero-banner`:** Includes "How to Evaluate Me" navigation guide.
 - **`c-testimonial-submit`:** "Mad Libs" style sentence builder.
 - **`c-api-tester`:** Developer console LWC utilizing fetch() to exercise endpoints.
-- **`c-changelog`:** Displays live commit history.
+- **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
 - **`c-skill-network`:** Visualizes Junction Objects via AntV G6.
 - **`c-code-viewer`:** Fetches raw source code via Prism.js.
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
-- **`c-roadmap-viewer`:** Performs real-time REST callout to Jira API.
-- **`c-footer`:** Contains GitHub Actions Badge.
+- **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category. It makes no callout.
+- **`c-footer`:** Contains the GitHub Actions deploy badge and the Glass Box telemetry (section 9).
+- **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
 
 > [!TIP]
 > **Technical Implementation:** For detailed performance strategies (lazy-loading), mobile fallbacks, and accessibility patterns for these components, please refer to the **[Technical Guide: Frontend Component Logic](./04-Technical-Guide.md#2-frontend-lwr-component-logic)**.
@@ -541,7 +545,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 ### 8.3 API Rate Limit Exhaustion
 
 - **Symptom:** GitHub Commits or Portfolio API returns status 429.
-- **Mitigation (GitHub):** System automatically serves cached responses from `GitHub_Cache__c` (Custom Setting) indefinitely until the limit resets.
+- **Mitigation (GitHub):** guests never call GitHub. The changelog serves the newest `Github_Cache__c` row (a custom object) with its age, and a failed refresh inserts nothing, so the last good list stays until the next refresh succeeds.
 - **Mitigation (Portfolio API):** the 429 comes from `RateWindowLimiter` (SAPI 120, PAPI 15, `/ai/*` 10 requests per minute per caller key). The caller waits for `Retry-After`, which is the seconds left in the current minute ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)). Every vended evaluator token is the same session, so all evaluators share one key per tier, and one busy evaluator can use up the minute for everyone ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4)).
 
 ### 8.4 Resilience Simulation Operations
@@ -570,7 +574,7 @@ The system exposes real-time telemetry to the user via the `c-system-health-foot
 - **A.1 CI/CD Pipeline Configuration:** Authentication via Connected App with "Use Digital Signatures." Stores keys in GitHub Secrets. Use pr.yml for quality gates and deploy.yml for production push.
 - **A.2 CORS & Security:** Whitelist custom domain, enable LWS, update CSP for external scripts (Calendly, GitHub, Atlassian). Log retention policy: Zero-Persistence.
 - **A.3 Code Reusability:** Shared Prism.js utility module. Nebula Logger handles try/catch blocks.
-- **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches to `GitHub_Cache__c`. Refreshed by `GitHubCacheRefreshJob.cls`.
+- **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches to the `Github_Cache__c` custom object. Refreshed every 15 minutes by `GitHubCacheRefreshJob` (Queueable, enqueued by `IntegrationCacheRefreshScheduler`).
 - **A.5 Hero Banner Navigation:** (Refer to UI specs).
 - **A.6 Agentforce Configuration:** not built. Agentforce is a switch in the dispatch that ships off (section 5.4). The "Show your work" panel (section 5.4) replaces the Mirror Mode system instruction, so no instruction asks a model to reveal its prompt.
 - **A.7 Architecture Diagram Hosting:** Export C4 diagram and upload as Static Resource.

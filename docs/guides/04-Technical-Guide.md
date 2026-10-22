@@ -12,7 +12,7 @@
   - [2.2 `c-resume-builder` (Resume Generation)](#22-c-resume-builder-resume-generation)
   - [2.3 `c-testimonial-submit` (Social Proof)](#23-c-testimonial-submit-social-proof)
   - [2.4 `c-schema-visualizer` (Dynamic ERD Visualizer)](#24-c-schema-visualizer-dynamic-erd-visualizer)
-  - [2.5 `c-smart-docs` (Executable Governance)](#25-c-smart-docs-executable-governance)
+  - [2.5 `c-smart-checklist` (Executable Governance)](#25-c-smart-checklist-executable-governance)
   - [2.6 `c-system-health-footer` (Glass Box Telemetry)](#26-c-system-health-footer-glass-box-telemetry)
   - [2.7 Architectural Decision Record: ADR-014 (Deferred Telemetry)](#27-architectural-decision-record-adr-014-deferred-telemetry)
   - [2.8 Analytics Instrumentation (GA4)](#28-analytics-instrumentation-ga4)
@@ -35,20 +35,24 @@ All external API calls originate from a secure **Named Credential** accessed via
 
 ### 1.1 GitHub Integration (Live Feed)
 
-- **Mechanism:** Uses the GitHub_API Named Credential.
-- **Caching Strategy (ADR-007):**
-  - An **Apex Scheduled Job** (`GitHubCacheRefreshJob.cls`) refreshes the API response.
-  - Data is stored in the `GitHub_Cache__c` **Custom Setting** to prevent rate-limit exhaustion (60 requests/hour unauthenticated).
+- **Mechanism:** Uses the `GitHub_API` Named Credential, authenticated by the `GitHub_Auth` External Credential (a read-only token in the `GitHub_Principal` principal). Authenticated calls get 5,000 requests an hour.
+- **Caching Strategy ([ADR-007](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-round-4)):**
+  - `IntegrationCacheRefreshScheduler` runs at :00, :15, :30 and :45 and enqueues `GitHubCacheRefreshJob` (`Queueable`, `Database.AllowsCallouts`, because scheduled Apex cannot call out synchronously).
+  - The job reads the latest commits on `main` and inserts one row into the `Github_Cache__c` **custom object**, with the mapped commit list in `JSON_Payload__c`.
+  - Guests never call out. The `c-changelog` component reads the newest row through `DeliveryController.getRecentCommits()`.
 - **Degraded Mode:**
-  - Upon HTTP 429 response, the system automatically serves cached responses from `GitHub_Cache__c` indefinitely until the limit resets.
+  - A failed refresh inserts nothing, so the last good list keeps showing with its age.
+  - The cleanup batch keeps the newest row per cache object, so an outage never empties the page.
 
 ### 1.2 Jira Integration (Roadmap)
 
-- **Authentication:** Basic Auth with a Named Credential.
-- **Component:** `c-roadmap-viewer` LWC calls the Apex JiraService.cls to fetch Epics/Stories via REST API.
+- **Authentication:** Basic Auth through the `Jira_API` Named Credential (`Jira_Auth` External Credential, `Jira_Principal` principal).
+- **Refresh:** `JiraCacheRefreshJob`, enqueued by the same scheduler, runs the JQL `project = SPAP AND labels = portfolio-roadmap` (owner decision E6, 2026-10-21) and inserts one `Jira_Cache__c` row.
+- **Component:** `c-roadmap-viewer` reads the newest row through `DeliveryController.getRoadmap()` and places issues in To Do, In Progress and Done by Jira status category, so a renamed workflow status cannot empty a column. It never calls Jira.
+- **Principal access:** the scheduling admin user reaches both principals through `Portfolio_Admin` (owner decision E8, 2026-10-21). `Integration_Access` keeps them too, by the owner's choice. `Portfolio_Guest` has neither.
 - **Degraded Mode:**
-  - After three consecutive 503 errors, a Circuit Breaker opens for 30 minutes.
-  - The user sees a "Roadmap temporarily unavailable" message.
+  - After three consecutive failures, a circuit breaker skips Jira refreshes for 30 minutes, and `DeliveryController` reports `DEGRADED` while it is open.
+  - With no usable cache row, the user sees a "Roadmap temporarily unavailable" message.
 
 ### 1.3 AI Content Generation (Agentforce switch off)
 
@@ -153,10 +157,12 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - **Node Mapping:** Salesforce Child Relationships (getDescribe().getChildRelationships()) are mapped to G6 "Edges," while SObjects are mapped to "Nodes."
 - **Performance:** To prevent Heap Size errors during schema description, the service is strictly scoped to the portfolio namespace and caches the JSON result in Platform Cache.
 
-### 2.5 `c-smart-docs` (Executable Governance)
+### 2.5 `c-smart-checklist` (Executable Governance)
 
-- **Event Subscription:** Utilizes the `lightning/empApi` module to subscribe to `event/Governance_Notification__e`.
-- **State Management:** The component maintains the state of checklist items (e.g., `isBuildGreen`, `isTestsPassing`) in the browser's `localStorage` so the "Verified" checkmarks persist across page reloads for the user session.
+- **No browser subscription.** `lightning-emp-api` is unsupported in LWR sites, and a guest has no token for Pub/Sub API, so the component imports no `lightning/empApi` and opens no channel ([ADR-019 Round 4 amendment](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-21-round-4)).
+- **Server side.** CI publishes `Governance_Event__e` after a production deploy and after the daily heartbeat. An Apex trigger upserts a `Pipeline_Run__c` record by `Run_Key__c`, so a replayed event changes nothing.
+- **Read.** The component wires `GovernanceController.getPipelineStatus()` (cacheable): the latest run per workflow plus the age of the integration caches. It reads when the page is viewed and calls `refreshApex` when the tab becomes visible again (`visibilitychange`). There is no `setInterval` and no `setTimeout` loop.
+- **Items.** Production deploy green, heartbeat within 26 hours, integration caches under 30 minutes. Each shows its evidence (commit and time, linking to the run). An item with no data shows "No signal yet", never a tick. Nothing is kept in `localStorage`.
 
 ### 2.6 `c-system-health-footer` (Glass Box Telemetry)
 

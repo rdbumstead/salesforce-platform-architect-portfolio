@@ -79,7 +79,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Multi-Cloud Integration patterns using AWS Free Tier (Lambda Function URL, S3, CloudFront) – Phase 8 (2027-2028) – design complete**
 - **Advanced Visualization:** Dynamic Skill Graph using AntV G6 with custom flow animation.
 - **Dynamic ERD Visualizer:** A live-rendered Entity Relationship Diagram utilizing the Schema class and AntV G6 to visualize the actual Org metadata, replacing static architecture diagrams.
-- **Executable Governance:** LWC-based documentation that subscribes to Platform Events to automatically verify its own success criteria (e.g., verifying a "Green Build" checkbox in real-time).
+- **Executable Governance:** LWC-based documentation that verifies its own success criteria from pipeline evidence. CI publishes a platform event, an Apex trigger persists it, and the checklist reads the result when viewed (for example, ticking "production deploy green" with the commit and the run behind it).
 - **Enterprise Observability:** Implementation of **Nebula Logger** (Open Source) for structured, event-driven error logging across Apex, LWC, and Flow, replacing standard debug logs.
 
 **Out of Scope:**
@@ -208,7 +208,7 @@ The delivery is organized into four parallel execution tracks:
 **Phase 7: Observability & Governance (Post-Launch)**
 
 - **System Health Dashboard:** "Glass Box Telemetry" footer.
-- **Smart Documentation:** Implement `c-smart-checklist` using lightning/empApi to listen for Deployment_Event\_\_e and auto-complete governance checklists.
+- **Smart Documentation:** moved into the launch scope (owner decision E3, 2026-10-21). `c-smart-checklist` reads `Pipeline_Run__c` records written by an Apex trigger on `Governance_Event__e`, which CI publishes. It does not use `lightning/empApi`, which LWR sites do not support.
 
 **Phase 8: Multi-Cloud & FinOps – Hybrid GraphQL Strategy (2027-2028)**
 
@@ -265,7 +265,7 @@ _Design artifacts complete; implementation begins post-launch._
 - **Appendix C:** Configure MuleSoft Governance Policies (Reference Implementation).
 - **Docs:** Upload Redoc documentation as Static Resource.
 - **Dev:** Develop `c-api-tester` LWC with fetch() harness.
-- **A.4:** Implement GitHub Live Feed, Custom Setting Cache, and Scheduler.
+- **A.4:** Implement GitHub Live Feed, the custom object cache (`Github_Cache__c`), and the Queueable refresh with its scheduler.
 
 **Phase 4: Innovation**
 
