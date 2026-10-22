@@ -188,4 +188,71 @@ private class SAPIProjectTest {
     );
     System.assertEquals('1', res.headers.get('X-Total-Count'), 'Total count');
   }
+
+  // Property names of the Project schema in salesforce-sapi.yaml (decision D4).
+  private static final Set<String> SPEC_PROJECT_KEYS = new Set<String>{
+    'id',
+    'name',
+    'challenge',
+    'solution',
+    'businessValue',
+    'status',
+    'dateCompleted',
+    'heroImageUrl',
+    'liveUrl',
+    'repositoryUrl',
+    'pillar',
+    'pillarLabel',
+    'isFeatured',
+    'contactName',
+    'contactId',
+    'sortOrder'
+  };
+
+  @IsTest
+  static void listResponseKeysEqualTheSpecSchema() {
+    Contact owner = new Contact(LastName = 'Owner');
+    insert owner;
+    Project__c proj = [SELECT Id FROM Project__c LIMIT 1];
+    proj.Contact__c = owner.Id;
+    update proj;
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/projects/');
+
+    Test.startTest();
+    SAPIProject.getProjects();
+    Test.stopTest();
+
+    List<Object> items = (List<Object>) JSON.deserializeUntyped(
+      RestTestUtil.getResponse().responseBody.toString()
+    );
+    Map<String, Object> item = (Map<String, Object>) items[0];
+    Assert.areEqual(SPEC_PROJECT_KEYS, item.keySet(), 'Keys equal the spec');
+    Assert.areEqual(owner.Id, item.get('contactId'), 'contactId from Contact__c');
+    Project__c read = [SELECT Pillar_Label__c FROM Project__c WHERE Id = :proj.Id];
+    Assert.areEqual(
+      read.Pillar_Label__c,
+      item.get('pillarLabel'),
+      'pillarLabel from Pillar_Label__c'
+    );
+    Assert.isNull(item.get('challenge'), 'Empty fields are sent as null');
+  }
+
+  @IsTest
+  static void singleResponseKeysEqualTheSpecSchema() {
+    Project__c proj = [SELECT Id FROM Project__c LIMIT 1];
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/projects/' + proj.Id);
+
+    Test.startTest();
+    SAPIProject.getProjects();
+    Test.stopTest();
+
+    List<Object> items = (List<Object>) JSON.deserializeUntyped(
+      RestTestUtil.getResponse().responseBody.toString()
+    );
+    Assert.areEqual(
+      SPEC_PROJECT_KEYS,
+      ((Map<String, Object>) items[0]).keySet(),
+      'Single record keys equal the spec'
+    );
+  }
 }
