@@ -9,6 +9,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>FooterController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>GovernanceController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -25,7 +29,7 @@
         <enabled>true</enabled>
     </classAccesses>
     <description
-  >Site visitor. Reads skills, projects, assets, experience and their links. Submits testimonials for review. Runs the resume, testimonial, delivery, governance and API Lab controllers and the token endpoint. Calls Gemini through its principal for the in process cover letter. No contact, account, certification or education access.</description>
+  >Site visitor. Reads skills, projects, assets, experience and their links. Submits testimonials for review. Runs the resume, testimonial, delivery, governance, footer and API Lab controllers and the token endpoint. Calls Gemini through its principal for the in process cover letter. No contact, account, certification or education access.</description>
     <externalCredentialPrincipalAccesses>
         <enabled>true</enabled>
         <externalCredentialPrincipal
