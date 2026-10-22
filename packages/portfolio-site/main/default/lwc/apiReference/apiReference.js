@@ -9,7 +9,9 @@
  *                      On its own page (route Api_Reference, api-lab/reference) the builder
  *                      sets fullWidth and openOnLoad: the reference then fills the page width
  *                      with no height cap and opens without a click, the SAPI and PAPI switch
- *                      staying at the top.
+ *                      staying at the top. There the component carries the page's only h1 and
+ *                      the Pillar C intro, so the view needs no header of its own, and the
+ *                      open button shows only when the reference is not on screen.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -21,6 +23,7 @@ import REDOC_SCRIPT from "@salesforce/resourceUrl/Redoc_Script";
 import SAPI_SPEC from "@salesforce/resourceUrl/SAPI_Spec";
 import PAPI_SPEC from "@salesforce/resourceUrl/PAPI_Spec";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import basePath from "@salesforce/community/basePath";
 
 export const HOSTED_REFERENCE_URL =
   "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi";
@@ -49,6 +52,18 @@ const MONO_FONTS = 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace';
 export const REDOC_LINK_COLOR = "#2563EB";
 
 /**
+ * Response tab text on Redoc's dark code panel (rgb(17,23,26) as rendered). With no
+ * tonalOffset Redoc's own reds and greens fall to 3.45:1 and 3.64:1 there, so each tab
+ * colour is set from the site's dark palette, every one above 6:1 on that panel.
+ */
+export const REDOC_TAB_COLORS = {
+  success: "#47CD89",
+  error: "#F97066",
+  redirect: "#FDB022",
+  info: "#60A5FA"
+};
+
+/**
  * Redoc 2.5.4 options. System fonts instead of the default web fonts, no download
  * button, native scrollbars inside the component, and search off because Redoc runs
  * search in a web worker built from a blob URL, which Lightning Web Security may block.
@@ -68,6 +83,12 @@ export const REDOC_OPTIONS = {
         main: REDOC_LINK_COLOR,
         light: REDOC_LINK_COLOR,
         dark: REDOC_LINK_COLOR
+      },
+      responses: {
+        success: { tabTextColor: REDOC_TAB_COLORS.success },
+        error: { tabTextColor: REDOC_TAB_COLORS.error },
+        redirect: { tabTextColor: REDOC_TAB_COLORS.redirect },
+        info: { tabTextColor: REDOC_TAB_COLORS.info }
       }
     },
     typography: {
@@ -130,9 +151,27 @@ export default class ApiReference extends LightningElement {
     return Boolean(this.errorMessage);
   }
 
+  get cardClass() {
+    return this.fullWidth
+      ? "reference-card reference-card_full"
+      : "reference-card";
+  }
+
+  get apiLabHref() {
+    return `${basePath || ""}/api-lab`;
+  }
+
+  /**
+   * On its own page the reference opens by itself, so the button only shows when it is not
+   * on screen: before the first open, or after a failure so the visitor can retry.
+   */
+  get showOpenButton() {
+    return !this.fullWidth || !this.isOpen || this.hasError;
+  }
+
   get bodyClass() {
     return this.fullWidth
-      ? "reference-body reference-body_full slds-p-around_medium"
+      ? "reference-body reference-body_full"
       : "reference-body slds-p-around_medium";
   }
 

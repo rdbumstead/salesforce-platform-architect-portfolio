@@ -14,6 +14,7 @@ import ApiReference, {
   HOSTED_REFERENCE_URL,
   REDOC_OPTIONS,
   REDOC_LINK_COLOR,
+  REDOC_TAB_COLORS,
   RENDER_TIMEOUT_MS,
   TIMEOUT_MESSAGE
 } from "c/apiReference";
@@ -26,6 +27,12 @@ jest.mock(
     trackEvent: jest.fn(),
     EVENTS: { API_REFERENCE_OPENED: "api_reference_opened" }
   }),
+  { virtual: true }
+);
+
+jest.mock(
+  "@salesforce/community/basePath",
+  () => ({ __esModule: true, default: "/portfolio" }),
   { virtual: true }
 );
 
@@ -370,6 +377,60 @@ describe("c-api-reference", () => {
     expect(loadScript).not.toHaveBeenCalled();
   });
 
+  it("carries the page's only heading and the Pillar C intro on its own page", async () => {
+    const element = createElement("c-api-reference", { is: ApiReference });
+    element.fullWidth = true;
+    element.openOnLoad = true;
+    document.body.appendChild(element);
+    await flushPromises();
+    await flushPromises();
+
+    const headings = element.shadowRoot.querySelectorAll("h1");
+    expect(headings).toHaveLength(1);
+    expect(headings[0].textContent.trim()).toBe("API reference");
+    expect(element.shadowRoot.querySelector("h2")).toBeNull();
+    const intro = query(element, ".reference-intro").textContent;
+    expect(intro).toMatch(/^\s*Pillar C: the full contract/);
+    expect(intro).not.toMatch(/loads only when you open it/);
+    expect(query(element, "a.inline-link").getAttribute("href")).toBe(
+      "/portfolio/api-lab"
+    );
+    expect(
+      query(element, ".reference-card").classList.contains(
+        "reference-card_full"
+      )
+    ).toBe(true);
+    // Open on its own, so no button pushes the reference down.
+    expect(openButton(element)).toBeNull();
+  });
+
+  it("offers the open button again on its own page when the reference fails", async () => {
+    loadScript.mockRejectedValueOnce(new Error("blocked"));
+    const element = createElement("c-api-reference", { is: ApiReference });
+    element.fullWidth = true;
+    element.openOnLoad = true;
+    document.body.appendChild(element);
+    await flushPromises();
+    await flushPromises();
+
+    expect(query(element, ".reference-error")).not.toBeNull();
+    expect(openButton(element)).not.toBeNull();
+  });
+
+  it("keeps a section title, the boxed intro and the open button when embedded", async () => {
+    const element = createComponent();
+    await flushPromises();
+
+    expect(element.shadowRoot.querySelector("h1")).toBeNull();
+    expect(query(element, "h2.reference-title").textContent).toMatch(
+      /API reference/
+    );
+    expect(query(element, ".reference-intro").textContent).toMatch(
+      /loads only when you open it/
+    );
+    expect(openButton(element)).not.toBeNull();
+  });
+
   it("exposes fullWidth and openOnLoad to the site builder", () => {
     const meta = readFileSync(
       join(__dirname, "..", "apiReference.js-meta.xml"),
@@ -398,5 +459,31 @@ describe("c-api-reference", () => {
     const css = readFileSync(join(__dirname, "..", "apiReference.css"), "utf8");
     expect(css).toMatch(/\.redoc-panel \{[^}]*--pf-accent: var\(--pf-btn\)/);
     expect(css).toMatch(/\.redoc-panel a \{[^}]*color: var\(--pf-btn\)/);
+  });
+
+  it("gives every response tab a colour readable on Redoc's dark code panel", async () => {
+    const element = createComponent();
+    await flushPromises();
+    openButton(element).click();
+    await flushPromises();
+
+    const responses = window.Redoc.init.mock.calls[0][1].theme.colors.responses;
+    // WCAG ratio against the panel as rendered, rgb(17,23,26).
+    const luminance = (hex) => {
+      const channels = hex
+        .match(/\w\w/g)
+        .map((part) => parseInt(part, 16) / 255)
+        .map((v) => {
+          return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+    };
+    const panel = luminance("#11171A");
+    for (const kind of ["success", "error", "redirect", "info"]) {
+      const color = responses[kind].tabTextColor;
+      expect(color).toBe(REDOC_TAB_COLORS[kind]);
+      const ratio = (luminance(color) + 0.05) / (panel + 0.05);
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

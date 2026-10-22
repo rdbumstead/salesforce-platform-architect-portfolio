@@ -26,8 +26,69 @@
   color: var(--pf-text);
 }
 
+.reference-card {
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  overflow: hidden;
+}
+
+/* On its own page the reference is the page content, not a boxed card. */
+.reference-card_full {
+  border: 0;
+  border-radius: 0;
+  background-color: var(--pf-bg);
+}
+
+.reference-header {
+  padding: var(--pf-space-4) var(--pf-space-4) 0;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+}
+
+.reference-card_full .reference-header,
+.reference-card_full .reference-body {
+  padding-left: 0;
+  padding-right: 0;
+  background-color: var(--pf-bg);
+}
+
+.reference-card_full .reference-body {
+  padding-top: var(--pf-space-4);
+  padding-bottom: var(--pf-space-4);
+}
+
+.reference-card_full .reference-body_full .spec-toggle {
+  background-color: var(--pf-bg);
+}
+
+.reference-title {
+  display: flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  margin: 0 0 var(--pf-space-2);
+  color: var(--pf-text);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.reference-title_page {
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
 .reference-intro {
+  margin: 0;
   color: var(--pf-body);
+}
+
+.inline-link {
+  color: var(--pf-accent);
+  text-decoration: underline;
 }
 
 .spec-toggle {

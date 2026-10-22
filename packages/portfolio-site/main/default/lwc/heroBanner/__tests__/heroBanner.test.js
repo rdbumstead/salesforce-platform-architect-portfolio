@@ -143,6 +143,32 @@ describe("c-hero-banner", () => {
         "/portfolio/api-lab/reference"
       );
     });
+
+    it("makes a stored URL with no scheme an absolute https link, and drops an unsafe one", async () => {
+      const element = render();
+      getResume.emit({
+        header: {
+          ...HEADER,
+          linkedInUrl: "www.linkedin.com/in/ryanbumstead",
+          // The script URL is the input under test, proving it never renders as a link.
+          // eslint-disable-next-line no-script-url
+          gitHubUrl: "javascript:alert(1)"
+        }
+      });
+      await flush();
+
+      const links = Array.from(
+        element.shadowRoot.querySelectorAll(".profile-link")
+      );
+      expect(links.map((a) => a.dataset.key)).toEqual([
+        "linkedin",
+        "resume",
+        "api-docs"
+      ]);
+      expect(links[0].getAttribute("href")).toBe(
+        "https://www.linkedin.com/in/ryanbumstead"
+      );
+    });
   });
 
   describe("pillars", () => {
