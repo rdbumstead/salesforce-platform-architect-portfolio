@@ -210,7 +210,7 @@ Every architectural decision follows a strict three-gate approval process before
 
 - Apex governor limits assessed (SOQL queries, DML rows).
 - LWC bundle size < 100KB verified.
-- Related ADR documented (e.g., ADR-011: Why G6 Lazy-Load).
+- Related ADR documented (for example ADR-020: why the graph engine loads only when a graph view opens).
 
 ### Gate 2: Security & Privacy
 

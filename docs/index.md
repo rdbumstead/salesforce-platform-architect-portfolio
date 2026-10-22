@@ -36,8 +36,8 @@ _Target Audience: Architects, Developers_
 - [ADR-004: Static Resource Code Rendering](adr/004-static-resource-code-rendering.md)
 - [ADR-005: Gamified Testimonial UI](adr/005-gamified-testimonial-ui.md)
 - [ADR-009: Granular Resume Data Model](adr/009-granular-resume-data-model.md)
-- [ADR-010: Visualization Engine (Vis.js vs. AntV G6)](adr/010-visualization-engine-vis-js-vs-antv-g6.md)
-- [ADR-020: Mobile Performance (SVG Fallback)](adr/020-mobile-performance-static-svg-fallback-strategy.md)
+- [ADR-010: Visualization Engine (Vis.js vs. AntV G6, now D3)](adr/010-visualization-engine-vis-js-vs-antv-g6.md)
+- [ADR-020: Mobile Performance (matrix first, graph on open)](adr/020-mobile-performance-static-svg-fallback-strategy.md)
 - [ADR-021: Native GraphQL vs. Apex REST](adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)
 - [ADR-023: Client-Side PDF Generation](adr/023-client-side-pdf-generation-jspdf-for-mvp.md)
 
