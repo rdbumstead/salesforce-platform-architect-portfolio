@@ -6,7 +6,7 @@ keeps its own licence. The project's own code is under the licence in [LICENSE](
 | Library                   | Version          | Licence     | Ships in                                                                                              |
 | ------------------------- | ---------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
 | Redoc (standalone bundle) | 2.5.4            | MIT         | `packages/portfolio-site/main/default/staticresources/Redoc_Script.js`                                |
-| AntV G6                   | 4.8.23           | MIT         | `packages/portfolio-site/main/default/staticresources/G6_Library.js`                                  |
+| D3 force layout modules   | 3.0.0 and 3.0.1  | ISC         | `packages/portfolio-site/main/default/staticresources/D3_Library.js`                                  |
 | jsPDF                     | 3.0.4            | MIT         | `packages/portfolio-site/main/default/staticresources/jsPDF_Library.js`                               |
 | PrismJS                   | 1.30.0           | MIT         | `packages/portfolio-site/main/default/staticresources/Prism_JS/prism.js` and `prism.css`              |
 | Inter (font)              | fontsource 5.3.0 | SIL OFL 1.1 | `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/inter-latin-*-normal.woff2`     |
@@ -22,12 +22,15 @@ keeps its own licence. The project's own code is under the licence in [LICENSE](
   copy. It is published with the package at
   https://unpkg.com/redoc@2.5.4/bundles/redoc.standalone.js.LICENSE.txt
 
-## AntV G6 4.8.23
+## D3 force layout modules
 
-- Copyright (c) 2018 Alipay.inc
-- Licence: MIT. Source: https://github.com/antvis/G6, package `@antv/g6@4.8.23` (the `license`
-  field of its `package.json` reads `MIT`).
-- Licence text: https://github.com/antvis/G6/blob/master/LICENSE
+- Modules: d3-dispatch 3.0.1, d3-quadtree 3.0.1, d3-timer 3.0.1 and d3-force 3.0.0, the official UMD
+  builds (`dist/<name>.min.js` from each npm package) concatenated unchanged in dependency order.
+- Copyright 2010-2021 Mike Bostock
+- Licence: ISC. Source: https://github.com/d3, packages `d3-dispatch@3.0.1`, `d3-quadtree@3.0.1`,
+  `d3-timer@3.0.1` and `d3-force@3.0.0`.
+- Licence text: in the comment at the top of `D3_Library.js`, below in this file, and published with
+  each package, for example https://unpkg.com/d3-force@3.0.0/LICENSE
 
 ## jsPDF 3.0.4
 
@@ -65,7 +68,7 @@ keeps its own licence. The project's own code is under the licence in [LICENSE](
 
 ## MIT licence text
 
-Redoc, AntV G6, jsPDF and PrismJS use this text, each with its own copyright line.
+Redoc, jsPDF and PrismJS use this text, each with its own copyright line.
 
 ```text
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -85,4 +88,22 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+## ISC licence text
+
+The four D3 modules use this text with the copyright line above.
+
+```text
+Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
 ```

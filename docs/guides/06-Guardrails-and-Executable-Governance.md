@@ -39,7 +39,7 @@ We treat these limits as a blueprint for building high-performance systems.
 | :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
 | **100 SOQL Queries per transaction** | SOQL (Salesforce Object Query Language) is like SQL for databases. You get 100 database queries per page load. Exceed this and your app crashes. | **Bulkification** (batch processing)     | All `SAPI*` classes use map-based caching to ensure exactly 1 query per request, no matter how many records are processed.                    |
 | **10 second CPU timeout**            | Your code gets 10 seconds of processing time. After that, Salesforce kills it to protect other customers.                                        | **Async Strategy** (offload work)        | Heavy operations (like Resume PDF generation) are offloaded to AWS Lambda (Phase 8) so Salesforce only handles lightweight coordination.      |
-| **6MB Heap Size**                    | Your code can only use 6MB of memory per transaction. For context, a single high-res image is ~5MB.                                              | **Lazy Loading** (load only when needed) | The AntV G6 visualization library (700KB) is split into chunks and loaded only when users scroll to the Skill Graph section.                  |
+| **6MB Heap Size**                    | Your code can only use 6MB of memory per transaction. For context, a single high-res image is ~5MB.                                              | **Lazy Loading** (load only when needed) | The D3 graph engine (`D3_Library`, about 18.5 KB) loads only when a visitor opens a graph view, and never on a phone.                         |
 | **Guest User Security**              | Anonymous visitors have restricted permissions by default. They can't see sensitive data without explicit grants.                                | **Zero Trust** (deny by default)         | Restricted strictly to custom objects via Sharing and Restriction Rules. No access to standard Salesforce objects (Accounts, Contacts, etc.). |
 | **Real-time Telemetry**              | Salesforce provides APIs to check how close you are to hitting limits.                                                                           | **Glass Box Telemetry** (show your work) | Governor limits (SOQL count, heap usage, CPU time) displayed in site footer so visitors can see the system is healthy.                        |
 
@@ -163,11 +163,11 @@ sequenceDiagram
     U->>B: Request Page
     B->>B: Check Form Factor (Mobile?)
     alt is Mobile
-        B-->>U: Serve Static SVG (Low Data)
-        Note right of U: ~50ms (cached)
+        B-->>U: Serve the matrix, no graph engine
+        Note right of U: no engine request
     else is Desktop
-        B-->>U: Lazy-load G6 Library (>2s)
-        Note right of U: ~2.3s (chunk split)
+        B-->>U: Load D3_Library only when a graph view opens
+        Note right of U: about 18.5 KB, on demand
     end
 
     Note over B,G: Layer 2: Zero Trust Security
@@ -210,7 +210,7 @@ Every architectural decision follows a strict three-gate approval process before
 
 - Apex governor limits assessed (SOQL queries, DML rows).
 - LWC bundle size < 100KB verified.
-- Related ADR documented (e.g., ADR-011: Why G6 Lazy-Load).
+- Related ADR documented (for example ADR-020: why the graph engine loads only when a graph view opens).
 
 ### Gate 2: Security & Privacy
 
