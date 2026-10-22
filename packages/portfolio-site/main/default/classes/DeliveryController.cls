@@ -4,7 +4,11 @@
  *                      Github_Cache__c row and getRoadmap() the newest Jira_Cache__c row. Each
  *                      payload is {"schemaVersion":1,"items":[...]} built from the DTOs below,
  *                      which the Round 4 refresh jobs serialize. A missing or unreadable row
- *                      returns EMPTY, never an exception. No callout happens here.
+ *                      returns EMPTY, never an exception. No callout happens here. Round 4
+ *                      plan L10: simulate=true returns the cached data as SIMULATED (the
+ *                      Resilience Simulation toggle, ADR-022), and while a source's circuit
+ *                      breaker is open its feed reports DEGRADED. EMPTY wins over both,
+ *                      because there is nothing to show.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -17,19 +21,26 @@ public with sharing class DeliveryController {
   public static final String STATUS_FRESH = 'FRESH';
   public static final String STATUS_STALE = 'STALE';
   public static final String STATUS_EMPTY = 'EMPTY';
-  // SIMULATED and DEGRADED are reserved for Round 4 and never emitted here.
   public static final String STATUS_SIMULATED = 'SIMULATED';
   public static final String STATUS_DEGRADED = 'DEGRADED';
+
+  // Groups: 1 to 6 date and time, 7 the zone, 8 the offset sign, 9 and 10 its hours and
+  // minutes.
+  private static final Pattern ISO_TIMESTAMP = Pattern.compile(
+    '^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.\\d+)?(Z|([+-])(\\d{2}):?(\\d{2}))?$'
+  );
 
   @TestVisible
   private static Datetime nowOverride;
 
   /**
    * @description The latest commits from the newest GitHub cache row.
+   * @param simulate True for the resilience toggle: the cached data comes back as SIMULATED.
+   *                 Null or false is the normal read.
    * @return CommitFeed The items, the row time, its age in minutes and the status.
    */
   @AuraEnabled(cacheable=true)
-  public static CommitFeed getRecentCommits() {
+  public static CommitFeed getRecentCommits(Boolean simulate) {
     CommitFeed feed = new CommitFeed();
     feed.items = new List<CommitItem>();
     Snapshot row = new CacheSelector().newestGithubRow();
@@ -43,16 +54,22 @@ public with sharing class DeliveryController {
     feed.items = payload.items;
     feed.fetchedAt = row.createdDate;
     feed.ageMinutes = ageInMinutes(row.createdDate);
-    feed.status = statusFor(feed.ageMinutes);
+    feed.status = statusFor(
+      feed.ageMinutes,
+      simulate,
+      CircuitBreaker.KEY_GITHUB
+    );
     return feed;
   }
 
   /**
    * @description The roadmap from the newest Jira cache row.
+   * @param simulate True for the resilience toggle: the cached data comes back as SIMULATED.
+   *                 Null or false is the normal read.
    * @return RoadmapFeed The items, the row time, its age in minutes and the status.
    */
   @AuraEnabled(cacheable=true)
-  public static RoadmapFeed getRoadmap() {
+  public static RoadmapFeed getRoadmap(Boolean simulate) {
     RoadmapFeed feed = new RoadmapFeed();
     feed.items = new List<RoadmapItem>();
     Snapshot row = new CacheSelector().newestJiraRow();
@@ -66,8 +83,40 @@ public with sharing class DeliveryController {
     feed.items = payload.items;
     feed.fetchedAt = row.createdDate;
     feed.ageMinutes = ageInMinutes(row.createdDate);
-    feed.status = statusFor(feed.ageMinutes);
+    feed.status = statusFor(feed.ageMinutes, simulate, CircuitBreaker.KEY_JIRA);
     return feed;
+  }
+
+  /**
+   * @description Parses an ISO 8601 timestamp as GitHub and Jira send it. Accepts Z, an
+   *              offset with a colon (+02:00) and Jira's offset without one (+0000), with
+   *              or without milliseconds. The refresh services use it to fill the DTOs.
+   * @param value The timestamp text.
+   * @return Datetime The instant, or null when the text is blank or not a timestamp.
+   */
+  public static Datetime parseTimestamp(String value) {
+    if (String.isBlank(value)) {
+      return null;
+    }
+    Matcher parts = ISO_TIMESTAMP.matcher(value.trim());
+    if (!parts.matches()) {
+      return null;
+    }
+    Datetime instant = Datetime.newInstanceGmt(
+      Integer.valueOf(parts.group(1)),
+      Integer.valueOf(parts.group(2)),
+      Integer.valueOf(parts.group(3)),
+      Integer.valueOf(parts.group(4)),
+      Integer.valueOf(parts.group(5)),
+      Integer.valueOf(parts.group(6))
+    );
+    String sign = parts.group(8);
+    if (sign == null) {
+      return instant;
+    }
+    Integer offsetMinutes =
+      Integer.valueOf(parts.group(9)) * 60 + Integer.valueOf(parts.group(10));
+    return instant.addMinutes(sign == '+' ? -offsetMinutes : offsetMinutes);
   }
 
   // Returns null for a blank payload, invalid JSON, a wrong shape or another schema version.
@@ -89,7 +138,18 @@ public with sharing class DeliveryController {
     return Math.max(0L, millis / 60000).intValue();
   }
 
-  private static String statusFor(Integer ageMinutes) {
+  // Called only when cached data exists. The toggle beats the breaker, and both beat age.
+  private static String statusFor(
+    Integer ageMinutes,
+    Boolean simulate,
+    String breakerKey
+  ) {
+    if (simulate == true) {
+      return STATUS_SIMULATED;
+    }
+    if (CircuitBreaker.isOpen(breakerKey)) {
+      return STATUS_DEGRADED;
+    }
     return ageMinutes < FRESH_MINUTES ? STATUS_FRESH : STATUS_STALE;
   }
 
