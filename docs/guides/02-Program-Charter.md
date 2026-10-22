@@ -120,7 +120,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - Zero critical security warnings from PMD Scanner.
 - The network log shows no `D3_Library` request until a graph view is opened.
 - Lighthouse Accessibility score remains 100 with the "Matrix | Graph" view switch present.
-- A phone requests no graph engine: the skills page shows the matrix and the ERD its list. On desktop the engine is `D3_Library`, 18,544 bytes, where G6 was 1.57 MB.
+- Skills graph: D3 force layout (`d3-force` and three helper modules, an 18,544 byte static resource, down from the 1.57 MB G6 library), loaded only when a visitor opens the graph view on desktop or tablet. Phones show the skills matrix and request no graph engine, and the Pillar A ERD shows its object list.
 
 **Engagement:**
 
