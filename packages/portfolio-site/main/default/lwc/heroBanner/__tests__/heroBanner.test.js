@@ -2,6 +2,7 @@
  * @description       : Unit tests for heroBanner LWC: the static hero, the bio and profile links
  *                      from the ResumeController header wire, the live pillar cards with the
  *                      "coming" line, and the tour (Round 4 plan WS4b, logs 155 and 164).
+ *                      c/pillarData is a fixed stand in (Round 5 plan, log 192).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -10,6 +11,99 @@
 import { createElement } from "@lwc/engine-dom";
 import HeroBanner from "c/heroBanner";
 import getResume from "@salesforce/apex/ResumeController.getResume";
+import { reset, setComingLetters } from "c/pillarData";
+
+// A fixed five pillar list, all live unless a test marks some as coming with
+// setComingLetters, so these tests pass before and after the pillarData flags change
+// (Round 5 plan, log 192).
+jest.mock(
+  "c/pillarData",
+  () => {
+    const source = [
+      [
+        "business-architecture",
+        "A",
+        "Business Architecture",
+        "Business Architecture",
+        ["Employer Hub", "Data model"]
+      ],
+      [
+        "nonprofit-solutions",
+        "B",
+        "Nonprofit Solutions",
+        "Pre-Sales Consultancy",
+        ["Solution design", "Decision matrix"]
+      ],
+      [
+        "api-lab",
+        "C",
+        "API Lab",
+        "Work Experience Verification API",
+        ["Apex REST", "OAuth 2.0", "OpenAPI"]
+      ],
+      [
+        "ai-lab",
+        "D",
+        "AI Lab",
+        "AI & Innovation",
+        ["Grounded generation", "Fallback chain"]
+      ],
+      [
+        "delivery",
+        "E",
+        "Delivery",
+        "Agile Delivery & DevOps",
+        ["Jira", "GitHub Actions"]
+      ]
+    ];
+    let coming = [];
+    const build = () =>
+      source.map(([key, letter, pageLabel, sasName, tags]) => ({
+        key,
+        letter,
+        pageLabel,
+        sasName,
+        tags,
+        url: key,
+        href: `/portfolio/${key}`,
+        summary: `${pageLabel} summary.`,
+        tour: `${pageLabel} tour stop.`,
+        code: letter === "C" ? "GET /sapi/v1/health  200" : undefined,
+        inProgress: coming.includes(letter),
+        subLinks:
+          letter === "C"
+            ? [
+                {
+                  key: "api-reference",
+                  label: "API reference",
+                  url: "api-lab/reference",
+                  href: "/portfolio/api-lab/reference"
+                }
+              ]
+            : []
+      }));
+    return {
+      __esModule: true,
+      get PILLARS() {
+        return build();
+      },
+      get LIVE_PILLARS() {
+        return build().filter((pillar) => !pillar.inProgress);
+      },
+      get COMING_PILLARS() {
+        return build().filter((pillar) => pillar.inProgress);
+      },
+      pillarByLetter: (letter) => build().find((p) => p.letter === letter),
+      setComingLetters: (letters) => {
+        coming = [...letters];
+      },
+      reset: () => {
+        coming = [];
+      }
+    };
+  },
+  { virtual: true }
+);
 
 jest.mock(
   "@salesforce/community/basePath",
@@ -54,6 +148,7 @@ describe("c-hero-banner", () => {
       document.body.removeChild(document.body.firstChild);
     }
     jest.clearAllMocks();
+    reset();
   });
 
   describe("hero", () => {
@@ -172,45 +267,73 @@ describe("c-hero-banner", () => {
   });
 
   describe("pillars", () => {
-    it("shows cards for C, D and E only, in order, with K7 links", () => {
+    it("shows a card for every live pillar, in order, with K7 links", () => {
       const element = render();
       const cards = element.shadowRoot.querySelectorAll(".pillar-card");
       expect(Array.from(cards).map((card) => card.dataset.key)).toEqual([
+        "business-architecture",
+        "nonprofit-solutions",
         "api-lab",
         "ai-lab",
         "delivery"
       ]);
       const first = cards[0];
       expect(text(first.querySelector(".pillar-eyebrow"))).toBe(
-        "Pillar C · API Lab"
+        "Pillar A · Business Architecture"
       );
       expect(text(first.querySelector(".pillar-name"))).toBe(
-        "Work Experience Verification API"
+        "Business Architecture"
       );
       expect(first.querySelector(".pillar-link").getAttribute("href")).toBe(
-        "/portfolio/api-lab"
+        "/portfolio/business-architecture"
       );
-      expect(text(first.querySelector(".pillar-link"))).toBe("Open API Lab →");
+      expect(text(first.querySelector(".pillar-link"))).toBe(
+        "Open Business Architecture →"
+      );
       expect(
         Array.from(first.querySelectorAll(".tag")).map((tag) => text(tag))
-      ).toEqual(["Apex REST", "OAuth 2.0", "OpenAPI"]);
-      expect(text(first.querySelector(".pillar-code"))).toBe(
+      ).toEqual(["Employer Hub", "Data model"]);
+      expect(first.querySelector(".pillar-code")).toBeNull();
+
+      const apiLab = cards[2];
+      expect(text(apiLab.querySelector(".pillar-eyebrow"))).toBe(
+        "Pillar C · API Lab"
+      );
+      expect(text(apiLab.querySelector(".pillar-name"))).toBe(
+        "Work Experience Verification API"
+      );
+      expect(text(apiLab.querySelector(".pillar-code"))).toBe(
         "GET /sapi/v1/health 200"
       );
-      expect(cards[1].querySelector(".pillar-code")).toBeNull();
     });
 
-    it("has no being built card and says once that A and B are coming", () => {
+    it("has no being built card and no coming line when every pillar is live", () => {
       const element = render();
       const root = element.shadowRoot;
       expect(root.textContent).not.toMatch(/being built/i);
+      expect(root.querySelector('[data-id="coming-note"]')).toBeNull();
+    });
+
+    it("leaves coming pillars out of the cards and names them once", () => {
+      setComingLetters(["A", "B"]);
+      const element = render();
+      const root = element.shadowRoot;
       expect(
         root.querySelector('[data-key="business-architecture"]')
       ).toBeNull();
       expect(root.querySelector('[data-key="nonprofit-solutions"]')).toBeNull();
+      expect(root.querySelectorAll(".pillar-card")).toHaveLength(3);
       expect(text(root.querySelector('[data-id="coming-note"]'))).toBe(
         "Pillars A and B, Business Architecture and Pre-Sales Consultancy, are coming."
       );
+    });
+
+    it("names a single coming pillar in the singular", () => {
+      setComingLetters(["B"]);
+      const element = render();
+      expect(
+        text(element.shadowRoot.querySelector('[data-id="coming-note"]'))
+      ).toBe("Pillar B, Pre-Sales Consultancy, is coming.");
     });
 
     it("labels the sections in the mockup's numbered style", () => {
@@ -223,10 +346,10 @@ describe("c-hero-banner", () => {
   });
 
   describe("tour", () => {
-    it("lists one stop per live pillar and no stop for A or B", () => {
+    it("lists one stop per live pillar", () => {
       const element = render();
       const steps = element.shadowRoot.querySelectorAll(".tour-step");
-      expect(steps).toHaveLength(3);
+      expect(steps).toHaveLength(5);
       expect(
         Array.from(steps).map((step) => [
           text(step.querySelector(".tour-number")),
@@ -235,20 +358,41 @@ describe("c-hero-banner", () => {
           text(step.querySelector(".tour-duration"))
         ])
       ).toEqual([
-        ["01", "API Lab", "/portfolio/api-lab", "1 minute"],
-        ["02", "AI Lab", "/portfolio/ai-lab", "1 minute"],
-        ["03", "Delivery", "/portfolio/delivery", "1 minute"]
+        [
+          "01",
+          "Business Architecture",
+          "/portfolio/business-architecture",
+          "1 minute"
+        ],
+        [
+          "02",
+          "Nonprofit Solutions",
+          "/portfolio/nonprofit-solutions",
+          "1 minute"
+        ],
+        ["03", "API Lab", "/portfolio/api-lab", "1 minute"],
+        ["04", "AI Lab", "/portfolio/ai-lab", "1 minute"],
+        ["05", "Delivery", "/portfolio/delivery", "1 minute"]
       ]);
+    });
+
+    it("leaves coming pillars out of the tour", () => {
+      setComingLetters(["A", "B"]);
+      const element = render();
+      const steps = element.shadowRoot.querySelectorAll(".tour-step");
+      expect(
+        Array.from(steps).map((step) => text(step.querySelector(".tour-link")))
+      ).toEqual(["API Lab", "AI Lab", "Delivery"]);
     });
 
     it("counts the tour length from the stops", () => {
       const element = render();
       const root = element.shadowRoot;
       expect(text(root.querySelector('[data-id="tour-button"]'))).toBe(
-        "Take the 3 minute tour ↓"
+        "Take the 5 minute tour ↓"
       );
       expect(text(root.querySelector('[data-id="tour-heading"]'))).toBe(
-        "A 3 minute tour."
+        "A 5 minute tour."
       );
     });
 

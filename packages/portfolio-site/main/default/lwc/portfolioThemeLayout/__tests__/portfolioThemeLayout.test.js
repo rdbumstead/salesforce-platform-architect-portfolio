@@ -1,6 +1,7 @@
 /**
  * @description       : Unit tests for portfolioThemeLayout LWC: header navigation, Pillars menu,
  *                      phone menu and the theme toggle (Round 4 plan, contracts L2 and L3).
+ *                      c/pillarData is a fixed stand in (Round 5 plan, log 192).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -8,8 +9,100 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import PortfolioThemeLayout from "c/portfolioThemeLayout";
-import { PILLARS } from "c/pillarData";
+import { PILLARS, reset, setComingLetters } from "c/pillarData";
 import { trackEvent } from "c/analyticsService";
+
+// A fixed five pillar list, all live unless a test marks some as coming with
+// setComingLetters, so these tests pass before and after the pillarData flags change
+// (Round 5 plan, log 192).
+jest.mock(
+  "c/pillarData",
+  () => {
+    const source = [
+      [
+        "business-architecture",
+        "A",
+        "Business Architecture",
+        "Business Architecture",
+        ["Employer Hub", "Data model"]
+      ],
+      [
+        "nonprofit-solutions",
+        "B",
+        "Nonprofit Solutions",
+        "Pre-Sales Consultancy",
+        ["Solution design", "Decision matrix"]
+      ],
+      [
+        "api-lab",
+        "C",
+        "API Lab",
+        "Work Experience Verification API",
+        ["Apex REST", "OAuth 2.0", "OpenAPI"]
+      ],
+      [
+        "ai-lab",
+        "D",
+        "AI Lab",
+        "AI & Innovation",
+        ["Grounded generation", "Fallback chain"]
+      ],
+      [
+        "delivery",
+        "E",
+        "Delivery",
+        "Agile Delivery & DevOps",
+        ["Jira", "GitHub Actions"]
+      ]
+    ];
+    let coming = [];
+    const build = () =>
+      source.map(([key, letter, pageLabel, sasName, tags]) => ({
+        key,
+        letter,
+        pageLabel,
+        sasName,
+        tags,
+        url: key,
+        href: `/portfolio/${key}`,
+        summary: `${pageLabel} summary.`,
+        tour: `${pageLabel} tour stop.`,
+        code: letter === "C" ? "GET /sapi/v1/health  200" : undefined,
+        inProgress: coming.includes(letter),
+        subLinks:
+          letter === "C"
+            ? [
+                {
+                  key: "api-reference",
+                  label: "API reference",
+                  url: "api-lab/reference",
+                  href: "/portfolio/api-lab/reference"
+                }
+              ]
+            : []
+      }));
+    return {
+      __esModule: true,
+      get PILLARS() {
+        return build();
+      },
+      get LIVE_PILLARS() {
+        return build().filter((pillar) => !pillar.inProgress);
+      },
+      get COMING_PILLARS() {
+        return build().filter((pillar) => pillar.inProgress);
+      },
+      pillarByLetter: (letter) => build().find((p) => p.letter === letter),
+      setComingLetters: (letters) => {
+        coming = [...letters];
+      },
+      reset: () => {
+        coming = [];
+      }
+    };
+  },
+  { virtual: true }
+);
 
 jest.mock(
   "@salesforce/community/basePath",
@@ -93,6 +186,7 @@ describe("c-portfolio-theme-layout", () => {
       value: realLocalStorage
     });
     jest.clearAllMocks();
+    reset();
   });
 
   describe("navigation", () => {
@@ -136,7 +230,13 @@ describe("c-portfolio-theme-layout", () => {
       ).toEqual(["A", "B", "C", "D", "E"]);
     });
 
-    it("marks pillars A and B as coming and no other pillar", () => {
+    it("marks no pillar as coming when every pillar is live", () => {
+      const element = render();
+      expect(element.shadowRoot.querySelector(".pillar-coming")).toBeNull();
+    });
+
+    it("marks the coming pillars and no other pillar", () => {
+      setComingLetters(["A", "B"]);
       const element = render();
       const coming = Array.from(
         element.shadowRoot.querySelectorAll(".pillar-link")
