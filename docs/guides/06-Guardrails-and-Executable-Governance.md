@@ -120,7 +120,7 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 
 **What is LCP?** Largest Contentful Paint — the time until the main content appears on screen. Google uses this for search ranking.  
 **Our budget:** 2.5 seconds (Google's "good" threshold).  
-**How we enforce:** Lighthouse CI audits every commit. If JavaScript bundle size grows and pushes LCP > 2.5s, the build fails.  
+**How we enforce:** Lighthouse runs on demand (`performance.yml`, started by hand with a target URL, which runs `npm run test:lighthouse`) and as a launch gate. It does not run on every commit, and no build fails on it automatically.  
 **Why it matters:** Slow sites lose users. Amazon found every 100ms delay costs 1% of revenue.
 
 ---

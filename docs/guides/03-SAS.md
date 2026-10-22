@@ -519,7 +519,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 ### 8.1 Deployment Failure
 
 - **Symptom:** GitHub Actions deploy.yml job fails or turns red.
-- **Detection:** Automated email notification from GitHub Actions; missing PR comment on Pull Request.
+- **Detection:** Automated email notification from GitHub Actions, and the run's step summary ("Deployment Status" in `deploy.yml`) reports the failure.
 - **Mitigation:**
   1. Check GitHub Action logs for specific metadata error.
   2. If environment issue: Manually deploy via CLI: sf project deploy start.

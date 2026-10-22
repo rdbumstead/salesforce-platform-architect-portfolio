@@ -73,7 +73,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Client-side document generation** (Resume).
 - **Generative AI Utility:** A "Dynamic Cover Letter Engine" that utilizes Agentforce to generate personalized application letters based on the visitor's job description and the architect's matching project history.
 - **Gamified Social Proof engine** with "Vibe-Gated" submission logic.
-- **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and Automated PR Commenting.
+- **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and a results step summary on every PR run ("PR Validation Results" in `pr.yml`).
 - **External API Integration (GitHub):** Live feed of portfolio repository commits displayed on the site.
 - **External API Integration (Jira):** Live fetch of portfolio roadmap Epics and Stories.
 - **Multi-Cloud Integration patterns using AWS Free Tier (Lambda Function URL, S3, CloudFront) – Phase 8 (2027-2028) – design complete**
