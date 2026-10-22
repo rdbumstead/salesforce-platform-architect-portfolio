@@ -93,7 +93,7 @@ export default class PlaceholderTerminal extends LightningElement {
     },
     {
       id: 13,
-      text: "Loading AntV G6 Graphing Engine...",
+      text: "Loading the graph engine...",
       delay: 700,
       type: "info"
     },
