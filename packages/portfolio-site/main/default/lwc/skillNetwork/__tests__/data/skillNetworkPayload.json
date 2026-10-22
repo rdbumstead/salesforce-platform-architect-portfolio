@@ -5,61 +5,101 @@
         "edges": [
           {
             "node": {
-              "Id": "a01SKILL1",
+              "Id": "a01S1",
               "Name": {
                 "value": "Apex"
               },
               "Category__c": {
                 "value": "Backend"
               },
+              "Category_Order__c": {
+                "value": 2
+              },
               "Display_Name__c": {
                 "value": null
               },
               "Proficiency__c": {
                 "value": 5
-              },
-              "Color_Hex__c": {
-                "value": "#123abc"
               }
             }
           },
           {
             "node": {
-              "Id": "a01SKILL2",
+              "Id": "a01S2",
               "Name": {
                 "value": "LWC"
               },
               "Category__c": {
                 "value": "Frontend"
               },
+              "Category_Order__c": {
+                "value": 1
+              },
               "Display_Name__c": {
                 "value": "Lightning Web Components"
               },
               "Proficiency__c": {
                 "value": 4
-              },
-              "Color_Hex__c": {
-                "value": "red;stroke:url(x)"
               }
             }
           },
           {
             "node": {
-              "Id": "a01SKILL3",
+              "Id": "a01S3",
+              "Name": {
+                "value": "Flow"
+              },
+              "Category__c": {
+                "value": "Frontend"
+              },
+              "Category_Order__c": {
+                "value": 1
+              },
+              "Display_Name__c": {
+                "value": null
+              },
+              "Proficiency__c": {
+                "value": 4
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a01S4",
               "Name": {
                 "value": "Data Cloud"
               },
               "Category__c": {
                 "value": "Data"
               },
+              "Category_Order__c": {
+                "value": 3
+              },
               "Display_Name__c": {
                 "value": null
               },
               "Proficiency__c": {
+                "value": 2
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a01S5",
+              "Name": {
+                "value": "Agentforce"
+              },
+              "Category__c": {
+                "value": "Data"
+              },
+              "Category_Order__c": {
+                "value": 3
+              },
+              "Display_Name__c": {
                 "value": null
               },
-              "Color_Hex__c": {
-                "value": null
+              "Proficiency__c": {
+                "value": 3
               }
             }
           }
@@ -69,44 +109,60 @@
         "edges": [
           {
             "node": {
-              "Id": "a02PS1",
+              "Id": "a0PS1",
               "Project__c": {
-                "value": "a03PROJ1"
+                "value": "a0AP1"
               },
               "Skill__c": {
-                "value": "a01SKILL1"
+                "value": "a01S1"
               },
               "Project__r": {
                 "Name": {
-                  "value": "Portfolio Site"
+                  "value": "Portfolio"
                 }
               }
             }
           },
           {
             "node": {
-              "Id": "a02PS2",
+              "Id": "a0PS2",
               "Project__c": {
-                "value": "a03PROJ1"
+                "value": "a0AP1"
               },
               "Skill__c": {
-                "value": "a01SKILL2"
+                "value": "a01S2"
               },
               "Project__r": {
                 "Name": {
-                  "value": "Portfolio Site"
+                  "value": "Portfolio"
                 }
               }
             }
           },
           {
             "node": {
-              "Id": "a02PS3",
+              "Id": "a0PS3",
               "Project__c": {
-                "value": "a03PROJ2"
+                "value": "a0AP1"
               },
               "Skill__c": {
-                "value": "a01SKILL1"
+                "value": "a01S5"
+              },
+              "Project__r": {
+                "Name": {
+                  "value": "Portfolio"
+                }
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a0PS4",
+              "Project__c": {
+                "value": "a0AP2"
+              },
+              "Skill__c": {
+                "value": "a01S1"
               },
               "Project__r": {
                 "Name": {
@@ -117,12 +173,12 @@
           },
           {
             "node": {
-              "Id": "a02PS4",
+              "Id": "a0PS5",
               "Project__c": {
-                "value": "a03PROJ2"
+                "value": "a0AP2"
               },
               "Skill__c": {
-                "value": "a01SKILLX"
+                "value": "a01MISSING"
               },
               "Project__r": {
                 "Name": {
@@ -137,32 +193,150 @@
         "edges": [
           {
             "node": {
-              "Id": "a04ES1",
+              "Id": "a0ES1",
               "Experience__c": {
-                "value": "a05EXP1"
+                "value": "a05R1"
               },
               "Skill__c": {
-                "value": "a01SKILL1"
+                "value": "a01S1"
               },
               "Experience__r": {
                 "Name": {
-                  "value": "Platform Architect"
+                  "value": "Senior Developer"
+                },
+                "Start_Date__c": {
+                  "value": "2018-01-01"
+                },
+                "End_Date__c": {
+                  "value": "2021-01-01"
+                },
+                "Is_Current_Role__c": {
+                  "value": false
                 }
               }
             }
           },
           {
             "node": {
-              "Id": "a04ES2",
+              "Id": "a0ES2",
               "Experience__c": {
-                "value": "a05EXP1"
+                "value": "a05R2"
               },
               "Skill__c": {
-                "value": "a01SKILL3"
+                "value": "a01S1"
               },
               "Experience__r": {
                 "Name": {
-                  "value": "Platform Architect"
+                  "value": "Architect"
+                },
+                "Start_Date__c": {
+                  "value": "2020-01-01"
+                },
+                "End_Date__c": {
+                  "value": null
+                },
+                "Is_Current_Role__c": {
+                  "value": true
+                }
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a0ES3",
+              "Experience__c": {
+                "value": "a05R2"
+              },
+              "Skill__c": {
+                "value": "a01S2"
+              },
+              "Experience__r": {
+                "Name": {
+                  "value": "Architect"
+                },
+                "Start_Date__c": {
+                  "value": "2020-01-01"
+                },
+                "End_Date__c": {
+                  "value": null
+                },
+                "Is_Current_Role__c": {
+                  "value": true
+                }
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a0ES4",
+              "Experience__c": {
+                "value": "a05R1"
+              },
+              "Skill__c": {
+                "value": "a01S3"
+              },
+              "Experience__r": {
+                "Name": {
+                  "value": "Senior Developer"
+                },
+                "Start_Date__c": {
+                  "value": "2018-01-01"
+                },
+                "End_Date__c": {
+                  "value": "2021-01-01"
+                },
+                "Is_Current_Role__c": {
+                  "value": false
+                }
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a0ES5",
+              "Experience__c": {
+                "value": "a05R3"
+              },
+              "Skill__c": {
+                "value": "a01S4"
+              },
+              "Experience__r": {
+                "Name": {
+                  "value": "Analyst"
+                },
+                "Start_Date__c": {
+                  "value": "2024-01-01"
+                },
+                "End_Date__c": {
+                  "value": "2024-06-30"
+                },
+                "Is_Current_Role__c": {
+                  "value": false
+                }
+              }
+            }
+          },
+          {
+            "node": {
+              "Id": "a0ES6",
+              "Experience__c": {
+                "value": "a05R1"
+              },
+              "Skill__c": {
+                "value": "a01MISSING"
+              },
+              "Experience__r": {
+                "Name": {
+                  "value": "Senior Developer"
+                },
+                "Start_Date__c": {
+                  "value": "2018-01-01"
+                },
+                "End_Date__c": {
+                  "value": "2021-01-01"
+                },
+                "Is_Current_Role__c": {
+                  "value": false
                 }
               }
             }
