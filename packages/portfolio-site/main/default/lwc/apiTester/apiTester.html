@@ -29,14 +29,14 @@
             ></lightning-input>
           </div>
           <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-6">
-            <lightning-button
-              variant="brand"
-              label="Execute GET"
+            <button
+              type="button"
+              class="execute-button"
               onclick={handleExecute}
               disabled={isExecuteDisabled}
-              class="execute-button"
             >
-            </lightning-button>
+              Execute GET
+            </button>
           </div>
         </div>
 
@@ -118,13 +118,14 @@
             ></lightning-input>
           </div>
           <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-6">
-            <lightning-button
-              variant="brand"
-              label="Request token"
+            <button
+              type="button"
+              class="token-button"
               onclick={handleRequestToken}
               disabled={isTokenDisabled}
-              class="token-button"
-            ></lightning-button>
+            >
+              Request token
+            </button>
           </div>
         </div>
 

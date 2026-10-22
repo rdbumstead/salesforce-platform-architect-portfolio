@@ -16,6 +16,16 @@ import ApiTester, {
 } from "c/apiTester";
 import invoke from "@salesforce/apex/ApiLabController.invoke";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
+import { trackEvent } from "c/analyticsService";
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    trackEvent: jest.fn(),
+    EVENTS: { API_TEST_EXECUTED: "api_test_executed" }
+  }),
+  { virtual: true }
+);
 
 jest.mock(
   "@salesforce/apex/ApiLabController.invoke",
@@ -123,7 +133,7 @@ describe("c-api-tester", () => {
     setInput(element, "lightning-input.query-input", "limit=5&offset=0");
     await flushPromises();
 
-    query(element, "lightning-button.execute-button").click();
+    query(element, "button.execute-button").click();
     await flushPromises();
 
     expect(invoke).toHaveBeenCalledWith({
@@ -156,7 +166,7 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    query(element, "lightning-button.execute-button").click();
+    query(element, "button.execute-button").click();
     await flushPromises();
 
     expect(invoke).toHaveBeenCalledWith({
@@ -169,20 +179,49 @@ describe("c-api-tester", () => {
     expect(query(element, ".response-body").textContent).toBe("not json");
   });
 
-  it("uses brand buttons and no SLDS text colour classes (contract K9)", async () => {
+  it("uses native 44 px buttons and no SLDS text colour classes", async () => {
     invoke.mockResolvedValue(INVOKE_RESULT);
     const element = createComponent();
     await flushPromises();
-    query(element, "lightning-button.execute-button").click();
+    query(element, "button.execute-button").click();
     await flushPromises();
 
-    expect(query(element, "lightning-button.execute-button").variant).toBe(
-      "brand"
+    expect(query(element, "button.execute-button").textContent.trim()).toBe(
+      "Execute GET"
     );
-    expect(query(element, "lightning-button.token-button").variant).toBe(
-      "brand"
+    expect(query(element, "button.token-button").textContent.trim()).toBe(
+      "Request token"
     );
     expect(query(element, '[class*="slds-text-color_"]')).toBeNull();
+    const css = readFileSync(join(__dirname, "..", "apiTester.css"), "utf8");
+    expect(css).toMatch(/\.token-button \{[^}]*min-height: 44px/);
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+  });
+
+  it("sends api_test_executed with the path and status after each call", async () => {
+    invoke.mockResolvedValueOnce({ ...INVOKE_RESULT, statusCode: 429 });
+    invoke.mockRejectedValueOnce({ body: { message: "unreachable" } });
+    const element = createComponent();
+    await flushPromises();
+    query(element, "lightning-combobox.endpoint-picker").dispatchEvent(
+      new CustomEvent("change", { detail: { value: "/sapi/v1/skills" } })
+    );
+    await flushPromises();
+
+    query(element, "button.execute-button").click();
+    await flushPromises();
+    expect(trackEvent).toHaveBeenLastCalledWith("api_test_executed", {
+      path: "/sapi/v1/skills",
+      status: 429
+    });
+
+    query(element, "button.execute-button").click();
+    await flushPromises();
+    expect(trackEvent).toHaveBeenLastCalledWith("api_test_executed", {
+      path: "/sapi/v1/skills",
+      status: "error"
+    });
+    expect(trackEvent).toHaveBeenCalledTimes(2);
   });
 
   it("shows the controller error when invoke throws", async () => {
@@ -192,7 +231,7 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    query(element, "lightning-button.execute-button").click();
+    query(element, "button.execute-button").click();
     await flushPromises();
 
     expect(query(element, ".invoke-error").textContent).toContain(
@@ -224,7 +263,7 @@ describe("c-api-tester", () => {
 
     setInput(element, "lightning-input.token-email", "eval@example.com");
     setInput(element, "lightning-input.token-purpose", "Review the API");
-    query(element, "lightning-button.token-button").click();
+    query(element, "button.token-button").click();
     await flushPromises();
 
     expect(requestEvaluatorToken).toHaveBeenCalledWith({
@@ -257,7 +296,7 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    query(element, "lightning-button.token-button").click();
+    query(element, "button.token-button").click();
     await flushPromises();
 
     const value = (name) =>
@@ -277,7 +316,7 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    query(element, "lightning-button.token-button").click();
+    query(element, "button.token-button").click();
     await flushPromises();
 
     expect(query(element, ".token-error").textContent).toContain(

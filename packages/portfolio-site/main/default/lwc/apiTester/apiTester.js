@@ -3,7 +3,8 @@
  *                      ApiLabController.invoke (ADR-027) and shows the status, latency, tracing
  *                      and paging headers, the Named Credential and the body. Also requests an
  *                      evaluator token through ApiLabController.requestEvaluatorToken (ADR-028)
- *                      and shows the result exactly as the controller returns it.
+ *                      and shows the result exactly as the controller returns it. Sends
+ *                      api_test_executed with the path and status after each call (contract L4).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -12,6 +13,10 @@
 import { LightningElement } from "lwc";
 import invoke from "@salesforce/apex/ApiLabController.invoke";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
+import { trackEvent, EVENTS } from "c/analyticsService";
+
+/** api_test_executed status when the call itself failed and no HTTP status came back. */
+export const STATUS_CALL_FAILED = "error";
 
 /**
  * Mirrors ApiLabController.ALLOWED_PATHS. The controller refuses any other path, so a
@@ -229,13 +234,22 @@ export default class ApiTester extends LightningElement {
     this.isLoading = true;
     this.invokeError = "";
     this.result = undefined;
+    const path = this.selectedPath;
     try {
       this.result = await invoke({
-        path: this.selectedPath,
+        path,
         params: parseQuery(this.queryText)
+      });
+      trackEvent(EVENTS.API_TEST_EXECUTED, {
+        path,
+        status: this.result?.statusCode
       });
     } catch (error) {
       this.invokeError = reduceError(error);
+      trackEvent(EVENTS.API_TEST_EXECUTED, {
+        path,
+        status: STATUS_CALL_FAILED
+      });
     } finally {
       this.isLoading = false;
     }
