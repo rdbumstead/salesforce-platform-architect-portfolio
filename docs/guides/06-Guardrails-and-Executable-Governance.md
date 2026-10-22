@@ -80,11 +80,13 @@ To maintain a "$0.00 Forever" guarantee, the architecture avoids common "cost tr
 
 ### Gemini API Quota Management
 
-**The Problem:** Google's Gemini AI has a free tier (15 requests/minute, 1500 requests/day). Exceed this and requests fail with HTTP 429 errors.
+**The Problem:** The Gemini API key's free tier allows Gemma 4 31B 30 requests per minute, 16,000 tokens per minute and 14,400 requests per day. Gemma 4 reasons before it answers and spends most of its tokens on that, so only a few cover letters a minute fit. Past the limit, Google answers HTTP 429.
 
-**Our Solution:** A Circuit Breaker in `local.AIMetrics` (Salesforce's in-memory cache) tracks usage. When 80% of the daily quota is consumed, the system automatically switches to the fallback AI model.
+**Our Solution:** No quota counter is stored and no Platform Cache is used (the org has no partition). The bounds are:
 
-**Why 80%?** Leaves a 20% buffer for legitimate traffic while preventing quota exhaustion that would break the site for all visitors.
+- The `papi-ai` rate tier of `RateWindowLimiter`: 10 requests a minute, on `POST /papi/v1/ai/generate` and on the site's cover letter page alike.
+- When Google refuses or fails, the cover letter falls back to the Local Template, so the visitor still gets a letter (`ContentGenerationController.dispatch`).
+- The footer shows "AI requests today", the sum of today's `papi-ai` counts in `API_Rate_Window__c`. It counts requests, not Gemini calls, and a Local fallback counts too, so it is never labelled as a Gemini quota (owner decision PD-D9, 2026-10-21).
 
 ---
 

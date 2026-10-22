@@ -85,7 +85,7 @@ graph LR
     GQL[Salesforce<br/>GraphQL]
     Apex[Apex Runtime]
     DB[(Custom Objects)]
-    AI[Agentforce]
+    AI[AI dispatch<br/>Gemini, Local]
     Jira[Jira Cloud API]
     GitHub[GitHub API]
     Lambda[AWS Lambda<br/>Phase 8]
@@ -173,7 +173,7 @@ graph TD
 - **Experience Cloud (LWR):** High-performance, pixel-perfect frontend.
 - **Apex REST Services:** Custom API layer for external integrations.
 - **Custom Metadata Types:** Configuration management.
-- **Agentforce:** AI grounding and conversational interface.
+- **Generative AI:** one Apex dispatch (`ContentGenerationController.dispatch`) over Gemma 4 31B through the Gemini API and a local template. Agentforce is a switch in that dispatch that ships off and is not implemented (section 5.4).
 - **Unlocked Packages:** Modular deployment strategy.
 
 #### 1.3.1 Technology Selection Rationale
@@ -211,7 +211,7 @@ Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Disciplin
 - **Maintainability:** Codebase governed by automated quality gates (Prettier/PMD) ensuring architectural standards.
 - **Performance:** Target LCP < 2.5s via Static Resource caching and minimal DOM footprint.
   - **Latency:** LCP < 2.5s on 4G networks.
-  - **AI Generation Timeout:** 2000ms HTTP timeout (Hard Stop) + 500ms buffer for Apex processing.
+  - **AI Generation Timeout:** 60 seconds for the Gemini callout, read from the `Gemini` record of `AI_Provider_Config__mdt` (`Timeout_Ms__c`, owner decision 2026-10-21). Gemma 4 reasons before it answers, so a cover letter can take up to about a minute. The earlier 2 second hard stop was dropped because a reasoning model almost never answers inside it.
   - **Total CPU Budget:** < 5000ms per request (Allocating 50% of the 10,000ms Synchronous Limit to ensure headroom for platform overhead).
 - **Security:** Public access restricted strictly to custom objects. No PII stored.
 - **Scalability:** Data model supports 10,000+ records via indexed Junction Objects.
@@ -529,7 +529,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 ### 8.2 Agentforce Unavailable
 
 > [!NOTE]
-> Agentforce is deferred and not built (decision 2026-10-02), so this scenario cannot occur in the current release. It is kept for when the deferral ends.
+> Agentforce is not implemented, and its switch ships off (decision 2026-10-02, [ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)). If the switch is turned on, `AgentforceService.generateContent` throws, `ContentGenerationController.dispatch` records a failed attempt and Gemini serves, so the visitor still gets a letter. The scenario below is the target design for a real Agentforce agent, kept for when one is built.
 
 - **Symptom:** Agentforce Service Agent fails to load or returns generic errors (common in some **Developer Edition** regions).
 - **Detection:** `<agentforce-service-agent>` LWC fails to render during manual testing.
@@ -572,7 +572,7 @@ The system exposes real-time telemetry to the user via the `c-system-health-foot
 - **A.3 Code Reusability:** Shared Prism.js utility module. Nebula Logger handles try/catch blocks.
 - **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches to `GitHub_Cache__c`. Refreshed by `GitHubCacheRefreshJob.cls`.
 - **A.5 Hero Banner Navigation:** (Refer to UI specs).
-- **A.6 Agentforce Configuration:** Configure Agent Topic to query `Project__c`. Use "Mirror Mode" in system instructions.
+- **A.6 Agentforce Configuration:** not built. Agentforce is a switch in the dispatch that ships off (section 5.4). The "Show your work" panel (section 5.4) replaces the Mirror Mode system instruction, so no instruction asks a model to reveal its prompt.
 - **A.7 Architecture Diagram Hosting:** Export C4 diagram and upload as Static Resource.
 - **A.8 Jira Integration:** Endpoint: ryanbumstead.atlassian.net. Auth: Basic Auth with Named Credential.
 - **A.9 Advanced Visualization Strategy:**

@@ -69,9 +69,9 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Public-facing Experience Cloud (LWR)** site with "5-Minute Tour" guided navigation.
 - **Custom LWC component framework** including a custom API Testing Harness.
 - **Apex REST API implementation** matching MuleSoft specifications.
-- **Agentforce (AI)** grounding and prompt engineering.
+- **Generative AI** grounding and prompt engineering in Apex (`PortfolioGroundingService`, `ContentGenerationController.dispatch`). Agentforce is built as a switch in the dispatch and ships off.
 - **Client-side document generation** (Resume).
-- **Generative AI Utility:** A "Dynamic Cover Letter Engine" that utilizes Agentforce to generate personalized application letters based on the visitor's job description and the architect's matching project history.
+- **Generative AI Utility:** A "Dynamic Cover Letter Engine" that uses Gemma 4 31B through the Gemini API, with a local template as the last resort, to write personalized application letters based on the visitor's job description and the architect's matching project history (featured projects and experience highlights).
 - **Gamified Social Proof engine** with "Vibe-Gated" submission logic.
 - **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and a results step summary on every PR run ("PR Validation Results" in `pr.yml`).
 - **External API Integration (GitHub):** Live feed of portfolio repository commits displayed on the site.
@@ -125,10 +125,11 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 **Engagement:**
 
 - Average Session Duration > 2 minutes (verified via GA4).
-- **ai_primary_success_rate:** % of requests served by Agentforce (Target > 80%).
-- **ai_fallback_usage:** % of requests served by Gemini or Local Template (Success via Resilience).
-- **ai_complete_failure_rate:** % returning emergency error message (Target < 1%)
-- **finops_quota_visibility:** Users interacting with the Quota/Health footer (Hover events).
+- **ai_live_model_rate:** % of generations served by a live model, Agentforce or Gemini (Target > 80%). Agentforce ships switched off, so today this is the Gemini share.
+- **ai_fallback_usage:** % of generations served by the Local Template (the fallback share).
+- **ai_complete_failure_rate:** % of requests that end with no content at all, a 503 or an error message (Target < 1%).
+- **finops_quota_visibility:** visitors who hover over or focus the footer's "AI requests today" line.
+- All three AI rates come from one GA4 event, `ai_generation_completed`, with the parameters `provider`, `model`, `fallback`, `latency_ms` and `outcome`. GA4 computes the rates, so no counter is stored in Salesforce (owner decision PD-D8, 2026-10-21).
 
 **Conversion:**
 
@@ -192,8 +193,8 @@ The delivery is organized into four parallel execution tracks:
 - **Data360 Setup.**
 - **Data360 Data Integration:** (CRM Connector → `Project__c`, `Experience__c`)
 - **Agentforce Grounding:** on Data360 Data Model Objects (DMOs)
-- **Prompt Engineering:** & Mirror Mode configuration
-- **AI Generation Service:** Triple-fallback (Agentforce → Gemini Flash → Local Template)
+- **Prompt Engineering:** and the "Show your work" panel (provider, model, latency, attempts and the prompt that was sent, filled by Apex, not by the model)
+- **AI Generation Service:** one dispatch: Agentforce only when switched on (it ships off), then Gemma 4 31B through the Gemini API, then the Local Template
 
 **Phase 6: Observability & Launch**
 
@@ -268,7 +269,7 @@ _Design artifacts complete; implementation begins post-launch._
 
 **Phase 4: Innovation**
 
-- **A.6:** Configure Agentforce Service Agent & Topic Grounding.
+- **A.6:** Agentforce Service Agent and topic grounding. Not built: Agentforce is a switch in the dispatch that ships off (SAS Appendix A.6).
 - **Security:** Enable "Lightning Web Security" in Session Settings.
 - **Asset:** Download g6.min.js (v4.x/v5.x) and upload as G6_Library (Public Cache).
 - **Dev:** Implement `c-skill-network` LWC using G6 graph.update loop for edge animation.
