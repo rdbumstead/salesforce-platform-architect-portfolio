@@ -80,7 +80,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Advanced Visualization:** Dynamic Skill Graph using AntV G6 with custom flow animation.
 - **Dynamic ERD Visualizer:** A live-rendered Entity Relationship Diagram utilizing the Schema class and AntV G6 to visualize the actual Org metadata, replacing static architecture diagrams.
 - **Executable Governance:** LWC-based documentation that verifies its own success criteria from pipeline evidence. CI publishes a platform event, an Apex trigger persists it, and the checklist reads the result when viewed (for example, ticking "production deploy green" with the commit and the run behind it).
-- **Enterprise Observability:** Implementation of **Nebula Logger** (Open Source) for structured, event-driven error logging across Apex, LWC, and Flow, replacing standard debug logs.
+- **Enterprise Observability:** structured Apex logging through one seam (`PortfolioLog`) that writes to **Nebula Logger** (Open Source) when the owner has installed it, and to debug logs when not. Nebula is optional, so CI and scratch orgs run without it.
 
 **Out of Scope:**
 
@@ -199,7 +199,7 @@ The delivery is organized into four parallel execution tracks:
 **Phase 6: Observability & Launch**
 
 - **System Health "Glass Box Telemetry":** Develop `c-system-health-footer` with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
-- **Enterprise Logging:** Install and configure Nebula Logger (Unlocked Package); configure storage guardrails (2-day retention).
+- **Enterprise Logging:** the owner installs Nebula Logger (unlocked package, no namespace) in production and sets 2-day retention. Apex reaches it only through the `PortfolioLog` seam.
 - **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test Circuit Breakers and cached data fallbacks.
 - **Analytics Instrumentation:** Deploy Google Analytics 4 (GA4) with custom events for API tests and resume downloads.
 - **API Mode Indicator:** Glass Box Telemetry footer displays "GraphQL Mode: Native (Live)" – prepares UI for Phase 8 toggle.

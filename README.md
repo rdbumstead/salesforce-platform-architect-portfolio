@@ -32,7 +32,7 @@ Principal-level Salesforce Platform Architecture including:
 - **Multi-Cloud Design** — LWR + AWS Lambda BFF with $0.00-forever architecture.
 - **DevOps Maturity** — Delta deployments, automated quality gates, and JWT-based CI/CD.
 - **Contract-First APIs** — OpenAPI 3.0 specs proving Salesforce/MuleSoft parity.
-- **Applied AI Governance**: one provider dispatch behind `POST /papi/v1/ai/generate` (Gemma 4 31B through the Gemini API, then a deterministic Local Template), with cover letters grounded on portfolio records. The site's cover letter page runs the same dispatch in process, under the same AI rate tier, and shows which provider wrote each letter. Agentforce is a switch that ships off and is not implemented.
+- **Applied AI Governance**: one provider dispatch behind `POST /papi/v1/ai/generate` (Gemma 4 31B through the Gemini API, then a deterministic Local Template), with cover letters grounded on portfolio records. The site's cover letter page runs the same dispatch in process, under its own AI rate limit of 10 a minute, and shows which provider wrote each letter. Agentforce is a switch that ships off and is not implemented.
 - **Observability** — Real-time Glass Box telemetry and constraint-aware monitoring.
 
 ### Portfolio Overview

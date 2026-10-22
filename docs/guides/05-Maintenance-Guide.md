@@ -19,7 +19,8 @@
   - [4.3 Scenario: GitHub Rate Limit Exhaustion](#43-scenario-github-rate-limit-exhaustion)
   - [4.4 Scenario: Token Vending Abuse](#44-scenario-token-vending-abuse)
 - [5. Observability & Monitoring](#5-observability--monitoring)
-  - [5.1 Quota Monitoring (Automated)](#51-quota-monitoring-automated)
+  - [5.1 Quota Monitoring (Not Built)](#51-quota-monitoring-not-built)
+  - [5.2 Logging](#52-logging)
 
 ---
 
@@ -195,7 +196,14 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed the owner above a threshold. **It is not built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
 
 - The Gemini API key's own limits for Gemma 4 31B: 30 requests per minute, 16,000 tokens per minute, 14,400 requests per day (AI Studio). Past them, `/papi/v1/ai/generate` falls back to the local template for cover letters and answers 503 `ALL_PROVIDERS_UNAVAILABLE` otherwise.
-- The `papi-ai` rate tier, 10 requests per minute (`RateWindowLimiter`). The site cover letter and `/papi/v1/ai/generate` both count against it, and every evaluator token is the same session, so evaluators share one bucket.
+- The `papi-ai` rate tier, 10 requests per minute (`RateWindowLimiter`). The site cover letter has its own bucket, `papi-ai:site-cover-letter`, shared by every site visitor. `/papi/v1/ai/generate` keys by session, and every evaluator token is the same session, so evaluators share one bucket too.
 - The footer's "AI requests today" line (`FooterController.getSystemSnapshot`), the sum of today's `papi-ai` counts. It counts requests, not Gemini calls.
 - The audit object `API_Access_Request__c` for evaluator token requests.
 - Setup → System Overview for the org's daily API request usage (15,000 per day in Developer Edition).
+
+### 5.2 Logging
+
+- **Where logs go.** Apex logs through `PortfolioLog` (one line per API request: path, status, correlation id, elapsed time). With Nebula Logger installed, the lines are Nebula log entries tagged `portfolio`. Without it, they are ordinary debug logs, visible only while a trace flag is set.
+- **Nebula is optional and owner-installed.** Install its unlocked, no-namespace package in production by hand. No deploy installs or needs it, and removing it changes nothing but where the lines land.
+- **Retention.** Set Nebula's log retention to 2 days, to protect the Developer Edition's 5 MB of data storage.
+- **What is never logged:** a request or response body, a header value, a token or a query string ([Technical Guide §1.5](./04-Technical-Guide.md#15-logging-nebula-logger-optional)).

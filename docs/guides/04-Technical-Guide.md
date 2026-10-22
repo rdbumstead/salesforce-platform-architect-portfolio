@@ -7,6 +7,7 @@
   - [1.2 Jira Integration (Roadmap)](#12-jira-integration-roadmap)
   - [1.3 AI Content Generation (Agentforce switch off)](#13-ai-content-generation-agentforce-switch-off)
   - [1.4 System API Security (The "Twin" Pattern)](#14-system-api-security-the-twin-pattern)
+  - [1.5 Logging (Nebula Logger, optional)](#15-logging-nebula-logger-optional)
 - [2. Frontend (LWR) Component Logic](#2-frontend-lwr-component-logic)
   - [2.1 `c-skill-network` (Visualization)](#21-c-skill-network-visualization)
   - [2.2 `c-resume-builder` (Resume Generation)](#22-c-resume-builder-resume-generation)
@@ -65,13 +66,15 @@ All external API calls originate from a secure **Named Credential** accessed via
   - Gemini is Gemma 4 31B (`gemma-4-31b-it`, `GeminiService.MODEL`) through the Gemini API and the `Gemini_API` Named Credential, with a 60 second callout timeout from the `Gemini` record (owner decision 2026-10-21). Gemma 4 always reasons before it answers (the owner measured 28.7 seconds for a trivial prompt), so a cover letter can take up to about a minute. `GeminiService` reports a failure as text starting `Error: Unable to generate content.` or `Exception: `, which the dispatch treats as a failed attempt.
   - The Local Template serves a cover letter when Gemini fails. Other content types answer 503 `ALL_PROVIDERS_UNAVAILABLE`.
 - **Callers.** `PAPIAiGenerate.generate` (`POST /papi/v1/ai/generate`) calls the dispatch for outside callers with a Bearer token and returns `provider`, `model`, `fallbackOccurred`, `latencyMs`, `attempts` and `promptShown`. The site's cover letter page (`coverLetterGenerator`) calls `ApiLabController.generateCoverLetter`, which runs the same dispatch **in process, as the site guest** ([ADR-015 Round 4 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-4)):
-  - It checks the AI tier key with `ApiRequestContext.rateLimiter().checkKey` (the same `papi-ai` prefix as `/papi/v1/ai/`, 10 requests a minute) before the dispatch and writes the count with `ApiRequestContext.commitRateCounts()` after it, so the footer's "AI requests today" counts both paths.
+  - It checks `ApiLabController.AI_RATE_KEY` (`papi-ai:site-cover-letter`, 10 requests a minute, one bucket for every site visitor) with `ApiRequestContext.rateLimiter().checkKey` before the dispatch and writes the count with `ApiRequestContext.commitRateCounts()` after it. The key has the `papi-ai` prefix that `/papi/v1/ai/` counts on, so the footer's "AI requests today" counts both paths. Over the limit, the page says "Too many cover letters were requested in the last minute. Try again in a minute."
+  - It writes one log line through `PortfolioLog` with the path `aura:ApiLabController.generateCoverLetter`.
   - `Portfolio_Guest` holds the `Gemini_Auth-Gemini_Principal` principal for this. Agentforce is never consulted for a guest.
   - Grounding as the guest goes through a `without sharing` selector that returns a fixed shape with no email, phone or owner field, because a guest sees only rows shared to it.
   - Why not through the API: the Round 3 page posted to the org's own `/papi/v1/ai/generate` through the `Portfolio_API` Named Credential. A request that arrives as a callout from the same org may not call out again ("Callout loop not allowed"), so Gemini could never answer the page and every live letter came from the Local Template.
 - **Limits.** The Gemini key's free tier allows Gemma 4 31B 30 requests per minute, 16,000 tokens per minute and 14,400 requests per day.
 - **Grounding.** `PortfolioGroundingService` adds featured projects and experience highlights to a cover letter prompt, ranked by keywords from the job title and description. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and caps the JSON at 8,000 characters (about 2,000 tokens).
-- **Show your work.** The page's badge shows the provider and model from the response. A panel the visitor opens shows the fallback flag, the round trip and generation time, the attempts and the prompt that was sent. The panel is built in Apex and the component, not by asking the model to reveal its prompt.
+- **Show your work.** The page's badge shows the provider and model from the response. A panel the visitor opens shows the fallback flag, the round trip and generation time, the attempts (each with its `detail` when the dispatch reports one) and the prompt that was sent. The panel is built in Apex and the component, not by asking the model to reveal its prompt.
+- **Fallback message.** When the template letter is used, the page says "The AI model could not be reached" if the Gemini attempt failed in under 1 second (`coverLetterGenerator.UNREACHABLE_MS`), and "The AI model was busy or too slow" otherwise. Each letter sends the GA4 event `ai_generation_completed`, and a request with no letter sends `ai_complete_failure`.
 - **Footer.** `ContentGenerationController.providerStatus()` returns each provider's switch and state (`on`, `off`, `not built`) for the Round 4 footer.
 - **Not built:** a real Agentforce provider and the hourly budget it needs (`Hourly_Budget__c` is in the config but not read yet).
 
@@ -138,6 +141,13 @@ public interface IAIGenerationService {
 `AgentforceService`, `GeminiService` and `LocalTemplateService` implement it. The API dispatch returns a `ContentGenerationController.GenerationResult` (`content`, `provider` `Gemini` or `Local`, `model`, `fallbackOccurred`); `PAPIAiGenerate.generate` writes those fields to the response.
 
 **Gemini Quota Tracking: not built.** The design counted Gemini calls in a Platform Cache partition (`local.AIMetrics`). The org has no Platform Cache partition, and no class reads or writes such a counter. The bounds that do exist are the `papi-ai` rate tier (10 requests per minute) and the Gemini API key's own limits above.
+
+### 1.5 Logging (Nebula Logger, optional)
+
+- **One seam.** `PortfolioLog.info(message)` writes a line to Nebula Logger when it is installed and to `System.debug` when it is not ([ADR-013 Round 4 amendment](../adr/013-structured-logging-framework-nebula-logger.md#amendment-2026-10-21-round-4)). It finds Nebula's `System.Callable` entry point, `CallableLogger`, at run time with `Type.forName` (namespace `Nebula` first, then none), so no source file depends on Nebula at compile time. CI and scratch orgs run without it.
+- **One line per API request.** After the response is written, `ApiRequestContext` calls `RequestUtil.logRequest`, which writes `api request path=<path> status=<status> correlationId=<id> elapsedMs=<ms>`. The query string is cut off and no body, header value or token is logged. The site cover letter writes the same line with the path `aura:ApiLabController.generateCoverLetter`.
+- **Never fails a request.** Nebula reports its own failures as `isSuccess` false, and the seam then falls back to `System.debug`. An exception inside the seam is caught.
+- **Install (owner, production only).** Nebula Logger's unlocked package with no namespace, installed by hand. Set log retention to 2 days in Nebula's settings, to stay inside Developer Edition storage. Entries carry the tag `portfolio`.
 
 ## 2. Frontend (LWR) Component Logic
 
