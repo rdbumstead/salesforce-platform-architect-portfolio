@@ -3,8 +3,8 @@
  *                      mocked wire adapter, getSystemSnapshot a mocked imperative call, and
  *                      requestIdleCallback is captured so a test decides when the page is idle.
  *                      lightning/uiGraphQLApi passes the universal mock through and replaces only
- *                      graphql and gql (trap 25). The footer imports it on demand and drives the
- *                      adapter by hand, so graphql here is a small adapter class with emit.
+ *                      graphql and gql (trap 25). The probe is the real c/graphqlProbe, which the
+ *                      footer imports on demand after idle.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -41,34 +41,14 @@ jest.mock(
 jest.mock(
   "lightning/uiGraphQLApi",
   () => {
+    const {
+      createTestWireAdapter
+    } = require("@salesforce/wire-service-jest-util");
     const universal = jest.requireActual("lightning/uiGraphQLApi");
-    // The wire adapter protocol: constructed with a data callback, then connect, update and
-    // disconnect. emit sends a value to every connected instance.
-    class GraphqlAdapter {
-      static instances = new Set();
-      static lastConfig;
-      static emit(value) {
-        GraphqlAdapter.instances.forEach((instance) =>
-          instance.callback(value)
-        );
-      }
-      constructor(callback) {
-        this.callback = callback;
-      }
-      connect() {
-        GraphqlAdapter.instances.add(this);
-      }
-      update(config) {
-        GraphqlAdapter.lastConfig = config;
-      }
-      disconnect() {
-        GraphqlAdapter.instances.delete(this);
-      }
-    }
     return {
       __esModule: true,
       default: universal.default,
-      graphql: GraphqlAdapter,
+      graphql: createTestWireAdapter(jest.fn()),
       gql: jest.fn((strings) => strings.join(""))
     };
   },
@@ -134,7 +114,7 @@ function createComponent() {
 
 async function runIdle() {
   idleCallbacks.splice(0).forEach((callback) => callback());
-  // The GraphQL module is a dynamic import, which takes a few more turns to settle.
+  // The probe component is a dynamic import, which takes a few more turns to settle.
   for (let i = 0; i < 4; i++) {
     await flushPromises();
   }
@@ -403,22 +383,14 @@ describe("c-footer", () => {
     clock.mockRestore();
   });
 
-  it("does not load the GraphQL module or send the probe before the page is idle", async () => {
-    createComponent();
-    await flushPromises();
-    expect(graphql.instances.size).toBe(0);
-
-    await runIdle();
-    expect(graphql.instances.size).toBe(1);
-    expect(graphql.lastConfig.query).toContain("Skill__c(first: 1)");
-  });
-
-  it("stops the probe adapter when the footer is removed", async () => {
+  it("renders the GraphQL probe only once the page is idle", async () => {
     const element = createComponent();
+    await flushPromises();
+    expect(q(element, '[data-id="graphql-probe"]')).toBeNull();
+
     await runIdle();
-    expect(graphql.instances.size).toBe(1);
-    document.body.removeChild(element);
-    expect(graphql.instances.size).toBe(0);
+    expect(q(element, '[data-id="graphql-probe"]')).not.toBeNull();
+    expect(graphql.getLastConfig().query).toContain("Skill__c(first: 1)");
   });
 
   it("shows GraphQL unavailable when the probe errors", async () => {

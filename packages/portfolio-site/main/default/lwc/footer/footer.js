@@ -7,9 +7,10 @@
  *                      (ADR-014). Every provider word on screen comes from the snapshot data.
  *                      At the same moment one small GraphQL query is timed, and the footer says
  *                      "GraphQL: live, N ms" or "GraphQL: unavailable" (log 155). Never a constant.
- *                      lightning/uiGraphQLApi is imported only at that moment. As a static import it
- *                      put the whole GraphQL engine (about 1.2 MB unminified) into the theme layout
- *                      bundle that every page downloads before first paint (Round 5 WS5).
+ *                      The probe is the c/graphqlProbe child, imported with a literal dynamic import
+ *                      only at that moment, so the GraphQL adapter stack is not part of what loads
+ *                      before first paint. A statically rendered child, even behind lwc:if, still
+ *                      put it in the layout's preloads (log 203).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -24,21 +25,6 @@ const REPO_URL =
   "https://github.com/rdbumstead/salesforce-platform-architect-portfolio";
 export const BADGE_URL = `${REPO_URL}/actions/workflows/deploy.yml/badge.svg?branch=main`;
 export const ACTIONS_URL = `${REPO_URL}/actions/workflows/deploy.yml`;
-
-/**
- * Loads the GraphQL wire adapter on demand, so the engine is not part of the page bundle.
- * Same module skillNetwork uses (Round 3 plan K5).
- * @returns {Promise<object>} The lightning/uiGraphQLApi module.
- */
-function loadGraphqlApi() {
-  return import("lightning/uiGraphQLApi");
-}
-
-function nowMs() {
-  return typeof performance !== "undefined" && performance.now
-    ? performance.now()
-    : Date.now();
-}
 
 /**
  * Local HH:MM for a circuit reopen time.
@@ -104,37 +90,17 @@ export default class Footer extends LightningElement {
   badgeUrl = BADGE_URL;
   actionsUrl = ACTIONS_URL;
 
+  probeConstructor;
   graphqlMs;
   graphqlFailed = false;
 
   _cancelDeferred;
   _quotaTracked = false;
-  _graphqlStartedAt;
-  _graphqlAdapter;
-  _disconnected = false;
 
   @wire(getLinks)
   wiredLinks({ data }) {
     this.gitHubUrl = data?.gitHubUrl || null;
     this.linkedInUrl = data?.linkedInUrl || null;
-  }
-
-  /**
-   * Receives the probe result from the GraphQL adapter.
-   * @param {object} result The adapter value, { data, errors }.
-   */
-  handleGraphqlResult(result) {
-    const { data, errors } = result || {};
-    if (this._graphqlStartedAt === undefined) {
-      return;
-    }
-    if (errors && errors.length) {
-      this.graphqlFailed = true;
-      this.graphqlMs = undefined;
-    } else if (data) {
-      this.graphqlFailed = false;
-      this.graphqlMs = Math.round(nowMs() - this._graphqlStartedAt);
-    }
   }
 
   connectedCallback() {
@@ -144,48 +110,33 @@ export default class Footer extends LightningElement {
     });
   }
 
-  /**
-   * Imports the adapter, then drives it through the wire adapter protocol (connect, update)
-   * exactly as @wire would. The clock starts when the query is handed over, so the time on
-   * screen is the query, not the module download.
-   */
   async startGraphqlProbe() {
     try {
-      const { gql, graphql } = await loadGraphqlApi();
-      if (this._disconnected) {
-        return;
-      }
-      const adapter = new graphql((value) => this.handleGraphqlResult(value));
-      this._graphqlAdapter = adapter;
-      adapter.connect();
-      // The smallest read the guest may make: one Skill__c Id (Round 3 plan K4).
-      const query = gql`
-        query FooterGraphqlProbe {
-          uiapi {
-            query {
-              Skill__c(first: 1) {
-                edges {
-                  node {
-                    Id
-                  }
-                }
-              }
-            }
-          }
-        }
-      `;
-      this._graphqlStartedAt = nowMs();
-      adapter.update({ query }, {});
+      const { default: probe } = await import("c/graphqlProbe");
+      this.probeConstructor = probe;
     } catch {
       this.graphqlFailed = true;
       this.graphqlMs = undefined;
     }
   }
 
+  /**
+   * The probe's answer: { ms } when the query came back, { failed: true } when it errored.
+   * @param {CustomEvent} event The probe event from c/graphqlProbe.
+   */
+  handleProbe(event) {
+    const detail = event.detail || {};
+    if (detail.failed) {
+      this.graphqlFailed = true;
+      this.graphqlMs = undefined;
+    } else if (typeof detail.ms === "number") {
+      this.graphqlFailed = false;
+      this.graphqlMs = detail.ms;
+    }
+  }
+
   disconnectedCallback() {
-    this._disconnected = true;
     this._cancelDeferred?.();
-    this._graphqlAdapter?.disconnect();
   }
 
   async loadSnapshot() {
