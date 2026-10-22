@@ -28,8 +28,7 @@ export const EVENTS = Object.freeze({
   ERD_NODE_SELECTED: "erd_node_selected", // object
   GALLERY_ASSET_OPENED: "gallery_asset_opened", // type, pillar
   MATRIX_WEIGHT_CHANGED: "matrix_weight_changed", // criterion
-  MATRIX_RESET: "matrix_reset", // none
-  PILLAR_VIDEO_OPENED: "pillar_video_opened" // none
+  MATRIX_RESET: "matrix_reset" // none
 });
 
 /**

@@ -1,7 +1,7 @@
 /**
- * @description       : Unit tests for pillarBStory: the seven sections, captioned tables, the
- *                      marked D3 and D8 placeholders, the architecture image and its alt text,
- *                      and tokens only in the CSS.
+ * @description       : Unit tests for pillarBStory: the six sections, captioned tables, the
+ *                      pre-sales framing (D3), no video prototype (D8), the architecture image
+ *                      and its alt text, and tokens only in the CSS.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -10,17 +10,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
-import PillarBStory, { VIDEO_URL } from "c/pillarBStory";
-import { trackEvent } from "c/analyticsService";
-
-jest.mock(
-  "c/analyticsService",
-  () => ({
-    trackEvent: jest.fn(),
-    EVENTS: { PILLAR_VIDEO_OPENED: "pillar_video_opened" }
-  }),
-  { virtual: true }
-);
+import PillarBStory from "c/pillarBStory";
 
 const HEADINGS = [
   "1. The client",
@@ -28,8 +18,7 @@ const HEADINGS = [
   "3. The decision matrix",
   "4. ROI and cost",
   "5. Solution design",
-  "6. Video prototype",
-  "7. Outcome"
+  "6. Outcome"
 ];
 
 function createComponent() {
@@ -51,7 +40,7 @@ describe("c-pillar-b-story", () => {
     jest.clearAllMocks();
   });
 
-  it("renders the seven section headings in order", () => {
+  it("renders the six section headings in order", () => {
     const element = createComponent();
     expect(qa(element, "h2.section-heading").map(text)).toEqual(HEADINGS);
   });
@@ -92,27 +81,22 @@ describe("c-pillar-b-story", () => {
     });
   });
 
-  it("opens section 2 with the marked D3 framing placeholder", () => {
+  it("opens section 2 by framing the work as pre-sales (D3)", () => {
     const element = createComponent();
     const discovery = q(element, '[data-section="discovery"]');
     const first = discovery.querySelector("p");
-    expect(first.dataset.placeholder).toBe("D3");
+    expect(first.dataset.id).toBe("framing");
     expect(text(first)).toBe(
-      "PLACEHOLDER: how the comparison is framed pending the owner's answer (D3)."
+      "This work was done in pre-sales, before the nonprofit chose a platform and before any build began."
     );
   });
 
-  it("shows only the marked D8 placeholder for the video and fires nothing", () => {
-    expect(VIDEO_URL).toBeNull();
+  it("has no video prototype section and no D3 or D8 placeholder (D8)", () => {
     const element = createComponent();
-    const video = q(element, '[data-section="video"]');
-    expect(video.querySelector("a")).toBeNull();
-    const line = video.querySelector('[data-placeholder="D8"]');
-    expect(text(line)).toBe(
-      "PLACEHOLDER: video prototype link pending the owner's answer (D8)"
-    );
-    line.click();
-    expect(trackEvent).not.toHaveBeenCalled();
+    expect(q(element, '[data-section="video"]')).toBeNull();
+    expect(q(element, '[data-placeholder="D3"]')).toBeNull();
+    expect(q(element, '[data-placeholder="D8"]')).toBeNull();
+    expect(text(q(element, "article"))).not.toMatch(/video/i);
   });
 
   it("shows the redrawn architecture from NL_Assets with alt text", () => {

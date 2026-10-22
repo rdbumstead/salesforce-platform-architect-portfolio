@@ -234,7 +234,7 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
   - `roadmap_viewed`, `changelog_commit_clicked` {`sha`}, `governance_run_link_clicked` {`workflow`}
   - `resilience_test_triggered` {`source`: `changelog` or `roadmap`}, sent when the "Simulate an outage" switch is turned on
   - `finops_quota_visibility`, `theme_changed` {`theme`}
-  - Round 5: `skills_view_changed` {`view`}, `skill_selected` {`skill`, `years`}, `erd_scope_changed` {`scope`}, `erd_node_selected` {`object`}, `gallery_asset_opened` {`type`, `pillar`}, `matrix_weight_changed` {`criterion`}, `matrix_reset`, `pillar_video_opened`
+  - Round 5: `skills_view_changed` {`view`}, `skill_selected` {`skill`, `years`}, `erd_scope_changed` {`scope`}, `erd_node_selected` {`object`}, `gallery_asset_opened` {`type`, `pillar`}, `matrix_weight_changed` {`criterion`}, `matrix_reset`
 - **The tag.** The GA4 tag loads from head markup, with a page view sent on every route change, because the LWR router changes routes without a page load. The route change page view is sent from the plain head script that wraps `history.pushState`, which calls the exported `gtag('event', 'page_view', ...)` with the new location. Before Round 5 that listener sat inside the privileged iframe, never received the outer window's event, and no page view was sent after the first page.
 - **CSP.** To load the tag the site runs on **Relaxed CSP** (owner decision, 2026-10-21). That lets inline scripts and `eval()` run on the site, so only reviewed head markup adds scripts, and `https://www.googletagmanager.com` is on the site's script allowlist (Experience Builder "Trusted Sites for Scripts"), kept in source in the site bundle at `digitalExperiences/site/Portfolio1/sfdc_cms__trustedSites/trustedSites/content.json`. It deploys with the site, so production needs no hand step. On the scratch site the tag loaded and a `g/collect` hit reached `google-analytics.com`. The GA4 image and connect hosts are trusted sites in source (`GA4_Tag_Manager`, `GA4_Analytics`, `GA4_Google`), so a Builder setting saved only in production cannot drift from the repo.
 
@@ -259,7 +259,7 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
 - **Analytics:** `matrix_weight_changed` with the criterion, `matrix_reset`.
 - **Tests:** `DecisionMatrixControllerTest` fails when any option and criterion pair lacks a score, and proves the site guest gets the same matrix as an admin, cell for cell.
 
-**`c/pillarBStory`** holds the seven sections of the Pillar B page: the client, discovery with the lifecycle to object table, the decision matrix introduction, the cost and effort table from public licence facts with a source per row, the solution design with the object model redrawn in `NL_Assets`, the video prototype, and the outcome. The comparison framing (decision D3) and the video link (decision D8) are marked `PLACEHOLDER:` until the owner answers. Opening the video, once there is one, sends `pillar_video_opened`.
+**`c/pillarBStory`** holds the six sections of the Pillar B page: the client, discovery with the lifecycle to object table, the decision matrix introduction, the cost and effort table from public licence facts with a source per row, the solution design with the object model redrawn in `NL_Assets`, and the outcome. Discovery opens by saying the work was done in pre-sales (decision D3). There is no video prototype (decision D8), so the page has no video section and sends no video event.
 
 ### 2.11 Mobile Performance
 

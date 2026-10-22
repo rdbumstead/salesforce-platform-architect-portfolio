@@ -31,8 +31,7 @@ const M6_NAMES = [
   "erd_node_selected",
   "gallery_asset_opened",
   "matrix_weight_changed",
-  "matrix_reset",
-  "pillar_video_opened"
+  "matrix_reset"
 ];
 
 describe("c/analyticsService", () => {

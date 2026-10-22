@@ -347,12 +347,12 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 > **Built in Round 5, awaiting the Round 5 pull request and the owner's deploy.** Every score and weight in the matrix is a placeholder until the owner reviews it, and the page says so in a banner. The client is described as "a regional adult literacy nonprofit" and never named (owner decision D4 b). Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production (owner decision D1 a).
 
 - **Objective:** Demonstrate ROI analysis and Solution Design.
-- **Page:** `/nonprofit-solutions`. `c-pillar-b-story` tells the pre-sales story in seven sections (the client, discovery, the decision matrix, ROI and cost, solution design, the video prototype, the outcome), then `c-decision-matrix`, then `c-project-asset-gallery` for the Pillar B media.
+- **Page:** `/nonprofit-solutions`. `c-pillar-b-story` tells the pre-sales story in six sections (the client, discovery, the decision matrix, ROI and cost, solution design, the outcome), then `c-decision-matrix`, then `c-project-asset-gallery` for the Pillar B media.
 - **Comparative Decision Matrix:** three-way, NPSP with the Program Management Module, Education Cloud, and Nonprofit Cloud (owner decision D2 b). The client's own two-way decision (NPSP and PMM against Education Cloud, which chose NPSP and PMM) is the dated baseline, and its weights are the starting weights. Options, criteria and scores are Custom Metadata in the `nonprofit-literacy` package, read once by `DecisionMatrixController.getMatrix()`. The visitor moves labelled weight sliders, and the browser recomputes the ranking and a sensitivity line naming the single weight change that would swap the top two. "Reset to the client's weights" restores the baseline ([ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)).
 - **ROI analysis:** a cost and effort table built from public licence facts only, with a source per row. Effort is a relative band, and no client rates or totals appear (owner decision D9 a).
 - **Solution design:** the minimalist object model redrawn from public object names (`NL_Assets` static resource), one line per architecture decision, and what was deliberately not built.
-- **Video Prototype:** a link, pending. The owner has not yet said whether a recording exists (decision D8 open), so the page shows a marked placeholder and no video row is loaded. When a link arrives it opens externally, with no embed and no new trusted site (owner decision D7 a).
-- **Framing of the comparison:** the owner's to state (decision D3 open). The page carries a marked placeholder sentence until then.
+- **No video prototype.** None was recorded (owner, decision D8, 2026-10-22), so the page has no video section and no video row is loaded.
+- **Framing of the comparison:** pre-sales. The comparison was made before the nonprofit chose a platform and before any build began, and the page says so at the start of the discovery section (owner, decision D3, 2026-10-22).
 
 ### 5.3 Pillar C: Work Experience Verification API (Twin API Pattern)
 
