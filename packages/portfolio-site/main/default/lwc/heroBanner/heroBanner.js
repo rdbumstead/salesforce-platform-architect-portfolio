@@ -14,6 +14,7 @@ import basePath from "@salesforce/community/basePath";
 import getResume from "@salesforce/apex/ResumeController.getResume";
 import HEADSHOT from "@salesforce/resourceUrl/Portfolio_Headshot";
 import { LIVE_PILLARS, COMING_PILLARS } from "c/pillarData";
+import { toExternalUrl } from "c/externalUrl";
 
 const MINUTES_PER_STEP = 1;
 // The resume page opens on this persona, so the home page asks for the same one and the
@@ -80,20 +81,22 @@ export default class HeroBanner extends LightningElement {
 
   get profileLinks() {
     const links = [];
-    if (this.header && this.header.gitHubUrl) {
+    const gitHubHref = toExternalUrl(this.header && this.header.gitHubUrl);
+    const linkedInHref = toExternalUrl(this.header && this.header.linkedInUrl);
+    if (gitHubHref) {
       links.push({
         key: "github",
         label: "GitHub",
-        href: this.header.gitHubUrl,
+        href: gitHubHref,
         external: true,
         isGitHub: true
       });
     }
-    if (this.header && this.header.linkedInUrl) {
+    if (linkedInHref) {
       links.push({
         key: "linkedin",
         label: "LinkedIn",
-        href: this.header.linkedInUrl,
+        href: linkedInHref,
         external: true,
         isLinkedIn: true
       });

@@ -8,6 +8,7 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/21/2026
  **/
+import { toExternalUrl } from "c/externalUrl";
 
 const MONTHS = [
   "Jan",
@@ -54,10 +55,10 @@ function clean(value) {
 
 function headerLinks(header) {
   return [
-    { label: "LinkedIn", url: clean(header.linkedInUrl) },
-    { label: "GitHub", url: clean(header.gitHubUrl) },
-    { label: "Trailhead", url: clean(header.trailheadUrl) },
-    { label: "Portfolio", url: clean(header.portfolioUrl) }
+    { label: "LinkedIn", url: toExternalUrl(header.linkedInUrl) },
+    { label: "GitHub", url: toExternalUrl(header.gitHubUrl) },
+    { label: "Trailhead", url: toExternalUrl(header.trailheadUrl) },
+    { label: "Portfolio", url: toExternalUrl(header.portfolioUrl) }
   ].filter((link) => link.url);
 }
 
