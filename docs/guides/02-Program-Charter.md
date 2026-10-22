@@ -160,7 +160,7 @@ The delivery is organized into four parallel execution tracks:
 - **M1 (Foundation):** Schema deployed, Baseline API contracts (OAS) defined. (Completed)
 - **M2 (Core Interactions):** LWR Site active, Navigation functional, Resume logic validated.
 - **M3 (Integration):** External services (Jira/GitHub) connected, Security scanning active.
-- **M4 (Intelligence):** Data360 Setup and data Ingested, Agentforce grounded, "Vibe-Gate" logic tested.
+- **M4 (Intelligence):** Grounded generation in Apex with a visible fallback chain, "Vibe-Gate" logic tested. Data 360 grounding and Agentforce are deferred ([ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md), 2026-10-22).
 - **M5 (Go-Live):** Public Launch, DNS propagation, Telemetry review.
 
 ### 3.3 Detailed Phasing
@@ -190,9 +190,8 @@ The delivery is organized into four parallel execution tracks:
 
 **Phase 5: Intelligence**
 
-- **Data360 Setup.**
-- **Data360 Data Integration:** (CRM Connector → `Project__c`, `Experience__c`)
-- **Agentforce Grounding:** on Data360 Data Model Objects (DMOs)
+- **Data 360 streams:** the CRM connector ingests the portfolio objects. No search index or retriever is built, and grounding on Data 360 is deferred ([ADR-011 amendment, 2026-10-22](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md#amendment-2026-10-22-deferred)).
+- **Grounding:** in Apex, reading the CRM directly (`PortfolioGroundingService.build`, SAS section 5.4.1).
 - **Prompt Engineering:** and the "Show your work" panel (provider, model, latency, attempts and the prompt that was sent, filled by Apex, not by the model)
 - **AI Generation Service:** one dispatch: Agentforce only when switched on (it ships off), then Gemma 4 31B through the Gemini API, then the Local Template
 
