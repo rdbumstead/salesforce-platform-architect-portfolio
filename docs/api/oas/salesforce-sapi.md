@@ -19,7 +19,7 @@ System API exposing core Salesforce objects for the Portfolio.
 ### Non-Functional Requirements (NFRs)
 - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`). The platform echoes a caller-supplied value on every response; Apex sets the header only when it generated the value (ADR-026).
 - **Latency**: Target < 500ms for internal processing.
-- **Resilience**: 120 requests per minute per caller, enforced by `RateWindowLimiter` (ADR-025), with `429` responses and `Retry-After` headers.
+- **Resilience**: 120 requests per minute per caller key, enforced by `RateWindowLimiter` (ADR-025), with `429` responses and `Retry-After` headers. Every vended evaluator token is the same session, so all evaluators share one key and one limit of 120 per minute (ADR-028).
 - **Caching Strategy**: 
   - **Public Data** (Skills, Projects, Junctions): `Cache-Control: max-age=300, public`.
   - **Private Data** (Contact, Config): `Cache-Control: max-age=300, private` or `no-store`.
@@ -44,7 +44,8 @@ License: <a href="https://opensource.org/licenses/MIT">MIT</a>
 
 - oAuth2 authentication. OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).
 Tokens run as the read-only integration user. External evaluators obtain a short-lived token
-from `POST /papi/v1/auth/token` (ADR-028) instead of holding the consumer secret.
+from `POST /papi/v1/auth/token` (ADR-028) instead of holding the consumer secret. Every
+evaluator receives the same session, so all evaluators share one rate limit.
 
     - Flow: clientCredentials
 
@@ -206,8 +207,6 @@ Retrieves the primary contact details for the portfolio owner. Returns only the 
   {
     "id": "0035e00000B2O3DAAV",
     "name": "Ryan Bumstead",
-    "email": "ryan@ryanbumstead.com",
-    "phone": "+1 555-0199",
     "title": "Platform Architect",
     "trailhead": "https://trailblazer.me/id/rbumstead",
     "careerObjective": "Driving digital transformation...",
@@ -246,11 +245,9 @@ Status Code **200**
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|*anonymous*|[[Contact](#schemacontact)]|false|none|[Contact Information Schema.]|
+|*anonymous*|[[Contact](#schemacontact)]|false|none|[Contact Information Schema. The contact's email and phone are never returned.]|
 |» id|string|false|read-only|Salesforce Record ID|
 |» name|string|false|none|Full Name|
-|» email|string(email)|false|none|Email Address|
-|» phone|string|false|none|Phone Number|
 |» title|string|false|none|Job Title|
 |» trailhead|string(uri)¦null|false|none|Trailhead Profile URL|
 |» careerObjective|string¦null|false|none|Short Professional Summary|
@@ -1882,8 +1879,6 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 
 ```json
 {
-  "ownerEmail": "ryan@ryanbumstead.com",
-  "ownerPhone": "+1 555-0199",
   "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
   "gitHubProfileUrl": "https://github.com/ryanbumstead",
   "calendlyUrl": "https://calendly.com/ryanbumstead",
@@ -2227,8 +2222,6 @@ API Health Status Schema.
 {
   "id": "0035e00000B2O3DAAV",
   "name": "Ryan Bumstead",
-  "email": "ryan@ryanbumstead.com",
-  "phone": "+1 555-0199",
   "title": "Platform Architect",
   "trailhead": "https://trailblazer.me/id/rbumstead",
   "careerObjective": "Driving digital transformation...",
@@ -2238,7 +2231,7 @@ API Health Status Schema.
 
 ```
 
-Contact Information Schema.
+Contact Information Schema. The contact's email and phone are never returned.
 
 ### Properties
 
@@ -2246,8 +2239,6 @@ Contact Information Schema.
 |---|---|---|---|---|
 |id|string|false|read-only|Salesforce Record ID|
 |name|string|false|none|Full Name|
-|email|string(email)|false|none|Email Address|
-|phone|string|false|none|Phone Number|
 |title|string|false|none|Job Title|
 |trailhead|string(uri)¦null|false|none|Trailhead Profile URL|
 |careerObjective|string¦null|false|none|Short Professional Summary|
@@ -2567,8 +2558,6 @@ Junction Object: Certification <-> Skill.
 
 ```json
 {
-  "ownerEmail": "ryan@ryanbumstead.com",
-  "ownerPhone": "+1 555-0199",
   "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
   "gitHubProfileUrl": "https://github.com/ryanbumstead",
   "calendlyUrl": "https://calendly.com/ryanbumstead",
@@ -2581,14 +2570,12 @@ Junction Object: Certification <-> Skill.
 
 ```
 
-Global Config Schema (Custom Metadata).
+Global Config Schema (Custom Metadata). The owner's email and phone are never returned.
 
 ### Properties
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|ownerEmail|string(email)|false|none|Owner Email|
-|ownerPhone|string¦null|false|none|Owner Phone|
 |linkedInUrl|string(uri)¦null|false|none|LinkedIn URL|
 |gitHubProfileUrl|string(uri)¦null|false|none|GitHub URL|
 |calendlyUrl|string(uri)¦null|false|none|Calendly URL|
