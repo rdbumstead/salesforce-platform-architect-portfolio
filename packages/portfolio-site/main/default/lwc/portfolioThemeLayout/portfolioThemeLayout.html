@@ -1,49 +1,151 @@
 <template>
   <div class="portfolio-layout-wrapper">
-    <header class="site-header">
+    <header class="site-header" onkeydown={handleKeydown}>
       <div class="site-header__bar">
         <a class="site-brand" href={homeHref}>Ryan Bumstead</a>
-        <button
-          class="menu-toggle"
-          type="button"
-          aria-controls="site-navigation"
-          aria-expanded={menuExpanded}
-          onclick={handleMenuToggle}
-        >
-          {menuButtonLabel}
-        </button>
+        <nav id="site-navigation" class={navClass} aria-label="Primary">
+          <ul class="nav-list">
+            <template for:each={pages} for:item="page">
+              <li key={page.key} class="nav-item">
+                <a
+                  class="nav-link"
+                  href={page.href}
+                  data-key={page.key}
+                  onclick={handleNavClick}
+                  >{page.label}</a
+                >
+              </li>
+            </template>
+            <li class="nav-item pillars">
+              <button
+                class="nav-link pillars-toggle"
+                type="button"
+                aria-expanded={pillarsExpanded}
+                aria-controls="pillar-menu"
+                onclick={handlePillarsToggle}
+              >
+                Pillars
+                <svg
+                  class="chevron"
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <ul
+                id="pillar-menu"
+                class="pillar-menu"
+                aria-label="Pillars"
+                hidden={pillarsHidden}
+              >
+                <template for:each={pillars} for:item="pillar">
+                  <li key={pillar.key}>
+                    <a
+                      class="pillar-link"
+                      href={pillar.href}
+                      data-key={pillar.key}
+                      onclick={handleNavClick}
+                    >
+                      <span class="pillar-letter" aria-hidden="true"
+                        >{pillar.letter}</span
+                      >
+                      <span class="pillar-text">
+                        <span class="pillar-label">{pillar.pageLabel}</span>
+                        <span class="pillar-sas">{pillar.sasName}</span>
+                      </span>
+                    </a>
+                  </li>
+                </template>
+              </ul>
+            </li>
+          </ul>
+        </nav>
+        <div class="site-actions">
+          <span class="divider" aria-hidden="true"></span>
+          <button
+            class="icon-button theme-toggle"
+            type="button"
+            aria-label="Dark theme"
+            aria-pressed={themePressed}
+            title={themeTitle}
+            onclick={handleThemeToggle}
+          >
+            <template lwc:if={isDark}>
+              <svg
+                class="icon-sun"
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.2" y1="4.2" x2="5.6" y2="5.6"></line>
+                <line x1="18.4" y1="18.4" x2="19.8" y2="19.8"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.2" y1="19.8" x2="5.6" y2="18.4"></line>
+                <line x1="18.4" y1="5.6" x2="19.8" y2="4.2"></line>
+              </svg>
+            </template>
+            <template lwc:else>
+              <svg
+                class="icon-moon"
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+                ></path>
+              </svg>
+            </template>
+          </button>
+          <button
+            class="icon-button menu-toggle"
+            type="button"
+            aria-controls="site-navigation"
+            aria-expanded={menuExpanded}
+            aria-label={menuButtonLabel}
+            onclick={handleMenuToggle}
+          >
+            <svg
+              aria-hidden="true"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <line x1="4" y1="7" x2="20" y2="7"></line>
+              <line x1="4" y1="12" x2="20" y2="12"></line>
+              <line x1="4" y1="17" x2="20" y2="17"></line>
+            </svg>
+          </button>
+        </div>
       </div>
-      <nav id="site-navigation" class={navClass} aria-label="Primary">
-        <ul class="nav-list nav-list_pages">
-          <template for:each={pages} for:item="page">
-            <li key={page.key} class="nav-item">
-              <a
-                class="nav-link"
-                href={page.href}
-                data-key={page.key}
-                onclick={handleNavClick}
-                >{page.label}</a
-              >
-            </li>
-          </template>
-        </ul>
-        <ul class="nav-list nav-list_pillars" aria-label="Pillars">
-          <template for:each={pillars} for:item="pillar">
-            <li key={pillar.key} class="nav-item">
-              <a
-                class="nav-link nav-link_pillar"
-                href={pillar.href}
-                data-key={pillar.key}
-                title={pillar.sasName}
-                aria-label={pillar.ariaLabel}
-                onclick={handleNavClick}
-                ><span class="pillar-letter">{pillar.letter}</span
-                ><span class="pillar-label">{pillar.label}</span></a
-              >
-            </li>
-          </template>
-        </ul>
-      </nav>
       <div class="region-header">
         <slot name="header"></slot>
       </div>

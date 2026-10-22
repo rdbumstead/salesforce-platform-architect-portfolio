@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
+    <cacheControl>Public</cacheControl>
+    <contentType>application/zip</contentType>
+    <description>Inter 400 to 700 and Fira Code 400 and 500, Latin subset, woff2, from @fontsource 5.3.0. SIL Open Font License 1.1, licence text inside.</description>
+</StaticResource>
