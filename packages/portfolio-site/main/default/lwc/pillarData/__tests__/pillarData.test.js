@@ -25,14 +25,14 @@ const EXPECTED = [
     "Business Architecture",
     "Business Architecture",
     "/portfolio/business-architecture",
-    true
+    false
   ],
   [
     "B",
     "Nonprofit Solutions",
     "Pre-Sales Consultancy",
     "/portfolio/nonprofit-solutions",
-    true
+    false
   ],
   [
     "C",
@@ -96,15 +96,47 @@ describe("c/pillarData", () => {
     expect(pillarByLetter(3)).toBeUndefined();
   });
 
-  it("splits the pillars into live (C, D, E) and coming (A, B) by inProgress", () => {
+  it("has all five pillars live and none coming (Round 5 plan, M9)", () => {
     expect(LIVE_PILLARS.map((pillar) => pillar.letter)).toEqual([
+      "A",
+      "B",
       "C",
       "D",
       "E"
     ]);
-    expect(COMING_PILLARS.map((pillar) => pillar.letter)).toEqual(["A", "B"]);
+    expect(COMING_PILLARS).toHaveLength(0);
+    expect(PILLARS.filter((pillar) => pillar.inProgress)).toHaveLength(0);
     expect(Object.isFrozen(LIVE_PILLARS)).toBe(true);
     expect(Object.isFrozen(COMING_PILLARS)).toBe(true);
+  });
+
+  it("names no client in the pillar A and B copy and says nothing is being built", () => {
+    const copy = PILLARS.map((pillar) =>
+      [pillar.summary, pillar.tour, ...pillar.tags].join(" ")
+    ).join(" ");
+    expect(copy).not.toMatch(
+      /being built|coming|MCC|GLA|Metropolitan|Greenville/i
+    );
+  });
+
+  it("keeps the pillar A and B tour lines and summaries from the Round 5 plan", () => {
+    expect(pillarByLetter("A").tour).toBe(
+      "See how a business process maps to its data model, drawn live from the org."
+    );
+    expect(pillarByLetter("A").summary).toBe(
+      "How an employer hub for a community college models a business process and its data."
+    );
+    expect(pillarByLetter("B").tour).toBe(
+      "Follow the pre-sales reasoning behind a platform choice for a literacy program."
+    );
+    expect(pillarByLetter("B").summary).toBe(
+      "A solution design, decision matrix and cost comparison for a regional adult literacy nonprofit."
+    );
+    expect(pillarByLetter("A").tags).toEqual(["Employer Hub", "Data model"]);
+    expect(pillarByLetter("B").tags).toEqual([
+      "Solution design",
+      "Decision matrix"
+    ]);
   });
 
   it("gives pillar C the API reference sub link and no other pillar any", () => {

@@ -26,10 +26,29 @@
                     {
                       "attributes": {
                         "imageInfos": "",
-                        "richTextValue": "<h1>Nonprofit Solutions</h1><p>Pillar B: Pre-Sales Consultancy (Nonprofit Literacy Solutions). This page is being built. It will walk through the solution design and the decision matrix behind a platform choice for a nonprofit literacy program.</p>"
+                        "richTextValue": "<h1>Nonprofit Solutions</h1><p>Pillar B: a pre-sales solution design for a regional adult literacy nonprofit, with a decision matrix and a cost comparison.</p>"
                       },
                       "definition": "community_builder:richTextEditor",
                       "id": "6a44653c-40ea-4e8d-9289-6ca1a9369971",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:pillarBStory",
+                      "id": "78507e18-1179-4211-8c01-37294dcd55e8",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:decisionMatrix",
+                      "id": "4a2bd202-f8a9-42e4-b2c9-60d6405007c6",
+                      "type": "component"
+                    },
+                    {
+                      "attributes": {
+                        "heading": "Prototype and media",
+                        "pillar": "B"
+                      },
+                      "definition": "c:projectAssetGallery",
+                      "id": "d1adcdba-cf97-4bab-95b2-90bfa3aa72d5",
                       "type": "component"
                     }
                   ],
@@ -54,7 +73,7 @@
             {
               "attributes": {
                 "customHeadTags": "",
-                "description": "Pillar B. Pre-sales consultancy for a nonprofit literacy program. This page is being built.",
+                "description": "Pillar B. Pre-sales consultancy for a nonprofit literacy program: solution design, decision matrix, cost comparison.",
                 "pageTitle": "Nonprofit Solutions | Ryan Bumstead",
                 "recordId": "{!recordId}"
               },

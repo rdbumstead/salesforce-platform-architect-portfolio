@@ -26,10 +26,11 @@ const SOURCE = [
     pageLabel: "Business Architecture",
     sasName: "Business Architecture",
     url: "business-architecture",
-    summary: "How the Employer Hub models a business process and its data.",
-    tour: "See how a business process maps to the data model.",
+    summary:
+      "How an employer hub for a community college models a business process and its data.",
+    tour: "See how a business process maps to its data model, drawn live from the org.",
     tags: ["Employer Hub", "Data model"],
-    inProgress: true
+    inProgress: false
   },
   {
     key: "nonprofit-solutions",
@@ -38,10 +39,10 @@ const SOURCE = [
     sasName: "Pre-Sales Consultancy",
     url: "nonprofit-solutions",
     summary:
-      "A solution design and decision matrix for a nonprofit literacy program.",
-    tour: "Follow the pre-sales reasoning behind a platform choice.",
+      "A solution design, decision matrix and cost comparison for a regional adult literacy nonprofit.",
+    tour: "Follow the pre-sales reasoning behind a platform choice for a literacy program.",
     tags: ["Solution design", "Decision matrix"],
-    inProgress: true
+    inProgress: false
   },
   {
     key: "api-lab",
