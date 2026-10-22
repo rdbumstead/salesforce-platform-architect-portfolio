@@ -180,12 +180,12 @@ graph TD
 
 Why specific technologies were chosen over alternatives.
 
-| Requirement             | Finalist Options      | Selected    | Rejection Reason                                                     |
-| :---------------------- | :-------------------- | :---------- | :------------------------------------------------------------------- |
-| **Frontend Framework**  | Aura vs. LWR          | **LWR**     | Aura's 3-5s LCP violates UX requirements for public sites.           |
-| **Graph Visualization** | Vis.js vs. G6         | **AntV G6** | Vis.js lacks native animation API for flow lines ("running edge").   |
-| **API Documentation**   | Swagger UI vs. Redoc  | **Redoc**   | Redoc's single-file static HTML works without Node.js server.        |
-| **CI/CD Auth**          | Username/Pass vs. JWT | **JWT**     | Username/Password is fragile and requires rotation; JWT is headless. |
+| Requirement             | Finalist Options      | Selected            | Rejection Reason                                                                                                                                                                                                                                                                                      |
+| :---------------------- | :-------------------- | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Frontend Framework**  | Aura vs. LWR          | **LWR**             | Aura's 3-5s LCP violates UX requirements for public sites.                                                                                                                                                                                                                                            |
+| **Graph Visualization** | Vis.js vs. G6 vs. D3  | **D3** (`d3-force`) | G6 is 1.57 MB and its force layout tangled 59 skills. Four D3 modules are about 18.5 KB and draw both the skills graph and the ERD ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)). |
+| **API Documentation**   | Swagger UI vs. Redoc  | **Redoc**           | Redoc's single-file static HTML works without Node.js server.                                                                                                                                                                                                                                         |
+| **CI/CD Auth**          | Username/Pass vs. JWT | **JWT**             | Username/Password is fragile and requires rotation; JWT is headless.                                                                                                                                                                                                                                  |
 
 ### 1.4 Visual Architecture Standard (C4 Model)
 
@@ -288,7 +288,7 @@ erDiagram
 
 ### 4.3 Junction Objects (The Glue)
 
-- **`Project_Skill__c`:** Connects Skills to Projects (e.g., linking "Flow" to "MCC Employer Hub").
+- **`Project_Skill__c`:** Connects Skills to Projects (for example, linking "Flow" to the Employer Hub project).
 - **`Experience_Skill__c`:** Connects Skills to Job History.
 
 ### 4.4 Asset Management
@@ -465,7 +465,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-testimonial-submit`:** "Mad Libs" style sentence builder.
 - **`c-api-tester`:** Developer console LWC utilizing fetch() to exercise endpoints.
 - **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
-- **`c-skill-network`:** Visualizes Junction Objects via AntV G6.
+- **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with D3 that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
 - **`c-code-viewer`:** Fetches raw source code via Prism.js.
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
 - **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category. It makes no callout.
@@ -580,9 +580,9 @@ The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box T
 - **A.7 Architecture Diagram Hosting:** Export C4 diagram and upload as Static Resource.
 - **A.8 Jira Integration:** Endpoint: ryanbumstead.atlassian.net. Auth: Basic Auth with Named Credential.
 - **A.9 Advanced Visualization Strategy:**
-  - **Mobile Guardrail:** Check FORM_FACTOR. Render static SVG if mobile.
-  - **Lazy Loading:** Dynamic import of G6 inside renderedCallback.
-  - **Library Version:** AntV G6 v4.8.x.
+  - **Mobile Guardrail:** on `FORM_FACTOR` `Small` or a viewport under 768 px the skills page shows its matrix and the ERD its accessible list, and neither requests the graph engine.
+  - **Lazy Loading:** `c/graphEngine.loadGraphEngine` loads the `D3_Library` static resource through `loadScript` the first time a graph view opens, once per page. A failed load is not cached.
+  - **Library Version:** d3-force 3.0.0 with d3-dispatch, d3-quadtree and d3-timer 3.0.1 (G6 was removed in Round 5).
 
 ### Appendix B: API Specification (OpenAPI/Swagger)
 
@@ -952,7 +952,7 @@ Global configuration settings.
 
 #### D.7 Object: `Project_Skill__c` (Junction)
 
-Links Projects to Skills for the G6 Graph.
+Links Projects to Skills for the skills matrix and graph.
 
 | Field Label | API Name     | Type                        | Required | Description       |
 | :---------- | :----------- | :-------------------------- | :------- | :---------------- |

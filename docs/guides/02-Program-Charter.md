@@ -77,8 +77,8 @@ This is not a static website. It is a live, observable platform governed by prod
 - **External API Integration (GitHub):** Live feed of portfolio repository commits displayed on the site.
 - **External API Integration (Jira):** Live fetch of portfolio roadmap Epics and Stories.
 - **Multi-Cloud Integration patterns using AWS Free Tier (Lambda Function URL, S3, CloudFront) – Phase 8 (2027-2028) – design complete**
-- **Advanced Visualization:** Dynamic Skill Graph using AntV G6 with custom flow animation.
-- **Dynamic ERD Visualizer:** A live-rendered Entity Relationship Diagram utilizing the Schema class and AntV G6 to visualize the actual Org metadata, replacing static architecture diagrams.
+- **Advanced Visualization:** a skills matrix with "years used" from linked roles, and a D3 force graph that loads only when a visitor opens it ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md)).
+- **Dynamic ERD Visualizer:** A live-rendered Entity Relationship Diagram utilizing the Schema class and the same D3 engine to visualize the actual Org metadata, replacing static architecture diagrams.
 - **Executable Governance:** LWC-based documentation that verifies its own success criteria from pipeline evidence. CI publishes a platform event, an Apex trigger persists it, and the checklist reads the result when viewed (for example, ticking "production deploy green" with the commit and the run behind it).
 - **Enterprise Observability:** structured Apex logging through one seam (`PortfolioLog`) that writes to **Nebula Logger** (Open Source) when the owner has installed it, and to debug logs when not. Nebula is optional, so CI and scratch orgs run without it.
 
@@ -103,7 +103,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - All 5 pillars accessible via guided navigation.
 - API tester successfully calls at least 3 endpoints (Experience, Skills, Certifications).
 - Resume generates in both ATS (Plain Text) and Creative (PDF) modes.
-- Skill Graph renders with animated "flow" lines on Desktop (Static SVG on Mobile).
+- The skills page shows the matrix on every device, and its graph view opens on desktop and tablet only.
 - Mobile responsive layout passes manual verification on iOS Safari and Android Chrome.
 
 **Technical Acceptance:**
@@ -118,9 +118,9 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - All Apex tests > 90% coverage (Hard Governance Gate).
 - CI/CD pipeline passing (Green build badge on Repo).
 - Zero critical security warnings from PMD Scanner.
-- Network Tab screenshot confirms G6 lazy-load occurs >2s after LCP.
-- Lighthouse Accessibility score remains 100 with animation toggle present.
-- Mobile viewport serves <50KB static SVG instead of 220KB G6 library.
+- The network log shows no `D3_Library` request until a graph view is opened.
+- Lighthouse Accessibility score remains 100 with the "Matrix | Graph" view switch present.
+- A phone requests no graph engine: the skills page shows the matrix and the ERD its list. On desktop the engine is `D3_Library`, 18,544 bytes, where G6 was 1.57 MB.
 
 **Engagement:**
 
@@ -270,14 +270,11 @@ _Design artifacts complete; implementation begins post-launch._
 
 - **A.6:** Agentforce Service Agent and topic grounding. Not built: Agentforce is a switch in the dispatch that ships off (SAS Appendix A.6).
 - **Security:** Enable "Lightning Web Security" in Session Settings.
-- **Asset:** Download g6.min.js (v4.x/v5.x) and upload as G6_Library (Public Cache).
-- **Dev:** Implement `c-skill-network` LWC using G6 graph.update loop for edge animation.
-- **Optimization:** Implement G6 lazy-loading (Network Tab proof).
-- **Optimization:** Build "Static SVG" fallback for mobile LCP compliance.
-  - **Asset:** Export static SVG from G6 during local build (graph.toFullDataURL()).
-  - **Upload:** Store SVG as Static Resource "Skill_Graph_Fallback".
-  - **Logic:** `c-skill-network` detects mobile and renders `<img src={staticResourceUrl}>`.
-- **A11y:** Add "Pause Animation" toggle button.
+- **Asset:** the `D3_Library` static resource (`d3-force` and its three dependencies, Public cache). It replaced `G6_Library` in Round 5.
+- **Dev:** `c-skill-network` shows the matrix and draws the graph view through `c/graphEngine`.
+- **Optimization:** the engine loads only when the graph view opens (network log proof).
+- **Mobile:** phones show the matrix and never request the engine. This replaced the planned static SVG fallback ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md)).
+- **A11y:** nothing animates, and an accessible list mirrors every graph.
 - Conduct Mobile QA on iOS and Android devices.
 
 **Phase 5: Optimization**
