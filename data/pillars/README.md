@@ -13,7 +13,7 @@ The four images are placeholders drawn for the portfolio. Each says so in the im
 
 ## Copy for the owner's review
 
-The project name and the three text fields are proposals. The owner judges the copy (Round 5 plan §0 item 6). The same text is in the production script, so a change here is a change there too.
+The project name and the three text fields are proposals. The owner judges the copy (Round 5 plan §0 item 6). The name and the Business Value are also in the production script, so a change to either is made in both places. The production script leaves Challenge and Solution as they are.
 
 - **Name:** "Employer Hub for a community college". No client name.
 - **Challenge:** "Several departments at a community college worked with the same employer partners, each from its own inbox and spreadsheet. Partners repeated themselves, and nobody could see the whole relationship. Leadership had no shared numbers for engagement, sponsorship or hiring."
