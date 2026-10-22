@@ -326,7 +326,7 @@ components:
         summary:
           type: string
           description: Auto-generated professional summary
-          example: "7+ years of experience as a Salesforce Platform Architect"
+          example: "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education"
         skills:
           type: array
           items:
@@ -370,7 +370,7 @@ components:
         summary:
           type: string
           description: Calculated summary based on experience
-          example: "7+ years of experience as a Salesforce Platform Architect"
+          example: "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education"
         skills:
           type: array
           items:
@@ -1352,7 +1352,7 @@ paths:
                     experienceSummary:
                       type: string
                       description: Brief professional summary
-                      example: "7+ years as Salesforce Architect"
+                      example: "Nearly a decade on the Salesforce platform"
                 tone:
                   type: string
                   enum: [Professional, Enthusiastic, Technical, Casual]
@@ -1371,7 +1371,7 @@ paths:
                 companyName: "Acme Financial"
                 role: "Senior Technical Architect"
                 skills: ["Apex", "LWC", "MuleSoft", "AWS Lambda"]
-                experienceSummary: "7+ years as Salesforce Platform Architect specializing in API-led connectivity"
+                experienceSummary: "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education"
               tone: "Professional"
               maxLength: 500
       responses:
