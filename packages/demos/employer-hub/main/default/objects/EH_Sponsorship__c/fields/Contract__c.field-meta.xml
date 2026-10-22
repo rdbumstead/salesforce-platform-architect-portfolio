@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Contract__c</fullName>
+    <description
+  >The signed agreement, when the sponsorship has one.</description>
+    <inlineHelpText
+  >Pick the contract that covers this sponsorship, if any.</inlineHelpText>
+    <label>Contract</label>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <referenceTo>Contract</referenceTo>
+    <relationshipLabel>Sponsorships</relationshipLabel>
+    <relationshipName>EH_Sponsorships</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

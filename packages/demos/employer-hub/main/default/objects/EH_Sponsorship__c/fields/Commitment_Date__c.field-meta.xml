@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Commitment_Date__c</fullName>
+    <description>The date the partner committed.</description>
+    <inlineHelpText
+  >Enter the date the partner agreed to the sponsorship.</inlineHelpText>
+    <label>Commitment Date</label>
+    <required>false</required>
+    <type>Date</type>
+</CustomField>
