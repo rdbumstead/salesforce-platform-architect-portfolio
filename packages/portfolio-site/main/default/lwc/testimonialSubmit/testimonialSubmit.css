@@ -1,26 +1,24 @@
 /*
- * Contract K9: the site branding is dark. Every element here that sets a background
- * also sets its text colour. The form sits on the site root surface with the DXP root
- * tokens, the submit button uses the DXP brand pair, and the vibe switch, hint and
- * message colours are fixed values checked against the root surface. Fallbacks are the
- * values the Portfolio branding set renders.
+ * Built on the site tokens (Round 4 plan, contract L1), so the form follows the light and dark
+ * theme. Every element that sets a background also sets its text colour. Input borders and the
+ * switch track use the muted token, which keeps the 3:1 contrast a control boundary needs.
  */
 :host {
   display: block;
-  --form-surface: var(--dxp-g-root, #020617);
-  --form-text: var(--dxp-g-root-contrast, #e2e8f0);
-  --form-muted: #94a3b8;
-  --form-border: #64748b;
-  --form-brand: var(--dxp-g-brand, #005fb2);
-  --form-brand-text: var(--dxp-g-brand-contrast, #ffffff);
+  --form-surface: var(--pf-surface);
+  --form-text: var(--pf-text);
+  --form-muted: var(--pf-muted);
+  --form-border: var(--pf-muted);
+  --form-brand: var(--pf-btn);
+  --form-brand-text: var(--pf-btn-text);
 }
 
 .testimonial {
   background-color: var(--form-surface);
   color: var(--form-text);
   padding: 1rem;
-  border: 1px solid var(--dxp-g-neutral-3, #475569);
-  border-radius: 0.25rem;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
   max-width: 40rem;
   overflow-wrap: anywhere;
 }
@@ -60,7 +58,7 @@
 }
 
 .field-input:focus {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid var(--pf-focus);
   outline-offset: 1px;
 }
 
@@ -92,7 +90,7 @@
 }
 
 .vibe-toggle:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
@@ -102,7 +100,7 @@
   width: 2.5rem;
   height: 1.25rem;
   border-radius: 0.625rem;
-  background-color: #64748b;
+  background-color: var(--pf-muted);
 }
 
 .vibe-thumb {
@@ -112,12 +110,12 @@
   width: 1rem;
   height: 1rem;
   border-radius: 50%;
-  background-color: #ffffff;
+  background-color: var(--pf-surface);
   transition: left 0.15s;
 }
 
 .vibe-toggle[aria-checked="true"] .vibe-track {
-  background-color: #38bdf8;
+  background-color: var(--pf-accent);
 }
 
 .vibe-toggle[aria-checked="true"] .vibe-thumb {
@@ -137,7 +135,8 @@
   background-color: var(--form-brand);
   color: var(--form-brand-text);
   border: 1px solid var(--form-brand);
-  border-radius: 0.25rem;
+  border-radius: var(--pf-radius-sm);
+  min-height: 44px;
   padding: 0.5rem 1rem;
   font: inherit;
   font-weight: 700;
@@ -145,14 +144,14 @@
 }
 
 .submit-button:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
 .submit-button:disabled {
-  background-color: #334155;
-  color: #e2e8f0;
-  border-color: #334155;
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-color: var(--pf-chip);
   cursor: not-allowed;
 }
 
@@ -162,9 +161,9 @@
 }
 
 .message-success {
-  color: #4ade80;
+  color: var(--pf-ok);
 }
 
 .message-error {
-  color: #f87171;
+  color: var(--pf-error-text);
 }
