@@ -29,7 +29,7 @@
         <enabled>true</enabled>
     </classAccesses>
     <description
-  >Site visitor. Reads skills, projects, assets, experience and their links. Submits testimonials for review. Runs the resume, testimonial, delivery, governance, footer and API Lab controllers and the token endpoint. Calls Gemini through its principal for the in process cover letter. No contact, account, certification or education access.</description>
+  >Site visitor. Reads skills, projects, assets and experience. Submits testimonials for review. Runs the site controllers and the token endpoint. Calls Gemini for the cover letter. No contact, account, certification or education access.</description>
     <externalCredentialPrincipalAccesses>
         <enabled>true</enabled>
         <externalCredentialPrincipal
