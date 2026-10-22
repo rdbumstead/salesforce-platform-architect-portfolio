@@ -170,10 +170,26 @@ private class DecisionMatrixControllerTest {
       asGuest.hasPlaceholders,
       'The guest sees the same placeholder flag'
     );
-    Assert.areEqual(
-      asAdmin.scores[0].rationale,
-      asGuest.scores[0].rationale,
-      'The guest reads the rationale text'
-    );
+    for (Integer k = 0; k < asAdmin.scores.size(); k++) {
+      DecisionMatrixController.Score admin = asAdmin.scores[k];
+      DecisionMatrixController.Score guestScore = asGuest.scores[k];
+      Assert.isNotNull(
+        guestScore.optionName,
+        'The guest sees which option each score belongs to'
+      );
+      Assert.isNotNull(
+        guestScore.criterionName,
+        'The guest sees which criterion each score belongs to'
+      );
+      Assert.areEqual(
+        admin.optionName + '|' + admin.criterionName + '|' + admin.rationale,
+        guestScore.optionName +
+          '|' +
+          guestScore.criterionName +
+          '|' +
+          guestScore.rationale,
+        'The guest reads the same cell in the same place'
+      );
+    }
   }
 }

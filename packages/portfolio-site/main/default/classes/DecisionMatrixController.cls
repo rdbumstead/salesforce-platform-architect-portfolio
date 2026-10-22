@@ -97,13 +97,18 @@ public with sharing class DecisionMatrixController {
 
   private static Matrix buildMatrix() {
     Matrix result = new Matrix();
+    // Option__c and Criterion__c hold the related record's Id. The relationship path
+    // (Option__r.DeveloperName) comes back empty for the site guest, so names are
+    // resolved from the Ids read above instead.
+    Map<String, String> namesByKey = new Map<String, String>();
     for (Decision_Option__mdt row : [
-      SELECT DeveloperName, MasterLabel, Summary__c, Sort_Order__c
+      SELECT Id, DeveloperName, MasterLabel, Summary__c, Sort_Order__c
       FROM Decision_Option__mdt
       ORDER BY Sort_Order__c ASC NULLS LAST, DeveloperName ASC
     ]) {
       Option o = new Option();
       o.developerName = row.DeveloperName;
+      remember(namesByKey, row.Id, row.DeveloperName);
       o.label = row.MasterLabel;
       o.summary = row.Summary__c;
       o.sortOrder = row.Sort_Order__c;
@@ -111,6 +116,7 @@ public with sharing class DecisionMatrixController {
     }
     for (Decision_Criterion__mdt row : [
       SELECT
+        Id,
         DeveloperName,
         MasterLabel,
         Description__c,
@@ -121,6 +127,7 @@ public with sharing class DecisionMatrixController {
     ]) {
       Criterion c = new Criterion();
       c.developerName = row.DeveloperName;
+      remember(namesByKey, row.Id, row.DeveloperName);
       c.label = row.MasterLabel;
       c.description = row.Description__c;
       c.defaultWeight = row.Default_Weight__c;
@@ -131,8 +138,8 @@ public with sharing class DecisionMatrixController {
     for (Decision_Score__mdt row : [
       SELECT
         DeveloperName,
-        Option__r.DeveloperName,
-        Criterion__r.DeveloperName,
+        Option__c,
+        Criterion__c,
         Score__c,
         Rationale__c,
         Evidence__c,
@@ -141,8 +148,8 @@ public with sharing class DecisionMatrixController {
       ORDER BY DeveloperName ASC
     ]) {
       Score s = new Score();
-      s.optionName = row.Option__r?.DeveloperName;
-      s.criterionName = row.Criterion__r?.DeveloperName;
+      s.optionName = namesByKey.get(row.Option__c);
+      s.criterionName = namesByKey.get(row.Criterion__c);
       s.score = row.Score__c;
       s.rationale = row.Rationale__c;
       s.evidence = row.Evidence__c;
@@ -152,6 +159,17 @@ public with sharing class DecisionMatrixController {
     }
     result.scores = inMatrixOrder(unordered, result.options, result.criteria);
     return result;
+  }
+
+  private static void remember(
+    Map<String, String> namesByKey,
+    Id recordId,
+    String developerName
+  ) {
+    String fullId = String.valueOf(recordId);
+    namesByKey.put(fullId, developerName);
+    namesByKey.put(fullId.left(15), developerName);
+    namesByKey.put(developerName, developerName);
   }
 
   // Criterion order first, then option order. A score whose option or criterion is missing
