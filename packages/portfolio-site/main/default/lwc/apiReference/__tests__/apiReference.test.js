@@ -14,6 +14,7 @@ import ApiReference, {
   HOSTED_REFERENCE_URL,
   REDOC_OPTIONS,
   REDOC_LINK_COLOR,
+  REDOC_TAB_COLORS,
   RENDER_TIMEOUT_MS,
   TIMEOUT_MESSAGE
 } from "c/apiReference";
@@ -458,5 +459,31 @@ describe("c-api-reference", () => {
     const css = readFileSync(join(__dirname, "..", "apiReference.css"), "utf8");
     expect(css).toMatch(/\.redoc-panel \{[^}]*--pf-accent: var\(--pf-btn\)/);
     expect(css).toMatch(/\.redoc-panel a \{[^}]*color: var\(--pf-btn\)/);
+  });
+
+  it("gives every response tab a colour readable on Redoc's dark code panel", async () => {
+    const element = createComponent();
+    await flushPromises();
+    openButton(element).click();
+    await flushPromises();
+
+    const responses = window.Redoc.init.mock.calls[0][1].theme.colors.responses;
+    // WCAG ratio against the panel as rendered, rgb(17,23,26).
+    const luminance = (hex) => {
+      const channels = hex
+        .match(/\w\w/g)
+        .map((part) => parseInt(part, 16) / 255)
+        .map((v) =>
+          v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+        );
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+    };
+    const panel = luminance("#11171A");
+    for (const kind of ["success", "error", "redirect", "info"]) {
+      const color = responses[kind].tabTextColor;
+      expect(color).toBe(REDOC_TAB_COLORS[kind]);
+      const ratio = (luminance(color) + 0.05) / (panel + 0.05);
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

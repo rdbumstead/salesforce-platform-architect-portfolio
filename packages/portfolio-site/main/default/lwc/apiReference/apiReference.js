@@ -52,6 +52,18 @@ const MONO_FONTS = 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace';
 export const REDOC_LINK_COLOR = "#2563EB";
 
 /**
+ * Response tab text on Redoc's dark code panel (rgb(17,23,26) as rendered). With no
+ * tonalOffset Redoc's own reds and greens fall to 3.45:1 and 3.64:1 there, so each tab
+ * colour is set from the site's dark palette, every one above 6:1 on that panel.
+ */
+export const REDOC_TAB_COLORS = {
+  success: "#47CD89",
+  error: "#F97066",
+  redirect: "#FDB022",
+  info: "#60A5FA"
+};
+
+/**
  * Redoc 2.5.4 options. System fonts instead of the default web fonts, no download
  * button, native scrollbars inside the component, and search off because Redoc runs
  * search in a web worker built from a blob URL, which Lightning Web Security may block.
@@ -71,6 +83,12 @@ export const REDOC_OPTIONS = {
         main: REDOC_LINK_COLOR,
         light: REDOC_LINK_COLOR,
         dark: REDOC_LINK_COLOR
+      },
+      responses: {
+        success: { tabTextColor: REDOC_TAB_COLORS.success },
+        error: { tabTextColor: REDOC_TAB_COLORS.error },
+        redirect: { tabTextColor: REDOC_TAB_COLORS.redirect },
+        info: { tabTextColor: REDOC_TAB_COLORS.info }
       }
     },
     typography: {
