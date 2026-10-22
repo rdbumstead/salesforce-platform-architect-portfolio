@@ -262,6 +262,63 @@ private class ApiRequestContextTest {
     );
   }
 
+  // ---------- One log line per request
+
+  private class RecordingSink implements System.Callable {
+    public List<Map<String, Object>> entries = new List<Map<String, Object>>();
+
+    public Object call(String action, Map<String, Object> args) {
+      entries.add(args);
+      return new Map<String, Object>{ 'isSuccess' => true };
+    }
+  }
+
+  @IsTest
+  static void okWritesOneLogLineWithoutHeaderValues() {
+    RecordingSink sink = new RecordingSink();
+    PortfolioLog.injectedSink = sink;
+    RestTestUtil.initGetRaw(
+      SAPI_URI + '?limit=5',
+      new Map<String, String>{
+        'X-Request-Id' => VALID_ID,
+        'Authorization' => 'Bearer secret-token-value'
+      },
+      null
+    );
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    ctx.ok(new Map<String, Object>{ 'body' => 'secret-body-value' });
+    ctx.ok(new Map<String, Object>{ 'again' => true });
+    Test.stopTest();
+
+    Assert.areEqual(1, sink.entries.size(), 'Exactly one line per request');
+    String line = (String) sink.entries[0].get('message');
+    Assert.isTrue(line.contains('path=' + SAPI_URI), line);
+    Assert.isTrue(line.contains('status=200'), line);
+    Assert.isTrue(line.contains('correlationId=' + VALID_ID), line);
+    Assert.isTrue(line.contains('elapsedMs='), line);
+    Assert.isFalse(line.contains('limit=5'), 'No query string');
+    Assert.isFalse(line.contains('secret'), 'No token and no body');
+  }
+
+  @IsTest
+  static void rejectionWritesOneLogLineWithItsStatus() {
+    RecordingSink sink = new RecordingSink();
+    PortfolioLog.injectedSink = sink;
+    RestTestUtil.initGetRaw(SAPI_URI, headers(null, 'v1'), null);
+
+    Test.startTest();
+    ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.areEqual(1, sink.entries.size(), 'One line for the rejection');
+    Assert.isTrue(
+      ((String) sink.entries[0].get('message')).contains('status=400'),
+      'Status logged'
+    );
+  }
+
   @IsTest
   static void papiMalformedRequestIdRejected() {
     RestTestUtil.initGetRaw(PAPI_URI, headers('not-a-uuid', null), null);

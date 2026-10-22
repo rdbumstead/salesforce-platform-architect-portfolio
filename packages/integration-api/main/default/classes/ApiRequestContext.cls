@@ -3,7 +3,8 @@
  *                      Owns tracing and version headers, pagination, error payloads,
  *                      cache directives and rate-limit headers. Authentication is not
  *                      handled here: the platform rejects unauthenticated callers before
- *                      Apex runs (ADR-027).
+ *                      Apex runs (ADR-027). Writes one log line per request through
+ *                      RequestUtil and PortfolioLog once the response is written.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -59,6 +60,8 @@ public with sharing class ApiRequestContext {
   private String correlationId;
   private Boolean rejected = false;
   private Integer pageLimit = DEFAULT_LIMIT;
+  private final Long startedAt = System.currentTimeMillis();
+  private Boolean logged = false;
 
   /**
    * @description Outcome of a rate-limit check and the values for the rate-limit headers.
@@ -223,6 +226,7 @@ public with sharing class ApiRequestContext {
     commitRateCounts();
     res.statusCode = 200;
     res.responseBody = Blob.valueOf(JSON.serialize(body));
+    logRequest();
   }
 
   /**
@@ -246,6 +250,25 @@ public with sharing class ApiRequestContext {
           status == 429)
         }
       )
+    );
+    logRequest();
+  }
+
+  /**
+   * @description Writes the one log line for this request (path, status, correlation id,
+   *              elapsed ms) through RequestUtil and PortfolioLog. Runs once, after the
+   *              response is written, so it never precedes a resource's callouts.
+   */
+  private void logRequest() {
+    if (logged) {
+      return;
+    }
+    logged = true;
+    RequestUtil.logRequest(
+      req?.requestURI,
+      res?.statusCode,
+      correlationId,
+      System.currentTimeMillis() - startedAt
     );
   }
 
