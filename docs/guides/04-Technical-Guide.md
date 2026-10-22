@@ -41,7 +41,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 - **Caching Strategy ([ADR-007](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-round-4)):**
   - `IntegrationCacheRefreshScheduler` runs at :00, :15, :30 and :45 and enqueues `GitHubCacheRefreshJob` (`Queueable`, `Database.AllowsCallouts`, because scheduled Apex cannot call out synchronously).
   - The job reads the latest commits on `main` and inserts one row into the `Github_Cache__c` **custom object**, with the mapped commit list in `JSON_Payload__c`.
-  - Guests never call out. The `c-changelog` component reads the newest row through `DeliveryController.getRecentCommits()`.
+  - Guests never call out. The `c-changelog` component reads the newest row through `DeliveryController.getRecentCommits(simulate)`.
 - **Degraded Mode:**
   - A failed refresh inserts nothing, so the last good list keeps showing with its age.
   - Three consecutive failures open the `github` circuit breaker for 30 minutes, refreshes are skipped while it is open, and `DeliveryController` reports `DEGRADED`.
@@ -51,7 +51,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 
 - **Authentication:** Basic Auth through the `Jira_API` Named Credential (`Jira_Auth` External Credential, `Jira_Principal` principal).
 - **Refresh:** `JiraCacheRefreshJob`, enqueued by the same scheduler, runs the JQL `project = <key> AND labels = "portfolio-roadmap" ORDER BY updated DESC`, where the key is `Portfolio_Config__mdt.Jira_Project_Key__c` (`SPAP`), and inserts one `Jira_Cache__c` row from the first page of 50 issues. Only issues labelled `portfolio-roadmap` become public (owner decision E6, 2026-10-21).
-- **Component:** `c-roadmap-viewer` reads the newest row through `DeliveryController.getRoadmap()` and places issues in To Do, In Progress and Done by Jira status category, so a renamed workflow status cannot empty a column. It never calls Jira.
+- **Component:** `c-roadmap-viewer` reads the newest row through `DeliveryController.getRoadmap(simulate)` and places issues in To Do, In Progress and Done by Jira status category, so a renamed workflow status cannot empty a column. It never calls Jira.
 - **Principal access:** the scheduling admin user reaches both principals through `Portfolio_Admin` (owner decision E8, 2026-10-21). `Integration_Access` keeps them too, by the owner's choice. `Portfolio_Guest` has neither.
 - **Degraded Mode:**
   - After three consecutive failures, the `jira` circuit breaker skips Jira refreshes for 30 minutes, and `DeliveryController` reports `DEGRADED` while it is open.
@@ -62,7 +62,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 > [!NOTE]
 > **Agentforce is not implemented, and its switch ships off** (decision 2026-10-02, [ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)). `AgentforceService.generateContent` throws, so nothing in this guide claims Agentforce as a live provider.
 
-- **One dispatch.** `ContentGenerationController.dispatch` tries Agentforce, then Gemini, then the Local Template (cover letters only), and records every attempt with its outcome and elapsed time.
+- **One dispatch.** `ContentGenerationController.dispatch` tries Agentforce, then Gemini, then the Local Template (cover letters only), and records every attempt with its outcome (`served`, `skipped_off`, `skipped_open_circuit`, `failed`), its elapsed time and, on a failure, a short `detail` such as `HTTP 503` or the exception type, never a key or a URL with a query string. While the `gemini` or `agentforce` circuit breaker is open, that provider is skipped. Breaker state is written after every provider has been tried.
   - Agentforce is consulted only when `AgentforceService.isAvailable` is true: the `Agentforce` record of `AI_Provider_Config__mdt` has `Enabled__c` set, and the running user is not a site guest. The record ships with `Enabled__c` false. Switching it on today only adds a failed attempt, because the class throws.
   - Gemini is Gemma 4 31B (`gemma-4-31b-it`, `GeminiService.MODEL`) through the Gemini API and the `Gemini_API` Named Credential, with a 60 second callout timeout from the `Gemini` record (owner decision 2026-10-21). Gemma 4 always reasons before it answers (the owner measured 28.7 seconds for a trivial prompt), so a cover letter can take up to about a minute. `GeminiService` reports a failure as text starting `Error: Unable to generate content.` or `Exception: `, which the dispatch treats as a failed attempt.
   - The Local Template serves a cover letter when Gemini fails. Other content types answer 503 `ALL_PROVIDERS_UNAVAILABLE`.
@@ -76,7 +76,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 - **Grounding.** `PortfolioGroundingService` adds featured projects and experience highlights to a cover letter prompt, ranked by keywords from the job title and description. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and caps the JSON at 8,000 characters (about 2,000 tokens).
 - **Show your work.** The page's badge shows the provider and model from the response. A panel the visitor opens shows the fallback flag, the round trip and generation time, the attempts (each with its `detail` when the dispatch reports one) and the prompt that was sent. The panel is built in Apex and the component, not by asking the model to reveal its prompt.
 - **Fallback message.** When the template letter is used, the page says "The AI model could not be reached" if the Gemini attempt failed in under 1 second (`coverLetterGenerator.UNREACHABLE_MS`), and "The AI model was busy or too slow" otherwise. Each letter sends the GA4 event `ai_generation_completed`, and a request with no letter sends `ai_complete_failure`.
-- **Footer.** `ContentGenerationController.providerStatus()` returns each provider's switch and state (`on`, `off`, `not built`) for the Round 4 footer.
+- **Footer.** `ContentGenerationController.providerStatus()` returns each provider's switch and state (`on`, `off`, `not built`) and `circuitOpenUntil` while its breaker is open, for the footer (section 2.6).
 - **Not built:** a real Agentforce provider and the hourly budget it needs (`Hourly_Budget__c` is in the config but not read yet).
 
 ### 1.4 System API Security (The "Twin" Pattern)
@@ -95,7 +95,7 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 **Deployment prerequisites (per org):**
 
 1. **Integration user** (`portfolio-api@ryanbumstead.com` in the production org) on the **`Portfolio API Integration`** profile. The profile is in source (`packages/integration-api/main/default/profiles/`): Salesforce Platform licence, API access only, the licence's default object permissions revoked, and a 30-minute session timeout (`Portfolio_API_Integration.profileSessionSetting-meta.xml`). The user itself is created in Setup.
-2. **`Integration_Access`** assigned to the integration user. It is the only source of data access: read-only on `Account`, `Certification__c`, `Certification_Skill__c`, `Contact`, `Education__c`, `Experience_Highlight__c`, `Experience_Skill__c`, `Experience__c`, `Github_Cache__c`, `Jira_Cache__c`, `Project_Asset__c`, `Project_Skill__c`, `Project__c`, `Skill__c` and `Testimonial__c`, no editable field, plus execute access on 21 SAPI and PAPI REST classes (every resource class except `PAPIAuthToken`, which the integration user never needs) and External Credential principal access to `Portfolio_API_Auth-Portfolio_API_Principal`, without which `PAPIHealth` reports `credential: DOWN` ([ADR-027 amendments](../adr/027-platform-native-api-authentication.md#amendment-2026-10-21)).
+2. **`Integration_Access`** assigned to the integration user. It is the only source of data access: read-only on `Account`, `Certification__c`, `Certification_Skill__c`, `Contact`, `Education__c`, `Experience_Highlight__c`, `Experience_Skill__c`, `Experience__c`, `Github_Cache__c`, `Jira_Cache__c`, `Project_Asset__c`, `Project_Skill__c`, `Project__c`, `Skill__c` and `Testimonial__c`, no editable field, plus execute access on 21 SAPI and PAPI REST classes (every resource class except `PAPIAuthToken`, which the integration user never needs) and External Credential principal access to `Portfolio_API_Auth-Portfolio_API_Principal`, without which `PAPIHealth` reports `credential: DOWN`, plus the `Gemini_Auth`, `GitHub_Auth` and `Jira_Auth` principals ([ADR-027 amendments](../adr/027-platform-native-api-authentication.md#amendment-2026-10-21)).
 3. **"Portfolio API" External Client App**, created in Setup (it is not in source): Client Credentials flow enabled, "run as" set to the integration user, pre-authorised through `Integration_Access`.
 4. **External Credential principals, two of them.** Enter the values in Setup; they are never in source or custom metadata.
    - `Portfolio_API_Auth` (OAuth 2.0 client credentials, in source), named principal `Portfolio_API_Principal`: the app's consumer key and secret. Used through the `Portfolio_API` Named Credential.
@@ -142,7 +142,7 @@ public interface IAIGenerationService {
 
 `AgentforceService`, `GeminiService` and `LocalTemplateService` implement it. The API dispatch returns a `ContentGenerationController.GenerationResult` (`content`, `provider` `Gemini` or `Local`, `model`, `fallbackOccurred`); `PAPIAiGenerate.generate` writes those fields to the response.
 
-**Gemini Quota Tracking: not built.** The design counted Gemini calls in a Platform Cache partition (`local.AIMetrics`). The org has no Platform Cache partition, and no class reads or writes such a counter. The bounds that do exist are the `papi-ai` rate tier (10 requests per minute) and the Gemini API key's own limits above.
+**Gemini Quota Tracking: not built.** The design counted Gemini calls in a Platform Cache partition (`local.AIMetrics`). The org has no Platform Cache partition, and no class reads or writes such a counter. The bounds that do exist are the `papi-ai` rate limits (10 requests per minute on the API and 10 on the site page), the `gemini` circuit breaker and the Gemini API key's own limits above. The footer shows "AI requests today" from the rate rows (section 2.6).
 
 ### 1.5 Logging (Nebula Logger, optional)
 
