@@ -1,14 +1,16 @@
 # Third-party notices
 
-This repository ships the third-party libraries below inside Salesforce static resources. Each one
+This repository ships the third-party libraries and fonts below inside Salesforce static resources. Each one
 keeps its own licence. The project's own code is under the licence in [LICENSE](LICENSE).
 
-| Library                   | Version | Licence | Ships in                                                                                 |
-| ------------------------- | ------- | ------- | ---------------------------------------------------------------------------------------- |
-| Redoc (standalone bundle) | 2.5.4   | MIT     | `packages/portfolio-site/main/default/staticresources/Redoc_Script.js`                   |
-| AntV G6                   | 4.8.23  | MIT     | `packages/portfolio-site/main/default/staticresources/G6_Library.js`                     |
-| jsPDF                     | 3.0.4   | MIT     | `packages/portfolio-site/main/default/staticresources/jsPDF_Library.js`                  |
-| PrismJS                   | 1.30.0  | MIT     | `packages/portfolio-site/main/default/staticresources/Prism_JS/prism.js` and `prism.css` |
+| Library                   | Version          | Licence     | Ships in                                                                                              |
+| ------------------------- | ---------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
+| Redoc (standalone bundle) | 2.5.4            | MIT         | `packages/portfolio-site/main/default/staticresources/Redoc_Script.js`                                |
+| AntV G6                   | 4.8.23           | MIT         | `packages/portfolio-site/main/default/staticresources/G6_Library.js`                                  |
+| jsPDF                     | 3.0.4            | MIT         | `packages/portfolio-site/main/default/staticresources/jsPDF_Library.js`                               |
+| PrismJS                   | 1.30.0           | MIT         | `packages/portfolio-site/main/default/staticresources/Prism_JS/prism.js` and `prism.css`              |
+| Inter (font)              | fontsource 5.3.0 | SIL OFL 1.1 | `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/inter-latin-*-normal.woff2`     |
+| Fira Code (font)          | fontsource 5.3.0 | SIL OFL 1.1 | `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/fira-code-latin-*-normal.woff2` |
 
 ## Redoc 2.5.4
 
@@ -43,9 +45,27 @@ keeps its own licence. The project's own code is under the licence in [LICENSE](
   and the markup, css, clike and javascript languages).
 - Licence text: https://github.com/PrismJS/prism/blob/v1.30.0/LICENSE
 
+## Inter
+
+- Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+- Licence: SIL Open Font License, Version 1.1. Packaged by Fontsource as `@fontsource/inter` 5.3.0.
+  The repository ships the Latin subset, weights 400, 500, 600 and 700, as woff2.
+- Licence text: shipped beside the fonts in
+  `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/Inter-OFL.txt`, and at
+  https://openfontlicense.org/open-font-license-official-text/
+
+## Fira Code
+
+- Copyright 2014-2020 The Fira Code Project Authors (https://github.com/tonsky/FiraCode)
+- Licence: SIL Open Font License, Version 1.1. Packaged by Fontsource as `@fontsource/fira-code`
+  5.3.0. The repository ships the Latin subset, weights 400 and 500, as woff2.
+- Licence text: shipped beside the fonts in
+  `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/FiraCode-OFL.txt`, and at
+  https://openfontlicense.org/open-font-license-official-text/
+
 ## MIT licence text
 
-The four libraries above use this text, each with its own copyright line.
+Redoc, AntV G6, jsPDF and PrismJS use this text, each with its own copyright line.
 
 ```text
 Permission is hereby granted, free of charge, to any person obtaining a copy
