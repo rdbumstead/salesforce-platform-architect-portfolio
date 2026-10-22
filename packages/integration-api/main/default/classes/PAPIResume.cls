@@ -61,10 +61,11 @@ global with sharing class PAPIResume {
 
     PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
     Contact owner = ownerContact(agg);
+    Set<Id> printedRoleIds = new Set<Id>();
     String resumeText =
       contactSection(owner) +
-      experienceSection(agg, persona) +
-      skillsSection(agg) +
+      experienceSection(agg, persona, printedRoleIds) +
+      skillsSection(agg, printedRoleIds) +
       certificationsSection(agg) +
       educationSection(agg) +
       linksSection(owner);
@@ -131,7 +132,8 @@ global with sharing class PAPIResume {
 
   private static String experienceSection(
     PAPITransformer.Aggregation agg,
-    String persona
+    String persona,
+    Set<Id> printedRoleIds
   ) {
     agg.source('experience');
     agg.source('experience-highlights');
@@ -163,6 +165,7 @@ global with sharing class PAPIResume {
 
     String text = 'EXPERIENCE\n\n';
     for (Experience__c exp : experiences) {
+      printedRoleIds.add(exp.Id);
       String employer = exp.Employer__r?.Name != null
         ? exp.Employer__r.Name
         : 'Unknown';
@@ -190,33 +193,61 @@ global with sharing class PAPIResume {
     return text;
   }
 
-  private static String skillsSection(PAPITransformer.Aggregation agg) {
+  /**
+   * @description The skills linked through Experience_Skill__c to the roles the resume
+   *              prints, each once, grouped by category in Category_Order__c order and by
+   *              proficiency within a category (owner feedback 4c, log 155).
+   */
+  private static String skillsSection(
+    PAPITransformer.Aggregation agg,
+    Set<Id> printedRoleIds
+  ) {
     agg.source('skills');
-    List<Skill__c> skills;
+    agg.source('experience-skills');
+    List<Experience_Skill__c> links;
     try {
       PAPITransformer.guardSection('skills');
-      skills = [
-        SELECT Name, Category__c, Proficiency__c
-        FROM Skill__c
-        ORDER BY Proficiency__c DESC
-        LIMIT 20
+      if (printedRoleIds.isEmpty()) {
+        return '';
+      }
+      links = [
+        SELECT Skill__c, Skill__r.Name, Skill__r.Category__c
+        FROM Experience_Skill__c
+        WHERE Experience__c IN :printedRoleIds
+        ORDER BY
+          Skill__r.Category_Order__c ASC NULLS LAST,
+          Skill__r.Category__c ASC NULLS LAST,
+          Skill__r.Proficiency__c DESC NULLS LAST,
+          Skill__r.Name ASC
+        LIMIT 500
       ];
     } catch (Exception e) {
       agg.fail('skills');
       return '';
     }
 
+    Set<Id> seen = new Set<Id>();
+    List<String> categories = new List<String>();
     Map<String, List<String>> skillsByCategory = new Map<String, List<String>>();
-    for (Skill__c s : skills) {
-      String cat = s.Category__c != null ? s.Category__c : 'Other';
+    for (Experience_Skill__c link : links) {
+      if (link.Skill__c == null || !seen.add(link.Skill__c)) {
+        continue;
+      }
+      String cat = link.Skill__r.Category__c != null
+        ? link.Skill__r.Category__c
+        : 'Other';
       if (!skillsByCategory.containsKey(cat)) {
         skillsByCategory.put(cat, new List<String>());
+        categories.add(cat);
       }
-      skillsByCategory.get(cat).add(s.Name);
+      skillsByCategory.get(cat).add(link.Skill__r.Name);
+    }
+    if (categories.isEmpty()) {
+      return '';
     }
 
     String text = 'SKILLS\n\n';
-    for (String cat : skillsByCategory.keySet()) {
+    for (String cat : categories) {
       text += cat + ': ' + String.join(skillsByCategory.get(cat), ', ') + '\n';
     }
     return text + '\n';

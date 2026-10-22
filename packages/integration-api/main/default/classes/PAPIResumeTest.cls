@@ -307,4 +307,61 @@ private class PAPIResumeTest {
       'No Id 15'
     );
   }
+
+  @IsTest
+  static void skillsAreThoseOfThePrintedRolesByCategoryThenProficiency() {
+    Experience__c role = [SELECT Id FROM Experience__c LIMIT 1];
+    Skill__c apex = [SELECT Id FROM Skill__c WHERE Name = 'Apex'];
+    apex.Category_Order__c = 2;
+    update apex;
+    Skill__c soql = new Skill__c(
+      Name = 'SOQL',
+      Category__c = 'Backend',
+      Category_Order__c = 2,
+      Proficiency__c = 3
+    );
+    Skill__c flows = new Skill__c(
+      Name = 'Flow',
+      Category__c = 'Automation',
+      Category_Order__c = 1,
+      Proficiency__c = 4
+    );
+    Skill__c unlinked = new Skill__c(
+      Name = 'Unlinked Skill',
+      Category__c = 'Backend',
+      Category_Order__c = 2,
+      Proficiency__c = 5
+    );
+    insert new List<Skill__c>{ soql, flows, unlinked };
+    insert new List<Experience_Skill__c>{
+      new Experience_Skill__c(Experience__c = role.Id, Skill__c = soql.Id),
+      new Experience_Skill__c(Experience__c = role.Id, Skill__c = apex.Id),
+      new Experience_Skill__c(Experience__c = role.Id, Skill__c = flows.Id)
+    };
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    String text = (String) RestTestUtil.getBodyAsMap().get('generatedText');
+    Assert.isTrue(
+      text.contains('SKILLS\n\nAutomation: Flow\nBackend: Apex, SOQL\n'),
+      'Linked skills, category order then proficiency: ' + text
+    );
+    Assert.isFalse(text.contains('Unlinked Skill'), 'Only linked skills');
+  }
+
+  @IsTest
+  static void noLinkedSkillsLeavesTheSectionOut() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    String text = (String) RestTestUtil.getBodyAsMap().get('generatedText');
+    Assert.isFalse(text.contains('SKILLS'), 'No linked skill, no section');
+    Assert.isTrue(text.contains('EXPERIENCE'), 'Other sections remain');
+  }
 }
