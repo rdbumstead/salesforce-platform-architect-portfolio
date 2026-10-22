@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Open_Until__c</fullName>
+    <description
+  >While now is before this time the circuit is open and callers skip the dependency. Blank means closed.</description>
+    <label>Open Until</label>
+    <required>false</required>
+    <type>DateTime</type>
+</CustomField>

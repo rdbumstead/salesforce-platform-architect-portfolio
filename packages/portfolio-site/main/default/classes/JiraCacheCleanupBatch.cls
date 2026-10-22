@@ -1,5 +1,9 @@
 /**
- * @description       : Batch job for cleaning up Jira cache records.
+ * @description       : Batch job for cleaning up Jira cache records. Deletes rows older than
+ *                      30 minutes, except the newest row, which always stays so the Delivery
+ *                      page keeps its last good roadmap through an outage (pillar-e-design
+ *                      4.4, G10). "Newest" is the row DeliveryController serves:
+ *                      CreatedDate DESC, then Id DESC.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -7,10 +11,16 @@
  * @Test Class        : [JiraCacheCleanupBatchTest]
  **/
 public with sharing class JiraCacheCleanupBatch implements Database.Batchable<SObject> {
+  /** Rows older than this many minutes are deleted, the newest row excepted. */
+  public static final Integer MAX_AGE_MINUTES = 30;
+
+  @TestVisible
+  private static Boolean forceHardDelete = false;
+
   /**
    * @description Start method to query records to be deleted.
    * @param bc BatchableContext
-   * @return Database.QueryLocator
+   * @return Database.QueryLocator Rows past the age limit, never the newest row.
    */
   public Database.QueryLocator start(Database.BatchableContext bc) {
     if (!CacheCleanupSettings.isEnabled()) {
@@ -19,15 +29,13 @@ public with sharing class JiraCacheCleanupBatch implements Database.Batchable<SO
       );
     }
 
-    Datetime cutoffJira = Datetime.now().addMinutes(-30);
+    Datetime cutoffJira = Datetime.now().addMinutes(-MAX_AGE_MINUTES);
+    Id newestId = newestRowId();
 
     return Database.getQueryLocator(
-      'SELECT Id FROM Jira_Cache__c WHERE CreatedDate < :cutoffJira WITH USER_MODE'
+      'SELECT Id FROM Jira_Cache__c WHERE CreatedDate < :cutoffJira AND Id != :newestId WITH USER_MODE'
     );
   }
-
-  @TestVisible
-  private static Boolean forceHardDelete = false;
 
   public void execute(Database.BatchableContext bc, List<SObject> records) {
     if (!records.isEmpty()) {
@@ -44,5 +52,17 @@ public with sharing class JiraCacheCleanupBatch implements Database.Batchable<SO
 
   public void finish(Database.BatchableContext bc) {
     System.debug('Jira cache cleanup completed.');
+  }
+
+  // System mode so the row kept is the one DeliveryController serves, whoever runs the job.
+  private static Id newestRowId() {
+    List<Jira_Cache__c> rows = [
+      SELECT Id
+      FROM Jira_Cache__c
+      WITH SYSTEM_MODE
+      ORDER BY CreatedDate DESC, Id DESC
+      LIMIT 1
+    ];
+    return rows.isEmpty() ? null : rows[0].Id;
   }
 }
