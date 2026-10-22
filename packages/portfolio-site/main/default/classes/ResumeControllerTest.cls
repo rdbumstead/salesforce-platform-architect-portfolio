@@ -194,6 +194,69 @@ private class ResumeControllerTest {
   }
 
   @isTest
+  static void getHeaderAsGuestMatchesGetResumeHeader() {
+    User guest = SiteGuestTestSupport.preparedGuest();
+    ResumeController.Header header;
+    ResumeController.ResumeData resume;
+
+    Test.startTest();
+    System.runAs(guest) {
+      header = ResumeController.getHeader();
+      resume = ResumeController.getResume('Architect');
+    }
+    Test.stopTest();
+
+    Assert.isNotNull(header, 'The owner header is returned');
+    Assert.areEqual(
+      JSON.serialize(resume.header),
+      JSON.serialize(header),
+      'getHeader returns exactly the header getResume returns'
+    );
+    Assert.areEqual('Test Owner', header.name, 'Header name');
+    Assert.areEqual('Solution Architect', header.title, 'Header title');
+  }
+
+  @isTest
+  static void getHeaderAsGuestSerializedResultHasNoContactDetails() {
+    User guest = SiteGuestTestSupport.preparedGuest();
+    String serialized;
+
+    Test.startTest();
+    System.runAs(guest) {
+      serialized = JSON.serialize(ResumeController.getHeader());
+    }
+    Test.stopTest();
+
+    Assert.isTrue(serialized.contains('Test Owner'), 'Owner header is present');
+    Assert.isFalse(
+      serialized.contains(SiteGuestTestSupport.OWNER_EMAIL),
+      'No email address may reach a guest'
+    );
+    Assert.isFalse(
+      serialized.contains(SiteGuestTestSupport.OWNER_PHONE),
+      'No phone number may reach a guest'
+    );
+    Assert.isFalse(
+      serialized.contains(SiteGuestTestSupport.OWNER_STREET),
+      'No address may reach a guest'
+    );
+    Assert.isFalse(serialized.contains('@'), 'No email-like value at all');
+  }
+
+  @isTest
+  static void getHeaderNoOwnerContactReturnsNull() {
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    owner.Is_Portfolio_Owner__c = false;
+    update owner;
+
+    Test.startTest();
+    ResumeController.Header header = ResumeController.getHeader();
+    Test.stopTest();
+
+    Assert.isNull(header, 'No owner means no header');
+  }
+
+  @isTest
   static void getResumeInvalidPersonaThrows() {
     Test.startTest();
     try {
