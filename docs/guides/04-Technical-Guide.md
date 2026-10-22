@@ -219,7 +219,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
   - `roadmap_viewed`, `changelog_commit_clicked` {`sha`}, `governance_run_link_clicked` {`workflow`}
   - `finops_quota_visibility`, `theme_changed` {`theme`}
 - **The tag.** The GA4 tag loads from head markup, with a page view sent on every route change, because the LWR router changes routes without a page load.
-- **CSP.** To load the tag the site runs on **Relaxed CSP** (owner decision, 2026-10-21). That lets inline scripts and `eval()` run on the site, so only reviewed head markup adds scripts, and `https://www.googletagmanager.com` is on the site's script allowlist. The GA4 image and connect hosts are trusted sites in source (`GA4_Tag_Manager`, `GA4_Analytics`, `GA4_Google`), so a Builder setting saved only in production cannot drift from the repo.
+- **CSP.** To load the tag the site runs on **Relaxed CSP** (owner decision, 2026-10-21). That lets inline scripts and `eval()` run on the site, so only reviewed head markup adds scripts, and `https://www.googletagmanager.com` is on the site's script allowlist (Experience Builder "Trusted Sites for Scripts"), kept in source in the site bundle at `digitalExperiences/site/Portfolio1/sfdc_cms__trustedSites/trustedSites/content.json`. It deploys with the site, so production needs no hand step. On the scratch site the tag loaded and a `g/collect` hit reached `google-analytics.com`. The GA4 image and connect hosts are trusted sites in source (`GA4_Tag_Manager`, `GA4_Analytics`, `GA4_Google`), so a Builder setting saved only in production cannot drift from the repo.
 
 ### 2.9 Site Theme, Tokens and Fonts
 
