@@ -10,7 +10,7 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import HeroBanner from "c/heroBanner";
-import getResume from "@salesforce/apex/ResumeController.getResume";
+import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import { reset, setComingLetters } from "c/pillarData";
 
 // A fixed five pillar list, all live unless a test marks some as coming with
@@ -112,7 +112,7 @@ jest.mock(
 );
 
 jest.mock(
-  "@salesforce/apex/ResumeController.getResume",
+  "@salesforce/apex/ResumeController.getHeader",
   () => {
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
@@ -166,22 +166,22 @@ describe("c-hero-banner", () => {
 
     it("never says Multi-Cloud Strategist or Technical Architect", async () => {
       const element = render();
-      getResume.emit({ header: HEADER });
+      getHeader.emit(HEADER);
       await flush();
       const all = element.shadowRoot.textContent;
       expect(all).not.toMatch(/Multi-Cloud Strategist/i);
       expect(all).not.toMatch(/Technical Architect/i);
     });
 
-    it("asks for the Architect persona so the resume page reuses the cached response", () => {
+    it("reads the header from getHeader, which takes no parameters", () => {
       render();
-      expect(getResume.getLastConfig()).toEqual({ persona: "Architect" });
+      expect(getHeader.getLastConfig()).toEqual({});
     });
 
     it("renders the bio from the header, trimmed", async () => {
       const element = render();
       expect(element.shadowRoot.querySelector(".hero-bio")).toBeNull();
-      getResume.emit({ header: HEADER });
+      getHeader.emit(HEADER);
       await flush();
       expect(text(element.shadowRoot.querySelector(".hero-bio"))).toBe(
         "I design Salesforce platforms that stay simple to run."
@@ -190,15 +190,15 @@ describe("c-hero-banner", () => {
 
     it("renders no bio and no placeholder when the bio is blank, the header is null or the wire fails", async () => {
       const element = render();
-      getResume.emit({ header: { ...HEADER, careerObjective: "   " } });
+      getHeader.emit({ ...HEADER, careerObjective: "   " });
       await flush();
       expect(element.shadowRoot.querySelector(".hero-bio")).toBeNull();
 
-      getResume.emit({ header: null });
+      getHeader.emit(null);
       await flush();
       expect(element.shadowRoot.querySelector(".hero-bio")).toBeNull();
 
-      getResume.error();
+      getHeader.error();
       await flush();
       expect(element.shadowRoot.querySelector(".hero-bio")).toBeNull();
       expect(text(element.shadowRoot.querySelector("h1"))).toBe(
@@ -223,7 +223,7 @@ describe("c-hero-banner", () => {
         );
       expect(keys()).toEqual(["resume", "api-docs"]);
 
-      getResume.emit({ header: HEADER });
+      getHeader.emit(HEADER);
       await flush();
       expect(keys()).toEqual(["github", "linkedin", "resume", "api-docs"]);
 
@@ -241,14 +241,12 @@ describe("c-hero-banner", () => {
 
     it("makes a stored URL with no scheme an absolute https link, and drops an unsafe one", async () => {
       const element = render();
-      getResume.emit({
-        header: {
-          ...HEADER,
-          linkedInUrl: "www.linkedin.com/in/ryanbumstead",
-          // The script URL is the input under test, proving it never renders as a link.
-          // eslint-disable-next-line no-script-url
-          gitHubUrl: "javascript:alert(1)"
-        }
+      getHeader.emit({
+        ...HEADER,
+        linkedInUrl: "www.linkedin.com/in/ryanbumstead",
+        // The script URL is the input under test, proving it never renders as a link.
+        // eslint-disable-next-line no-script-url
+        gitHubUrl: "javascript:alert(1)"
       });
       await flush();
 
