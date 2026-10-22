@@ -1,11 +1,30 @@
 <template>
-  <lightning-card title="API reference" icon-name="utility:knowledge_base">
+  <article class={cardClass}>
+    <header class="reference-header">
+      <template lwc:if={fullWidth}>
+        <h1 class="reference-title reference-title_page">API reference</h1>
+        <p class="reference-intro">
+          Pillar C: the full contract for the system API (SAPI) and the process
+          API (PAPI). Switch between them below. To send a live request, go back
+          to the <a class="inline-link" href={apiLabHref}>API Lab</a>.
+        </p>
+      </template>
+      <template lwc:else>
+        <h2 class="reference-title">
+          <lightning-icon
+            icon-name="utility:knowledge_base"
+            size="small"
+            class="reference-icon"
+          ></lightning-icon>
+          <span>API reference</span>
+        </h2>
+        <p class="reference-intro">
+          Browse the full OpenAPI contract for the System API and the Process
+          API. The interactive reference loads only when you open it.
+        </p>
+      </template>
+    </header>
     <div class={bodyClass}>
-      <p class="reference-intro slds-m-bottom_small">
-        Browse the full OpenAPI contract for the System API and the Process API.
-        The interactive reference loads only when you open it.
-      </p>
-
       <div
         class="spec-toggle slds-m-bottom_small"
         role="group"
@@ -25,14 +44,16 @@
         </template>
       </div>
 
-      <button
-        type="button"
-        class="open-reference"
-        onclick={handleOpen}
-        disabled={openDisabled}
-      >
-        {openLabel}
-      </button>
+      <template lwc:if={showOpenButton}>
+        <button
+          type="button"
+          class="open-reference"
+          onclick={handleOpen}
+          disabled={openDisabled}
+        >
+          {openLabel}
+        </button>
+      </template>
 
       <div aria-live="polite" class="slds-m-top_small">
         <template lwc:if={isLoading}>
@@ -65,5 +86,5 @@
         <div class="redoc-target" lwc:dom="manual"></div>
       </div>
     </div>
-  </lightning-card>
+  </article>
 </template>

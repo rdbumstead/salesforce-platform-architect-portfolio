@@ -29,6 +29,12 @@ jest.mock(
   { virtual: true }
 );
 
+jest.mock(
+  "@salesforce/community/basePath",
+  () => ({ __esModule: true, default: "/portfolio" }),
+  { virtual: true }
+);
+
 // config/jest.config.js maps every lightning/* import to one universal mock file, so
 // mocking platformResourceLoader mocks lightning-card and the rest too. Keep the real
 // mock component as the default export and add the loader functions beside it.
@@ -368,6 +374,60 @@ describe("c-api-reference", () => {
       )
     ).toBe(false);
     expect(loadScript).not.toHaveBeenCalled();
+  });
+
+  it("carries the page's only heading and the Pillar C intro on its own page", async () => {
+    const element = createElement("c-api-reference", { is: ApiReference });
+    element.fullWidth = true;
+    element.openOnLoad = true;
+    document.body.appendChild(element);
+    await flushPromises();
+    await flushPromises();
+
+    const headings = element.shadowRoot.querySelectorAll("h1");
+    expect(headings).toHaveLength(1);
+    expect(headings[0].textContent.trim()).toBe("API reference");
+    expect(element.shadowRoot.querySelector("h2")).toBeNull();
+    const intro = query(element, ".reference-intro").textContent;
+    expect(intro).toMatch(/^\s*Pillar C: the full contract/);
+    expect(intro).not.toMatch(/loads only when you open it/);
+    expect(query(element, "a.inline-link").getAttribute("href")).toBe(
+      "/portfolio/api-lab"
+    );
+    expect(
+      query(element, ".reference-card").classList.contains(
+        "reference-card_full"
+      )
+    ).toBe(true);
+    // Open on its own, so no button pushes the reference down.
+    expect(openButton(element)).toBeNull();
+  });
+
+  it("offers the open button again on its own page when the reference fails", async () => {
+    loadScript.mockRejectedValueOnce(new Error("blocked"));
+    const element = createElement("c-api-reference", { is: ApiReference });
+    element.fullWidth = true;
+    element.openOnLoad = true;
+    document.body.appendChild(element);
+    await flushPromises();
+    await flushPromises();
+
+    expect(query(element, ".reference-error")).not.toBeNull();
+    expect(openButton(element)).not.toBeNull();
+  });
+
+  it("keeps a section title, the boxed intro and the open button when embedded", async () => {
+    const element = createComponent();
+    await flushPromises();
+
+    expect(element.shadowRoot.querySelector("h1")).toBeNull();
+    expect(query(element, "h2.reference-title").textContent).toMatch(
+      /API reference/
+    );
+    expect(query(element, ".reference-intro").textContent).toMatch(
+      /loads only when you open it/
+    );
+    expect(openButton(element)).not.toBeNull();
   });
 
   it("exposes fullWidth and openOnLoad to the site builder", () => {

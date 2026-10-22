@@ -9,7 +9,9 @@
  *                      On its own page (route Api_Reference, api-lab/reference) the builder
  *                      sets fullWidth and openOnLoad: the reference then fills the page width
  *                      with no height cap and opens without a click, the SAPI and PAPI switch
- *                      staying at the top.
+ *                      staying at the top. There the component carries the page's only h1 and
+ *                      the Pillar C intro, so the view needs no header of its own, and the
+ *                      open button shows only when the reference is not on screen.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -21,6 +23,7 @@ import REDOC_SCRIPT from "@salesforce/resourceUrl/Redoc_Script";
 import SAPI_SPEC from "@salesforce/resourceUrl/SAPI_Spec";
 import PAPI_SPEC from "@salesforce/resourceUrl/PAPI_Spec";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import basePath from "@salesforce/community/basePath";
 
 export const HOSTED_REFERENCE_URL =
   "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi";
@@ -130,9 +133,27 @@ export default class ApiReference extends LightningElement {
     return Boolean(this.errorMessage);
   }
 
+  get cardClass() {
+    return this.fullWidth
+      ? "reference-card reference-card_full"
+      : "reference-card";
+  }
+
+  get apiLabHref() {
+    return `${basePath || ""}/api-lab`;
+  }
+
+  /**
+   * On its own page the reference opens by itself, so the button only shows when it is not
+   * on screen: before the first open, or after a failure so the visitor can retry.
+   */
+  get showOpenButton() {
+    return !this.fullWidth || !this.isOpen || this.hasError;
+  }
+
   get bodyClass() {
     return this.fullWidth
-      ? "reference-body reference-body_full slds-p-around_medium"
+      ? "reference-body reference-body_full"
       : "reference-body slds-p-around_medium";
   }
 

@@ -25,15 +25,6 @@
                   "children": [
                     {
                       "attributes": {
-                        "imageInfos": "",
-                        "richTextValue": "<h1>API reference</h1><p>Pillar C: the full contract for the system API (SAPI) and the process API (PAPI). Switch between them at the top. To send a live request, go back to the <a href=\"../api-lab\">API Lab</a>.</p>"
-                      },
-                      "definition": "community_builder:richTextEditor",
-                      "id": "da733800-e50c-4c48-bdec-5e1c72501ff7",
-                      "type": "component"
-                    },
-                    {
-                      "attributes": {
                         "fullWidth": true,
                         "openOnLoad": true
                       },
