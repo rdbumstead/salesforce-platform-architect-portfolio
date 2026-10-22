@@ -44,16 +44,17 @@ All external API calls originate from a secure **Named Credential** accessed via
   - Guests never call out. The `c-changelog` component reads the newest row through `DeliveryController.getRecentCommits()`.
 - **Degraded Mode:**
   - A failed refresh inserts nothing, so the last good list keeps showing with its age.
+  - Three consecutive failures open the `github` circuit breaker for 30 minutes, refreshes are skipped while it is open, and `DeliveryController` reports `DEGRADED`.
   - The cleanup batch keeps the newest row per cache object, so an outage never empties the page.
 
 ### 1.2 Jira Integration (Roadmap)
 
 - **Authentication:** Basic Auth through the `Jira_API` Named Credential (`Jira_Auth` External Credential, `Jira_Principal` principal).
-- **Refresh:** `JiraCacheRefreshJob`, enqueued by the same scheduler, runs the JQL `project = SPAP AND labels = portfolio-roadmap` (owner decision E6, 2026-10-21) and inserts one `Jira_Cache__c` row.
+- **Refresh:** `JiraCacheRefreshJob`, enqueued by the same scheduler, runs the JQL `project = <key> AND labels = "portfolio-roadmap" ORDER BY updated DESC`, where the key is `Portfolio_Config__mdt.Jira_Project_Key__c` (`SPAP`), and inserts one `Jira_Cache__c` row from the first page of 50 issues. Only issues labelled `portfolio-roadmap` become public (owner decision E6, 2026-10-21).
 - **Component:** `c-roadmap-viewer` reads the newest row through `DeliveryController.getRoadmap()` and places issues in To Do, In Progress and Done by Jira status category, so a renamed workflow status cannot empty a column. It never calls Jira.
 - **Principal access:** the scheduling admin user reaches both principals through `Portfolio_Admin` (owner decision E8, 2026-10-21). `Integration_Access` keeps them too, by the owner's choice. `Portfolio_Guest` has neither.
 - **Degraded Mode:**
-  - After three consecutive failures, a circuit breaker skips Jira refreshes for 30 minutes, and `DeliveryController` reports `DEGRADED` while it is open.
+  - After three consecutive failures, the `jira` circuit breaker skips Jira refreshes for 30 minutes, and `DeliveryController` reports `DEGRADED` while it is open.
   - With no usable cache row, the user sees a "Roadmap temporarily unavailable" message.
 
 ### 1.3 AI Content Generation (Agentforce switch off)
@@ -242,12 +243,12 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - [ ] **Coverage:** Verify Apex tests > 90% coverage (Hard Gate).
 - [ ] **Security:** Verify Zero critical warnings from PMD Scanner.
 - [ ] **Accessibility:** Confirm the "Pause Animation" toggle exists and works.
-- [ ] **Degradation Test:** Toggle "Resilience Simulation" (disconnect GitHub). Verify UI seamlessly switches to cached data with a "Data Stale" badge.
+- [ ] **Degradation Test:** turn on "Simulate an outage" on the changelog or the roadmap. Verify the cached data stays on screen with a `SIMULATED` badge and no request leaves for GitHub or Jira.
 - [ ] **Limit Visibility:** Verify "Glass Box Telemetry" footer accurately reflects Heap Size changes after running a heavy operation.
 - [ ] **Analytics:** Verify api_test_executed event fires in GA4 Real-Time view when using the API Tester.
 - [ ] Verify the Skill Graph uses `lightning/uiGraphQLApi` (the Network tab shows a `/graphql` call to the Salesforce domain). The Roadmap reads Apex over the cache (`DeliveryController.getRoadmap`), so it makes no GraphQL call
 - [ ] API Lab "Enterprise Mode" tab disabled with clear "Phase 8 – 2027-2028" messaging
-- [ ] **AI fallback:** with the Gemini API unavailable, `POST /papi/v1/ai/generate` with `type: CoverLetter` returns `provider: Local` and `fallbackOccurred: true`. (The circuit-breaker checks this list used to hold are not applicable: no circuit breaker class exists and Agentforce is deferred.)
+- [ ] **AI fallback:** with the Gemini API unavailable, `POST /papi/v1/ai/generate` with `type: CoverLetter` returns `provider: Local` and `fallbackOccurred: true`, and the site page shows the template letter with the reason. After three Gemini failures the footer shows "Gemini: circuit open until HH:MM" and the next letter skips Gemini.
 
 ## 3.4 Concrete Testing Example
 
