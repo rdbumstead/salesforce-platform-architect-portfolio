@@ -116,4 +116,43 @@ private class PortfolioLogTest {
 
     Assert.isTrue(toNebula, 'No answer map is not a failure');
   }
+
+  /**
+   * @description A public Callable the lookup can build with Type.newInstance, standing in
+   *              for Nebula's CallableLogger.
+   */
+  public class StandInLogger implements System.Callable {
+    public Object call(String action, Map<String, Object> args) {
+      return new Map<String, Object>{ 'isSuccess' => true };
+    }
+  }
+
+  @IsTest
+  static void lookupSkipsMissingAndUnusableTypesAndTakesTheFirstCallable() {
+    PortfolioLog.candidateOverride = new List<Type>{
+      null,
+      ApiRateLimiter.class,
+      RequestUtil.class,
+      StandInLogger.class
+    };
+
+    Test.startTest();
+    Boolean available = PortfolioLog.isNebulaAvailable();
+    Boolean toNebula = PortfolioLog.info('line');
+    Test.stopTest();
+
+    Assert.isTrue(available, 'The first Callable type is used');
+    Assert.isTrue(toNebula, 'Lines go to it');
+  }
+
+  @IsTest
+  static void lookupWithNoCallableFallsBackToDebug() {
+    PortfolioLog.candidateOverride = new List<Type>{ null, RequestUtil.class };
+
+    Test.startTest();
+    Boolean toNebula = PortfolioLog.info('line');
+    Test.stopTest();
+
+    Assert.isFalse(toNebula, 'No Callable, so System.debug');
+  }
 }

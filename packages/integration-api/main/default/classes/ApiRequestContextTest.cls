@@ -281,7 +281,7 @@ private class ApiRequestContextTest {
       SAPI_URI + '?limit=5',
       new Map<String, String>{
         'X-Request-Id' => VALID_ID,
-        'Authorization' => 'Bearer secret-token-value'
+        'X-Evaluator-Note' => 'secret-header-value'
       },
       null
     );

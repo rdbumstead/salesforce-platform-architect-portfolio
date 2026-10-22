@@ -322,7 +322,7 @@ private class PAPIResumeTest {
     );
     Skill__c flows = new Skill__c(
       Name = 'Flow',
-      Category__c = 'Automation',
+      Category__c = 'Process Automation',
       Category_Order__c = 1,
       Proficiency__c = 4
     );
@@ -346,7 +346,9 @@ private class PAPIResumeTest {
 
     String text = (String) RestTestUtil.getBodyAsMap().get('generatedText');
     Assert.isTrue(
-      text.contains('SKILLS\n\nAutomation: Flow\nBackend: Apex, SOQL\n'),
+      text.contains(
+        'SKILLS\n\nProcess Automation: Flow\nBackend: Apex, SOQL\n'
+      ),
       'Linked skills, category order then proficiency: ' + text
     );
     Assert.isFalse(text.contains('Unlinked Skill'), 'Only linked skills');

@@ -28,6 +28,9 @@ public with sharing class PortfolioLog {
   @TestVisible
   private static Boolean ignoreInstalledNebula = false;
 
+  @TestVisible
+  private static List<Type> candidateOverride;
+
   private static Boolean resolved = false;
   private static System.Callable nebulaSink;
 
@@ -94,10 +97,12 @@ public with sharing class PortfolioLog {
   }
 
   private static System.Callable findNebula() {
-    List<Type> candidates = new List<Type>{
-      Type.forName(NEBULA_NAMESPACE, NEBULA_CLASS),
-      Type.forName(NEBULA_CLASS)
-    };
+    List<Type> candidates = candidateOverride != null
+      ? candidateOverride
+      : new List<Type>{
+          Type.forName(NEBULA_NAMESPACE, NEBULA_CLASS),
+          Type.forName(NEBULA_CLASS)
+        };
     for (Type candidate : candidates) {
       if (candidate == null) {
         continue;
