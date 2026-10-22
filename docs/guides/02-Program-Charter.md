@@ -51,7 +51,7 @@ This is not a static website. It is a live, observable platform governed by prod
 #### Current MVP State (Q1 2027 Launch)
 
 - 100% on-platform data access using Apex REST + native Salesforce GraphQL (lightning/uiGraphQLApi)
-- Skill Graph, Roadmap, and Project Gallery all use native wire adapter for sub-250 ms LCP
+- Skill Graph and Project Gallery use the native GraphQL wire adapter. The Roadmap and Changelog read cached Jira and GitHub data through Apex (`DeliveryController`), because the cache is one JSON row per refresh, not one record per item (owner decision E7, 2026-10-21)
 - No external dependencies required
 
 #### Target Enterprise State – Phase 8 (2027-2028) – _Design Complete / Implementation Deferred_
@@ -219,7 +219,7 @@ The delivery is organized into four parallel execution tracks:
 _Design artifacts complete; implementation begins post-launch._
 
 - **Native GraphQL Verification:**
-  - Confirm `c-skill-network`, `c-roadmap-viewer`, and Project Gallery all use `lightning/uiGraphQLApi`
+  - Confirm `c-skill-network` and Project Gallery use `lightning/uiGraphQLApi`. `c-roadmap-viewer` reads Apex over the cache by design (E7)
 - **AWS Lambda Polyglot Gateway:** (Function URL) – "Door 2" – **Designed, not yet implemented** (planned 2027-2028)
   - Deploy single HTTPS Function URL endpoint (no API Gateway)
   - Support both REST → GraphQL translation and direct GraphQL

@@ -128,13 +128,13 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 
 ### 2.1 `c-skill-network` (Visualization)
 
-- **Lazy Loading:** Dynamic import (lazy-loading) of the **G6 library** occurs only when the component enters the viewport to maintain a fast initial LCP.
+- **Data:** the component reads `Skill__c` and its junctions through the `lightning/uiGraphQLApi` wire adapter (`skillNetwork.js`, `SKILL_NETWORK_QUERY`).
+- **Lazy Loading:** G6 loads only when the graph container scrolls into view (`skillNetwork.whenVisible`, an `IntersectionObserver`), so the 1.57 MB library never competes with the first paint. The script loads through the shared module `c/g6Loader`: `loadG6(component)` calls `loadScript` on the `G6_Library` static resource (AntV G6 4.8.23) once per page and hands every caller the same `G6` global. A failed load is not cached, so a later call can try again.
 - **Mobile Guardrail:**
-  - Automatically detects mobile viewports (FORM_FACTOR).
-  - Falls back to a **static SVG image** (Skill_Graph_Fallback Static Resource) to prevent rendering overhead on low-power devices.
-- **Stale Data Guardrail:** Mobile SVG includes embedded build timestamp. If server-side skill count > SVG metadata count, a subtle "Graph outdated – refresh for latest" banner appears.
+  - On a small form factor (`@salesforce/client/formFactor` is `Small`) or a viewport under 768 px, G6 never loads.
+  - Instead the component draws an **inline SVG built from the same live GraphQL data** (`skillNetwork.buildSvgModel`). There is no pre-rendered image and no `Skill_Graph_Fallback` static resource, so the mobile graph cannot go stale and needs no "outdated" banner.
 - **Accessibility (A11y):**
-  - Includes a "Pause Animation" toggle button.
+  - Includes a pause toggle for the layout animation ("Pause layout animation" and "Resume layout animation").
   - Uses the **"Shadow Structure" Pattern** (a visually hidden `<ul>`) for screen readers.
 
 ### 2.2 `c-resume-builder` (Resume Generation)
@@ -202,7 +202,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - [ ] **Degradation Test:** Toggle "Resilience Simulation" (disconnect GitHub). Verify UI seamlessly switches to cached data with a "Data Stale" badge.
 - [ ] **Limit Visibility:** Verify "Glass Box Telemetry" footer accurately reflects Heap Size changes after running a heavy operation.
 - [ ] **Analytics:** Verify api_test_executed event fires in GA4 Real-Time view when using the API Tester.
-- [ ] Verify Skill Graph/Roadmap use lightning/uiGraphQLApi (Network tab shows /graphql call to Salesforce domain)
+- [ ] Verify the Skill Graph uses `lightning/uiGraphQLApi` (the Network tab shows a `/graphql` call to the Salesforce domain). The Roadmap reads Apex over the cache (`DeliveryController.getRoadmap`), so it makes no GraphQL call
 - [ ] API Lab "Enterprise Mode" tab disabled with clear "Phase 8 – 2027-2028" messaging
 - [ ] **AI fallback:** with the Gemini API unavailable, `POST /papi/v1/ai/generate` with `type: CoverLetter` returns `provider: Local` and `fallbackOccurred: true`. (The circuit-breaker checks this list used to hold are not applicable: no circuit breaker class exists and Agentforce is deferred.)
 
