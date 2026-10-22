@@ -1,83 +1,189 @@
 <template>
   <lightning-card title="Resume Generator" icon-name="doctype:pdf">
-    <div class="slds-p-around_medium">
-      <div class="slds-grid slds-gutters">
-        <!-- Left: Configuration -->
-        <div class="slds-col slds-size_1-of-3">
-          <div class="slds-box slds-theme_shade">
-            <h3 class="slds-text-heading_small slds-m-bottom_medium">
+    <div class="builder-body slds-p-around_medium">
+      <div class="slds-grid slds-wrap slds-gutters">
+        <div
+          class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3 slds-m-bottom_medium"
+        >
+          <div class="config-panel slds-box">
+            <h2 class="slds-text-heading_small slds-m-bottom_medium">
               Configuration
-            </h3>
+            </h2>
 
             <lightning-combobox
               name="persona"
-              label="Target Persona"
+              label="Target persona"
               value={selectedPersona}
               options={personaOptions}
               onchange={handlePersonaChange}
-              class="slds-m-bottom_medium"
+              class="persona-picker slds-m-bottom_medium"
             >
             </lightning-combobox>
 
             <div class="slds-form-element slds-m-bottom_medium">
               <lightning-input
                 type="checkbox"
-                label="Include Header"
+                label="Include header"
                 checked={includeHeader}
-                onchange={handleConfigChange}
+                onchange={handleToggle}
                 data-field="includeHeader"
               ></lightning-input>
               <lightning-input
                 type="checkbox"
-                label="Include Skills"
+                label="Include skills"
                 checked={includeSkills}
-                onchange={handleConfigChange}
+                onchange={handleToggle}
                 data-field="includeSkills"
               ></lightning-input>
             </div>
 
-            <lightning-button
-              variant="brand"
-              label="Download PDF"
-              icon-name="utility:download"
-              onclick={handleDownload}
-              class="slds-size_1-of-1"
-            >
-            </lightning-button>
+            <div class="slds-grid slds-grid_vertical">
+              <lightning-button
+                variant="brand"
+                label={downloadLabel}
+                icon-name="utility:download"
+                onclick={handleDownload}
+                disabled={exportDisabled}
+                class="download-pdf slds-m-bottom_x-small"
+              >
+              </lightning-button>
+              <lightning-button
+                variant="brand"
+                label="Copy ATS text"
+                icon-name="utility:copy"
+                onclick={handleCopyText}
+                disabled={exportDisabled}
+                class="copy-ats"
+              >
+              </lightning-button>
+            </div>
+
+            <div aria-live="polite" class="slds-m-top_small">
+              <p lwc:if={exportMessage} class="export-message text-success">
+                {exportMessage}
+              </p>
+              <p lwc:if={exportError} class="export-error text-error">
+                {exportError}
+              </p>
+            </div>
           </div>
         </div>
 
-        <!-- Right: Live Preview -->
-        <div class="slds-col slds-size_2-of-3">
-          <div class="preview-paper slds-p-around_large slds-scrollable_y">
-            <!-- Header -->
-            <div
-              if:true={includeHeader}
-              class="preview-header slds-text-align_center slds-m-bottom_large"
-            >
-              <h1 class="slds-text-heading_large">Ryan Bumstead</h1>
-              <p class="slds-text-body_small">
-                Salesforce Technical Architect | {selectedPersona} Focused
-              </p>
-            </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3">
+          <div class="preview-paper slds-p-around_large" aria-busy={isLoading}>
+            <template lwc:if={isLoading}>
+              <div
+                class="loading-state slds-is-relative slds-p-around_xx-large"
+              >
+                <lightning-spinner
+                  alternative-text="Loading resume"
+                  size="small"
+                ></lightning-spinner>
+              </div>
+            </template>
 
-            <!-- Content dynamically changes based on persona -->
-            <div class="preview-content">
-              <h2 class="section-title">Experience</h2>
-              <template for:each={previewData} for:item="item">
-                <div key={item.id} class="slds-m-bottom_medium">
-                  <div class="slds-grid slds-grid_align-spread">
-                    <strong>{item.role} at {item.employer}</strong>
-                    <span>{item.date}</span>
-                  </div>
-                  <ul class="slds-list_dotted slds-m-top_x-small">
-                    <template for:each={item.bullets} for:item="bullet">
-                      <li key={bullet}>{bullet}</li>
+            <template lwc:if={hasError}>
+              <div
+                class="error-state paper-error slds-p-around_medium"
+                role="alert"
+              >
+                <p>The resume could not be loaded.</p>
+                <p>{errorMessage}</p>
+              </div>
+            </template>
+
+            <template lwc:if={isEmpty}>
+              <p class="empty-state paper-muted slds-p-around_medium">
+                No resume content is available for this persona yet.
+              </p>
+            </template>
+
+            <template lwc:if={hasContent}>
+              <template lwc:if={model.hasHeader}>
+                <header
+                  class="preview-header slds-text-align_center slds-m-bottom_large"
+                >
+                  <h2 class="resume-name slds-text-heading_large">
+                    {model.header.name}
+                  </h2>
+                  <p class="resume-title slds-text-body_regular">
+                    {model.header.title}
+                  </p>
+                  <ul
+                    class="resume-links slds-list_horizontal slds-has-dividers_left slds-grid_align-center"
+                  >
+                    <template for:each={model.header.links} for:item="link">
+                      <li key={link.key} class="slds-item">
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          >{link.label}</a
+                        >
+                      </li>
                     </template>
                   </ul>
-                </div>
+                  <p
+                    lwc:if={model.header.careerObjective}
+                    class="resume-objective slds-m-top_small slds-text-align_left"
+                  >
+                    {model.header.careerObjective}
+                  </p>
+                </header>
               </template>
-            </div>
+
+              <section lwc:if={model.hasRoles} class="resume-experience">
+                <h3 class="section-title">Experience</h3>
+                <template for:each={model.roles} for:item="role">
+                  <div key={role.key} class="resume-role slds-m-bottom_medium">
+                    <div class="slds-grid slds-wrap slds-grid_align-spread">
+                      <strong class="role-heading">{role.heading}</strong>
+                      <span class="role-dates">{role.dateRange}</span>
+                    </div>
+                    <ul class="slds-list_dotted slds-m-top_x-small">
+                      <template for:each={role.highlights} for:item="highlight">
+                        <li key={highlight.key} class="role-highlight">
+                          {highlight.text}
+                        </li>
+                      </template>
+                    </ul>
+                  </div>
+                </template>
+              </section>
+
+              <section lwc:if={model.hasSkills} class="resume-skills">
+                <h3 class="section-title">Skills</h3>
+                <template for:each={model.skillGroups} for:item="group">
+                  <p key={group.key} class="skill-group slds-m-bottom_x-small">
+                    <strong>{group.category}:</strong> {group.skillsText}
+                  </p>
+                </template>
+              </section>
+
+              <section
+                lwc:if={model.hasCertifications}
+                class="resume-certifications slds-m-top_medium"
+              >
+                <h3 class="section-title">Certifications</h3>
+                <ul>
+                  <template for:each={model.certifications} for:item="cert">
+                    <li key={cert.key} class="certification">{cert.text}</li>
+                  </template>
+                </ul>
+              </section>
+
+              <section
+                lwc:if={model.hasEducation}
+                class="resume-education slds-m-top_medium"
+              >
+                <h3 class="section-title">Education</h3>
+                <ul>
+                  <template for:each={model.education} for:item="edu">
+                    <li key={edu.key} class="education">{edu.text}</li>
+                  </template>
+                </ul>
+              </section>
+            </template>
           </div>
         </div>
       </div>

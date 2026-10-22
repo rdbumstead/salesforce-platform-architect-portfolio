@@ -1,0 +1,77 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "Resume",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"0dfb173f-6c4c-4882-b5cd-4c02cfd2fb89\",\"columns\":[{\"UUID\":\"14efa7e2-ea56-4df2-b2d3-78bad8bb0875\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "definition": "c:resumeBuilder",
+                      "id": "664d4eba-5a4d-4074-aafb-96166da86ed2",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "14efa7e2-ea56-4df2-b2d3-78bad8bb0875",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "0dfb173f-6c4c-4882-b5cd-4c02cfd2fb89",
+              "type": "component"
+            }
+          ],
+          "id": "bc7f60ed-5ef9-4d81-b19d-71a53be1e9e6",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "Ryan Bumstead's Salesforce resume, filtered by Admin, Developer or Architect focus, with PDF and plain text downloads.",
+                "pageTitle": "Resume | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "d1812ef1-0108-409a-ba32-ea3b7a013142",
+              "type": "component"
+            }
+          ],
+          "id": "ce7ff2cd-617b-4e13-8ccb-7c6e27fbc668",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "88d0d745-2a49-449e-b319-e48267962c17",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-resume"
+  },
+  "urlName": "resume"
+}

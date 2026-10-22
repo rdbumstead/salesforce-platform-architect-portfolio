@@ -4,6 +4,10 @@
  *                      Credential and returns status, latency, tracing and paging headers and
  *                      the body. requestEvaluatorToken() vends a token through the same
  *                      TokenExchangeService path as POST /papi/v1/auth/token.
+ *                      generateCoverLetter() is the site's cover letter path (PD-D3 b): it posts
+ *                      to /papi/v1/ai/generate through the same Named Credential, so the letter
+ *                      is written by the integration user under the API's validation and its
+ *                      10 per minute ai tier, and the guest needs no AI grant.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -49,6 +53,22 @@ public with sharing class ApiLabController {
     'X-Has-More'
   };
 
+  /** The one POST path generateCoverLetter() calls. Not part of the GET allowlist. */
+  public static final String AI_GENERATE_PATH = '/papi/v1/ai/generate';
+
+  /**
+   * Proxy callout timeout, 90 s. It must outlast the Gemini callout timeout (60 s) plus the
+   * PAPI overhead, so a slow model falls through to the local template inside PAPI and the
+   * page still gets a letter, instead of this callout failing first. Apex allows 120 s.
+   */
+  public static final Integer AI_TIMEOUT_MS = 90000;
+
+  /** Cover letter length asked of the API, the spec maximum. */
+  public static final Integer COVER_LETTER_MAX_LENGTH = 1000;
+  public static final Integer MAX_COMPANY_LENGTH = 120;
+  public static final Integer MAX_TITLE_LENGTH = 120;
+  public static final Integer MAX_DESCRIPTION_LENGTH = 4000;
+
   private static final String APEX_REST_PATH = '/services/apexrest';
   private static final Pattern PARAM_NAME = Pattern.compile(
     '^[A-Za-z][A-Za-z0-9_]{0,39}$'
@@ -92,6 +112,45 @@ public with sharing class ApiLabController {
     public Map<String, Object> token;
     @AuraEnabled
     public String correlationId;
+  }
+
+  /**
+   * @description One provider attempt reported by /papi/v1/ai/generate.
+   */
+  public class AttemptView {
+    @AuraEnabled
+    public String provider;
+    @AuraEnabled
+    public String outcome;
+    @AuraEnabled
+    public Long ms;
+  }
+
+  /**
+   * @description A cover letter from /papi/v1/ai/generate, with what the show-your-work
+   *              panel needs. Every value is read from the API response.
+   */
+  public class CoverLetterResult {
+    @AuraEnabled
+    public String content;
+    @AuraEnabled
+    public String provider;
+    @AuraEnabled
+    public String model;
+    @AuraEnabled
+    public Boolean fallbackOccurred;
+    /** Round trip measured here, API call included. */
+    @AuraEnabled
+    public Long latencyMs;
+    /** Dispatch time reported by the API. */
+    @AuraEnabled
+    public Long generationMs;
+    @AuraEnabled
+    public List<AttemptView> attempts;
+    @AuraEnabled
+    public String promptShown;
+    @AuraEnabled
+    public String requestId;
   }
 
   /**
@@ -143,6 +202,89 @@ public with sharing class ApiLabController {
         result.headers.put(name, value);
       }
     }
+    return result;
+  }
+
+  /**
+   * @description Writes a cover letter through POST /papi/v1/ai/generate as the integration
+   *              user. Writes nothing and checks no limiter here: the API counts the request
+   *              against its ai tier in its own transaction (contracts C2 and C4).
+   * @param companyName Company the letter is for, at most 120 characters.
+   * @param jobTitle Job title, at most 120 characters.
+   * @param jobDescription Job description, optional, at most 4000 characters.
+   * @return CoverLetterResult Content, provider, model, fallback, latency, attempts, prompt.
+   * @throws AuraHandledException On invalid input, a 4xx or 5xx answer, or a callout failure.
+   */
+  @AuraEnabled
+  public static CoverLetterResult generateCoverLetter(
+    String companyName,
+    String jobTitle,
+    String jobDescription
+  ) {
+    String company = requireText(
+      companyName,
+      'Company name',
+      MAX_COMPANY_LENGTH
+    );
+    String title = requireText(jobTitle, 'Job title', MAX_TITLE_LENGTH);
+    String description = String.isBlank(jobDescription)
+      ? null
+      : jobDescription.trim();
+    if (description != null && description.length() > MAX_DESCRIPTION_LENGTH) {
+      throw auraError(
+        'Job description can be at most ' +
+          MAX_DESCRIPTION_LENGTH +
+          ' characters.'
+      );
+    }
+
+    Map<String, Object> context = new Map<String, Object>{
+      'companyName' => company,
+      'role' => title
+    };
+    if (description != null) {
+      context.put('jobDescription', description);
+    }
+    String requestId = UUID.randomUUID().toString();
+    HttpRequest req = new HttpRequest();
+    req.setEndpoint(
+      'callout:' + NAMED_CREDENTIAL + APEX_REST_PATH + AI_GENERATE_PATH
+    );
+    req.setMethod('POST');
+    req.setTimeout(AI_TIMEOUT_MS);
+    req.setHeader('X-Request-Id', requestId);
+    req.setHeader('X-API-Version', API_VERSION);
+    req.setHeader('Accept', 'application/json');
+    req.setHeader('Content-Type', 'application/json');
+    req.setBody(
+      JSON.serialize(
+        new Map<String, Object>{
+          'type' => 'CoverLetter',
+          'tone' => 'Professional',
+          'maxLength' => COVER_LETTER_MAX_LENGTH,
+          'context' => context
+        }
+      )
+    );
+
+    Long started = System.currentTimeMillis();
+    HttpResponse res;
+    try {
+      res = new Http().send(req);
+    } catch (CalloutException e) {
+      throw auraError(
+        'The cover letter service could not be reached: ' + e.getMessage()
+      );
+    }
+    Long latencyMs = System.currentTimeMillis() - started;
+
+    Integer status = res.getStatusCode();
+    if (status != 200) {
+      throw auraError(coverLetterError(status, res.getBody()));
+    }
+    CoverLetterResult result = toCoverLetterResult(res.getBody());
+    result.latencyMs = latencyMs;
+    result.requestId = requestId;
     return result;
   }
 
@@ -208,6 +350,113 @@ public with sharing class ApiLabController {
 
   @TestVisible
   private static Map<String, String> sessionOverride;
+
+  private static String requireText(
+    String value,
+    String label,
+    Integer maxLength
+  ) {
+    if (String.isBlank(value)) {
+      throw auraError(label + ' is required.');
+    }
+    String trimmed = value.trim();
+    if (trimmed.length() > maxLength) {
+      throw auraError(label + ' can be at most ' + maxLength + ' characters.');
+    }
+    return trimmed;
+  }
+
+  @TestVisible
+  private static String coverLetterError(Integer status, String body) {
+    if (status == 429) {
+      return 'Too many cover letters were requested in the last minute. Try again in a minute.';
+    }
+    if (status == 503) {
+      return 'No AI provider is available right now. Try again later.';
+    }
+    if (status >= 400 && status < 500) {
+      String detail = errorMessage(body);
+      return 'The cover letter request was refused (status ' +
+        status +
+        ')' +
+        (String.isBlank(detail) ? '.' : ': ' + detail);
+    }
+    return 'The cover letter service failed (status ' +
+      status +
+      '). Try again later.';
+  }
+
+  private static String errorMessage(String body) {
+    Map<String, Object> parsed = parseObject(body);
+    Object message = parsed?.get('message');
+    return message instanceof String ? (String) message : null;
+  }
+
+  private static CoverLetterResult toCoverLetterResult(String body) {
+    Map<String, Object> parsed = parseObject(body);
+    if (parsed == null || !(parsed.get('content') instanceof String)) {
+      throw auraError(
+        'The cover letter service returned a response that could not be read.'
+      );
+    }
+    CoverLetterResult result = new CoverLetterResult();
+    result.content = (String) parsed.get('content');
+    result.provider = stringOf(parsed.get('provider'));
+    result.model = stringOf(parsed.get('model'));
+    result.fallbackOccurred = booleanOf(parsed.get('fallbackOccurred'));
+    result.generationMs = longOf(parsed.get('latencyMs'));
+    result.promptShown = stringOf(parsed.get('promptShown'));
+    result.attempts = new List<AttemptView>();
+    Object attempts = parsed.get('attempts');
+    if (attempts instanceof List<Object>) {
+      for (Object item : (List<Object>) attempts) {
+        if (item instanceof Map<String, Object>) {
+          Map<String, Object> row = (Map<String, Object>) item;
+          AttemptView view = new AttemptView();
+          view.provider = stringOf(row.get('provider'));
+          view.outcome = stringOf(row.get('outcome'));
+          view.ms = longOf(row.get('ms'));
+          result.attempts.add(view);
+        }
+      }
+    }
+    return result;
+  }
+
+  private static Map<String, Object> parseObject(String body) {
+    if (String.isBlank(body)) {
+      return null;
+    }
+    try {
+      Object parsed = JSON.deserializeUntyped(body);
+      return parsed instanceof Map<String, Object>
+        ? (Map<String, Object>) parsed
+        : null;
+    } catch (JSONException e) {
+      return null;
+    }
+  }
+
+  private static Boolean booleanOf(Object value) {
+    return value instanceof Boolean ? (Boolean) value : false;
+  }
+
+  private static String stringOf(Object value) {
+    return value instanceof String ? (String) value : null;
+  }
+
+  private static Long longOf(Object value) {
+    if (value instanceof Decimal) {
+      return ((Decimal) value).longValue();
+    }
+    if (value instanceof Long) {
+      return (Long) value;
+    }
+    if (value instanceof Integer) {
+      return Long.valueOf(String.valueOf(value));
+    }
+    return null;
+  }
 
   private static String buildQuery(Map<String, String> params) {
     if (params == null || params.isEmpty()) {

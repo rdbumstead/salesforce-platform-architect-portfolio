@@ -1,11 +1,56 @@
 <template>
   <div class="portfolio-layout-wrapper">
-    <div class="region-header">
-      <slot name="header"></slot>
-    </div>
+    <header class="site-header">
+      <div class="site-header__bar">
+        <a class="site-brand" href={homeHref}>Ryan Bumstead</a>
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-controls="site-navigation"
+          aria-expanded={menuExpanded}
+          onclick={handleMenuToggle}
+        >
+          {menuButtonLabel}
+        </button>
+      </div>
+      <nav id="site-navigation" class={navClass} aria-label="Primary">
+        <ul class="nav-list nav-list_pages">
+          <template for:each={pages} for:item="page">
+            <li key={page.key} class="nav-item">
+              <a
+                class="nav-link"
+                href={page.href}
+                data-key={page.key}
+                onclick={handleNavClick}
+                >{page.label}</a
+              >
+            </li>
+          </template>
+        </ul>
+        <ul class="nav-list nav-list_pillars" aria-label="Pillars">
+          <template for:each={pillars} for:item="pillar">
+            <li key={pillar.key} class="nav-item">
+              <a
+                class="nav-link nav-link_pillar"
+                href={pillar.href}
+                data-key={pillar.key}
+                title={pillar.sasName}
+                aria-label={pillar.ariaLabel}
+                onclick={handleNavClick}
+                ><span class="pillar-letter">{pillar.letter}</span
+                ><span class="pillar-label">{pillar.label}</span></a
+              >
+            </li>
+          </template>
+        </ul>
+      </nav>
+      <div class="region-header">
+        <slot name="header"></slot>
+      </div>
+    </header>
 
     <div class="region-content">
-      <slot name="default"></slot>
+      <slot></slot>
     </div>
 
     <div class="region-footer">

@@ -1,0 +1,91 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "Delivery",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"05e07450-5a03-46cd-9bd9-9ee9e294501c\",\"columns\":[{\"UUID\":\"71aa6982-74f6-4640-aea8-d46c489b11a9\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "attributes": {
+                        "imageInfos": "",
+                        "richTextValue": "<h1>Delivery</h1><p>Pillar E: Agile Delivery and DevOps. Work on this site is planned in Jira, and GitHub Actions validates and deploys every change to Salesforce. The roadmap and changelog below read copies of the Jira and GitHub data that are stored in Salesforce, so your browser never calls either service directly. The event pattern comes next. The pipeline will publish a platform event after each deploy, and a status panel on this page will show the result.</p>"
+                      },
+                      "definition": "community_builder:richTextEditor",
+                      "id": "b4ae3b8e-6ac1-4bdc-8320-bc576a9de6a0",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:roadmapViewer",
+                      "id": "a2ce48c1-bcc6-46eb-b2fe-8de73849e175",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:changelog",
+                      "id": "e8dd52e9-7fad-4544-ac20-881fc4b9664d",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "71aa6982-74f6-4640-aea8-d46c489b11a9",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "05e07450-5a03-46cd-9bd9-9ee9e294501c",
+              "type": "component"
+            }
+          ],
+          "id": "0db924ce-9bee-49ec-92a8-1fc641cd042d",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "Pillar E. The Jira roadmap and recent GitHub commits behind this Salesforce portfolio.",
+                "pageTitle": "Delivery | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "f6f17da5-8c7e-4eea-b281-8130475be179",
+              "type": "component"
+            }
+          ],
+          "id": "9b05ebb3-0084-44bf-9ab5-4df42d5bf24a",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "10dd6f40-c09a-4fe8-aef6-23efc2dec6c8",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-delivery"
+  },
+  "urlName": "delivery"
+}

@@ -1,0 +1,16 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "SeedAssetAlphaRef"
+      },
+      "Name": "Seed Asset Alpha",
+      "Project__c": "@SeedProjectAlphaRef",
+      "Type__c": "Link",
+      "External_URL__c": "https://example.com/seed-asset",
+      "Alt_Text__c": "Seed asset link",
+      "Sort_Order__c": 1
+    }
+  ]
+}

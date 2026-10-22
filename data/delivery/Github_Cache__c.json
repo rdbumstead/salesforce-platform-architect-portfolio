@@ -1,0 +1,11 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Github_Cache__c",
+        "referenceId": "SeedGithubCacheRef"
+      },
+      "JSON_Payload__c": "{\"schemaVersion\":1,\"items\":[{\"sha\":\"5eed901a1b2c3d4e5f60718293a4b5c6d7e8f901\",\"message\":\"seed: delivery walk\",\"authorName\":\"Seed Author\",\"authorAvatarUrl\":\"https://avatars.githubusercontent.com/u/0?v=4\",\"url\":\"https://github.com/rdbumstead/salesforce-platform-architect-portfolio/commits/main\",\"committedAt\":\"2026-10-21T08:00:00.000Z\"}]}"
+    }
+  ]
+}

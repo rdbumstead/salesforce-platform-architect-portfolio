@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Hourly_Budget__c</fullName>
+    <description
+  >Most calls per hour this provider may serve. Not read yet. The real Agentforce provider enforces it (pillar-d-design 4.4).</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Hourly Budget</label>
+    <precision>5</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <type>Number</type>
+</CustomField>

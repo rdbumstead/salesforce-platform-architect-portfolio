@@ -1,0 +1,12 @@
+{
+  "type": "sfdc_cms__route",
+  "title": "Delivery",
+  "contentBody": {
+    "activeViewId": "Delivery",
+    "configurationTags": [],
+    "pageAccess": "UseParent",
+    "routeType": "custom-delivery",
+    "urlPrefix": "delivery"
+  },
+  "urlName": "delivery"
+}

@@ -4,7 +4,7 @@
     <isExposed>true</isExposed>
     <masterLabel>Portfolio Custom Layout</masterLabel>
     <description
-  >Custom LWR Layout with hard-coded Dark Mode fixes.</description>
+  >Portfolio theme layout with the site header navigation and a footer region.</description>
     <targets>
         <target>lightningCommunity__Theme_Layout</target>
     </targets>

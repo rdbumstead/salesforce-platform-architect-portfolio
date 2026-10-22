@@ -1,0 +1,18 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Account",
+        "referenceId": "SeedEmployerRef"
+      },
+      "Name": "Seed Employer"
+    },
+    {
+      "attributes": {
+        "type": "Account",
+        "referenceId": "SeedInstituteRef"
+      },
+      "Name": "Seed Institute"
+    }
+  ]
+}

@@ -1,5 +1,34 @@
+/*
+ * Contract K9: the site branding is dark. Every element here that sets a background
+ * also sets its text colour. The console sits on the site root surface with the DXP
+ * root tokens, the same pair the theme gives base component labels. The response box
+ * is a fixed dark panel with its own light text. Fallbacks are the values the
+ * Portfolio branding set renders.
+ */
+:host {
+  --lab-surface: var(--dxp-g-root, #020617);
+  --lab-text: var(--dxp-g-root-contrast, #e2e8f0);
+}
+
 .console-container {
-  background-color: var(--lwc-colorBackgroundStencil, #f3f3f3);
+  background-color: var(--lab-surface);
+  color: var(--lab-text);
+}
+
+.console-container h2,
+.console-container h3,
+.field-label {
+  color: var(--lab-text);
+}
+
+.text-success {
+  color: #4ade80;
+  background-color: var(--lab-surface);
+}
+
+.text-error {
+  color: #f87171;
+  background-color: var(--lab-surface);
 }
 
 .result-box {
@@ -16,4 +45,13 @@
 .json-viewer {
   margin: 0;
   white-space: pre-wrap;
+  color: #d4d4d4;
+}
+
+.header-value,
+.token-value,
+.refusal-value {
+  color: var(--lab-text);
+  font-family: "Courier New", Courier, monospace;
+  overflow-wrap: anywhere;
 }

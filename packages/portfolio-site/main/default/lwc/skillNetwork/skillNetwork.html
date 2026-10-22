@@ -1,47 +1,134 @@
 <template>
   <lightning-card title="Skill Network" icon-name="standard:invocable_action">
-    <div
-      class="slds-p-around_medium"
-      style="position: relative; min-height: 500px"
-    >
-      <template if:true={isLoading}>
-        <lightning-spinner
-          alternative-text="Loading Graph"
-          size="medium"
-        ></lightning-spinner>
+    <div class="slds-p-around_medium network-body">
+      <template lwc:if={isLoading}>
+        <div class="state state-loading">
+          <lightning-spinner
+            alternative-text="Loading the skill network"
+            size="medium"
+          ></lightning-spinner>
+        </div>
       </template>
 
-      <!-- Accessibility: Toggle Animation -->
-      <div class="controls slds-p-bottom_small slds-text-align_right">
-        <lightning-button-icon
-          icon-name="utility:pause"
-          alternative-text="Pause Animation"
-          title="Pause"
-          onclick={handlePause}
-        ></lightning-button-icon>
-        <lightning-button-icon
-          icon-name="utility:refresh"
-          alternative-text="Reset Layout"
-          title="Reset"
-          onclick={handleReset}
-          class="slds-m-left_x-small"
-        ></lightning-button-icon>
-      </div>
+      <template lwc:elseif={hasError}>
+        <div class="state state-error" role="alert">
+          <p class="state-title">The skill network could not be loaded.</p>
+          <p class="slds-text-body_small">{errorMessage}</p>
+        </div>
+      </template>
 
-      <!-- G6 Canvas Container -->
-      <div class="graph-container" lwc:dom="manual"></div>
+      <template lwc:elseif={isEmpty}>
+        <div class="state state-empty">
+          <p>No skills to show yet.</p>
+        </div>
+      </template>
 
-      <!-- Fallback for Screen Readers or Mobile -->
-      <div class="slds-assistive-text">
-        <h3>Skill Relationships</h3>
-        <ul>
-          <template for:each={skills} for:item="skill">
-            <li key={skill.id}>
-              {skill.name} connects to {skill.relatedProjectCount} projects.
-            </li>
+      <template lwc:else>
+        <template lwc:if={showCanvas}>
+          <div class="controls slds-p-bottom_small slds-text-align_right">
+            <lightning-button-icon
+              class="pause-toggle"
+              icon-name={pauseIcon}
+              alternative-text={pauseLabel}
+              title={pauseLabel}
+              disabled={controlsDisabled}
+              onclick={handlePauseToggle}
+            ></lightning-button-icon>
+            <lightning-button-icon
+              class="reset-layout slds-m-left_x-small"
+              icon-name="utility:refresh"
+              alternative-text="Reset layout"
+              title="Reset layout"
+              disabled={controlsDisabled}
+              onclick={handleReset}
+            ></lightning-button-icon>
+          </div>
+          <div
+            class="graph-container"
+            lwc:dom="manual"
+            aria-hidden="true"
+          ></div>
+        </template>
+
+        <template lwc:if={showSvg}>
+          <template lwc:if={graphErrorMessage}>
+            <p class="graph-error slds-text-body_small">{graphErrorMessage}</p>
           </template>
-        </ul>
-      </div>
+          <div class="svg-wrapper">
+            <svg
+              class="network-svg"
+              viewBox={svgModel.viewBox}
+              aria-hidden="true"
+              focusable="false"
+            >
+              <template for:each={svgModel.lines} for:item="line">
+                <line
+                  key={line.key}
+                  class="svg-edge"
+                  x1={line.x1}
+                  y1={line.y1}
+                  x2={line.x2}
+                  y2={line.y2}
+                ></line>
+              </template>
+              <template for:each={svgModel.skillPoints} for:item="point">
+                <g key={point.key} class="svg-node svg-skill">
+                  <title>{point.title}</title>
+                  <circle
+                    cx={point.cx}
+                    cy={point.cy}
+                    r={point.r}
+                    fill={point.fill}
+                  ></circle>
+                  <text
+                    class="svg-label"
+                    x={point.labelX}
+                    y={point.labelY}
+                    text-anchor="end"
+                  >
+                    {point.label}
+                  </text>
+                </g>
+              </template>
+              <template for:each={svgModel.workPoints} for:item="point">
+                <g key={point.key} class="svg-node svg-work">
+                  <title>{point.title}</title>
+                  <circle
+                    cx={point.cx}
+                    cy={point.cy}
+                    r={point.r}
+                    fill={point.fill}
+                  ></circle>
+                  <text
+                    class="svg-label"
+                    x={point.labelX}
+                    y={point.labelY}
+                    text-anchor="start"
+                  >
+                    {point.label}
+                  </text>
+                </g>
+              </template>
+            </svg>
+          </div>
+        </template>
+
+        <div class="slds-assistive-text network-list">
+          <h3>Skill network as a list</h3>
+          <p class="network-summary">{summary}</p>
+          <ul>
+            <template for:each={accessibleNodes} for:item="item">
+              <li
+                key={item.id}
+                class="network-node"
+                data-connections={item.connectionCount}
+              >
+                {item.text}
+              </li>
+            </template>
+          </ul>
+        </div>
+      </template>
     </div>
   </lightning-card>
 </template>

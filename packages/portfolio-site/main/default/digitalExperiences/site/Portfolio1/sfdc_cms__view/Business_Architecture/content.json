@@ -1,0 +1,81 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "Business Architecture",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"78e5a62d-4293-4e4f-bf0a-f620f4abedc4\",\"columns\":[{\"UUID\":\"bd80bc1c-946a-4ad8-93ac-ee31e4918833\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "attributes": {
+                        "imageInfos": "",
+                        "richTextValue": "<h1>Business Architecture</h1><p>Pillar A: Business Architecture (Employer Hub). This page is being built. It will show how the Employer Hub maps a business process to its data model.</p>"
+                      },
+                      "definition": "community_builder:richTextEditor",
+                      "id": "e250f3b0-c8c8-4ac1-a615-5ef76bc17d0e",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "bd80bc1c-946a-4ad8-93ac-ee31e4918833",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "78e5a62d-4293-4e4f-bf0a-f620f4abedc4",
+              "type": "component"
+            }
+          ],
+          "id": "4c52d17f-5104-4c97-8594-8c10a2992435",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "Pillar A. Business architecture for the Employer Hub. This page is being built.",
+                "pageTitle": "Business Architecture | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "4bb49d7c-3270-4f06-8867-0b927f526305",
+              "type": "component"
+            }
+          ],
+          "id": "af58e615-1334-4136-aa57-19a94d1d00cd",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "5ea74340-7e97-4390-83a8-3d883cbe1e50",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-business-architecture"
+  },
+  "urlName": "business-architecture"
+}

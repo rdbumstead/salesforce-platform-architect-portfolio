@@ -1,0 +1,12 @@
+{
+  "type": "sfdc_cms__route",
+  "title": "AI Lab",
+  "contentBody": {
+    "activeViewId": "Ai_Lab",
+    "configurationTags": [],
+    "pageAccess": "UseParent",
+    "routeType": "custom-ai-lab",
+    "urlPrefix": "ai-lab"
+  },
+  "urlName": "ai-lab"
+}

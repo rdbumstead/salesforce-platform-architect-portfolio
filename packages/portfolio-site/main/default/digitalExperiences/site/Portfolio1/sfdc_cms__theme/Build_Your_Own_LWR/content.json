@@ -12,6 +12,10 @@
       {
         "layoutId": "scopedHeaderAndFooter",
         "layoutType": "Inner"
+      },
+      {
+        "layoutId": "portfolioThemeLayout",
+        "layoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9"
       }
     ]
   },

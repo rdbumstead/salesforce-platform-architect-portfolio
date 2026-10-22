@@ -1,0 +1,91 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "API Lab",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"6b83f4d0-ce3d-42ba-a32c-b02d3466a659\",\"columns\":[{\"UUID\":\"02958e17-9dab-483d-a846-c57de2a1b704\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "attributes": {
+                        "imageInfos": "",
+                        "richTextValue": "<h1>API Lab</h1><p>Pillar C: Work Experience Verification API. Send a request to the portfolio REST API and read what comes back. The full contract is in the <a href=\"https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi\" target=\"_blank\" rel=\"noopener noreferrer\">hosted API reference</a>.</p>"
+                      },
+                      "definition": "community_builder:richTextEditor",
+                      "id": "fde2f7b7-4676-4a60-9193-c0abb21c347e",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:apiTester",
+                      "id": "a9a35330-34fb-47d1-9e06-5d548c4da7c7",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:apiReference",
+                      "id": "88c3220e-dfd1-4ca8-84d3-6bbb9d324b0c",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "02958e17-9dab-483d-a846-c57de2a1b704",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "6b83f4d0-ce3d-42ba-a32c-b02d3466a659",
+              "type": "component"
+            }
+          ],
+          "id": "cdd33cf3-43ed-4113-bb3a-4dd4fbae26b8",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "Pillar C. Call the portfolio's Salesforce REST API from the browser and inspect the status and response headers.",
+                "pageTitle": "API Lab | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "5f69c5e0-bb0c-47dc-a043-0868156a3d8c",
+              "type": "component"
+            }
+          ],
+          "id": "a59cfd13-639a-4dcd-a332-8ed7e2e84248",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "71c870c5-e6c6-4b13-899c-7750eb446c71",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-api-lab"
+  },
+  "urlName": "api-lab"
+}

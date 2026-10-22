@@ -1,5 +1,27 @@
+/*
+ * Contract K9: the site branding is dark. The viewer body sits on the site root
+ * surface with the DXP root tokens. The code block is a fixed dark panel that sets
+ * its own text and token colours, each at least 4.5:1 on #0f172a. These rules also
+ * beat the light background, text shadow and operator background that the global
+ * Prism_JS/prism.css applies wherever it reaches.
+ */
+:host {
+  --viewer-surface: var(--dxp-g-root, #020617);
+  --viewer-text: var(--dxp-g-root-contrast, #e2e8f0);
+}
+
+.viewer-body {
+  background-color: var(--viewer-surface);
+  color: var(--viewer-text);
+}
+
+.copy-message {
+  color: var(--viewer-text);
+}
+
 .code-container {
-  background-color: #f5f2f0; /* Default Prism Theme background */
+  background-color: #0f172a;
+  color: #e2e8f0;
   padding: 1rem;
   border-radius: 4px;
   max-height: 500px;
@@ -7,6 +29,67 @@
   font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
 }
 
-pre {
+.code-container pre,
+.code-container code {
   margin: 0;
+  padding: 0;
+  white-space: pre;
+  background: none;
+  color: #e2e8f0;
+  text-shadow: none;
+}
+
+.code-block .token {
+  background: none;
+}
+
+.code-block .token.comment,
+.code-block .token.prolog,
+.code-block .token.doctype,
+.code-block .token.cdata {
+  color: #94a3b8;
+}
+
+.code-block .token.punctuation {
+  color: #cbd5e1;
+}
+
+.code-block .token.boolean,
+.code-block .token.constant,
+.code-block .token.number,
+.code-block .token.property,
+.code-block .token.symbol,
+.code-block .token.tag {
+  color: #f472b6;
+}
+
+.code-block .token.attr-name,
+.code-block .token.builtin,
+.code-block .token.char,
+.code-block .token.selector,
+.code-block .token.string {
+  color: #86efac;
+}
+
+.code-block .token.operator,
+.code-block .token.entity,
+.code-block .token.url {
+  color: #fcd34d;
+}
+
+.code-block .token.atrule,
+.code-block .token.attr-value,
+.code-block .token.keyword {
+  color: #7dd3fc;
+}
+
+.code-block .token.class-name,
+.code-block .token.function {
+  color: #fda4af;
+}
+
+.code-block .token.regex,
+.code-block .token.important,
+.code-block .token.variable {
+  color: #fdba74;
 }

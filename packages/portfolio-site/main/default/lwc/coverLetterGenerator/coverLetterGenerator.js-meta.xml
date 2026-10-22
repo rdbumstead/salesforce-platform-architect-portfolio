@@ -3,7 +3,8 @@
     <apiVersion>62.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Cover Letter Generator</masterLabel>
-    <description>AI Powered RAG Tool</description>
+    <description
+  >Cover letter grounded on portfolio records, written through the AI dispatch</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>

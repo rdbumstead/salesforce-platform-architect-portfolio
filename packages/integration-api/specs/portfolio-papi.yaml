@@ -1301,14 +1301,22 @@ paths:
         - Logic
       summary: Generate AI Content
       description: |
-        Generates content through `PAPIAiGenerate.generate`, which dispatches with
-        `ContentGenerationController.generateWithoutAgentforce`.
+        Generates content through `PAPIAiGenerate.generate`, which calls the one provider chain,
+        `ContentGenerationController.dispatch`.
 
         **Provider chain**:
-        1. Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API (`Gemini_API` Named Credential).
-        2. Local template (`Local`), CoverLetter only.
+        1. Agentforce, only when its switch (`AI_Provider_Config__mdt` record `Agentforce`) is on.
+           It ships off, and the provider is not built yet: a switched-on call fails and the chain
+           moves on, so `provider` is never `Agentforce` today.
+        2. Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API (`Gemini_API` Named Credential),
+           with a 60 second timeout. Gemma 4 always reasons before it answers, so a response can
+           take up to about a minute.
+        3. Local template (`Local`), CoverLetter only.
 
-        Agentforce is deferred and never consulted.
+        A CoverLetter prompt also carries facts from featured projects and experience highlights,
+        chosen by keywords from `role` and `jobDescription`. No email address, phone number or
+        owner field is ever included. The API Lab cover letter page calls this endpoint through
+        `ApiLabController.generateCoverLetter`.
 
         **Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allows Gemma 4 31B
         30 requests per minute, 16,000 tokens per minute and 14,400 requests per day. When the Gemini API
@@ -1410,6 +1418,9 @@ paths:
                   - content
                   - provider
                   - generatedAt
+                  - latencyMs
+                  - attempts
+                  - promptShown
                 properties:
                   content:
                     type: string
@@ -1440,8 +1451,54 @@ paths:
                     format: date-time
                   fallbackOccurred:
                     type: boolean
-                    description: True when the local template served the request
+                    description: True when the local template served the request or an earlier provider failed
                     example: false
+                  latencyMs:
+                    type: integer
+                    format: int64
+                    description: Time the provider chain took, in milliseconds
+                    example: 1240
+                  attempts:
+                    type: array
+                    description: Every provider the chain considered, in order, with what happened
+                    items:
+                      type: object
+                      required:
+                        - provider
+                        - outcome
+                        - ms
+                      properties:
+                        provider:
+                          type: string
+                          enum: [Agentforce, Gemini, Local]
+                          example: "Gemini"
+                        outcome:
+                          type: string
+                          enum: [served, skipped_off, failed]
+                          description: |
+                            `served` wrote the content, `skipped_off` was switched off or unavailable,
+                            `failed` threw or returned no usable text.
+                          example: "served"
+                        ms:
+                          type: integer
+                          format: int64
+                          description: Time spent on this provider, in milliseconds
+                          example: 1236
+                    example:
+                      - provider: "Agentforce"
+                        outcome: "skipped_off"
+                        ms: 0
+                      - provider: "Gemini"
+                        outcome: "served"
+                        ms: 1236
+                  promptShown:
+                    type: string
+                    nullable: true
+                    description: |
+                      The prompt sent to the provider that served, as built by Apex, including the
+                      portfolio facts for a CoverLetter. Null when the local template served, because
+                      it uses no prompt.
+                    example: "Write a cover letter for Ryan Bumstead in a professional tone, no longer than 500 characters."
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

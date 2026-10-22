@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<SharingRules xmlns="http://soap.sforce.com/2006/04/metadata">
+    <sharingGuestRules>
+        <fullName>Guest_Read_All_Experience</fullName>
+        <accessLevel>Read</accessLevel>
+        <booleanFilter>1 OR 2</booleanFilter>
+        <criteriaItems>
+            <field>Sort_Order__c</field>
+            <operation>greaterOrEqual</operation>
+            <value>0</value>
+        </criteriaItems>
+        <criteriaItems>
+            <field>Sort_Order__c</field>
+            <operation>lessThan</operation>
+            <value>0</value>
+        </criteriaItems>
+        <description
+    >Shares every record read only with the site guest. Sort_Order__c is required, so every record matches.</description>
+        <includeHVUOwnedRecords>false</includeHVUOwnedRecords>
+        <label>Guest Read All Experience</label>
+        <sharedTo>
+            <guestUser>Portfolio</guestUser>
+        </sharedTo>
+    </sharingGuestRules>
+</SharingRules>

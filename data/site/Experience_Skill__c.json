@@ -1,0 +1,20 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Experience_Skill__c",
+        "referenceId": "SeedExpSkillCurrentRef"
+      },
+      "Experience__c": "@SeedRoleCurrentRef",
+      "Skill__c": "@SeedSkillIntegrationPatternsRef"
+    },
+    {
+      "attributes": {
+        "type": "Experience_Skill__c",
+        "referenceId": "SeedExpSkillPastRef"
+      },
+      "Experience__c": "@SeedRolePastRef",
+      "Skill__c": "@SeedSkillApexRef"
+    }
+  ]
+}

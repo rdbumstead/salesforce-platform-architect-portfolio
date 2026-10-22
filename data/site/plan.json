@@ -1,0 +1,68 @@
+[
+  {
+    "sobject": "Account",
+    "saveRefs": true,
+    "resolveRefs": false,
+    "files": ["Account.json"]
+  },
+  {
+    "sobject": "Contact",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Contact.json"]
+  },
+  {
+    "sobject": "Experience__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Experience__c.json"]
+  },
+  {
+    "sobject": "Experience_Highlight__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Experience_Highlight__c.json"]
+  },
+  {
+    "sobject": "Skill__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Skill__c.json"]
+  },
+  {
+    "sobject": "Experience_Skill__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Experience_Skill__c.json"]
+  },
+  {
+    "sobject": "Project__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Project__c.json"]
+  },
+  {
+    "sobject": "Project_Skill__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Project_Skill__c.json"]
+  },
+  {
+    "sobject": "Project_Asset__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Project_Asset__c.json"]
+  },
+  {
+    "sobject": "Certification__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Certification__c.json"]
+  },
+  {
+    "sobject": "Education__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["Education__c.json"]
+  }
+]

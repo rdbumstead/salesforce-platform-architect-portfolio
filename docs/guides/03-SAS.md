@@ -365,45 +365,51 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 #### 5.4.1 Feature Spotlight: Generative Cover Letter Engine
 
 > [!IMPORTANT]
-> **As built, the site's cover-letter page shows no live AI content.** Its Apex entry point, `ContentGenerationController.generateCoverLetter`, keeps its original chain with Agentforce first (decision 2026-10-20). `AgentforceService.isAvailable` always returns true and `AgentforceService.generateContent` returns the mock text `Agentforce response for: <prompt>`, so that page returns the mock until Agentforce is built. The path that reaches a real model is the API: `POST /papi/v1/ai/generate` ([ADR-015 amendment (2026-10-21)](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21)).
+> **As built, the cover letter page is written by Gemma 4 31B through the Gemini API, or by the local template when Gemini fails.** Agentforce is not implemented and its switch ships off, so no letter is attributed to it ([ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)).
 
-The target design, kept for when Agentforce is built:
+- **The Concept:** Instead of a static "About Me," recruiters enter a company name, a job title and, optionally, the job description. The system writes a cover letter explaining why this candidate fits that role.
+- **The Architecture as built:**
+  - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`. That method posts to `POST /papi/v1/ai/generate` through the `Portfolio_API` Named Credential with a 90 second timeout, so the letter is written by the integration user under the API's validation and its `papi-ai` tier of 10 requests per minute. The site guest holds no AI grant.
+  - **Retrieval Layer:** `PortfolioGroundingService` reads featured `Project__c` records (name, challenge, solution, business value, skills) and `Experience_Highlight__c` text with its role and employer, ranks them by keywords from the job title and description, and adds them to the prompt as JSON. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and stays under 8,000 characters. This is direct CRM retrieval in Apex, not the Data 360 search index of section 5.4.
+  - **Generation Layer:** `ContentGenerationController.dispatch`, described below.
+  - **Show your work:** the page's badge shows the provider and model from the response. A panel the visitor opens shows whether a fallback happened, the round trip and generation time, every attempt and the prompt that was sent.
 
-- **The Concept:** Instead of a static "About Me," recruiters input their Company Name and Job Title. The system generates a custom cover letter explaining why this specific candidate matches that specific role.
-- **The Architecture:**
-  - **Input Layer:** LWC Form (`c-cover-letter-generator`) captures context (e.g., "Senior Architect", "Financial Services").
-  - **Retrieval Layer:** Agentforce Topic executes a SOQL query against `Project__c` and `Experience__c` to find records matching the input keywords. Deferred, not built.
-  - **Generation Layer:** The LLM synthesizes the retrieved project data into a 3-paragraph professional narrative.
+**Generation strategy as built.** Providers implement `IAIGenerationService` (`generateContent`, `isAvailable`). One dispatch method, `ContentGenerationController.dispatch`, serves both `PAPIAiGenerate.generate` and the page (through the API):
 
-**Generation strategy as built.** Providers implement `IAIGenerationService` (`generateContent`, `isAvailable`). Two dispatch methods exist on `ContentGenerationController`:
+| Order       | Provider                                                                | Consulted when                                                                                                     | Result today                                                                                                                       |
+| :---------- | :---------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------- |
+| First       | Agentforce (`AgentforceService`)                                        | The `Agentforce` record of `AI_Provider_Config__mdt` has `Enabled__c` set and the running user is not a site guest | Never serves. The record ships switched off, and the class throws when switched on, which the dispatch records as a failed attempt |
+| Second      | Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API (`GeminiService`) | Always                                                                                                             | The letter, within a 60 second callout timeout. Gemma 4 always reasons first, so a letter can take up to about a minute            |
+| Last resort | Local Template (`LocalTemplateService`)                                 | Cover letters only                                                                                                 | A fixed letter naming the company and role. Other types answer 503 `ALL_PROVIDERS_UNAVAILABLE`                                     |
 
-| Method                      | Caller                                                  | Chain                                                                                       | Result today                                                            |
-| :-------------------------- | :------------------------------------------------------ | :------------------------------------------------------------------------------------------ | :---------------------------------------------------------------------- |
-| `generateCoverLetter`       | Site cover-letter page (`@AuraEnabled`)                 | Agentforce (mock) → Gemini → Local Template                                                 | Always the Agentforce mock text                                         |
-| `generateWithoutAgentforce` | `PAPIAiGenerate.generate` (`POST /papi/v1/ai/generate`) | Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API → Local Template (cover letters only) | Gemma output, or the local template, or 503 `ALL_PROVIDERS_UNAVAILABLE` |
-
-No circuit breaker is built; each request tries the chain in order. `GeminiService.generateContent` reports a failure as text starting `Error: Unable to generate content.` or `Exception: `, which `generateWithoutAgentforce` treats as a failed attempt.
+Every attempt is recorded with its outcome (`served`, `skipped_off`, `failed`) and time, and the API returns them as `attempts` beside `provider`, `model`, `fallbackOccurred`, `latencyMs` and `promptShown`. No circuit breaker is built yet, so each request tries the chain in order. `GeminiService.generateContent` reports a failure as text starting `Error: Unable to generate content.` or `Exception: `, which the dispatch treats as a failed attempt.
 
 <details>
 <summary>Click to view Sequence Diagram</summary>
 
-> _What This Diagram Shows: the `/papi/v1/ai/generate` dispatch as built. Agentforce is never consulted on this path._
+> _What This Diagram Shows: a cover letter from the site page as built. Agentforce is skipped while its switch is off._
 
 ```mermaid
 sequenceDiagram
-    participant Client as API caller
+    participant Page as c-cover-letter-generator
+    participant Proxy as ApiLabController
     participant API as PAPIAiGenerate
     participant Dispatcher as ContentGenerationController
+    participant Grounding as PortfolioGroundingService
     participant Gemini as GeminiService (gemma-4-31b-it)
     participant Local as LocalTemplateService
 
-    Client->>API: POST /papi/v1/ai/generate
-    API->>Dispatcher: generateWithoutAgentforce(prompt, context, localAllowed)
+    Page->>Proxy: generateCoverLetter(company, title, description)
+    Proxy->>API: POST /papi/v1/ai/generate (Portfolio_API)
+    API->>Grounding: build(role, jobDescription)
+    Grounding-->>API: projects and highlights JSON
+    API->>Dispatcher: dispatch(prompt, context, localAllowed)
+    Note over Dispatcher: Agentforce switch off, attempt recorded as skipped_off
     Dispatcher->>Gemini: generateContent()
     alt Usable text
         Gemini-->>Dispatcher: content
-        Dispatcher-->>API: provider Gemini
-    else Error text or exception
+        Dispatcher-->>API: provider Gemini, attempts, promptShown
+    else Error text, exception or timeout
         Gemini-->>Dispatcher: failure
         alt CoverLetter
             Dispatcher->>Local: generateContent()
@@ -411,15 +417,16 @@ sequenceDiagram
             Dispatcher-->>API: provider Local, fallbackOccurred true
         else Other types
             Dispatcher-->>API: ContentGenerationException
-            API-->>Client: 503 ALL_PROVIDERS_UNAVAILABLE
+            API-->>Proxy: 503 ALL_PROVIDERS_UNAVAILABLE
         end
     end
-    API-->>Client: 200 content, provider, model, X-AI-Provider
+    API-->>Proxy: 200 content, provider, model, latencyMs, attempts, promptShown
+    Proxy-->>Page: CoverLetterResult (badge and panel read from it)
 ```
 
 </details>
 
-- **Privacy:** Inputs are processed transiently and never stored in Salesforce.
+- **Privacy:** Inputs are processed transiently and never stored in Salesforce. The prompt shown to the visitor holds only what they typed and public portfolio facts.
 
 #### 5.4.2 Optional Edge Layer Integration (Future Scope)
 

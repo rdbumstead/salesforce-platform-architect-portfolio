@@ -1,100 +1,68 @@
 <template>
-  <div class="roadmap-container slds-p-around_medium">
-    <div class="header slds-m-bottom_medium slds-grid slds-grid_align-spread">
-      <h2 class="slds-text-heading_medium">Product Roadmap</h2>
-      <div class="sync-status">
-        <lightning-badge
-          label="Live Sync: Jira"
-          icon-name="utility:sync"
-          class="slds-theme_success"
-        ></lightning-badge>
-      </div>
-    </div>
-
-    <div class="slds-grid slds-gutters">
-      <!-- Column 1: To Do -->
-      <div class="slds-col slds-size_1-of-3">
-        <div class="kanban-column">
-          <h3
-            class="slds-text-heading_small slds-m-bottom_small slds-p-left_small border-left-todo"
+  <section class="roadmap" aria-labelledby="roadmap-heading">
+    <header class="roadmap-header">
+      <h2 id="roadmap-heading" class="roadmap-title">Product Roadmap</h2>
+      <div class="roadmap-meta">
+        <template lwc:if={statusBadge}>
+          <span class={statusBadge.className} data-id="status-badge"
+            >{statusBadge.label}</span
           >
-            To Do
-          </h3>
-          <template for:each={todoItems} for:item="item">
-            <div
-              key={item.id}
-              class="kanban-card slds-box slds-box_small slds-m-bottom_small"
-            >
-              <div class="slds-grid slds-grid_align-spread">
-                <span class="ticket-id">{item.id}</span>
-                <lightning-badge
-                  label={item.type}
-                  class={item.badgeClass}
-                ></lightning-badge>
-              </div>
-              <p class="slds-text-heading_small slds-m-top_x-small">
-                {item.title}
-              </p>
-            </div>
-          </template>
-        </div>
+        </template>
+        <template lwc:if={ageText}>
+          <span class={ageClass} data-id="age-label">{ageText}</span>
+        </template>
       </div>
+    </header>
 
-      <!-- Column 2: In Progress -->
-      <div class="slds-col slds-size_1-of-3">
-        <div class="kanban-column">
-          <h3
-            class="slds-text-heading_small slds-m-bottom_small slds-p-left_small border-left-progress"
-          >
-            In Progress
-          </h3>
-          <template for:each={inProgressItems} for:item="item">
-            <div
-              key={item.id}
-              class="kanban-card slds-box slds-box_small slds-m-bottom_small"
-            >
-              <div class="slds-grid slds-grid_align-spread">
-                <span class="ticket-id">{item.id}</span>
-                <lightning-badge
-                  label={item.type}
-                  class={item.badgeClass}
-                ></lightning-badge>
-              </div>
-              <p class="slds-text-heading_small slds-m-top_x-small">
-                {item.title}
-              </p>
-            </div>
-          </template>
-        </div>
-      </div>
+    <template lwc:if={isLoading}>
+      <p class="roadmap-message" data-id="loading">Loading the roadmap</p>
+    </template>
 
-      <!-- Column 3: Done -->
-      <div class="slds-col slds-size_1-of-3">
-        <div class="kanban-column">
-          <h3
-            class="slds-text-heading_small slds-m-bottom_small slds-p-left_small border-left-done"
+    <template lwc:if={showBoard}>
+      <div class="roadmap-board">
+        <template for:each={columns} for:item="column">
+          <div
+            key={column.category}
+            class="roadmap-column"
+            data-category={column.category}
           >
-            Done
-          </h3>
-          <template for:each={doneItems} for:item="item">
-            <div
-              key={item.id}
-              class="kanban-card slds-box slds-box_small slds-m-bottom_small done-card"
-            >
-              <div class="slds-grid slds-grid_align-spread">
-                <span class="ticket-id">{item.id}</span>
-                <lightning-badge
-                  label={item.type}
-                  class={item.badgeClass}
-                ></lightning-badge>
-              </div>
-              <p class="slds-text-heading_small slds-m-top_x-small">
-                {item.title}
-              </p>
-            </div>
-          </template>
-        </div>
+            <h3 class="column-title">
+              {column.label}
+              <span class="column-count">({column.count})</span>
+            </h3>
+            <ul class="card-list">
+              <template for:each={column.cards} for:item="card">
+                <li key={card.key} class={card.className} data-key={card.key}>
+                  <div class="card-top">
+                    <span class="card-key" data-id="key">{card.key}</span>
+                    <template lwc:if={card.isEpic}>
+                      <span class="epic-label" data-id="epic-label">Epic</span>
+                    </template>
+                    <template lwc:else>
+                      <span class="card-type" data-id="type">{card.type}</span>
+                    </template>
+                  </div>
+                  <p class="card-summary" data-id="summary">{card.summary}</p>
+                  <template lwc:if={card.epicKey}>
+                    <p class="card-parent" data-id="epic-key">
+                      Part of {card.epicKey}
+                    </p>
+                  </template>
+                </li>
+              </template>
+            </ul>
+            <template lwc:if={column.isEmpty}>
+              <p class="column-empty">Nothing here right now.</p>
+            </template>
+          </div>
+        </template>
       </div>
-    </div>
-  </div>
+    </template>
+
+    <template lwc:if={showUnavailable}>
+      <p class="roadmap-message" data-id="unavailable">
+        Roadmap temporarily unavailable
+      </p>
+    </template>
+  </section>
 </template>
