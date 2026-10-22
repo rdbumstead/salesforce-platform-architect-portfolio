@@ -874,18 +874,8 @@ components:
 
     PortfolioConfig:
       type: object
-      description: "Global Config Schema (Custom Metadata)."
+      description: "Global Config Schema (Custom Metadata). The owner's email and phone are never returned."
       properties:
-        ownerEmail:
-          type: string
-          format: email
-          example: "ryan@ryanbumstead.com"
-          description: "Owner Email"
-        ownerPhone:
-          type: string
-          example: "+1 555-0199"
-          nullable: true
-          description: "Owner Phone"
         linkedInUrl:
           type: string
           format: uri

@@ -549,16 +549,8 @@ components:
     # --- Basic DTOs ---
     PortfolioConfig:
       type: object
-      required:
-        - ownerEmail
+      description: Public configuration. The owner's email and phone are never returned.
       properties:
-        ownerEmail:
-          type: string
-          format: email
-          example: "bumsteadryan@gmail.com"
-        ownerPhone:
-          type: string
-          example: "+1 555-0199"
         linkedInUrl:
           type: string
           format: uri
@@ -594,10 +586,9 @@ components:
 
     ContactDetail:
       type: object
-      description: Simplified contact information for the header
+      description: Simplified contact information for the header. No email or phone is returned.
       required:
         - fullName
-        - email
       properties:
         id:
           type: string
@@ -605,13 +596,6 @@ components:
         fullName:
           type: string
           example: "Ryan Bumstead"
-        email:
-          type: string
-          format: email
-          example: "ryan@ryanbumstead.com"
-        phone:
-          type: string
-          example: "+1 555-0199"
         title:
           type: string
           example: "Platform Architect"
@@ -757,19 +741,18 @@ components:
       required:
         - access_token
         - token_type
-        - expires_in
         - instance_url
       properties:
         access_token:
           type: string
-          description: OAuth 2.0 Bearer token bound to the read-only integration user.
+          description: >-
+            OAuth 2.0 Bearer token bound to the read-only integration user. It is the integration
+            user's current session, shared by every evaluator, and it ends after 30 minutes without
+            use (the integration profile's idle timeout). The response carries no expires_in,
+            because the token endpoint reports no expiry and a fixed number would be a guess.
         token_type:
           type: string
           enum: [Bearer]
-        expires_in:
-          type: integer
-          description: Always 1800, the integration profile's session timeout. The token endpoint returns no expiry, so this is the profile setting, not a value read from the grant.
-          example: 1800
         instance_url:
           type: string
           format: uri
@@ -827,9 +810,10 @@ paths:
         hands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,
         then runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named
         Credential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user
-        and expire with its 30-minute session. While that session is valid, every exchange returns the
-        same token, so all evaluators share one token and one rate limit per tier (SAPI 120, PAPI 15,
-        `/ai/*` 10 per minute).
+        and end with its session, after 30 minutes without use. While that session is valid, every
+        exchange returns the same token, so all evaluators share one token and one rate limit per tier
+        (SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token
+        endpoint reports no expiry, and the session's end depends on use.
 
         - **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254
           characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule
@@ -933,8 +917,6 @@ paths:
                 $ref: "#/components/schemas/FullPortfolioPayload"
               example:
                 config:
-                  ownerEmail: "bumsteadryan@gmail.com"
-                  ownerPhone: "+1 555-0199"
                   linkedInUrl: "https://linkedin.com/in/ryanbumstead"
                   calendlyUrl: "https://calendly.com/ryanbumstead"
                   githubUrl: "https://github.com/ryanbumstead"
@@ -944,8 +926,6 @@ paths:
                 contactInfo:
                   id: "0035e00000B2O3DAAV"
                   fullName: "Ryan Bumstead"
-                  email: "bumsteadryan@gmail.com"
-                  phone: "555-0199"
                   title: "Platform Architect"
                   linkedIn: "https://linkedin.com/in/ryanbumstead"
                   github: "https://github.com/ryanbumstead"
