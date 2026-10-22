@@ -127,6 +127,7 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 9. **Assign `Portfolio_Admin`** to administrators who need to report on `API_Access_Request__c` (the token audit trail), `API_Rate_Window__c` and `Pipeline_Run__c`. It grants read and View All on the first two, read on `Pipeline_Run__c`, and read on their fields. Without it the fields are not readable, even in SOQL. It also grants the `GitHub_Auth-GitHub_Principal` and `Jira_Auth-Jira_Principal` principals, which the admin who schedules the cache refresh needs (owner decision E8, 2026-10-21). `Integration_Access` keeps those two principals as well.
 10. **Token settings.** `Portfolio_Config__mdt.Ryan_Bumstead.Token_Daily_Cap__c` sets the daily evaluator token cap (`TokenExchangeService.dailyCap`, default 50 when blank); `Last_Secret_Rotation__c` records the last rotation date.
 11. **Governance publisher.** CI publishes `Governance_Event__e` as each workflow's existing JWT user (`deploy.yml` and `keep-alive.yml`). Assign `Governance_Publisher` (Create on that event only) to whichever of those users cannot create it yet. The publish steps in the two workflows are the owner's edits, made after the event is deployed to production.
+12. **Schedule the cache refresh** as the administrator who holds `Portfolio_Admin` (it carries the GitHub and Jira principals). From anonymous Apex, once per org: `IntegrationCacheRefreshScheduler.scheduleAll();`. It creates four jobs, `Integration Cache Refresh :00`, `:15`, `:30` and `:45`, each enqueuing `GitHubCacheRefreshJob` and `JiraCacheRefreshJob`. With no `Portfolio_Config__mdt` record (a scratch org), each job logs and exits.
 
 **Operational notes:** rotation and revocation procedures are in the [Maintenance Guide §1.2](./05-Maintenance-Guide.md#12-external-client-app-secret-rotation).
 
@@ -212,7 +213,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - **One event layer.** `c/analyticsService` exports `trackEvent(name, params)` and `EVENTS`, the one event list. `trackEvent` does nothing when `window.gtag` is absent and never throws, so analytics can never break a component. Later rounds append to `EVENTS`.
 - **Events** (measurement id `G-G6P1S31J8L`):
   - `api_test_executed` {`path`, `status`}, `api_reference_opened` {`spec`}
-  - `ai_generation_completed` {`provider`, `model`, `fallback`, `latency_ms`, `outcome`}, `ai_complete_failure` {`message_kind`}. The Charter's AI rates are computed in GA4 from these (PD-D8).
+  - `ai_generation_completed` {`provider`, `model`, `fallback`, `latency_ms`, `outcome`}, where `outcome` is `live`, `template_unreachable` or `template_slow`, and `ai_complete_failure` {`message_kind`}, where the kind is `rate_limited`, `no_provider`, `invalid_input` or `other`, never the message. The Charter's AI rates are computed in GA4 from these (PD-D8).
   - `resume_downloaded` {`persona`, `format`}
   - `roadmap_viewed`, `changelog_commit_clicked` {`sha`}, `governance_run_link_clicked` {`workflow`}
   - `finops_quota_visibility`, `theme_changed` {`theme`}
