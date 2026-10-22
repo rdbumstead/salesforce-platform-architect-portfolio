@@ -9,10 +9,22 @@
 import { createElement } from "@lwc/engine-dom";
 import PortfolioThemeLayout from "c/portfolioThemeLayout";
 import { PILLARS } from "c/pillarData";
+import { trackEvent } from "c/analyticsService";
 
 jest.mock(
   "@salesforce/community/basePath",
   () => ({ __esModule: true, default: "/portfolio" }),
+  { virtual: true }
+);
+
+// c/analyticsService is built by WS1 (contract L4). Mocked so this bundle tests on its own.
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    __esModule: true,
+    trackEvent: jest.fn(),
+    EVENTS: { THEME_CHANGED: "theme_changed" }
+  }),
   { virtual: true }
 );
 
@@ -272,6 +284,25 @@ describe("c-portfolio-theme-layout", () => {
       expect(element.getAttribute("data-theme")).toBe("light");
       expect(window.localStorage.getItem(STORAGE_KEY)).toBe("light");
       expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    });
+
+    it("sends theme_changed with the new theme on each press", async () => {
+      const element = render();
+      const toggle = element.shadowRoot.querySelector(".theme-toggle");
+      expect(trackEvent).not.toHaveBeenCalled();
+
+      toggle.click();
+      await flush();
+      expect(trackEvent).toHaveBeenLastCalledWith("theme_changed", {
+        theme: "dark"
+      });
+
+      toggle.click();
+      await flush();
+      expect(trackEvent).toHaveBeenLastCalledWith("theme_changed", {
+        theme: "light"
+      });
+      expect(trackEvent).toHaveBeenCalledTimes(2);
     });
 
     it("applies a saved choice on load over the system setting", () => {

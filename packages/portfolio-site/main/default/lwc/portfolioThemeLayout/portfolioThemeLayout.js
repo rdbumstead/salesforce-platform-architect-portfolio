@@ -12,6 +12,7 @@
 import { LightningElement } from "lwc";
 import basePath from "@salesforce/community/basePath";
 import { PILLARS } from "c/pillarData";
+import { trackEvent, EVENTS } from "c/analyticsService";
 
 // Route URLs match the urlPrefix of each route in the Portfolio1 site bundle (K7).
 const PAGES = [
@@ -192,6 +193,7 @@ export default class PortfolioThemeLayout extends LightningElement {
     this.chosenTheme = next;
     this.applyTheme(next);
     storeTheme(next);
+    trackEvent(EVENTS.THEME_CHANGED, { theme: next });
   }
 
   handleMenuToggle() {
