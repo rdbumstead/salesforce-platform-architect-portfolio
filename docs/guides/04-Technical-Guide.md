@@ -246,7 +246,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - [ ] **Coverage:** Verify Apex tests > 90% coverage (Hard Gate).
 - [ ] **Security:** Verify Zero critical warnings from PMD Scanner.
 - [ ] **Accessibility:** Confirm the "Pause Animation" toggle exists and works.
-- [ ] **Degradation Test:** turn on "Simulate an outage" on the changelog or the roadmap. Verify the cached data stays on screen with a `SIMULATED` badge and no request leaves for GitHub or Jira.
+- [ ] **Degradation Test:** turn on "Simulate an outage" on the changelog or the roadmap. Verify the cached data stays on screen with a "Simulated" badge (status `SIMULATED`) and no request leaves for GitHub or Jira.
 - [ ] **Limit Visibility:** Verify "Glass Box Telemetry" footer accurately reflects Heap Size changes after running a heavy operation.
 - [ ] **Analytics:** Verify api_test_executed event fires in GA4 Real-Time view when using the API Tester.
 - [ ] Verify the Skill Graph uses `lightning/uiGraphQLApi` (the Network tab shows a `/graphql` call to the Salesforce domain). The Roadmap reads Apex over the cache (`DeliveryController.getRoadmap`), so it makes no GraphQL call
