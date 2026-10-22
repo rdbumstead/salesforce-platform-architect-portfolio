@@ -1,33 +1,60 @@
 <template>
-  <lightning-card title="Governance Checklist" icon-name="action:approval">
-    <div class="slds-p-around_medium">
-      <div class="slds-m-bottom_medium">
-        <span class="slds-badge slds-theme_success" if:true={isConnected}
-          >Live Connected</span
-        >
-        <span class="slds-badge slds-theme_warning" if:false={isConnected}
-          >Offline</span
-        >
-      </div>
+  <section class="checklist" aria-labelledby="governance-heading">
+    <p class="eyebrow">Pipeline governance</p>
+    <h2 class="heading" id="governance-heading">Governance checklist</h2>
 
-      <ul class="slds-has-dividers_bottom-space">
-        <template for:each={items} for:item="item">
-          <li key={item.id} class="slds-item">
-            <div class="slds-grid slds-grid_vertical-align-center">
-              <lightning-icon
-                icon-name={item.icon}
-                size="x-small"
-                class={item.iconClass}
-                variant={item.variant}
-              >
-              </lightning-icon>
-              <span class="slds-m-left_small slds-truncate" title={item.label}
-                >{item.label}</span
-              >
-            </div>
-          </li>
-        </template>
-      </ul>
-    </div>
-  </lightning-card>
+    <template lwc:if={isLoading}>
+      <p class="note" role="status">Loading the latest pipeline runs.</p>
+    </template>
+    <template lwc:elseif={hasError}>
+      <p class="note" role="status">
+        The pipeline status could not be loaded. No item is shown as passed.
+      </p>
+    </template>
+
+    <ul class="items">
+      <template for:each={items} for:item="item">
+        <li key={item.key} class="item" data-key={item.key}>
+          <span class={item.stateClass} data-ticked={item.ticked}>
+            {item.stateText}
+          </span>
+          <div class="body">
+            <p class="label">{item.label}</p>
+            <template lwc:if={item.hasRunLink}>
+              <p class="evidence">
+                <a
+                  class="run-link"
+                  href={item.run.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={item.run.sha}
+                  aria-label={item.run.linkLabel}
+                  data-workflow={item.run.workflow}
+                  onclick={handleRunClick}
+                  >{item.run.shortSha}</a
+                >
+                <span class="time">{item.run.time}</span>
+              </p>
+            </template>
+            <template lwc:if={item.hasRunText}>
+              <p class="evidence">
+                <span class="sha" title={item.run.sha}
+                  >{item.run.shortSha}</span
+                >
+                <span class="time">{item.run.time}</span>
+              </p>
+            </template>
+            <template lwc:if={item.cacheText}>
+              <p class="evidence time">{item.cacheText}</p>
+            </template>
+          </div>
+        </li>
+      </template>
+    </ul>
+
+    <p class="note">
+      Updated by a platform event from the pipeline. Refreshed when you open or
+      return to this page.
+    </p>
+  </section>
 </template>

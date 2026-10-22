@@ -1,3 +1,120 @@
-.slds-item {
-  padding: 0.75rem 0;
+:host {
+  display: block;
+}
+
+.checklist {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-lg);
+  padding: var(--pf-space-5);
+  color: var(--pf-body);
+  font-family: var(--pf-font-sans);
+}
+
+.eyebrow {
+  margin: 0 0 var(--pf-space-1);
+  font-family: var(--pf-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pf-muted);
+}
+
+.heading {
+  margin: 0 0 var(--pf-space-4);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  display: flex;
+  gap: var(--pf-space-3);
+  align-items: flex-start;
+  padding: var(--pf-space-3) 0;
+  border-top: 1px solid var(--pf-border);
+}
+
+.item:first-child {
+  border-top: none;
+}
+
+.state {
+  flex: 0 0 auto;
+  min-width: 7.5rem;
+  padding: var(--pf-space-1) var(--pf-space-2);
+  border-radius: var(--pf-radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  background: var(--pf-chip);
+  color: var(--pf-chip-text);
+}
+
+.state-pass {
+  color: var(--pf-ok);
+}
+
+.state-fail {
+  background: var(--pf-error);
+  color: var(--pf-error-text);
+}
+
+.state-stale {
+  background: var(--pf-warn);
+  color: var(--pf-warn-text);
+}
+
+.body {
+  min-width: 0;
+}
+
+.label {
+  margin: 0;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.evidence {
+  margin: var(--pf-space-1) 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+  align-items: center;
+}
+
+.run-link,
+.sha,
+.time {
+  font-family: var(--pf-font-mono);
+  font-size: 0.8125rem;
+}
+
+.run-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  min-width: 24px;
+  color: var(--pf-accent);
+}
+
+.run-link:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+.time {
+  color: var(--pf-muted);
+}
+
+.note {
+  margin: var(--pf-space-4) 0 0;
+  font-size: 0.875rem;
+  color: var(--pf-muted);
 }

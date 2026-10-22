@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >For the CI user that publishes Governance_Event__e from GitHub Actions. Create on that event only, plus the read the platform requires with it. Nothing else. Assign it only to the workflow user that lacks Create on the event.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>Governance Publisher</label>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Governance_Event__e</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+</PermissionSet>

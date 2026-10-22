@@ -41,6 +41,11 @@
                       "definition": "c:changelog",
                       "id": "e8dd52e9-7fad-4544-ac20-881fc4b9664d",
                       "type": "component"
+                    },
+                    {
+                      "definition": "c:smartChecklist",
+                      "id": "0a35156b-3623-49ad-9c01-59a218b57573",
+                      "type": "component"
                     }
                   ],
                   "id": "71aa6982-74f6-4640-aea8-d46c489b11a9",

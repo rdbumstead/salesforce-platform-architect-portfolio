@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The Pipeline Run object keeps the newest 60 GitHub Actions runs per workflow, written only by the Governance Event trigger. It records Workflow, Status, Run Id, Run URL, Commit SHA, Completed At and Run Key (unique, external ID). Commonly used for the Delivery page checklist and pipeline audits.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>false</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>Pipeline Run</label>
+    <nameField>
+        <displayFormat>RUN-{00000}</displayFormat>
+        <label>Pipeline Run Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Pipeline Runs</pluralLabel>
+    <searchLayouts />
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>
