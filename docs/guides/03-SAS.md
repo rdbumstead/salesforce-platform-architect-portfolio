@@ -542,7 +542,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 
 - **Symptom:** GitHub Commits or Portfolio API returns status 429.
 - **Mitigation (GitHub):** System automatically serves cached responses from `GitHub_Cache__c` (Custom Setting) indefinitely until the limit resets.
-- **Mitigation (Portfolio API):** the 429 comes from `RateWindowLimiter` (SAPI 120, PAPI 15, `/ai/*` 10 requests per minute per caller key). The caller waits for `Retry-After`, which is the seconds left in the current minute ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)).
+- **Mitigation (Portfolio API):** the 429 comes from `RateWindowLimiter` (SAPI 120, PAPI 15, `/ai/*` 10 requests per minute per caller key). The caller waits for `Retry-After`, which is the seconds left in the current minute ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)). Every vended evaluator token is the same session, so all evaluators share one key per tier, and one busy evaluator can use up the minute for everyone ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4)).
 
 ### 8.4 Resilience Simulation Operations
 
@@ -600,7 +600,7 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 - **Distributed Tracing:** Mandatory `X-Request-Id` header (UUID format) in all requests for correlation across log aggregation systems
 - **Contract-First Design:** OpenAPI 3.0 specification defines the interface before implementation
 - **Explicit Caching:** `Cache-Control` headers distinguish between cacheable configuration (`max-age=300`) and dynamic data (`no-store`)
-- **Rate Limiting:** Standard tier enforces 120 requests/minute with burst capacity of 20
+- **Rate Limiting:** `RateWindowLimiter` allows 120 requests per minute per caller key, with no burst allowance. Every evaluator token is the same session, so all evaluators share that one limit ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4))
 - **Versioning:** `X-API-Version` header required for contract negotiation and backward compatibility
 
 **Core Endpoints:**
@@ -805,7 +805,7 @@ sequenceDiagram
 1. **Least privilege:** a client-credentials token is valid for any REST API as the integration user, so the integration user's permission set is the real boundary: read-only on portfolio objects, execute on SAPI/PAPI classes, nothing else.
 2. **Expiry:** the integration user runs under a profile with a 30-minute session timeout.
 3. **Kill switch:** deactivating the External Client App revokes every outstanding token.
-4. **Quota protection:** rate limiting by `RateWindowLimiter` ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)), 15 token requests per minute per email and source IP, and a daily cap on issued tokens (`Token_Daily_Cap__c`, default 50) guard the Developer Edition API request limit (15,000/day).
+4. **Quota protection:** rate limiting by `RateWindowLimiter` ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)), shared by every evaluator because every vended token is the same session ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4)), 15 token requests per minute per email and source IP, and a daily cap on issued tokens (`Token_Daily_Cap__c`, default 50) guard the Developer Edition API request limit (15,000/day).
 5. **Audit:** every token request writes an `API_Access_Request__c` record.
 
 **Evaluator flow:**
