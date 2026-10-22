@@ -91,6 +91,27 @@ private class SchemaServiceTest {
   }
 
   @isTest
+  static void customSettingsAreLeftOut() {
+    Set<String> portfolio = nodeNames(graphFor(SchemaService.SCOPE_PORTFOLIO));
+    Set<String> employerHub = nodeNames(
+      graphFor(SchemaService.SCOPE_EMPLOYER_HUB)
+    );
+
+    Assert.isTrue(
+      Circuit_Breaker_State__c.SObjectType.getDescribe().isCustomSetting(),
+      'Circuit_Breaker_State__c is a custom setting'
+    );
+    Assert.isFalse(
+      portfolio.contains('Circuit_Breaker_State__c'),
+      'A custom setting is not drawn in portfolio'
+    );
+    Assert.isFalse(
+      employerHub.contains('Circuit_Breaker_State__c'),
+      'A custom setting is not drawn in employerHub'
+    );
+  }
+
+  @isTest
   static void overrideRecordMovesAnObjectToEmployerHub() {
     // Custom metadata cannot be inserted in a test, so the rows go through the seam.
     SchemaService.overrideRecords = (List<Schema_Visualizer_Object__mdt>) JSON.deserialize(

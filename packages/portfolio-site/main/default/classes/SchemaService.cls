@@ -82,11 +82,17 @@ public with sharing class SchemaService {
         objectNames,
         SObjectDescribeOptions.DEFERRED
       );
+      // A custom setting ends in __c too, but it is configuration, not data model
+      // (log 192), so it is dropped once the describe says what it is.
+      List<Schema.DescribeSObjectResult> objects = new List<Schema.DescribeSObjectResult>();
       Map<String, String> namesInScope = new Map<String, String>();
       for (Schema.DescribeSObjectResult result : results) {
-        namesInScope.put(result.getName().toLowerCase(), result.getName());
+        if (!result.isCustomSetting()) {
+          objects.add(result);
+          namesInScope.put(result.getName().toLowerCase(), result.getName());
+        }
       }
-      for (Schema.DescribeSObjectResult result : results) {
+      for (Schema.DescribeSObjectResult result : objects) {
         graph.nodes.add(toNode(result, namesInScope, graph.edges));
       }
     }
