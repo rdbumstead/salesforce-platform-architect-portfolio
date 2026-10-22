@@ -15,7 +15,7 @@ info:
     ### 2. Versioning Strategy
     - **Pattern**: Header-based versioning takes precedence.
     - **Header**: `X-API-Version: v1`. A missing header resolves to `v1`; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026).
-    - **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID; a present but non-UUID value returns `400 BAD_REQUEST`. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes a valid caller-supplied `X-Request-Id`, and Apex sets it only when it generated the value (ADR-026).
+    - **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID; a present but non-UUID value returns `400 BAD_REQUEST`. On My Domain the platform injects its own 32-character hex id when the caller sends none, and PAPI treats that value as missing. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes whatever `X-Request-Id` the request carries, its own included, and Apex sets the header only when it generated the value and the request carried none, so the header appears once (ADR-026). When the platform injected its id, the header carries that id and an error body's `correlationId` carries the generated UUID. Send your own UUID to get one predictable id.
     - **URL**: Version segments removed from base path to align with SAPI ADR.
 
     ### 3. Rate Limiting & Aggregation Math
@@ -111,7 +111,7 @@ components:
       name: X-Request-Id
       in: header
       required: false
-      description: Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).
+      description: Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).
       schema:
         type: string
         format: uuid
