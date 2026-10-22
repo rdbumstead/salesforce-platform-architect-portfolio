@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Case__c</fullName>
+    <description>The inquiry case that asked for the letter.</description>
+    <inlineHelpText>Pick the case that requested this letter.</inlineHelpText>
+    <label>Request</label>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <referenceTo>Case</referenceTo>
+    <relationshipLabel>Letters of Support</relationshipLabel>
+    <relationshipName>EH_Letters_of_Support</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

@@ -1,21 +1,193 @@
 <template>
-  <lightning-card title="Data Model (ERD)" icon-name="standard:relationship">
-    <div class="slds-p-around_medium chart-container">
-      <template if:true={isLoading}>
-        <lightning-spinner
-          alternative-text="Loading Chart"
-          size="small"
-        ></lightning-spinner>
-      </template>
-      <div if:false={isLoading} class="slds-text-align_center">
-        <!-- Placeholder for G6 or Mermaid Chart -->
-        <p class="slds-m-bottom_medium slds-text-color_weak">
-          Visualization powered by AntV G6 (Lazy Loaded).
-        </p>
-        <div class="mock-chart">
-          [ Project__c ] --&lt; [ Project_Skill__c ] &gt;-- [ Skill__c ]
-        </div>
+  <section class="erd" aria-label="Data model">
+    <div class="erd-header">
+      <h2 class="erd-title">Data model, live</h2>
+      <div class="scope-toggle" role="group" aria-label="Schema scope">
+        <template for:each={scopeButtons} for:item="button">
+          <button
+            key={button.value}
+            type="button"
+            class={button.className}
+            aria-pressed={button.pressed}
+            data-scope={button.value}
+            onclick={handleScopeClick}
+          >
+            {button.label}
+          </button>
+        </template>
       </div>
     </div>
-  </lightning-card>
+
+    <template lwc:if={isLoading}>
+      <p class="status" role="status">Loading the data model.</p>
+    </template>
+    <template lwc:if={hasError}>
+      <p class="status status_error" role="alert">{errorMessage}</p>
+    </template>
+    <template lwc:if={isEmpty}>
+      <p class="status">No objects to show for this scope.</p>
+    </template>
+
+    <template lwc:if={showContent}>
+      <p class="caption">{caption}</p>
+      <template lwc:if={engineErrorMessage}>
+        <p class="status status_error" role="status">{engineErrorMessage}</p>
+      </template>
+
+      <template lwc:if={showDiagram}>
+        <div class="diagram">
+          <template lwc:if={diagramReady}>
+            <svg
+              class="diagram-svg"
+              viewBox={viewBox}
+              role="group"
+              aria-label={diagramLabel}
+            >
+              <template for:each={svgEdges} for:item="edge">
+                <g key={edge.key} class={edge.className} aria-hidden="true">
+                  <line
+                    x1={edge.x1}
+                    y1={edge.y1}
+                    x2={edge.x2}
+                    y2={edge.y2}
+                  ></line>
+                  <template lwc:if={edge.isMasterDetail}>
+                    <circle
+                      class="edge-dot"
+                      cx={edge.x2}
+                      cy={edge.y2}
+                      r={edge.dotRadius}
+                    ></circle>
+                  </template>
+                </g>
+              </template>
+              <template for:each={svgNodes} for:item="node">
+                <g
+                  key={node.key}
+                  class={node.className}
+                  role="button"
+                  tabindex="0"
+                  aria-label={node.ariaLabel}
+                  aria-pressed={node.pressed}
+                  data-api={node.apiName}
+                  onclick={handleNodeClick}
+                  onkeydown={handleNodeKeydown}
+                >
+                  <rect
+                    x={node.x}
+                    y={node.y}
+                    width={node.width}
+                    height={node.height}
+                    rx="8"
+                  ></rect>
+                  <text
+                    class="node-label"
+                    x={node.labelX}
+                    y={node.labelY}
+                    text-anchor="middle"
+                  >
+                    {node.label}
+                  </text>
+                  <text
+                    class="node-count"
+                    x={node.labelX}
+                    y={node.countY}
+                    text-anchor="middle"
+                  >
+                    {node.count}
+                  </text>
+                </g>
+              </template>
+            </svg>
+          </template>
+          <template lwc:else>
+            <p class="status" role="status">Drawing the diagram.</p>
+          </template>
+        </div>
+        <ul class="legend" aria-label="Legend">
+          <li class="legend-item">
+            <svg class="legend-swatch" viewBox="0 0 40 12" aria-hidden="true">
+              <line class="legend-line" x1="2" y1="6" x2="32" y2="6"></line>
+              <circle class="edge-dot" cx="33" cy="6" r="4"></circle>
+            </svg>
+            Master-detail, the dot marks the parent
+          </li>
+          <li class="legend-item">
+            <svg class="legend-swatch" viewBox="0 0 40 12" aria-hidden="true">
+              <line
+                class="legend-line legend-line_lookup"
+                x1="2"
+                y1="6"
+                x2="38"
+                y2="6"
+              ></line>
+            </svg>
+            Lookup
+          </li>
+        </ul>
+      </template>
+
+      <template lwc:if={hasSelection}>
+        <div class="panel" role="region" aria-label={panelHeading}>
+          <div class="panel-header">
+            <h3 class="panel-title">{panelHeading}</h3>
+            <button
+              type="button"
+              class="panel-close"
+              onclick={handleClosePanel}
+            >
+              Close
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table class="fields">
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col">Label</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">References</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template for:each={selectedFields} for:item="field">
+                  <tr key={field.key} class="field-row">
+                    <td class="mono">{field.apiName}</td>
+                    <td>{field.label}</td>
+                    <td class="mono">{field.type}</td>
+                    <td class="mono">{field.references}</td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </template>
+
+      <div class={listClass}>
+        <h3 class="list-title">Objects and relationships</h3>
+        <ul class="objects">
+          <template for:each={listItems} for:item="item">
+            <li key={item.key} class="object-item">
+              <button
+                type="button"
+                class="object-button"
+                data-api={item.apiName}
+                onclick={handleNodeClick}
+              >
+                {item.text}
+              </button>
+              <template lwc:if={item.hasRelationships}>
+                <ul class="relationships">
+                  <template for:each={item.relationships} for:item="rel">
+                    <li key={rel.key} class="relationship">{rel.text}</li>
+                  </template>
+                </ul>
+              </template>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </template>
+  </section>
 </template>

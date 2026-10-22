@@ -1,0 +1,100 @@
+{
+  "scope": "employerHub",
+  "objectCount": 3,
+  "cpuMs": 142,
+  "nodes": [
+    {
+      "apiName": "Account",
+      "label": "Account",
+      "isCustom": false,
+      "fieldCount": 2,
+      "fields": [
+        {
+          "apiName": "Name",
+          "label": "Account Name",
+          "type": "STRING",
+          "referenceTo": [],
+          "isRequired": true
+        },
+        {
+          "apiName": "ParentId",
+          "label": "Parent Account ID",
+          "type": "REFERENCE",
+          "referenceTo": ["Account"],
+          "isRequired": false
+        }
+      ]
+    },
+    {
+      "apiName": "EH_Job_Posting__c",
+      "label": "Job Posting",
+      "isCustom": true,
+      "fieldCount": 2,
+      "fields": [
+        {
+          "apiName": "Name",
+          "label": "Job Posting Title",
+          "type": "STRING",
+          "referenceTo": [],
+          "isRequired": true
+        },
+        {
+          "apiName": "Partner_Engagement__c",
+          "label": "Partner Engagement",
+          "type": "REFERENCE",
+          "referenceTo": ["EH_Partner_Engagement__c"],
+          "isRequired": true
+        }
+      ]
+    },
+    {
+      "apiName": "EH_Partner_Engagement__c",
+      "label": "Partner Engagement",
+      "isCustom": true,
+      "fieldCount": 3,
+      "fields": [
+        {
+          "apiName": "Account__c",
+          "label": "Account",
+          "type": "REFERENCE",
+          "referenceTo": ["Account"],
+          "isRequired": false
+        },
+        {
+          "apiName": "Name",
+          "label": "Partner Engagement Name",
+          "type": "STRING",
+          "referenceTo": [],
+          "isRequired": true
+        },
+        {
+          "apiName": "Stage__c",
+          "label": "Stage",
+          "type": "PICKLIST",
+          "referenceTo": [],
+          "isRequired": false
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "fromObject": "Account",
+      "toObject": "Account",
+      "field": "ParentId",
+      "kind": "lookup"
+    },
+    {
+      "fromObject": "EH_Job_Posting__c",
+      "toObject": "EH_Partner_Engagement__c",
+      "field": "Partner_Engagement__c",
+      "kind": "masterDetail"
+    },
+    {
+      "fromObject": "EH_Partner_Engagement__c",
+      "toObject": "Account",
+      "field": "Account__c",
+      "kind": "lookup"
+    }
+  ]
+}

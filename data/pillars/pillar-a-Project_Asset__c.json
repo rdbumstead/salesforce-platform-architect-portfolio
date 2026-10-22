@@ -1,0 +1,63 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "PillarAAsset1Ref"
+      },
+      "Name": "Process flow, part 1: Initial inquiry and routing",
+      "Project__c": "@PillarAProjectRef",
+      "Type__c": "Image",
+      "Alt_Text__c": "Placeholder process flow: an employer inquiry arrives by web form, email or phone, is triaged into one shared record, routed to one department, and ends with the partner engaged.",
+      "Sort_Order__c": 1,
+      "External_URL__c": "resource:EH_Assets/flow-part-1.svg"
+    },
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "PillarAAsset2Ref"
+      },
+      "Name": "Process flow, part 2: Monetary and service paths",
+      "Project__c": "@PillarAProjectRef",
+      "Type__c": "Image",
+      "Alt_Text__c": "Placeholder process flow: a routed request follows a monetary path from sponsorship to opportunity to contract, or a service path from job posting to letter of support to a closed case.",
+      "Sort_Order__c": 2,
+      "External_URL__c": "resource:EH_Assets/flow-part-2.svg"
+    },
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "PillarAAsset3Ref"
+      },
+      "Name": "Operations dashboard",
+      "Project__c": "@PillarAProjectRef",
+      "Type__c": "Image",
+      "Alt_Text__c": "Placeholder operations dashboard with six empty tiles: open inquiries, inquiries by department, days to route, engagements by stage, letters due this month and postings open.",
+      "Sort_Order__c": 3,
+      "External_URL__c": "resource:EH_Assets/dashboard-operations.svg"
+    },
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "PillarAAsset4Ref"
+      },
+      "Name": "Executive dashboard",
+      "Project__c": "@PillarAProjectRef",
+      "Type__c": "Image",
+      "Alt_Text__c": "Placeholder executive dashboard with six empty tiles: active partners, sponsorship committed, partners by focus area, placements this year, engagements by department and contracts signed.",
+      "Sort_Order__c": 4,
+      "External_URL__c": "resource:EH_Assets/dashboard-executive.svg"
+    },
+    {
+      "attributes": {
+        "type": "Project_Asset__c",
+        "referenceId": "PillarAAsset5Ref"
+      },
+      "Name": "Employer Hub demo deck",
+      "Project__c": "@PillarAProjectRef",
+      "Type__c": "Document",
+      "Alt_Text__c": "Employer Hub demo deck",
+      "Sort_Order__c": 5
+    }
+  ]
+}
