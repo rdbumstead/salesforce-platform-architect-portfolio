@@ -163,6 +163,8 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 
 ### 4.1 Scenario: Deployment Failure
 
+If Apex classes fail with "You can bypass this error by allowing deployments with Apex jobs in the Deployment Settings page in Setup", nothing is wrong with the code. A scheduled job (`Cache Cleanup Daily` or one of the four `Integration Cache Refresh` jobs) depends on a changed class. Tick "Allow deployments of components when corresponding Apex jobs are pending or in progress" in Setup > Deployment Settings ([Technical Guide](./04-Technical-Guide.md) deployment prerequisite 13), then re-run the failed deploy. The deploy is atomic, so the failed attempt changed nothing. For any other failure:
+
 1. Revert main branch to previous commit SHA.
 2. Trigger fresh deployment.
 3. Verify site health via Smoke Test suite / Manual Verification.
