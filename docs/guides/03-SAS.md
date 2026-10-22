@@ -332,7 +332,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.1 Pillar A: Business Architecture (Employer Hub)
 
 > [!NOTE]
-> **Built in Round 5, awaiting the Round 5 pull request and the owner's deploy.** The process flows and dashboards on the page are clearly labelled placeholder drawings until the sanitized material arrives. The client is described as "a community college" and never named (owner decision D4 b).
+> **Built in Round 5, awaiting the Round 5 pull request and the owner's deploy.** The process flows and dashboards on the page are redrawn from the original demo deck with no names, and the dashboards carry sample values. The client is described as "a community college" and never named (owner decision D4 b).
 
 - **Objective:** Demonstrate Business Analysis and Process Mapping.
 - **Page:** `/business-architecture`. An introduction to the problem (departments of a community college shared employer partners with no shared view) and the hub that centralized, routed and reported on the relationship, then the process map and dashboard gallery, then the live data model, then an eight step walkthrough of a partner inquiry.

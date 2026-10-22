@@ -8,7 +8,7 @@
       "Name": "Process flow, part 1: Initial inquiry and routing",
       "Project__c": "@PillarAProjectRef",
       "Type__c": "Image",
-      "Alt_Text__c": "Placeholder process flow: an employer inquiry arrives by web form, email or phone, is triaged into one shared record, routed to one department, and ends with the partner engaged.",
+      "Alt_Text__c": "Process flow, part 1: an employer submits the web form, the hub finds or creates the Account and the Contact and links them, creates one Case for each kind of help asked for, routes each Case to a queue by the Account's academic focus area and notifies the queue, and a queue member reviews the Case.",
       "Sort_Order__c": 1,
       "External_URL__c": "resource:EH_Assets/flow-part-1.svg"
     },
@@ -20,7 +20,7 @@
       "Name": "Process flow, part 2: Monetary and service paths",
       "Project__c": "@PillarAProjectRef",
       "Type__c": "Image",
-      "Alt_Text__c": "Placeholder process flow: a routed request follows a monetary path from sponsorship to opportunity to contract, or a service path from job posting to letter of support to a closed case.",
+      "Alt_Text__c": "Process flow, part 2: a service request is handled in a screen flow and the Case closes. A monetary request is converted to an Opportunity and the Case closes, the Opportunity follows the sales stages to Closed Won, an automation creates a Task for the contract, and the user creates the Contract with its file.",
       "Sort_Order__c": 2,
       "External_URL__c": "resource:EH_Assets/flow-part-2.svg"
     },
@@ -32,7 +32,7 @@
       "Name": "Operations dashboard",
       "Project__c": "@PillarAProjectRef",
       "Type__c": "Image",
-      "Alt_Text__c": "Placeholder operations dashboard with six empty tiles: open inquiries, inquiries by department, days to route, engagements by stage, letters due this month and postings open.",
+      "Alt_Text__c": "Operations dashboard with sample values: a donut chart of 22 open inquiries by queue across three academic focus areas, and a table of neglected inquiries with the queue, employer, subject and age.",
       "Sort_Order__c": 3,
       "External_URL__c": "resource:EH_Assets/dashboard-operations.svg"
     },
@@ -44,7 +44,7 @@
       "Name": "Executive dashboard",
       "Project__c": "@PillarAProjectRef",
       "Type__c": "Image",
-      "Alt_Text__c": "Placeholder executive dashboard with six empty tiles: active partners, sponsorship committed, partners by focus area, placements this year, engagements by department and contracts signed.",
+      "Alt_Text__c": "Executive dashboard with sample values: the top employer partners by won opportunity amount, and the opportunity pipeline as a funnel from Needs Analysis to Closed Won.",
       "Sort_Order__c": 4,
       "External_URL__c": "resource:EH_Assets/dashboard-executive.svg"
     },

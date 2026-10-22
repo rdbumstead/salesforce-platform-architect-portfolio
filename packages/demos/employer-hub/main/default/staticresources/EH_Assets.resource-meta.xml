@@ -2,5 +2,5 @@
 <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
     <cacheControl>Public</cacheControl>
     <contentType>application/zip</contentType>
-    <description>Employer Hub pillar images: two process flows and two dashboards, all clearly labelled placeholders drawn for the portfolio until the sanitized material arrives.</description>
+    <description>Employer Hub pillar images: two process flows and two dashboards, redrawn for the portfolio from the original demo, with no names and sample values.</description>
 </StaticResource>

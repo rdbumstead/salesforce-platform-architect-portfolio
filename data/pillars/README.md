@@ -4,12 +4,12 @@ Seed records for the pillar pages, for walking the site in a scratch org. One pl
 
 ## What `plan-a.json` holds
 
-| Object             | Records                                                                                                                                                                                                                      |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Project__c`       | 1: "Employer Hub for a community college", Pillar A, with a proposed Challenge, Solution and Business Value                                                                                                                  |
-| `Project_Asset__c` | 5: four Image rows pointing at the placeholder images in the `EH_Assets` static resource (`resource:EH_Assets/<file>.svg`, sort order 1 to 4, each with alt text), and one Document row "Employer Hub demo deck" with no URL |
+| Object             | Records                                                                                                                                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Project__c`       | 1: "Employer Hub for a community college", Pillar A, with a proposed Challenge, Solution and Business Value                                                                                                      |
+| `Project_Asset__c` | 5: four Image rows pointing at the images in the `EH_Assets` static resource (`resource:EH_Assets/<file>.svg`, sort order 1 to 4, each with alt text), and one Document row "Employer Hub demo deck" with no URL |
 
-The four images are placeholders drawn for the portfolio. Each says so in the image. They are replaced when the sanitized material arrives.
+The four images are redrawn for the portfolio from the original Employer Hub demo deck, step for step for the two flows and chart for chart for the two dashboards. They carry no names, and the dashboard values are samples, which each image says.
 
 ## Copy for the owner's review
 
