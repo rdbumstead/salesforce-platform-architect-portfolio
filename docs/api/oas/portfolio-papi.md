@@ -438,7 +438,7 @@ strictest-policy-wins.
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
-  "summary": "7+ years of experience as a Salesforce Platform Architect",
+  "summary": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education",
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",
@@ -1183,7 +1183,7 @@ const inputBody = '{
       "LWC",
       "Integration Architecture"
     ],
-    "experienceSummary": "7+ years as Salesforce Architect"
+    "experienceSummary": "Nearly a decade on the Salesforce platform"
   },
   "tone": "Professional",
   "maxLength": 500
@@ -1255,7 +1255,7 @@ CoverLetter requires `context.companyName` and `context.role`. Content longer th
       "LWC",
       "Integration Architecture"
     ],
-    "experienceSummary": "7+ years as Salesforce Architect"
+    "experienceSummary": "Nearly a decade on the Salesforce platform"
   },
   "tone": "Professional",
   "maxLength": 500
@@ -1819,7 +1819,7 @@ This operation does not require authentication
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
-  "summary": "7+ years of experience as a Salesforce Platform Architect",
+  "summary": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education",
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",
@@ -1946,7 +1946,7 @@ The master payload for initial app load
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
-  "summary": "7+ years of experience as a Salesforce Platform Architect",
+  "summary": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education",
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",
