@@ -1,7 +1,8 @@
 /**
- * @description       : Unit tests for ApiLabController.generateCoverLetter, the site's proxy
- *                      to POST /papi/v1/ai/generate (pillar-d-design 3.9 test 9). The API is
- *                      answered by PortfolioApiCalloutMock.
+ * @description       : Unit tests for ApiLabController.generateCoverLetter, the site's cover
+ *                      letter path in process (Round 4 decision 2 a, contract L9). The real
+ *                      GeminiService runs against an HTTP mock that answers Gemini and records
+ *                      every endpoint, so a call to the org's own Portfolio_API would show.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -9,240 +10,329 @@
  **/
 @IsTest
 private class ApiLabControllerCoverLetterTest {
-  private static final String SERVED_BODY = JSON.serialize(
-    new Map<String, Object>{
-      'content' => 'Dear Hiring Manager',
-      'provider' => 'Gemini',
-      'model' => 'gemma-4-31b-it',
-      'type' => 'CoverLetter',
-      'tone' => 'Professional',
-      'generatedAt' => '2026-10-21T10:00:00Z',
-      'fallbackOccurred' => false,
-      'latencyMs' => 1234,
-      'promptShown' => 'Write a cover letter for Ryan Bumstead',
-      'attempts' => new List<Object>{
-        new Map<String, Object>{
-          'provider' => 'Agentforce',
-          'outcome' => 'skipped_off',
-          'ms' => 0
-        },
-        new Map<String, Object>{
-          'provider' => 'Gemini',
-          'outcome' => 'served',
-          'ms' => 1200
-        }
-      }
-    }
+  private static final String GEMINI_ANSWER = 'Dear Hiring Manager, I build platforms.';
+  private static final String GEMINI_BODY =
+    '{"candidates":[{"content":{"parts":[{"text":"' +
+    GEMINI_ANSWER +
+    '"}]},"finishReason":"STOP"}]}';
+  private static final Pattern PHONE_SHAPE = Pattern.compile(
+    '\\(?\\d{3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}'
   );
 
-  private static PortfolioApiCalloutMock answer(Integer status, String body) {
-    PortfolioApiCalloutMock mock = new PortfolioApiCalloutMock()
-      .withRestResponse(status, body, null);
+  /**
+   * @description Answers Gemini with a status and body and records every endpoint called.
+   */
+  private class RoutingMock implements HttpCalloutMock {
+    public List<String> endpoints = new List<String>();
+    public List<String> bodies = new List<String>();
+    private final Integer geminiStatus;
+
+    RoutingMock(Integer geminiStatus) {
+      this.geminiStatus = geminiStatus;
+    }
+
+    public HttpResponse respond(HttpRequest req) {
+      endpoints.add(req.getEndpoint());
+      bodies.add(req.getBody());
+      HttpResponse res = new HttpResponse();
+      res.setHeader('Content-Type', 'application/json');
+      if (req.getEndpoint().startsWith('callout:Gemini_API/')) {
+        res.setStatusCode(geminiStatus);
+        res.setBody(geminiStatus == 200 ? GEMINI_BODY : '{"error":{}}');
+      } else {
+        res.setStatusCode(500);
+        res.setBody('{"message":"unexpected endpoint"}');
+      }
+      return res;
+    }
+
+    Integer callsTo(String prefix) {
+      Integer count = 0;
+      for (String endpoint : endpoints) {
+        if (endpoint.startsWith(prefix)) {
+          count++;
+        }
+      }
+      return count;
+    }
+  }
+
+  /**
+   * @description Limiter that refuses every key.
+   */
+  private class DenyingLimiter implements ApiRateLimiter {
+    public ApiRequestContext.RateDecision check(
+      String key,
+      Integer limitPerMinute
+    ) {
+      return checkKey(key, limitPerMinute);
+    }
+
+    public ApiRequestContext.RateDecision checkKey(
+      String key,
+      Integer limitPerMinute
+    ) {
+      return new ApiRequestContext.RateDecision(false, limitPerMinute, 0, 30);
+    }
+  }
+
+  /**
+   * @description A provider that never serves.
+   */
+  private class FailingProvider implements IAIGenerationService {
+    public String generateContent(String prompt, Map<String, Object> context) {
+      return 'Error: Unable to generate content. (Status: 503)';
+    }
+
+    public Boolean isAvailable() {
+      return true;
+    }
+  }
+
+  private class RecordingSink implements System.Callable {
+    public List<String> messages = new List<String>();
+
+    public Object call(String action, Map<String, Object> args) {
+      messages.add((String) args.get('message'));
+      return new Map<String, Object>{ 'isSuccess' => true };
+    }
+  }
+
+  private static RoutingMock mockGemini(Integer status) {
+    RoutingMock mock = new RoutingMock(status);
     Test.setMock(HttpCalloutMock.class, mock);
     return mock;
   }
 
-  private static String errorBody(String code, String message) {
-    return JSON.serialize(
-      new Map<String, Object>{ 'errorCode' => code, 'message' => message }
+  private static void switchAgentforceOn() {
+    AgentforceService.configOverridden = true;
+    AgentforceService.configOverride = (AI_Provider_Config__mdt) JSON.deserialize(
+      '{"DeveloperName":"Agentforce","Enabled__c":true}',
+      AI_Provider_Config__mdt.class
+    );
+    AgentforceService.guestOverride = null;
+  }
+
+  private static void insertGroundingFacts() {
+    Account employer = new Account(Name = 'Acme Corp');
+    insert employer;
+    Experience__c role = new Experience__c(
+      Name = 'Platform Architect',
+      Sort_Order__c = 1,
+      Employer__c = employer.Id,
+      Is_Current_Role__c = true
+    );
+    insert role;
+    insert new Experience_Highlight__c(
+      Name = 'Highlight',
+      Experience__c = role.Id,
+      Description__c = 'Led an API program, call (555) 014-2424 or leak.sentinel@example.com',
+      Persona_Tag__c = 'Architect',
+      Sort_Order__c = 1,
+      Lock_Sort_Across_Personas__c = false
     );
   }
 
-  private static String refusal(Integer status, String body) {
-    answer(status, body);
-    Test.startTest();
+  private static ApiLabController.AttemptView attemptFor(
+    ApiLabController.CoverLetterResult result,
+    String provider
+  ) {
+    for (ApiLabController.AttemptView attempt : result.attempts) {
+      if (attempt.provider == provider) {
+        return attempt;
+      }
+    }
+    return null;
+  }
+
+  private static String refusalMessage(String company, String title) {
     try {
-      ApiLabController.generateCoverLetter('Acme', 'Architect', null);
+      ApiLabController.generateCoverLetter(company, title, null);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
       return e.getMessage();
-    } finally {
-      Test.stopTest();
     }
     return null;
   }
 
   @IsTest
-  static void postsTheCoverLetterRequestThroughPortfolioApi() {
-    PortfolioApiCalloutMock mock = answer(200, SERVED_BODY);
+  static void guestReachesGeminiInProcessWithNoCallToPortfolioApi() {
+    switchAgentforceOn();
+    insertGroundingFacts();
+    User guest = SiteGuestTestSupport.preparedGuest();
+    RoutingMock mock = mockGemini(200);
+    ApiLabController.CoverLetterResult result;
 
     Test.startTest();
-    ApiLabController.generateCoverLetter(
-      ' Acme ',
-      'Architect',
-      'Design integrations'
-    );
+    System.runAs(guest) {
+      result = ApiLabController.generateCoverLetter(
+        ' Acme ',
+        'Architect',
+        'Design integrations'
+      );
+    }
     Test.stopTest();
 
-    HttpRequest sent = mock.requests[0];
+    Assert.areEqual('Gemini', result.provider, 'Gemini serves the guest');
+    Assert.areEqual(GEMINI_ANSWER, result.content, 'Answer text');
+    Assert.isFalse(result.fallbackOccurred, 'No fallback');
     Assert.areEqual(
-      'callout:Portfolio_API/services/apexrest/papi/v1/ai/generate',
-      sent.getEndpoint(),
-      'One fixed POST path'
+      'skipped_off',
+      attemptFor(result, 'Agentforce').outcome,
+      'Agentforce is never consulted for a guest, even switched on'
     );
-    Assert.areEqual('POST', sent.getMethod(), 'POST');
-    Assert.areEqual('v1', sent.getHeader('X-API-Version'), 'Version');
+    Assert.areEqual('served', attemptFor(result, 'Gemini').outcome, 'Served');
+    Assert.areEqual(1, mock.callsTo('callout:Gemini_API/'), 'One Gemini call');
     Assert.areEqual(
-      'application/json',
-      sent.getHeader('Content-Type'),
-      'JSON body'
+      0,
+      mock.callsTo('callout:Portfolio_API'),
+      'No request goes to the org\'s own API (trap 30)'
     );
-    Assert.isNotNull(sent.getHeader('X-Request-Id'), 'Fresh request id');
-    Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(
-      sent.getBody()
+    Assert.areEqual(1, mock.endpoints.size(), 'No other callout at all');
+    Assert.isTrue(
+      result.promptShown.contains('companyName: Acme'),
+      'Trimmed company in the prompt'
     );
-    Assert.areEqual('CoverLetter', body.get('type'), 'Type');
-    Assert.areEqual(1000, body.get('maxLength'), 'Spec maximum');
-    Map<String, Object> context = (Map<String, Object>) body.get('context');
-    Assert.areEqual('Acme', context.get('companyName'), 'Trimmed company');
-    Assert.areEqual('Architect', context.get('role'), 'Title as role');
-    Assert.areEqual(
-      'Design integrations',
-      context.get('jobDescription'),
-      'Description passed'
+    Assert.isTrue(
+      result.promptShown.contains('Platform Architect'),
+      'Grounding facts reach the guest prompt'
     );
+    Assert.isFalse(result.promptShown.contains('@'), 'No email in the prompt');
+    Assert.isFalse(
+      PHONE_SHAPE.matcher(result.promptShown).find(),
+      'No phone in the prompt'
+    );
+    Assert.isTrue(
+      mock.bodies[0].contains('Platform Architect'),
+      'The prompt Gemini receives is the one shown'
+    );
+    Assert.isNotNull(result.requestId, 'Request id');
+    Assert.isNotNull(result.latencyMs, 'Latency measured');
   }
 
   @IsTest
-  static void returnsProviderAttemptsAndPromptFromTheResponse() {
-    answer(200, SERVED_BODY);
+  static void successWritesOneCountOnTheAiTierKey() {
+    mockGemini(200);
+
+    Test.startTest();
+    ApiLabController.generateCoverLetter('Acme', 'Architect', null);
+    Test.stopTest();
+
+    List<API_Rate_Window__c> windows = [
+      SELECT Key__c, Count__c
+      FROM API_Rate_Window__c
+    ];
+    Assert.areEqual(1, windows.size(), 'One window row');
+    Assert.isTrue(
+      windows[0].Key__c.startsWith(ApiLabController.AI_RATE_KEY + '|'),
+      windows[0].Key__c
+    );
+    Assert.isTrue(
+      ApiLabController.AI_RATE_KEY.startsWith('papi-ai:'),
+      'Same prefix as /papi/v1/ai/'
+    );
+    Assert.areEqual(1, windows[0].Count__c, 'Counted once');
+  }
+
+  @IsTest
+  static void limitRefusalIsReadableAndCallsNothing() {
+    ApiRequestContext.limiterOverride = new DenyingLimiter();
+    RoutingMock mock = mockGemini(200);
+
+    Test.startTest();
+    String message = refusalMessage('Acme', 'Architect');
+    Test.stopTest();
+
+    Assert.areEqual(
+      'Too many cover letters were requested in the last minute. Try again in a minute.',
+      message,
+      'Readable refusal'
+    );
+    Assert.areEqual(0, mock.endpoints.size(), 'No callout once refused');
+  }
+
+  @IsTest
+  static void geminiFailureFallsBackToTheTemplate() {
+    RoutingMock mock = mockGemini(500);
 
     Test.startTest();
     ApiLabController.CoverLetterResult result = ApiLabController.generateCoverLetter(
       'Acme',
       'Architect',
-      ''
+      null
     );
     Test.stopTest();
 
-    Assert.areEqual('Dear Hiring Manager', result.content, 'Content');
-    Assert.areEqual('Gemini', result.provider, 'Provider from the API');
-    Assert.areEqual('gemma-4-31b-it', result.model, 'Model');
-    Assert.isFalse(result.fallbackOccurred, 'Fallback flag');
-    Assert.areEqual(1234L, result.generationMs, 'API dispatch time');
-    Assert.isNotNull(result.latencyMs, 'Round trip measured');
-    Assert.isNotNull(result.requestId, 'Request id kept');
+    Assert.areEqual('Local', result.provider, 'Template serves');
+    Assert.isTrue(result.fallbackOccurred, 'Fallback reported');
+    Assert.areEqual('failed', attemptFor(result, 'Gemini').outcome, 'Failed');
+    Assert.isNotNull(attemptFor(result, 'Gemini').ms, 'Attempt time kept');
+    Assert.isNull(result.promptShown, 'No prompt shown for the template');
+    Assert.areEqual(0, mock.callsTo('callout:Portfolio_API'), 'No loop');
+  }
+
+  @IsTest
+  static void noProviderIsExplained() {
+    ContentGenerationController.mockGeminiService = new FailingProvider();
+    ContentGenerationController.mockLocalService = new FailingProvider();
+
+    Test.startTest();
+    String message = refusalMessage('Acme', 'Architect');
+    Test.stopTest();
+
     Assert.areEqual(
-      'Write a cover letter for Ryan Bumstead',
-      result.promptShown,
-      'Prompt shown'
+      'No AI provider is available right now. Try again later.',
+      message,
+      'Readable failure'
     );
-    Assert.areEqual(2, result.attempts.size(), 'Both attempts');
-    Assert.areEqual('Agentforce', result.attempts[0].provider, 'First');
-    Assert.areEqual('skipped_off', result.attempts[0].outcome, 'Skipped');
-    Assert.areEqual(1200L, result.attempts[1].ms, 'Gemini time');
   }
 
   @IsTest
-  static void omitsABlankJobDescription() {
-    PortfolioApiCalloutMock mock = answer(200, SERVED_BODY);
+  static void writesOneLogLinePerLetter() {
+    RecordingSink sink = new RecordingSink();
+    PortfolioLog.injectedSink = sink;
+    mockGemini(200);
 
     Test.startTest();
-    ApiLabController.generateCoverLetter('Acme', 'Architect', '  ');
+    ApiLabController.CoverLetterResult result = ApiLabController.generateCoverLetter(
+      'Acme',
+      'Architect',
+      null
+    );
     Test.stopTest();
 
-    Map<String, Object> context = (Map<String, Object>) ((Map<String, Object>) JSON.deserializeUntyped(
-        mock.requests[0].getBody()
-      ))
-      .get('context');
-    Assert.isFalse(context.containsKey('jobDescription'), 'Not sent');
-  }
-
-  @IsTest
-  static void badRequestCarriesTheApiMessage() {
-    String message = refusal(
-      400,
-      errorBody('BAD_REQUEST', 'context.role is required for CoverLetter.')
+    Assert.areEqual(1, sink.messages.size(), 'One line');
+    String expectedStart =
+      'api request path=' +
+      ApiLabController.COVER_LETTER_LOG_PATH +
+      ' status=200 correlationId=' +
+      result.requestId;
+    Assert.isTrue(
+      sink.messages[0].startsWith(expectedStart),
+      sink.messages[0]
     );
-
-    Assert.isTrue(message.contains('status 400'), message);
-    Assert.isTrue(message.contains('context.role is required'), message);
-  }
-
-  @IsTest
-  static void rateLimitIsExplained() {
-    String message = refusal(
-      429,
-      errorBody('RATE_LIMIT_EXCEEDED', 'Too many requests')
-    );
-
-    Assert.isTrue(message.contains('Try again in a minute'), message);
-  }
-
-  @IsTest
-  static void allProvidersUnavailableIsExplained() {
-    String message = refusal(
-      503,
-      errorBody('ALL_PROVIDERS_UNAVAILABLE', 'All AI providers unavailable')
-    );
-
-    Assert.isTrue(message.contains('No AI provider is available'), message);
-  }
-
-  @IsTest
-  static void serverErrorIsReportedWithItsStatus() {
-    String message = refusal(500, 'not json');
-
-    Assert.isTrue(message.contains('failed (status 500)'), message);
-  }
-
-  @IsTest
-  static void clientErrorWithoutABodyStillExplains() {
-    String message = refusal(404, '');
-
-    Assert.isTrue(message.contains('refused (status 404).'), message);
-  }
-
-  @IsTest
-  static void unreadableSuccessBodyIsAnError() {
-    String message = refusal(200, '{"provider":"Gemini"}');
-
-    Assert.isTrue(message.contains('could not be read'), message);
-  }
-
-  @IsTest
-  static void calloutFailureIsWrapped() {
-    Test.setMock(
-      HttpCalloutMock.class,
-      new PortfolioApiCalloutMock().throwing('Read timed out')
-    );
-
-    Test.startTest();
-    try {
-      ApiLabController.generateCoverLetter('Acme', 'Architect', null);
-      Assert.fail('Expected AuraHandledException');
-    } catch (AuraHandledException e) {
-      Assert.isTrue(
-        e.getMessage().contains('could not be reached: Read timed out'),
-        e.getMessage()
-      );
-    }
-    Test.stopTest();
+    Assert.isFalse(sink.messages[0].contains('Acme'), 'No input in the log');
   }
 
   @IsTest
   static void missingCompanyIsRefusedBeforeAnyCallout() {
-    PortfolioApiCalloutMock mock = answer(200, SERVED_BODY);
-    try {
-      ApiLabController.generateCoverLetter('', 'Architect', null);
-      Assert.fail('Expected AuraHandledException');
-    } catch (AuraHandledException e) {
-      Assert.areEqual('Company name is required.', e.getMessage(), 'Msg');
-    }
-    Assert.areEqual(0, mock.requests.size(), 'No callout');
+    RoutingMock mock = mockGemini(200);
+
+    Assert.areEqual(
+      'Company name is required.',
+      refusalMessage('', 'Architect'),
+      'Msg'
+    );
+    Assert.areEqual(0, mock.endpoints.size(), 'No callout');
   }
 
   @IsTest
   static void overlongTitleIsRefused() {
-    try {
-      ApiLabController.generateCoverLetter('Acme', 'x'.repeat(121), null);
-      Assert.fail('Expected AuraHandledException');
-    } catch (AuraHandledException e) {
-      Assert.isTrue(
-        e.getMessage().contains('at most 120 characters'),
-        e.getMessage()
-      );
-    }
+    Assert.isTrue(
+      refusalMessage('Acme', 'x'.repeat(121))
+        .contains('at most 120 characters'),
+      'Title bound'
+    );
   }
 
   @IsTest
@@ -263,13 +353,32 @@ private class ApiLabControllerCoverLetterTest {
   }
 
   @IsTest
+  static void promptMatchesTheApiCoverLetterPrompt() {
+    Test.startTest();
+    String prompt = ApiLabController.coverLetterPrompt(
+      'Acme',
+      'Architect',
+      'Apex'
+    );
+    Test.stopTest();
+
+    List<String> lines = prompt.split('\n');
+    Assert.areEqual(
+      'Write a cover letter for Ryan Bumstead in a professional tone, no longer than 1000 characters.',
+      lines[0],
+      'Same opening line as /papi/v1/ai/generate'
+    );
+    Assert.areEqual('companyName: Acme', lines[1], 'Company');
+    Assert.areEqual('role: Architect', lines[2], 'Role');
+    Assert.areEqual('jobDescription: Apex', lines[3], 'Description');
+  }
+
+  @IsTest
   static void allowlistAndReturnedHeadersAreUnchanged() {
     Assert.areEqual(21, ApiLabController.ALLOWED_PATHS.size(), 'GET only');
     Assert.isFalse(
-      ApiLabController.ALLOWED_PATHS.contains(
-        ApiLabController.AI_GENERATE_PATH
-      ),
-      'The POST path is not in the GET allowlist'
+      ApiLabController.ALLOWED_PATHS.contains('/papi/v1/ai/generate'),
+      'The AI path is not in the GET allowlist'
     );
     Assert.areEqual(6, ApiLabController.RETURNED_HEADERS.size(), 'Headers');
   }
