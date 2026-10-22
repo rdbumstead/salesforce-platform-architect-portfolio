@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >The Decision Option type holds one platform option in the Pillar B decision matrix, with a short Summary and a Sort Order for its column. Read by DecisionMatrixController. Commonly used for adding or renaming an option without a code change.</description>
+    <label>Decision Option</label>
+    <pluralLabel>Decision Options</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>

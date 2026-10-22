@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Placeholder__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description
+  >True while the score and rationale are provisional and the owner has not reviewed them. The page shows a banner while any score is a placeholder.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >Clear this once the owner has reviewed the score and rationale.</inlineHelpText>
+    <label>Is Placeholder</label>
+    <type>Checkbox</type>
+</CustomField>
