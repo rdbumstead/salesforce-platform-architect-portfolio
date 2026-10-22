@@ -60,17 +60,56 @@ public with sharing class GeminiService implements IAIGenerationService {
    *                starting "Error: Unable to generate content." or "Exception: " on failure.
    */
   public static String generateContentStatic(String prompt) {
+    failureDetail = null;
     try {
       HttpResponse res = callGemini(prompt);
       if (res.getStatusCode() == 200) {
-        return parseResponse(res.getBody());
+        String answer = parseResponse(res.getBody());
+        if (String.isBlank(answer)) {
+          failureDetail = 'HTTP 200 with no answer text';
+        }
+        return answer;
       }
+      failureDetail = 'HTTP ' + res.getStatusCode();
       return 'Error: Unable to generate content. (Status: ' +
         res.getStatusCode() +
         ')';
     } catch (Exception e) {
+      failureDetail = shortDetail(e.getTypeName() + ': ' + e.getMessage());
       return 'Exception: ' + e.getMessage();
     }
+  }
+
+  /**
+   * @description What went wrong in the last call of this transaction, for the dispatch's
+   *              Attempt.detail (Round 4 plan L7): "HTTP 503", "HTTP 200 with no answer
+   *              text", or the exception type and a short message. The API key travels in
+   *              a header merged by the Named Credential and never reaches Apex, and any URL
+   *              or key=value pair in a message is replaced before it is kept.
+   * @return String The detail, or null when the last call served an answer.
+   */
+  public static String lastFailureDetail() {
+    return failureDetail;
+  }
+
+  private static String failureDetail;
+
+  private static final Integer DETAIL_MAX_LENGTH = 120;
+
+  @TestVisible
+  private static String shortDetail(String text) {
+    if (text == null) {
+      return null;
+    }
+    String cleaned = text.replaceAll('(?i)https?://\\S+', '[url]')
+      .replaceAll(
+        '(?i)(api[_-]?key|key|token|secret|password|authorization)\\s*[=:]\\s*\\S+',
+        '$1=[redacted]'
+      )
+      .normalizeSpace();
+    return cleaned.length() > DETAIL_MAX_LENGTH
+      ? cleaned.substring(0, DETAIL_MAX_LENGTH)
+      : cleaned;
   }
 
   /**

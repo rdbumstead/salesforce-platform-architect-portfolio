@@ -6,9 +6,12 @@
  *                      Agentforce unless a real Agentforce call produced the content (3.1).
  *                      Every attempt is recorded with its outcome and elapsed time.
  *                      PAPIAiGenerate (POST /papi/v1/ai/generate) and generateCoverLetter both
- *                      call it. The site page reaches it through ApiLabController and the API
- *                      (PD-D3 b). providerStatus() is the read-only provider view for the
- *                      footer.
+ *                      call it. The site page reaches it in process through
+ *                      ApiLabController.generateCoverLetter (plan L9). providerStatus() is the read-only provider view for the
+ *                      footer. Round 4 (plan L7, pillar-d-design 7.2): the agentforce and
+ *                      gemini circuit breakers. An open circuit records the attempt as
+ *                      skipped_open_circuit and moves on. Breaker results are written once
+ *                      every provider has been tried, after the last callout (contract C2).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -29,10 +32,14 @@ public with sharing class ContentGenerationController {
   public static final String MODEL_GEMINI = GeminiService.MODEL;
   public static final String MODEL_LOCAL = 'local-template';
 
-  /** Attempt outcomes. Round 4 adds skipped_open_circuit, the real provider budget_exhausted. */
+  /** Attempt outcomes. The real provider adds budget_exhausted. */
   public static final String OUTCOME_SERVED = 'served';
   public static final String OUTCOME_SKIPPED_OFF = 'skipped_off';
+  public static final String OUTCOME_SKIPPED_OPEN_CIRCUIT = 'skipped_open_circuit';
   public static final String OUTCOME_FAILED = 'failed';
+
+  private static final String DETAIL_NO_CONTENT = 'No usable content';
+  private static final Integer DETAIL_MAX_LENGTH = 120;
 
   /** Provider states reported by providerStatus(). */
   public static final String STATE_ON = 'on';
@@ -91,6 +98,12 @@ public with sharing class ContentGenerationController {
     public String outcome;
     @AuraEnabled
     public Long ms;
+    /**
+     * Why a failed attempt failed: "HTTP 503", or the exception type and a short message.
+     * Never a key, never a URL. Null when the attempt served or was skipped.
+     */
+    @AuraEnabled
+    public String detail;
 
     /**
      * @description Creates an attempt record.
@@ -99,9 +112,21 @@ public with sharing class ContentGenerationController {
      * @param ms Elapsed milliseconds.
      */
     public Attempt(String provider, String outcome, Long ms) {
+      this(provider, outcome, ms, null);
+    }
+
+    /**
+     * @description Creates an attempt record with a failure detail.
+     * @param provider Provider name.
+     * @param outcome One of the OUTCOME_ constants.
+     * @param ms Elapsed milliseconds.
+     * @param detail Short, key-free reason for a failure, or null.
+     */
+    public Attempt(String provider, String outcome, Long ms, String detail) {
       this.provider = provider;
       this.outcome = outcome;
       this.ms = ms;
+      this.detail = detail;
     }
   }
 
@@ -144,11 +169,15 @@ public with sharing class ContentGenerationController {
     public String state;
     @AuraEnabled
     public Integer sortOrder;
+    /** When this provider's open circuit closes. Null when the circuit is closed. */
+    @AuraEnabled
+    public Datetime circuitOpenUntil;
   }
 
   /**
    * @description The one provider chain: Agentforce when its switch is on, then Gemini, then
-   *              the local template when the request allows it. Performs no DML.
+   *              the local template when the request allows it. Its only DML is the
+   *              circuit breaker writes, made after the last provider call.
    * @param request Prompt, provider context and whether Local may serve.
    * @return GenerationResult The content, the serving provider and every attempt.
    * @throws ContentGenerationException When the prompt is blank or no provider served.
@@ -165,6 +194,7 @@ public with sharing class ContentGenerationController {
     Long started = System.currentTimeMillis();
     List<Attempt> attempts = new List<Attempt>();
     List<String> errors = new List<String>();
+    pendingBreakerResults = new Map<String, Boolean>();
 
     IAIGenerationService agentforce = (mockAgentforceService != null)
       ? mockAgentforceService
@@ -235,6 +265,7 @@ public with sharing class ContentGenerationController {
       }
     }
 
+    recordBreakerResults();
     throw new ContentGenerationException(
       'Content generation failed. Errors: ' + String.join(errors, '; ')
     );
@@ -243,7 +274,7 @@ public with sharing class ContentGenerationController {
   /**
    * @description Generates a cover letter through dispatch(), grounded on portfolio records.
    *              The site page does not call this method. It reaches the same dispatch
-   *              through ApiLabController.generateCoverLetter and /papi/v1/ai/generate.
+   *              in process through ApiLabController.generateCoverLetter (plan L9).
    * @param companyName Name of the target company.
    * @param jobTitle Title of the job.
    * @param jobDescription Description of the job, may be blank.
@@ -321,6 +352,7 @@ public with sharing class ContentGenerationController {
   /**
    * @description Read-only provider view for the Glass Box footer (Round 4). Reads the
    *              switch only. It never says Agentforce is on while the class is not built.
+   *              circuitOpenUntil comes from the agentforce and gemini breakers.
    * @return List<ProviderStatus> Agentforce, Gemini and Local in dispatch order.
    */
   @AuraEnabled(cacheable=true)
@@ -329,7 +361,7 @@ public with sharing class ContentGenerationController {
     String agentforceState = !agentforceEnabled
       ? STATE_OFF
       : (AgentforceService.IMPLEMENTED ? STATE_ON : STATE_NOT_BUILT);
-    return new List<ProviderStatus>{
+    List<ProviderStatus> rows = new List<ProviderStatus>{
       status(
         PROVIDER_AGENTFORCE,
         AgentforceService.model(),
@@ -340,6 +372,11 @@ public with sharing class ContentGenerationController {
       status(PROVIDER_GEMINI, GeminiService.model(), true, STATE_ON, 2),
       status(PROVIDER_LOCAL, MODEL_LOCAL, true, STATE_ON, 3)
     };
+    for (ProviderStatus row : rows) {
+      String key = breakerKeyFor(row.provider);
+      row.circuitOpenUntil = key == null ? null : CircuitBreaker.openUntil(key);
+    }
+    return rows;
   }
 
   private static ProviderStatus status(
@@ -372,18 +409,89 @@ public with sharing class ContentGenerationController {
       errors.add(provider + ': unavailable');
       return null;
     }
+    String breakerKey = breakerKeyFor(provider);
+    if (breakerKey != null && CircuitBreaker.isOpen(breakerKey)) {
+      attempts.add(new Attempt(provider, OUTCOME_SKIPPED_OPEN_CIRCUIT, 0L));
+      errors.add(provider + ': circuit open');
+      return null;
+    }
+    String detail;
     try {
       String text = service.generateContent(prompt, context);
       if (isUsable(text)) {
         attempts.add(new Attempt(provider, OUTCOME_SERVED, elapsed(started)));
+        noteBreakerResult(breakerKey, true);
         return text;
       }
       errors.add(provider + ': no usable content');
+      detail = service instanceof GeminiService
+        ? GeminiService.lastFailureDetail()
+        : null;
+      detail = detail ?? DETAIL_NO_CONTENT;
     } catch (Exception e) {
       errors.add(provider + ': ' + e.getMessage());
+      detail = failureDetail(e);
     }
-    attempts.add(new Attempt(provider, OUTCOME_FAILED, elapsed(started)));
+    attempts.add(
+      new Attempt(provider, OUTCOME_FAILED, elapsed(started), detail)
+    );
+    noteBreakerResult(breakerKey, false);
     return null;
+  }
+
+  /**
+   * Breaker results of the dispatch in progress, by key. Written by recordBreakerResults()
+   * once every provider has been tried, so no DML sits ahead of a provider callout (C2).
+   */
+  private static Map<String, Boolean> pendingBreakerResults = new Map<String, Boolean>();
+
+  private static String breakerKeyFor(String provider) {
+    if (provider == PROVIDER_AGENTFORCE) {
+      return CircuitBreaker.KEY_AGENTFORCE;
+    }
+    if (provider == PROVIDER_GEMINI) {
+      return CircuitBreaker.KEY_GEMINI;
+    }
+    return null;
+  }
+
+  private static void noteBreakerResult(String breakerKey, Boolean success) {
+    if (breakerKey != null) {
+      pendingBreakerResults.put(breakerKey, success);
+    }
+  }
+
+  private static void recordBreakerResults() {
+    for (String key : pendingBreakerResults.keySet()) {
+      if (pendingBreakerResults.get(key)) {
+        CircuitBreaker.recordSuccess(key);
+      } else {
+        CircuitBreaker.recordFailure(key);
+      }
+    }
+    pendingBreakerResults.clear();
+  }
+
+  /**
+   * @description The Attempt.detail for an exception: its type and a short message, with any
+   *              URL or key=value pair replaced, at most 120 characters.
+   * @param e The exception a provider threw.
+   * @return String The detail.
+   */
+  @TestVisible
+  private static String failureDetail(Exception e) {
+    String cleaned = (e.getTypeName() +
+      ': ' +
+      e.getMessage())
+      .replaceAll('(?i)https?://\\S+', '[url]')
+      .replaceAll(
+        '(?i)(api[_-]?key|key|token|secret|password|authorization)\\s*[=:]\\s*\\S+',
+        '$1=[redacted]'
+      )
+      .normalizeSpace();
+    return cleaned.length() > DETAIL_MAX_LENGTH
+      ? cleaned.substring(0, DETAIL_MAX_LENGTH)
+      : cleaned;
   }
 
   private static GenerationResult result(
@@ -394,6 +502,7 @@ public with sharing class ContentGenerationController {
     List<Attempt> attempts,
     Long started
   ) {
+    recordBreakerResults();
     Boolean earlierFailure = false;
     for (Attempt attempt : attempts) {
       if (attempt.outcome == OUTCOME_FAILED) {

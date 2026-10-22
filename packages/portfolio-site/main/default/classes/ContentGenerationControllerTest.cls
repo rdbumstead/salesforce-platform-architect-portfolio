@@ -585,4 +585,344 @@ private class ContentGenerationControllerTest {
 
     Assert.isNull(section, 'Nothing to ground on');
   }
+
+  // --- Round 4 plan L6 and L7, pillar-d-design 7.2 WS2: breakers and detail ---
+
+  private class GeminiStatusMock implements HttpCalloutMock {
+    private final Integer status;
+    GeminiStatusMock(Integer status) {
+      this.status = status;
+    }
+    public HttpResponse respond(HttpRequest req) {
+      HttpResponse res = new HttpResponse();
+      res.setStatusCode(status);
+      res.setBody('{"error":{"message":"API key not valid. key=SECRETKEY"}}');
+      return res;
+    }
+  }
+
+  private static void useLocalAndFailingGemini(MockService gemini) {
+    switchAgentforce(false);
+    ContentGenerationController.mockGeminiService = gemini;
+    ContentGenerationController.mockLocalService = new MockService(
+      true,
+      false,
+      LOCAL_TEXT
+    );
+  }
+
+  @IsTest
+  static void threeGeminiFailuresOpenTheCircuitAndTheNextDispatchServesLocal() {
+    MockService gemini = new MockService(true, true, null);
+    useLocalAndFailingGemini(gemini);
+
+    Test.startTest();
+    for (Integer i = 0; i < 3; i++) {
+      ContentGenerationController.dispatch(request(true));
+    }
+    Boolean openAfterThree = CircuitBreaker.isOpen(CircuitBreaker.KEY_GEMINI);
+    ContentGenerationController.GenerationResult fourth = ContentGenerationController.dispatch(
+      request(true)
+    );
+    Test.stopTest();
+
+    Assert.isTrue(openAfterThree, 'Three failures open the gemini circuit');
+    Assert.areEqual(3, gemini.generateCalls, 'Gemini not called while open');
+    Assert.areEqual(
+      'skipped_open_circuit',
+      attemptFor(fourth, 'Gemini').outcome,
+      'Recorded as skipped_open_circuit'
+    );
+    Assert.areEqual(0L, attemptFor(fourth, 'Gemini').ms, 'No time spent');
+    Assert.areEqual('Local', fourth.provider, 'Local serves');
+    Assert.areEqual(LOCAL_TEXT, fourth.content, 'Local content');
+  }
+
+  @IsTest
+  static void geminiCircuitClosesAfterTheCoolDown() {
+    MockService gemini = new MockService(true, true, null);
+    useLocalAndFailingGemini(gemini);
+    Datetime start = Datetime.now();
+    CircuitBreaker.nowOverride = start;
+    for (Integer i = 0; i < 3; i++) {
+      ContentGenerationController.dispatch(request(true));
+    }
+
+    CircuitBreaker.nowOverride = start.addMinutes(CircuitBreaker.OPEN_MINUTES);
+    ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
+      request(true)
+    );
+
+    Assert.areEqual(
+      4,
+      gemini.generateCalls,
+      'Gemini tried again after 30 minutes'
+    );
+    Assert.areEqual(
+      'failed',
+      attemptFor(result, 'Gemini').outcome,
+      'A real attempt, not a skip'
+    );
+  }
+
+  @IsTest
+  static void breakerWritesFollowTheGeminiCallout() {
+    // C2: Agentforce fails first and its breaker result is held. The real Gemini callout
+    // that follows in the same transaction succeeds, which it could not do after DML.
+    switchAgentforce(true);
+    Test.setMock(HttpCalloutMock.class, new GeminiOkMock());
+    Integer dmlBefore = Limits.getDmlStatements();
+
+    Test.startTest();
+    Assert.isFalse(CircuitBreaker.isOpen(CircuitBreaker.KEY_GEMINI), 'Closed');
+    Assert.areEqual(
+      dmlBefore,
+      Limits.getDmlStatements(),
+      'The check wrote nothing'
+    );
+    ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
+      request(true)
+    );
+    Integer callouts = Limits.getCallouts();
+    Test.stopTest();
+
+    Assert.areEqual(
+      'Gemini',
+      result.provider,
+      'The callout after the check served'
+    );
+    Assert.areEqual(1, callouts, 'One callout');
+    Assert.areEqual(
+      'failed',
+      attemptFor(result, 'Agentforce').outcome,
+      'Agentforce failed first'
+    );
+    Assert.areEqual(
+      1,
+      [
+        SELECT Consecutive_Failures__c
+        FROM Circuit_Breaker_State__c
+        WHERE Name = 'agentforce'
+      ]
+      .Consecutive_Failures__c,
+      'The Agentforce failure was written after the callout'
+    );
+  }
+
+  @IsTest
+  static void openAgentforceCircuitIsSkippedAndGeminiServes() {
+    switchAgentforce(true);
+    AgentforceSpy spy = new AgentforceSpy();
+    ContentGenerationController.mockAgentforceService = spy;
+    ContentGenerationController.mockGeminiService = new MockService(
+      true,
+      false,
+      GEMINI_TEXT
+    );
+    for (Integer i = 0; i < CircuitBreaker.FAILURE_THRESHOLD; i++) {
+      CircuitBreaker.recordFailure(CircuitBreaker.KEY_AGENTFORCE);
+    }
+
+    ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
+      request(true)
+    );
+
+    Assert.areEqual(0, spy.generateCalls, 'Agentforce not called while open');
+    Assert.areEqual(
+      'skipped_open_circuit',
+      attemptFor(result, 'Agentforce').outcome,
+      'Skipped'
+    );
+    Assert.areEqual('Gemini', result.provider, 'Gemini serves');
+  }
+
+  @IsTest
+  static void switchedOffAgentforceNeverTouchesItsBreaker() {
+    switchAgentforce(false);
+    ContentGenerationController.mockGeminiService = new MockService(
+      true,
+      false,
+      GEMINI_TEXT
+    );
+
+    ContentGenerationController.dispatch(request(true));
+
+    Assert.areEqual(
+      0,
+      [SELECT COUNT() FROM Circuit_Breaker_State__c],
+      'Skipped off and a healthy success write nothing'
+    );
+  }
+
+  @IsTest
+  static void geminiSuccessClosesItsCircuit() {
+    switchAgentforce(false);
+    CircuitBreaker.recordFailure(CircuitBreaker.KEY_GEMINI);
+    ContentGenerationController.mockGeminiService = new MockService(
+      true,
+      false,
+      GEMINI_TEXT
+    );
+
+    ContentGenerationController.dispatch(request(true));
+
+    Assert.areEqual(
+      0,
+      [
+        SELECT Consecutive_Failures__c
+        FROM Circuit_Breaker_State__c
+        WHERE Name = 'gemini'
+      ]
+      .Consecutive_Failures__c,
+      'A served attempt resets the count'
+    );
+  }
+
+  @IsTest
+  static void allFailingDispatchStillRecordsBreakerResults() {
+    switchAgentforce(false);
+    ContentGenerationController.mockGeminiService = new MockService(
+      true,
+      true,
+      null
+    );
+
+    try {
+      ContentGenerationController.dispatch(request(false));
+      Assert.fail('No provider served');
+    } catch (ContentGenerationController.ContentGenerationException e) {
+      Assert.isTrue(e.getMessage().contains('Gemini'), 'Gemini named');
+    }
+
+    Assert.areEqual(
+      1,
+      [
+        SELECT Consecutive_Failures__c
+        FROM Circuit_Breaker_State__c
+        WHERE Name = 'gemini'
+      ]
+      .Consecutive_Failures__c,
+      'The failure is counted before the throw'
+    );
+  }
+
+  @IsTest
+  static void attemptDetailHoldsTheHttpStatusAndNoKey() {
+    switchAgentforce(false);
+    Test.setMock(HttpCalloutMock.class, new GeminiStatusMock(400));
+
+    Test.startTest();
+    ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
+      request(true)
+    );
+    Test.stopTest();
+
+    ContentGenerationController.Attempt gemini = attemptFor(result, 'Gemini');
+    Assert.areEqual('failed', gemini.outcome, 'Failed');
+    Assert.areEqual('HTTP 400', gemini.detail, 'Status only, never the body');
+    Assert.isFalse(gemini.detail.contains('SECRETKEY'), 'No key');
+    Assert.isNull(attemptFor(result, 'Local').detail, 'Served has no detail');
+  }
+
+  @IsTest
+  static void attemptDetailNamesTheExceptionTypeAndMessage() {
+    switchAgentforce(false);
+    Test.setMock(HttpCalloutMock.class, new GeminiTimeoutMock());
+
+    Test.startTest();
+    ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
+      request(true)
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      'System.CalloutException: Read timed out',
+      attemptFor(result, 'Gemini').detail,
+      'Exception type and a short message'
+    );
+  }
+
+  @IsTest
+  static void attemptDetailOfAThrowingDoubleIsItsException() {
+    useLocalAndFailingGemini(new MockService(true, true, null));
+
+    ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
+      request(true)
+    );
+
+    Assert.areEqual(
+      'System.CalloutException: Service Unavailable',
+      attemptFor(result, 'Gemini').detail,
+      'Type and message'
+    );
+  }
+
+  @IsTest
+  static void attemptDetailOfUnusableTextSaysSo() {
+    useLocalAndFailingGemini(new MockService(true, false, '   '));
+
+    ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
+      request(true)
+    );
+
+    Assert.areEqual(
+      'No usable content',
+      attemptFor(result, 'Gemini').detail,
+      'Blank text'
+    );
+  }
+
+  @IsTest
+  static void failureDetailRemovesUrlsAndKeys() {
+    String detail = ContentGenerationController.failureDetail(
+      new CalloutException(
+        'Unauthorized endpoint https://generativelanguage.googleapis.com/v1beta?key=SECRETKEY api_key: SECRET2 ' +
+        'x'.repeat(200)
+      )
+    );
+
+    Assert.isFalse(detail.contains('SECRETKEY'), 'URL query removed');
+    Assert.isFalse(detail.contains('SECRET2'), 'key pair removed');
+    Assert.isFalse(detail.contains('googleapis'), 'No URL');
+    Assert.isTrue(detail.startsWith('System.CalloutException: '), 'Type first');
+    Assert.areEqual(120, detail.length(), 'Cut to 120 characters');
+  }
+
+  @IsTest
+  static void geminiReportsAnEmptyAnswerAsAFailureDetail() {
+    switchAgentforce(false);
+    Test.setMock(HttpCalloutMock.class, new GeminiStatusMock(200));
+
+    Test.startTest();
+    ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
+      request(true)
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      'HTTP 200 with no answer text',
+      attemptFor(result, 'Gemini').detail,
+      'A 200 without an answer is explained'
+    );
+  }
+
+  @IsTest
+  static void providerStatusReportsWhenTheGeminiCircuitCloses() {
+    switchAgentforce(false);
+    Datetime start = Datetime.newInstanceGmt(2026, 10, 21, 12, 0, 0);
+    CircuitBreaker.nowOverride = start;
+    for (Integer i = 0; i < CircuitBreaker.FAILURE_THRESHOLD; i++) {
+      CircuitBreaker.recordFailure(CircuitBreaker.KEY_GEMINI);
+    }
+
+    List<ContentGenerationController.ProviderStatus> rows = ContentGenerationController.providerStatus();
+
+    Assert.isNull(rows[0].circuitOpenUntil, 'Agentforce closed');
+    Assert.areEqual(
+      start.addMinutes(30),
+      rows[1].circuitOpenUntil,
+      'Gemini open for 30 minutes'
+    );
+    Assert.isNull(rows[2].circuitOpenUntil, 'Local has no breaker');
+  }
 }
