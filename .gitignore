@@ -126,6 +126,7 @@ test-result/
 test-results/
 **/test-results/
 .lighthouseci/
+.playwright-mcp/
 
 # ---------------------------------------------------------------------
 # CI/CD, Delta & Build Artifacts
