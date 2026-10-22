@@ -1,87 +1,111 @@
 /**
- * @description Unit tests for JiraCacheCleanupBatch.
- * @author Ryan Bumstead
- */
+ * @description       : Unit tests for JiraCacheCleanupBatch: rows past 30 minutes go, the
+ *                      newest row always stays (pillar-e-design 4.4, G10).
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 01/03/2026
+ **/
 @IsTest
 private class JiraCacheCleanupBatchTest {
-  @IsTest
-  static void testDeletesExpiredRecords() {
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      CacheCleanupSettings.testOverrideEnabled = true;
-
-      TestFactory.createJiraCache(200);
-
-      for (Jira_Cache__c rec : [SELECT Id FROM Jira_Cache__c]) {
-        Test.setCreatedDate(rec.Id, Datetime.now().addHours(-1));
-      }
-
-      Test.startTest();
-      Database.executeBatch(new JiraCacheCleanupBatch(), 200);
-      Test.stopTest();
-
-      System.assertEquals(
-        0,
-        [SELECT COUNT() FROM Jira_Cache__c],
-        'All expired Jira records should be deleted.'
-      );
+  /** Creates rows aged minutesOld[i] minutes and returns them in the same order. */
+  private static List<Jira_Cache__c> rowsAged(List<Integer> minutesOld) {
+    List<Jira_Cache__c> rows = TestFactory.createJiraCache(minutesOld.size());
+    Datetime now = Datetime.now();
+    for (Integer i = 0; i < rows.size(); i++) {
+      Test.setCreatedDate(rows[i].Id, now.addMinutes(-minutesOld[i]));
     }
+    return rows;
   }
 
   @IsTest
-  static void testBatchWhenDisabledDoesNothing() {
-    CacheCleanupSettings.testOverrideEnabled = false;
-
-    TestFactory.createJiraCache(6);
+  static void shouldKeepNewestRowWhenEveryRowIsPastTheLimit() {
+    CacheCleanupSettings.testOverrideEnabled = true;
+    List<Jira_Cache__c> rows = rowsAged(new List<Integer>{ 90, 45, 120 });
 
     Test.startTest();
     Database.executeBatch(new JiraCacheCleanupBatch(), 200);
     Test.stopTest();
 
-    System.assertEquals(
-      6,
-      [SELECT COUNT() FROM Jira_Cache__c],
-      'Records must remain when cleanup is disabled.'
+    List<Jira_Cache__c> left = [SELECT Id FROM Jira_Cache__c];
+    Assert.areEqual(1, left.size(), 'Only the newest row stays');
+    Assert.areEqual(
+      rows[1].Id,
+      left[0].Id,
+      'The 45 minute old row is the newest'
     );
   }
 
   @IsTest
-  static void testBatchWithEmptyScopeIsSafe() {
+  static void shouldKeepRecentRowsWhenInsideTheLimit() {
+    CacheCleanupSettings.testOverrideEnabled = true;
+    rowsAged(new List<Integer>{ 60, 10, 0 });
+
+    Test.startTest();
+    Database.executeBatch(new JiraCacheCleanupBatch(), 200);
+    Test.stopTest();
+
+    Assert.areEqual(
+      2,
+      [SELECT COUNT() FROM Jira_Cache__c],
+      'Only the old row goes'
+    );
+  }
+
+  @IsTest
+  static void shouldDeleteBulkWhenManyRowsAreOld() {
+    CacheCleanupSettings.testOverrideEnabled = true;
+    List<Integer> ages = new List<Integer>();
+    for (Integer i = 0; i < 251; i++) {
+      ages.add(31 + i);
+    }
+    rowsAged(ages);
+
+    Test.startTest();
+    Database.executeBatch(new JiraCacheCleanupBatch(), 300);
+    Test.stopTest();
+
+    Assert.areEqual(1, [SELECT COUNT() FROM Jira_Cache__c], 'Newest stays');
+  }
+
+  @IsTest
+  static void shouldDeleteNothingWhenDisabled() {
+    CacheCleanupSettings.testOverrideEnabled = false;
+    rowsAged(new List<Integer>{ 60, 60 });
+
+    Test.startTest();
+    Database.executeBatch(new JiraCacheCleanupBatch(), 200);
+    Test.stopTest();
+
+    Assert.areEqual(2, [SELECT COUNT() FROM Jira_Cache__c], 'All kept');
+  }
+
+  @IsTest
+  static void shouldBeSafeWhenNoRows() {
     CacheCleanupSettings.testOverrideEnabled = true;
 
-    TestFactory.createJiraCache(5);
+    Test.startTest();
+    Database.executeBatch(new JiraCacheCleanupBatch(), 200);
+    Test.stopTest();
+
+    Assert.areEqual(0, [SELECT COUNT() FROM Jira_Cache__c], 'Nothing to do');
+  }
+
+  @IsTest
+  static void shouldEmptyRecycleBinWhenHardDeleteAllowed() {
+    CacheCleanupSettings.testOverrideEnabled = true;
+    CacheCleanupSettings.useMockSettings = true;
+    CacheCleanupSettings.mockSettings = new Cache_Cleanup_Settings__mdt(
+      Is_Enabled__c = true,
+      Allow_Hard_Delete__c = true
+    );
+    JiraCacheCleanupBatch.forceHardDelete = true;
+    rowsAged(new List<Integer>{ 60, 50 });
 
     Test.startTest();
     Database.executeBatch(new JiraCacheCleanupBatch(), 200);
     Test.stopTest();
 
-    System.assertEquals(
-      5,
-      [SELECT COUNT() FROM Jira_Cache__c],
-      'Recent Jira records should not be deleted.'
-    );
-  }
-  @IsTest
-  static void testFullCoverage() {
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      CacheCleanupSettings.testOverrideEnabled = true;
-
-      TestFactory.createJiraCache(10);
-      for (Jira_Cache__c rec : [SELECT Id FROM Jira_Cache__c]) {
-        Test.setCreatedDate(rec.Id, Datetime.now().addHours(-1));
-      }
-
-      // Force hard delete
-      JiraCacheCleanupBatch.forceHardDelete = true;
-
-      Test.startTest();
-      Database.executeBatch(new JiraCacheCleanupBatch(), 200);
-      Test.stopTest();
-
-      System.assertEquals(
-        0,
-        [SELECT COUNT() FROM Jira_Cache__c],
-        'Records should be hard deleted'
-      );
-    }
+    Assert.areEqual(1, [SELECT COUNT() FROM Jira_Cache__c], 'Newest stays');
   }
 }

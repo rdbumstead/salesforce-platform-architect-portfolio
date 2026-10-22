@@ -1,72 +1,113 @@
 /**
- * @description Unit tests for GithubCacheCleanupBatch.
- * @author Ryan Bumstead
- */
+ * @description       : Unit tests for GithubCacheCleanupBatch: rows past two hours go, the
+ *                      newest row always stays (pillar-e-design 4.4, G10).
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 01/03/2026
+ **/
 @IsTest
 private class GithubCacheCleanupBatchTest {
-  @IsTest
-  static void testGithubBatchDeletesExpiredRecords() {
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      CacheCleanupSettings.testOverrideEnabled = true;
-
-      TestFactory.createGithubCache(10);
-
-      for (Github_Cache__c rec : [SELECT Id FROM Github_Cache__c]) {
-        Test.setCreatedDate(rec.Id, Datetime.now().addHours(-5));
-      }
-
-      Test.startTest();
-      Database.executeBatch(new GithubCacheCleanupBatch(), 200);
-      Test.stopTest();
-
-      System.assertEquals(
-        0,
-        [SELECT COUNT() FROM Github_Cache__c],
-        'All expired GitHub cache records should be deleted.'
-      );
+  /** Creates rows aged hoursOld[i] hours and returns them in the same order. */
+  private static List<Github_Cache__c> rowsAged(List<Integer> hoursOld) {
+    List<Github_Cache__c> rows = TestFactory.createGithubCache(hoursOld.size());
+    Datetime now = Datetime.now();
+    for (Integer i = 0; i < rows.size(); i++) {
+      Test.setCreatedDate(rows[i].Id, now.addHours(-hoursOld[i]));
     }
+    return rows;
+  }
+
+  private static void allowHardDelete() {
+    CacheCleanupSettings.useMockSettings = true;
+    CacheCleanupSettings.mockSettings = new Cache_Cleanup_Settings__mdt(
+      Is_Enabled__c = true,
+      Allow_Hard_Delete__c = true
+    );
   }
 
   @IsTest
-  static void testGithubBatchWhenDisabled() {
-    CacheCleanupSettings.testOverrideEnabled = false;
-
-    TestFactory.createGithubCache(10);
+  static void shouldKeepNewestRowWhenEveryRowIsPastTheLimit() {
+    CacheCleanupSettings.testOverrideEnabled = true;
+    List<Github_Cache__c> rows = rowsAged(new List<Integer>{ 5, 4, 3, 6 });
 
     Test.startTest();
     Database.executeBatch(new GithubCacheCleanupBatch(), 200);
     Test.stopTest();
 
-    System.assertEquals(
-      10,
-      [SELECT COUNT() FROM Github_Cache__c],
-      'No GitHub cache records should be deleted when cleanup is disabled.'
-    );
+    List<Github_Cache__c> left = [SELECT Id FROM Github_Cache__c];
+    Assert.areEqual(1, left.size(), 'Only the newest row stays');
+    Assert.areEqual(rows[2].Id, left[0].Id, 'The 3 hour old row is the newest');
   }
+
   @IsTest
-  static void testGithubBatchFullCoverage() {
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      CacheCleanupSettings.testOverrideEnabled = true;
+  static void shouldKeepRecentRowsWhenInsideTheLimit() {
+    CacheCleanupSettings.testOverrideEnabled = true;
+    List<Github_Cache__c> rows = rowsAged(new List<Integer>{ 5, 1, 0 });
 
-      // Create records
-      TestFactory.createGithubCache(10);
-      for (Github_Cache__c rec : [SELECT Id FROM Github_Cache__c]) {
-        Test.setCreatedDate(rec.Id, Datetime.now().addHours(-5));
-      }
+    Test.startTest();
+    Database.executeBatch(new GithubCacheCleanupBatch(), 200);
+    Test.stopTest();
 
-      // Enable flags to hit all lines
-      GithubCacheCleanupBatch.forceHardDelete = true;
-      GithubCacheCleanupBatch.forceChainBatch = true; // This will queue Jira batch
+    Set<Id> left = new Map<Id, Github_Cache__c>(
+        [SELECT Id FROM Github_Cache__c]
+      )
+      .keySet();
+    Assert.areEqual(2, left.size(), 'Only the 5 hour old row goes');
+    Assert.isFalse(left.contains(rows[0].Id), 'Old row deleted');
+  }
 
-      Test.startTest();
-      Database.executeBatch(new GithubCacheCleanupBatch(), 200);
-      Test.stopTest();
-
-      System.assertEquals(
-        0,
-        [SELECT COUNT() FROM Github_Cache__c],
-        'Records should be deleted'
-      );
+  @IsTest
+  static void shouldDeleteBulkWhenManyRowsAreOld() {
+    CacheCleanupSettings.testOverrideEnabled = true;
+    List<Integer> ages = new List<Integer>();
+    for (Integer i = 0; i < 251; i++) {
+      ages.add(3 + i);
     }
+    rowsAged(ages);
+
+    Test.startTest();
+    Database.executeBatch(new GithubCacheCleanupBatch(), 300);
+    Test.stopTest();
+
+    Assert.areEqual(1, [SELECT COUNT() FROM Github_Cache__c], 'Newest stays');
+  }
+
+  @IsTest
+  static void shouldDeleteNothingWhenDisabled() {
+    CacheCleanupSettings.testOverrideEnabled = false;
+    rowsAged(new List<Integer>{ 5, 5, 5 });
+
+    Test.startTest();
+    Database.executeBatch(new GithubCacheCleanupBatch(), 200);
+    Test.stopTest();
+
+    Assert.areEqual(3, [SELECT COUNT() FROM Github_Cache__c], 'All kept');
+  }
+
+  @IsTest
+  static void shouldBeSafeWhenNoRows() {
+    CacheCleanupSettings.testOverrideEnabled = true;
+
+    Test.startTest();
+    Database.executeBatch(new GithubCacheCleanupBatch(), 200);
+    Test.stopTest();
+
+    Assert.areEqual(0, [SELECT COUNT() FROM Github_Cache__c], 'Nothing to do');
+  }
+
+  @IsTest
+  static void shouldHardDeleteAndChainWhenAllowed() {
+    CacheCleanupSettings.testOverrideEnabled = true;
+    allowHardDelete();
+    rowsAged(new List<Integer>{ 5, 4 });
+    GithubCacheCleanupBatch.forceHardDelete = true;
+    GithubCacheCleanupBatch.forceChainBatch = true;
+
+    Test.startTest();
+    Database.executeBatch(new GithubCacheCleanupBatch(), 200);
+    Test.stopTest();
+
+    Assert.areEqual(1, [SELECT COUNT() FROM Github_Cache__c], 'Newest stays');
   }
 }
