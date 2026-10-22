@@ -1,0 +1,14 @@
+[
+  {
+    "sobject": "Project__c",
+    "saveRefs": true,
+    "resolveRefs": false,
+    "files": ["pillar-a-Project__c.json"]
+  },
+  {
+    "sobject": "Project_Asset__c",
+    "saveRefs": true,
+    "resolveRefs": true,
+    "files": ["pillar-a-Project_Asset__c.json"]
+  }
+]
