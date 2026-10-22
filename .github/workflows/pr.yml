@@ -115,24 +115,24 @@ jobs:
     steps:
       - name: Generate PR Summary
         run: |
-          echo "## 🚀 PR Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "## PR Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           FAILED=false
 
           if [ "${{ needs.quality-check.result }}" = "success" ]; then
-             echo "✅ **Quality Gates**: Passed" >> $GITHUB_STEP_SUMMARY
+             echo "**Quality Gates**: Passed" >> $GITHUB_STEP_SUMMARY
           else
-             echo "❌ **Quality Gates**: Failed" >> $GITHUB_STEP_SUMMARY
+             echo "**Quality Gates**: Failed" >> $GITHUB_STEP_SUMMARY
              FAILED=true
           fi
 
           if [ "${{ needs.scratch-org-test.result }}" = "success" ]; then
-             echo "✅ **Scratch Org Deployment**: Passed" >> $GITHUB_STEP_SUMMARY
+             echo "**Scratch Org Deployment**: Passed" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.scratch-org-test.result }}" = "skipped" ]; then
-             echo "⚠️ **Scratch Org Deployment**: Skipped" >> $GITHUB_STEP_SUMMARY
+             echo "**Scratch Org Deployment**: Skipped" >> $GITHUB_STEP_SUMMARY
           else
-             echo "❌ **Scratch Org Deployment**: Failed" >> $GITHUB_STEP_SUMMARY
+             echo "**Scratch Org Deployment**: Failed" >> $GITHUB_STEP_SUMMARY
              FAILED=true
           fi
 

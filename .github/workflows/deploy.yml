@@ -63,7 +63,7 @@ jobs:
         run: |
           # 1. Handle Full Deployment
           if [ "${{ inputs.deployment_mode }}" == "full" ]; then
-            echo "🚀 Starting FULL deployment..."
+            echo "Starting FULL deployment..."
             sf project deploy start --source-dir packages --target-org portfolio --wait 60
             exit 0
           fi
@@ -73,13 +73,13 @@ jobs:
           DEPLOY_CMD="sf project deploy start --target-org portfolio --wait 30"
 
           if [ -s changed/package/package.xml ] && grep -q "<types>" changed/package/package.xml; then
-             echo "📦 Detected Metadata Changes"
+             echo "Detected Metadata Changes"
              DEPLOY_CMD="$DEPLOY_CMD --manifest changed/package/package.xml"
              HAS_CHANGES="true"
           fi
 
           if [ -s changed/destructiveChanges/destructiveChanges.xml ] && grep -q "<types>" changed/destructiveChanges/destructiveChanges.xml; then
-             echo "🔥 Detected Destructive Changes"
+             echo "Detected Destructive Changes"
              
              TIMING="${{ inputs.destructive_timing }}"
              [ -z "$TIMING" ] && TIMING="post"
@@ -94,10 +94,10 @@ jobs:
 
           # 3. Execute or Skip
           if [ "$HAS_CHANGES" == "true" ]; then
-             echo "🚀 Executing: $DEPLOY_CMD"
+             echo "Executing: $DEPLOY_CMD"
              $DEPLOY_CMD
           else
-             echo "✅ No metadata changes detected. Skipping deployment."
+             echo "No metadata changes detected. Skipping deployment."
           fi
 
   deploy-status:
@@ -107,12 +107,12 @@ jobs:
     steps:
       - name: Generate Deployment Summary
         run: |
-          echo "## 🚀 Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Status" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ needs.deploy.result }}" = "success" ]; then
-             echo "✅ **Result**: Deployment Successful (or Skipped safely)" >> $GITHUB_STEP_SUMMARY
+             echo "**Result**: Deployment Successful (or Skipped safely)" >> $GITHUB_STEP_SUMMARY
           else
-             echo "❌ **Result**: Deployment Failed" >> $GITHUB_STEP_SUMMARY
+             echo "**Result**: Deployment Failed" >> $GITHUB_STEP_SUMMARY
              exit 1
           fi

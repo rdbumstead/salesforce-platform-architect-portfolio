@@ -16,21 +16,21 @@ const checks = [
   }
 ];
 
-console.log("🚀 Starting Pre-Launch Check...\n");
+console.log("Starting Pre-Launch Check...\n");
 
 for (const check of checks) {
   try {
-    console.log(`⏳ Running: ${check.name}`);
+    console.log(`Running: ${check.name}`);
     execSync(check.cmd, { stdio: "inherit" });
-    console.log(`✅ ${check.name} PASSED\n`);
+    console.log(`${check.name} PASSED\n`);
   } catch {
     if (check.optional) {
-      console.log(`⚠️  ${check.name} SKIPPED (optional)\n`);
+      console.log(`${check.name} SKIPPED (optional)\n`);
     } else {
-      console.error(`❌ ${check.name} FAILED`);
+      console.error(`${check.name} FAILED`);
       process.exit(1);
     }
   }
 }
 
-console.log("✅ PRE-LAUNCH CHECK PASSED");
+console.log("PRE-LAUNCH CHECK PASSED");
