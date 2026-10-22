@@ -8,6 +8,7 @@ on:
       - "packages/**"
       - "sfdx-project.json"
       - "package.json"
+      - ".github/workflows/pr.yml"
 
 jobs:
   quality-check:
@@ -54,20 +55,41 @@ jobs:
           install_delta: "true"
           alias: "portfolio"
 
+      # The setup action deletes its JWT key file when its login step ends, but the CLI
+      # needs the Dev Hub key again to log in to a new scratch org after signup. Without
+      # it the create fails after the org exists. Log in to the Dev Hub again with a key
+      # file that lives until the last step of this job.
+      - name: Restore Dev Hub Key
+        env:
+          SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
+          SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
+          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+        run: |
+          KEY_FILE="$RUNNER_TEMP/devhub.key"
+          printf '%s\n' "$SFDX_JWT_KEY" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+          sf org login jwt --client-id "$SFDX_CLIENT_ID" --jwt-key-file "$KEY_FILE" --username "$SFDX_USERNAME" --instance-url https://login.salesforce.com --alias portfolio --set-default-dev-hub --json \
+            | jq '{status, orgId: .result.orgId, message}'
+
       - name: Create Scratch Org
         id: create_org
         run: |
-          echo "ORG_TYPE=scratch" >> $GITHUB_ENV
+          echo "CREATE_STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
           set +e
           sf org create scratch --target-dev-hub portfolio --definition-file config/project-scratch-def.json --alias ci-org --duration-days 1 --set-default --no-ancestors --wait 30 --json > scratch_info.json
           EXIT_CODE=$?
           set -e
+          echo "CREATE_FINISHED=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
 
-          if [ $EXIT_CODE -ne 0 ]; then
-             echo "Scratch Org limit reached. Switching to Fallback Mode."
-             echo "ORG_TYPE=fallback" >> $GITHUB_ENV
+          ORG_ID=$(jq -r '.result.orgId // empty' scratch_info.json 2>/dev/null || true)
+          if [ $EXIT_CODE -eq 0 ] && [ -n "$ORG_ID" ]; then
+             echo "Scratch Org created: $ORG_ID"
+             echo "SCRATCH_ORG_ID=$ORG_ID" >> $GITHUB_ENV
+             echo "ORG_TYPE=scratch" >> $GITHUB_ENV
           else
-             echo "Scratch Org created successfully."
+             echo "Scratch Org creation failed (exit $EXIT_CODE). Switching to Fallback Mode."
+             jq -r '"  \(.name // "UnknownError"): \(.message // "no message")"' scratch_info.json 2>/dev/null || head -c 2000 scratch_info.json
+             echo "ORG_TYPE=fallback" >> $GITHUB_ENV
           fi
 
       - name: Deploy & Test (Scratch Mode - FULL)
@@ -104,9 +126,33 @@ jobs:
           echo "sf org open -o pr-${{ github.event.number }}-uat" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
+      # Runs whenever a create was attempted, so a signup whose create command failed
+      # afterwards is still removed. Without an org Id from the CLI, the org is found on
+      # the Dev Hub: a 1 day Active signup created while this job's create was running.
       - name: Delete Scratch Org
-        if: always() && env.ORG_TYPE == 'scratch' && !contains(github.event.pull_request.labels.*.name, 'debug:keep-org')
-        run: sf org delete scratch --target-org ci-org --no-prompt || true
+        if: always() && env.CREATE_STARTED != '' && !contains(github.event.pull_request.labels.*.name, 'debug:keep-org')
+        run: |
+          if [ -n "$SCRATCH_ORG_ID" ] && sf org delete scratch --target-org ci-org --no-prompt; then
+             exit 0
+          fi
+
+          WINDOW_END=${CREATE_FINISHED:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
+          ORPHANS=$(sf data query --target-org portfolio --json \
+            --query "SELECT ScratchOrg FROM ScratchOrgInfo WHERE CreatedDate >= $CREATE_STARTED AND CreatedDate <= $WINDOW_END AND DurationDays = 1 AND Status = 'Active'" \
+            | jq -r '.result.records[].ScratchOrg // empty')
+          if [ -z "$ORPHANS" ]; then
+             echo "No scratch org from this run is left on the Dev Hub."
+             exit 0
+          fi
+          for ORG in $ORPHANS; do
+             echo "Deleting scratch org $ORG through the Dev Hub."
+             sf data delete record --target-org portfolio --sobject ActiveScratchOrg --where "ScratchOrg='$ORG'" \
+               || echo "::warning::Could not delete scratch org $ORG. It expires in 1 day."
+          done
+
+      - name: Remove Dev Hub Key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/devhub.key"
 
   pr-status:
     if: always()
