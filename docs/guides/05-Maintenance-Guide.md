@@ -88,7 +88,7 @@ The portfolio APIs authenticate with OAuth 2.0 Client Credentials issued by the 
 - `Portfolio_API_Token_Principal` of `Portfolio_API_Token_Auth` (Custom), whose `Client_Id` and `Client_Secret` parameters `TokenExchangeService.exchangeToken` sends to the token endpoint to vend evaluator tokens ([ADR-028 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21)).
 
 - **Rotation Schedule:** every 90 days, or immediately on suspected exposure.
-- **Blast radius:** rotating the secret invalidates both principals until they are updated; tokens already issued keep working until the shared session ends after 30 minutes without use.
+- **Blast radius:** rotating the secret invalidates both principals until they are updated, and tokens already issued keep working until the shared session ends after 30 minutes without use.
 
 **Procedure**
 
