@@ -1,0 +1,317 @@
+/**
+ * @description       : Unit tests for the graphEngine service module (Round 5 plan M1). Covers the
+ *                      one load per page, a failed load that is not cached, the D3_Library resource
+ *                      itself (read from disk and run in a vm context with a fake window), and
+ *                      layoutGraph on the real d3-force build: inside the box, anchors pull groups
+ *                      apart, the same input gives the same output, inputs are not changed.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 10/22/2026
+ **/
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
+const crypto = require("crypto");
+
+// config/jest.config.js maps every lightning/* import to one universal mock
+// component, so the resource loader is mocked here explicitly.
+jest.mock(
+  "lightning/platformResourceLoader",
+  () => ({ loadScript: jest.fn(), loadStyle: jest.fn() }),
+  { virtual: true }
+);
+
+const RESOURCE_PATH = path.join(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "staticresources",
+  "D3_Library.js"
+);
+
+// The four official UMD builds, as logged by WS1 (bytes and SHA-256 of each file).
+const MODULES = [
+  {
+    banner: "// https://d3js.org/d3-dispatch/ v3.0.1",
+    bytes: 1901,
+    sha256: "94b3bbdb6b98dc1325a15762b051013e8253999b0e0436b27d1da17b952ba0af"
+  },
+  {
+    banner: "// https://d3js.org/d3-quadtree/ v3.0.1",
+    bytes: 5279,
+    sha256: "57e2ad12824ed82893ba447523f2a2fb9beeb9222aafb2c778a9f5b313348b0e"
+  },
+  {
+    banner: "// https://d3js.org/d3-timer/ v3.0.1",
+    bytes: 1947,
+    sha256: "911ceda305f014b6b53ca68d5c896a9a387da120cfd56a421a2c60cca2fc9b36"
+  },
+  {
+    banner: "// https://d3js.org/d3-force/ v3.0.0",
+    bytes: 8300,
+    sha256: "1e07b473241328795d5ea9ad479a7bbabd765012fa2ef95633c83b69868dff6b"
+  }
+];
+
+// A checkout on Windows may hold the file with CRLF endings. The published builds use LF.
+function readResource() {
+  return fs.readFileSync(RESOURCE_PATH, "utf8").replace(/\r\n/g, "\n");
+}
+
+// Runs the resource the way a browser runs a classic script: no module system, a window
+// that is also self and globalThis, with the timer functions d3-timer reaches for.
+function loadD3FromResource() {
+  const fakeWindow = { setTimeout, clearTimeout, setInterval, clearInterval };
+  fakeWindow.window = fakeWindow;
+  fakeWindow.self = fakeWindow;
+  const context = vm.createContext(fakeWindow);
+  vm.runInContext(readResource(), context, { filename: "D3_Library.js" });
+  return vm.runInContext("globalThis", context).d3;
+}
+
+// Each test gets a fresh module so the page level promise cache starts empty.
+function freshModules() {
+  let engine;
+  let resourceLoader;
+  jest.isolateModules(() => {
+    resourceLoader = require("lightning/platformResourceLoader");
+    engine = require("c/graphEngine");
+  });
+  return {
+    loadGraphEngine: engine.loadGraphEngine,
+    layoutGraph: engine.layoutGraph,
+    loadScript: resourceLoader.loadScript
+  };
+}
+
+const FAKE_D3 = { forceSimulation: function forceSimulation() {} };
+
+describe("c/graphEngine loadGraphEngine", () => {
+  afterEach(() => {
+    delete window.d3;
+    jest.clearAllMocks();
+  });
+
+  it("loads D3_Library once for three calls and resolves each to window.d3", async () => {
+    const { loadGraphEngine, loadScript } = freshModules();
+    loadScript.mockImplementation(() => {
+      window.d3 = FAKE_D3;
+      return Promise.resolve();
+    });
+    const component = {};
+
+    const [first, second] = await Promise.all([
+      loadGraphEngine(component),
+      loadGraphEngine(component)
+    ]);
+    const third = await loadGraphEngine(component);
+
+    expect(loadScript).toHaveBeenCalledTimes(1);
+    expect(loadScript).toHaveBeenCalledWith(component, "D3_Library");
+    expect(first).toBe(FAKE_D3);
+    expect(second).toBe(FAKE_D3);
+    expect(third).toBe(FAKE_D3);
+  });
+
+  it("rejects with a clear Error when the script fails to load", async () => {
+    const { loadGraphEngine, loadScript } = freshModules();
+    loadScript.mockRejectedValue(new Error("network down"));
+
+    await expect(loadGraphEngine({})).rejects.toThrow(
+      "D3_Library failed to load: network down"
+    );
+  });
+
+  it("rejects when the script loads but exposes no d3.forceSimulation", async () => {
+    const { loadGraphEngine, loadScript } = freshModules();
+    loadScript.mockResolvedValue();
+
+    await expect(loadGraphEngine({})).rejects.toThrow(
+      "D3_Library loaded but no d3.forceSimulation was found"
+    );
+  });
+
+  it("does not cache a failure, so a later call tries again", async () => {
+    const { loadGraphEngine, loadScript } = freshModules();
+    loadScript
+      .mockRejectedValueOnce(new Error("blocked"))
+      .mockImplementation(() => {
+        window.d3 = FAKE_D3;
+        return Promise.resolve();
+      });
+
+    await expect(loadGraphEngine({})).rejects.toThrow("blocked");
+    await expect(loadGraphEngine({})).resolves.toBe(FAKE_D3);
+    expect(loadScript).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("D3_Library static resource", () => {
+  it("holds the four official builds unchanged, in dependency order, with the ISC text", () => {
+    const text = readResource();
+    const starts = MODULES.map((module) => text.indexOf(module.banner));
+    starts.forEach((start) => expect(start).toBeGreaterThan(0));
+    expect([...starts].sort((a, b) => a - b)).toEqual(starts);
+
+    MODULES.forEach((module, index) => {
+      const end = index + 1 < MODULES.length ? starts[index + 1] : text.length;
+      const segment = text.slice(starts[index], end);
+      expect(Buffer.byteLength(segment, "utf8")).toBe(module.bytes);
+      expect(crypto.createHash("sha256").update(segment).digest("hex")).toBe(
+        module.sha256
+      );
+    });
+
+    const header = text.slice(0, starts[0]);
+    expect(header).toContain("Copyright 2010-2021 Mike Bostock");
+    expect(header).toContain(
+      "Permission to use, copy, modify, and/or distribute this software"
+    );
+    expect(Buffer.byteLength(text, "utf8")).toBeLessThan(60 * 1024);
+  });
+
+  it("attaches one window.d3 with every force the engine uses", () => {
+    const d3 = loadD3FromResource();
+
+    expect(d3).toBeDefined();
+    [
+      "forceSimulation",
+      "forceManyBody",
+      "forceCollide",
+      "forceLink",
+      "forceX",
+      "forceY",
+      "dispatch",
+      "quadtree",
+      "timer"
+    ].forEach((name) => expect(typeof d3[name]).toBe("function"));
+  });
+});
+
+describe("c/graphEngine layoutGraph", () => {
+  const { layoutGraph } = freshModules();
+  const d3 = loadD3FromResource();
+  const WIDTH = 400;
+  const HEIGHT = 300;
+
+  // Two groups of eight with links inside each group and one across.
+  function sampleGraph() {
+    const nodes = [];
+    const edges = [];
+    ["left", "right"].forEach((group) => {
+      for (let i = 0; i < 8; i++) {
+        nodes.push({ id: `${group}${i}`, group, radius: 6 + (i % 3) });
+        if (i > 0) {
+          edges.push({ source: `${group}0`, target: `${group}${i}` });
+        }
+      }
+    });
+    edges.push({ source: "left1", target: "right1", kind: "across" });
+    return { nodes, edges };
+  }
+
+  function centroid(nodes, group) {
+    const members = nodes.filter((node) => node.group === group);
+    return {
+      x: members.reduce((sum, node) => sum + node.x, 0) / members.length,
+      y: members.reduce((sum, node) => sum + node.y, 0) / members.length
+    };
+  }
+
+  it("keeps every node inside the box, radius included", () => {
+    const { nodes, edges } = sampleGraph();
+    // A strong push and anchors outside the box try to throw nodes out.
+    const result = layoutGraph(d3, nodes, edges, {
+      width: WIDTH,
+      height: HEIGHT,
+      charge: -400,
+      anchors: { left: { x: -500, y: -500 }, right: { x: 900, y: 900 } }
+    });
+
+    expect(result.nodes).toHaveLength(nodes.length);
+    result.nodes.forEach((node) => {
+      expect(node.x).toBeGreaterThanOrEqual(node.radius);
+      expect(node.x).toBeLessThanOrEqual(WIDTH - node.radius);
+      expect(node.y).toBeGreaterThanOrEqual(node.radius);
+      expect(node.y).toBeLessThanOrEqual(HEIGHT - node.radius);
+    });
+  });
+
+  it("pulls each group toward its own anchor", () => {
+    const { nodes, edges } = sampleGraph();
+    const anchors = { left: { x: 80, y: 150 }, right: { x: 320, y: 150 } };
+    const result = layoutGraph(d3, nodes, edges, {
+      width: WIDTH,
+      height: HEIGHT,
+      anchors,
+      anchorStrength: 0.3
+    });
+
+    const left = centroid(result.nodes, "left");
+    const right = centroid(result.nodes, "right");
+    expect(right.x - left.x).toBeGreaterThan(150);
+    expect(Math.abs(left.x - anchors.left.x)).toBeLessThan(40);
+    expect(Math.abs(right.x - anchors.right.x)).toBeLessThan(40);
+  });
+
+  it("puts groups on a ring when no anchors are given", () => {
+    const { nodes, edges } = sampleGraph();
+    const result = layoutGraph(d3, nodes, edges, {
+      width: WIDTH,
+      height: HEIGHT,
+      anchorStrength: 0.3
+    });
+
+    const left = centroid(result.nodes, "left");
+    const right = centroid(result.nodes, "right");
+    expect(Math.hypot(right.x - left.x, right.y - left.y)).toBeGreaterThan(100);
+  });
+
+  it("gives the same output for the same input twice", () => {
+    const first = sampleGraph();
+    const second = sampleGraph();
+    const options = { width: WIDTH, height: HEIGHT, linkDistance: 40 };
+
+    expect(layoutGraph(d3, first.nodes, first.edges, options)).toEqual(
+      layoutGraph(d3, second.nodes, second.edges, options)
+    );
+  });
+
+  it("returns edge end points, keeps extra fields and drops edges with a missing end", () => {
+    const { nodes, edges } = sampleGraph();
+    const withStray = [...edges, { source: "left0", target: "nobody" }];
+    const result = layoutGraph(d3, nodes, withStray, {
+      width: WIDTH,
+      height: HEIGHT
+    });
+
+    expect(result.edges).toHaveLength(edges.length);
+    const across = result.edges.find((edge) => edge.kind === "across");
+    const from = result.nodes.find((node) => node.id === "left1");
+    const to = result.nodes.find((node) => node.id === "right1");
+    expect(across).toMatchObject({
+      source: "left1",
+      target: "right1",
+      x1: from.x,
+      y1: from.y,
+      x2: to.x,
+      y2: to.y
+    });
+    expect(from.group).toBe("left");
+  });
+
+  it("does not change its inputs", () => {
+    const { nodes, edges } = sampleGraph();
+    const before = JSON.stringify({ nodes, edges });
+
+    layoutGraph(d3, nodes, edges, { width: WIDTH, height: HEIGHT });
+
+    expect(JSON.stringify({ nodes, edges })).toBe(before);
+  });
+
+  it("handles an empty graph", () => {
+    expect(layoutGraph(d3, [], [], {})).toEqual({ nodes: [], edges: [] });
+  });
+});
