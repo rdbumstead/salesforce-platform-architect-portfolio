@@ -14,9 +14,9 @@
 >
 > **Target Launch:** Q1 2027.
 
-**📘 Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
+**Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 
-**🌐 Live App:** [https://ryanbumstead.com](https://ryanbumstead.com) (Static placeholder until MVP launch)
+**Live App:** [https://ryanbumstead.com](https://ryanbumstead.com) (Static placeholder until MVP launch)
 
 > [!TIP]
 > **Non-Salesforce Reader?** This is a full enterprise-grade system built on the Salesforce CRM platform. It functions as a high-scale public web app with real-time data, AI-generated content, and strict DevOps protocols.
@@ -37,21 +37,21 @@ Principal-level Salesforce Platform Architecture including:
 
 ### Portfolio Overview
 
-**📈 By The Numbers:**
+**By The Numbers:**
 
-- ✅ **6 Enterprise Documents** — SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
-- ✅ **28 Architectural Decisions (ADRs)** — Documented rationale for performance, security, and AI.
-- ✅ **12 Core Competencies** — Mapped to verifiable artifacts and validation methods.
-- ✅ **4 Active CI/CD Pipelines** — Delta deploys, PR gates, heartbeat, and worker automation.
+- **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
+- **28 Architectural Decisions (ADRs)**: Documented rationale for performance, security, and AI.
+- **12 Core Competencies**: Mapped to verifiable artifacts and validation methods.
+- **4 Active CI/CD Pipelines**: Delta deploys, PR gates, heartbeat, and worker automation.
 
-**⚡ Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [Architecture Diagram](#north-star-architecture) • [Full Docs](#full-architecture-documentation)
+**Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [Architecture Diagram](#north-star-architecture) • [Full Docs](#full-architecture-documentation)
 
 ---
 
 ## Evidence Matrix
 
 <details>
-<summary><strong>📊 Skills-to-Artifacts Evidence Matrix</strong> (Click to expand—maps competencies to verifiable deliverables)</summary>
+<summary><strong>Skills-to-Artifacts Evidence Matrix</strong> (Click to expand. Maps competencies to verifiable deliverables)</summary>
 
 | Core Competency                 | Demonstrated By                            | Artifact/Evidence                                                                                                                                                                                        | Verification Method                                                                                                                                                                                            |
 | :------------------------------ | :----------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -94,7 +94,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 
 ### Verification Checklist for Evaluators
 
-**✅ Available Now:**
+**Available Now:**
 
 - [Architecture decisions documented with rationale](docs/adr/) — 28 ADRs covering performance, security, AI, FinOps
 - [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) — 4 active workflows (deploy, PR validation, heartbeat, worker)
@@ -104,7 +104,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix) — Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
 - [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine): one dispatch from the Gemini API to a deterministic Local Template, grounded on portfolio records (Agentforce switch off, not implemented)
 
-**🚧 Available at MVP Launch (Q1 2027):**
+**Available at MVP Launch (Q1 2027):**
 
 - **Real-time observability** — Glass Box footer showing live Salesforce governor limits (Heap, CPU, SOQL) and AI provider health
 - **Resilience simulation** — Toggle switch to force GitHub/Jira integration failures and observe circuit breaker behavior with cached fallbacks
@@ -158,7 +158,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 ## Architectural Decision Records
 
 <details>
-<summary><strong>📋 Architectural Decision Records (ADR) Index</strong> (Click to expand—28 documented decisions)</summary>
+<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 28 documented decisions)</summary>
 
 | ID                                                                                       | Subject                              | Strategic Driver         |
 | :--------------------------------------------------------------------------------------- | :----------------------------------- | :----------------------- |
@@ -196,7 +196,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 ---
 
 <details>
-<summary><strong>📖 Glossary of Terms</strong> (Click to expand)</summary>
+<summary><strong>Glossary of Terms</strong> (Click to expand)</summary>
 
 | Term          | Meaning                                                                                                                   | Status                          |
 | :------------ | :------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |

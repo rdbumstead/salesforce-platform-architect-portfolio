@@ -14,14 +14,14 @@ try {
 // Check if package.xml exists
 const packageXmlPath = "changed/package/package.xml";
 if (!fs.existsSync(packageXmlPath)) {
-  console.log("⚠️  No package.xml found. Skipping validation.");
+  console.log("No package.xml found. Skipping validation.");
   process.exit(0);
 }
 
 // Check if package.xml actually has metadata changes (looks for <types> tag)
 const content = fs.readFileSync(packageXmlPath, "utf8");
 if (!content.includes("<types>")) {
-  console.log("✅  No metadata changes detected. Skipping validation.");
+  console.log("No metadata changes detected. Skipping validation.");
   process.exit(0);
 }
 
@@ -32,6 +32,6 @@ try {
     { stdio: "inherit" }
   );
 } catch (error) {
-  console.error("❌  Validation Failed.");
+  console.error("Validation Failed.");
   process.exit(1);
 }

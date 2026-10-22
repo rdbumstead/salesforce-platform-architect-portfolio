@@ -102,14 +102,14 @@ jobs:
     steps:
       - name: Generate Heartbeat Summary
         run: |
-          echo "## 💓 Org Heartbeat Status" >> $GITHUB_STEP_SUMMARY
+          echo "## Org Heartbeat Status" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Check Job Status
           if [ "${{ needs.heartbeat.result }}" = "success" ]; then
-             echo "✅ **Connectivity**: Online" >> $GITHUB_STEP_SUMMARY
+             echo "**Connectivity**: Online" >> $GITHUB_STEP_SUMMARY
           else
-             echo "❌ **Connectivity**: Flatline (Error Detected)" >> $GITHUB_STEP_SUMMARY
+             echo "**Connectivity**: Flatline (Error Detected)" >> $GITHUB_STEP_SUMMARY
              exit 1
           fi
 
@@ -117,7 +117,7 @@ jobs:
           WAS_FROZEN="${{ needs.heartbeat.outputs.was_frozen }}"
 
           if [ "$WAS_FROZEN" == "true" ]; then
-             echo "⚠️ **Account Status**: Was Frozen (Recovery Attempted)" >> $GITHUB_STEP_SUMMARY
+             echo "**Account Status**: Was Frozen (Recovery Attempted)" >> $GITHUB_STEP_SUMMARY
           else
-             echo "✅ **Account Status**: Active" >> $GITHUB_STEP_SUMMARY
+             echo "**Account Status**: Active" >> $GITHUB_STEP_SUMMARY
           fi
