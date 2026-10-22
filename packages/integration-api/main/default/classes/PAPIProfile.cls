@@ -269,7 +269,7 @@ global with sharing class PAPIProfile {
     try {
       PAPITransformer.guardSection('certifications');
       for (Certification__c c : [
-        SELECT Id, Name, Issuer__c, Earned_Date__c
+        SELECT Id, Name, Issuer__r.Name, Earned_Date__c
         FROM Certification__c
         ORDER BY Earned_Date__c DESC
         LIMIT 50
@@ -278,7 +278,7 @@ global with sharing class PAPIProfile {
           new Map<String, Object>{
             'id' => c.Id,
             'name' => c.Name,
-            'issuer' => c.Issuer__c,
+            'issuer' => c.Issuer__r?.Name,
             'dateEarned' => c.Earned_Date__c != null
               ? String.valueOf(c.Earned_Date__c)
               : null,

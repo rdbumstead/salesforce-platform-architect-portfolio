@@ -228,7 +228,7 @@ global with sharing class PAPIResume {
     try {
       PAPITransformer.guardSection('certifications');
       certs = [
-        SELECT Name, Issuer__c, Earned_Date__c
+        SELECT Name, Issuer__r.Name, Earned_Date__c
         FROM Certification__c
         ORDER BY Earned_Date__c DESC
         LIMIT 10
@@ -241,8 +241,8 @@ global with sharing class PAPIResume {
     String text = 'CERTIFICATIONS\n\n';
     for (Certification__c cert : certs) {
       text += cert.Name;
-      if (cert.Issuer__c != null) {
-        text += ' - ' + cert.Issuer__c;
+      if (String.isNotBlank(cert.Issuer__r?.Name)) {
+        text += ' - ' + cert.Issuer__r.Name;
       }
       if (cert.Earned_Date__c != null) {
         text +=

@@ -286,4 +286,25 @@ private class PAPIResumeTest {
       'Ends with the LinkedIn and portfolio links: ' + text.right(120)
     );
   }
+
+  @IsTest
+  static void certificationLineShowsTheIssuerName() {
+    Account issuer = [SELECT Id FROM Account WHERE Name = 'Salesforce'];
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    String text = (String) RestTestUtil.getBodyAsMap().get('generatedText');
+    Assert.isTrue(
+      text.contains('Platform Developer I - Salesforce'),
+      'Issuer name on the certification line'
+    );
+    Assert.isFalse(text.contains(String.valueOf(issuer.Id)), 'No Id 18');
+    Assert.isFalse(
+      text.contains(String.valueOf(issuer.Id).left(15)),
+      'No Id 15'
+    );
+  }
 }

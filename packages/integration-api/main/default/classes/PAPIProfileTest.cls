@@ -376,4 +376,32 @@ private class PAPIProfileTest {
     Assert.isFalse(raw.contains('ownerEmail'), 'No ownerEmail key');
     Assert.isFalse(raw.contains('ownerPhone'), 'No ownerPhone key');
   }
+
+  @IsTest
+  static void certificationIssuerIsTheAccountName() {
+    Account issuer = new Account(Name = 'Salesforce Issuer');
+    insert issuer;
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    insert new Certification__c(
+      Name = 'Platform Developer I',
+      Issuer__c = issuer.Id,
+      Contact__c = owner.Id,
+      Earned_Date__c = Date.today().addMonths(-6)
+    );
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    List<Object> certs = (List<Object>) RestTestUtil.getBodyAsMap()
+      .get('certifications');
+    Map<String, Object> cert = (Map<String, Object>) certs[0];
+    Assert.areEqual('Salesforce Issuer', cert.get('issuer'), 'Issuer name');
+    Assert.areNotEqual(
+      String.valueOf(issuer.Id),
+      cert.get('issuer'),
+      'Never the Issuer__c Id'
+    );
+  }
 }
