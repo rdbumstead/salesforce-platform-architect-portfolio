@@ -202,7 +202,7 @@ The delivery is organized into four parallel execution tracks:
 - **Enterprise Logging:** the owner installs Nebula Logger (unlocked package, no namespace) in production and sets 2-day retention. Apex reaches it only through the `PortfolioLog` seam.
 - **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test Circuit Breakers and cached data fallbacks.
 - **Analytics Instrumentation:** Deploy Google Analytics 4 (GA4) with custom events for API tests and resume downloads.
-- **API Mode Indicator:** Glass Box Telemetry footer displays "GraphQL Mode: Native (Live)" – prepares UI for Phase 8 toggle.
+- **API Mode Indicator:** the Glass Box footer measures the guest GraphQL path after first paint and shows it as live with its latency, or as unavailable. It is measured on every visit, never a constant label (owner decision, 2026-10-21).
 - **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration.
 
 **Phase 7: Observability & Governance (Post-Launch)**

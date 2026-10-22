@@ -574,7 +574,7 @@ The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box T
 ### Appendix A: Engineering Implementation Notes
 
 - **A.1 CI/CD Pipeline Configuration:** Authentication via Connected App with "Use Digital Signatures." Stores keys in GitHub Secrets. Use pr.yml for quality gates and deploy.yml for production push.
-- **A.2 CORS & Security:** Whitelist custom domain, enable LWS, update CSP for external scripts (Calendly, GitHub, Atlassian). Log retention policy: Zero-Persistence.
+- **A.2 CORS & Security:** Whitelist custom domain, enable LWS. The site runs on **Relaxed CSP** (owner decision, 2026-10-21), because the GA4 tag needs a third-party script host and inline script. Relaxed CSP lets inline scripts and `eval()` run on the site, so only reviewed head markup may add scripts. Third-party hosts are trusted sites in source: `GitHub_Badge` for the deploy badge and the GA4 hosts. Log retention policy: Zero-Persistence.
 - **A.3 Code Reusability:** Shared Prism.js utility module. Logging goes through one seam, `PortfolioLog`, which writes to Nebula Logger when the owner has installed it and to debug logs otherwise ([ADR-013 Round 4 amendment](../adr/013-structured-logging-framework-nebula-logger.md#amendment-2026-10-21-round-4)).
 - **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches to the `Github_Cache__c` custom object. Refreshed every 15 minutes by `GitHubCacheRefreshJob` (Queueable, enqueued by `IntegrationCacheRefreshScheduler`).
 - **A.5 Hero Banner Navigation:** (Refer to UI specs).
@@ -758,7 +758,7 @@ The `/testimonials/feed?mode=professional` endpoint applies business logic:
 
 #### B.3 API Documentation Access
 
-- **Interactive Documentation:** Redoc static HTML hosted as Salesforce Static Resource
+- **Interactive Documentation:** the Redoc 2.5.4 bundle (`Redoc_Script` static resource) renders both specifications on a full-width page at `/api-lab/reference`, with a SAPI and PAPI switch, linked from the API Lab. Where Redoc does not finish loading in 15 seconds (seen in WebKit), the page says so and links the hosted documentation.
 - **Machine-Readable Spec:** `/openapi.json` endpoint returns the complete OpenAPI 3.0 specification for code generation
 - **Developer Console:** Custom `c-api-tester` LWC component provides live endpoint testing with syntax highlighting. It calls an Apex proxy (`ApiLabController`) that invokes the APIs through the `Portfolio_API` Named Credential, so no secret reaches the browser.
 - **Evaluator Access:** `POST /papi/v1/auth/token` returns a short-lived Bearer token for external testing ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
@@ -801,7 +801,7 @@ sequenceDiagram
 
     Reviewer->>Proxy: POST /auth/token {email, purpose}
     Proxy->>NC: client_credentials exchange
-    NC-->>Reviewer: {access_token, expires_in}
+    NC-->>Reviewer: {access_token, instance_url}
     Reviewer->>API: GET /sapi/v1/skills Bearer token
     API-->>Reviewer: payload
 ```
@@ -809,7 +809,7 @@ sequenceDiagram
 **Controls (in order of importance):**
 
 1. **Least privilege:** a client-credentials token is valid for any REST API as the integration user, so the integration user's permission set is the real boundary: read-only on portfolio objects, execute on SAPI/PAPI classes, nothing else.
-2. **Expiry:** the integration user runs under a profile with a 30-minute session timeout.
+2. **Expiry:** every evaluator token is the integration user's one shared session, which ends after 30 minutes without use (the profile's idle timeout). The token response carries no `expires_in`, because the token endpoint reports no expiry.
 3. **Kill switch:** deactivating the External Client App revokes every outstanding token.
 4. **Quota protection:** rate limiting by `RateWindowLimiter` ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)), shared by every evaluator because every vended token is the same session ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4)), 15 token requests per minute per email and source IP, and a daily cap on issued tokens (`Token_Daily_Cap__c`, default 50) guard the Developer Edition API request limit (15,000/day).
 5. **Audit:** every token request writes an `API_Access_Request__c` record.

@@ -165,6 +165,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - **Accessibility (A11y):**
   - Includes a pause toggle for the layout animation ("Pause layout animation" and "Resume layout animation").
   - Uses the **"Shadow Structure" Pattern** (a visually hidden `<ul>`) for screen readers.
+- **Round 5:** the owner has asked for a skills redesign (a matrix plus a new graph engine, with G6 removed). It is planned for Round 5 and not built. This section describes the component as it is.
 
 ### 2.2 `c-resume-builder` (Resume Generation)
 
@@ -217,7 +218,8 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
   - `resume_downloaded` {`persona`, `format`}
   - `roadmap_viewed`, `changelog_commit_clicked` {`sha`}, `governance_run_link_clicked` {`workflow`}
   - `finops_quota_visibility`, `theme_changed` {`theme`}
-- **CSP.** The GA4 hosts are trusted sites in source (`GA4_Tag_Manager`, `GA4_Analytics`, `GA4_Google`), so a Builder setting saved only in production cannot drift from the repo.
+- **The tag.** The GA4 tag loads from head markup, with a page view sent on every route change, because the LWR router changes routes without a page load.
+- **CSP.** To load the tag the site runs on **Relaxed CSP** (owner decision, 2026-10-21). That lets inline scripts and `eval()` run on the site, so only reviewed head markup adds scripts, and `https://www.googletagmanager.com` is on the site's script allowlist. The GA4 image and connect hosts are trusted sites in source (`GA4_Tag_Manager`, `GA4_Analytics`, `GA4_Google`), so a Builder setting saved only in production cannot drift from the repo.
 
 ### 2.9 Site Theme, Tokens and Fonts
 
