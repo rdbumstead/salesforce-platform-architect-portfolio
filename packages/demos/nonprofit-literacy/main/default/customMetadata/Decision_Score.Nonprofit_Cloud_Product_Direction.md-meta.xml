@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>Nonprofit Cloud, Product direction</label>
+    <protected>false</protected>
+    <values>
+        <field>Option__c</field>
+        <value xsi:type="xsd:string">Nonprofit_Cloud</value>
+    </values>
+    <values>
+        <field>Criterion__c</field>
+        <value xsi:type="xsd:string">Product_Direction</value>
+    </values>
+    <values>
+        <field>Score__c</field>
+        <value xsi:type="xsd:double">5</value>
+    </values>
+    <values>
+        <field>Rationale__c</field>
+        <value
+      xsi:type="xsd:string"
+    >PLACEHOLDER: A current Industries product.</value>
+    </values>
+    <values>
+        <field>Evidence__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Trailhead, Meet Nonprofit Success Pack</value>
+    </values>
+    <values>
+        <field>Is_Placeholder__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+</CustomMetadata>

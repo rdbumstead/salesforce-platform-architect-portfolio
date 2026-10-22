@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >The Decision Score type holds one cell of the Pillar B decision matrix: the Score (1 to 5) one option earns on one criterion, with its Rationale and Evidence. Is Placeholder marks a score the owner has not reviewed. Commonly used for scoring.</description>
+    <label>Decision Score</label>
+    <pluralLabel>Decision Scores</pluralLabel>
+    <validationRules>
+        <fullName>Score_Between_1_And_5</fullName>
+        <active>true</active>
+        <description
+    >Every cell of the matrix is scored from 1 (poor fit) to 5 (strong fit).</description>
+        <errorConditionFormula
+    >OR(ISBLANK(Score__c), Score__c &lt; 1, Score__c &gt; 5)</errorConditionFormula>
+        <errorMessage>Score must be a number from 1 to 5.</errorMessage>
+    </validationRules>
+    <visibility>Public</visibility>
+</CustomObject>

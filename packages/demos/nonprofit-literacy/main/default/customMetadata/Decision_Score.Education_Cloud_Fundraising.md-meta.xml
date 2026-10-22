@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>Education Cloud, Fundraising</label>
+    <protected>false</protected>
+    <values>
+        <field>Option__c</field>
+        <value xsi:type="xsd:string">Education_Cloud</value>
+    </values>
+    <values>
+        <field>Criterion__c</field>
+        <value xsi:type="xsd:string">Fundraising</value>
+    </values>
+    <values>
+        <field>Score__c</field>
+        <value xsi:type="xsd:double">3</value>
+    </values>
+    <values>
+        <field>Rationale__c</field>
+        <value
+      xsi:type="xsd:string"
+    >PLACEHOLDER: Fundraising objects exist, but fundraising is out of scope.</value>
+    </values>
+    <values>
+        <field>Evidence__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Donations stay in an external donor system (not verified)</value>
+    </values>
+    <values>
+        <field>Is_Placeholder__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+</CustomMetadata>

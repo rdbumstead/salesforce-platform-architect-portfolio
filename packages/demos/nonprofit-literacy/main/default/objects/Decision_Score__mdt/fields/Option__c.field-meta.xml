@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Option__c</fullName>
+    <description
+  >The option this score belongs to. One score exists for every option and criterion pair.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>Pick the option this cell scores.</inlineHelpText>
+    <label>Option</label>
+    <referenceTo>Decision_Option__mdt</referenceTo>
+    <relationshipLabel>Decision Scores</relationshipLabel>
+    <relationshipName>Decision_Scores</relationshipName>
+    <required>true</required>
+    <unique>false</unique>
+    <type>MetadataRelationship</type>
+</CustomField>

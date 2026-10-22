@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>Nonprofit Cloud, Fit to classes and atte</label>
+    <protected>false</protected>
+    <values>
+        <field>Option__c</field>
+        <value xsi:type="xsd:string">Nonprofit_Cloud</value>
+    </values>
+    <values>
+        <field>Criterion__c</field>
+        <value xsi:type="xsd:string">Class_Fit</value>
+    </values>
+    <values>
+        <field>Score__c</field>
+        <value xsi:type="xsd:double">5</value>
+    </values>
+    <values>
+        <field>Rationale__c</field>
+        <value
+      xsi:type="xsd:string"
+    >PLACEHOLDER: Program Management model with Program, Program Enrollment, Benefit and Benefit Session.</value>
+    </values>
+    <values>
+        <field>Evidence__c</field>
+        <value
+      xsi:type="xsd:string"
+    >PMM objects (Install PMM, Help). Education Cloud data model entity lists. Nonprofit Cloud ProgramManagement feature (scratch org features)</value>
+    </values>
+    <values>
+        <field>Is_Placeholder__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+</CustomMetadata>

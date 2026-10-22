@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
+    <cacheControl>Public</cacheControl>
+    <contentType>application/zip</contentType>
+    <description
+  >Pillar B images. minimalist-architecture.svg is the literacy program object model, redrawn from public NPSP, PMM and Volunteers for Salesforce object names only.</description>
+</StaticResource>

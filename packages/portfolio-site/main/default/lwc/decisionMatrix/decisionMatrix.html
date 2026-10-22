@@ -1,0 +1,111 @@
+<template>
+  <section class="matrix" aria-label="Decision matrix">
+    <template lwc:if={isLoading}>
+      <p class="matrix-note">Loading the decision matrix.</p>
+    </template>
+    <template lwc:if={error}>
+      <p class="matrix-note matrix-error" role="alert">
+        The decision matrix could not load. Try again later.
+      </p>
+    </template>
+    <template lwc:if={hasMatrix}>
+      <template lwc:if={showPlaceholderBanner}>
+        <p class="placeholder-banner" data-id="placeholder-banner">
+          {bannerText}
+        </p>
+      </template>
+      <p class="matrix-help">
+        Move a weight from 0 (ignored) to 10 (decisive). Open a score to read
+        why it was given. A total is each weight times its score, added up per
+        option.
+      </p>
+      <div class="table-scroll">
+        <table class="matrix-table">
+          <caption>
+            Weighted scores for three platform options, one row per criterion
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Criterion</th>
+              <th scope="col">Weight</th>
+              <template for:each={columns} for:item="col">
+                <th scope="col" key={col.key}>
+                  <span class="option-label">{col.label}</span>
+                  <span class="option-summary">{col.summary}</span>
+                </th>
+              </template>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={rows} for:item="row">
+              <tr key={row.key}>
+                <th scope="row" class="criterion">
+                  <span class="criterion-label">{row.label}</span>
+                  <span class="criterion-description">{row.description}</span>
+                </th>
+                <td class="weight-cell">
+                  <label class="weight-label">
+                    <span class="assistive-text">{row.sliderLabel}</span>
+                    <input
+                      class="weight-slider"
+                      type="range"
+                      min="0"
+                      max="10"
+                      step="1"
+                      value={row.weight}
+                      aria-valuetext={row.valueText}
+                      data-criterion={row.key}
+                      oninput={handleWeightInput}
+                      onchange={handleWeightChange}
+                    />
+                  </label>
+                  <span class="weight-value" aria-hidden="true"
+                    >{row.weight}</span
+                  >
+                </td>
+                <template for:each={row.cells} for:item="cell">
+                  <td key={cell.key} class="score-cell">
+                    <template lwc:if={cell.hasScore}>
+                      <details class="score-details">
+                        <summary
+                          class="score-summary"
+                          aria-label={cell.scoreLabel}
+                        >
+                          {cell.score}
+                        </summary>
+                        <p class="rationale">{cell.rationale}</p>
+                        <p class="evidence">Source: {cell.evidence}</p>
+                      </details>
+                    </template>
+                  </td>
+                </template>
+              </tr>
+            </template>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row">Weighted total</th>
+              <td></td>
+              <template for:each={totalCells} for:item="cell">
+                <td key={cell.key} class="total-cell" data-option={cell.key}>
+                  {cell.total}
+                </td>
+              </template>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="matrix-results" aria-live="polite">
+        <p class="ranking" data-id="ranking">
+          <span class="result-label">Ranking:</span> {rankingText}
+        </p>
+        <p class="sensitivity" data-id="sensitivity">
+          <span class="result-label">Sensitivity:</span> {sensitivityText}
+        </p>
+      </div>
+      <button type="button" class="reset-button" onclick={handleReset}>
+        Reset to the client's weights
+      </button>
+    </template>
+  </section>
+</template>

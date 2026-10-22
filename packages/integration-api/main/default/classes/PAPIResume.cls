@@ -13,12 +13,18 @@ global with sharing class PAPIResume {
     'Developer',
     'Architect'
   };
+  private static final String HEADER_ACCEPT = 'Accept';
+  private static final String MEDIA_TYPE_PLAIN_TEXT = 'text/plain';
+  @TestVisible
+  private static final String PLAIN_TEXT_CONTENT_TYPE = 'text/plain; charset=UTF-8';
 
   /**
    * @description GET method to generate resume.
    *              /resume/generate?persona={Admin|Developer|Architect}
    *              Each section is read independently: a section that fails is left out of
    *              the text, X-Data-Integrity becomes "partial" and integrityNote names it.
+   *              With Accept: text/plain first in the Accept list, a 200 answer is the
+   *              generated text alone as text/plain. Errors stay JSON whatever Accept says.
    */
   @HttpGet
   global static void getResume() {
@@ -79,7 +85,47 @@ global with sharing class PAPIResume {
 
     ctx.cache(agg.cachePolicy());
     ctx.header('X-Data-Integrity', agg.integrity());
+    if (wantsPlainText()) {
+      // Same status, headers, rate count and log line as the JSON answer. Only the
+      // Content-Type and the body change: ok() writes the JSON, then the text replaces it.
+      // Set after ok() so a failure before it still answers with JSON.
+      ctx.ok(response);
+      ctx.header('Content-Type', PLAIN_TEXT_CONTENT_TYPE);
+      RestContext.response.responseBody = Blob.valueOf(resumeText.trim());
+      return;
+    }
     ctx.ok(response);
+  }
+
+  /**
+   * @description True when the first media type in the request's Accept header is
+   *              text/plain. The list is split on commas, each entry trimmed, and any
+   *              parameters after a semicolon ignored. Absent, star slash star and
+   *              application/json all keep the JSON body. Header names are matched
+   *              without regard to case.
+   */
+  @TestVisible
+  private static Boolean wantsPlainText() {
+    String accept = acceptHeader();
+    if (String.isBlank(accept)) {
+      return false;
+    }
+    String first = accept.split(',')[0];
+    String mediaType = first.substringBefore(';').trim();
+    return MEDIA_TYPE_PLAIN_TEXT.equalsIgnoreCase(mediaType);
+  }
+
+  private static String acceptHeader() {
+    RestRequest req = RestContext.request;
+    if (req == null || req.headers == null) {
+      return null;
+    }
+    for (String name : req.headers.keySet()) {
+      if (name != null && name.equalsIgnoreCase(HEADER_ACCEPT)) {
+        return req.headers.get(name);
+      }
+    }
+    return null;
   }
 
   // The owner Contact without email, phone or address: the resume never prints them
