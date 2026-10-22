@@ -1,0 +1,177 @@
+/*
+ * Round 4 plan L1: colours, fonts, radii and spacing come only from the --pf- design tokens,
+ * so the matrix follows the light and dark themes. Every element that sets a background also
+ * sets its text colour. Scores and totals are metrics, so they use the mono font. Controls are
+ * at least 24 px and the reset button is 44 px high (trap 35).
+ */
+:host {
+  display: block;
+}
+
+.matrix {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  padding: var(--pf-space-4);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+}
+
+.matrix-note,
+.matrix-help {
+  color: var(--pf-body);
+  margin: 0 0 var(--pf-space-3);
+}
+
+.matrix-error {
+  color: var(--pf-error-text, var(--pf-text));
+}
+
+.placeholder-banner {
+  background-color: var(--pf-warn);
+  color: var(--pf-warn-text);
+  border-radius: var(--pf-radius-sm);
+  padding: var(--pf-space-2) var(--pf-space-3);
+  margin: 0 0 var(--pf-space-3);
+  font-weight: 600;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--pf-text);
+}
+
+.matrix-table caption {
+  text-align: left;
+  color: var(--pf-muted);
+  padding-bottom: var(--pf-space-2);
+}
+
+.matrix-table th,
+.matrix-table td {
+  border-bottom: 1px solid var(--pf-border);
+  padding: var(--pf-space-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.matrix-table thead th {
+  background-color: var(--pf-subtle);
+  color: var(--pf-text);
+}
+
+.option-label,
+.criterion-label {
+  display: block;
+  font-weight: 600;
+}
+
+.option-summary,
+.criterion-description {
+  display: block;
+  color: var(--pf-muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.weight-cell {
+  white-space: nowrap;
+}
+
+.weight-label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.weight-slider {
+  min-height: 24px;
+  min-width: 96px;
+  accent-color: var(--pf-accent);
+  cursor: pointer;
+}
+
+.weight-slider:focus-visible,
+.score-summary:focus-visible,
+.reset-button:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+.weight-value,
+.score-summary,
+.total-cell {
+  font-family: var(--pf-font-mono);
+}
+
+.weight-value {
+  margin-left: var(--pf-space-2);
+  color: var(--pf-body);
+}
+
+.score-summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  min-width: 24px;
+  cursor: pointer;
+  color: var(--pf-accent);
+  font-weight: 600;
+}
+
+.rationale,
+.evidence {
+  margin: var(--pf-space-1) 0 0;
+  color: var(--pf-body);
+  font-size: 0.8125rem;
+}
+
+.evidence {
+  color: var(--pf-muted);
+}
+
+.matrix-table tfoot th,
+.total-cell {
+  font-weight: 700;
+  color: var(--pf-text);
+}
+
+.matrix-results {
+  margin: var(--pf-space-3) 0;
+}
+
+.ranking,
+.sensitivity {
+  margin: 0 0 var(--pf-space-2);
+  color: var(--pf-body);
+}
+
+.result-label {
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.reset-button {
+  min-height: 44px;
+  padding: 0 var(--pf-space-4);
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+  border: none;
+  border-radius: var(--pf-radius-sm);
+  font-family: var(--pf-font-sans);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.assistive-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
