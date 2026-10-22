@@ -109,7 +109,7 @@ describe("c-pillar-b-story", () => {
     expect(text(q(element, "figcaption"))).toBe(
       "Minimalist architecture, redrawn from public object names."
     );
-    expect(qa(element, "ul.decisions li")).toHaveLength(6);
+    expect(qa(element, "ul.decisions li")).toHaveLength(8);
   });
 
   it("never names the client", () => {
