@@ -2,6 +2,11 @@
  * @description       : Recent commits for the Delivery page. Reads the newest GitHub cache row
  *                      through DeliveryController.getRecentCommits (plan K3, pillar-e-design
  *                      section 4.3) and shows its age. Guests never trigger a callout from here.
+ *                      The "Simulate an outage" switch (Round 4 plan L10, ADR-022) re-reads the
+ *                      feed with simulate=true, which returns the same cached commits marked
+ *                      SIMULATED. DEGRADED means the GitHub circuit breaker is open. A commit
+ *                      link click sends changelog_commit_clicked with its sha, and turning
+ *                      the switch on sends resilience_test_triggered (plan L4).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -9,12 +14,20 @@
  **/
 import { LightningElement, wire } from "lwc";
 import getRecentCommits from "@salesforce/apex/DeliveryController.getRecentCommits";
+import { trackEvent, EVENTS } from "c/analyticsService";
 
 const SHORT_SHA_LENGTH = 7;
 
 const STATUS_BADGES = {
   SIMULATED: { label: "Simulated", className: "status-badge badge-simulated" },
   DEGRADED: { label: "Degraded", className: "status-badge badge-degraded" }
+};
+
+export const STATUS_NOTES = {
+  SIMULATED:
+    "Simulated outage. These are the last cached commits, and no call was made to GitHub.",
+  DEGRADED:
+    "GitHub is not answering right now. These are the last commits we saved."
 };
 
 /**
@@ -46,8 +59,9 @@ function shortSha(sha) {
 export default class Changelog extends LightningElement {
   feed;
   hasError = false;
+  simulate = false;
 
-  @wire(getRecentCommits)
+  @wire(getRecentCommits, { simulate: "$simulate" })
   wiredCommits({ data, error }) {
     if (data) {
       this.feed = data;
@@ -56,6 +70,19 @@ export default class Changelog extends LightningElement {
       this.feed = undefined;
       this.hasError = true;
     }
+  }
+
+  handleSimulateChange(event) {
+    this.simulate = event.target.checked;
+    if (this.simulate) {
+      trackEvent(EVENTS.RESILIENCE_TEST_TRIGGERED, { source: "changelog" });
+    }
+  }
+
+  handleCommitClick(event) {
+    trackEvent(EVENTS.CHANGELOG_COMMIT_CLICKED, {
+      sha: event.currentTarget.dataset.sha
+    });
   }
 
   get isLoading() {
@@ -101,5 +128,9 @@ export default class Changelog extends LightningElement {
 
   get statusBadge() {
     return STATUS_BADGES[this.status] || null;
+  }
+
+  get statusNote() {
+    return STATUS_NOTES[this.status] || "";
   }
 }

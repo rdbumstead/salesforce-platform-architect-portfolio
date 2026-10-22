@@ -1,52 +1,191 @@
 <template>
-  <div class="hero-container">
-    <div class="hero-intro animate-slide-up">
-      <h1 class="hero-title">
-        Hello, I'm <span class="highlight">Ryan Bumstead</span>.
-      </h1>
-      <p class="hero-tagline">
-        Salesforce Technical Architect | Multi-Cloud Strategist
-      </p>
-    </div>
+  <div class="home">
+    <section class="hero" aria-labelledby="hero-name">
+      <img
+        class="hero-photo"
+        src={headshotUrl}
+        alt={name}
+        width="168"
+        height="168"
+        fetchpriority="high"
+      />
+      <div class="hero-body">
+        <p class="hero-meta">{title} · {location}</p>
+        <h1 id="hero-name" class="hero-name">{name}</h1>
+        <template lwc:if={bio}>
+          <p class="hero-bio">{bio}</p>
+        </template>
+        <div class="hero-actions">
+          <a
+            class="btn btn-primary"
+            href="#tour"
+            data-id="tour-button"
+            onclick={handleTourClick}
+            >{tourButtonLabel} <span aria-hidden="true">↓</span></a
+          >
+          <a class="btn btn-ghost" href={resumeHref} data-id="resume-button"
+            >View the resume <span aria-hidden="true">→</span></a
+          >
+        </div>
+        <nav class="profile-links" aria-label="Profiles">
+          <template for:each={profileLinks} for:item="link">
+            <a
+              key={link.key}
+              class="profile-link"
+              href={link.href}
+              target={link.target}
+              rel={link.rel}
+              data-key={link.key}
+            >
+              <template lwc:if={link.isGitHub}>
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+                  ></path>
+                </svg>
+              </template>
+              <template lwc:if={link.isLinkedIn}>
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"
+                  ></path>
+                  <rect x="2" y="9" width="4" height="12"></rect>
+                  <circle cx="4" cy="4" r="2"></circle>
+                </svg>
+              </template>
+              <template lwc:if={link.isResume}>
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  ></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+              </template>
+              <template lwc:if={link.isApi}>
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+              </template>
+              {link.label}
+            </a>
+          </template>
+        </nav>
+      </div>
+    </section>
 
-    <section
-      class="pillar-section animate-slide-up delay-1"
-      aria-labelledby="pillar-heading"
-    >
-      <h2 id="pillar-heading" class="section-heading">The five pillars</h2>
+    <section class="section" aria-labelledby="pillars-heading">
+      <p class="section-label">
+        <span class="section-rule" aria-hidden="true"></span>01 / THE PILLARS
+      </p>
+      <h2 id="pillars-heading" class="section-heading">The pillars.</h2>
+      <p class="section-intro">Pick a pillar, or take the tour below.</p>
       <ul class="pillar-grid" data-id="pillar-nav">
         <template for:each={pillars} for:item="pillar">
-          <li key={pillar.key} class="pillar-card" data-key={pillar.key}>
-            <h3 class="pillar-heading">
+          <li key={pillar.key} class="card pillar-card" data-key={pillar.key}>
+            <div class="pillar-top">
               <span class="pillar-letter" aria-hidden="true"
                 >{pillar.letter}</span
               >
-              {pillar.heading}
-            </h3>
+              <span class="pillar-eyebrow">{pillar.eyebrow}</span>
+            </div>
+            <h3 class="pillar-name">{pillar.sasName}</h3>
             <p class="pillar-summary">{pillar.summary}</p>
-            <template lwc:if={pillar.inProgress}>
-              <p class="pillar-status">Being built</p>
+            <template lwc:if={pillar.code}>
+              <code class="pillar-code">{pillar.code}</code>
             </template>
-            <a class="pillar-link" href={pillar.href}>{pillar.linkLabel}</a>
+            <ul class="tag-list" aria-label="Topics">
+              <template for:each={pillar.tags} for:item="tag">
+                <li key={tag.key} class="tag">{tag.label}</li>
+              </template>
+            </ul>
+            <a class="pillar-link" href={pillar.href}
+              >{pillar.linkLabel} <span aria-hidden="true">→</span></a
+            >
           </li>
         </template>
+        <li class="card tour-card">
+          <a
+            class="tour-card-link"
+            href="#tour"
+            data-id="tour-card"
+            onclick={handleTourClick}
+          >
+            <span class="tour-card-kicker">Not sure where to start?</span>
+            <span class="tour-card-title"
+              >{tourButtonLabel} <span aria-hidden="true">↓</span></span
+            >
+          </a>
+        </li>
       </ul>
+      <template lwc:if={hasComing}>
+        <p class="coming-note" data-id="coming-note">{comingText}</p>
+      </template>
     </section>
 
-    <section
-      class="guidance-box animate-slide-up delay-2"
-      aria-labelledby="tour-heading"
-    >
-      <h2 id="tour-heading" class="section-heading">How to Evaluate Me</h2>
-      <p class="tour-intro">
-        A {tourMinutes} minute tour, one stop per pillar.
+    <section class="section" aria-labelledby="tour-heading">
+      <p class="section-label">
+        <span class="section-rule" aria-hidden="true"></span>02 / HOW TO
+        EVALUATE ME
       </p>
+      <h2
+        id="tour-heading"
+        class="section-heading"
+        data-id="tour-heading"
+        tabindex="-1"
+      >
+        {tourHeading}
+      </h2>
+      <p class="section-intro">One stop per pillar.</p>
       <ol class="tour-list" data-id="tour">
         <template for:each={tourSteps} for:item="step">
           <li key={step.key} class="tour-step" data-key={step.key}>
-            <a class="tour-link" href={step.href}>{step.title}</a>
+            <span class="tour-lead">
+              <span class="tour-number" aria-hidden="true">{step.number}</span>
+              <a class="tour-link" href={step.href}>{step.title}</a>
+            </span>
+            <span class="tour-text">{step.text}</span>
             <span class="tour-duration">{step.duration}</span>
-            <p class="tour-text">{step.text}</p>
           </li>
         </template>
       </ol>

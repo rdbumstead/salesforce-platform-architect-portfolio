@@ -9,6 +9,14 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>FooterController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>GovernanceController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>PAPIAuthToken</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -21,7 +29,12 @@
         <enabled>true</enabled>
     </classAccesses>
     <description
-  >Site visitor. Reads skills, projects, assets, experience and their links. Submits testimonials for review. Runs the resume, testimonial, delivery and API Lab controllers and the token endpoint. No contact, account, certification or education access.</description>
+  >Site visitor. Reads skills, projects, assets and experience. Submits testimonials for review. Runs the site controllers and the token endpoint. Calls Gemini for the cover letter. No contact, account, certification or education access.</description>
+    <externalCredentialPrincipalAccesses>
+        <enabled>true</enabled>
+        <externalCredentialPrincipal
+    >Gemini_Auth-Gemini_Principal</externalCredentialPrincipal>
+    </externalCredentialPrincipalAccesses>
     <externalCredentialPrincipalAccesses>
         <enabled>true</enabled>
         <externalCredentialPrincipal

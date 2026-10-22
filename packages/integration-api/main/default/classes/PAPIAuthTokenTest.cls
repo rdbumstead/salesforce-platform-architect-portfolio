@@ -108,13 +108,7 @@ private class PAPIAuthTokenTest {
     Assert.areEqual(200, RestContext.response.statusCode, 'Issued');
     Map<String, Object> body = responseBody();
     Assert.areEqual(
-      new Set<String>{
-        'access_token',
-        'token_type',
-        'expires_in',
-        'instance_url',
-        'docs'
-      },
+      new Set<String>{ 'access_token', 'token_type', 'instance_url', 'docs' },
       body.keySet(),
       'Body keys match the spec'
     );
@@ -123,7 +117,7 @@ private class PAPIAuthTokenTest {
       body.get('access_token'),
       'Token'
     );
-    Assert.areEqual(1800, body.get('expires_in'), 'expires_in');
+    Assert.isFalse(body.containsKey('expires_in'), 'No expires_in (log 155)');
     assertNoStore();
     assertOneRow('Issued');
   }

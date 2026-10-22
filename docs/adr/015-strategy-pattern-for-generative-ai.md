@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Amended 2026-10-20, 2026-10-21 and again on 2026-10-21 for Round 3 (see below).
+Accepted. Amended 2026-10-20, 2026-10-21, and again on 2026-10-21 for Round 3 and Round 4 (see below).
 
 ## Context
 
@@ -46,3 +46,14 @@ Requires maintaining standardized response wrappers across AgentforceService, Ge
 - **Grounding.** A cover letter prompt carries featured projects and experience highlights from `PortfolioGroundingService`, chosen by keywords from the job. It never includes an email address, a phone number or an owner field, and stays under 8,000 characters.
 - **Show your work.** The page shows the provider and model on a badge read from the response, and a panel the visitor opens to see the fallback flag, latency, the attempts and the prompt that was sent.
 - The metal names for the providers are dropped. The order is first, second and last resort.
+
+## Amendment (2026-10-21, Round 4)
+
+**The site cover letter dispatches in process.** This supersedes the "cover letter page proxies through the API" bullet of the Round 3 amendment, for the page only (owner decision 2, option a, 2026-10-21).
+
+- **Why.** The Round 3 page reached Gemini by calling the org's own `/papi/v1/ai/generate` through the `Portfolio_API` Named Credential. A request that arrives as a callout from the same org may not call out again, so `GeminiService` failed at once with `System.CalloutException: Callout loop not allowed` and every live letter came from the Local Template. Apex tests mocked both callouts, so they could not see it.
+- **What changed.** `ApiLabController.generateCoverLetter` keeps its signature and its `CoverLetterResult`, drops the `Portfolio_API` callout, and calls `ContentGenerationController.dispatch` in process, as the site guest. One callout leaves the org (to Gemini), so there is no loop.
+- **The guest's grant.** `Portfolio_Guest` gains the `Gemini_Auth-Gemini_Principal` principal and nothing else for this. Agentforce is never consulted for a guest (`AgentforceService.isAvailable` is false for a site guest).
+- **The limit still applies.** Before the dispatch the page path checks the key `papi-ai:site-cover-letter` (`ApiLabController.AI_RATE_KEY`) with `ApiRequestContext.rateLimiter().checkKey` at the AI tier's 10 requests a minute, and writes the count after the dispatch with `ApiRequestContext.commitRateCounts()`, never before the Gemini callout. It is one bucket shared by every site visitor, separate from the API's session keys. It carries the `papi-ai` prefix that `/papi/v1/ai/` uses, so the footer's "AI requests today" counts both paths.
+- **Grounding as the guest.** The guest sees only rows shared to it, so the page's grounding reads featured projects and experience highlights through a `without sharing` selector that returns a fixed shape with no email, phone or owner field.
+- **`/papi/v1/ai/generate` stays** for outside callers with a Bearer token, unchanged.

@@ -60,12 +60,15 @@ global with sharing class PAPIResume {
     }
 
     PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
+    Contact owner = ownerContact(agg);
+    Set<Id> printedRoleIds = new Set<Id>();
     String resumeText =
-      contactSection(agg) +
-      experienceSection(agg, persona) +
-      skillsSection(agg) +
+      contactSection(owner) +
+      experienceSection(agg, persona, printedRoleIds) +
+      skillsSection(agg, printedRoleIds) +
       certificationsSection(agg) +
-      educationSection(agg);
+      educationSection(agg) +
+      linksSection(owner);
 
     Map<String, Object> response = new Map<String, Object>{
       'generatedText' => resumeText.trim(),
@@ -79,34 +82,58 @@ global with sharing class PAPIResume {
     ctx.ok(response);
   }
 
-  private static String contactSection(PAPITransformer.Aggregation agg) {
+  // The owner Contact without email, phone or address: the resume never prints them
+  // (owner decision, log 155). Null when there is none.
+  private static Contact ownerContact(PAPITransformer.Aggregation agg) {
     agg.source('contacts');
     try {
       PAPITransformer.guardSection('contacts');
       List<Contact> contacts = [
-        SELECT Id, Name, Email, Phone, Title, Career_Objective__c
+        SELECT Id, Name, Title, LinkedIn_URL__c, Portfolio_URL__c
         FROM Contact
         WHERE Is_Portfolio_Owner__c = TRUE
         LIMIT 1
       ];
       if (contacts.isEmpty()) {
         agg.fail('contacts');
-        return '';
+        return null;
       }
-      Contact c = contacts[0];
-      String text = c.Name + '\n';
-      text += (c.Title != null ? c.Title : 'Salesforce Professional') + '\n';
-      text += c.Email + (c.Phone != null ? ' | ' + c.Phone : '') + '\n\n';
-      return text;
+      return contacts[0];
     } catch (Exception e) {
       agg.fail('contacts');
+      return null;
+    }
+  }
+
+  private static String contactSection(Contact c) {
+    if (c == null) {
       return '';
     }
+    String text = c.Name + '\n';
+    text += (c.Title != null ? c.Title : 'Salesforce Professional') + '\n\n';
+    return text;
+  }
+
+  // The closing lines: the LinkedIn and portfolio links, in place of the email and phone
+  // the resume used to print.
+  private static String linksSection(Contact c) {
+    if (c == null) {
+      return '';
+    }
+    String text = '';
+    if (String.isNotBlank(c.LinkedIn_URL__c)) {
+      text += 'LinkedIn: ' + c.LinkedIn_URL__c + '\n';
+    }
+    if (String.isNotBlank(c.Portfolio_URL__c)) {
+      text += 'Portfolio: ' + c.Portfolio_URL__c + '\n';
+    }
+    return text;
   }
 
   private static String experienceSection(
     PAPITransformer.Aggregation agg,
-    String persona
+    String persona,
+    Set<Id> printedRoleIds
   ) {
     agg.source('experience');
     agg.source('experience-highlights');
@@ -138,6 +165,7 @@ global with sharing class PAPIResume {
 
     String text = 'EXPERIENCE\n\n';
     for (Experience__c exp : experiences) {
+      printedRoleIds.add(exp.Id);
       String employer = exp.Employer__r?.Name != null
         ? exp.Employer__r.Name
         : 'Unknown';
@@ -165,33 +193,61 @@ global with sharing class PAPIResume {
     return text;
   }
 
-  private static String skillsSection(PAPITransformer.Aggregation agg) {
+  /**
+   * @description The skills linked through Experience_Skill__c to the roles the resume
+   *              prints, each once, grouped by category in Category_Order__c order and by
+   *              proficiency within a category (owner feedback 4c, log 155).
+   */
+  private static String skillsSection(
+    PAPITransformer.Aggregation agg,
+    Set<Id> printedRoleIds
+  ) {
     agg.source('skills');
-    List<Skill__c> skills;
+    agg.source('experience-skills');
+    List<Experience_Skill__c> links;
     try {
       PAPITransformer.guardSection('skills');
-      skills = [
-        SELECT Name, Category__c, Proficiency__c
-        FROM Skill__c
-        ORDER BY Proficiency__c DESC
-        LIMIT 20
+      if (printedRoleIds.isEmpty()) {
+        return '';
+      }
+      links = [
+        SELECT Skill__c, Skill__r.Name, Skill__r.Category__c
+        FROM Experience_Skill__c
+        WHERE Experience__c IN :printedRoleIds
+        ORDER BY
+          Skill__r.Category_Order__c ASC NULLS LAST,
+          Skill__r.Category__c ASC NULLS LAST,
+          Skill__r.Proficiency__c DESC NULLS LAST,
+          Skill__r.Name ASC
+        LIMIT 500
       ];
     } catch (Exception e) {
       agg.fail('skills');
       return '';
     }
 
+    Set<Id> seen = new Set<Id>();
+    List<String> categories = new List<String>();
     Map<String, List<String>> skillsByCategory = new Map<String, List<String>>();
-    for (Skill__c s : skills) {
-      String cat = s.Category__c != null ? s.Category__c : 'Other';
+    for (Experience_Skill__c link : links) {
+      if (link.Skill__c == null || !seen.add(link.Skill__c)) {
+        continue;
+      }
+      String cat = link.Skill__r.Category__c != null
+        ? link.Skill__r.Category__c
+        : 'Other';
       if (!skillsByCategory.containsKey(cat)) {
         skillsByCategory.put(cat, new List<String>());
+        categories.add(cat);
       }
-      skillsByCategory.get(cat).add(s.Name);
+      skillsByCategory.get(cat).add(link.Skill__r.Name);
+    }
+    if (categories.isEmpty()) {
+      return '';
     }
 
     String text = 'SKILLS\n\n';
-    for (String cat : skillsByCategory.keySet()) {
+    for (String cat : categories) {
       text += cat + ': ' + String.join(skillsByCategory.get(cat), ', ') + '\n';
     }
     return text + '\n';
@@ -203,7 +259,7 @@ global with sharing class PAPIResume {
     try {
       PAPITransformer.guardSection('certifications');
       certs = [
-        SELECT Name, Issuer__c, Earned_Date__c
+        SELECT Name, Issuer__r.Name, Earned_Date__c
         FROM Certification__c
         ORDER BY Earned_Date__c DESC
         LIMIT 10
@@ -216,8 +272,8 @@ global with sharing class PAPIResume {
     String text = 'CERTIFICATIONS\n\n';
     for (Certification__c cert : certs) {
       text += cert.Name;
-      if (cert.Issuer__c != null) {
-        text += ' - ' + cert.Issuer__c;
+      if (String.isNotBlank(cert.Issuer__r?.Name)) {
+        text += ' - ' + cert.Issuer__r.Name;
       }
       if (cert.Earned_Date__c != null) {
         text +=

@@ -66,7 +66,9 @@ private class DeliveryControllerTest {
     DeliveryController.nowOverride = NOW;
 
     Test.startTest();
-    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits();
+    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits(
+      null
+    );
     Test.stopTest();
 
     Assert.areEqual(DeliveryController.STATUS_FRESH, feed.status, 'Status');
@@ -84,7 +86,9 @@ private class DeliveryControllerTest {
     DeliveryController.nowOverride = NOW;
 
     Test.startTest();
-    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits();
+    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits(
+      null
+    );
     Test.stopTest();
 
     Assert.areEqual(DeliveryController.STATUS_STALE, feed.status, 'Status');
@@ -95,7 +99,9 @@ private class DeliveryControllerTest {
   @isTest
   static void recentCommitsNoRowIsEmpty() {
     Test.startTest();
-    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits();
+    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits(
+      null
+    );
     Test.stopTest();
 
     Assert.areEqual(DeliveryController.STATUS_EMPTY, feed.status, 'Status');
@@ -109,7 +115,9 @@ private class DeliveryControllerTest {
     insertGithubRow('{"schemaVersion":1,"items":[', 5);
 
     Test.startTest();
-    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits();
+    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits(
+      null
+    );
     Test.stopTest();
 
     Assert.areEqual(DeliveryController.STATUS_EMPTY, feed.status, 'Status');
@@ -121,7 +129,9 @@ private class DeliveryControllerTest {
     insertGithubRow('{"schemaVersion":2,"items":[]}', 5);
 
     Test.startTest();
-    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits();
+    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits(
+      null
+    );
     Test.stopTest();
 
     Assert.areEqual(DeliveryController.STATUS_EMPTY, feed.status, 'Status');
@@ -132,7 +142,9 @@ private class DeliveryControllerTest {
     insertGithubRow(null, 5);
 
     Test.startTest();
-    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits();
+    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits(
+      null
+    );
     Test.stopTest();
 
     Assert.areEqual(DeliveryController.STATUS_EMPTY, feed.status, 'Status');
@@ -145,7 +157,9 @@ private class DeliveryControllerTest {
     DeliveryController.nowOverride = NOW;
 
     Test.startTest();
-    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits();
+    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits(
+      null
+    );
     Test.stopTest();
 
     Assert.areEqual('newer row', feed.items[0].message, 'Newest row wins');
@@ -158,7 +172,7 @@ private class DeliveryControllerTest {
     DeliveryController.nowOverride = NOW;
 
     Test.startTest();
-    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
     Test.stopTest();
 
     Assert.areEqual(DeliveryController.STATUS_FRESH, feed.status, 'Status');
@@ -175,7 +189,7 @@ private class DeliveryControllerTest {
     DeliveryController.nowOverride = NOW;
 
     Test.startTest();
-    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
     Test.stopTest();
 
     Assert.areEqual(DeliveryController.STATUS_STALE, feed.status, 'Status');
@@ -185,7 +199,7 @@ private class DeliveryControllerTest {
   @isTest
   static void roadmapNoRowIsEmpty() {
     Test.startTest();
-    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
     Test.stopTest();
 
     Assert.areEqual(DeliveryController.STATUS_EMPTY, feed.status, 'Status');
@@ -197,7 +211,7 @@ private class DeliveryControllerTest {
     insertJiraRow('not json at all', 5);
 
     Test.startTest();
-    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
     Test.stopTest();
 
     Assert.areEqual(DeliveryController.STATUS_EMPTY, feed.status, 'Status');
@@ -210,7 +224,7 @@ private class DeliveryControllerTest {
     DeliveryController.nowOverride = NOW;
 
     Test.startTest();
-    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
     Test.stopTest();
 
     Assert.areEqual('SPAP-NEW', feed.items[0].key, 'Newest row wins');
@@ -227,8 +241,8 @@ private class DeliveryControllerTest {
 
     Test.startTest();
     System.runAs(guest) {
-      commits = DeliveryController.getRecentCommits();
-      roadmap = DeliveryController.getRoadmap();
+      commits = DeliveryController.getRecentCommits(null);
+      roadmap = DeliveryController.getRoadmap(null);
     }
     Test.stopTest();
 
@@ -236,5 +250,200 @@ private class DeliveryControllerTest {
     Assert.areEqual('seed: delivery walk', commits.items[0].message, 'Message');
     Assert.areEqual(DeliveryController.STATUS_FRESH, roadmap.status, 'Roadmap');
     Assert.areEqual('SPAP-903', roadmap.items[0].key, 'Key');
+  }
+
+  // --- Round 4 plan L10: the toggle and the breaker ---
+
+  private static void openBreaker(String key) {
+    for (Integer i = 0; i < CircuitBreaker.FAILURE_THRESHOLD; i++) {
+      CircuitBreaker.recordFailure(key);
+    }
+  }
+
+  @isTest
+  static void simulatedCommitsReturnTheCacheWithNoCallout() {
+    insertGithubRow(commitPayload('seed: delivery walk'), 3);
+    DeliveryController.nowOverride = NOW;
+
+    Test.startTest();
+    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits(
+      true
+    );
+    Integer callouts = Limits.getCallouts();
+    Test.stopTest();
+
+    Assert.areEqual(DeliveryController.STATUS_SIMULATED, feed.status, 'Status');
+    Assert.areEqual(
+      'seed: delivery walk',
+      feed.items[0].message,
+      'Cached item'
+    );
+    Assert.areEqual(3, feed.ageMinutes, 'Age still reported');
+    Assert.areEqual(0, callouts, 'The toggle never calls out');
+  }
+
+  @isTest
+  static void simulatedRoadmapReturnsTheCacheWithNoCallout() {
+    insertJiraRow(roadmapPayload('SPAP-901'), 45);
+    DeliveryController.nowOverride = NOW;
+
+    Test.startTest();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(true);
+    Integer callouts = Limits.getCallouts();
+    Test.stopTest();
+
+    Assert.areEqual(DeliveryController.STATUS_SIMULATED, feed.status, 'Status');
+    Assert.areEqual('SPAP-901', feed.items[0].key, 'Cached item');
+    Assert.areEqual(0, callouts, 'The toggle never calls out');
+  }
+
+  @isTest
+  static void simulateFalseIsTheNormalRead() {
+    insertGithubRow(commitPayload('normal'), 3);
+    DeliveryController.nowOverride = NOW;
+
+    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits(
+      false
+    );
+
+    Assert.areEqual(DeliveryController.STATUS_FRESH, feed.status, 'Status');
+  }
+
+  @isTest
+  static void simulatedWithNoRowIsEmpty() {
+    DeliveryController.CommitFeed commits = DeliveryController.getRecentCommits(
+      true
+    );
+    DeliveryController.RoadmapFeed roadmap = DeliveryController.getRoadmap(
+      true
+    );
+
+    Assert.areEqual(DeliveryController.STATUS_EMPTY, commits.status, 'Commits');
+    Assert.areEqual(DeliveryController.STATUS_EMPTY, roadmap.status, 'Roadmap');
+  }
+
+  @isTest
+  static void openGithubBreakerDegradesOnlyTheCommits() {
+    insertGithubRow(commitPayload('cached'), 3);
+    insertJiraRow(roadmapPayload('SPAP-901'), 3);
+    DeliveryController.nowOverride = NOW;
+    openBreaker(CircuitBreaker.KEY_GITHUB);
+
+    DeliveryController.CommitFeed commits = DeliveryController.getRecentCommits(
+      null
+    );
+    DeliveryController.RoadmapFeed roadmap = DeliveryController.getRoadmap(
+      null
+    );
+
+    Assert.areEqual(
+      DeliveryController.STATUS_DEGRADED,
+      commits.status,
+      'Commits'
+    );
+    Assert.areEqual('cached', commits.items[0].message, 'Last good data shown');
+    Assert.areEqual(DeliveryController.STATUS_FRESH, roadmap.status, 'Roadmap');
+  }
+
+  @isTest
+  static void openJiraBreakerDegradesTheRoadmap() {
+    insertJiraRow(roadmapPayload('SPAP-901'), 90);
+    DeliveryController.nowOverride = NOW;
+    openBreaker(CircuitBreaker.KEY_JIRA);
+
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
+
+    Assert.areEqual(DeliveryController.STATUS_DEGRADED, feed.status, 'Status');
+    Assert.areEqual(90, feed.ageMinutes, 'Age still reported');
+  }
+
+  @isTest
+  static void simulateBeatsDegraded() {
+    insertJiraRow(roadmapPayload('SPAP-901'), 3);
+    DeliveryController.nowOverride = NOW;
+    openBreaker(CircuitBreaker.KEY_JIRA);
+
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(true);
+
+    Assert.areEqual(DeliveryController.STATUS_SIMULATED, feed.status, 'Status');
+  }
+
+  @isTest
+  static void openBreakerWithNoRowIsEmpty() {
+    openBreaker(CircuitBreaker.KEY_GITHUB);
+
+    DeliveryController.CommitFeed feed = DeliveryController.getRecentCommits(
+      null
+    );
+
+    Assert.areEqual(DeliveryController.STATUS_EMPTY, feed.status, 'Status');
+  }
+
+  @isTest
+  static void guestSeesSimulatedAndDegraded() {
+    insertGithubRow(commitPayload('seed: delivery walk'), 3);
+    insertJiraRow(roadmapPayload('SPAP-903'), 3);
+    DeliveryController.nowOverride = NOW;
+    openBreaker(CircuitBreaker.KEY_JIRA);
+    User guest = SiteGuestTestSupport.preparedGuest();
+    DeliveryController.CommitFeed commits;
+    DeliveryController.RoadmapFeed roadmap;
+
+    Test.startTest();
+    System.runAs(guest) {
+      commits = DeliveryController.getRecentCommits(true);
+      roadmap = DeliveryController.getRoadmap(null);
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      DeliveryController.STATUS_SIMULATED,
+      commits.status,
+      'Toggle'
+    );
+    Assert.areEqual(
+      DeliveryController.STATUS_DEGRADED,
+      roadmap.status,
+      'Breaker'
+    );
+  }
+
+  // --- parseTimestamp ---
+
+  @isTest
+  static void parseTimestampReadsZulu() {
+    Assert.areEqual(
+      Datetime.newInstanceGmt(2026, 10, 21, 8, 0, 0),
+      DeliveryController.parseTimestamp('2026-10-21T08:00:00Z'),
+      'GitHub form'
+    );
+  }
+
+  @isTest
+  static void parseTimestampReadsJiraOffsetWithoutColon() {
+    Assert.areEqual(
+      Datetime.newInstanceGmt(2026, 10, 21, 6, 30, 0),
+      DeliveryController.parseTimestamp('2026-10-21T08:30:00.000+0200'),
+      'Jira form, two hours ahead of GMT'
+    );
+  }
+
+  @isTest
+  static void parseTimestampReadsNegativeOffsetWithColon() {
+    Assert.areEqual(
+      Datetime.newInstanceGmt(2026, 10, 21, 13, 0, 0),
+      DeliveryController.parseTimestamp('2026-10-21T08:00:00-05:00'),
+      'Offset with a colon'
+    );
+  }
+
+  @isTest
+  static void parseTimestampReturnsNullForBlank() {
+    Assert.isNull(DeliveryController.parseTimestamp(' '), 'Blank');
+  }
+
+  @isTest
+  static void parseTimestampReturnsNullForText() {
+    Assert.isNull(DeliveryController.parseTimestamp('yesterday'), 'Not a time');
   }
 }

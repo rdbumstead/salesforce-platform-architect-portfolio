@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Commit_Sha__c</fullName>
+    <description
+  >The commit the run built, shown as a short sha on the checklist.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>The full github.sha of the run.</inlineHelpText>
+    <label>Commit SHA</label>
+    <length>40</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

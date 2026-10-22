@@ -130,7 +130,14 @@ global with sharing class PAPIProfile {
         agg.fail('contacts');
         return;
       }
-      payload.put('contactInfo', PAPITransformer.transformContact(contacts[0]));
+      Map<String, Object> contactInfo = PAPITransformer.transformContact(
+        contacts[0]
+      );
+      // The owner's email and phone are never returned (owner decision, log 155).
+      // PAPITransformer.transformContact reads them, so they stay in the query.
+      contactInfo.remove('email');
+      contactInfo.remove('phone');
+      payload.put('contactInfo', contactInfo);
       if (includeConfig) {
         payload.put('config', buildConfig(contacts[0]));
       }
@@ -262,7 +269,7 @@ global with sharing class PAPIProfile {
     try {
       PAPITransformer.guardSection('certifications');
       for (Certification__c c : [
-        SELECT Id, Name, Issuer__c, Earned_Date__c
+        SELECT Id, Name, Issuer__r.Name, Earned_Date__c
         FROM Certification__c
         ORDER BY Earned_Date__c DESC
         LIMIT 50
@@ -271,7 +278,7 @@ global with sharing class PAPIProfile {
           new Map<String, Object>{
             'id' => c.Id,
             'name' => c.Name,
-            'issuer' => c.Issuer__c,
+            'issuer' => c.Issuer__r?.Name,
             'dateEarned' => c.Earned_Date__c != null
               ? String.valueOf(c.Earned_Date__c)
               : null,
@@ -362,8 +369,6 @@ global with sharing class PAPIProfile {
 
   private static Map<String, Object> buildConfig(Contact c) {
     return new Map<String, Object>{
-      'ownerEmail' => c.Email,
-      'ownerPhone' => c.Phone,
       'linkedInUrl' => c.LinkedIn_URL__c,
       'githubUrl' => c.GitHub_URL__c,
       'trailheadUrl' => c.Trailhead_URL__c,

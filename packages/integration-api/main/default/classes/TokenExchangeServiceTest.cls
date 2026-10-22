@@ -106,10 +106,9 @@ private class TokenExchangeServiceTest {
     );
     Map<String, Object> body = result.toTokenBody();
     Assert.areEqual('Bearer', body.get('token_type'), 'token_type');
-    Assert.areEqual(
-      TokenExchangeService.TOKEN_LIFETIME_SECONDS,
-      body.get('expires_in'),
-      'expires_in'
+    Assert.isFalse(
+      body.containsKey('expires_in'),
+      'No lifetime is claimed for a shared session'
     );
     Assert.areEqual(
       PortfolioApiCalloutMock.TEST_INSTANCE_URL,

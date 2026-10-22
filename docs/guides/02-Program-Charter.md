@@ -51,7 +51,7 @@ This is not a static website. It is a live, observable platform governed by prod
 #### Current MVP State (Q1 2027 Launch)
 
 - 100% on-platform data access using Apex REST + native Salesforce GraphQL (lightning/uiGraphQLApi)
-- Skill Graph, Roadmap, and Project Gallery all use native wire adapter for sub-250 ms LCP
+- Skill Graph and Project Gallery use the native GraphQL wire adapter. The Roadmap and Changelog read cached Jira and GitHub data through Apex (`DeliveryController`), because the cache is one JSON row per refresh, not one record per item (owner decision E7, 2026-10-21)
 - No external dependencies required
 
 #### Target Enterprise State – Phase 8 (2027-2028) – _Design Complete / Implementation Deferred_
@@ -69,18 +69,18 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Public-facing Experience Cloud (LWR)** site with "5-Minute Tour" guided navigation.
 - **Custom LWC component framework** including a custom API Testing Harness.
 - **Apex REST API implementation** matching MuleSoft specifications.
-- **Agentforce (AI)** grounding and prompt engineering.
+- **Generative AI** grounding and prompt engineering in Apex (`PortfolioGroundingService`, `ContentGenerationController.dispatch`). Agentforce is built as a switch in the dispatch and ships off.
 - **Client-side document generation** (Resume).
-- **Generative AI Utility:** A "Dynamic Cover Letter Engine" that utilizes Agentforce to generate personalized application letters based on the visitor's job description and the architect's matching project history.
+- **Generative AI Utility:** A "Dynamic Cover Letter Engine" that uses Gemma 4 31B through the Gemini API, with a local template as the last resort, to write personalized application letters based on the visitor's job description and the architect's matching project history (featured projects and experience highlights).
 - **Gamified Social Proof engine** with "Vibe-Gated" submission logic.
-- **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and Automated PR Commenting.
+- **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and a results step summary on every PR run ("PR Validation Results" in `pr.yml`).
 - **External API Integration (GitHub):** Live feed of portfolio repository commits displayed on the site.
 - **External API Integration (Jira):** Live fetch of portfolio roadmap Epics and Stories.
 - **Multi-Cloud Integration patterns using AWS Free Tier (Lambda Function URL, S3, CloudFront) – Phase 8 (2027-2028) – design complete**
 - **Advanced Visualization:** Dynamic Skill Graph using AntV G6 with custom flow animation.
 - **Dynamic ERD Visualizer:** A live-rendered Entity Relationship Diagram utilizing the Schema class and AntV G6 to visualize the actual Org metadata, replacing static architecture diagrams.
-- **Executable Governance:** LWC-based documentation that subscribes to Platform Events to automatically verify its own success criteria (e.g., verifying a "Green Build" checkbox in real-time).
-- **Enterprise Observability:** Implementation of **Nebula Logger** (Open Source) for structured, event-driven error logging across Apex, LWC, and Flow, replacing standard debug logs.
+- **Executable Governance:** LWC-based documentation that verifies its own success criteria from pipeline evidence. CI publishes a platform event, an Apex trigger persists it, and the checklist reads the result when viewed (for example, ticking "production deploy green" with the commit and the run behind it).
+- **Enterprise Observability:** structured Apex logging through one seam (`PortfolioLog`) that writes to **Nebula Logger** (Open Source) when the owner has installed it, and to debug logs when not. Nebula is optional, so CI and scratch orgs run without it.
 
 **Out of Scope:**
 
@@ -125,16 +125,17 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 **Engagement:**
 
 - Average Session Duration > 2 minutes (verified via GA4).
-- **ai_primary_success_rate:** % of requests served by Agentforce (Target > 80%).
-- **ai_fallback_usage:** % of requests served by Gemini or Local Template (Success via Resilience).
-- **ai_complete_failure_rate:** % returning emergency error message (Target < 1%)
-- **finops_quota_visibility:** Users interacting with the Quota/Health footer (Hover events).
+- **ai_live_model_rate:** % of generations served by a live model, Agentforce or Gemini (Target > 80%). Agentforce ships switched off, so today this is the Gemini share.
+- **ai_fallback_usage:** % of generations served by the Local Template (the fallback share).
+- **ai_complete_failure_rate:** % of requests that end with no content at all, a 503 or an error message (Target < 1%).
+- **finops_quota_visibility:** visitors who hover over or focus the footer's "AI requests today" line.
+- All three AI rates come from one GA4 event, `ai_generation_completed`, with the parameters `provider`, `model`, `fallback`, `latency_ms` and `outcome`. GA4 computes the rates, so no counter is stored in Salesforce (owner decision PD-D8, 2026-10-21).
 
 **Conversion:**
 
 - Greater than 20% of visitors interact with "API Tester" or "Resume Builder" (verified via Custom Events).
   - **api_test_executed:** User successfully calls an endpoint in the API Tester.
-  - **resume_download_pdf:** User exports a resume in Creative Mode.
+  - **resume_downloaded** (`format` `pdf`): User exports a resume in Creative Mode.
   - **resilience_test_triggered:** User toggles the "Resilience Simulation" switch.
 
 **Reach:**
@@ -192,22 +193,22 @@ The delivery is organized into four parallel execution tracks:
 - **Data360 Setup.**
 - **Data360 Data Integration:** (CRM Connector → `Project__c`, `Experience__c`)
 - **Agentforce Grounding:** on Data360 Data Model Objects (DMOs)
-- **Prompt Engineering:** & Mirror Mode configuration
-- **AI Generation Service:** Triple-fallback (Agentforce → Gemini Flash → Local Template)
+- **Prompt Engineering:** and the "Show your work" panel (provider, model, latency, attempts and the prompt that was sent, filled by Apex, not by the model)
+- **AI Generation Service:** one dispatch: Agentforce only when switched on (it ships off), then Gemma 4 31B through the Gemini API, then the Local Template
 
 **Phase 6: Observability & Launch**
 
 - **System Health "Glass Box Telemetry":** Develop `c-system-health-footer` with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
-- **Enterprise Logging:** Install and configure Nebula Logger (Unlocked Package); configure storage guardrails (2-day retention).
+- **Enterprise Logging:** the owner installs Nebula Logger (unlocked package, no namespace) in production and sets 2-day retention. Apex reaches it only through the `PortfolioLog` seam.
 - **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test Circuit Breakers and cached data fallbacks.
 - **Analytics Instrumentation:** Deploy Google Analytics 4 (GA4) with custom events for API tests and resume downloads.
-- **API Mode Indicator:** Glass Box Telemetry footer displays "GraphQL Mode: Native (Live)" – prepares UI for Phase 8 toggle.
+- **API Mode Indicator:** the Glass Box footer measures the guest GraphQL path after first paint and shows it as live with its latency, or as unavailable. It is measured on every visit, never a constant label (owner decision, 2026-10-21).
 - **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration.
 
 **Phase 7: Observability & Governance (Post-Launch)**
 
 - **System Health Dashboard:** "Glass Box Telemetry" footer.
-- **Smart Documentation:** Implement `c-smart-checklist` using lightning/empApi to listen for Deployment_Event\_\_e and auto-complete governance checklists.
+- **Smart Documentation:** moved into the launch scope (owner decision E3, 2026-10-21). `c-smart-checklist` reads `Pipeline_Run__c` records written by an Apex trigger on `Governance_Event__e`, which CI publishes. It does not use `lightning/empApi`, which LWR sites do not support.
 
 **Phase 8: Multi-Cloud & FinOps – Hybrid GraphQL Strategy (2027-2028)**
 
@@ -219,7 +220,7 @@ The delivery is organized into four parallel execution tracks:
 _Design artifacts complete; implementation begins post-launch._
 
 - **Native GraphQL Verification:**
-  - Confirm `c-skill-network`, `c-roadmap-viewer`, and Project Gallery all use `lightning/uiGraphQLApi`
+  - Confirm `c-skill-network` and Project Gallery use `lightning/uiGraphQLApi`. `c-roadmap-viewer` reads Apex over the cache by design (E7)
 - **AWS Lambda Polyglot Gateway:** (Function URL) – "Door 2" – **Designed, not yet implemented** (planned 2027-2028)
   - Deploy single HTTPS Function URL endpoint (no API Gateway)
   - Support both REST → GraphQL translation and direct GraphQL
@@ -264,11 +265,11 @@ _Design artifacts complete; implementation begins post-launch._
 - **Appendix C:** Configure MuleSoft Governance Policies (Reference Implementation).
 - **Docs:** Upload Redoc documentation as Static Resource.
 - **Dev:** Develop `c-api-tester` LWC with fetch() harness.
-- **A.4:** Implement GitHub Live Feed, Custom Setting Cache, and Scheduler.
+- **A.4:** Implement GitHub Live Feed, the custom object cache (`Github_Cache__c`), and the Queueable refresh with its scheduler.
 
 **Phase 4: Innovation**
 
-- **A.6:** Configure Agentforce Service Agent & Topic Grounding.
+- **A.6:** Agentforce Service Agent and topic grounding. Not built: Agentforce is a switch in the dispatch that ships off (SAS Appendix A.6).
 - **Security:** Enable "Lightning Web Security" in Session Settings.
 - **Asset:** Download g6.min.js (v4.x/v5.x) and upload as G6_Library (Public Cache).
 - **Dev:** Implement `c-skill-network` LWC using G6 graph.update loop for edge animation.

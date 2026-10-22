@@ -12,6 +12,7 @@ import { LightningElement, wire } from "lwc";
 import { loadScript } from "lightning/platformResourceLoader";
 import getResume from "@salesforce/apex/ResumeController.getResume";
 import JSPDF_LIBRARY from "@salesforce/resourceUrl/jsPDF_Library";
+import { trackEvent, EVENTS } from "c/analyticsService";
 import {
   buildViewModel,
   buildLines,
@@ -23,7 +24,7 @@ import {
 const DEFAULT_PERSONA = "Architect";
 
 const PERSONA_OPTIONS = [
-  { label: "Technical Architect", value: "Architect" },
+  { label: "Platform Architect", value: "Architect" },
   { label: "Salesforce Developer", value: "Developer" },
   { label: "System Admin", value: "Admin" }
 ];
@@ -160,6 +161,10 @@ export default class ResumeBuilder extends LightningElement {
       writePdf(doc, this.exportLines());
       doc.save(pdfFileName(this.model, this.selectedPersona));
       this.exportMessage = "PDF downloaded.";
+      trackEvent(EVENTS.RESUME_DOWNLOADED, {
+        persona: this.selectedPersona,
+        format: "pdf"
+      });
     } catch (error) {
       this.exportError = `The PDF could not be created. ${reduceError(error)}`;
     } finally {
@@ -180,6 +185,10 @@ export default class ResumeBuilder extends LightningElement {
       }
       await navigator.clipboard.writeText(text);
       this.exportMessage = "ATS text copied to the clipboard.";
+      trackEvent(EVENTS.RESUME_DOWNLOADED, {
+        persona: this.selectedPersona,
+        format: "ats"
+      });
     } catch (error) {
       this.exportError = `The text could not be copied. ${reduceError(error)}`;
     }

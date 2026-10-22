@@ -85,7 +85,7 @@ graph LR
     GQL[Salesforce<br/>GraphQL]
     Apex[Apex Runtime]
     DB[(Custom Objects)]
-    AI[Agentforce]
+    AI[AI dispatch<br/>Gemini, Local]
     Jira[Jira Cloud API]
     GitHub[GitHub API]
     Lambda[AWS Lambda<br/>Phase 8]
@@ -173,7 +173,7 @@ graph TD
 - **Experience Cloud (LWR):** High-performance, pixel-perfect frontend.
 - **Apex REST Services:** Custom API layer for external integrations.
 - **Custom Metadata Types:** Configuration management.
-- **Agentforce:** AI grounding and conversational interface.
+- **Generative AI:** one Apex dispatch (`ContentGenerationController.dispatch`) over Gemma 4 31B through the Gemini API and a local template. Agentforce is a switch in that dispatch that ships off and is not implemented (section 5.4).
 - **Unlocked Packages:** Modular deployment strategy.
 
 #### 1.3.1 Technology Selection Rationale
@@ -211,7 +211,7 @@ Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Disciplin
 - **Maintainability:** Codebase governed by automated quality gates (Prettier/PMD) ensuring architectural standards.
 - **Performance:** Target LCP < 2.5s via Static Resource caching and minimal DOM footprint.
   - **Latency:** LCP < 2.5s on 4G networks.
-  - **AI Generation Timeout:** 2000ms HTTP timeout (Hard Stop) + 500ms buffer for Apex processing.
+  - **AI Generation Timeout:** 60 seconds for the Gemini callout, read from the `Gemini` record of `AI_Provider_Config__mdt` (`Timeout_Ms__c`, owner decision 2026-10-21). Gemma 4 reasons before it answers, so a cover letter can take up to about a minute. The earlier 2 second hard stop was dropped because a reasoning model almost never answers inside it.
   - **Total CPU Budget:** < 5000ms per request (Allocating 50% of the 10,000ms Synchronous Limit to ensure headroom for platform overhead).
 - **Security:** Public access restricted strictly to custom objects. No PII stored.
 - **Scalability:** Data model supports 10,000+ records via indexed Junction Objects.
@@ -233,7 +233,7 @@ The architecture is designed to operate within the specific limits of the Salesf
 - **Injection Attacks:** Mitigated by strict SOQL bind variable usage.
 - **Data Exposure:** Mitigated by enforcing "Guest User" profiles with strict Field Level Security (FLS) and Sharing Rules. Guest users have Read-Only access to specific Custom Objects only.
 - **API Abuse:** Mitigated by read-only endpoints and hardcoded query limits in the SAPI layer.
-- **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): on `POST /papi/v1/ai/generate`, a cover letter falls back from the Gemini API to a deterministic Local Template. Agentforce is deferred; `AgentforceService` is a mock, and the site's cover-letter page, which still calls it first, returns the mock text ([ADR-015 amendment (2026-10-21)](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21)).
+- **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): on the site page and on `POST /papi/v1/ai/generate`, a cover letter falls back from the Gemini API to a deterministic Local Template. Agentforce is not implemented and its switch ships off ([ADR-015 Round 4 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-4)).
 
 ## 4. Data Architecture & Schema
 
@@ -352,7 +352,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.4 Pillar D: AI & Innovation (Agentforce)
 
 > [!NOTE]
-> **Agentforce is deferred** (decision 2026-10-02). This section records the target design. Nothing in it is built: `AgentforceService` is a mock that returns a fixed string ([ADR-015 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-20)).
+> **Agentforce is not implemented, and its switch ships off** (decision 2026-10-02, [ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)). `ContentGenerationController.dispatch` consults Agentforce only when the `Agentforce` record of `AI_Provider_Config__mdt` is switched on, and never for a site guest. Retrieval for the cover letter is built in Apex (`PortfolioGroundingService`, section 5.4.1). The Data 360 design in the next list is the target design. None of it is built.
 
 - **Objective:** Demonstrate Hybrid Search (Vector + Keyword) and RAG architecture.
 - **Mechanism:** Agentforce Service Agent grounded on Data 360 DMOs (Data Model Objects) rather than direct CRM objects.
@@ -360,7 +360,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
   - **Ingestion:** `Project__c` and `Experience__c` records are ingested into Data 360 via CRM Connector.
   - **Context Layer:** A specific "Portfolio Context" Search Index is built from these DMOs.
   - **Retrieval:** Agentforce queries the Search Index to generate responses, decoupling the AI reasoning layer from the transactional database (See ADR-011).
-- **Mirror Mode:** System instruction configured to reveal the underlying system prompt and SOQL logic for transparency.
+- **Show your work** (formerly "Mirror Mode"): a panel under the letter, off until the visitor opens it, shows the serving provider and model, the latency, every attempt and the prompt that was sent. Apex and the component fill it from the generation result (`ContentGenerationController.GenerationResult`). The model is never asked to reveal its own prompt, because that is unreliable and invites prompt injection.
 
 #### 5.4.1 Feature Spotlight: Generative Cover Letter Engine
 
@@ -369,59 +369,58 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 
 - **The Concept:** Instead of a static "About Me," recruiters enter a company name, a job title and, optionally, the job description. The system writes a cover letter explaining why this candidate fits that role.
 - **The Architecture as built:**
-  - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`. That method posts to `POST /papi/v1/ai/generate` through the `Portfolio_API` Named Credential with a 90 second timeout, so the letter is written by the integration user under the API's validation and its `papi-ai` tier of 10 requests per minute. The site guest holds no AI grant.
-  - **Retrieval Layer:** `PortfolioGroundingService` reads featured `Project__c` records (name, challenge, solution, business value, skills) and `Experience_Highlight__c` text with its role and employer, ranks them by keywords from the job title and description, and adds them to the prompt as JSON. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and stays under 8,000 characters. This is direct CRM retrieval in Apex, not the Data 360 search index of section 5.4.
+  - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`, which checks the AI tier limit on the key `papi-ai:site-cover-letter` (10 requests per minute, one bucket shared by every site visitor), runs `ContentGenerationController.dispatch` in process as the site guest, and writes the count afterwards. The guest holds the `Gemini_Auth-Gemini_Principal` principal for this and no other AI grant. The page used to call `/papi/v1/ai/generate` through the `Portfolio_API` Named Credential, but a request that arrives as a callout from the same org may not call out again, so Gemini could never answer it ([ADR-015 Round 4 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-4)). `/papi/v1/ai/generate` stays for outside callers.
+  - **Retrieval Layer:** `PortfolioGroundingService` reads featured `Project__c` records (name, challenge, solution, business value, skills) and `Experience_Highlight__c` text with its role and employer, ranks them by keywords from the job title and description, and adds them to the prompt as JSON. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and stays under 8,000 characters. Its reads go through a `without sharing` selector with a fixed field list, because the site guest sees only rows shared to it. This is direct CRM retrieval in Apex, not the Data 360 search index of section 5.4.
   - **Generation Layer:** `ContentGenerationController.dispatch`, described below.
   - **Show your work:** the page's badge shows the provider and model from the response. A panel the visitor opens shows whether a fallback happened, the round trip and generation time, every attempt and the prompt that was sent.
 
-**Generation strategy as built.** Providers implement `IAIGenerationService` (`generateContent`, `isAvailable`). One dispatch method, `ContentGenerationController.dispatch`, serves both `PAPIAiGenerate.generate` and the page (through the API):
+**Generation strategy as built.** Providers implement `IAIGenerationService` (`generateContent`, `isAvailable`). One dispatch method, `ContentGenerationController.dispatch`, serves both `PAPIAiGenerate.generate` and the page (in process, as the guest):
 
-| Order       | Provider                                                                | Consulted when                                                                                                     | Result today                                                                                                                       |
-| :---------- | :---------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------- |
-| First       | Agentforce (`AgentforceService`)                                        | The `Agentforce` record of `AI_Provider_Config__mdt` has `Enabled__c` set and the running user is not a site guest | Never serves. The record ships switched off, and the class throws when switched on, which the dispatch records as a failed attempt |
-| Second      | Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API (`GeminiService`) | Always                                                                                                             | The letter, within a 60 second callout timeout. Gemma 4 always reasons first, so a letter can take up to about a minute            |
-| Last resort | Local Template (`LocalTemplateService`)                                 | Cover letters only                                                                                                 | A fixed letter naming the company and role. Other types answer 503 `ALL_PROVIDERS_UNAVAILABLE`                                     |
+| Order       | Provider                                                                | Consulted when                                                                                                                             | Result today                                                                                                                       |
+| :---------- | :---------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------- |
+| First       | Agentforce (`AgentforceService`)                                        | The `Agentforce` record of `AI_Provider_Config__mdt` has `Enabled__c` set, the running user is not a site guest, and its breaker is closed | Never serves. The record ships switched off, and the class throws when switched on, which the dispatch records as a failed attempt |
+| Second      | Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API (`GeminiService`) | Unless the `gemini` circuit breaker is open                                                                                                | The letter, within a 60 second callout timeout. Gemma 4 always reasons first, so a letter can take up to about a minute            |
+| Last resort | Local Template (`LocalTemplateService`)                                 | Cover letters only                                                                                                                         | A fixed letter naming the company and role. Other types answer 503 `ALL_PROVIDERS_UNAVAILABLE`                                     |
 
-Every attempt is recorded with its outcome (`served`, `skipped_off`, `failed`) and time, and the API returns them as `attempts` beside `provider`, `model`, `fallbackOccurred`, `latencyMs` and `promptShown`. No circuit breaker is built yet, so each request tries the chain in order. `GeminiService.generateContent` reports a failure as text starting `Error: Unable to generate content.` or `Exception: `, which the dispatch treats as a failed attempt.
+Every attempt is recorded with its outcome (`served`, `skipped_off`, `skipped_open_circuit`, `failed`), its time and, on a failure, a short `detail` (an HTTP status or the exception type, never a key), and the API returns them as `attempts` beside `provider`, `model`, `fallbackOccurred`, `latencyMs` and `promptShown`. Three Gemini failures in a row open the `gemini` circuit breaker (`CircuitBreaker`) for 30 minutes, and letters go straight to the Local Template until the next try succeeds. Breaker state is written after every provider has been tried, never before a callout. `GeminiService.generateContent` reports a failure as text starting `Error: Unable to generate content.` or `Exception: `, which the dispatch treats as a failed attempt.
 
 <details>
 <summary>Click to view Sequence Diagram</summary>
 
-> _What This Diagram Shows: a cover letter from the site page as built. Agentforce is skipped while its switch is off._
+> _What This Diagram Shows: a cover letter from the site page as built in Round 4. Agentforce is never consulted for a guest._
 
 ```mermaid
 sequenceDiagram
     participant Page as c-cover-letter-generator
-    participant Proxy as ApiLabController
-    participant API as PAPIAiGenerate
+    participant Lab as ApiLabController (guest)
+    participant Limiter as RateWindowLimiter (papi-ai)
+    participant Grounding as Grounding selector (without sharing)
     participant Dispatcher as ContentGenerationController
-    participant Grounding as PortfolioGroundingService
     participant Gemini as GeminiService (gemma-4-31b-it)
     participant Local as LocalTemplateService
 
-    Page->>Proxy: generateCoverLetter(company, title, description)
-    Proxy->>API: POST /papi/v1/ai/generate (Portfolio_API)
-    API->>Grounding: build(role, jobDescription)
-    Grounding-->>API: projects and highlights JSON
-    API->>Dispatcher: dispatch(prompt, context, localAllowed)
-    Note over Dispatcher: Agentforce switch off, attempt recorded as skipped_off
-    Dispatcher->>Gemini: generateContent()
-    alt Usable text
-        Gemini-->>Dispatcher: content
-        Dispatcher-->>API: provider Gemini, attempts, promptShown
-    else Error text, exception or timeout
-        Gemini-->>Dispatcher: failure
-        alt CoverLetter
+    Page->>Lab: generateCoverLetter(company, title, description)
+    Lab->>Limiter: checkKey(AI tier key)
+    alt Over 10 a minute
+        Limiter-->>Lab: refused
+        Lab-->>Page: rate limit message
+    else Allowed
+        Lab->>Grounding: featured projects and highlights
+        Grounding-->>Lab: PII-free JSON
+        Lab->>Dispatcher: dispatch(request)
+        Note over Dispatcher: Agentforce skipped for a guest
+        Dispatcher->>Gemini: generateContent() (one callout, 60 s)
+        alt Usable text
+            Gemini-->>Dispatcher: content
+        else Error text, exception or timeout
+            Gemini-->>Dispatcher: failure
             Dispatcher->>Local: generateContent()
             Local-->>Dispatcher: template text
-            Dispatcher-->>API: provider Local, fallbackOccurred true
-        else Other types
-            Dispatcher-->>API: ContentGenerationException
-            API-->>Proxy: 503 ALL_PROVIDERS_UNAVAILABLE
         end
+        Dispatcher-->>Lab: GenerationResult (provider, model, attempts, promptShown)
+        Lab->>Limiter: commitRateCounts()
+        Lab-->>Page: CoverLetterResult (badge and panel read from it)
     end
-    API-->>Proxy: 200 content, provider, model, latencyMs, attempts, promptShown
-    Proxy-->>Page: CoverLetterResult (badge and panel read from it)
 ```
 
 </details>
@@ -436,10 +435,13 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 
 - **Objective:** Demonstrate ALM, CI/CD Maturity, and External System Integration.
 - **Tooling:** Atlassian Jira + GitHub Actions (CI/CD).
-- **Technical Detail:** For the integration architecture (JiraService) and Platform Event subscription model, refer to the **[Technical Guide: Jira Integration](./04-Technical-Guide.md#12-jira-integration-roadmap)**.
-- **Mechanism:** The `c-smart-checklist` component subscribes to the `Governance_Event__e` Platform Event.
-- **Workflow:** When the CI/CD pipeline (GitHub Actions) completes a successful deployment, it upserts a record or publishes an event via the Salesforce CLI. The LWC receives this event and automatically checks the "Green Build Badge" box on the UI.
-- **Architectural Signal:** This proves the candidate understands the Streaming API and Event-Driven Architecture.
+- **Technical Detail:** For the refresh jobs, the caches and the governance event, refer to the **[Technical Guide: Jira Integration](./04-Technical-Guide.md#12-jira-integration-roadmap)** and **[Executable Governance](./04-Technical-Guide.md#25-c-smart-checklist-executable-governance)**.
+- **Mechanism:** the CI/CD pipeline publishes the `Governance_Event__e` platform event, an Apex trigger persists it as a `Pipeline_Run__c` record, and the `c-smart-checklist` component reads the result through cacheable Apex ([ADR-019 Round 4 amendment](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-21-round-4)).
+- **Workflow:** after a production deploy (`deploy.yml`) and after the daily heartbeat (`keep-alive.yml`), the workflow's existing JWT user publishes one event with the run's status, id, URL, commit and time. The trigger upserts `Pipeline_Run__c` by `Run_Key__c`, so a replayed event changes nothing. The component reads `GovernanceController.getPipelineStatus()` when the page is viewed and again when the tab becomes visible. There is no timer and no polling. Each item shows its evidence (the commit linking to the run, and the time), and an item with no data shows "No signal yet".
+- **What it claims:** the production deploy is green, the heartbeat ran in the last 26 hours, and the integration caches are under 30 minutes old.
+- **Why no browser subscription:** `lightning-emp-api` is unsupported in LWR sites, and each subscribed browser would count against the org's 20 concurrent streaming clients. The event-driven part is server-side: publish, an asynchronous subscriber and idempotent handling of a replayed event.
+- **Roadmap and changelog:** `c-roadmap-viewer` and `c-changelog` read cached Jira and GitHub data through `DeliveryController` (cacheable Apex). Scheduled Queueable jobs refresh the caches every 15 minutes, so a visitor never triggers a callout ([ADR-007 Round 4 amendment](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-round-4)). The roadmap shows only `SPAP` issues labelled `portfolio-roadmap`. The site's CDN caching of guest Apex stays off (owner decision E9), so every visit reads the org.
+- **Architectural Signal:** event-driven architecture with a server-side subscriber, and external system integration through Named Credentials.
 
 #### 5.5.1 The Governance Model
 
@@ -464,12 +466,13 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-hero-banner`:** Includes "How to Evaluate Me" navigation guide.
 - **`c-testimonial-submit`:** "Mad Libs" style sentence builder.
 - **`c-api-tester`:** Developer console LWC utilizing fetch() to exercise endpoints.
-- **`c-changelog`:** Displays live commit history.
+- **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
 - **`c-skill-network`:** Visualizes Junction Objects via AntV G6.
 - **`c-code-viewer`:** Fetches raw source code via Prism.js.
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
-- **`c-roadmap-viewer`:** Performs real-time REST callout to Jira API.
-- **`c-footer`:** Contains GitHub Actions Badge.
+- **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category. It makes no callout.
+- **`c-footer`:** Contains the GitHub Actions deploy badge and the Glass Box telemetry (section 9).
+- **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
 
 > [!TIP]
 > **Technical Implementation:** For detailed performance strategies (lazy-loading), mobile fallbacks, and accessibility patterns for these components, please refer to the **[Technical Guide: Frontend Component Logic](./04-Technical-Guide.md#2-frontend-lwr-component-logic)**.
@@ -519,7 +522,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 ### 8.1 Deployment Failure
 
 - **Symptom:** GitHub Actions deploy.yml job fails or turns red.
-- **Detection:** Automated email notification from GitHub Actions; missing PR comment on Pull Request.
+- **Detection:** Automated email notification from GitHub Actions, and the run's step summary ("Deployment Status" in `deploy.yml`) reports the failure.
 - **Mitigation:**
   1. Check GitHub Action logs for specific metadata error.
   2. If environment issue: Manually deploy via CLI: sf project deploy start.
@@ -529,7 +532,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 ### 8.2 Agentforce Unavailable
 
 > [!NOTE]
-> Agentforce is deferred and not built (decision 2026-10-02), so this scenario cannot occur in the current release. It is kept for when the deferral ends.
+> Agentforce is not implemented, and its switch ships off (decision 2026-10-02, [ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)). If the switch is turned on, `AgentforceService.generateContent` throws, `ContentGenerationController.dispatch` records a failed attempt and Gemini serves, so the visitor still gets a letter. The scenario below is the target design for a real Agentforce agent, kept for when one is built.
 
 - **Symptom:** Agentforce Service Agent fails to load or returns generic errors (common in some **Developer Edition** regions).
 - **Detection:** `<agentforce-service-agent>` LWC fails to render during manual testing.
@@ -541,38 +544,41 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 ### 8.3 API Rate Limit Exhaustion
 
 - **Symptom:** GitHub Commits or Portfolio API returns status 429.
-- **Mitigation (GitHub):** System automatically serves cached responses from `GitHub_Cache__c` (Custom Setting) indefinitely until the limit resets.
-- **Mitigation (Portfolio API):** the 429 comes from `RateWindowLimiter` (SAPI 120, PAPI 15, `/ai/*` 10 requests per minute per caller key). The caller waits for `Retry-After`, which is the seconds left in the current minute ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)).
+- **Mitigation (GitHub):** guests never call GitHub. The changelog serves the newest `Github_Cache__c` row (a custom object) with its age, and a failed refresh inserts nothing, so the last good list stays until the next refresh succeeds.
+- **Mitigation (Portfolio API):** the 429 comes from `RateWindowLimiter` (SAPI 120, PAPI 15, `/ai/*` 10 requests per minute per caller key). The caller waits for `Retry-After`, which is the seconds left in the current minute ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)). Every vended evaluator token is the same session, so all evaluators share one key per tier, and one busy evaluator can use up the minute for everyone ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4)).
 
 ### 8.4 Resilience Simulation Operations
 
-Ensuring the system fails gracefully during outage events.
+Ensuring the system fails gracefully during outage events ([ADR-022 Round 4 amendment](../adr/022-resilience-engineering-resilience-simulation-toggle.md#amendment-2026-10-21-round-4)).
 
-| Failure Scenario              | Detection Method                                          | User Experience                                              | Auto-Recovery                      |
-| :---------------------------- | :-------------------------------------------------------- | :----------------------------------------------------------- | :--------------------------------- |
-| **GitHub API Rate Limit**     | HTTP 429 response                                         | Display cached commits with "Last Updated: 15m ago" badge    | Scheduler retries in 15 min        |
-| **G6 Library 404**            | `loadScript()` Promise rejection                          | Render static SVG immediately                                | Log error + email admin            |
-| **Jira API Down**             | 3 consecutive 503 errors                                  | Show "Roadmap temporarily unavailable" message               | Circuit Breaker opens for 30 min   |
-| **User-Triggered Simulation** | `Resilience_Simulation_Enabled__c = True` (Session Cache) | "Simulation Active" badge appears; API calls mock 500 errors | Reset via UI Toggle or Session End |
+| Failure Scenario                 | Detection Method                                                                                 | User Experience                                                                                                                                   | Auto-Recovery                                                                                                     |
+| :------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------- |
+| **GitHub or Jira refresh fails** | The refresh job's callout fails. Three in a row open that source's breaker                       | The last good commits or roadmap with its age. `DEGRADED` while the breaker is open                                                               | After 30 minutes the next refresh is tried. A success closes the breaker, a failure keeps it open 30 more minutes |
+| **No usable cache row**          | `DeliveryController` finds no row, or a payload that does not parse                              | "No recent updates found." or "Roadmap temporarily unavailable"                                                                                   | The next successful refresh                                                                                       |
+| **Gemini fails**                 | An error, an exception or a timeout in `GeminiService`. Three in a row open the `gemini` breaker | The cover letter comes from the Local Template, and the attempts list shows why                                                                   | After 30 minutes the next letter tries Gemini again. A success closes the breaker                                 |
+| **G6 Library 404**               | `loadScript()` Promise rejection in `c/g6Loader`                                                 | The inline SVG built from the same live data, with "The interactive graph could not load, so a static view is shown." Small screens never load G6 | The next page load tries again                                                                                    |
+| **User-Triggered Simulation**    | The "Simulate an outage" switch on the changelog or the roadmap passes `simulate`                | The cached data with a "Simulated" badge (status `SIMULATED`). No callout, nothing stored                                                         | Switch it off                                                                                                     |
 
 ## 9. Observability & Glass Box Telemetry
 
-The system exposes real-time telemetry to the user via the `c-system-health-footer` component to demonstrate "Glass Box Telemetry" architecture.
+The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box Telemetry". It loads after the first paint ([ADR-014](../adr/014-deferred-telemetry-loading-performance.md)) from `FooterController.getSystemSnapshot()`, which is not cacheable, so the values are current.
 
-- **Heap/CPU:** Visualized vs. Governor Limits.
-- **AI Provider Health:** Current active provider and estimated latency.
-- **FinOps Telemetry:** Real-time counter of Gemini API calls remaining (e.g., "Daily Quota: 85% Free").
+- **Limits:** CPU time, heap size and SOQL queries used against their governor limits, read from `Limits` in that transaction.
+- **AI provider health:** each provider's switch and state from `ContentGenerationController.providerStatus()`, including when an open circuit closes again.
+- **AI requests today:** the sum of today's AI tier counts in `API_Rate_Window__c` (the site cover letter and `/papi/v1/ai/generate` both count). It counts requests, not Gemini calls, so it is never labelled as a Gemini quota (owner decision PD-D9, 2026-10-21). Hovering over or focusing it sends the GA4 event `finops_quota_visibility`.
+- **Deploy status:** the GitHub Actions badge for `deploy.yml` on `main`, with a text link when the image cannot load.
+- **Logs:** Apex writes one line per API request through a logging seam that uses Nebula Logger when it is installed and debug logs when it is not (section A.3).
 
 ## Appendices
 
 ### Appendix A: Engineering Implementation Notes
 
 - **A.1 CI/CD Pipeline Configuration:** Authentication via Connected App with "Use Digital Signatures." Stores keys in GitHub Secrets. Use pr.yml for quality gates and deploy.yml for production push.
-- **A.2 CORS & Security:** Whitelist custom domain, enable LWS, update CSP for external scripts (Calendly, GitHub, Atlassian). Log retention policy: Zero-Persistence.
-- **A.3 Code Reusability:** Shared Prism.js utility module. Nebula Logger handles try/catch blocks.
-- **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches to `GitHub_Cache__c`. Refreshed by `GitHubCacheRefreshJob.cls`.
+- **A.2 CORS & Security:** Whitelist custom domain, enable LWS. The site runs on **Relaxed CSP** (owner decision, 2026-10-21), because the GA4 tag needs a third-party script host and inline script. Relaxed CSP lets inline scripts and `eval()` run on the site, so only reviewed head markup may add scripts. Third-party hosts are trusted in source: `GitHub_Badge` for the deploy badge and the GA4 image and connect hosts as CSP trusted sites, and `https://www.googletagmanager.com` for scripts in the site bundle's `sfdc_cms__trustedSites/trustedSites/content.json` (Experience Builder "Trusted Sites for Scripts"), which deploys with the site. Log retention policy: Zero-Persistence.
+- **A.3 Code Reusability:** Shared Prism.js utility module. Logging goes through one seam, `PortfolioLog`, which writes to Nebula Logger when the owner has installed it and to debug logs otherwise ([ADR-013 Round 4 amendment](../adr/013-structured-logging-framework-nebula-logger.md#amendment-2026-10-21-round-4)).
+- **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches to the `Github_Cache__c` custom object. Refreshed every 15 minutes by `GitHubCacheRefreshJob` (Queueable, enqueued by `IntegrationCacheRefreshScheduler`).
 - **A.5 Hero Banner Navigation:** (Refer to UI specs).
-- **A.6 Agentforce Configuration:** Configure Agent Topic to query `Project__c`. Use "Mirror Mode" in system instructions.
+- **A.6 Agentforce Configuration:** not built. Agentforce is a switch in the dispatch that ships off (section 5.4). The "Show your work" panel (section 5.4) replaces the Mirror Mode system instruction, so no instruction asks a model to reveal its prompt.
 - **A.7 Architecture Diagram Hosting:** Export C4 diagram and upload as Static Resource.
 - **A.8 Jira Integration:** Endpoint: ryanbumstead.atlassian.net. Auth: Basic Auth with Named Credential.
 - **A.9 Advanced Visualization Strategy:**
@@ -600,7 +606,7 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 - **Distributed Tracing:** Mandatory `X-Request-Id` header (UUID format) in all requests for correlation across log aggregation systems
 - **Contract-First Design:** OpenAPI 3.0 specification defines the interface before implementation
 - **Explicit Caching:** `Cache-Control` headers distinguish between cacheable configuration (`max-age=300`) and dynamic data (`no-store`)
-- **Rate Limiting:** Standard tier enforces 120 requests/minute with burst capacity of 20
+- **Rate Limiting:** `RateWindowLimiter` allows 120 requests per minute per caller key, with no burst allowance. Every evaluator token is the same session, so all evaluators share that one limit ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4))
 - **Versioning:** `X-API-Version` header required for contract negotiation and backward compatibility
 
 **Core Endpoints:**
@@ -678,15 +684,15 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Core Endpoints:**
 
-| Endpoint              | Purpose                                                                               | Upstream SAPI Calls                                                                                                                                                                                             | Benefit                                                                        |
-| :-------------------- | :------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------- |
-| `/profile/full`       | Complete portfolio hydration                                                          | 10+ endpoints (Config, Skills, Tests, etc.)                                                                                                                                                                     | **Single Request** loads entire app state                                      |
-| `/profile/summary`    | Employment profile only                                                               | 5 (Contact, Experience, Skills, Certifications, Education)                                                                                                                                                      | Lightweight profile for resume generation                                      |
-| `/resume/generate`    | ATS-optimized plain text resume                                                       | 3 (Experience, Experience Highlights filtered by persona, Skills)                                                                                                                                               | Server-side text formatting eliminates client complexity                       |
-| `/projects/featured`  | Enriched project showcase                                                             | 3 (Projects, Project Assets, Project Skills)                                                                                                                                                                    | Pre-joined data structure eliminates N+1 query problem                         |
-| `/testimonials/feed`  | Curated social proof                                                                  | 1 (Testimonials with Vibe Mode filter)                                                                                                                                                                          | Server-side filtering ensures brand consistency                                |
-| `/ai/generate` (POST) | Generative content (cover letter, bio, skill blurb)                                   | `generateWithoutAgentforce`: Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API → Local Template for cover letters ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)); Agentforce never consulted | Real model output with a deterministic fallback; `ai` rate tier (10 req/min)   |
-| `/auth/token` (POST)  | Evaluator token vending ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)) | Server-side client-credentials exchange via `Portfolio_API` Named Credential                                                                                                                                    | External reviewers can `curl` the APIs without ever seeing the consumer secret |
+| Endpoint              | Purpose                                                                               | Upstream SAPI Calls                                                                                                                                                                                                                                          | Benefit                                                                        |
+| :-------------------- | :------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------- |
+| `/profile/full`       | Complete portfolio hydration                                                          | 10+ endpoints (Config, Skills, Tests, etc.)                                                                                                                                                                                                                  | **Single Request** loads entire app state                                      |
+| `/profile/summary`    | Employment profile only                                                               | 5 (Contact, Experience, Skills, Certifications, Education)                                                                                                                                                                                                   | Lightweight profile for resume generation                                      |
+| `/resume/generate`    | ATS-optimized plain text resume                                                       | 3 (Experience, Experience Highlights filtered by persona, Skills)                                                                                                                                                                                            | Server-side text formatting eliminates client complexity                       |
+| `/projects/featured`  | Enriched project showcase                                                             | 3 (Projects, Project Assets, Project Skills)                                                                                                                                                                                                                 | Pre-joined data structure eliminates N+1 query problem                         |
+| `/testimonials/feed`  | Curated social proof                                                                  | 1 (Testimonials with Vibe Mode filter)                                                                                                                                                                                                                       | Server-side filtering ensures brand consistency                                |
+| `/ai/generate` (POST) | Generative content (cover letter, bio, skill blurb)                                   | `ContentGenerationController.dispatch`: Agentforce only when switched on (it ships off), then Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API, then the Local Template for cover letters ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)) | Real model output with a deterministic fallback, `ai` rate tier (10 req/min)   |
+| `/auth/token` (POST)  | Evaluator token vending ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)) | Server-side client-credentials exchange via `Portfolio_API` Named Credential                                                                                                                                                                                 | External reviewers can `curl` the APIs without ever seeing the consumer secret |
 
 **Transformation Examples:**
 
@@ -752,7 +758,7 @@ The `/testimonials/feed?mode=professional` endpoint applies business logic:
 
 #### B.3 API Documentation Access
 
-- **Interactive Documentation:** Redoc static HTML hosted as Salesforce Static Resource
+- **Interactive Documentation:** the Redoc 2.5.4 bundle (`Redoc_Script` static resource) renders both specifications on a full-width page at `/api-lab/reference`, with a SAPI and PAPI switch, linked from the API Lab. Where Redoc does not finish loading in 15 seconds (seen in WebKit), the page says so and links the hosted documentation.
 - **Machine-Readable Spec:** `/openapi.json` endpoint returns the complete OpenAPI 3.0 specification for code generation
 - **Developer Console:** Custom `c-api-tester` LWC component provides live endpoint testing with syntax highlighting. It calls an Apex proxy (`ApiLabController`) that invokes the APIs through the `Portfolio_API` Named Credential, so no secret reaches the browser.
 - **Evaluator Access:** `POST /papi/v1/auth/token` returns a short-lived Bearer token for external testing ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
@@ -795,7 +801,7 @@ sequenceDiagram
 
     Reviewer->>Proxy: POST /auth/token {email, purpose}
     Proxy->>NC: client_credentials exchange
-    NC-->>Reviewer: {access_token, expires_in}
+    NC-->>Reviewer: {access_token, instance_url}
     Reviewer->>API: GET /sapi/v1/skills Bearer token
     API-->>Reviewer: payload
 ```
@@ -803,9 +809,9 @@ sequenceDiagram
 **Controls (in order of importance):**
 
 1. **Least privilege:** a client-credentials token is valid for any REST API as the integration user, so the integration user's permission set is the real boundary: read-only on portfolio objects, execute on SAPI/PAPI classes, nothing else.
-2. **Expiry:** the integration user runs under a profile with a 30-minute session timeout.
+2. **Expiry:** every evaluator token is the integration user's one shared session, which ends after 30 minutes without use (the profile's idle timeout). The token response carries no `expires_in`, because the token endpoint reports no expiry.
 3. **Kill switch:** deactivating the External Client App revokes every outstanding token.
-4. **Quota protection:** rate limiting by `RateWindowLimiter` ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)), 15 token requests per minute per email and source IP, and a daily cap on issued tokens (`Token_Daily_Cap__c`, default 50) guard the Developer Edition API request limit (15,000/day).
+4. **Quota protection:** rate limiting by `RateWindowLimiter` ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)), shared by every evaluator because every vended token is the same session ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4)), 15 token requests per minute per email and source IP, and a daily cap on issued tokens (`Token_Daily_Cap__c`, default 50) guard the Developer Edition API request limit (15,000/day).
 5. **Audit:** every token request writes an `API_Access_Request__c` record.
 
 **Evaluator flow:**
@@ -828,7 +834,7 @@ curl -s "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
 EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scripts/api-smoke.sh
 ```
 
-**Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in the Round 2 integration scratch org, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. [unverified] Whether an authenticated PAPI response to a request without an id then carries one id or two (the platform's and the UUID Apex generates) is not yet established; check it in the first live smoke. Send your own UUID to get a single, predictable id back.
+**Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in the Round 2 integration scratch org, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. On My Domain the platform also injects that id into the request when the caller sends none. The first live smoke found PAPI then answered 400 with two ids. Since Round 4, PAPI treats a 32-character hex id as missing, generates a UUID as its correlation id, and adds no header of its own (`ApiRequestContext.applyRequestRules`, owner decision D3). The response should then carry one id, the platform's, while an error body's `correlationId` carries the UUID. [unverified] until the next live smoke confirms it. SAPI still requires a UUID. Send your own UUID to get a single, predictable id back.
 
 ### Appendix C: MuleSoft Code, Governance, & Proxy Configuration (Reference)
 

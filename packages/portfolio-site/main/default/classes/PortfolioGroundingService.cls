@@ -8,8 +8,10 @@
  *                      phone number from the free text, because the prompt is sent to the model
  *                      and shown to the visitor. The output stays under MAX_CHARS (about 2,000
  *                      tokens), so Gemma's 16,000 tokens per minute still fit several letters.
- *                      Runs as the caller: under PD-D3 b that is the integration user, which
- *                      reads these objects through Integration_Access.
+ *                      The site page runs it as the guest (Round 4 decision 2 a), and guest
+ *                      with sharing code sees no Experience_Highlight__c (trap 31), so the
+ *                      reads go through the without sharing Selector below, which selects a
+ *                      fixed field list and returns only this PII-free shape (contract G1).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -69,6 +71,8 @@ public with sharing class PortfolioGroundingService {
   private static final Integer MAX_SCAN_CHARS = 2000;
   /** Text read for keyword matching is cut to this length, so splitting stays bounded. */
   private static final Integer MAX_MATCH_CHARS = 8000;
+  private static final Selector SELECTOR = new Selector();
+
   private static final Pattern PHONE = Pattern.compile(
     '(\\+?\\d{1,2}[\\s.-]?)?\\(?\\d{3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}'
   );
@@ -137,13 +141,7 @@ public with sharing class PortfolioGroundingService {
   }
 
   private static List<ProjectFact> selectProjects(Set<String> keywords) {
-    List<Project__c> projects = [
-      SELECT Id, Name, Challenge__c, Solution__c, Business_Value__c
-      FROM Project__c
-      WHERE Is_Featured__c = TRUE AND Status__c IN :LIVE_STATUSES
-      ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
-      LIMIT :CANDIDATE_PROJECTS
-    ];
+    List<Project__c> projects = SELECTOR.featuredProjects();
     Map<Id, List<String>> skillsByProject = skillsFor(
       new Map<Id, Project__c>(projects).keySet()
     );
@@ -188,13 +186,7 @@ public with sharing class PortfolioGroundingService {
     if (projectIds.isEmpty()) {
       return skillsByProject;
     }
-    for (Project_Skill__c link : [
-      SELECT Project__c, Skill__r.Name, Skill__r.Display_Name__c
-      FROM Project_Skill__c
-      WHERE Project__c IN :projectIds
-      ORDER BY Skill__r.Name ASC
-      LIMIT :MAX_SKILL_LINKS
-    ]) {
+    for (Project_Skill__c link : SELECTOR.skillLinks(projectIds)) {
       if (!skillsByProject.containsKey(link.Project__c)) {
         skillsByProject.put(link.Project__c, new List<String>());
       }
@@ -207,15 +199,7 @@ public with sharing class PortfolioGroundingService {
   }
 
   private static List<HighlightFact> selectHighlights(Set<String> keywords) {
-    List<Experience_Highlight__c> highlights = [
-      SELECT Description__c, Experience__r.Name, Experience__r.Employer__r.Name
-      FROM Experience_Highlight__c
-      ORDER BY
-        Experience__r.Is_Current_Role__c DESC,
-        Experience__r.End_Date__c DESC NULLS FIRST,
-        Sort_Order__c ASC
-      LIMIT :CANDIDATE_HIGHLIGHTS
-    ];
+    List<Experience_Highlight__c> highlights = SELECTOR.highlights();
 
     List<Ranked> ranked = new List<Ranked>();
     for (Integer i = 0; i < highlights.size(); i++) {
@@ -303,6 +287,51 @@ public with sharing class PortfolioGroundingService {
       }
     }
     return result;
+  }
+
+  /**
+   * @description The three grounding reads, without sharing on purpose. The site guest sees
+   *              only rows shared to it, which excludes every Experience_Highlight__c, so a
+   *              with sharing read would ground a guest's letter on nothing (trap 31). Each
+   *              query selects a fixed list of public portfolio fields: no Contact, no
+   *              Account other than an employer name, no email, phone or Owner field. The
+   *              caller cleans the free text before anything leaves this class (contract G1).
+   */
+  private without sharing class Selector {
+    List<Project__c> featuredProjects() {
+      return [
+        SELECT Id, Name, Challenge__c, Solution__c, Business_Value__c
+        FROM Project__c
+        WHERE Is_Featured__c = TRUE AND Status__c IN :LIVE_STATUSES
+        ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
+        LIMIT :CANDIDATE_PROJECTS
+      ];
+    }
+
+    List<Project_Skill__c> skillLinks(Set<Id> projectIds) {
+      return [
+        SELECT Project__c, Skill__r.Name, Skill__r.Display_Name__c
+        FROM Project_Skill__c
+        WHERE Project__c IN :projectIds
+        ORDER BY Skill__r.Name ASC
+        LIMIT :MAX_SKILL_LINKS
+      ];
+    }
+
+    List<Experience_Highlight__c> highlights() {
+      return [
+        SELECT
+          Description__c,
+          Experience__r.Name,
+          Experience__r.Employer__r.Name
+        FROM Experience_Highlight__c
+        ORDER BY
+          Experience__r.Is_Current_Role__c DESC,
+          Experience__r.End_Date__c DESC NULLS FIRST,
+          Sort_Order__c ASC
+        LIMIT :CANDIDATE_HIGHLIGHTS
+      ];
+    }
   }
 
   /**

@@ -14,14 +14,14 @@ from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
 ### 2. Versioning Strategy
 - **Pattern**: Header-based versioning takes precedence.
 - **Header**: `X-API-Version: v1`. A missing header resolves to `v1`; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026).
-- **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID; a present but non-UUID value returns `400 BAD_REQUEST`. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes a valid caller-supplied `X-Request-Id`, and Apex sets it only when it generated the value (ADR-026).
+- **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID, and a present but non-UUID value returns `400 BAD_REQUEST`. On My Domain the platform injects its own 32-character hex id when the caller sends none, and PAPI treats that value as missing. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes whatever `X-Request-Id` the request carries, its own included, and Apex sets the header only when it generated the value and the request carried none, so the header appears once (ADR-026). When the platform injected its id, the header carries that id and an error body's `correlationId` carries the generated UUID. Send your own UUID to get one predictable id.
 - **URL**: Version segments removed from base path to align with SAPI ADR.
 
 ### 3. Rate Limiting & Aggregation Math
 - **SAPI Limit**: 120 requests/minute.
 - **PAPI Aggregation**: A single `/profile/full` call triggers ~8 upstream SAPI calls.
 - **PAPI Limit**: Restricted to **15 requests/minute** (Standard Tier) to prevent cascading rate limit violations on SAPI (15 * 8 = 120).
-- **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. `POST /auth/token` is also limited to 15 requests per minute per email and source IP.
+- **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. Every token from `POST /auth/token` is the same session, so all evaluators share one key per tier and one limit (SAPI 120, PAPI 15, `/ai/*` 10 per minute, ADR-028). `POST /auth/token` is also limited to 15 requests per minute per email and source IP.
 
 ### 4. Caching Strategy (Aggregation Logic)
 *Note: PAPI cannot pass SAPI headers verbatim due to mixed sensitivity in aggregated payloads.*
@@ -54,7 +54,8 @@ License: <a href="https://opensource.org/licenses/MIT">MIT</a>
 
 - oAuth2 authentication. OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).
 Tokens run as the read-only integration user. External evaluators obtain a short-lived token
-from `POST /auth/token` (ADR-028) instead of holding the consumer secret.
+from `POST /auth/token` (ADR-028) instead of holding the consumer secret. Every
+evaluator receives the same session, so all evaluators share one rate limit per tier.
 
     - Flow: clientCredentials
 
@@ -160,7 +161,7 @@ The following groups are executed in parallel:
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
 |X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 
 > Example responses
@@ -170,8 +171,6 @@ The following groups are executed in parallel:
 ```json
 {
   "config": {
-    "ownerEmail": "bumsteadryan@gmail.com",
-    "ownerPhone": "+1 555-0199",
     "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
     "calendlyUrl": "https://calendly.com/ryanbumstead",
     "githubUrl": "https://github.com/ryanbumstead",
@@ -182,8 +181,6 @@ The following groups are executed in parallel:
   "contactInfo": {
     "id": "0035e00000B2O3DAAV",
     "fullName": "Ryan Bumstead",
-    "email": "bumsteadryan@gmail.com",
-    "phone": "555-0199",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
     "github": "https://github.com/ryanbumstead",
@@ -422,7 +419,7 @@ strictest-policy-wins.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
 |X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 
 > Example responses
@@ -434,8 +431,6 @@ strictest-policy-wins.
   "contactInfo": {
     "id": "0035e00000B2O3DAAV",
     "fullName": "Ryan Bumstead",
-    "email": "ryan@ryanbumstead.com",
-    "phone": "+1 555-0199",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
     "github": "https://github.com/ryanbumstead",
@@ -628,7 +623,7 @@ Retrieves projects marked as 'Featured' with nested Skills and Assets.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
 |X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 
 > Example responses
@@ -849,7 +844,7 @@ Generates an ATS-optimized plain text resume.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
 |X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |persona|query|string|false|Target audience for the resume. Omit for all highlights.|
 
@@ -1030,7 +1025,7 @@ any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest firs
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
 |X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |mode|query|string|false|Filter testimonials by vibe|
 
@@ -1233,8 +1228,10 @@ Generates content through `PAPIAiGenerate.generate`, which calls the one provide
 
 A CoverLetter prompt also carries facts from featured projects and experience highlights,
 chosen by keywords from `role` and `jobDescription`. No email address, phone number or
-owner field is ever included. The API Lab cover letter page calls this endpoint through
-`ApiLabController.generateCoverLetter`.
+owner field is ever included. The site's cover letter page does not call this endpoint: a
+request that arrives as a callout from the same org may not call out again, so
+`ApiLabController.generateCoverLetter` runs the same dispatch in process (ADR-015). This
+endpoint is for outside callers with a Bearer token.
 
 **Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allows Gemma 4 31B
 30 requests per minute, 16,000 tokens per minute and 14,400 requests per day. When the Gemini API
@@ -1269,7 +1266,7 @@ CoverLetter requires `context.companyName` and `context.role`. Content longer th
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
 |X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |body|body|object|true|none|
 |» type|body|string|true|The type of content to generate|
@@ -1582,7 +1579,10 @@ without holding the External Client App consumer secret (ADR-028). `PAPIAuthToke
 hands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,
 then runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named
 Credential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user
-and expire with its 30-minute session.
+and end with its session, after 30 minutes without use. While that session is valid, every
+exchange returns the same token, so all evaluators share one token and one rate limit per tier
+(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token
+endpoint reports no expiry, and the session's end depends on use.
 
 - **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254
   characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule
@@ -1614,7 +1614,7 @@ This is the only path served on the Experience Cloud site domain, not on My Doma
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, a generated UUID is used and returned in the response header; a present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
+|X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
 |X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |body|body|[TokenRequest](#schematokenrequest)|true|none|
 
@@ -1626,7 +1626,6 @@ This is the only path served on the Experience Cloud site domain, not on My Doma
 {
   "access_token": "string",
   "token_type": "Bearer",
-  "expires_in": 1800,
   "instance_url": "https://ryan-bumstead-dev-ed.develop.my.salesforce.com",
   "docs": "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi"
 }
@@ -1801,8 +1800,6 @@ This operation does not require authentication
 ```json
 {
   "config": {
-    "ownerEmail": "bumsteadryan@gmail.com",
-    "ownerPhone": "+1 555-0199",
     "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
     "calendlyUrl": "https://calendly.com/ryanbumstead",
     "githubUrl": "https://github.com/ryanbumstead",
@@ -1815,8 +1812,6 @@ This operation does not require authentication
   "contactInfo": {
     "id": "0035e00000B2O3DAAV",
     "fullName": "Ryan Bumstead",
-    "email": "ryan@ryanbumstead.com",
-    "phone": "+1 555-0199",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
     "github": "https://github.com/ryanbumstead",
@@ -1921,8 +1916,8 @@ The master payload for initial app load
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|config|[PortfolioConfig](#schemaportfolioconfig)|true|none|none|
-|contactInfo|[ContactDetail](#schemacontactdetail)|true|none|Simplified contact information for the header|
+|config|[PortfolioConfig](#schemaportfolioconfig)|true|none|Public configuration. The owner's email and phone are never returned.|
+|contactInfo|[ContactDetail](#schemacontactdetail)|true|none|Simplified contact information for the header. No email or phone is returned.|
 |summary|string|false|none|Auto-generated professional summary|
 |skills|[[SkillSummary](#schemaskillsummary)]|true|none|[Lightweight skill object for list views]|
 |experience|[[EnrichedExperience](#schemaenrichedexperience)]|true|none|[Work Experience enriched with related Skills and Highlights]|
@@ -1944,8 +1939,6 @@ The master payload for initial app load
   "contactInfo": {
     "id": "0035e00000B2O3DAAV",
     "fullName": "Ryan Bumstead",
-    "email": "ryan@ryanbumstead.com",
-    "phone": "+1 555-0199",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
     "github": "https://github.com/ryanbumstead",
@@ -2012,7 +2005,7 @@ The master payload for initial app load
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|contactInfo|[ContactDetail](#schemacontactdetail)|true|none|Simplified contact information for the header|
+|contactInfo|[ContactDetail](#schemacontactdetail)|true|none|Simplified contact information for the header. No email or phone is returned.|
 |summary|string|false|none|Calculated summary based on experience|
 |skills|[[SkillSummary](#schemaskillsummary)]|true|none|[Lightweight skill object for list views]|
 |experience|[[EnrichedExperience](#schemaenrichedexperience)]|true|none|[Work Experience enriched with related Skills and Highlights]|
@@ -2179,8 +2172,6 @@ Project enriched with Skills and Assets
 
 ```json
 {
-  "ownerEmail": "bumsteadryan@gmail.com",
-  "ownerPhone": "+1 555-0199",
   "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
   "calendlyUrl": "https://calendly.com/ryanbumstead",
   "githubUrl": "https://github.com/ryanbumstead",
@@ -2193,12 +2184,12 @@ Project enriched with Skills and Assets
 
 ```
 
+Public configuration. The owner's email and phone are never returned.
+
 ### Properties
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|ownerEmail|string(email)|true|none|none|
-|ownerPhone|string|false|none|none|
 |linkedInUrl|string(uri)|false|none|none|
 |calendlyUrl|string(uri)|false|none|none|
 |githubUrl|string(uri)|false|none|none|
@@ -2219,8 +2210,6 @@ Project enriched with Skills and Assets
 {
   "id": "0035e00000B2O3DAAV",
   "fullName": "Ryan Bumstead",
-  "email": "ryan@ryanbumstead.com",
-  "phone": "+1 555-0199",
   "title": "Platform Architect",
   "linkedIn": "https://linkedin.com/in/ryanbumstead",
   "github": "https://github.com/ryanbumstead",
@@ -2231,7 +2220,7 @@ Project enriched with Skills and Assets
 
 ```
 
-Simplified contact information for the header
+Simplified contact information for the header. No email or phone is returned.
 
 ### Properties
 
@@ -2239,8 +2228,6 @@ Simplified contact information for the header
 |---|---|---|---|---|
 |id|string|false|none|none|
 |fullName|string|true|none|none|
-|email|string(email)|true|none|none|
-|phone|string|false|none|none|
 |title|string¦null|false|none|none|
 |linkedIn|string(uri)|false|none|none|
 |github|string(uri)|false|none|none|
@@ -2381,7 +2368,6 @@ Educational background
 {
   "access_token": "string",
   "token_type": "Bearer",
-  "expires_in": 1800,
   "instance_url": "https://ryan-bumstead-dev-ed.develop.my.salesforce.com",
   "docs": "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi"
 }
@@ -2392,9 +2378,8 @@ Educational background
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|access_token|string|true|none|OAuth 2.0 Bearer token bound to the read-only integration user.|
+|access_token|string|true|none|OAuth 2.0 Bearer token bound to the read-only integration user. It is the integration user's current session, shared by every evaluator, and it ends after 30 minutes without use (the integration profile's idle timeout). The response carries no expires_in, because the token endpoint reports no expiry and a fixed number would be a guess.|
 |token_type|string|true|none|none|
-|expires_in|integer|true|none|Always 1800, the integration profile's session timeout. The token endpoint returns no expiry, so this is the profile setting, not a value read from the grant.|
 |instance_url|string(uri)|true|none|The My Domain root, as returned by the token endpoint. Append `/services/apexrest/sapi/v1/...` or `/services/apexrest/papi/v1/...` and send the token as a Bearer credential.|
 |docs|string(uri)|false|none|Link to the rendered API documentation.|
 

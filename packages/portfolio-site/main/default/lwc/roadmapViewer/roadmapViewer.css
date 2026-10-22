@@ -1,26 +1,19 @@
 /*
- * Contract K9: the site branding is dark. Every element here that sets a background
- * also sets its text colour. The board sits on the site root surface, each card on the
- * DXP neutral surface with its own text colour, and the badges are fixed colour pairs
- * with dark text. Fallbacks are the values the Portfolio branding set renders.
+ * Round 4 plan L1: colours, fonts, radii and spacing come only from the --pf- design
+ * tokens, so the board follows the light and dark themes. Every element that sets a
+ * background also sets its text colour. Issue keys and the age label use the mono font.
  */
 :host {
   display: block;
-  --board-surface: var(--dxp-g-root, #020617);
-  --board-text: var(--dxp-g-root-contrast, #e2e8f0);
-  --board-muted: #94a3b8;
-  --board-border: var(--dxp-g-neutral-3, #475569);
-  --card-surface: var(--dxp-g-neutral, #0f172a);
-  --card-text: var(--dxp-g-neutral-contrast, #ffffff);
-  --card-muted: #cbd5e1;
 }
 
 .roadmap {
-  background-color: var(--board-surface);
-  color: var(--board-text);
-  padding: 1rem;
-  border: 1px solid var(--board-border);
-  border-radius: 0.25rem;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  padding: var(--pf-space-4);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
   overflow-wrap: anywhere;
 }
 
@@ -29,12 +22,12 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: var(--pf-space-2);
+  margin-bottom: var(--pf-space-3);
 }
 
 .roadmap-title {
-  color: var(--board-text);
+  color: var(--pf-text);
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0;
@@ -44,43 +37,79 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--pf-space-2);
 }
 
 .age-label {
-  color: var(--board-muted);
-  background-color: var(--board-surface);
+  color: var(--pf-muted);
+  font-family: var(--pf-font-mono);
   font-size: 0.875rem;
 }
 
 .age-stale {
-  color: #fbbf24;
+  background-color: var(--pf-warn);
+  color: var(--pf-warn-text);
+  border-radius: var(--pf-radius-sm);
+  padding: 0 var(--pf-space-1);
   font-weight: 700;
 }
 
 .status-badge {
   display: inline-block;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.75rem;
+  padding: var(--pf-space-1) var(--pf-space-2);
+  border-radius: var(--pf-radius-sm);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .badge-simulated {
-  background-color: #7dd3fc;
-  color: #020617;
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border: 1px solid var(--pf-accent);
 }
 
 .badge-degraded {
-  background-color: #fbbf24;
-  color: #020617;
+  background-color: var(--pf-warn);
+  color: var(--pf-warn-text);
+}
+
+/* The switch: a native checkbox with role="switch", at least 24 by 24 px, inside its
+   label so a click anywhere on the text toggles it. */
+.simulate-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  min-height: 44px;
+  color: var(--pf-body);
+  cursor: pointer;
+}
+
+.simulate-input {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--pf-accent);
+  cursor: pointer;
+}
+
+.simulate-input:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+/* Always in the page, so screen readers announce the text when it appears. Empty, it
+   takes no space. */
+.status-note {
+  color: var(--pf-body);
+  font-size: 0.875rem;
+  margin: 0;
 }
 
 .roadmap-message {
-  color: var(--board-text);
+  color: var(--pf-text);
   margin: 0;
-  padding: 0.5rem 0;
+  padding: var(--pf-space-2) 0;
 }
 
 /* Three equal columns on a wide screen. Below 768px they stack into one column, so
@@ -88,7 +117,8 @@
 .roadmap-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: var(--pf-space-4);
+  margin-top: var(--pf-space-2);
 }
 
 @media (max-width: 767px) {
@@ -99,40 +129,40 @@
 
 .roadmap-column {
   min-width: 0;
-  background-color: var(--board-surface);
-  color: var(--board-text);
-  border: 1px solid var(--board-border);
-  border-radius: 0.25rem;
-  padding: 0.5rem;
+  background-color: var(--pf-subtle);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  padding: var(--pf-space-2);
 }
 
 .roadmap-column[data-category="new"] {
-  border-top: 4px solid #94a3b8;
+  border-top: 4px solid var(--pf-muted);
 }
 
 .roadmap-column[data-category="indeterminate"] {
-  border-top: 4px solid #38bdf8;
+  border-top: 4px solid var(--pf-accent);
 }
 
 .roadmap-column[data-category="done"] {
-  border-top: 4px solid #4ade80;
+  border-top: 4px solid var(--pf-ok);
 }
 
 .column-title {
-  color: var(--board-text);
+  color: var(--pf-text);
   font-size: 1rem;
   font-weight: 700;
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--pf-space-2);
 }
 
 .column-count {
-  margin-left: 0.25rem;
-  color: var(--board-muted);
+  margin-left: var(--pf-space-1);
+  color: var(--pf-muted);
   font-weight: 400;
 }
 
 .column-empty {
-  color: var(--board-muted);
+  color: var(--pf-muted);
   margin: 0;
   font-size: 0.875rem;
 }
@@ -144,16 +174,16 @@
 }
 
 .roadmap-card {
-  background-color: var(--card-surface);
-  color: var(--card-text);
-  border: 1px solid var(--board-border);
-  border-radius: 0.25rem;
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  padding: var(--pf-space-2);
+  margin-bottom: var(--pf-space-2);
 }
 
 .card-epic {
-  border-left: 4px solid #c4b5fd;
+  border-left: 4px solid var(--pf-accent);
 }
 
 .card-top {
@@ -161,36 +191,37 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--pf-space-2);
 }
 
 .card-key {
-  color: var(--card-muted);
+  color: var(--pf-muted);
+  font-family: var(--pf-font-mono);
   font-size: 0.75rem;
   font-weight: 700;
 }
 
 .card-type {
-  color: var(--card-muted);
+  color: var(--pf-muted);
   font-size: 0.75rem;
 }
 
 .epic-label {
-  background-color: #c4b5fd;
-  color: #1e1b4b;
-  border-radius: 0.75rem;
-  padding: 0 0.5rem;
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-radius: var(--pf-radius-sm);
+  padding: 0 var(--pf-space-2);
   font-size: 0.75rem;
   font-weight: 700;
 }
 
 .card-summary {
-  color: var(--card-text);
-  margin: 0.25rem 0 0;
+  color: var(--pf-text);
+  margin: var(--pf-space-1) 0 0;
 }
 
 .card-parent {
-  color: var(--card-muted);
+  color: var(--pf-muted);
   font-size: 0.75rem;
-  margin: 0.25rem 0 0;
+  margin: var(--pf-space-1) 0 0;
 }

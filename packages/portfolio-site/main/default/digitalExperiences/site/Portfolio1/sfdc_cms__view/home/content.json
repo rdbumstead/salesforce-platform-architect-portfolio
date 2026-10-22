@@ -50,7 +50,7 @@
             {
               "attributes": {
                 "customHeadTags": "",
-                "description": "Salesforce platform architecture portfolio by Ryan Bumstead, with a live API lab, an AI lab, the delivery roadmap and a five-minute tour of all five pillars.",
+                "description": "Salesforce platform architecture portfolio by Ryan Bumstead, with a live API lab, an AI lab, the delivery roadmap and a short tour of each.",
                 "pageTitle": "Ryan Bumstead | Salesforce Platform Architect",
                 "recordId": "{!recordId}"
               },

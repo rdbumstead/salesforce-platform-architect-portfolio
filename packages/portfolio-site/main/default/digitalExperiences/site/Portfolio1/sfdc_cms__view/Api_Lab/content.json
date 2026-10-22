@@ -38,8 +38,12 @@
                       "type": "component"
                     },
                     {
-                      "definition": "c:apiReference",
-                      "id": "88c3220e-dfd1-4ca8-84d3-6bbb9d324b0c",
+                      "attributes": {
+                        "imageInfos": "",
+                        "richTextValue": "<p><a href=\"api-lab/reference\">Open the API reference</a></p>"
+                      },
+                      "definition": "community_builder:richTextEditor",
+                      "id": "aa12035d-95fd-441d-8697-464476130bcb",
                       "type": "component"
                     }
                   ],

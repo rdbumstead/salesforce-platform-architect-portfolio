@@ -1,21 +1,145 @@
+/*
+ * Token mirror (Round 4 plan, contract L1). Same names and values as styles.css, so the theme
+ * reaches every slotted page through this host even if the html attribute cannot be set.
+ * Keep the three blocks in step with styles.css.
+ */
 :host {
   display: block;
   min-height: 100vh;
-  background-color: #020617;
-  --dxp-g-root: #020617;
-  --dxp-g-root-contrast: #e2e8f0;
+
+  --pf-bg: #ffffff;
+  --pf-surface: #ffffff;
+  --pf-subtle: #f9fafb;
+  --pf-border: #e5e7eb;
+  --pf-text: #101828;
+  --pf-body: #344054;
+  --pf-muted: #667085;
+  --pf-accent: #2563eb;
+  --pf-chip: #f2f4f7;
+  --pf-chip-text: #344054;
+  --pf-warn: #fef3c7;
+  --pf-warn-text: #92400e;
+  --pf-ok: #067647;
+  --pf-code: #f2f4f7;
+  --pf-code-text: #1d2939;
+  --pf-btn: #2563eb;
+  --pf-btn-text: #ffffff;
+  --pf-btn-hover: #1d4ed8;
+  --pf-error: #fee4e2;
+  --pf-error-text: #b42318;
+  --pf-focus: #2563eb;
+  --pf-glass: rgba(255, 255, 255, 0.9);
+  --pf-shadow: 0 12px 32px rgba(16, 24, 40, 0.14);
+
+  --pf-font-sans: "Inter", system-ui, sans-serif;
+  --pf-font-mono: "Fira Code", ui-monospace, monospace;
+  --pf-radius-sm: 8px;
+  --pf-radius: 12px;
+  --pf-radius-lg: 16px;
+  --pf-space-1: 4px;
+  --pf-space-2: 8px;
+  --pf-space-3: 12px;
+  --pf-space-4: 16px;
+  --pf-space-5: 24px;
+  --pf-space-6: 32px;
+
+  --dxp-g-root: var(--pf-bg);
+  --dxp-g-root-1: var(--pf-subtle);
+  --dxp-g-root-2: var(--pf-chip);
+  --dxp-g-root-3: var(--pf-border);
+  --dxp-g-root-contrast: var(--pf-text);
+  --dxp-g-root-contrast-1: var(--pf-body);
+  --dxp-g-root-contrast-2: var(--pf-body);
+  --dxp-g-root-contrast-3: var(--pf-text);
+  --dxp-g-neutral: var(--pf-chip);
+  --dxp-g-neutral-1: var(--pf-border);
+  --dxp-g-neutral-2: var(--pf-border);
+  --dxp-g-neutral-3: var(--pf-muted);
+  --dxp-g-neutral-contrast: var(--pf-text);
+  --dxp-g-neutral-contrast-1: var(--pf-body);
+  --dxp-g-neutral-contrast-2: var(--pf-body);
+  --dxp-g-neutral-contrast-3: var(--pf-text);
+  --dxp-g-brand: var(--pf-btn);
+  --dxp-g-brand-1: var(--pf-btn-hover);
+  --dxp-g-brand-contrast: var(--pf-btn-text);
+  --dxp-g-brand-contrast-1: var(--pf-btn-text);
+  --dxp-g-root-font-family: var(--pf-font-sans);
+  --dxp-s-button-color: var(--pf-btn);
+  --dxp-s-button-color-contrast: var(--pf-btn-text);
+  --dxp-s-link-text-color: var(--pf-accent);
+  --dxp-s-link-text-color-hover: var(--pf-accent);
+
+  background-color: var(--pf-bg);
+  color: var(--pf-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :host(:not([data-theme="light"])) {
+    --pf-bg: #0b0f17;
+    --pf-surface: #111827;
+    --pf-subtle: #0f1520;
+    --pf-border: #1f2937;
+    --pf-text: #f3f4f6;
+    --pf-body: #d0d5dd;
+    --pf-muted: #98a2b3;
+    --pf-accent: #60a5fa;
+    --pf-chip: #1d2939;
+    --pf-chip-text: #d0d5dd;
+    --pf-warn: #3a2a0a;
+    --pf-warn-text: #fcd34d;
+    --pf-ok: #47cd89;
+    --pf-code: #0b0f17;
+    --pf-code-text: #e2e8f0;
+    --pf-btn: #2563eb;
+    --pf-btn-text: #ffffff;
+    --pf-btn-hover: #1d4ed8;
+    --pf-error: #3b1219;
+    --pf-error-text: #fda29b;
+    --pf-focus: #60a5fa;
+    --pf-glass: rgba(11, 15, 23, 0.9);
+    --pf-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  }
+}
+
+:host([data-theme="dark"]) {
+  --pf-bg: #0b0f17;
+  --pf-surface: #111827;
+  --pf-subtle: #0f1520;
+  --pf-border: #1f2937;
+  --pf-text: #f3f4f6;
+  --pf-body: #d0d5dd;
+  --pf-muted: #98a2b3;
+  --pf-accent: #60a5fa;
+  --pf-chip: #1d2939;
+  --pf-chip-text: #d0d5dd;
+  --pf-warn: #3a2a0a;
+  --pf-warn-text: #fcd34d;
+  --pf-ok: #47cd89;
+  --pf-code: #0b0f17;
+  --pf-code-text: #e2e8f0;
+  --pf-btn: #2563eb;
+  --pf-btn-text: #ffffff;
+  --pf-btn-hover: #1d4ed8;
+  --pf-error: #3b1219;
+  --pf-error-text: #fda29b;
+  --pf-focus: #60a5fa;
+  --pf-glass: rgba(11, 15, 23, 0.9);
+  --pf-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 .portfolio-layout-wrapper {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #020617;
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
-  font-family: "Fira Code", "Courier New", monospace;
-  color: #e2e8f0;
+  /* clip, not hidden, so the wrapper is no scroll container and the header can stick */
+  overflow-x: clip;
+  background-color: var(--pf-bg);
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  font-size: 16px;
+  line-height: 1.65;
 }
 
 .region-header,
@@ -31,110 +155,284 @@
   flex: 1 0 auto;
 }
 
-/* Header navigation */
+/* Slim sticky header */
 .site-header {
-  border-bottom: 1px solid #1e293b;
-  padding: 0.75rem 1rem;
-  position: relative;
-  z-index: 2;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--pf-glass);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--pf-border);
 }
 
 .site-header__bar {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 10px var(--pf-space-4);
+  min-height: 44px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--pf-space-2) var(--pf-space-4);
 }
 
 .site-brand {
-  color: #e2e8f0;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  margin-right: auto;
+  color: var(--pf-text);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
   text-decoration: none;
-}
-
-.menu-toggle {
-  display: none;
-  background: transparent;
-  border: 1px solid #334155;
-  border-radius: 4px;
-  color: #e2e8f0;
-  font: inherit;
-  padding: 0.25rem 0.75rem;
-  cursor: pointer;
 }
 
 .site-nav {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 1.5rem;
-  margin-top: 0.5rem;
 }
 
-.nav-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
+.nav-list,
+.pillar-menu {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.nav-link {
-  color: #cbd5e1;
-  text-decoration: none;
-  display: inline-flex;
+.nav-list {
+  display: flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0;
+  gap: 2px;
 }
 
-.nav-link:hover,
-.nav-link:focus {
-  color: #60a5fa;
-  text-decoration: underline;
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--pf-space-3);
+  border: 0;
+  border-radius: var(--pf-radius-sm);
+  background: transparent;
+  color: var(--pf-body);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  background: var(--pf-chip);
+  color: var(--pf-text);
+}
+
+.pillars {
+  position: relative;
+}
+
+.pillars-toggle[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
+}
+
+.pillar-menu {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  box-shadow: var(--pf-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pillar-menu[hidden] {
+  display: none;
+}
+
+.pillar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--pf-space-3);
+  min-height: 44px;
+  padding: 10px;
+  border-radius: 10px;
+  color: var(--pf-text);
+  text-decoration: none;
+}
+
+.pillar-link:hover {
+  background: var(--pf-chip);
+}
+
+.pillar-letter {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: var(--pf-radius-sm);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-subtle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--pf-font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pf-accent);
+}
+
+.pillar-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.pillar-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pillar-sas {
+  font-size: 12px;
+  color: var(--pf-muted);
+}
+
+.pillar-coming {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--pf-warn);
+  color: var(--pf-warn-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.pillar-sub {
+  list-style: none;
+  margin: 0 0 2px;
+  padding: 0 0 0 52px;
+}
+
+.pillar-sub-link {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: var(--pf-radius-sm);
+  color: var(--pf-body);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.pillar-sub-link:hover {
+  background: var(--pf-chip);
+  color: var(--pf-text);
+}
+
+.site-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 6px;
+  background: var(--pf-border);
+}
+
+.icon-button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--pf-radius-sm);
+  background: transparent;
+  color: var(--pf-body);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--pf-chip);
+  color: var(--pf-text);
+}
+
+.menu-toggle {
+  display: none;
 }
 
 .site-brand:focus-visible,
 .nav-link:focus-visible,
-.menu-toggle:focus-visible {
-  outline: 2px solid #60a5fa;
+.pillar-link:focus-visible,
+.pillar-sub-link:focus-visible,
+.icon-button:focus-visible {
+  outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
-.pillar-letter {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.4rem;
-  height: 1.4rem;
-  border: 1px solid #3b82f6;
-  border-radius: 4px;
-  color: #93c5fd;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-@media screen and (max-width: 768px) {
+/* Phones and narrow tablets: the navigation folds behind the menu button. */
+@media screen and (max-width: 767.98px) {
   .portfolio-layout-wrapper {
     min-height: 100dvh;
   }
 
+  .site-header__bar {
+    flex-wrap: wrap;
+  }
+
+  .site-brand {
+    order: 1;
+  }
+
+  .site-actions {
+    order: 2;
+  }
+
   .menu-toggle {
-    display: inline-block;
+    display: inline-flex;
   }
 
   .site-nav {
+    order: 3;
     display: none;
-    flex-direction: column;
-    align-items: flex-start;
+    flex-basis: 100%;
+    padding-bottom: var(--pf-space-2);
   }
 
   .site-nav_open {
-    display: flex;
+    display: block;
   }
 
   .nav-list {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nav-link {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .pillar-menu {
+    position: static;
+    width: auto;
+    max-width: none;
+    margin-top: 2px;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pillars-toggle .chevron {
+    transition: transform 0.15s;
   }
 }

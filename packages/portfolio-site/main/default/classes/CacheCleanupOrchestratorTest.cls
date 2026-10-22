@@ -22,10 +22,10 @@ private class CacheCleanupOrchestratorTest {
       new CacheCleanupOrchestrator().run();
       Test.stopTest();
 
-      System.assertEquals(
-        0,
+      Assert.areEqual(
+        1,
         [SELECT COUNT() FROM Github_Cache__c],
-        'GitHub records should be deleted when orchestrator is enabled.'
+        'Old GitHub rows are deleted and the newest one stays.'
       );
     }
   }
@@ -72,10 +72,10 @@ private class CacheCleanupOrchestratorTest {
     CacheCleanupOrchestrator.runJiraCleanup();
     Test.stopTest();
 
-    System.assertEquals(
-      0,
+    Assert.areEqual(
+      1,
       [SELECT COUNT() FROM Jira_Cache__c],
-      'Jira cache should be deleted when runJiraCleanup is called.'
+      'Old Jira rows are deleted by runJiraCleanup and the newest one stays.'
     );
   }
 

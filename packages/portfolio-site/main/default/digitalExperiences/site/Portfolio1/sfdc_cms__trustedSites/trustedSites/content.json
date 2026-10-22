@@ -1,0 +1,14 @@
+{
+  "type": "sfdc_cms__trustedSites",
+  "title": "trustedSites",
+  "contentBody": {
+    "trustedSites": [
+      {
+        "isActive": true,
+        "source": "https://www.googletagmanager.com",
+        "sourceName": "GA4_Tag_Manager"
+      }
+    ]
+  },
+  "urlName": "trustedsites"
+}

@@ -32,7 +32,8 @@ global with sharing class SAPISkill {
 
       // Build dynamic query
       String baseQuery =
-        'SELECT Id, Name, Category__c, Proficiency__c, Icon_Name__c ' +
+        'SELECT Id, Name, Display_Name__c, Category__c, Proficiency__c, Icon_Name__c, ' +
+        'SVG_Path_Data__c, Color_Hex__c, Category_Order__c ' +
         'FROM Skill__c WHERE Id != null';
 
       if (String.isNotBlank(category)) {
@@ -53,8 +54,10 @@ global with sharing class SAPISkill {
   }
 
   /**
-   * @description Transforms Skill__c records to API response format.
+   * @description Transforms Skill__c records to the Skill schema in salesforce-sapi.yaml
+   *              (decision D4).
    */
+  @TestVisible
   private static List<Map<String, Object>> transformSkills(
     List<Skill__c> skills
   ) {
@@ -64,9 +67,13 @@ global with sharing class SAPISkill {
         new Map<String, Object>{
           'id' => s.Id,
           'name' => s.Name,
+          'displayName' => s.Display_Name__c,
           'category' => s.Category__c,
           'proficiencyScore' => s.Proficiency__c,
-          'iconName' => s.Icon_Name__c
+          'iconName' => s.Icon_Name__c,
+          'svgPathData' => s.SVG_Path_Data__c,
+          'colorHex' => s.Color_Hex__c,
+          'categoryOrder' => s.Category_Order__c
         }
       );
     }

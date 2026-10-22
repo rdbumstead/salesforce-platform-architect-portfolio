@@ -1,6 +1,6 @@
 <template>
   <lightning-card title="API reference" icon-name="utility:knowledge_base">
-    <div class="reference-body slds-p-around_medium">
+    <div class={bodyClass}>
       <p class="reference-intro slds-m-bottom_small">
         Browse the full OpenAPI contract for the System API and the Process API.
         The interactive reference loads only when you open it.
@@ -25,14 +25,14 @@
         </template>
       </div>
 
-      <lightning-button
-        variant="brand"
-        label={openLabel}
-        icon-name="utility:open"
+      <button
+        type="button"
+        class="open-reference"
         onclick={handleOpen}
         disabled={openDisabled}
-        class="open-reference"
-      ></lightning-button>
+      >
+        {openLabel}
+      </button>
 
       <div aria-live="polite" class="slds-m-top_small">
         <template lwc:if={isLoading}>

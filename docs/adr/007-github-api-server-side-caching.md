@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Amended 2026-10-21 for Round 4 (see below).
 
 ## Context
 
@@ -19,3 +19,14 @@ Prevents site failure by serving a GitHub_Cache\_\_c record when API limits are 
 ## Implications
 
 Commits may appear with a "Last Updated" delay of up to 15 minutes.
+
+## Amendment (2026-10-21, Round 4)
+
+The decision stands: guests read a server-side cache and never trigger a callout. The cache and the refresh are built as follows.
+
+- **The cache is custom objects**, `Github_Cache__c` and `Jira_Cache__c`, not custom metadata or a custom setting. Each refresh inserts one row whose `JSON_Payload__c` holds the mapped item list (`{"schemaVersion":1,"items":[...]}`), not the raw API body. The newest row is the one served.
+- **The refresh is Queueable.** Scheduled Apex cannot call out synchronously, so `IntegrationCacheRefreshScheduler`, scheduled at :00, :15, :30 and :45, enqueues `GitHubCacheRefreshJob` and `JiraCacheRefreshJob` (`Queueable`, `Database.AllowsCallouts`). They call out through the `GitHub_API` and `Jira_API` Named Credentials as the scheduling admin user, who holds the principal access through `Portfolio_Admin`. A failed refresh inserts nothing, so the last good row stays.
+- **The read side** is `DeliveryController.getRecentCommits()` and `getRoadmap()` (cacheable Apex). Each returns the items with their age and a status: `FRESH` under 30 minutes, `STALE` older, `EMPTY` with no usable row, and `SIMULATED` or `DEGRADED` for the resilience toggle and an open breaker (ADR-022).
+- **Cleanup keeps the newest row** per cache object and deletes only older rows past the age limit, so an outage never empties the page.
+- **The roadmap** shows only `SPAP` issues labelled `portfolio-roadmap` (owner decision E6, 2026-10-21), so nothing private reaches the public page.
+- **The authenticated GitHub limit** is 5,000 requests an hour, so the 60 an hour unauthenticated limit in the context no longer binds. Four refreshes an hour are far inside it.

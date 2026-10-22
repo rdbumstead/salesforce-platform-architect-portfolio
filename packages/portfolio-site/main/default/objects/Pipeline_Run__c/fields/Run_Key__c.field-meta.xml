@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Run_Key__c</fullName>
+    <caseSensitive>false</caseSensitive>
+    <description
+  >The workflow and run id as workflow:run id. The trigger upserts on it, so a replayed event never makes a second row.</description>
+    <externalId>true</externalId>
+    <inlineHelpText
+  >Set by the Governance Event trigger, for example deploy:123456. Do not edit.</inlineHelpText>
+    <label>Run Key</label>
+    <length>80</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

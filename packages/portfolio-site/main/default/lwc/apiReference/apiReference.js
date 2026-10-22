@@ -3,20 +3,34 @@
  *                      SAPI or PAPI OpenAPI spec from the SAPI_Spec and PAPI_Spec static
  *                      resources in Redoc. Redoc_Script loads only when the visitor opens the
  *                      reference. Any load or render failure shows a message and the hosted
- *                      reference link instead.
+ *                      reference link instead, and so does a render that has not finished 15 s
+ *                      after the visitor opened it (Redoc never finishes under the site runtime
+ *                      in WebKit, trap 32). Sends api_reference_opened on open (contract L4).
+ *                      On its own page (route Api_Reference, api-lab/reference) the builder
+ *                      sets fullWidth and openOnLoad: the reference then fills the page width
+ *                      with no height cap and opens without a click, the SAPI and PAPI switch
+ *                      staying at the top.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/21/2026
  **/
-import { LightningElement } from "lwc";
+import { LightningElement, api } from "lwc";
 import { loadScript } from "lightning/platformResourceLoader";
 import REDOC_SCRIPT from "@salesforce/resourceUrl/Redoc_Script";
 import SAPI_SPEC from "@salesforce/resourceUrl/SAPI_Spec";
 import PAPI_SPEC from "@salesforce/resourceUrl/PAPI_Spec";
+import { trackEvent, EVENTS } from "c/analyticsService";
 
 export const HOSTED_REFERENCE_URL =
   "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi";
+
+/** How long the visitor waits for Redoc before the page gives up (trap 32). */
+export const RENDER_TIMEOUT_MS = 15000;
+export const TIMEOUT_MESSAGE =
+  "The interactive reference could not load in this browser.";
+
+class RenderTimeoutError extends Error {}
 
 export const SPECS = {
   sapi: { label: "System API (SAPI)", url: SAPI_SPEC },
@@ -26,6 +40,13 @@ export const SPECS = {
 const SYSTEM_FONTS =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 const MONO_FONTS = 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace';
+
+/**
+ * Link and primary colour inside the Redoc panel. The panel is white in both site themes,
+ * so it takes the light accent (L1 --pf-accent light, --pf-btn in both themes), 5.17:1
+ * on white, never the dark theme accent, which is 2.54:1 there.
+ */
+export const REDOC_LINK_COLOR = "#2563EB";
 
 /**
  * Redoc 2.5.4 options. System fonts instead of the default web fonts, no download
@@ -40,10 +61,24 @@ export const REDOC_OPTIONS = {
   scrollYOffset: 0,
   expandResponses: "200",
   theme: {
+    colors: {
+      // No lightened or darkened shades: Redoc's lightened primary was 2.41:1 on white.
+      tonalOffset: 0,
+      primary: {
+        main: REDOC_LINK_COLOR,
+        light: REDOC_LINK_COLOR,
+        dark: REDOC_LINK_COLOR
+      }
+    },
     typography: {
       fontFamily: SYSTEM_FONTS,
       headings: { fontFamily: SYSTEM_FONTS },
-      code: { fontFamily: MONO_FONTS }
+      code: { fontFamily: MONO_FONTS },
+      links: {
+        color: REDOC_LINK_COLOR,
+        visited: REDOC_LINK_COLOR,
+        hover: REDOC_LINK_COLOR
+      }
     }
   }
 };
@@ -62,12 +97,20 @@ function reduceError(error) {
 }
 
 export default class ApiReference extends LightningElement {
+  /** Fill the page width with no height cap (the dedicated reference page). */
+  @api fullWidth = false;
+  /** Open the reference without a click (the dedicated reference page). */
+  @api openOnLoad = false;
+
   selectedSpec = "sapi";
+  autoOpened = false;
   isOpen = false;
   isLoading = false;
   errorMessage = "";
   redocPromise;
   styleBaseline;
+  renderCount = 0;
+  timeoutId;
 
   hostedUrl = HOSTED_REFERENCE_URL;
 
@@ -87,10 +130,26 @@ export default class ApiReference extends LightningElement {
     return Boolean(this.errorMessage);
   }
 
+  get bodyClass() {
+    return this.fullWidth
+      ? "reference-body reference-body_full slds-p-around_medium"
+      : "reference-body slds-p-around_medium";
+  }
+
   get targetClass() {
-    return this.isOpen && !this.errorMessage
-      ? "redoc-panel"
-      : "redoc-panel slds-hide";
+    const panel = this.fullWidth
+      ? "redoc-panel redoc-panel_full"
+      : "redoc-panel";
+    return this.isOpen && !this.errorMessage ? panel : `${panel} slds-hide`;
+  }
+
+  renderedCallback() {
+    // The Redoc target must be in the DOM before the first render, so the automatic
+    // open waits for the first renderedCallback and runs once.
+    if (this.openOnLoad && !this.autoOpened) {
+      this.autoOpened = true;
+      this.handleOpen();
+    }
   }
 
   get openDisabled() {
@@ -119,7 +178,30 @@ export default class ApiReference extends LightningElement {
       return;
     }
     this.isOpen = true;
+    trackEvent(EVENTS.API_REFERENCE_OPENED, { spec: this.selectedSpec });
     this.renderReference();
+  }
+
+  disconnectedCallback() {
+    this.clearRenderTimeout();
+  }
+
+  clearRenderTimeout() {
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = undefined;
+    }
+  }
+
+  /** Rejects once the render has taken RENDER_TIMEOUT_MS. One timer, cleared on finish. */
+  renderTimeout() {
+    this.clearRenderTimeout();
+    return new Promise((resolve, reject) => {
+      this.timeoutId = setTimeout(() => {
+        this.timeoutId = undefined;
+        reject(new RenderTimeoutError(TIMEOUT_MESSAGE));
+      }, RENDER_TIMEOUT_MS);
+    });
   }
 
   /** Loads Redoc_Script once. A failed load is not cached, so a later click retries. */
@@ -142,38 +224,53 @@ export default class ApiReference extends LightningElement {
   }
 
   async renderReference() {
+    const renderId = ++this.renderCount;
     this.isLoading = true;
     this.errorMessage = "";
     try {
-      const redoc = await this.loadRedoc();
-      const target = this.template.querySelector(".redoc-target");
-      if (!target) {
-        throw new Error("The reference container is not on the page.");
-      }
-      if (!this.styleBaseline) {
-        // Style tags present before Redoc first renders are the site's own.
-        this.styleBaseline = new Set(document.head.querySelectorAll("style"));
-      }
-      await new Promise((resolve, reject) => {
-        try {
-          redoc.init(
-            SPECS[this.selectedSpec].url,
-            REDOC_OPTIONS,
-            target,
-            (error) => (error ? reject(error) : resolve())
-          );
-        } catch (error) {
-          reject(error);
-        }
-      });
-      this.adoptRedocStyles(this.styleBaseline);
+      await Promise.race([this.renderSpec(), this.renderTimeout()]);
     } catch (error) {
-      this.errorMessage = `The interactive reference could not be shown. ${reduceError(
-        error
-      )}`;
+      if (renderId !== this.renderCount) {
+        return;
+      }
+      this.errorMessage =
+        error instanceof RenderTimeoutError
+          ? error.message
+          : `The interactive reference could not be shown. ${reduceError(
+              error
+            )}`;
     } finally {
-      this.isLoading = false;
+      if (renderId === this.renderCount) {
+        this.clearRenderTimeout();
+        this.isLoading = false;
+      }
     }
+  }
+
+  /** Loads Redoc and renders the selected spec. Resolves when Redoc reports done. */
+  async renderSpec() {
+    const redoc = await this.loadRedoc();
+    const target = this.template.querySelector(".redoc-target");
+    if (!target) {
+      throw new Error("The reference container is not on the page.");
+    }
+    if (!this.styleBaseline) {
+      // Style tags present before Redoc first renders are the site's own.
+      this.styleBaseline = new Set(document.head.querySelectorAll("style"));
+    }
+    await new Promise((resolve, reject) => {
+      try {
+        redoc.init(
+          SPECS[this.selectedSpec].url,
+          REDOC_OPTIONS,
+          target,
+          (error) => (error ? reject(error) : resolve())
+        );
+      } catch (error) {
+        reject(error);
+      }
+    });
+    this.adoptRedocStyles(this.styleBaseline);
   }
 
   /**

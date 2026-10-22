@@ -9,8 +9,13 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
-import RoadmapViewer, { COLUMNS, ageLabel } from "c/roadmapViewer";
+import RoadmapViewer, {
+  COLUMNS,
+  STATUS_NOTES,
+  ageLabel
+} from "c/roadmapViewer";
 import getRoadmap from "@salesforce/apex/DeliveryController.getRoadmap";
+import { trackEvent } from "c/analyticsService";
 
 jest.mock(
   "@salesforce/apex/DeliveryController.getRoadmap",
@@ -18,6 +23,19 @@ jest.mock(
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
   },
+  { virtual: true }
+);
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    trackEvent: jest.fn(),
+    EVENTS: {
+      ROADMAP_VIEWED: "roadmap_viewed",
+      CHANGELOG_COMMIT_CLICKED: "changelog_commit_clicked",
+      RESILIENCE_TEST_TRIGGERED: "resilience_test_triggered"
+    }
+  }),
   { virtual: true }
 );
 
@@ -229,6 +247,91 @@ describe("c-roadmap-viewer", () => {
     );
     expect(css).toMatch(
       /@media \(max-width: 767px\)\s*\{\s*\.roadmap-board\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\);/
+    );
+  });
+
+  it("sends roadmap_viewed once when the board loads", async () => {
+    createComponent();
+    getRoadmap.emit(feed("FRESH"));
+    await flushPromises();
+    getRoadmap.emit(feed("STALE"));
+    await flushPromises();
+
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("roadmap_viewed");
+  });
+
+  it("renders the outage switch off, labelled, and reads with simulate false", async () => {
+    const element = createComponent();
+    await flushPromises();
+
+    const input = q(element, '[data-id="simulate-switch"]');
+    expect(input.type).toBe("checkbox");
+    expect(input.getAttribute("role")).toBe("switch");
+    expect(input.checked).toBe(false);
+    expect(input.closest("label").textContent.trim()).toBe(
+      "Simulate an outage"
+    );
+    expect(getRoadmap.getLastConfig()).toEqual({ simulate: false });
+  });
+
+  it("turning the switch on re-reads with simulate true and shows SIMULATED", async () => {
+    const element = createComponent();
+    getRoadmap.emit(feed("FRESH"));
+    await flushPromises();
+
+    const input = q(element, '[data-id="simulate-switch"]');
+    input.checked = true;
+    input.dispatchEvent(new CustomEvent("change"));
+    await flushPromises();
+    expect(getRoadmap.getLastConfig()).toEqual({ simulate: true });
+    expect(trackEvent).toHaveBeenCalledWith("resilience_test_triggered", {
+      source: "roadmap"
+    });
+
+    getRoadmap.emit(feed("SIMULATED"));
+    await flushPromises();
+    expect(q(element, '[data-id="status-badge"]').textContent).toBe(
+      "Simulated"
+    );
+    expect(element.shadowRoot.querySelectorAll("li")).toHaveLength(4);
+    expect(q(element, '[data-id="status-note"]').textContent.trim()).toBe(
+      STATUS_NOTES.SIMULATED
+    );
+
+    input.checked = false;
+    input.dispatchEvent(new CustomEvent("change"));
+    await flushPromises();
+    expect(getRoadmap.getLastConfig()).toEqual({ simulate: false });
+    expect(
+      trackEvent.mock.calls.filter(
+        ([name]) => name === "resilience_test_triggered"
+      )
+    ).toHaveLength(1);
+  });
+
+  it("DEGRADED explains itself in a live region, FRESH says nothing", async () => {
+    const element = createComponent();
+    getRoadmap.emit(feed("DEGRADED"));
+    await flushPromises();
+
+    const note = q(element, '[data-id="status-note"]');
+    expect(note.getAttribute("aria-live")).toBe("polite");
+    expect(note.textContent.trim()).toBe(STATUS_NOTES.DEGRADED);
+
+    getRoadmap.emit(feed("FRESH"));
+    await flushPromises();
+    expect(note.textContent.trim()).toBe("");
+  });
+
+  it("styles only with design tokens, never a hex colour", () => {
+    const css = readFileSync(
+      join(__dirname, "..", "roadmapViewer.css"),
+      "utf8"
+    );
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(css).toMatch(
+      /\.simulate-input\s*\{[^}]*width:\s*24px;[^}]*height:\s*24px;/
     );
   });
 
