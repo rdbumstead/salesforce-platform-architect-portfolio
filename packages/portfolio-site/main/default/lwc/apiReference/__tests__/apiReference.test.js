@@ -46,7 +46,6 @@ const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
 // Microtask flush that works under fake timers.
 async function settle() {
   for (let i = 0; i < 8; i++) {
-    // eslint-disable-next-line no-await-in-loop
     await Promise.resolve();
   }
 }

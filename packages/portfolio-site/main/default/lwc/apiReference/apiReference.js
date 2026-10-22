@@ -150,7 +150,6 @@ export default class ApiReference extends LightningElement {
   renderTimeout() {
     this.clearRenderTimeout();
     return new Promise((resolve, reject) => {
-      // eslint-disable-next-line @lwc/lwc/no-async-operation
       this.timeoutId = setTimeout(() => {
         this.timeoutId = undefined;
         reject(new RenderTimeoutError(TIMEOUT_MESSAGE));

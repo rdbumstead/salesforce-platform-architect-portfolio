@@ -460,6 +460,6 @@ describe("c-cover-letter-generator", () => {
       "utf8"
     );
     expect(css).toMatch(/\.generate-button \{[^}]*min-height: 44px/);
-    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
   });
 });
