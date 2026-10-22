@@ -1,9 +1,11 @@
 /**
- * @description       : Tests for SchemaService (Round 5 plan M3). The ERD reads no records, so these
+ * @description       : Tests for SchemaService (Round 5 plan M3). The ERD reads no records, so the ERD
  *                      tests insert none. They read the org's real schema, the shipped
  *                      Schema_Visualizer_Object__mdt records, and the Employer Hub objects from the
  *                      employer-hub package. Guest tests run as the real Portfolio1 site guest user.
  *                      An edge points from the object holding the reference field to its target.
+ *                      One more test inserts a project and an asset to prove the Url field takes
+ *                      a resource path for the gallery.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -336,6 +338,39 @@ private class SchemaServiceTest {
         );
       }
     }
+  }
+
+  // The gallery (Round 5 plan M5) stores static resource paths as resource:<Name>/<path>
+  // in the Url field. This proves the field accepts that form (reading R4).
+  @isTest
+  static void assetUrlFieldAcceptsResourcePath() {
+    Project__c project = new Project__c(
+      Name = 'Schema Test Project',
+      Sort_Order__c = 1
+    );
+    insert project;
+    Project_Asset__c asset = new Project_Asset__c(
+      Name = 'Schema Test Asset',
+      Project__c = project.Id,
+      Type__c = 'Image',
+      Alt_Text__c = 'Schema test asset',
+      External_URL__c = 'resource:EH_Assets/flow-part-1.svg'
+    );
+
+    Test.startTest();
+    Database.SaveResult result = Database.insert(asset, false);
+    Test.stopTest();
+
+    Assert.isTrue(
+      result.isSuccess(),
+      'Url field refused the resource path: ' + result.getErrors()
+    );
+    Assert.areEqual(
+      'resource:EH_Assets/flow-part-1.svg',
+      [SELECT External_URL__c FROM Project_Asset__c WHERE Id = :asset.Id]
+      .External_URL__c,
+      'Stored as given'
+    );
   }
 
   private static SchemaService.SchemaGraph graphFor(String scope) {
