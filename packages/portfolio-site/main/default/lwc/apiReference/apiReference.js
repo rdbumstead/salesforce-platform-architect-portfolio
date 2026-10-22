@@ -3,7 +3,9 @@
  *                      SAPI or PAPI OpenAPI spec from the SAPI_Spec and PAPI_Spec static
  *                      resources in Redoc. Redoc_Script loads only when the visitor opens the
  *                      reference. Any load or render failure shows a message and the hosted
- *                      reference link instead.
+ *                      reference link instead, and so does a render that has not finished 15 s
+ *                      after the visitor opened it (Redoc never finishes under the site runtime
+ *                      in WebKit, trap 32). Sends api_reference_opened on open (contract L4).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -14,9 +16,17 @@ import { loadScript } from "lightning/platformResourceLoader";
 import REDOC_SCRIPT from "@salesforce/resourceUrl/Redoc_Script";
 import SAPI_SPEC from "@salesforce/resourceUrl/SAPI_Spec";
 import PAPI_SPEC from "@salesforce/resourceUrl/PAPI_Spec";
+import { trackEvent, EVENTS } from "c/analyticsService";
 
 export const HOSTED_REFERENCE_URL =
   "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi";
+
+/** How long the visitor waits for Redoc before the page gives up (trap 32). */
+export const RENDER_TIMEOUT_MS = 15000;
+export const TIMEOUT_MESSAGE =
+  "The interactive reference could not load in this browser.";
+
+class RenderTimeoutError extends Error {}
 
 export const SPECS = {
   sapi: { label: "System API (SAPI)", url: SAPI_SPEC },
@@ -68,6 +78,8 @@ export default class ApiReference extends LightningElement {
   errorMessage = "";
   redocPromise;
   styleBaseline;
+  renderCount = 0;
+  timeoutId;
 
   hostedUrl = HOSTED_REFERENCE_URL;
 
@@ -119,7 +131,31 @@ export default class ApiReference extends LightningElement {
       return;
     }
     this.isOpen = true;
+    trackEvent(EVENTS.API_REFERENCE_OPENED, { spec: this.selectedSpec });
     this.renderReference();
+  }
+
+  disconnectedCallback() {
+    this.clearRenderTimeout();
+  }
+
+  clearRenderTimeout() {
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = undefined;
+    }
+  }
+
+  /** Rejects once the render has taken RENDER_TIMEOUT_MS. One timer, cleared on finish. */
+  renderTimeout() {
+    this.clearRenderTimeout();
+    return new Promise((resolve, reject) => {
+      // eslint-disable-next-line @lwc/lwc/no-async-operation
+      this.timeoutId = setTimeout(() => {
+        this.timeoutId = undefined;
+        reject(new RenderTimeoutError(TIMEOUT_MESSAGE));
+      }, RENDER_TIMEOUT_MS);
+    });
   }
 
   /** Loads Redoc_Script once. A failed load is not cached, so a later click retries. */
@@ -142,38 +178,53 @@ export default class ApiReference extends LightningElement {
   }
 
   async renderReference() {
+    const renderId = ++this.renderCount;
     this.isLoading = true;
     this.errorMessage = "";
     try {
-      const redoc = await this.loadRedoc();
-      const target = this.template.querySelector(".redoc-target");
-      if (!target) {
-        throw new Error("The reference container is not on the page.");
-      }
-      if (!this.styleBaseline) {
-        // Style tags present before Redoc first renders are the site's own.
-        this.styleBaseline = new Set(document.head.querySelectorAll("style"));
-      }
-      await new Promise((resolve, reject) => {
-        try {
-          redoc.init(
-            SPECS[this.selectedSpec].url,
-            REDOC_OPTIONS,
-            target,
-            (error) => (error ? reject(error) : resolve())
-          );
-        } catch (error) {
-          reject(error);
-        }
-      });
-      this.adoptRedocStyles(this.styleBaseline);
+      await Promise.race([this.renderSpec(), this.renderTimeout()]);
     } catch (error) {
-      this.errorMessage = `The interactive reference could not be shown. ${reduceError(
-        error
-      )}`;
+      if (renderId !== this.renderCount) {
+        return;
+      }
+      this.errorMessage =
+        error instanceof RenderTimeoutError
+          ? error.message
+          : `The interactive reference could not be shown. ${reduceError(
+              error
+            )}`;
     } finally {
-      this.isLoading = false;
+      if (renderId === this.renderCount) {
+        this.clearRenderTimeout();
+        this.isLoading = false;
+      }
     }
+  }
+
+  /** Loads Redoc and renders the selected spec. Resolves when Redoc reports done. */
+  async renderSpec() {
+    const redoc = await this.loadRedoc();
+    const target = this.template.querySelector(".redoc-target");
+    if (!target) {
+      throw new Error("The reference container is not on the page.");
+    }
+    if (!this.styleBaseline) {
+      // Style tags present before Redoc first renders are the site's own.
+      this.styleBaseline = new Set(document.head.querySelectorAll("style"));
+    }
+    await new Promise((resolve, reject) => {
+      try {
+        redoc.init(
+          SPECS[this.selectedSpec].url,
+          REDOC_OPTIONS,
+          target,
+          (error) => (error ? reject(error) : resolve())
+        );
+      } catch (error) {
+        reject(error);
+      }
+    });
+    this.adoptRedocStyles(this.styleBaseline);
   }
 
   /**

@@ -25,14 +25,14 @@
         </template>
       </div>
 
-      <lightning-button
-        variant="brand"
-        label={openLabel}
-        icon-name="utility:open"
+      <button
+        type="button"
+        class="open-reference"
         onclick={handleOpen}
         disabled={openDisabled}
-        class="open-reference"
-      ></lightning-button>
+      >
+        {openLabel}
+      </button>
 
       <div aria-live="polite" class="slds-m-top_small">
         <template lwc:if={isLoading}>
