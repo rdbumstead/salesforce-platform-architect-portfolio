@@ -101,12 +101,20 @@
 }
 
 .redoc-panel {
+  /* The panel is light in both themes, so links inside it take the light accent.
+     --pf-btn is the same blue in both themes, 5.17:1 on white. */
+  --pf-accent: var(--pf-btn);
+  --dxp-s-link-text-color: var(--pf-btn);
   background-color: white;
   color: black;
   margin-top: var(--pf-space-4);
   border-radius: var(--pf-radius-sm);
   max-height: 80vh;
   overflow: auto;
+}
+
+.redoc-panel a {
+  color: var(--pf-btn);
 }
 
 .redoc-panel_full {
