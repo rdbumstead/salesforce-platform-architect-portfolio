@@ -12,7 +12,9 @@ import { createElement } from "@lwc/engine-dom";
 import ApiTester, {
   ALLOWED_PATHS,
   DISPLAYED_HEADERS,
-  parseQuery
+  parseQuery,
+  longTextFields,
+  RENDERED_MIN_LENGTH
 } from "c/apiTester";
 import invoke from "@salesforce/apex/ApiLabController.invoke";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
@@ -334,5 +336,94 @@ describe("c-api-tester", () => {
       persona: "Architect"
     });
     expect(parseQuery("q=a%20b&flag")).toEqual({ q: "a b", flag: "" });
+  });
+
+  describe("rendered view", () => {
+    const RESUME_TEXT =
+      "Test User\nArchitect\n\nEXPERIENCE\n\nEmployer Inc | Developer\n- Did great things";
+    const RESUME_RESULT = {
+      ...INVOKE_RESULT,
+      path: "/papi/v1/resume/generate",
+      body: JSON.stringify({
+        generatedText: RESUME_TEXT,
+        persona: "Architect",
+        integrityNote: "complete"
+      })
+    };
+
+    async function executeWith(result) {
+      invoke.mockResolvedValue(result);
+      const element = createComponent();
+      await flushPromises();
+      query(element, "button.execute-button").click();
+      await flushPromises();
+      return element;
+    }
+
+    it("starts on Raw JSON with both views as pressed toggle buttons", async () => {
+      const element = await executeWith(RESUME_RESULT);
+      const raw = query(element, 'button[data-view="raw"]');
+      const rendered = query(element, 'button[data-view="rendered"]');
+      expect(raw.getAttribute("aria-pressed")).toBe("true");
+      expect(rendered.getAttribute("aria-pressed")).toBe("false");
+      expect(raw.tagName).toBe("BUTTON");
+      expect(rendered.textContent.trim()).toBe("Rendered");
+      expect(query(element, ".response-body")).not.toBeNull();
+      expect(query(element, '[data-id="rendered-view"]')).toBeNull();
+    });
+
+    it("shows a long text field with its line breaks when Rendered is chosen", async () => {
+      const element = await executeWith(RESUME_RESULT);
+      query(element, 'button[data-view="rendered"]').click();
+      await flushPromises();
+
+      expect(
+        query(element, 'button[data-view="rendered"]').getAttribute(
+          "aria-pressed"
+        )
+      ).toBe("true");
+      expect(query(element, ".response-body")).toBeNull();
+      const fields = element.shadowRoot.querySelectorAll(".rendered-field");
+      expect(fields).toHaveLength(1);
+      expect(query(element, ".rendered-path").textContent).toBe(
+        "generatedText"
+      );
+      const text = query(element, ".rendered-text");
+      expect(text.tagName).toBe("PRE");
+      expect(text.textContent).toBe(RESUME_TEXT);
+      expect(text.textContent).toContain("\n\nEXPERIENCE\n");
+      expect(text.getAttribute("tabindex")).toBe("0");
+
+      query(element, 'button[data-view="raw"]').click();
+      await flushPromises();
+      expect(query(element, ".response-body")).not.toBeNull();
+    });
+
+    it("says so when the body has no long text field", async () => {
+      const element = await executeWith(INVOKE_RESULT);
+      query(element, 'button[data-view="rendered"]').click();
+      await flushPromises();
+
+      expect(query(element, '[data-id="rendered-empty"]')).not.toBeNull();
+      expect(query(element, ".rendered-field")).toBeNull();
+    });
+
+    it("finds long or multi-line strings at any depth, by path", () => {
+      const long = "x".repeat(RENDERED_MIN_LENGTH);
+      expect(
+        longTextFields({
+          short: "Apex",
+          multi: "a\nb",
+          data: [{ description: long }, { name: "LWC" }],
+          nested: { deeper: { text: long } }
+        })
+      ).toEqual([
+        { path: "multi", text: "a\nb" },
+        { path: "data.0.description", text: long },
+        { path: "nested.deeper.text", text: long }
+      ]);
+      expect(longTextFields(undefined)).toEqual([]);
+      expect(longTextFields("top level string\n")).toEqual([]);
+    });
   });
 });

@@ -84,9 +84,49 @@
             </dl>
 
             <h3 class="slds-text-title_caps slds-m-top_small">Body</h3>
-            <div class="result-box">
-              <pre class="json-viewer response-body">{bodyText}</pre>
+            <div class="view-toggle" role="group" aria-label="Body view">
+              <button
+                type="button"
+                class={rawViewClass}
+                data-view="raw"
+                aria-pressed={rawPressed}
+                onclick={handleViewClick}
+              >
+                Raw JSON
+              </button>
+              <button
+                type="button"
+                class={renderedViewClass}
+                data-view="rendered"
+                aria-pressed={renderedPressed}
+                onclick={handleViewClick}
+              >
+                Rendered
+              </button>
             </div>
+            <template lwc:if={isRawView}>
+              <div class="result-box">
+                <pre class="json-viewer response-body">{bodyText}</pre>
+              </div>
+            </template>
+            <template lwc:else>
+              <div class="rendered-view" data-id="rendered-view">
+                <template lwc:if={hasRenderedFields}>
+                  <template for:each={renderedFields} for:item="field">
+                    <section key={field.key} class="rendered-field">
+                      <h4 class="rendered-path">{field.path}</h4>
+                      <pre class="rendered-text" tabindex="0">{field.text}</pre>
+                    </section>
+                  </template>
+                </template>
+                <template lwc:else>
+                  <p class="rendered-empty" data-id="rendered-empty">
+                    This response has no long text fields. Raw JSON shows all of
+                    it.
+                  </p>
+                </template>
+              </div>
+            </template>
           </template>
         </div>
       </section>
