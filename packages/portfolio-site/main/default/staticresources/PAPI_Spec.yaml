@@ -22,7 +22,7 @@ info:
     - **SAPI Limit**: 120 requests/minute.
     - **PAPI Aggregation**: A single `/profile/full` call triggers ~8 upstream SAPI calls.
     - **PAPI Limit**: Restricted to **15 requests/minute** (Standard Tier) to prevent cascading rate limit violations on SAPI (15 * 8 = 120).
-    - **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. `POST /auth/token` is also limited to 15 requests per minute per email and source IP.
+    - **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. Every token from `POST /auth/token` is the same session, so all evaluators share one key per tier and one limit (SAPI 120, PAPI 15, `/ai/*` 10 per minute, ADR-028). `POST /auth/token` is also limited to 15 requests per minute per email and source IP.
 
     ### 4. Caching Strategy (Aggregation Logic)
     *Note: PAPI cannot pass SAPI headers verbatim due to mixed sensitivity in aggregated payloads.*
@@ -63,7 +63,7 @@ servers:
 
 # Global Rate Limits (Aligned to SAPI capacity)
 x-rate-limit:
-  description: "Enforced in Apex by RateWindowLimiter (ADR-025), a custom-object counter: one API_Rate_Window__c row per caller key per fixed UTC calendar minute. The caller key is {tier}:{SHA-256 hex of the session id}, or {tier}:{user id} when the session id is null. Every response carries X-RateLimit-Limit and X-RateLimit-Remaining; request limit + 1 within the minute gets 429 RATE_LIMIT_EXCEEDED with Retry-After set to the seconds left in the minute. Rejected requests count. Evaluator token vending adds a per-email and source IP limit and a daily cap (ADR-028)."
+  description: "Enforced in Apex by RateWindowLimiter (ADR-025), a custom-object counter: one API_Rate_Window__c row per caller key per fixed UTC calendar minute. The caller key is {tier}:{SHA-256 hex of the session id}, or {tier}:{user id} when the session id is null. Every response carries X-RateLimit-Limit and X-RateLimit-Remaining; request limit + 1 within the minute gets 429 RATE_LIMIT_EXCEEDED with Retry-After set to the seconds left in the minute. Rejected requests count. Every vended evaluator token is the same session, so all evaluators share one key and one limit per tier. Evaluator token vending adds a per-email and source IP limit and a daily cap (ADR-028)."
   tiers:
     standard:
       requestsPerMinute: 15
@@ -98,7 +98,8 @@ components:
       description: |
         OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).
         Tokens run as the read-only integration user. External evaluators obtain a short-lived token
-        from `POST /auth/token` (ADR-028) instead of holding the consumer secret.
+        from `POST /auth/token` (ADR-028) instead of holding the consumer secret. Every
+        evaluator receives the same session, so all evaluators share one rate limit per tier.
       flows:
         clientCredentials:
           tokenUrl: https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/oauth2/token
@@ -826,7 +827,9 @@ paths:
         hands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,
         then runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named
         Credential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user
-        and expire with its 30-minute session.
+        and expire with its 30-minute session. While that session is valid, every exchange returns the
+        same token, so all evaluators share one token and one rate limit per tier (SAPI 120, PAPI 15,
+        `/ai/*` 10 per minute).
 
         - **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254
           characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule

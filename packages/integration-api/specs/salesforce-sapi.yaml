@@ -20,7 +20,7 @@ info:
     ### Non-Functional Requirements (NFRs)
     - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`). The platform echoes a caller-supplied value on every response; Apex sets the header only when it generated the value (ADR-026).
     - **Latency**: Target < 500ms for internal processing.
-    - **Resilience**: 120 requests per minute per caller, enforced by `RateWindowLimiter` (ADR-025), with `429` responses and `Retry-After` headers.
+    - **Resilience**: 120 requests per minute per caller key, enforced by `RateWindowLimiter` (ADR-025), with `429` responses and `Retry-After` headers. Every vended evaluator token is the same session, so all evaluators share one key and one limit of 120 per minute (ADR-028).
     - **Caching Strategy**: 
       - **Public Data** (Skills, Projects, Junctions): `Cache-Control: max-age=300, public`.
       - **Private Data** (Contact, Config): `Cache-Control: max-age=300, private` or `no-store`.
@@ -67,7 +67,7 @@ security:
 
 components:
   x-rate-limit:
-    description: "Enforced in Apex by RateWindowLimiter (ADR-025), a custom-object counter: one API_Rate_Window__c row per caller key per fixed UTC calendar minute. The caller key is sapi:{SHA-256 hex of the session id}, or sapi:{user id} when the session id is null. Every response carries X-RateLimit-Limit and X-RateLimit-Remaining. Request limit + 1 within the minute gets 429 RATE_LIMIT_EXCEEDED with Retry-After set to the seconds left in the minute. Rejected requests count. No burst allowance."
+    description: "Enforced in Apex by RateWindowLimiter (ADR-025), a custom-object counter: one API_Rate_Window__c row per caller key per fixed UTC calendar minute. The caller key is sapi:{SHA-256 hex of the session id}, or sapi:{user id} when the session id is null. Every response carries X-RateLimit-Limit and X-RateLimit-Remaining. Request limit + 1 within the minute gets 429 RATE_LIMIT_EXCEEDED with Retry-After set to the seconds left in the minute. Rejected requests count. No burst allowance. Every token from POST /papi/v1/auth/token is the same session, so all evaluators share one key and one limit (ADR-028)."
     tier: standard
     requestsPerMinute: 120
 
@@ -77,7 +77,8 @@ components:
       description: |
         OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).
         Tokens run as the read-only integration user. External evaluators obtain a short-lived token
-        from `POST /papi/v1/auth/token` (ADR-028) instead of holding the consumer secret.
+        from `POST /papi/v1/auth/token` (ADR-028) instead of holding the consumer secret. Every
+        evaluator receives the same session, so all evaluators share one rate limit.
       flows:
         clientCredentials:
           tokenUrl: https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/oauth2/token
