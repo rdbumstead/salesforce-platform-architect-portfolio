@@ -21,7 +21,6 @@ public with sharing class TokenExchangeService {
   public static final Integer EMAIL_MAX_LENGTH = 254;
   public static final Integer PURPOSE_MAX_LENGTH = 280;
   /** Integration user profile session timeout (30 minutes); the token endpoint does not return one. */
-  public static final Integer TOKEN_LIFETIME_SECONDS = 1800;
   public static final String NAMED_CREDENTIAL = 'Portfolio_API_Token';
   public static final String EXTERNAL_CREDENTIAL = 'Portfolio_API_Token_Auth';
   public static final String DOCS_URL = 'https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi';
@@ -79,7 +78,6 @@ public with sharing class TokenExchangeService {
   public class TokenGrant {
     public String accessToken;
     public String tokenType;
-    public Integer expiresIn;
     public String instanceUrl;
   }
 
@@ -139,15 +137,16 @@ public with sharing class TokenExchangeService {
     }
 
     /**
-     * @description The /auth/token 200 body: access_token, token_type, expires_in,
-     *              instance_url and docs.
+     * @description The /auth/token 200 body: access_token, token_type, instance_url and
+     *              docs. There is no expires_in: every vended token is the same session of
+     *              the integration user, which ends after 30 minutes without use, so no
+     *              lifetime per token can be stated honestly (owner decision, log 155).
      * @return Map<String, Object> The response body.
      */
     public Map<String, Object> toTokenBody() {
       return new Map<String, Object>{
         'access_token' => grant.accessToken,
         'token_type' => grant.tokenType,
-        'expires_in' => grant.expiresIn,
         'instance_url' => grant.instanceUrl,
         'docs' => DOCS_URL
       };
@@ -293,7 +292,6 @@ public with sharing class TokenExchangeService {
     TokenGrant grant = new TokenGrant();
     grant.accessToken = stringValue(body.get('access_token'));
     grant.tokenType = 'Bearer';
-    grant.expiresIn = TOKEN_LIFETIME_SECONDS;
     grant.instanceUrl = stringValue(body.get('instance_url'));
     if (String.isBlank(grant.accessToken)) {
       throw new TokenExchangeException(

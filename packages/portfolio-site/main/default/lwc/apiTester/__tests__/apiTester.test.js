@@ -250,7 +250,6 @@ describe("c-api-tester", () => {
       token: {
         access_token: "00Dxx!token",
         token_type: "Bearer",
-        expires_in: 1800,
         instance_url: "https://example.my.salesforce.com",
         docs: "https://example.com/docs"
       }
@@ -275,8 +274,11 @@ describe("c-api-tester", () => {
       query(element, 'dd.token-value[data-field="access_token"]').textContent
     ).toBe("00Dxx!token");
     expect(
-      query(element, 'dd.token-value[data-field="expires_in"]').textContent
-    ).toBe("1800");
+      query(element, 'dd.token-value[data-field="expires_in"]')
+    ).toBeNull();
+    expect(query(element, ".token-issued").textContent).toContain(
+      "30 minutes without use"
+    );
     consoleSpies.forEach((spy) => {
       const logged = JSON.stringify(spy.mock.calls);
       expect(logged).not.toContain("00Dxx!token");

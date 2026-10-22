@@ -192,7 +192,7 @@ export default class ApiTester extends LightningElement {
   get tokenFields() {
     const token = (this.tokenResult && this.tokenResult.token) || {};
     return withKeys(
-      ["access_token", "token_type", "expires_in", "instance_url", "docs"]
+      ["access_token", "token_type", "instance_url", "docs"]
         .filter((name) => token[name] !== undefined && token[name] !== null)
         .map((name) => ({ name, value: String(token[name]) }))
     );

@@ -146,7 +146,8 @@
           <template lwc:if={hasTokenResult}>
             <template lwc:if={tokenIssued}>
               <p class="token-issued text-success">
-                Token issued. It is shown once and expires in the time below.
+                Token issued. It is shown once. Every evaluator token shares one
+                session, which ends after 30 minutes without use.
               </p>
               <dl class="slds-list_horizontal slds-wrap token-fields">
                 <template for:each={tokenFields} for:item="field">
