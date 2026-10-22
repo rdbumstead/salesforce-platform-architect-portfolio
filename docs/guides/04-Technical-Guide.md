@@ -16,6 +16,7 @@
   - [2.6 `c-footer` (Glass Box Telemetry)](#26-c-footer-glass-box-telemetry)
   - [2.7 Architectural Decision Record: ADR-014 (Deferred Telemetry)](#27-architectural-decision-record-adr-014-deferred-telemetry)
   - [2.8 Analytics Instrumentation (GA4)](#28-analytics-instrumentation-ga4)
+  - [2.9 Site Theme, Tokens and Fonts](#29-site-theme-tokens-and-fonts)
 - [3. Quality Assurance Checklist](#3-quality-assurance-checklist)
   - [3.4 Concrete Testing Example](#34-concrete-testing-example)
 
@@ -205,6 +206,15 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
   - `roadmap_viewed`, `changelog_commit_clicked` {`sha`}, `governance_run_link_clicked` {`workflow`}
   - `finops_quota_visibility`, `theme_changed` {`theme`}
 - **CSP.** The GA4 hosts are trusted sites in source (`GA4_Tag_Manager`, `GA4_Analytics`, `GA4_Google`), so a Builder setting saved only in production cannot drift from the repo.
+
+### 2.9 Site Theme, Tokens and Fonts
+
+- **The theme follows the visitor's system setting.** Light tokens sit on `:root` in the site stylesheet (`sfdc_cms__styles/styles_css/styles.css`). Dark tokens apply under `@media (prefers-color-scheme: dark)` for `:root:not([data-theme="light"])`, and again on `:root[data-theme="dark"]`, so the first paint needs no script. Light is the fallback.
+- **The toggle.** The header's theme button in `portfolioThemeLayout` sets `data-theme="light"` or `"dark"` on the `html` element and on its own host, which overrides the media query, and stores the choice under the `localStorage` key `portfolio-theme`. No stored value means "follow the system". Changing it sends the GA4 event `theme_changed`. No other component reads that key or sets the attribute.
+- **Design tokens.** Components use only the `--pf-*` custom properties (background, surface, text, accent, chip, warning, success, code, button, error, fonts, radius and spacing), defined in `styles.css` and mirrored on the `:host` of `portfolioThemeLayout`. The stylesheet also maps the platform's `--dxp-g-*` globals onto them, because it loads after the branding set's inline styles.
+- **Fonts.** Inter (400 to 700) for text and Fira Code (400 and 500) for section labels, pillar letters, code, API output and the footer metrics. Both are Latin woff2 files in the `Portfolio_Fonts` static resource, loaded by `@font-face` with `font-display: swap` from a same-origin URL, so the site's CSP needs no new host (licences in [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)).
+- **Header.** A slim sticky header with the primary navigation, a pillar menu and the theme button. Under 768 px the navigation collapses behind a menu button. Primary controls are at least 44 px high.
+- **Shared pillar list.** `c/pillarData` exports `PILLARS` and `pillarByLetter`, the one list the header and the home page read.
 
 ## 3. Quality Assurance Checklist
 
