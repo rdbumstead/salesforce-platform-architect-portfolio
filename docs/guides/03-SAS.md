@@ -233,7 +233,7 @@ The architecture is designed to operate within the specific limits of the Salesf
 - **Injection Attacks:** Mitigated by strict SOQL bind variable usage.
 - **Data Exposure:** Mitigated by enforcing "Guest User" profiles with strict Field Level Security (FLS) and Sharing Rules. Guest users have Read-Only access to specific Custom Objects only.
 - **API Abuse:** Mitigated by read-only endpoints and hardcoded query limits in the SAPI layer.
-- **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): on `POST /papi/v1/ai/generate`, a cover letter falls back from the Gemini API to a deterministic Local Template. Agentforce is deferred; `AgentforceService` is a mock, and the site's cover-letter page, which still calls it first, returns the mock text ([ADR-015 amendment (2026-10-21)](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21)).
+- **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): on the site page and on `POST /papi/v1/ai/generate`, a cover letter falls back from the Gemini API to a deterministic Local Template. Agentforce is not implemented and its switch ships off ([ADR-015 Round 4 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-4)).
 
 ## 4. Data Architecture & Schema
 
@@ -369,12 +369,12 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 
 - **The Concept:** Instead of a static "About Me," recruiters enter a company name, a job title and, optionally, the job description. The system writes a cover letter explaining why this candidate fits that role.
 - **The Architecture as built:**
-  - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`. That method posts to `POST /papi/v1/ai/generate` through the `Portfolio_API` Named Credential with a 90 second timeout, so the letter is written by the integration user under the API's validation and its `papi-ai` tier of 10 requests per minute. The site guest holds no AI grant.
-  - **Retrieval Layer:** `PortfolioGroundingService` reads featured `Project__c` records (name, challenge, solution, business value, skills) and `Experience_Highlight__c` text with its role and employer, ranks them by keywords from the job title and description, and adds them to the prompt as JSON. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and stays under 8,000 characters. This is direct CRM retrieval in Apex, not the Data 360 search index of section 5.4.
+  - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`, which checks the AI tier limit (the same `papi-ai` key as `/papi/v1/ai/`, 10 requests per minute), runs `ContentGenerationController.dispatch` in process as the site guest, and writes the count afterwards. The guest holds the `Gemini_Auth-Gemini_Principal` principal for this and no other AI grant. The page used to call `/papi/v1/ai/generate` through the `Portfolio_API` Named Credential, but a request that arrives as a callout from the same org may not call out again, so Gemini could never answer it ([ADR-015 Round 4 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-4)). `/papi/v1/ai/generate` stays for outside callers.
+  - **Retrieval Layer:** `PortfolioGroundingService` reads featured `Project__c` records (on the guest page through a `without sharing` selector, because the guest sees only rows shared to it) (name, challenge, solution, business value, skills) and `Experience_Highlight__c` text with its role and employer, ranks them by keywords from the job title and description, and adds them to the prompt as JSON. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and stays under 8,000 characters. This is direct CRM retrieval in Apex, not the Data 360 search index of section 5.4.
   - **Generation Layer:** `ContentGenerationController.dispatch`, described below.
   - **Show your work:** the page's badge shows the provider and model from the response. A panel the visitor opens shows whether a fallback happened, the round trip and generation time, every attempt and the prompt that was sent.
 
-**Generation strategy as built.** Providers implement `IAIGenerationService` (`generateContent`, `isAvailable`). One dispatch method, `ContentGenerationController.dispatch`, serves both `PAPIAiGenerate.generate` and the page (through the API):
+**Generation strategy as built.** Providers implement `IAIGenerationService` (`generateContent`, `isAvailable`). One dispatch method, `ContentGenerationController.dispatch`, serves both `PAPIAiGenerate.generate` and the page (in process, as the guest):
 
 | Order       | Provider                                                                | Consulted when                                                                                                     | Result today                                                                                                                       |
 | :---------- | :---------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------- |
@@ -387,41 +387,40 @@ Every attempt is recorded with its outcome (`served`, `skipped_off`, `failed`) a
 <details>
 <summary>Click to view Sequence Diagram</summary>
 
-> _What This Diagram Shows: a cover letter from the site page as built. Agentforce is skipped while its switch is off._
+> _What This Diagram Shows: a cover letter from the site page as built in Round 4. Agentforce is never consulted for a guest._
 
 ```mermaid
 sequenceDiagram
     participant Page as c-cover-letter-generator
-    participant Proxy as ApiLabController
-    participant API as PAPIAiGenerate
+    participant Lab as ApiLabController (guest)
+    participant Limiter as RateWindowLimiter (papi-ai)
+    participant Grounding as Grounding selector (without sharing)
     participant Dispatcher as ContentGenerationController
-    participant Grounding as PortfolioGroundingService
     participant Gemini as GeminiService (gemma-4-31b-it)
     participant Local as LocalTemplateService
 
-    Page->>Proxy: generateCoverLetter(company, title, description)
-    Proxy->>API: POST /papi/v1/ai/generate (Portfolio_API)
-    API->>Grounding: build(role, jobDescription)
-    Grounding-->>API: projects and highlights JSON
-    API->>Dispatcher: dispatch(prompt, context, localAllowed)
-    Note over Dispatcher: Agentforce switch off, attempt recorded as skipped_off
-    Dispatcher->>Gemini: generateContent()
-    alt Usable text
-        Gemini-->>Dispatcher: content
-        Dispatcher-->>API: provider Gemini, attempts, promptShown
-    else Error text, exception or timeout
-        Gemini-->>Dispatcher: failure
-        alt CoverLetter
+    Page->>Lab: generateCoverLetter(company, title, description)
+    Lab->>Limiter: checkKey(AI tier key)
+    alt Over 10 a minute
+        Limiter-->>Lab: refused
+        Lab-->>Page: rate limit message
+    else Allowed
+        Lab->>Grounding: featured projects and highlights
+        Grounding-->>Lab: PII-free JSON
+        Lab->>Dispatcher: dispatch(request)
+        Note over Dispatcher: Agentforce skipped for a guest
+        Dispatcher->>Gemini: generateContent() (one callout, 60 s)
+        alt Usable text
+            Gemini-->>Dispatcher: content
+        else Error text, exception or timeout
+            Gemini-->>Dispatcher: failure
             Dispatcher->>Local: generateContent()
             Local-->>Dispatcher: template text
-            Dispatcher-->>API: provider Local, fallbackOccurred true
-        else Other types
-            Dispatcher-->>API: ContentGenerationException
-            API-->>Proxy: 503 ALL_PROVIDERS_UNAVAILABLE
         end
+        Dispatcher-->>Lab: GenerationResult (provider, model, attempts, promptShown)
+        Lab->>Limiter: commitRateCounts()
+        Lab-->>Page: CoverLetterResult (badge and panel read from it)
     end
-    API-->>Proxy: 200 content, provider, model, latencyMs, attempts, promptShown
-    Proxy-->>Page: CoverLetterResult (badge and panel read from it)
 ```
 
 </details>
