@@ -33,3 +33,7 @@ Run it from Git Bash with stdin closed, or it can hang. The running user needs f
 ## Production
 
 Production records change only through the owner's script, run by hand: `.claude\data-changes\2026-10-22-pillar-a-production.apex` in the owner's local checkout. It renames the existing Pillar A project, sets its Business Value, removes the old deck asset and inserts the same five asset rows as this plan.
+
+## Pillar B
+
+`plan-b.json` loads one `Project__c` for Pillar B, named "Literacy program platform for a regional adult literacy nonprofit", with proposed `Challenge__c`, `Solution__c` and `Business_Value__c` text marked for the owner's review (N1, D3). It loads no `Project_Asset__c` rows, because the video waits for D8. Load it into a scratch org only, with stdin closed: `sf data import tree --plan data/pillars/plan-b.json --target-org <scratch-alias> --json < /dev/null`. Production changes go through `.claude/data-changes/2026-10-22-pillar-b-production.apex`, which the owner runs.
