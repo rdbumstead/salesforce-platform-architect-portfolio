@@ -121,6 +121,62 @@ private class FooterControllerTest {
     );
   }
 
+  private static Portfolio_Config__mdt namedConfig(String developerName) {
+    return new Portfolio_Config__mdt(
+      DeveloperName = developerName,
+      GitHub_Profile_URL__c = 'https://github.com/' + developerName
+    );
+  }
+
+  @isTest
+  static void firstByNamePicksTheFirstDeveloperNameFromUnorderedRecords() {
+    List<Portfolio_Config__mdt> records = new List<Portfolio_Config__mdt>{
+      namedConfig('Zulu_Config'),
+      namedConfig('Alpha_Config'),
+      namedConfig('Mike_Config')
+    };
+
+    Test.startTest();
+    Portfolio_Config__mdt first = FooterController.firstByName(records);
+    Test.stopTest();
+
+    Assert.areEqual(
+      'Alpha_Config',
+      first.DeveloperName,
+      'The record that sorts first by DeveloperName wins'
+    );
+  }
+
+  @isTest
+  static void firstByNameReturnsTheOnlyRecord() {
+    Portfolio_Config__mdt only = namedConfig('Only_Config');
+
+    Test.startTest();
+    Portfolio_Config__mdt first = FooterController.firstByName(
+      new List<Portfolio_Config__mdt>{ only }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      'Only_Config',
+      first.DeveloperName,
+      'A single record is returned'
+    );
+  }
+
+  @isTest
+  static void firstByNameReturnsNullForNoRecords() {
+    Test.startTest();
+    Portfolio_Config__mdt fromEmpty = FooterController.firstByName(
+      new List<Portfolio_Config__mdt>()
+    );
+    Portfolio_Config__mdt fromNull = FooterController.firstByName(null);
+    Test.stopTest();
+
+    Assert.isNull(fromEmpty, 'An empty list gives null');
+    Assert.isNull(fromNull, 'A null list gives null');
+  }
+
   @isTest
   static void getSystemSnapshotCountsOnlyTodaysAiTierWindows() {
     insertWindows();

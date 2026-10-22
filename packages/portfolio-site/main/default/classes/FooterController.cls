@@ -106,10 +106,21 @@ public with sharing class FooterController {
     if (configOverride != null) {
       return configOverride;
     }
+    return firstByName(Portfolio_Config__mdt.getAll().values());
+  }
+
+  /**
+   * The record whose DeveloperName sorts first, or null for an empty or null list.
+   */
+  @TestVisible
+  private static Portfolio_Config__mdt firstByName(
+    List<Portfolio_Config__mdt> records
+  ) {
     Portfolio_Config__mdt first;
-    for (
-      Portfolio_Config__mdt record : Portfolio_Config__mdt.getAll().values()
-    ) {
+    if (records == null) {
+      return first;
+    }
+    for (Portfolio_Config__mdt record : records) {
       if (
         first == null ||
         record.DeveloperName.compareTo(first.DeveloperName) < 0
