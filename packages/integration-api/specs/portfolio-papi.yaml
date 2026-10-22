@@ -1318,8 +1318,10 @@ paths:
 
         A CoverLetter prompt also carries facts from featured projects and experience highlights,
         chosen by keywords from `role` and `jobDescription`. No email address, phone number or
-        owner field is ever included. The API Lab cover letter page calls this endpoint through
-        `ApiLabController.generateCoverLetter`.
+        owner field is ever included. The site's cover letter page does not call this endpoint: a
+        request that arrives as a callout from the same org may not call out again, so
+        `ApiLabController.generateCoverLetter` runs the same dispatch in process (ADR-015). This
+        endpoint is for outside callers with a Bearer token.
 
         **Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allows Gemma 4 31B
         30 requests per minute, 16,000 tokens per minute and 14,400 requests per day. When the Gemini API
