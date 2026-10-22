@@ -6,7 +6,8 @@
  *                      outage" switch (Round 4 plan L10, ADR-022) re-reads the feed with
  *                      simulate=true, which returns the same cached board marked SIMULATED.
  *                      DEGRADED means the Jira circuit breaker is open. roadmap_viewed is sent
- *                      once when the board is first shown on the page (plan L4).
+ *                      once when the board is first shown on the page, and turning the switch
+ *                      on sends resilience_test_triggered (plan L4).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -79,6 +80,9 @@ export default class RoadmapViewer extends LightningElement {
 
   handleSimulateChange(event) {
     this.simulate = event.target.checked;
+    if (this.simulate) {
+      trackEvent(EVENTS.RESILIENCE_TEST_TRIGGERED, { source: "roadmap" });
+    }
   }
 
   get isLoading() {

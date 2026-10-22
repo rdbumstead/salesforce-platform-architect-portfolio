@@ -32,7 +32,8 @@ jest.mock(
     trackEvent: jest.fn(),
     EVENTS: {
       ROADMAP_VIEWED: "roadmap_viewed",
-      CHANGELOG_COMMIT_CLICKED: "changelog_commit_clicked"
+      CHANGELOG_COMMIT_CLICKED: "changelog_commit_clicked",
+      RESILIENCE_TEST_TRIGGERED: "resilience_test_triggered"
     }
   }),
   { virtual: true }
@@ -284,6 +285,9 @@ describe("c-roadmap-viewer", () => {
     input.dispatchEvent(new CustomEvent("change"));
     await flushPromises();
     expect(getRoadmap.getLastConfig()).toEqual({ simulate: true });
+    expect(trackEvent).toHaveBeenCalledWith("resilience_test_triggered", {
+      source: "roadmap"
+    });
 
     getRoadmap.emit(feed("SIMULATED"));
     await flushPromises();
@@ -299,6 +303,11 @@ describe("c-roadmap-viewer", () => {
     input.dispatchEvent(new CustomEvent("change"));
     await flushPromises();
     expect(getRoadmap.getLastConfig()).toEqual({ simulate: false });
+    expect(
+      trackEvent.mock.calls.filter(
+        ([name]) => name === "resilience_test_triggered"
+      )
+    ).toHaveLength(1);
   });
 
   it("DEGRADED explains itself in a live region, FRESH says nothing", async () => {

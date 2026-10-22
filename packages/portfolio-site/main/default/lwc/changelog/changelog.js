@@ -5,7 +5,8 @@
  *                      The "Simulate an outage" switch (Round 4 plan L10, ADR-022) re-reads the
  *                      feed with simulate=true, which returns the same cached commits marked
  *                      SIMULATED. DEGRADED means the GitHub circuit breaker is open. A commit
- *                      link click sends changelog_commit_clicked with its sha (plan L4).
+ *                      link click sends changelog_commit_clicked with its sha, and turning
+ *                      the switch on sends resilience_test_triggered (plan L4).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -73,6 +74,9 @@ export default class Changelog extends LightningElement {
 
   handleSimulateChange(event) {
     this.simulate = event.target.checked;
+    if (this.simulate) {
+      trackEvent(EVENTS.RESILIENCE_TEST_TRIGGERED, { source: "changelog" });
+    }
   }
 
   handleCommitClick(event) {
