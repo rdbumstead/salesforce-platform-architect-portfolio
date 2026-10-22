@@ -12,10 +12,23 @@ import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import CoverLetterGenerator from "c/coverLetterGenerator";
 import generateCoverLetter from "@salesforce/apex/ApiLabController.generateCoverLetter";
+import { trackEvent } from "c/analyticsService";
 
 jest.mock(
   "@salesforce/apex/ApiLabController.generateCoverLetter",
   () => ({ default: jest.fn() }),
+  { virtual: true }
+);
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    trackEvent: jest.fn(),
+    EVENTS: {
+      AI_GENERATION_COMPLETED: "ai_generation_completed",
+      AI_COMPLETE_FAILURE: "ai_complete_failure"
+    }
+  }),
   { virtual: true }
 );
 
@@ -43,11 +56,26 @@ const LOCAL_RESULT = {
   generationMs: 600,
   attempts: [
     { provider: "Agentforce", outcome: "skipped_off", ms: 0 },
-    { provider: "Gemini", outcome: "failed", ms: 590 },
+    { provider: "Gemini", outcome: "failed", ms: 59000 },
     { provider: "Local", outcome: "served", ms: 1 }
   ],
   promptShown: null,
   requestId: "22222222-2222-4333-8444-555555555555"
+};
+
+// The live finding of log 129: the model attempt failed in 2 ms, before any request left.
+const UNREACHABLE_RESULT = {
+  ...LOCAL_RESULT,
+  attempts: [
+    { provider: "Agentforce", outcome: "skipped_off", ms: 0 },
+    {
+      provider: "Gemini",
+      outcome: "failed",
+      ms: 2,
+      detail: "CalloutException: Unauthorized endpoint"
+    },
+    { provider: "Local", outcome: "served", ms: 0 }
+  ]
 };
 
 // Provider and tier words the component may never print on its own. The tier words are split
@@ -87,7 +115,7 @@ async function fillAndGenerate(element) {
   setInput(element, "lightning-input.title-input", "Architect");
   setInput(element, "lightning-textarea.description-input", "Apex and APIs");
   await flushPromises();
-  query(element, "lightning-button.generate-button").click();
+  query(element, "button.generate-button").click();
   await flushPromises();
   await flushPromises();
 }
@@ -173,7 +201,7 @@ describe("c-cover-letter-generator", () => {
   it("keeps Generate disabled until company and title are set", async () => {
     const element = createComponent();
     await flushPromises();
-    const button = query(element, "lightning-button.generate-button");
+    const button = query(element, "button.generate-button");
     expect(button.disabled).toBe(true);
 
     setInput(element, "lightning-input.company-input", "Acme");
@@ -189,7 +217,7 @@ describe("c-cover-letter-generator", () => {
     const element = createComponent();
     await flushPromises();
 
-    const label = query(element, "lightning-button.generate-button").label;
+    const label = query(element, "button.generate-button").textContent.trim();
     expect(label).toBe("Generate");
     expect(element.shadowRoot.textContent).not.toMatch(PROVIDER_WORDS);
     expect(query(element, '[data-id="provider-badge"]')).toBeNull();
@@ -202,7 +230,7 @@ describe("c-cover-letter-generator", () => {
     setInput(element, "lightning-input.title-input", " Architect");
     await flushPromises();
 
-    query(element, "lightning-button.generate-button").click();
+    query(element, "button.generate-button").click();
     await flushPromises();
 
     expect(generateCoverLetter).toHaveBeenCalledWith({
@@ -324,5 +352,111 @@ describe("c-cover-letter-generator", () => {
     );
     expect(source).not.toMatch(/setTimeout|setInterval/);
     expect(source + template).not.toMatch(PROVIDER_WORDS);
+  });
+
+  it("says the model could not be reached when its attempt failed in under a second", async () => {
+    generateCoverLetter.mockResolvedValue(UNREACHABLE_RESULT);
+    const element = createComponent();
+    await fillAndGenerate(element);
+
+    const note = query(element, '[data-id="fallback-note"]').textContent;
+    expect(note).toContain("could not be reached");
+    expect(note).not.toContain("busy or too slow");
+  });
+
+  it("keeps busy or too slow when the model attempt took a second or more", async () => {
+    generateCoverLetter.mockResolvedValue(LOCAL_RESULT);
+    const element = createComponent();
+    await fillAndGenerate(element);
+
+    const note = query(element, '[data-id="fallback-note"]').textContent;
+    expect(note).toContain("busy or too slow");
+    expect(note).not.toContain("could not be reached");
+  });
+
+  it("shows an attempt detail only when the result carries one", async () => {
+    generateCoverLetter.mockResolvedValue(UNREACHABLE_RESULT);
+    const element = createComponent();
+    await fillAndGenerate(element);
+    query(element, "button.work-toggle").click();
+    await flushPromises();
+
+    const attempts = Array.from(
+      element.shadowRoot.querySelectorAll("li.attempt-row")
+    ).map((row) => row.textContent);
+    expect(attempts[1]).toBe(
+      "Gemini: failed, 2 ms (CalloutException: Unauthorized endpoint)"
+    );
+    expect(attempts[2]).toBe("Local: served, 0 ms");
+  });
+
+  it("sends ai_generation_completed with the result fields", async () => {
+    generateCoverLetter.mockResolvedValue(GEMINI_RESULT);
+    const live = createComponent();
+    await fillAndGenerate(live);
+    expect(trackEvent).toHaveBeenCalledWith("ai_generation_completed", {
+      provider: "Gemini",
+      model: "gemma-4-31b-it",
+      fallback: false,
+      latency_ms: 2140,
+      outcome: "live"
+    });
+    document.body.removeChild(live);
+
+    trackEvent.mockClear();
+    generateCoverLetter.mockResolvedValue(UNREACHABLE_RESULT);
+    const unreachable = createComponent();
+    await fillAndGenerate(unreachable);
+    expect(trackEvent).toHaveBeenCalledWith(
+      "ai_generation_completed",
+      expect.objectContaining({ fallback: true, outcome: "template_unreachable" })
+    );
+    document.body.removeChild(unreachable);
+
+    trackEvent.mockClear();
+    generateCoverLetter.mockResolvedValue(LOCAL_RESULT);
+    const slow = createComponent();
+    await fillAndGenerate(slow);
+    expect(trackEvent).toHaveBeenCalledWith(
+      "ai_generation_completed",
+      expect.objectContaining({ outcome: "template_slow" })
+    );
+  });
+
+  it("sends ai_complete_failure with a message kind and never the message", async () => {
+    generateCoverLetter.mockRejectedValue({
+      body: {
+        message:
+          "Too many cover letters were requested in the last minute. Try again in a minute."
+      }
+    });
+    const element = createComponent();
+    await fillAndGenerate(element);
+
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("ai_complete_failure", {
+      message_kind: "rate_limited"
+    });
+  });
+
+  it("sorts error messages into message kinds", async () => {
+    const { messageKind } = await import("c/coverLetterGenerator");
+    expect(
+      messageKind("No AI provider is available right now. Try again later.")
+    ).toBe("no_provider");
+    expect(messageKind("Company name is required.")).toBe("invalid_input");
+    expect(messageKind("Job title can be at most 120 characters.")).toBe(
+      "invalid_input"
+    );
+    expect(messageKind(undefined)).toBe("other");
+  });
+
+  it("gives the Generate button a 44 px minimum height", () => {
+    const css = readFileSync(
+      join(__dirname, "..", "coverLetterGenerator.css"),
+      "utf8"
+    );
+    expect(css).toMatch(/\.generate-button \{[^}]*min-height: 44px/);
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
   });
 });
