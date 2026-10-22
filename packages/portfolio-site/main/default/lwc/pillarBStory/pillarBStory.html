@@ -1,0 +1,312 @@
+<template>
+  <article class="story">
+    <section class="story-section" data-section="client">
+      <h2 class="section-heading">1. The client</h2>
+      <p>
+        A regional adult literacy nonprofit that teaches reading, writing and
+        work skills to adults in small classes.
+      </p>
+      <ul class="facts">
+        <li>A small staff, on ten free licences under Power of Us.</li>
+        <li>Instructors and students hold no licences.</li>
+        <li>
+          Donations stay in an existing donor system, so fundraising is out of
+          scope.
+        </li>
+        <li>State reporting goes through an external system.</li>
+      </ul>
+    </section>
+
+    <section class="story-section" data-section="discovery">
+      <h2 class="section-heading">2. Discovery</h2>
+      <p class="placeholder" data-placeholder="D3">
+        PLACEHOLDER: how the comparison is framed pending the owner's answer
+        (D3).
+      </p>
+      <p>
+        Discovery followed a learner through the lifecycle the nonprofit runs:
+        inquiry, registration, assessment, orientation, delivery, transition and
+        alumni. Each step was mapped to the objects each option provides. The
+        map shows the naming trap early: "Program" means three different things
+        across the options, so every conversation names which one.
+      </p>
+      <div class="table-scroll">
+        <table class="story-table">
+          <caption>
+            Lifecycle concepts mapped to each option's objects
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Concept</th>
+              <th scope="col">NPSP and PMM</th>
+              <th scope="col">Education Cloud*</th>
+              <th scope="col">What to watch</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Learner</th>
+              <td>Contact in a Household Account</td>
+              <td>Contact, or Person Account (the side varies by object)</td>
+              <td>Name the side, always</td>
+            </tr>
+            <tr>
+              <th scope="row">What the nonprofit offers</th>
+              <td>Program</td>
+              <td>
+                Learning Program for academics, Program for services and
+                benefits
+              </td>
+              <td>Three different "Programs"</td>
+            </tr>
+            <tr>
+              <th scope="row">A learner in the offering</th>
+              <td>Program Engagement</td>
+              <td>Learner Program (academic), Program Enrollment (services)</td>
+              <td>"Enrollment" is not one concept</td>
+            </tr>
+            <tr>
+              <th scope="row">A class or cohort</th>
+              <td>Program Cohort, Service Schedule</td>
+              <td>Course Offering, Course Offering Schedule</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th scope="row">A seat in the class</th>
+              <td>Service Participant</td>
+              <td>Course Offering Participant</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th scope="row">Attendance</th>
+              <td>Service Delivery per session</td>
+              <td>
+                No attendance object in the lists. Benefit Session sits in the
+                services model
+              </td>
+              <td>A real gap to state</td>
+            </tr>
+            <tr>
+              <th scope="row">Assessment and gain</th>
+              <td>Custom Assessment object</td>
+              <td>Assessment, Course Offering Participant Result</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th scope="row">Employment outcome</th>
+              <td>Custom Employment object</td>
+              <td>Person Employment</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th scope="row">Referral partner</th>
+              <td>Custom Partner Referral object</td>
+              <td>Partnership Agreement, Partnership Person Placement</td>
+              <td></td>
+            </tr>
+            <tr>
+              <th scope="row">Volunteer tutor</th>
+              <td>Volunteers for Salesforce: Volunteer Job, Shift, Hours</td>
+              <td>None</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footnote">
+        * Education Cloud names come from the published data model entity lists.
+        They are not verified in an org.
+      </p>
+    </section>
+
+    <section class="story-section" data-section="matrix">
+      <h2 class="section-heading">3. The decision matrix</h2>
+      <p>
+        The matrix below scores three options against ten criteria: NPSP with
+        the Program Management Module, which the nonprofit chose, Education
+        Cloud, and Nonprofit Cloud as the option a reviewer would ask about
+        today. The starting weights are the client's. Move any weight to see the
+        ranking change, and read the sensitivity line to see which single weight
+        would change the answer. Reset puts the client's weights back.
+      </p>
+    </section>
+
+    <section class="story-section" data-section="roi">
+      <h2 class="section-heading">4. ROI and cost</h2>
+      <p>
+        Cost is compared from public licence facts only. Effort is a relative
+        band, not an estimate, and no client rates or totals appear here.
+      </p>
+      <div class="table-scroll">
+        <table class="story-table">
+          <caption>
+            Licence model and implementation effort by option, from public
+            sources
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Option</th>
+              <th scope="col">Licence model</th>
+              <th scope="col">Implementation effort</th>
+              <th scope="col">Why</th>
+              <th scope="col">Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">NPSP and PMM</th>
+              <td>
+                Free, open source packages on Power of Us licences, ten free for
+                an eligible nonprofit
+              </td>
+              <td>Smallest</td>
+              <td>
+                Two packages in one org and the smallest model, so a small staff
+                can adopt it first
+              </td>
+              <td>
+                <a
+                  href="https://trailhead.salesforce.com/content/learn/modules/nonprofit-success-pack-basics/meet-nonprofit-success-pack"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Meet Nonprofit Success Pack (Trailhead)</a
+                >,
+                <a
+                  href="https://help.salesforce.com/s/articleView?id=sfdo.pmm_install.htm&amp;type=5"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Install Program Management Module (Help)</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Education Cloud</th>
+              <td>
+                A paid Education Cloud licence. A Developer Edition qualifies
+                only with Education Cloud
+              </td>
+              <td>Largest</td>
+              <td>
+                The academic model, Person Accounts and a configuration heavy
+                setup need the most build and training
+              </td>
+              <td>
+                <a
+                  href="https://help.salesforce.com/s/articleView?id=sfdo.ec_enable_education_cloud.htm&amp;type=5"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Turn On Education Cloud (Help)</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Nonprofit Cloud</th>
+              <td>A paid Nonprofit Cloud licence</td>
+              <td>Medium</td>
+              <td>
+                Program, volunteer and outcome features are native, but Person
+                Accounts and a new data model take work to adopt
+              </td>
+              <td>
+                <a
+                  href="https://developer.salesforce.com/docs/platform/sfdx-dev/guide/sfdx-dev-scratch-orgs-def-file-config-values.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Scratch Org Features (Salesforce Developers)</a
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="placeholder" data-placeholder="sources">
+        PLACEHOLDER: the public pages for the Power of Us licence count and the
+        Nonprofit Cloud licence are pending the owner's check.
+      </p>
+    </section>
+
+    <section class="story-section" data-section="design">
+      <h2 class="section-heading">5. Solution design</h2>
+      <figure class="architecture">
+        <img
+          class="architecture-image"
+          src={architectureImageUrl}
+          alt="Object model: NPSP Household Account and Contact, the Program Management Module objects from Program to Service Delivery, three custom objects on Contact for assessment, employment and partner referral, and Volunteers for Salesforce Volunteer Job, Shift and Hours."
+          width="1000"
+          height="660"
+          loading="lazy"
+        />
+        <figcaption>
+          Minimalist architecture, redrawn from public object names.
+        </figcaption>
+      </figure>
+      <h3 class="sub-heading">Architecture decisions</h3>
+      <ul class="decisions">
+        <li>
+          Minimalist model: start with the fewest objects the staff can run, and
+          add only what reporting needs.
+        </li>
+        <li>
+          Household Accounts: each learner is a Contact in a Household Account,
+          the NPSP default.
+        </li>
+        <li>
+          Custom assessment and employment objects: Assessment, Employment and
+          Partner Referral are small custom objects on Contact, because the
+          program packages have no outcome objects.
+        </li>
+        <li>
+          Volunteer management deferred: tutors stay outside the platform in the
+          first release, and Volunteers for Salesforce follows once the programs
+          run.
+        </li>
+        <li>
+          Donations external: the existing donor system keeps fundraising.
+        </li>
+        <li>
+          State reporting external: the state system stays where reports are
+          filed, and the platform holds the data the report needs.
+        </li>
+      </ul>
+      <h3 class="sub-heading">What we deliberately did not build</h3>
+      <ul class="not-built">
+        <li>Fundraising, gifts or donor records.</li>
+        <li>A portal for learners or instructors, who hold no licences.</li>
+        <li>An automated sync to the state reporting system.</li>
+        <li>Volunteer management in the first release.</li>
+      </ul>
+    </section>
+
+    <section class="story-section" data-section="video">
+      <h2 class="section-heading">6. Video prototype</h2>
+      <template lwc:if={hasVideo}>
+        <p>
+          <a
+            class="video-link"
+            href={videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onclick={handleVideoOpen}
+            >Watch the video prototype</a
+          >
+        </p>
+      </template>
+      <template lwc:else>
+        <p class="placeholder" data-placeholder="D8">
+          PLACEHOLDER: video prototype link pending the owner's answer (D8)
+        </p>
+      </template>
+    </section>
+
+    <section class="story-section" data-section="outcome">
+      <h2 class="section-heading">7. Outcome</h2>
+      <p>
+        The nonprofit runs NPSP with the Program Management Module on the
+        minimalist model. Staff record classes, sessions and attendance in one
+        place, and assessment, employment and referral outcomes sit on the
+        learner's record, ready for the state report. Fundraising and state
+        filing stay in the systems that already do them well.
+      </p>
+    </section>
+  </article>
+</template>
