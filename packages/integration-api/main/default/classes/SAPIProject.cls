@@ -48,6 +48,7 @@ global with sharing class SAPIProject {
             Business_Value__c,
             Status__c,
             Pillar__c,
+            Pillar_Label__c,
             Hero_Image_URL__c,
             Is_Featured__c,
             Live_URL__c,
@@ -68,8 +69,8 @@ global with sharing class SAPIProject {
       } else {
         // Build dynamic query with filters
         String baseQuery =
-          'SELECT Id, Name, Status__c, Pillar__c, Hero_Image_URL__c, ' +
-          'Is_Featured__c, Sort_Order__c, Contact__r.Name, ' +
+          'SELECT Id, Name, Status__c, Pillar__c, Pillar_Label__c, Hero_Image_URL__c, ' +
+          'Is_Featured__c, Sort_Order__c, Contact__c, Contact__r.Name, ' +
           'Challenge__c, Solution__c, Business_Value__c, Live_URL__c, Repository_URL__c, Date_Completed__c ' +
           'FROM Project__c WHERE Status__c IN (\'Live – In Production\', \'Live – Demo / Reference\', \'Active Development\')';
 
@@ -96,38 +97,37 @@ global with sharing class SAPIProject {
   }
 
   /**
-   * @description Transforms Project__c records to API response format.
+   * @description Transforms Project__c records to the Project schema in salesforce-sapi.yaml.
+   *              Every schema key is present, null when the field is empty (decision D4).
    */
+  @TestVisible
   private static List<Map<String, Object>> transformProjects(
     List<Project__c> projects
   ) {
     List<Map<String, Object>> result = new List<Map<String, Object>>();
     for (Project__c p : projects) {
-      Map<String, Object> proj = new Map<String, Object>();
-      proj.put('id', p.Id);
-      proj.put('name', p.Name);
-      proj.put('status', p.Status__c);
-      proj.put('pillar', p.Pillar__c);
-      proj.put('heroImageUrl', p.Hero_Image_URL__c);
-      proj.put('isFeatured', p.Is_Featured__c);
-      proj.put('sortOrder', p.Sort_Order__c);
-      proj.put('contactName', p.Contact__r?.Name);
-
-      // Include detail fields if present
-      if (p.Challenge__c != null)
-        proj.put('challenge', p.Challenge__c);
-      if (p.Solution__c != null)
-        proj.put('solution', p.Solution__c);
-      if (p.Business_Value__c != null)
-        proj.put('businessValue', p.Business_Value__c);
-      if (p.Live_URL__c != null)
-        proj.put('liveUrl', p.Live_URL__c);
-      if (p.Repository_URL__c != null)
-        proj.put('repositoryUrl', p.Repository_URL__c);
-      if (p.Date_Completed__c != null)
-        proj.put('dateCompleted', String.valueOf(p.Date_Completed__c));
-
-      result.add(proj);
+      result.add(
+        new Map<String, Object>{
+          'id' => p.Id,
+          'name' => p.Name,
+          'challenge' => p.Challenge__c,
+          'solution' => p.Solution__c,
+          'businessValue' => p.Business_Value__c,
+          'status' => p.Status__c,
+          'dateCompleted' => p.Date_Completed__c != null
+            ? String.valueOf(p.Date_Completed__c)
+            : null,
+          'heroImageUrl' => p.Hero_Image_URL__c,
+          'liveUrl' => p.Live_URL__c,
+          'repositoryUrl' => p.Repository_URL__c,
+          'pillar' => p.Pillar__c,
+          'pillarLabel' => p.Pillar_Label__c,
+          'isFeatured' => p.Is_Featured__c,
+          'contactName' => p.Contact__r?.Name,
+          'contactId' => p.Contact__c,
+          'sortOrder' => p.Sort_Order__c
+        }
+      );
     }
     return result;
   }

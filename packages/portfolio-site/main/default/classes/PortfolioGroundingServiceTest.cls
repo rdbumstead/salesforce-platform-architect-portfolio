@@ -147,6 +147,49 @@ private class PortfolioGroundingServiceTest {
   }
 
   @IsTest
+  static void guestGetsHighlightsAndProjectsWithoutPii() {
+    User guest = SiteGuestTestSupport.preparedGuest();
+    Account employer = new Account(Name = 'Acme Corp');
+    insert employer;
+    Experience__c role = new Experience__c(
+      Name = 'Platform Architect',
+      Sort_Order__c = 1,
+      Employer__c = employer.Id,
+      Is_Current_Role__c = true
+    );
+    insert role;
+    insert new Experience_Highlight__c(
+      Name = 'Highlight',
+      Experience__c = role.Id,
+      Description__c = 'Led an API program, call ' + SENTINEL_PHONE,
+      Persona_Tag__c = 'Architect',
+      Sort_Order__c = 1,
+      Lock_Sort_Across_Personas__c = false
+    );
+    insert project(1, 'Architect challenge');
+
+    String grounding;
+    Test.startTest();
+    System.runAs(guest) {
+      grounding = PortfolioGroundingService.build('Architect', null);
+    }
+    Test.stopTest();
+
+    Assert.isNotNull(grounding, 'The guest gets facts (trap 31)');
+    Map<String, Object> facts = parse(grounding);
+    Assert.isFalse(
+      ((List<Object>) facts.get('highlights')).isEmpty(),
+      'Highlights reach the guest through the without sharing selector'
+    );
+    Assert.isFalse(
+      ((List<Object>) facts.get('projects')).isEmpty(),
+      'Featured projects reach the guest'
+    );
+    Assert.isFalse(grounding.contains('@'), 'No email');
+    Assert.isFalse(PHONE_SHAPE.matcher(grounding).find(), 'No phone');
+  }
+
+  @IsTest
   static void nothingToGroundOnReturnsNull() {
     Test.startTest();
     String grounding = PortfolioGroundingService.build(null, null);

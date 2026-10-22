@@ -28,7 +28,8 @@ public with sharing class SAPITransformer {
 
   /**
    * @description Maps owner Contacts to the Contact schema. Only fields granted by
-   *              Integration_Access are read.
+   *              Integration_Access are read. The owner's email and phone are never
+   *              returned (owner decision, 2026-10-21).
    * @param contacts Contact records.
    * @return List<Map<String, Object>> Contact schema rows.
    */
@@ -39,8 +40,6 @@ public with sharing class SAPITransformer {
         new Map<String, Object>{
           'id' => c.Id,
           'name' => c.Name,
-          'email' => c.Email,
-          'phone' => c.Phone,
           'title' => c.Title,
           'trailhead' => c.Trailhead_URL__c,
           'careerObjective' => c.Career_Objective__c,
@@ -244,6 +243,8 @@ public with sharing class SAPITransformer {
 
   /**
    * @description Maps the Portfolio_Config__mdt record to the PortfolioConfig schema.
+   *              Owner_Email__c and Owner_Phone__c are never returned (owner decision,
+   *              log 155).
    * @param config The configuration record; null yields an empty object.
    * @return Map<String, Object> PortfolioConfig schema object.
    */
@@ -254,8 +255,6 @@ public with sharing class SAPITransformer {
       return new Map<String, Object>();
     }
     return new Map<String, Object>{
-      'ownerEmail' => config.Owner_Email__c,
-      'ownerPhone' => config.Owner_Phone__c,
       'linkedInUrl' => config.LinkedIn_URL__c,
       'gitHubProfileUrl' => config.GitHub_Profile_URL__c,
       'calendlyUrl' => config.Calendly_URL__c,

@@ -8,7 +8,7 @@
  **/
 @RestResource(urlMapping='/sapi/v1/contacts/*')
 global with sharing class SAPIContact {
-  private static final String SELECT_FIELDS = 'SELECT Id, Name, Email, Phone, Title, Trailhead_URL__c, Career_Objective__c, LinkedIn_URL__c, Portfolio_URL__c FROM Contact';
+  private static final String SELECT_FIELDS = 'SELECT Id, Name, Title, Trailhead_URL__c, Career_Objective__c, LinkedIn_URL__c, Portfolio_URL__c FROM Contact';
   private static final String ORDER_BY = ' ORDER BY Name ASC';
 
   /**

@@ -30,11 +30,10 @@ public class SapiTestData {
   // Response schema keys, copied from salesforce-sapi.yaml components.schemas. Keys with
   // no granted Salesforce source are left out and logged as [conflict] (Contact accountId,
   // accountName).
+  // No email or phone: never returned (owner decision, 2026-10-21).
   public static final Set<String> CONTACT_KEYS = new Set<String>{
     'id',
     'name',
-    'email',
-    'phone',
     'title',
     'trailhead',
     'careerObjective',
@@ -113,9 +112,8 @@ public class SapiTestData {
     'skillCategory',
     'skillProficiencyScore'
   };
+  // No owner email or phone: never returned (owner decision, log 155).
   public static final Set<String> PORTFOLIO_CONFIG_KEYS = new Set<String>{
-    'ownerEmail',
-    'ownerPhone',
     'linkedInUrl',
     'gitHubProfileUrl',
     'calendlyUrl',

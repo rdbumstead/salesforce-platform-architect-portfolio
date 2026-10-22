@@ -1,27 +1,18 @@
 /*
- * Contract K9: the site branding is dark. Every element here that sets a background also
- * sets its text colour. The form sits on the site root surface with the DXP root tokens,
- * the pair the theme gives base component labels. The letter is a white paper with dark
- * text, the badge and the prompt are fixed dark panels with light text. Ratios (WCAG):
- * #e2e8f0 on #020617 16.36, #0f172a on #ffffff 17.85, #f8fafc on #1e293b 13.98,
- * #e2e8f0 on #0f172a 14.48, #f87171 on #020617 7.29 (error text and required marker).
- * The wait note, the status line and the template note use #e2e8f0 on #020617 (16.36).
- * Company and title draw their own label and required marker: the base component's
- * asterisk rendered #c23934 on #020617 (3.77) and no styling hook for it is confirmed.
+ * Colours come only from the site tokens (contract L1), which hold the light and dark values,
+ * so this file carries no colour of its own. Every element that sets a background also sets
+ * its text colour from the matching token pair. Buttons are at least 44 px high (trap 35).
+ * Company and title draw their own label and required marker, because the base component's
+ * asterisk has no confirmed styling hook (contract K9).
  */
-:host {
-  --clg-surface: var(--dxp-g-root, #020617);
-  --clg-text: var(--dxp-g-root-contrast, #e2e8f0);
-}
-
 .generator {
-  background-color: var(--clg-surface);
-  color: var(--clg-text);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
 }
 
 .intro,
 .wait-note,
-.fallback-note,
 .loading-text,
 .provider-caption,
 .work-heading,
@@ -30,35 +21,62 @@
 .work-list dd,
 .attempt-row,
 .no-prompt {
-  color: var(--clg-text);
+  color: var(--pf-body);
 }
 
 .field-label {
-  color: var(--clg-text);
+  color: var(--pf-text);
   font-size: 0.75rem;
-  margin-bottom: 0.125rem;
+  margin-bottom: var(--pf-space-1);
 }
 
 .required-marker {
-  color: #f87171;
-  background-color: var(--clg-surface);
+  color: var(--pf-text);
   font-weight: 700;
-  margin-left: 0.125rem;
+  margin-left: var(--pf-space-1);
+}
+
+.generate-button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--pf-space-5);
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+  border: 0;
+  border-radius: var(--pf-radius-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.generate-button:disabled {
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  cursor: not-allowed;
+}
+
+.generate-button:focus-visible,
+.work-toggle:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
 }
 
 .wait-note {
-  margin-top: 0.5rem;
+  margin-top: var(--pf-space-2);
   text-align: right;
 }
 
 .fallback-note {
-  margin-bottom: 0.5rem;
+  background-color: var(--pf-warn);
+  color: var(--pf-warn-text);
+  border-radius: var(--pf-radius-sm);
+  padding: var(--pf-space-2) var(--pf-space-3);
+  margin-bottom: var(--pf-space-2);
 }
 
 .loading-state {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--pf-space-3);
 }
 
 .spinner-holder {
@@ -67,74 +85,74 @@
 }
 
 .error-text {
-  color: #f87171;
-  background-color: var(--clg-surface);
+  background-color: var(--pf-error);
+  color: var(--pf-error-text);
+  border-radius: var(--pf-radius-sm);
+  padding: var(--pf-space-2) var(--pf-space-3);
   font-weight: 700;
 }
 
 .provider-line {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: var(--pf-space-2);
+  margin-bottom: var(--pf-space-2);
 }
 
 .provider-badge {
-  background-color: #1e293b;
-  color: #f8fafc;
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
   border-radius: 999px;
-  padding: 0.125rem 0.75rem;
+  padding: var(--pf-space-1) var(--pf-space-3);
+  font-family: var(--pf-font-mono);
   font-weight: 700;
 }
 
 .letter {
-  background-color: #ffffff;
-  color: #0f172a;
-  border-radius: 4px;
-  padding: 1rem;
+  background-color: var(--pf-subtle);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  padding: var(--pf-space-4);
   white-space: pre-wrap;
   line-height: 1.6;
 }
 
 .work-toggle {
-  background-color: #1e293b;
-  color: #f8fafc;
-  border: 1px solid #475569;
-  border-radius: 4px;
-  padding: 0.375rem 1rem;
+  min-height: 44px;
+  padding: 0 var(--pf-space-4);
+  background-color: var(--pf-surface);
+  color: var(--pf-accent);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
   font-weight: 700;
   cursor: pointer;
 }
 
-.work-toggle:focus-visible {
-  outline: 2px solid #f8fafc;
-  outline-offset: 2px;
-}
-
 .work-panel {
-  margin-top: 0.75rem;
-  border: 1px solid #334155;
-  border-radius: 4px;
-  padding: 0.75rem;
-  background-color: var(--clg-surface);
-  color: var(--clg-text);
+  margin-top: var(--pf-space-3);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  padding: var(--pf-space-3);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
 }
 
 .work-heading {
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--pf-space-2);
 }
 
 .work-subheading {
   font-weight: 700;
-  margin-top: 0.75rem;
+  margin-top: var(--pf-space-3);
 }
 
 .work-list {
   display: grid;
   grid-template-columns: max-content 1fr;
-  column-gap: 1rem;
-  row-gap: 0.25rem;
+  column-gap: var(--pf-space-4);
+  row-gap: var(--pf-space-1);
 }
 
 .work-list dt {
@@ -142,18 +160,19 @@
 }
 
 .attempt-list {
-  margin-left: 1.25rem;
+  margin-left: var(--pf-space-5);
   list-style: decimal;
+  font-family: var(--pf-font-mono);
 }
 
 .prompt {
-  background-color: #0f172a;
-  color: #e2e8f0;
-  border-radius: 4px;
-  padding: 0.75rem;
+  background-color: var(--pf-code);
+  color: var(--pf-code-text);
+  border-radius: var(--pf-radius-sm);
+  padding: var(--pf-space-3);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   max-height: 24rem;
   overflow-y: auto;
-  font-family: "Courier New", Courier, monospace;
+  font-family: var(--pf-font-mono);
 }

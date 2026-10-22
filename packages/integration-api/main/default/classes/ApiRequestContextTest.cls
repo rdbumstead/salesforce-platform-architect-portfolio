@@ -173,6 +173,152 @@ private class ApiRequestContextTest {
     );
   }
 
+  // ---------- D3: the platform's own 32-hex id on PAPI
+
+  private static final String PLATFORM_ID = '89b386134a6c191e614fc9ae695e52bf';
+
+  @IsTest
+  static void papiPlatformIdCountsAsMissing() {
+    RestTestUtil.initGetRaw(PAPI_URI, headers(PLATFORM_ID, null), null);
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.isFalse(ctx.isRejected(), 'A platform id is not a malformed id');
+    Assert.isTrue(
+      UUID_PATTERN.matcher(ctx.correlationId()).matches(),
+      'A UUID is generated as the correlation id'
+    );
+    Assert.isNull(
+      responseHeader('X-Request-Id'),
+      'Apex adds no second id: the platform echoes the one it injected'
+    );
+  }
+
+  @IsTest
+  static void papiPlatformIdServesTheRequest() {
+    RestTestUtil.initGetRaw(PAPI_URI, headers(PLATFORM_ID, 'v1'), null);
+
+    Test.startTest();
+    PAPIHealth.getHealth();
+    Test.stopTest();
+
+    Assert.areEqual(
+      200,
+      RestTestUtil.getResponse().statusCode,
+      'PAPI no longer answers 400 to a request with no caller id'
+    );
+    Assert.isNull(responseHeader('X-Request-Id'), 'One id on the response');
+  }
+
+  @IsTest
+  static void papiTrulyMissingIdSetsExactlyOneHeader() {
+    RestTestUtil.initGetRaw(PAPI_URI, new Map<String, String>(), null);
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.areEqual(
+      ctx.correlationId(),
+      responseHeader('X-Request-Id'),
+      'With no id at all, Apex sets its generated UUID once'
+    );
+  }
+
+  @IsTest
+  static void papiPlatformIdErrorBodyCarriesTheGeneratedUuid() {
+    ApiRequestContext.limiterOverride = new DenyingLimiter();
+    RestTestUtil.initGetRaw(PAPI_URI, headers(PLATFORM_ID, null), null);
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.isTrue(ctx.isRejected(), 'Refused by the limiter');
+    Assert.areEqual(429, RestTestUtil.getResponse().statusCode, '429');
+    Assert.areEqual(
+      ctx.correlationId(),
+      RestTestUtil.getBodyAsMap().get('correlationId'),
+      'Body carries the generated UUID'
+    );
+    Assert.isNull(responseHeader('X-Request-Id'), 'Still no second id');
+  }
+
+  @IsTest
+  static void sapiPlatformIdIsStillRejected() {
+    RestTestUtil.initGetRaw(SAPI_URI, headers(PLATFORM_ID, 'v1'), null);
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.isTrue(ctx.isRejected(), 'SAPI rules are unchanged');
+    Assert.areEqual(
+      'X-Request-Id must be a UUID.',
+      RestTestUtil.getBodyAsMap().get('message'),
+      'SAPI message unchanged'
+    );
+  }
+
+  // ---------- One log line per request
+
+  private class RecordingSink implements System.Callable {
+    public List<Map<String, Object>> entries = new List<Map<String, Object>>();
+
+    public Object call(String action, Map<String, Object> args) {
+      entries.add(args);
+      return new Map<String, Object>{ 'isSuccess' => true };
+    }
+  }
+
+  @IsTest
+  static void okWritesOneLogLineWithoutHeaderValues() {
+    RecordingSink sink = new RecordingSink();
+    PortfolioLog.injectedSink = sink;
+    RestTestUtil.initGetRaw(
+      SAPI_URI + '?limit=5',
+      new Map<String, String>{
+        'X-Request-Id' => VALID_ID,
+        'X-Evaluator-Note' => 'secret-header-value'
+      },
+      null
+    );
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    ctx.ok(new Map<String, Object>{ 'body' => 'secret-body-value' });
+    ctx.ok(new Map<String, Object>{ 'again' => true });
+    Test.stopTest();
+
+    Assert.areEqual(1, sink.entries.size(), 'Exactly one line per request');
+    String line = (String) sink.entries[0].get('message');
+    Assert.isTrue(line.contains('path=' + SAPI_URI), line);
+    Assert.isTrue(line.contains('status=200'), line);
+    Assert.isTrue(line.contains('correlationId=' + VALID_ID), line);
+    Assert.isTrue(line.contains('elapsedMs='), line);
+    Assert.isFalse(line.contains('limit=5'), 'No query string');
+    Assert.isFalse(line.contains('secret'), 'No token and no body');
+  }
+
+  @IsTest
+  static void rejectionWritesOneLogLineWithItsStatus() {
+    RecordingSink sink = new RecordingSink();
+    PortfolioLog.injectedSink = sink;
+    RestTestUtil.initGetRaw(SAPI_URI, headers(null, 'v1'), null);
+
+    Test.startTest();
+    ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.areEqual(1, sink.entries.size(), 'One line for the rejection');
+    Assert.isTrue(
+      ((String) sink.entries[0].get('message')).contains('status=400'),
+      'Status logged'
+    );
+  }
+
   @IsTest
   static void papiMalformedRequestIdRejected() {
     RestTestUtil.initGetRaw(PAPI_URI, headers('not-a-uuid', null), null);

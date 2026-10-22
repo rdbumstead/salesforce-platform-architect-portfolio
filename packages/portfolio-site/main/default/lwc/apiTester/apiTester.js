@@ -3,7 +3,10 @@
  *                      ApiLabController.invoke (ADR-027) and shows the status, latency, tracing
  *                      and paging headers, the Named Credential and the body. Also requests an
  *                      evaluator token through ApiLabController.requestEvaluatorToken (ADR-028)
- *                      and shows the result exactly as the controller returns it.
+ *                      and shows the result exactly as the controller returns it. Sends
+ *                      api_test_executed with the path and status after each call (contract L4).
+ *                      The body has a Raw JSON view and a Rendered view that shows long text
+ *                      fields, such as the resume's generatedText, with their line breaks.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -12,6 +15,10 @@
 import { LightningElement } from "lwc";
 import invoke from "@salesforce/apex/ApiLabController.invoke";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
+import { trackEvent, EVENTS } from "c/analyticsService";
+
+/** api_test_executed status when the call itself failed and no HTTP status came back. */
+export const STATUS_CALL_FAILED = "error";
 
 /**
  * Mirrors ApiLabController.ALLOWED_PATHS. The controller refuses any other path, so a
@@ -100,6 +107,64 @@ export function parseQuery(text) {
   return params;
 }
 
+/** A string field this long, or with a line break, is shown in the Rendered view. */
+export const RENDERED_MIN_LENGTH = 80;
+const MAX_RENDERED_FIELDS = 20;
+const MAX_RENDER_DEPTH = 4;
+
+export const VIEW_RAW = "raw";
+export const VIEW_RENDERED = "rendered";
+
+/**
+ * Finds the long text fields of a parsed body, depth first, as { path, text }. A path
+ * is the keys and list indexes joined with dots, for example "generatedText" or
+ * "data.0.description".
+ */
+export function longTextFields(value, path = "", depth = 0, found = []) {
+  if (found.length >= MAX_RENDERED_FIELDS || depth > MAX_RENDER_DEPTH) {
+    return found;
+  }
+  if (typeof value === "string") {
+    if (path && (value.length >= RENDERED_MIN_LENGTH || value.includes("\n"))) {
+      found.push({ path, text: value });
+    }
+    return found;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      longTextFields(
+        item,
+        path ? `${path}.${index}` : String(index),
+        depth + 1,
+        found
+      )
+    );
+    return found;
+  }
+  if (value && typeof value === "object") {
+    Object.keys(value).forEach((key) =>
+      longTextFields(
+        value[key],
+        path ? `${path}.${key}` : key,
+        depth + 1,
+        found
+      )
+    );
+  }
+  return found;
+}
+
+function parseBody(body) {
+  if (body === null || body === undefined || body === "") {
+    return undefined;
+  }
+  try {
+    return JSON.parse(body);
+  } catch {
+    return undefined;
+  }
+}
+
 function formatBody(body) {
   if (body === null || body === undefined || body === "") {
     return "(empty body)";
@@ -117,6 +182,7 @@ export default class ApiTester extends LightningElement {
   isLoading = false;
   result;
   invokeError = "";
+  bodyView = VIEW_RAW;
 
   email = "";
   purpose = "";
@@ -172,6 +238,45 @@ export default class ApiTester extends LightningElement {
     return this.result ? formatBody(this.result.body) : "";
   }
 
+  get isRawView() {
+    return this.bodyView === VIEW_RAW;
+  }
+
+  get rawPressed() {
+    return this.isRawView ? "true" : "false";
+  }
+
+  get renderedPressed() {
+    return this.isRawView ? "false" : "true";
+  }
+
+  get rawViewClass() {
+    return this.isRawView ? "view-button view-button_selected" : "view-button";
+  }
+
+  get renderedViewClass() {
+    return this.isRawView ? "view-button" : "view-button view-button_selected";
+  }
+
+  get renderedFields() {
+    const parsed = this.result ? parseBody(this.result.body) : undefined;
+    return longTextFields(parsed).map((field, index) => ({
+      ...field,
+      key: `${index}-${field.path}`
+    }));
+  }
+
+  get hasRenderedFields() {
+    return this.renderedFields.length > 0;
+  }
+
+  handleViewClick(event) {
+    const view = event.currentTarget.dataset.view;
+    if (view === VIEW_RAW || view === VIEW_RENDERED) {
+      this.bodyView = view;
+    }
+  }
+
   get isTokenDisabled() {
     return this.isRequestingToken;
   }
@@ -187,7 +292,7 @@ export default class ApiTester extends LightningElement {
   get tokenFields() {
     const token = (this.tokenResult && this.tokenResult.token) || {};
     return withKeys(
-      ["access_token", "token_type", "expires_in", "instance_url", "docs"]
+      ["access_token", "token_type", "instance_url", "docs"]
         .filter((name) => token[name] !== undefined && token[name] !== null)
         .map((name) => ({ name, value: String(token[name]) }))
     );
@@ -229,13 +334,22 @@ export default class ApiTester extends LightningElement {
     this.isLoading = true;
     this.invokeError = "";
     this.result = undefined;
+    const path = this.selectedPath;
     try {
       this.result = await invoke({
-        path: this.selectedPath,
+        path,
         params: parseQuery(this.queryText)
+      });
+      trackEvent(EVENTS.API_TEST_EXECUTED, {
+        path,
+        status: this.result?.statusCode
       });
     } catch (error) {
       this.invokeError = reduceError(error);
+      trackEvent(EVENTS.API_TEST_EXECUTED, {
+        path,
+        status: STATUS_CALL_FAILED
+      });
     } finally {
       this.isLoading = false;
     }

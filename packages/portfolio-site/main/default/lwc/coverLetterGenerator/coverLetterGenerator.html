@@ -56,14 +56,14 @@
       </div>
 
       <div class="slds-m-top_medium slds-text-align_right">
-        <lightning-button
-          variant="brand"
-          label="Generate"
-          icon-name="utility:magicwand"
+        <button
+          type="button"
+          class="generate-button"
           onclick={handleGenerate}
           disabled={isGenerateDisabled}
-          class="generate-button"
-        ></lightning-button>
+        >
+          Generate
+        </button>
       </div>
       <p class="wait-note" data-id="wait-note">
         Letters are written by Gemma 4, which reasons before it answers, so a
@@ -105,8 +105,7 @@
               class="fallback-note"
               data-id="fallback-note"
             >
-              The AI model was busy or too slow, so the template letter was
-              used.
+              {fallbackReason}
             </p>
             <div class="letter" data-id="letter">{result.content}</div>
 

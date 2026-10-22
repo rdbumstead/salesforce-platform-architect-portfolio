@@ -3,7 +3,8 @@
  *                      Owns tracing and version headers, pagination, error payloads,
  *                      cache directives and rate-limit headers. Authentication is not
  *                      handled here: the platform rejects unauthenticated callers before
- *                      Apex runs (ADR-027).
+ *                      Apex runs (ADR-027). Writes one log line per request through
+ *                      RequestUtil and PortfolioLog once the response is written.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -40,6 +41,10 @@ public with sharing class ApiRequestContext {
   private static final Pattern UUID_PATTERN = Pattern.compile(
     '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
   );
+  // The id the platform injects on My Domain when the caller sends none (round-2-post-deploy D3).
+  private static final Pattern PLATFORM_ID_PATTERN = Pattern.compile(
+    '^[0-9a-fA-F]{32}$'
+  );
   private static final Map<CachePolicy, String> CACHE_DIRECTIVES = new Map<CachePolicy, String>{
     CachePolicy.PUBLIC_300 => 'max-age=300, public',
     CachePolicy.PRIVATE_300 => 'max-age=300, private',
@@ -55,6 +60,8 @@ public with sharing class ApiRequestContext {
   private String correlationId;
   private Boolean rejected = false;
   private Integer pageLimit = DEFAULT_LIMIT;
+  private final Long startedAt = System.currentTimeMillis();
+  private Boolean logged = false;
 
   /**
    * @description Outcome of a rate-limit check and the values for the rate-limit headers.
@@ -219,6 +226,7 @@ public with sharing class ApiRequestContext {
     commitRateCounts();
     res.statusCode = 200;
     res.responseBody = Blob.valueOf(JSON.serialize(body));
+    logRequest();
   }
 
   /**
@@ -242,6 +250,25 @@ public with sharing class ApiRequestContext {
           status == 429)
         }
       )
+    );
+    logRequest();
+  }
+
+  /**
+   * @description Writes the one log line for this request (path, status, correlation id,
+   *              elapsed ms) through RequestUtil and PortfolioLog. Runs once, after the
+   *              response is written, so it never precedes a resource's callouts.
+   */
+  private void logRequest() {
+    if (logged) {
+      return;
+    }
+    logged = true;
+    RequestUtil.logRequest(
+      req?.requestURI,
+      res?.statusCode,
+      correlationId,
+      System.currentTimeMillis() - startedAt
     );
   }
 
@@ -282,13 +309,19 @@ public with sharing class ApiRequestContext {
     header('Content-Type', 'application/json');
 
     String suppliedId = headerValue(HEADER_REQUEST_ID);
-    Boolean idMissing = String.isBlank(suppliedId);
+    // On PAPI the platform's own 32-hex id means the caller sent none (decision D3).
+    Boolean platformId =
+      family == ApiFamily.PAPI &&
+      String.isNotBlank(suppliedId) &&
+      PLATFORM_ID_PATTERN.matcher(suppliedId.trim()).matches();
+    Boolean idMissing = String.isBlank(suppliedId) || platformId;
     Boolean idValid =
       !idMissing && UUID_PATTERN.matcher(suppliedId.trim()).matches();
     correlationId = idValid ? suppliedId.trim() : UUID.randomUUID().toString();
-    // The platform echoes a caller-supplied X-Request-Id on every response (Round 2 pre-flight 1),
-    // so Apex sets the header only when it generated the id; setting it too doubles it (id;id).
-    if (!idValid) {
+    // The platform echoes whatever X-Request-Id the request carries on every response (Round 2
+    // pre-flight 1), the id it injected included. So Apex sets the header only when it
+    // generated the id and the request carried none, or the response gets two (id;id).
+    if (!idValid && !platformId) {
       header(HEADER_REQUEST_ID, correlationId);
     }
     header(HEADER_API_VERSION, SUPPORTED_VERSION);

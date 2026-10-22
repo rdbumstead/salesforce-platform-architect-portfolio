@@ -12,10 +12,22 @@ import { createElement } from "@lwc/engine-dom";
 import ApiTester, {
   ALLOWED_PATHS,
   DISPLAYED_HEADERS,
-  parseQuery
+  parseQuery,
+  longTextFields,
+  RENDERED_MIN_LENGTH
 } from "c/apiTester";
 import invoke from "@salesforce/apex/ApiLabController.invoke";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
+import { trackEvent } from "c/analyticsService";
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    trackEvent: jest.fn(),
+    EVENTS: { API_TEST_EXECUTED: "api_test_executed" }
+  }),
+  { virtual: true }
+);
 
 jest.mock(
   "@salesforce/apex/ApiLabController.invoke",
@@ -123,7 +135,7 @@ describe("c-api-tester", () => {
     setInput(element, "lightning-input.query-input", "limit=5&offset=0");
     await flushPromises();
 
-    query(element, "lightning-button.execute-button").click();
+    query(element, "button.execute-button").click();
     await flushPromises();
 
     expect(invoke).toHaveBeenCalledWith({
@@ -156,7 +168,7 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    query(element, "lightning-button.execute-button").click();
+    query(element, "button.execute-button").click();
     await flushPromises();
 
     expect(invoke).toHaveBeenCalledWith({
@@ -169,20 +181,49 @@ describe("c-api-tester", () => {
     expect(query(element, ".response-body").textContent).toBe("not json");
   });
 
-  it("uses brand buttons and no SLDS text colour classes (contract K9)", async () => {
+  it("uses native 44 px buttons and no SLDS text colour classes", async () => {
     invoke.mockResolvedValue(INVOKE_RESULT);
     const element = createComponent();
     await flushPromises();
-    query(element, "lightning-button.execute-button").click();
+    query(element, "button.execute-button").click();
     await flushPromises();
 
-    expect(query(element, "lightning-button.execute-button").variant).toBe(
-      "brand"
+    expect(query(element, "button.execute-button").textContent.trim()).toBe(
+      "Execute GET"
     );
-    expect(query(element, "lightning-button.token-button").variant).toBe(
-      "brand"
+    expect(query(element, "button.token-button").textContent.trim()).toBe(
+      "Request token"
     );
     expect(query(element, '[class*="slds-text-color_"]')).toBeNull();
+    const css = readFileSync(join(__dirname, "..", "apiTester.css"), "utf8");
+    expect(css).toMatch(/\.token-button \{[^}]*min-height: 44px/);
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+  });
+
+  it("sends api_test_executed with the path and status after each call", async () => {
+    invoke.mockResolvedValueOnce({ ...INVOKE_RESULT, statusCode: 429 });
+    invoke.mockRejectedValueOnce({ body: { message: "unreachable" } });
+    const element = createComponent();
+    await flushPromises();
+    query(element, "lightning-combobox.endpoint-picker").dispatchEvent(
+      new CustomEvent("change", { detail: { value: "/sapi/v1/skills" } })
+    );
+    await flushPromises();
+
+    query(element, "button.execute-button").click();
+    await flushPromises();
+    expect(trackEvent).toHaveBeenLastCalledWith("api_test_executed", {
+      path: "/sapi/v1/skills",
+      status: 429
+    });
+
+    query(element, "button.execute-button").click();
+    await flushPromises();
+    expect(trackEvent).toHaveBeenLastCalledWith("api_test_executed", {
+      path: "/sapi/v1/skills",
+      status: "error"
+    });
+    expect(trackEvent).toHaveBeenCalledTimes(2);
   });
 
   it("shows the controller error when invoke throws", async () => {
@@ -192,7 +233,7 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    query(element, "lightning-button.execute-button").click();
+    query(element, "button.execute-button").click();
     await flushPromises();
 
     expect(query(element, ".invoke-error").textContent).toContain(
@@ -211,7 +252,6 @@ describe("c-api-tester", () => {
       token: {
         access_token: "00Dxx!token",
         token_type: "Bearer",
-        expires_in: 1800,
         instance_url: "https://example.my.salesforce.com",
         docs: "https://example.com/docs"
       }
@@ -224,7 +264,7 @@ describe("c-api-tester", () => {
 
     setInput(element, "lightning-input.token-email", "eval@example.com");
     setInput(element, "lightning-input.token-purpose", "Review the API");
-    query(element, "lightning-button.token-button").click();
+    query(element, "button.token-button").click();
     await flushPromises();
 
     expect(requestEvaluatorToken).toHaveBeenCalledWith({
@@ -236,8 +276,11 @@ describe("c-api-tester", () => {
       query(element, 'dd.token-value[data-field="access_token"]').textContent
     ).toBe("00Dxx!token");
     expect(
-      query(element, 'dd.token-value[data-field="expires_in"]').textContent
-    ).toBe("1800");
+      query(element, 'dd.token-value[data-field="expires_in"]')
+    ).toBeNull();
+    expect(query(element, ".token-issued").textContent).toContain(
+      "30 minutes without use"
+    );
     consoleSpies.forEach((spy) => {
       const logged = JSON.stringify(spy.mock.calls);
       expect(logged).not.toContain("00Dxx!token");
@@ -257,7 +300,7 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    query(element, "lightning-button.token-button").click();
+    query(element, "button.token-button").click();
     await flushPromises();
 
     const value = (name) =>
@@ -277,7 +320,7 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    query(element, "lightning-button.token-button").click();
+    query(element, "button.token-button").click();
     await flushPromises();
 
     expect(query(element, ".token-error").textContent).toContain(
@@ -293,5 +336,94 @@ describe("c-api-tester", () => {
       persona: "Architect"
     });
     expect(parseQuery("q=a%20b&flag")).toEqual({ q: "a b", flag: "" });
+  });
+
+  describe("rendered view", () => {
+    const RESUME_TEXT =
+      "Test User\nArchitect\n\nEXPERIENCE\n\nEmployer Inc | Developer\n- Did great things";
+    const RESUME_RESULT = {
+      ...INVOKE_RESULT,
+      path: "/papi/v1/resume/generate",
+      body: JSON.stringify({
+        generatedText: RESUME_TEXT,
+        persona: "Architect",
+        integrityNote: "complete"
+      })
+    };
+
+    async function executeWith(result) {
+      invoke.mockResolvedValue(result);
+      const element = createComponent();
+      await flushPromises();
+      query(element, "button.execute-button").click();
+      await flushPromises();
+      return element;
+    }
+
+    it("starts on Raw JSON with both views as pressed toggle buttons", async () => {
+      const element = await executeWith(RESUME_RESULT);
+      const raw = query(element, 'button[data-view="raw"]');
+      const rendered = query(element, 'button[data-view="rendered"]');
+      expect(raw.getAttribute("aria-pressed")).toBe("true");
+      expect(rendered.getAttribute("aria-pressed")).toBe("false");
+      expect(raw.tagName).toBe("BUTTON");
+      expect(rendered.textContent.trim()).toBe("Rendered");
+      expect(query(element, ".response-body")).not.toBeNull();
+      expect(query(element, '[data-id="rendered-view"]')).toBeNull();
+    });
+
+    it("shows a long text field with its line breaks when Rendered is chosen", async () => {
+      const element = await executeWith(RESUME_RESULT);
+      query(element, 'button[data-view="rendered"]').click();
+      await flushPromises();
+
+      expect(
+        query(element, 'button[data-view="rendered"]').getAttribute(
+          "aria-pressed"
+        )
+      ).toBe("true");
+      expect(query(element, ".response-body")).toBeNull();
+      const fields = element.shadowRoot.querySelectorAll(".rendered-field");
+      expect(fields).toHaveLength(1);
+      expect(query(element, ".rendered-path").textContent).toBe(
+        "generatedText"
+      );
+      const text = query(element, ".rendered-text");
+      expect(text.tagName).toBe("PRE");
+      expect(text.textContent).toBe(RESUME_TEXT);
+      expect(text.textContent).toContain("\n\nEXPERIENCE\n");
+      expect(text.getAttribute("tabindex")).toBe("0");
+
+      query(element, 'button[data-view="raw"]').click();
+      await flushPromises();
+      expect(query(element, ".response-body")).not.toBeNull();
+    });
+
+    it("says so when the body has no long text field", async () => {
+      const element = await executeWith(INVOKE_RESULT);
+      query(element, 'button[data-view="rendered"]').click();
+      await flushPromises();
+
+      expect(query(element, '[data-id="rendered-empty"]')).not.toBeNull();
+      expect(query(element, ".rendered-field")).toBeNull();
+    });
+
+    it("finds long or multi-line strings at any depth, by path", () => {
+      const long = "x".repeat(RENDERED_MIN_LENGTH);
+      expect(
+        longTextFields({
+          short: "Apex",
+          multi: "a\nb",
+          data: [{ description: long }, { name: "LWC" }],
+          nested: { deeper: { text: long } }
+        })
+      ).toEqual([
+        { path: "multi", text: "a\nb" },
+        { path: "data.0.description", text: long },
+        { path: "nested.deeper.text", text: long }
+      ]);
+      expect(longTextFields(undefined)).toEqual([]);
+      expect(longTextFields("top level string\n")).toEqual([]);
+    });
   });
 });

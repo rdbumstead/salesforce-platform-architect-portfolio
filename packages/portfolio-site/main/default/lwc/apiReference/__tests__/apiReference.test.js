@@ -12,9 +12,21 @@ import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
   HOSTED_REFERENCE_URL,
-  REDOC_OPTIONS
+  REDOC_OPTIONS,
+  RENDER_TIMEOUT_MS,
+  TIMEOUT_MESSAGE
 } from "c/apiReference";
 import { loadScript } from "lightning/platformResourceLoader";
+import { trackEvent } from "c/analyticsService";
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    trackEvent: jest.fn(),
+    EVENTS: { API_REFERENCE_OPENED: "api_reference_opened" }
+  }),
+  { virtual: true }
+);
 
 // config/jest.config.js maps every lightning/* import to one universal mock file, so
 // mocking platformResourceLoader mocks lightning-card and the rest too. Keep the real
@@ -31,6 +43,13 @@ jest.mock("lightning/platformResourceLoader", () => {
 
 const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
 
+// Microtask flush that works under fake timers.
+async function settle() {
+  for (let i = 0; i < 8; i++) {
+    await Promise.resolve();
+  }
+}
+
 function createComponent() {
   const element = createElement("c-api-reference", { is: ApiReference });
   document.body.appendChild(element);
@@ -42,7 +61,7 @@ function query(element, selector) {
 }
 
 function openButton(element) {
-  return query(element, "lightning-button.open-reference");
+  return query(element, "button.open-reference");
 }
 
 function specButton(element, value) {
@@ -66,6 +85,67 @@ describe("c-api-reference", () => {
       document.body.removeChild(document.body.firstChild);
     }
     delete window.Redoc;
+    trackEvent.mockClear();
+    jest.useRealTimers();
+  });
+
+  it("sends api_reference_opened with the selected spec on open", async () => {
+    const element = createComponent();
+    await flushPromises();
+    specButton(element, "papi").click();
+    await flushPromises();
+
+    openButton(element).click();
+    await flushPromises();
+
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("api_reference_opened", {
+      spec: "papi"
+    });
+  });
+
+  it("stops waiting after 15 s and offers the hosted reference", async () => {
+    jest.useFakeTimers();
+    window.Redoc.init = jest.fn(); // never calls back, as under WebKit (trap 32)
+    const element = createComponent();
+    await Promise.resolve();
+
+    openButton(element).click();
+    await settle();
+    expect(window.Redoc.init).toHaveBeenCalledTimes(1);
+    expect(query(element, ".reference-error")).toBeNull();
+    expect(openButton(element).disabled).toBe(true);
+
+    jest.advanceTimersByTime(RENDER_TIMEOUT_MS - 1);
+    await settle();
+    expect(query(element, ".reference-error")).toBeNull();
+
+    jest.advanceTimersByTime(1);
+    await settle();
+
+    const error = query(element, ".reference-error");
+    expect(error).not.toBeNull();
+    expect(error.textContent).toContain(TIMEOUT_MESSAGE);
+    expect(query(element, "a.hosted-link").href).toBe(HOSTED_REFERENCE_URL);
+    expect(openButton(element).disabled).toBe(false);
+  });
+
+  it("clears the 15 s timer once Redoc renders", async () => {
+    jest.useFakeTimers();
+    const element = createComponent();
+    await Promise.resolve();
+
+    openButton(element).click();
+    await settle();
+    expect(jest.getTimerCount()).toBe(0);
+    expect(query(element, ".reference-error")).toBeNull();
+  });
+
+  it("uses only token colours apart from the Redoc panel, with 44 px buttons", () => {
+    const css = readFileSync(join(__dirname, "..", "apiReference.css"), "utf8");
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+    expect(css).toMatch(/\.open-reference \{[^}]*min-height: 44px/);
+    expect(css).toMatch(/\.spec-button \{[^}]*min-height: 44px/);
   });
 
   it("loads nothing before the visitor opens the reference", async () => {
@@ -74,8 +154,10 @@ describe("c-api-reference", () => {
 
     expect(loadScript).not.toHaveBeenCalled();
     expect(window.Redoc.init).not.toHaveBeenCalled();
-    expect(openButton(element).label).toBe("Open interactive reference");
-    expect(openButton(element).variant).toBe("brand");
+    expect(openButton(element).textContent.trim()).toBe(
+      "Open interactive reference"
+    );
+    expect(trackEvent).not.toHaveBeenCalled();
   });
 
   it("loads Redoc_Script once on the click and renders the SAPI spec", async () => {
@@ -243,5 +325,56 @@ describe("c-api-reference", () => {
       expect(copy.length).toBeGreaterThan(0);
       expect(copy.equals(source)).toBe(true);
     });
+  });
+
+  it("fills the page and opens without a click on its own page", async () => {
+    const element = createElement("c-api-reference", { is: ApiReference });
+    element.fullWidth = true;
+    element.openOnLoad = true;
+    document.body.appendChild(element);
+    await flushPromises();
+    await flushPromises();
+
+    expect(loadScript).toHaveBeenCalledTimes(1);
+    expect(window.Redoc.init).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("api_reference_opened", {
+      spec: "sapi"
+    });
+    expect(
+      query(element, ".reference-body").classList.contains(
+        "reference-body_full"
+      )
+    ).toBe(true);
+    const panel = query(element, ".redoc-target").parentElement;
+    expect(panel.classList.contains("redoc-panel_full")).toBe(true);
+    expect(panel.classList.contains("slds-hide")).toBe(false);
+    expect(specButton(element, "papi")).not.toBeNull();
+
+    specButton(element, "papi").click();
+    await flushPromises();
+    expect(window.Redoc.init).toHaveBeenCalledTimes(2);
+    expect(window.Redoc.init.mock.calls[1][0]).toBe("PAPI_Spec");
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the boxed layout and waits for a click by default", async () => {
+    const element = createComponent();
+    await flushPromises();
+
+    expect(
+      query(element, ".reference-body").classList.contains(
+        "reference-body_full"
+      )
+    ).toBe(false);
+    expect(loadScript).not.toHaveBeenCalled();
+  });
+
+  it("exposes fullWidth and openOnLoad to the site builder", () => {
+    const meta = readFileSync(
+      join(__dirname, "..", "apiReference.js-meta.xml"),
+      "utf8"
+    );
+    expect(meta).toMatch(/name="fullWidth"/);
+    expect(meta).toMatch(/name="openOnLoad"/);
   });
 });

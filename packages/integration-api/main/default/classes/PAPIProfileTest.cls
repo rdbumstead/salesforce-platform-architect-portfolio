@@ -14,6 +14,7 @@ private class PAPIProfileTest {
       FirstName = 'Ryan',
       LastName = 'Bumstead',
       Email = 'ryan@test.com',
+      Phone = '(555) 014-2424',
       Is_Portfolio_Owner__c = true,
       LinkedIn_URL__c = 'https://linkedin.com/in/test',
       Career_Objective__c = 'Test objective'
@@ -351,6 +352,56 @@ private class PAPIProfileTest {
       'max-age=300, private',
       res.headers.get('Cache-Control'),
       'A failure does not change the summary policy'
+    );
+  }
+
+  @IsTest
+  static void fullProfileReturnsNoOwnerEmailOrPhone() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    String raw = RestTestUtil.getResponse().responseBody.toString();
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Map<String, Object> contactInfo = (Map<String, Object>) body.get(
+      'contactInfo'
+    );
+    Assert.areEqual('Ryan Bumstead', contactInfo.get('fullName'), 'Name kept');
+    Assert.isFalse(contactInfo.containsKey('email'), 'No email key');
+    Assert.isFalse(contactInfo.containsKey('phone'), 'No phone key');
+    Assert.isFalse(raw.contains('ryan@test.com'), 'Email never leaks');
+    Assert.isFalse(raw.contains('014-2424'), 'Phone never leaks');
+    Assert.isFalse(raw.contains('ownerEmail'), 'No ownerEmail key');
+    Assert.isFalse(raw.contains('ownerPhone'), 'No ownerPhone key');
+  }
+
+  @IsTest
+  static void certificationIssuerIsTheAccountName() {
+    Account issuer = new Account(Name = 'Salesforce Issuer');
+    insert issuer;
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    insert new Certification__c(
+      Name = 'Platform Developer I',
+      Issuer__c = issuer.Id,
+      Contact__c = owner.Id,
+      Earned_Date__c = Date.today().addMonths(-6)
+    );
+    RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
+
+    Test.startTest();
+    PAPIProfile.getProfile();
+    Test.stopTest();
+
+    List<Object> certs = (List<Object>) RestTestUtil.getBodyAsMap()
+      .get('certifications');
+    Map<String, Object> cert = (Map<String, Object>) certs[0];
+    Assert.areEqual('Salesforce Issuer', cert.get('issuer'), 'Issuer name');
+    Assert.areNotEqual(
+      String.valueOf(issuer.Id),
+      cert.get('issuer'),
+      'Never the Issuer__c Id'
     );
   }
 }

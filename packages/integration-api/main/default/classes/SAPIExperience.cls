@@ -35,8 +35,7 @@ global with sharing class SAPIExperience {
       String baseQuery =
         'SELECT Id, Name, Employer__c, Employer__r.Name, ' +
         'Start_Date__c, End_Date__c, Is_Current_Role__c, Is_Remote__c, Sort_Order__c, ' +
-        'Contact__c, Contact__r.Name, ' +
-        '(SELECT Id, Name, Description__c, Persona_Tag__c, Sort_Order__c FROM Experience_Highlights__r ORDER BY Sort_Order__c ASC) ' +
+        'Contact__c, Contact__r.Name, Accomplishments__c ' +
         'FROM Experience__c WHERE Id != null';
 
       if (currentlyEmployed != null) {
@@ -61,8 +60,11 @@ global with sharing class SAPIExperience {
   }
 
   /**
-   * @description Transforms Experience__c records to API response format.
+   * @description Transforms Experience__c records to the Experience schema in
+   *              salesforce-sapi.yaml (decision D4). accomplishments is the deprecated HTML
+   *              field the spec keeps. Highlights are served by /experience-highlights.
    */
+  @TestVisible
   private static List<Map<String, Object>> transformExperiences(
     List<Experience__c> experiences
   ) {
@@ -70,7 +72,7 @@ global with sharing class SAPIExperience {
     for (Experience__c exp : experiences) {
       Map<String, Object> item = new Map<String, Object>{
         'id' => exp.Id,
-        'name' => exp.Name, // UPDATED: Mapped standard Name field
+        'name' => exp.Name,
         'employerId' => exp.Employer__c,
         'employerName' => exp.Employer__r?.Name,
         'startDate' => exp.Start_Date__c != null
@@ -83,29 +85,9 @@ global with sharing class SAPIExperience {
         'isRemote' => exp.Is_Remote__c,
         'sortOrder' => exp.Sort_Order__c,
         'contactId' => exp.Contact__c,
-        'contactName' => exp.Contact__r?.Name
+        'contactName' => exp.Contact__r?.Name,
+        'accomplishments' => exp.Accomplishments__c
       };
-
-      // Transform highlights
-      if (
-        exp.Experience_Highlights__r != null &&
-        !exp.Experience_Highlights__r.isEmpty()
-      ) {
-        List<Map<String, Object>> highlights = new List<Map<String, Object>>();
-        for (Experience_Highlight__c h : exp.Experience_Highlights__r) {
-          highlights.add(
-            new Map<String, Object>{
-              'id' => h.Id,
-              'name' => h.Name, // Highlights use Name (auto-number) or custom
-              'description' => h.Description__c,
-              'personaTag' => h.Persona_Tag__c,
-              'sortOrder' => h.Sort_Order__c
-            }
-          );
-        }
-        item.put('highlights', highlights);
-      }
-
       result.add(item);
     }
     return result;

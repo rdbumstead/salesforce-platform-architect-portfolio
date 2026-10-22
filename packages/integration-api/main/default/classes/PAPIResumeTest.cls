@@ -13,8 +13,12 @@ private class PAPIResumeTest {
       FirstName = 'Test',
       LastName = 'User',
       Email = 'test@test.com',
+      Phone = '(555) 014-2424',
+      MobilePhone = '555-014-2425',
       Is_Portfolio_Owner__c = true,
-      Title = 'Architect'
+      Title = 'Architect',
+      LinkedIn_URL__c = 'https://www.linkedin.com/in/test-user',
+      Portfolio_URL__c = 'https://example.com/portfolio'
     );
     insert c;
 
@@ -256,5 +260,110 @@ private class PAPIResumeTest {
       RestTestUtil.getBodyAsMap().get('integrityNote'),
       'No owner contact is reported as a partial resume'
     );
+  }
+
+  private static final Pattern PHONE_SHAPE = Pattern.compile(
+    '\\(?\\d{3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}'
+  );
+
+  @IsTest
+  static void resumeHasNoEmailOrPhoneAndEndsWithTheLinks() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    String text = (String) body.get('generatedText');
+    Assert.isFalse(text.contains('@'), 'No email in the resume text');
+    Assert.isFalse(PHONE_SHAPE.matcher(text).find(), 'No phone in the text');
+    Assert.isTrue(
+      text.endsWith(
+        'LinkedIn: https://www.linkedin.com/in/test-user\n' +
+        'Portfolio: https://example.com/portfolio'
+      ),
+      'Ends with the LinkedIn and portfolio links: ' + text.right(120)
+    );
+  }
+
+  @IsTest
+  static void certificationLineShowsTheIssuerName() {
+    Account issuer = [SELECT Id FROM Account WHERE Name = 'Salesforce'];
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    String text = (String) RestTestUtil.getBodyAsMap().get('generatedText');
+    Assert.isTrue(
+      text.contains('Platform Developer I - Salesforce'),
+      'Issuer name on the certification line'
+    );
+    Assert.isFalse(text.contains(String.valueOf(issuer.Id)), 'No Id 18');
+    Assert.isFalse(
+      text.contains(String.valueOf(issuer.Id).left(15)),
+      'No Id 15'
+    );
+  }
+
+  @IsTest
+  static void skillsAreThoseOfThePrintedRolesByCategoryThenProficiency() {
+    Experience__c role = [SELECT Id FROM Experience__c LIMIT 1];
+    Skill__c apex = [SELECT Id FROM Skill__c WHERE Name = 'Apex'];
+    apex.Category_Order__c = 2;
+    update apex;
+    Skill__c soql = new Skill__c(
+      Name = 'SOQL',
+      Category__c = 'Backend',
+      Category_Order__c = 2,
+      Proficiency__c = 3
+    );
+    Skill__c flows = new Skill__c(
+      Name = 'Flow',
+      Category__c = 'Process Automation',
+      Category_Order__c = 1,
+      Proficiency__c = 4
+    );
+    Skill__c unlinked = new Skill__c(
+      Name = 'Unlinked Skill',
+      Category__c = 'Backend',
+      Category_Order__c = 2,
+      Proficiency__c = 5
+    );
+    insert new List<Skill__c>{ soql, flows, unlinked };
+    insert new List<Experience_Skill__c>{
+      new Experience_Skill__c(Experience__c = role.Id, Skill__c = soql.Id),
+      new Experience_Skill__c(Experience__c = role.Id, Skill__c = apex.Id),
+      new Experience_Skill__c(Experience__c = role.Id, Skill__c = flows.Id)
+    };
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    String text = (String) RestTestUtil.getBodyAsMap().get('generatedText');
+    Assert.isTrue(
+      text.contains(
+        'SKILLS\n\nProcess Automation: Flow\nBackend: Apex, SOQL\n'
+      ),
+      'Linked skills, category order then proficiency: ' + text
+    );
+    Assert.isFalse(text.contains('Unlinked Skill'), 'Only linked skills');
+  }
+
+  @IsTest
+  static void noLinkedSkillsLeavesTheSectionOut() {
+    RestTestUtil.initGet('/services/apexrest/papi/v1/resume/generate');
+
+    Test.startTest();
+    PAPIResume.getResume();
+    Test.stopTest();
+
+    String text = (String) RestTestUtil.getBodyAsMap().get('generatedText');
+    Assert.isFalse(text.contains('SKILLS'), 'No linked skill, no section');
+    Assert.isTrue(text.contains('EXPERIENCE'), 'Other sections remain');
   }
 }

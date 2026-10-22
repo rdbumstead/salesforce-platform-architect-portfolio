@@ -47,8 +47,6 @@ global with sharing class SAPIPortfolioConfig {
     }
     return [
       SELECT
-        Owner_Email__c,
-        Owner_Phone__c,
         LinkedIn_URL__c,
         GitHub_Profile_URL__c,
         Calendly_URL__c,

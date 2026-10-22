@@ -122,7 +122,7 @@ private class SAPIExperienceTest {
   }
 
   @IsTest
-  static void testGetExperiencesEmployerFilterWithHighlights() {
+  static void testGetExperiencesEmployerFilterLeavesHighlightsOut() {
     Experience__c exp = [SELECT Id FROM Experience__c LIMIT 1];
     exp.Is_Current_Role__c = false;
     exp.End_Date__c = Date.today();
@@ -147,12 +147,51 @@ private class SAPIExperienceTest {
     System.assertEquals(200, res.statusCode, 'Should return 200 OK');
     String responseJson = res.responseBody.toString();
     System.assert(
-      responseJson.contains('Delivered the platform'),
-      'Response should contain the highlight'
+      !responseJson.contains('Delivered the platform'),
+      'Highlights are served by /experience-highlights, not here'
     );
     System.assert(
       responseJson.contains('endDate'),
       'Response should contain the end date'
     );
+  }
+
+  // Property names of the Experience schema in salesforce-sapi.yaml (decision D4).
+  private static final Set<String> SPEC_EXPERIENCE_KEYS = new Set<String>{
+    'id',
+    'employerName',
+    'employerId',
+    'name',
+    'startDate',
+    'endDate',
+    'isCurrentRole',
+    'isRemote',
+    'accomplishments',
+    'contactId',
+    'contactName',
+    'sortOrder'
+  };
+
+  @IsTest
+  static void responseKeysEqualTheSpecSchema() {
+    Experience__c exp = [SELECT Id FROM Experience__c LIMIT 1];
+    exp.Accomplishments__c = '<ul><li>Led 5 deployments</li></ul>';
+    update exp;
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/experience/');
+
+    Test.startTest();
+    SAPIExperience.getExperiences();
+    Test.stopTest();
+
+    List<Object> items = (List<Object>) JSON.deserializeUntyped(
+      RestTestUtil.getResponse().responseBody.toString()
+    );
+    Map<String, Object> item = (Map<String, Object>) items[0];
+    Assert.areEqual(SPEC_EXPERIENCE_KEYS, item.keySet(), 'Keys equal the spec');
+    Assert.isTrue(
+      ((String) item.get('accomplishments')).contains('Led 5 deployments'),
+      'accomplishments from Accomplishments__c'
+    );
+    Assert.isFalse(item.containsKey('highlights'), 'highlights is gone');
   }
 }

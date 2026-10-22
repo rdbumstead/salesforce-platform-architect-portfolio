@@ -8,4 +8,22 @@
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
     </targets>
+    <targetConfigs>
+        <targetConfig targets="lightningCommunity__Default">
+            <property
+        name="fullWidth"
+        type="Boolean"
+        default="false"
+        label="Full width"
+        description="Fill the page width with no height cap, for the reference page."
+      />
+            <property
+        name="openOnLoad"
+        type="Boolean"
+        default="false"
+        label="Open on load"
+        description="Open the interactive reference without a click."
+      />
+        </targetConfig>
+    </targetConfigs>
 </LightningComponentBundle>
