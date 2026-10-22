@@ -1,46 +1,38 @@
 /*
- * Contract K9: the site branding is dark. Every element here that sets a background
- * also sets its text colour. The controls sit on the site root surface and use the
- * DXP root tokens, the same pair the theme gives base component labels. The resume
- * preview is a light paper with its own dark text, so it reads the same on any theme.
- * Fallbacks are the values the Portfolio branding set renders.
+ * Built on the site tokens (Round 4 plan, contract L1), so the builder and the preview follow
+ * the light and dark theme. Every element that sets a background also sets its text colour.
  */
-:host {
-  --resume-surface: var(--dxp-g-root, #020617);
-  --resume-text: var(--dxp-g-root-contrast, #e2e8f0);
-  --resume-border: var(--dxp-g-neutral-3, #475569);
-}
-
 .builder-body,
 .config-panel {
-  background-color: var(--resume-surface);
-  color: var(--resume-text);
+  background-color: var(--pf-bg);
+  color: var(--pf-text);
 }
 
 .config-panel {
-  border: 1px solid var(--resume-border);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
 }
 
 .config-panel h2 {
-  color: var(--resume-text);
+  color: var(--pf-text);
 }
 
 .text-success {
-  color: #4ade80;
-  background-color: var(--resume-surface);
+  color: var(--pf-ok);
+  background-color: var(--pf-bg);
 }
 
 .text-error {
-  color: #f87171;
-  background-color: var(--resume-surface);
+  color: var(--pf-error-text);
+  background-color: var(--pf-bg);
 }
 
 .preview-paper {
-  background-color: #ffffff;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
   min-height: 500px;
-  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
 }
 
 .preview-paper h2,
@@ -51,20 +43,20 @@
 .preview-paper span,
 .preview-paper section,
 .preview-paper header {
-  color: #0f172a;
+  color: var(--pf-text);
 }
 
 .preview-paper a {
-  color: #1d4ed8;
+  color: var(--pf-accent);
 }
 
 .preview-paper .paper-error,
 .preview-paper .paper-error p {
-  color: #b91c1c;
+  color: var(--pf-error-text);
 }
 
 .preview-paper .paper-muted {
-  color: #475569;
+  color: var(--pf-muted);
 }
 
 .section-title {
