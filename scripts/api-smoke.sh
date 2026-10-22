@@ -7,6 +7,8 @@
 # 2. Calls every GET path in salesforce-sapi.yaml and portfolio-papi.yaml on the
 #    instance_url returned with the token, with the token as a Bearer credential.
 # 3. Prints the status and the key headers for each path.
+# 4. Calls /papi/v1/resume/generate once more with Accept: text/plain and prints the
+#    Content-Type and the first line of the plain text answer.
 #
 # Usage:
 #   ./scripts/api-smoke.sh <email> "<purpose>"
@@ -16,7 +18,7 @@
 #   SITE_API_BASE  Apex REST base on the site domain (default below).
 #
 # This file holds no token, key or secret. The token lives only in this process's memory.
-# Exit status: 1 when the token request fails, 2 when any GET path is not 200, 0 otherwise.
+# Exit status: 1 when the token request fails, 2 when any GET call is not 200, 0 otherwise.
 
 set -euo pipefail
 
@@ -162,8 +164,28 @@ for path in "${SAPI_PATHS[@]}" "${PAPI_PATHS[@]}"; do
   call_path "$path"
 done
 
-TOTAL=$((${#SAPI_PATHS[@]} + ${#PAPI_PATHS[@]}))
-echo "$((TOTAL - FAILURES)) of $TOTAL GET paths returned 200."
+# --- 3. The resume as plain text ------------------------------------------------------------
+
+PLAIN_PATH="/papi/v1/resume/generate"
+PLAIN_REQUEST_ID="$(new_uuid)"
+PLAIN_STATUS="$(curl -sS -o "$WORK_DIR/resume.txt" -D "$WORK_DIR/resume.headers" -w '%{http_code}' \
+  "$API_BASE$PLAIN_PATH" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Accept: text/plain" \
+  -H "X-API-Version: v1" \
+  -H "X-Request-Id: $PLAIN_REQUEST_ID")" || PLAIN_STATUS="000"
+
+echo "GET $PLAIN_PATH (Accept: text/plain)"
+echo "  status $PLAIN_STATUS (sent X-Request-Id $PLAIN_REQUEST_ID)"
+grep -iE "^(content-type|$KEY_HEADERS):" "$WORK_DIR/resume.headers" | sed 's/^/  /' | tr -d '\r' || true
+echo "  first line: $(head -n 1 "$WORK_DIR/resume.txt" | tr -d '\r')"
+if [[ "$PLAIN_STATUS" != "200" ]]; then
+  FAILURES=$((FAILURES + 1))
+fi
+echo ""
+
+TOTAL=$((${#SAPI_PATHS[@]} + ${#PAPI_PATHS[@]} + 1))
+echo "$((TOTAL - FAILURES)) of $TOTAL GET calls returned 200."
 if [[ "$FAILURES" -gt 0 ]]; then
   exit 2
 fi
