@@ -3,7 +3,8 @@
  *                      mocked wire adapter, getSystemSnapshot a mocked imperative call, and
  *                      requestIdleCallback is captured so a test decides when the page is idle.
  *                      lightning/uiGraphQLApi passes the universal mock through and replaces only
- *                      graphql and gql (trap 25).
+ *                      graphql and gql (trap 25). The probe is the real c/graphqlProbe, which the
+ *                      footer imports on demand after idle.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -113,8 +114,10 @@ function createComponent() {
 
 async function runIdle() {
   idleCallbacks.splice(0).forEach((callback) => callback());
-  await flushPromises();
-  await flushPromises();
+  // The probe component is a dynamic import, which takes a few more turns to settle.
+  for (let i = 0; i < 4; i++) {
+    await flushPromises();
+  }
 }
 
 function q(element, selector) {
@@ -378,6 +381,16 @@ describe("c-footer", () => {
       "GraphQL: live, 42 ms"
     );
     clock.mockRestore();
+  });
+
+  it("renders the GraphQL probe only once the page is idle", async () => {
+    const element = createComponent();
+    await flushPromises();
+    expect(q(element, '[data-id="graphql-probe"]')).toBeNull();
+
+    await runIdle();
+    expect(q(element, '[data-id="graphql-probe"]')).not.toBeNull();
+    expect(graphql.getLastConfig().query).toContain("Skill__c(first: 1)");
   });
 
   it("shows GraphQL unavailable when the probe errors", async () => {

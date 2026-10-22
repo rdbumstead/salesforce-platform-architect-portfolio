@@ -40,6 +40,13 @@
       <template lwc:if={graphqlLabel}>
         <span class="metric" data-id="graphql">{graphqlLabel}</span>
       </template>
+      <template lwc:if={probeConstructor}>
+        <lwc:component
+          lwc:is={probeConstructor}
+          data-id="graphql-probe"
+          onprobe={handleProbe}
+        ></lwc:component>
+      </template>
 
       <template lwc:if={snapshotLoaded}>
         <template for:each={providerRows} for:item="row">

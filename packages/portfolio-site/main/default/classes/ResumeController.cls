@@ -44,6 +44,19 @@ public with sharing class ResumeController {
     return resume;
   }
 
+  /**
+   * @description Returns only the owner header, for the home page hero. One query on the owner
+   *              Contact, so the hero bio never waits on the roles, skills and credentials that
+   *              getResume reads. Same fields and same selector as getResume's header (K1).
+   * @return Header The owner header, or null when no Contact is the portfolio owner.
+   * @example
+   * ResumeController.Header header = ResumeController.getHeader();
+   */
+  @AuraEnabled(cacheable=true)
+  public static Header getHeader() {
+    return toHeader(new ResumeSelector().selectOwner());
+  }
+
   private static Header toHeader(Contact owner) {
     if (owner == null) {
       return null;
