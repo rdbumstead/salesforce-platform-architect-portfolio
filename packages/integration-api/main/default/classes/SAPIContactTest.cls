@@ -33,6 +33,11 @@ private class SAPIContactTest {
       rows[0].get('name'),
       'The owner is the only contact returned'
     );
+    Assert.isFalse(rows[0].containsKey('email'), 'No email key');
+    Assert.isFalse(rows[0].containsKey('phone'), 'No phone key');
+    String raw = SapiTestData.bodyText();
+    Assert.isFalse(raw.contains('owner@example.com'), 'Email never leaks');
+    Assert.isFalse(raw.contains('555-0199'), 'Phone never leaks');
     SapiTestData.assertCache('no-store, no-cache');
     SapiTestData.assertPaging(1, false);
   }
