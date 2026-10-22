@@ -173,6 +173,95 @@ private class ApiRequestContextTest {
     );
   }
 
+  // ---------- D3: the platform's own 32-hex id on PAPI
+
+  private static final String PLATFORM_ID = '89b386134a6c191e614fc9ae695e52bf';
+
+  @IsTest
+  static void papiPlatformIdCountsAsMissing() {
+    RestTestUtil.initGetRaw(PAPI_URI, headers(PLATFORM_ID, null), null);
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.isFalse(ctx.isRejected(), 'A platform id is not a malformed id');
+    Assert.isTrue(
+      UUID_PATTERN.matcher(ctx.correlationId()).matches(),
+      'A UUID is generated as the correlation id'
+    );
+    Assert.isNull(
+      responseHeader('X-Request-Id'),
+      'Apex adds no second id: the platform echoes the one it injected'
+    );
+  }
+
+  @IsTest
+  static void papiPlatformIdServesTheRequest() {
+    RestTestUtil.initGetRaw(PAPI_URI, headers(PLATFORM_ID, 'v1'), null);
+
+    Test.startTest();
+    PAPIHealth.getHealth();
+    Test.stopTest();
+
+    Assert.areEqual(
+      200,
+      RestTestUtil.getResponse().statusCode,
+      'PAPI no longer answers 400 to a request with no caller id'
+    );
+    Assert.isNull(responseHeader('X-Request-Id'), 'One id on the response');
+  }
+
+  @IsTest
+  static void papiTrulyMissingIdSetsExactlyOneHeader() {
+    RestTestUtil.initGetRaw(PAPI_URI, new Map<String, String>(), null);
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.areEqual(
+      ctx.correlationId(),
+      responseHeader('X-Request-Id'),
+      'With no id at all, Apex sets its generated UUID once'
+    );
+  }
+
+  @IsTest
+  static void papiPlatformIdErrorBodyCarriesTheGeneratedUuid() {
+    ApiRequestContext.limiterOverride = new DenyingLimiter();
+    RestTestUtil.initGetRaw(PAPI_URI, headers(PLATFORM_ID, null), null);
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.isTrue(ctx.isRejected(), 'Refused by the limiter');
+    Assert.areEqual(429, RestTestUtil.getResponse().statusCode, '429');
+    Assert.areEqual(
+      ctx.correlationId(),
+      RestTestUtil.getBodyAsMap().get('correlationId'),
+      'Body carries the generated UUID'
+    );
+    Assert.isNull(responseHeader('X-Request-Id'), 'Still no second id');
+  }
+
+  @IsTest
+  static void sapiPlatformIdIsStillRejected() {
+    RestTestUtil.initGetRaw(SAPI_URI, headers(PLATFORM_ID, 'v1'), null);
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.isTrue(ctx.isRejected(), 'SAPI rules are unchanged');
+    Assert.areEqual(
+      'X-Request-Id must be a UUID.',
+      RestTestUtil.getBodyAsMap().get('message'),
+      'SAPI message unchanged'
+    );
+  }
+
   @IsTest
   static void papiMalformedRequestIdRejected() {
     RestTestUtil.initGetRaw(PAPI_URI, headers('not-a-uuid', null), null);
