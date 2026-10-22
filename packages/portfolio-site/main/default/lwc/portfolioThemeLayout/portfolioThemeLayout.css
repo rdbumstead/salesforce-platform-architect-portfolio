@@ -302,6 +302,38 @@
   color: var(--pf-muted);
 }
 
+.pillar-coming {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--pf-warn);
+  color: var(--pf-warn-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.pillar-sub {
+  list-style: none;
+  margin: 0 0 2px;
+  padding: 0 0 0 52px;
+}
+
+.pillar-sub-link {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: var(--pf-radius-sm);
+  color: var(--pf-body);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.pillar-sub-link:hover {
+  background: var(--pf-chip);
+  color: var(--pf-text);
+}
+
 .site-actions {
   display: flex;
   align-items: center;
@@ -340,6 +372,7 @@
 .site-brand:focus-visible,
 .nav-link:focus-visible,
 .pillar-link:focus-visible,
+.pillar-sub-link:focus-visible,
 .icon-button:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;

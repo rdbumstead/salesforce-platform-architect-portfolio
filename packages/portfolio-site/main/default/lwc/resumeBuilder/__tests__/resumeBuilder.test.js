@@ -10,6 +10,7 @@ import { createElement } from "@lwc/engine-dom";
 import ResumeBuilder from "c/resumeBuilder";
 import getResume from "@salesforce/apex/ResumeController.getResume";
 import { loadScript } from "lightning/platformResourceLoader";
+import { trackEvent } from "c/analyticsService";
 
 jest.mock(
   "@salesforce/apex/ResumeController.getResume",
@@ -17,6 +18,17 @@ jest.mock(
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
   },
+  { virtual: true }
+);
+
+// c/analyticsService (contract L4) is mocked so the bundle tests on its own.
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    __esModule: true,
+    trackEvent: jest.fn(),
+    EVENTS: { RESUME_DOWNLOADED: "resume_downloaded" }
+  }),
   { virtual: true }
 );
 
@@ -192,6 +204,19 @@ describe("c-resume-builder", () => {
     );
   });
 
+  it("offers the personas without the Technical Architect title", async () => {
+    const element = createComponent();
+    getResume.emit(RESUME);
+    await flushPromises();
+
+    const picker = query(element, "lightning-combobox.persona-picker");
+    expect(picker.options.map((option) => option.label)).toEqual([
+      "Platform Architect",
+      "Salesforce Developer",
+      "System Admin"
+    ]);
+  });
+
   it("re-wires with the new persona when the picker changes", async () => {
     const element = createComponent();
     getResume.emit(RESUME);
@@ -295,6 +320,10 @@ describe("c-resume-builder", () => {
     expect(query(element, ".export-message").textContent).toContain(
       "PDF downloaded."
     );
+    expect(trackEvent).toHaveBeenCalledWith("resume_downloaded", {
+      persona: "Architect",
+      format: "pdf"
+    });
 
     button(element, "download-pdf").click();
     await flushPromises();
@@ -336,6 +365,7 @@ describe("c-resume-builder", () => {
       "The PDF could not be created."
     );
     expect(jsPdfInstance.save).not.toHaveBeenCalled();
+    expect(trackEvent).not.toHaveBeenCalled();
 
     button(element, "download-pdf").click();
     await flushPromises();
@@ -396,6 +426,10 @@ describe("c-resume-builder", () => {
     expect(query(element, ".export-message").textContent).toContain(
       "ATS text copied"
     );
+    expect(trackEvent).toHaveBeenCalledWith("resume_downloaded", {
+      persona: "Architect",
+      format: "ats"
+    });
 
     delete navigator.clipboard;
   });

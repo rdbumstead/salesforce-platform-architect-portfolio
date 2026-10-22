@@ -1,75 +1,24 @@
 /**
- * @description       : Home page hero with pillar navigation and the five-minute "How to Evaluate Me" tour.
+ * @description       : Home page: the hero (photo, name, title, location, bio, the tour button, a
+ *                      direct link to the resume, profile links), the live pillar cards, an honest
+ *                      line for the pillars that are coming, and the "How to evaluate me" tour.
+ *                      Name, title, location and photo are static so they paint without waiting on
+ *                      Apex. The bio and profile links come from the ResumeController header wire.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/19/2025
  **/
-import { LightningElement } from "lwc";
+import { LightningElement, wire } from "lwc";
 import basePath from "@salesforce/community/basePath";
-
-// One entry per pillar. Names follow docs/guides/03-SAS.md section 5, URLs follow the
-// urlPrefix of each route in the Portfolio1 site bundle.
-const PILLARS = [
-  {
-    key: "business-architecture",
-    letter: "A",
-    sasName: "Business Architecture",
-    pageLabel: "Business Architecture",
-    url: "business-architecture",
-    summary: "How the Employer Hub models a business process and its data.",
-    tourStep:
-      "Open Business Architecture to see how a business process maps to the data model. This page is being built.",
-    inProgress: true
-  },
-  {
-    key: "nonprofit-solutions",
-    letter: "B",
-    sasName: "Pre-Sales Consultancy",
-    pageLabel: "Nonprofit Solutions",
-    url: "nonprofit-solutions",
-    summary:
-      "A solution design and decision matrix for a nonprofit literacy program.",
-    tourStep:
-      "Open Nonprofit Solutions to follow the pre-sales reasoning behind a platform choice. This page is being built.",
-    inProgress: true
-  },
-  {
-    key: "api-lab",
-    letter: "C",
-    sasName: "Work Experience Verification API",
-    pageLabel: "API Lab",
-    url: "api-lab",
-    summary: "Call the portfolio REST API and read the headers it returns.",
-    tourStep:
-      "Open the API Lab, send a request and check the status, request id and rate limit headers.",
-    inProgress: false
-  },
-  {
-    key: "ai-lab",
-    letter: "D",
-    sasName: "AI & Innovation",
-    pageLabel: "AI Lab",
-    url: "ai-lab",
-    summary: "Generate a cover letter grounded in the portfolio data.",
-    tourStep:
-      "Open the AI Lab, paste a job description and see what the generator writes.",
-    inProgress: false
-  },
-  {
-    key: "delivery",
-    letter: "E",
-    sasName: "Agile Delivery & DevOps",
-    pageLabel: "Delivery",
-    url: "delivery",
-    summary: "The Jira roadmap and the commits that shipped this site.",
-    tourStep:
-      "Open Delivery to see the roadmap from Jira and the latest commits from GitHub.",
-    inProgress: false
-  }
-];
+import getResume from "@salesforce/apex/ResumeController.getResume";
+import HEADSHOT from "@salesforce/resourceUrl/Portfolio_Headshot";
+import { LIVE_PILLARS, COMING_PILLARS } from "c/pillarData";
 
 const MINUTES_PER_STEP = 1;
+// The resume page opens on this persona, so the home page asks for the same one and the
+// two share one cached response.
+const HEADER_PERSONA = "Architect";
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -80,28 +29,154 @@ function toHref(url) {
   return `${basePath || ""}/${url}`;
 }
 
+/**
+ * Joins names as "A", "A and B" or "A, B and C".
+ * @param {string[]} names the names
+ * @returns {string} the joined text
+ */
+function joinNames(names) {
+  if (names.length <= 1) {
+    return names.join("");
+  }
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/**
+ * Whether the visitor asked the system for less motion.
+ * @returns {boolean} true when reduced motion is set
+ */
+function prefersReducedMotion() {
+  try {
+    return (
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
+  } catch {
+    return false;
+  }
+}
+
 export default class HeroBanner extends LightningElement {
-  get pillars() {
-    return PILLARS.map((pillar) => ({
-      ...pillar,
-      href: toHref(pillar.url),
-      heading: `Pillar ${pillar.letter}: ${pillar.sasName}`,
-      linkLabel: `Go to ${pillar.pageLabel}`
+  headshotUrl = HEADSHOT;
+  name = "Ryan Bumstead";
+  title = "Salesforce Platform Architect";
+  location = "Greater Toledo, Ohio";
+  header;
+
+  @wire(getResume, { persona: HEADER_PERSONA })
+  wiredResume({ data }) {
+    // An error or an empty header renders nothing extra: never a placeholder sentence.
+    this.header = data && data.header ? data.header : undefined;
+  }
+
+  get bio() {
+    const text = this.header && this.header.careerObjective;
+    return typeof text === "string" && text.trim() ? text.trim() : null;
+  }
+
+  get resumeHref() {
+    return toHref("resume");
+  }
+
+  get profileLinks() {
+    const links = [];
+    if (this.header && this.header.gitHubUrl) {
+      links.push({
+        key: "github",
+        label: "GitHub",
+        href: this.header.gitHubUrl,
+        external: true,
+        isGitHub: true
+      });
+    }
+    if (this.header && this.header.linkedInUrl) {
+      links.push({
+        key: "linkedin",
+        label: "LinkedIn",
+        href: this.header.linkedInUrl,
+        external: true,
+        isLinkedIn: true
+      });
+    }
+    links.push({
+      key: "resume",
+      label: "Resume",
+      href: this.resumeHref,
+      isResume: true
+    });
+    links.push({
+      key: "api-docs",
+      label: "API docs",
+      href: toHref("api-lab/reference"),
+      isApi: true
+    });
+    return links.map((link) => ({
+      ...link,
+      target: link.external ? "_blank" : undefined,
+      rel: link.external ? "noopener noreferrer" : undefined
     }));
   }
 
-  get tourSteps() {
-    return PILLARS.map((pillar, index) => ({
+  get pillars() {
+    return LIVE_PILLARS.map((pillar) => ({
       key: pillar.key,
-      number: index + 1,
-      href: toHref(pillar.url),
-      title: `Pillar ${pillar.letter}: ${pillar.pageLabel}`,
-      text: pillar.tourStep,
+      letter: pillar.letter,
+      eyebrow: `Pillar ${pillar.letter} · ${pillar.pageLabel}`,
+      sasName: pillar.sasName,
+      summary: pillar.summary,
+      code: pillar.code,
+      tags: pillar.tags.map((tag) => ({ key: tag, label: tag })),
+      href: pillar.href,
+      linkLabel: `Open ${pillar.pageLabel}`
+    }));
+  }
+
+  get hasComing() {
+    return COMING_PILLARS.length > 0;
+  }
+
+  get comingText() {
+    const letters = joinNames(COMING_PILLARS.map((p) => p.letter));
+    const names = joinNames(COMING_PILLARS.map((p) => p.sasName));
+    const noun = COMING_PILLARS.length === 1 ? "Pillar" : "Pillars";
+    const verb = COMING_PILLARS.length === 1 ? "is" : "are";
+    return `${noun} ${letters}, ${names}, ${verb} coming.`;
+  }
+
+  get tourSteps() {
+    return LIVE_PILLARS.map((pillar, index) => ({
+      key: pillar.key,
+      number: String(index + 1).padStart(2, "0"),
+      href: pillar.href,
+      title: pillar.pageLabel,
+      text: pillar.tour,
       duration: `${MINUTES_PER_STEP} minute`
     }));
   }
 
   get tourMinutes() {
-    return PILLARS.length * MINUTES_PER_STEP;
+    return LIVE_PILLARS.length * MINUTES_PER_STEP;
+  }
+
+  get tourButtonLabel() {
+    return `Take the ${this.tourMinutes} minute tour`;
+  }
+
+  get tourHeading() {
+    return `A ${this.tourMinutes} minute tour.`;
+  }
+
+  handleTourClick(event) {
+    event.preventDefault();
+    const heading = this.template.querySelector('[data-id="tour-heading"]');
+    if (heading) {
+      if (typeof heading.scrollIntoView === "function") {
+        heading.scrollIntoView({
+          behavior: prefersReducedMotion() ? "auto" : "smooth",
+          block: "start"
+        });
+      }
+      heading.focus({ preventScroll: true });
+    }
   }
 }

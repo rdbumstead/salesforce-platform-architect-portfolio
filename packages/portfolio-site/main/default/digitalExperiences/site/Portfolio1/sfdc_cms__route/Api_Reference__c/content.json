@@ -1,0 +1,12 @@
+{
+  "type": "sfdc_cms__route",
+  "title": "API Reference",
+  "contentBody": {
+    "activeViewId": "Api_Reference",
+    "configurationTags": [],
+    "pageAccess": "UseParent",
+    "routeType": "custom-api-reference",
+    "urlPrefix": "api-lab/reference"
+  },
+  "urlName": "api-reference"
+}

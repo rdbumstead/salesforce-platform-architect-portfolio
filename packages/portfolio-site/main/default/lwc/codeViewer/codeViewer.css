@@ -1,13 +1,12 @@
 /*
- * Contract K9: the site branding is dark. The viewer body sits on the site root
- * surface with the DXP root tokens. The code block is a fixed dark panel that sets
- * its own text and token colours, each at least 4.5:1 on #0f172a. These rules also
- * beat the light background, text shadow and operator background that the global
- * Prism_JS/prism.css applies wherever it reaches.
+ * Built on the site tokens (Round 4 plan, contract L1). The code block uses the code pair and
+ * the syntax colours reuse the text tokens, each checked at 4.5:1 or more on --pf-code in both
+ * themes. These rules also beat the light background, text shadow and operator background
+ * that the global Prism_JS/prism.css applies wherever it reaches.
  */
 :host {
-  --viewer-surface: var(--dxp-g-root, #020617);
-  --viewer-text: var(--dxp-g-root-contrast, #e2e8f0);
+  --viewer-surface: var(--pf-bg);
+  --viewer-text: var(--pf-text);
 }
 
 .viewer-body {
@@ -20,13 +19,14 @@
 }
 
 .code-container {
-  background-color: #0f172a;
-  color: #e2e8f0;
+  background-color: var(--pf-code);
+  color: var(--pf-code-text);
   padding: 1rem;
-  border-radius: 4px;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
   max-height: 500px;
   overflow: auto;
-  font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+  font-family: var(--pf-font-mono);
 }
 
 .code-container pre,
@@ -35,7 +35,7 @@
   padding: 0;
   white-space: pre;
   background: none;
-  color: #e2e8f0;
+  color: var(--pf-code-text);
   text-shadow: none;
 }
 
@@ -47,11 +47,11 @@
 .code-block .token.prolog,
 .code-block .token.doctype,
 .code-block .token.cdata {
-  color: #94a3b8;
+  color: var(--pf-muted);
 }
 
 .code-block .token.punctuation {
-  color: #cbd5e1;
+  color: var(--pf-code-text);
 }
 
 .code-block .token.boolean,
@@ -60,7 +60,7 @@
 .code-block .token.property,
 .code-block .token.symbol,
 .code-block .token.tag {
-  color: #f472b6;
+  color: var(--pf-error-text);
 }
 
 .code-block .token.attr-name,
@@ -68,28 +68,29 @@
 .code-block .token.char,
 .code-block .token.selector,
 .code-block .token.string {
-  color: #86efac;
+  color: var(--pf-ok);
 }
 
 .code-block .token.operator,
 .code-block .token.entity,
 .code-block .token.url {
-  color: #fcd34d;
+  color: var(--pf-warn-text);
 }
 
 .code-block .token.atrule,
 .code-block .token.attr-value,
 .code-block .token.keyword {
-  color: #7dd3fc;
+  color: var(--pf-accent);
 }
 
 .code-block .token.class-name,
 .code-block .token.function {
-  color: #fda4af;
+  color: var(--pf-accent);
+  font-weight: 500;
 }
 
 .code-block .token.regex,
 .code-block .token.important,
 .code-block .token.variable {
-  color: #fdba74;
+  color: var(--pf-warn-text);
 }

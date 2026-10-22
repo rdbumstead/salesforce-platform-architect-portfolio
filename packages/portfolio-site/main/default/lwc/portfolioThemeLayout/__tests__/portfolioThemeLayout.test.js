@@ -28,7 +28,8 @@ jest.mock(
   { virtual: true }
 );
 
-// Every K7 route URL (Round 3 plan section 4). Home is the brand link.
+// Every K7 route URL (Round 3 plan section 4) plus the API reference page (log 155).
+// Home is the brand link.
 const EXPECTED_HREFS = [
   "/portfolio/",
   "/portfolio/resume",
@@ -37,6 +38,7 @@ const EXPECTED_HREFS = [
   "/portfolio/business-architecture",
   "/portfolio/nonprofit-solutions",
   "/portfolio/api-lab",
+  "/portfolio/api-lab/reference",
   "/portfolio/ai-lab",
   "/portfolio/delivery"
 ];
@@ -132,6 +134,31 @@ describe("c-portfolio-theme-layout", () => {
           (l) => l.querySelector(".pillar-letter").textContent
         )
       ).toEqual(["A", "B", "C", "D", "E"]);
+    });
+
+    it("marks pillars A and B as coming and no other pillar", () => {
+      const element = render();
+      const coming = Array.from(
+        element.shadowRoot.querySelectorAll(".pillar-link")
+      )
+        .filter((link) => link.querySelector(".pillar-coming"))
+        .map((link) => link.querySelector(".pillar-letter").textContent);
+      expect(coming).toEqual(["A", "B"]);
+      expect(
+        element.shadowRoot.querySelector(".pillar-coming").textContent
+      ).toBe("Coming");
+    });
+
+    it("lists the API reference under API Lab", () => {
+      const element = render();
+      const subLinks = element.shadowRoot.querySelectorAll(".pillar-sub-link");
+      expect(subLinks).toHaveLength(1);
+      expect(subLinks[0].textContent).toBe("API reference");
+      expect(subLinks[0].getAttribute("href")).toBe(
+        "/portfolio/api-lab/reference"
+      );
+      const owner = subLinks[0].closest("ul").closest("li");
+      expect(owner.querySelector(".pillar-label").textContent).toBe("API Lab");
     });
 
     it("exposes an unnamed content slot plus header and footer slots", () => {

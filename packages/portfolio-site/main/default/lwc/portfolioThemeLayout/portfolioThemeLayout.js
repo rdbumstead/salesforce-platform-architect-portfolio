@@ -164,7 +164,11 @@ export default class PortfolioThemeLayout extends LightningElement {
       letter: pillar.letter,
       pageLabel: pillar.pageLabel,
       sasName: pillar.sasName,
-      href: pillar.href
+      href: pillar.href,
+      inProgress: pillar.inProgress,
+      subLinks: pillar.subLinks,
+      hasSubLinks: pillar.subLinks.length > 0,
+      subLabel: `${pillar.pageLabel} pages`
     }));
   }
 

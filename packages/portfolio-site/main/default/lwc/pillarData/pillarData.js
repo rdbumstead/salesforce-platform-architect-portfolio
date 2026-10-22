@@ -53,7 +53,10 @@ const SOURCE = [
     tour: "Send a request and check the status, request id and rate limit headers.",
     tags: ["Apex REST", "OAuth 2.0", "OpenAPI"],
     inProgress: false,
-    code: "GET /sapi/v1/health  200"
+    code: "GET /sapi/v1/health  200",
+    subLinks: [
+      { key: "api-reference", label: "API reference", url: "api-lab/reference" }
+    ]
   },
   {
     key: "ai-lab",
@@ -80,18 +83,35 @@ const SOURCE = [
 ];
 
 /**
- * The five pillars, A to E, in tour order. Each entry is frozen, tags included.
- * Fields: key, letter, pageLabel, sasName, url, href, summary, tour, tags, inProgress, and code
- * where a pillar has a code line to show.
+ * The five pillars, A to E, in tour order. Each entry is frozen, tags and sub links included.
+ * Fields: key, letter, pageLabel, sasName, url, href, summary, tour, tags, inProgress, subLinks,
+ * and code where a pillar has a code line to show.
+ * inProgress marks a pillar that is coming: the home page leaves it out of the cards and the
+ * tour, and the header menu marks it "coming".
  */
 export const PILLARS = Object.freeze(
   SOURCE.map((pillar) =>
     Object.freeze({
       ...pillar,
       href: toHref(pillar.url),
-      tags: Object.freeze([...pillar.tags])
+      tags: Object.freeze([...pillar.tags]),
+      subLinks: Object.freeze(
+        (pillar.subLinks || []).map((link) =>
+          Object.freeze({ ...link, href: toHref(link.url) })
+        )
+      )
     })
   )
+);
+
+/** The pillars a visitor can open today, in tour order. */
+export const LIVE_PILLARS = Object.freeze(
+  PILLARS.filter((pillar) => !pillar.inProgress)
+);
+
+/** The pillars that are coming. */
+export const COMING_PILLARS = Object.freeze(
+  PILLARS.filter((pillar) => pillar.inProgress)
 );
 
 /**

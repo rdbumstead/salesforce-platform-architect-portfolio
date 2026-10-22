@@ -61,7 +61,25 @@
                         <span class="pillar-label">{pillar.pageLabel}</span>
                         <span class="pillar-sas">{pillar.sasName}</span>
                       </span>
+                      <template lwc:if={pillar.inProgress}>
+                        <span class="pillar-coming">Coming</span>
+                      </template>
                     </a>
+                    <template lwc:if={pillar.hasSubLinks}>
+                      <ul class="pillar-sub" aria-label={pillar.subLabel}>
+                        <template for:each={pillar.subLinks} for:item="link">
+                          <li key={link.key}>
+                            <a
+                              class="pillar-sub-link"
+                              href={link.href}
+                              data-key={link.key}
+                              onclick={handleNavClick}
+                              >{link.label}</a
+                            >
+                          </li>
+                        </template>
+                      </ul>
+                    </template>
                   </li>
                 </template>
               </ul>

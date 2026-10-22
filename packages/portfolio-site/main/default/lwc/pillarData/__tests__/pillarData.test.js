@@ -5,7 +5,12 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/21/2026
  **/
-import { PILLARS, pillarByLetter } from "c/pillarData";
+import {
+  PILLARS,
+  LIVE_PILLARS,
+  COMING_PILLARS,
+  pillarByLetter
+} from "c/pillarData";
 
 jest.mock(
   "@salesforce/community/basePath",
@@ -89,5 +94,30 @@ describe("c/pillarData", () => {
     expect(pillarByLetter("")).toBeUndefined();
     expect(pillarByLetter(undefined)).toBeUndefined();
     expect(pillarByLetter(3)).toBeUndefined();
+  });
+
+  it("splits the pillars into live (C, D, E) and coming (A, B) by inProgress", () => {
+    expect(LIVE_PILLARS.map((pillar) => pillar.letter)).toEqual([
+      "C",
+      "D",
+      "E"
+    ]);
+    expect(COMING_PILLARS.map((pillar) => pillar.letter)).toEqual(["A", "B"]);
+    expect(Object.isFrozen(LIVE_PILLARS)).toBe(true);
+    expect(Object.isFrozen(COMING_PILLARS)).toBe(true);
+  });
+
+  it("gives pillar C the API reference sub link and no other pillar any", () => {
+    const withLinks = PILLARS.filter((pillar) => pillar.subLinks.length);
+    expect(withLinks.map((pillar) => pillar.letter)).toEqual(["C"]);
+    expect(withLinks[0].subLinks).toEqual([
+      {
+        key: "api-reference",
+        label: "API reference",
+        url: "api-lab/reference",
+        href: "/portfolio/api-lab/reference"
+      }
+    ]);
+    expect(Object.isFrozen(withLinks[0].subLinks[0])).toBe(true);
   });
 });
