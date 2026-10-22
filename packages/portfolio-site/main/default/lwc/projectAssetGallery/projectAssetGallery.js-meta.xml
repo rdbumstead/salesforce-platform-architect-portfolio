@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>64.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Project Asset Gallery</masterLabel>
+    <description
+  >Images, documents, videos and links from the Project Asset rows of one pillar's projects.</description>
+    <targets>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightningCommunity__Default">
+            <property
+        name="pillar"
+        type="String"
+        label="Pillar"
+        description="Pillar letter, A to E."
+        datasource="A,B,C,D,E"
+        default="A"
+      />
+            <property
+        name="heading"
+        type="String"
+        label="Heading"
+        description="Optional heading above the gallery."
+      />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

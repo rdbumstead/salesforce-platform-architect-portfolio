@@ -1,0 +1,92 @@
+{
+  "uiapi": {
+    "query": {
+      "Project__c": {
+        "edges": [
+          {
+            "node": {
+              "Id": "a0A000000000001AAA",
+              "Name": { "value": "Employer Hub for a community college" },
+              "Project_Assets__r": {
+                "edges": [
+                  {
+                    "node": {
+                      "Id": "a08000000000005AAA",
+                      "Name": { "value": "Employer Hub demo deck" },
+                      "Type__c": { "value": "Document" },
+                      "External_URL__c": null,
+                      "Alt_Text__c": { "value": "Employer Hub demo deck" },
+                      "Sort_Order__c": { "value": 5 }
+                    }
+                  },
+                  {
+                    "node": {
+                      "Id": "a08000000000001AAA",
+                      "Name": { "value": "Process flow, part 1" },
+                      "Type__c": { "value": "Image" },
+                      "External_URL__c": {
+                        "value": "resource:EH_Assets/flow-part-1.svg"
+                      },
+                      "Alt_Text__c": {
+                        "value": "Process flow, part 1: inquiry, triage, routing and outcome"
+                      },
+                      "Sort_Order__c": { "value": 1 }
+                    }
+                  },
+                  {
+                    "node": {
+                      "Id": "a08000000000002AAA",
+                      "Name": { "value": "Hosted image" },
+                      "Type__c": { "value": "Image" },
+                      "External_URL__c": {
+                        "value": "https://example.com/hosted.png"
+                      },
+                      "Alt_Text__c": { "value": "A hosted image" },
+                      "Sort_Order__c": { "value": 2 }
+                    }
+                  },
+                  {
+                    "node": {
+                      "Id": "a08000000000003AAA",
+                      "Name": { "value": "Walkthrough video" },
+                      "Type__c": { "value": "Video" },
+                      "External_URL__c": {
+                        "value": "https://video.example.com/watch/1"
+                      },
+                      "Alt_Text__c": { "value": "Walkthrough video" },
+                      "Sort_Order__c": { "value": 3 }
+                    }
+                  },
+                  {
+                    "node": {
+                      "Id": "a08000000000004AAA",
+                      "Name": { "value": "Reference article" },
+                      "Type__c": { "value": "Link" },
+                      "External_URL__c": {
+                        "value": "https://example.com/article"
+                      },
+                      "Alt_Text__c": { "value": "Reference article" },
+                      "Sort_Order__c": { "value": 4 }
+                    }
+                  },
+                  {
+                    "node": {
+                      "Id": "a08000000000006AAA",
+                      "Name": { "value": "Published deck" },
+                      "Type__c": { "value": "Document" },
+                      "External_URL__c": {
+                        "value": "resource:EH_Assets/deck.pdf"
+                      },
+                      "Alt_Text__c": { "value": "Published deck" },
+                      "Sort_Order__c": { "value": 6 }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
