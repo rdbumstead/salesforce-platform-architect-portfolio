@@ -18,6 +18,8 @@
   - [2.7 Architectural Decision Record: ADR-014 (Deferred Telemetry)](#27-architectural-decision-record-adr-014-deferred-telemetry)
   - [2.8 Analytics Instrumentation (GA4)](#28-analytics-instrumentation-ga4)
   - [2.9 Site Theme, Tokens and Fonts](#29-site-theme-tokens-and-fonts)
+  - [2.10 Project Asset Gallery and Decision Matrix](#210-project-asset-gallery-and-decision-matrix)
+  - [2.11 Mobile Performance](#211-mobile-performance)
 - [3. Quality Assurance Checklist](#3-quality-assurance-checklist)
   - [3.4 Concrete Testing Example](#34-concrete-testing-example)
 
@@ -135,6 +137,8 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 11. **Governance publisher.** CI publishes `Governance_Event__e` as each workflow's existing JWT user (`deploy.yml` and `keep-alive.yml`). Assign `Governance_Publisher` (Create on that event only) to whichever of those users cannot create it yet. The publish steps in the two workflows are the owner's edits, made after the event is deployed to production.
 12. **Schedule the cache refresh** as the administrator who holds `Portfolio_Admin` (it carries the GitHub and Jira principals). From anonymous Apex, once per org: `IntegrationCacheRefreshScheduler.scheduleAll();`. It creates four jobs, `Integration Cache Refresh :00`, `:15`, `:30` and `:45`, each enqueuing `GitHubCacheRefreshJob` and `JiraCacheRefreshJob`. With no `Portfolio_Config__mdt` record (a scratch org), each job logs and exits.
 13. **Allow deployments while Apex jobs are scheduled.** In Setup > Deployment Settings, tick "Allow deployments of components when corresponding Apex jobs are pending or in progress". Items 7 and 12 schedule five jobs, and Salesforce refuses any deploy that changes a class one of them depends on (the error reads "You can bypass this error by allowing deployments with Apex jobs in the Deployment Settings page in Setup"). The setting is an org preference, not metadata in this repository, so set it in every org that runs the scheduled jobs. The production org has it since 2026-10-22. Scratch orgs do not need it, because nothing is scheduled in them.
+14. **Graph engine resource.** `D3_Library` (the four D3 modules, 18,544 bytes, Public cache) replaces `G6_Library` from Round 5. The delta deploy on `main` removes `G6_Library` and `c/g6Loader` as post-destructive changes (`deploy.yml`, "Generate Delta"). A full deploy does not delete anything, so after one, check with the Tooling query `SELECT Name FROM StaticResource WHERE Name = 'G6_Library'` and remove it with a destructive deploy if it is still there. Nothing on the site loads it.
+15. **Employer Hub demo objects.** The four `EH_` objects ship with the `EH_Demo_Read` permission set (read only). It is optional and for administrators only. The site guest needs no grant to see them in the diagram, because describe does not filter by object permission (ADR-029).
 
 **Operational notes:** rotation and revocation procedures are in the [Maintenance Guide §1.2](./05-Maintenance-Guide.md#12-external-client-app-secret-rotation).
 
@@ -160,19 +164,19 @@ public interface IAIGenerationService {
 
 ## 2. Frontend (LWR) Component Logic
 
-The front-end is based on **LWR** for sub-second page loads. **Lightning Web Security (LWS)** is required for security and to support libraries like AntV G6 and jsPDF.
+The front-end is based on **LWR** for sub-second page loads. **Lightning Web Security (LWS)** is required for security and to support libraries like D3 and jsPDF.
 
 ### 2.1 `c-skill-network` (Visualization)
 
-- **Data:** the component reads `Skill__c` and its junctions through the `lightning/uiGraphQLApi` wire adapter (`skillNetwork.js`, `SKILL_NETWORK_QUERY`).
-- **Lazy Loading:** G6 loads only when the graph container scrolls into view (`skillNetwork.whenVisible`, an `IntersectionObserver`), so the 1.57 MB library never competes with the first paint. The script loads through the shared module `c/g6Loader`: `loadG6(component)` calls `loadScript` on the `G6_Library` static resource (AntV G6 4.8.23) once per page and hands every caller the same `G6` global. A failed load is not cached, so a later call can try again.
-- **Mobile Guardrail:**
-  - On a small form factor (`@salesforce/client/formFactor` is `Small`) or a viewport under 768 px, G6 never loads.
-  - Instead the component draws an **inline SVG built from the same live GraphQL data** (`skillNetwork.buildSvgModel`). There is no pre-rendered image and no `Skill_Graph_Fallback` static resource, so the mobile graph cannot go stale and needs no "outdated" banner.
-- **Accessibility (A11y):**
-  - Includes a pause toggle for the layout animation ("Pause layout animation" and "Resume layout animation").
-  - Uses the **"Shadow Structure" Pattern** (a visually hidden `<ul>`) for screen readers.
-- **Round 5:** the owner has asked for a skills redesign (a matrix plus a new graph engine, with G6 removed). It is planned for Round 5 and not built. This section describes the component as it is.
+The Skills page (`c/skillNetwork`) opens on a matrix: one row per skill category, ordered by Category Order then name, with one chip per skill ordered by proficiency and then name. Each chip shows the skill's name, its proficiency out of 5 and the years it was used. Years used come from real role dates, not a self rating: the date ranges of the roles linked to the skill through Experience Skill are merged where they overlap, a current role or one with no end date counts to today, and the total shows to one decimal, as "under 1 yr" below a year, or not at all when no role is linked. Selecting a chip lists the roles and projects that used the skill. On desktop and tablet a Matrix and Graph switch opens a graph view. The graph engine is D3 (`d3-force` 3.0.0 with `d3-dispatch`, `d3-quadtree` and `d3-timer` 3.0.1, the `D3_Library` static resource, 18,544 bytes) behind `c/graphEngine`, and it is requested only when the graph is first opened. The layout runs to completion before anything is drawn: skills cluster by category on an inner ring, roles and projects sit on an outer ring, and edges appear only for the node that is hovered or selected. The component draws the result as SVG from its own template, so nothing animates and reduced motion needs no special case. Phones and viewports under 768 px get the matrix only and never request the engine. A visually hidden list names every node and its connections. G6 is no longer used anywhere on the site.
+
+- **Data:** `Skill__c` with `Category_Order__c`, its `Project_Skill__c` and `Experience_Skill__c` junctions, and each linked role's `Start_Date__c`, `End_Date__c` and `Is_Current_Role__c`, through the `lightning/uiGraphQLApi` wire adapter. The site guest reads the two dates through `Portfolio_Guest` field permissions added in Round 5. Without them the query fails validation for the guest.
+- **Engine contract (`c/graphEngine`):**
+  - `loadGraphEngine(component)` returns a Promise resolving to `window.d3`. It loads `D3_Library` through `loadScript` once per page. A failed load rejects and is not cached, so the next open tries again.
+  - `layoutGraph(d3, nodes, edges, options)` is pure and synchronous. It runs `forceManyBody`, `forceCollide`, `forceLink`, `forceX` and `forceY` toward `options.anchors[node.group]` (groups on a ring when absent) for a fixed number of ticks with a seeded random source, keeps every node inside `options.width` by `options.height`, and returns `{ nodes, edges }` with `x` and `y` on each node and `x1 y1 x2 y2` on each edge. The same input gives the same output.
+- **Failure:** if the engine cannot load, the graph view says "The graph could not load. The matrix still shows every skill."
+- **Analytics:** `skills_view_changed` with the view on every switch, `skill_selected` with the skill and its years on a selection (section 2.8).
+- **History:** until Round 5 the page drew a G6 force graph and an inline SVG on phones ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
 
 ### 2.2 `c-resume-builder` (Resume Generation)
 
@@ -186,9 +190,12 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 
 ### 2.4 `c-schema-visualizer` (Dynamic ERD Visualizer)
 
-- **Schema Extraction:** The Apex controller `SchemaService.cls` utilizes `Schema.getGlobalDescribe()` to dynamically map `Project__c`, `Skill__c`, and their Junction objects.
-- **Node Mapping:** Salesforce Child Relationships (getDescribe().getChildRelationships()) are mapped to G6 "Edges," while SObjects are mapped to "Nodes."
-- **Performance:** To prevent Heap Size errors during schema description, the service is strictly scoped to the portfolio namespace and caches the JSON result in Platform Cache.
+The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed by `SchemaService.getSchemaGraph(scope)` (`@AuraEnabled(cacheable=true)`, `with sharing`, API 64.0). The scope is `employerHub` (the default on the page) or `portfolio`, and a two-button toggle switches between them. Discovery reads the global describe keys once: custom objects of this org (ending in `__c` with no namespace), minus custom settings, plus a standard allowlist per scope (Account and Contact for the portfolio, and Account, Contact, Case, Opportunity and Contract for the Employer Hub). Objects whose name starts with `EH_` belong to the Employer Hub. `Schema_Visualizer_Object__mdt` rows move an object to a scope or hide it, and four shipped rows hide `API_Rate_Window__c`, `API_Access_Request__c`, `Github_Cache__c` and `Jira_Cache__c`. Only the filtered list is described, with `SObjectDescribeOptions.DEFERRED`. Edges come from reference fields whose target is in scope, not from child relationships, and a field with a relationship order is master-detail while every other reference is a lookup. The only cache is the browser's, from `cacheable=true`. There is no Platform Cache. The response carries its own CPU time, which the caption shows ("9 objects, described in 96 ms of server CPU"). Uncached, the portfolio scope took 141 ms and the Employer Hub 96 ms in a scratch org, against a 1,000 ms budget. The site guest sees the same objects as an admin, because describe does not filter by object permission. On desktop and tablet the D3 engine (`c/graphEngine`) loads once the diagram scrolls into view. Nodes are drawn as rounded rectangles with the label and field count. Master-detail edges are solid with a dot at the parent, lookups are dashed, and a legend explains both. Selecting a node lists its fields (name, label, type, reference targets). On phones and viewports under 768 px the object list is the visible view and the engine is never requested. The same list sits behind the diagram on desktop for screen readers and keyboards.
+
+- **Deviation from the first design:** this section used to say edges came from `getChildRelationships()` and the result was cached in Platform Cache. Neither is built: child relationships on `Account` alone run to hundreds, and the org has no Platform Cache partition ([ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)).
+- **Failure:** if the engine cannot load, the page says "The diagram could not load, so the object list is shown instead."
+- **Analytics:** `erd_scope_changed` with the scope, `erd_node_selected` with the object (section 2.8).
+- **Tests:** `SchemaServiceTest` proves, among others, that `Project_Skill__c` to `Project__c` is a master-detail edge, the four hidden objects are absent, an override moves an object, an `EH_` object lands in the Employer Hub, custom settings are left out, an unknown scope throws, each scope stays under the CPU budget, and the site guest gets the same objects as an admin.
 
 ### 2.5 `c-smart-checklist` (Executable Governance)
 
@@ -226,6 +233,7 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
   - `roadmap_viewed`, `changelog_commit_clicked` {`sha`}, `governance_run_link_clicked` {`workflow`}
   - `resilience_test_triggered` {`source`: `changelog` or `roadmap`}, sent when the "Simulate an outage" switch is turned on
   - `finops_quota_visibility`, `theme_changed` {`theme`}
+  - Round 5: `skills_view_changed` {`view`}, `skill_selected` {`skill`, `years`}, `erd_scope_changed` {`scope`}, `erd_node_selected` {`object`}, `gallery_asset_opened` {`type`, `pillar`}, `matrix_weight_changed` {`criterion`}, `matrix_reset`, `pillar_video_opened`
 - **The tag.** The GA4 tag loads from head markup, with a page view sent on every route change, because the LWR router changes routes without a page load.
 - **CSP.** To load the tag the site runs on **Relaxed CSP** (owner decision, 2026-10-21). That lets inline scripts and `eval()` run on the site, so only reviewed head markup adds scripts, and `https://www.googletagmanager.com` is on the site's script allowlist (Experience Builder "Trusted Sites for Scripts"), kept in source in the site bundle at `digitalExperiences/site/Portfolio1/sfdc_cms__trustedSites/trustedSites/content.json`. It deploys with the site, so production needs no hand step. On the scratch site the tag loaded and a `g/collect` hit reached `google-analytics.com`. The GA4 image and connect hosts are trusted sites in source (`GA4_Tag_Manager`, `GA4_Analytics`, `GA4_Google`), so a Builder setting saved only in production cannot drift from the repo.
 
@@ -237,6 +245,24 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 - **Fonts.** Inter (400 to 700) for text and Fira Code (400 and 500) for section labels, pillar letters, code, API output and the footer metrics. Both are Latin woff2 files in the `Portfolio_Fonts` static resource, loaded by `@font-face` with `font-display: swap` from a same-origin URL, so the site's CSP needs no new host (licences in [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)).
 - **Header.** A slim sticky header with the primary navigation, a pillar menu and the theme button. Under 768 px the navigation collapses behind a menu button. Primary controls are at least 44 px high.
 - **Shared pillar list.** `c/pillarData` exports `PILLARS` and `pillarByLetter`, the one list the header and the home page read.
+
+### 2.10 Project Asset Gallery and Decision Matrix
+
+**`c/projectAssetGallery`** (properties `pillar` A to E and `heading`) reads `Project__c` by `Pillar__c` with `Project_Assets__r` through `lightning/uiGraphQLApi`, ordered by Sort Order. An Image shows with its alt text and opens full size in a new tab. A Document is a download link. A Video or Link is an external link with `rel="noopener"` and no embed. An asset with no URL shows its name and "Not available yet". URLs that start with http or https are used as they are. `resource:<Name>/<path>` becomes `<site base path>/sfsites/c/resource/<Name>/<path>`, so images ship as static resources deployed by CI. Any other value gets no link. Opening an asset sends `gallery_asset_opened` with the type and pillar. It is generic, so any project page can reuse it. A `Url` field accepts the `resource:` form (`SchemaServiceTest.assetUrlFieldAcceptsResourcePath`), so no extra field was needed.
+
+**`c/decisionMatrix`** shows the Pillar B matrix ([ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)):
+
+- **Data:** one cacheable call, `DecisionMatrixController.getMatrix()`, returns the three options, the ten criteria with the client's default weights, the thirty scores with rationale and evidence, and `hasPlaceholders`. It reads three Custom Metadata Types in the `nonprofit-literacy` package with SOQL and maps each score to its option and criterion by record Id. The site guest needs only class access, no custom metadata grant.
+- **In the browser:** `computeTotals` sums weight times score per option, `rankOptions` orders them, and `findFlip` searches each criterion's weight from 0 to 10 for the smallest single change that would put the runner-up ahead. That is the sensitivity line. Moving a slider makes no server call. "Reset to the client's weights" restores every `Default_Weight__c`.
+- **Placeholders:** while any score has `Is_Placeholder__c`, a banner says "Scores and weights are provisional placeholders pending the owner's review." With the shipped placeholders at weight 5 everywhere, the totals are NPSP and PMM 190, Nonprofit Cloud 185 and Education Cloud 145.
+- **Analytics:** `matrix_weight_changed` with the criterion, `matrix_reset`.
+- **Tests:** `DecisionMatrixControllerTest` fails when any option and criterion pair lacks a score, and proves the site guest gets the same matrix as an admin, cell for cell.
+
+**`c/pillarBStory`** holds the seven sections of the Pillar B page: the client, discovery with the lifecycle to object table, the decision matrix introduction, the cost and effort table from public licence facts with a source per row, the solution design with the object model redrawn in `NL_Assets`, the video prototype, and the outcome. The comparison framing (decision D3) and the video link (decision D8) are marked `PLACEHOLDER:` until the owner answers. Opening the video, once there is one, sends `pillar_video_opened`.
+
+### 2.11 Mobile Performance
+
+PENDING: the measured mobile performance changes and their before and after medians, from the performance stream's hand-over. This section is filled before the Round 5 docs branch merges.
 
 ## 3. Quality Assurance Checklist
 
