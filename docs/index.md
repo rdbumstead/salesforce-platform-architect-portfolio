@@ -54,6 +54,8 @@ _Target Audience: Architects, Developers_
 - [ADR-026: Header-Based API Versioning](adr/026-header-based-api-versioning-strategy.md)
 - [ADR-027: Platform-Native API Authentication (ECA + Named Credential)](adr/027-platform-native-api-authentication.md) — supersedes ADR-017
 - [ADR-028: Evaluator Access via Token Vending](adr/028-evaluator-access-via-token-vending.md)
+- [ADR-029: Schema Visualizer Scope, Discovery and Caching](adr/029-schema-visualizer-scope-discovery-and-caching.md)
+- [ADR-030: Decision Matrix as Custom Metadata](adr/030-decision-matrix-as-custom-metadata.md)
 
 **AI, Data & FinOps**
 

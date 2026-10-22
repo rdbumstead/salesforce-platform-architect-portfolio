@@ -512,6 +512,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-026](../adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning Strategy                            | Accepted (Amended)       |
 | [ADR-027](../adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication (ECA + Named Credential)     | Accepted                 |
 | [ADR-028](../adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending                              | Accepted                 |
+| [ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema Visualizer Scope, Discovery and Caching                  | Accepted (2026-10-22)    |
+| [ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)                            | Decision Matrix as Custom Metadata                              | Accepted (2026-10-22)    |
 
 </details>
 
