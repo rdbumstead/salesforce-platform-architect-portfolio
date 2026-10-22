@@ -13,13 +13,11 @@
 import { LightningElement, wire } from "lwc";
 import basePath from "@salesforce/community/basePath";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
+import HEADSHOT from "@salesforce/resourceUrl/Portfolio_Headshot";
 import { LIVE_PILLARS, COMING_PILLARS } from "c/pillarData";
 import { toExternalUrl } from "c/externalUrl";
 
 const MINUTES_PER_STEP = 1;
-// The same URL the head markup preloads, so the photo starts downloading before this
-// component renders and the browser reuses that response.
-const HEADSHOT_PATH = "sfsites/c/resource/Portfolio_Headshot";
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -58,7 +56,7 @@ function prefersReducedMotion() {
 }
 
 export default class HeroBanner extends LightningElement {
-  headshotUrl = toHref(HEADSHOT_PATH);
+  headshotUrl = HEADSHOT;
   name = "Ryan Bumstead";
   title = "Salesforce Platform Architect";
   location = "Greater Toledo, Ohio";
