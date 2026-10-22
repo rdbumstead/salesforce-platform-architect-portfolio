@@ -320,7 +320,10 @@ public with sharing class PortfolioGroundingService {
 
     List<Experience_Highlight__c> highlights() {
       return [
-        SELECT Description__c, Experience__r.Name, Experience__r.Employer__r.Name
+        SELECT
+          Description__c,
+          Experience__r.Name,
+          Experience__r.Employer__r.Name
         FROM Experience_Highlight__c
         ORDER BY
           Experience__r.Is_Current_Role__c DESC,

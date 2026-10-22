@@ -227,8 +227,16 @@ private class SAPIProjectTest {
     );
     Map<String, Object> item = (Map<String, Object>) items[0];
     Assert.areEqual(SPEC_PROJECT_KEYS, item.keySet(), 'Keys equal the spec');
-    Assert.areEqual(owner.Id, item.get('contactId'), 'contactId from Contact__c');
-    Project__c read = [SELECT Pillar_Label__c FROM Project__c WHERE Id = :proj.Id];
+    Assert.areEqual(
+      owner.Id,
+      item.get('contactId'),
+      'contactId from Contact__c'
+    );
+    Project__c read = [
+      SELECT Pillar_Label__c
+      FROM Project__c
+      WHERE Id = :proj.Id
+    ];
     Assert.areEqual(
       read.Pillar_Label__c,
       item.get('pillarLabel'),

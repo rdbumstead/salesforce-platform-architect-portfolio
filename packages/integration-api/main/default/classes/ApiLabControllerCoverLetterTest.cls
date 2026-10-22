@@ -307,10 +307,7 @@ private class ApiLabControllerCoverLetterTest {
       ApiLabController.COVER_LETTER_LOG_PATH +
       ' status=200 correlationId=' +
       result.requestId;
-    Assert.isTrue(
-      sink.messages[0].startsWith(expectedStart),
-      sink.messages[0]
-    );
+    Assert.isTrue(sink.messages[0].startsWith(expectedStart), sink.messages[0]);
     Assert.isFalse(sink.messages[0].contains('Acme'), 'No input in the log');
   }
 

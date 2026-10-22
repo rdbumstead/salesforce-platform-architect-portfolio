@@ -265,7 +265,9 @@ public with sharing class ApiLabController {
     } catch (ContentGenerationController.ContentGenerationException e) {
       ApiRequestContext.commitRateCounts();
       logCoverLetter(503, requestId, started);
-      throw auraError('No AI provider is available right now. Try again later.');
+      throw auraError(
+        'No AI provider is available right now. Try again later.'
+      );
     }
     // The count is written after the provider callouts, never before (contract C2).
     ApiRequestContext.commitRateCounts();
