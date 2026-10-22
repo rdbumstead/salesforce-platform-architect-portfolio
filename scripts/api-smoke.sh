@@ -117,7 +117,6 @@ fi
 
 ACCESS_TOKEN="$(json_field access_token "$WORK_DIR/token.json")"
 INSTANCE_URL="$(json_field instance_url "$WORK_DIR/token.json")"
-EXPIRES_IN="$(json_field expires_in "$WORK_DIR/token.json")"
 
 if [[ -z "$ACCESS_TOKEN" || -z "$INSTANCE_URL" ]]; then
   echo "FAILED: token response is missing access_token or instance_url." >&2
@@ -133,7 +132,7 @@ else
 fi
 
 echo "  instance_url $INSTANCE_URL"
-echo "  expires_in ${EXPIRES_IN:-unknown}"
+echo "  the token is the shared session, it ends after 30 minutes without use"
 echo ""
 
 # --- 2. GET every path ----------------------------------------------------------------------
