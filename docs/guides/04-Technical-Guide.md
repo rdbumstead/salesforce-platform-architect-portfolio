@@ -46,6 +46,7 @@ All external API calls originate from a secure **Named Credential** accessed via
   - A failed refresh inserts nothing, so the last good list keeps showing with its age.
   - Three consecutive failures open the `github` circuit breaker for 30 minutes, refreshes are skipped while it is open, and `DeliveryController` reports `DEGRADED`.
   - The cleanup batch keeps the newest row per cache object, so an outage never empties the page.
+- **Logging.** When no `Portfolio_Config__mdt` record names a repository, and when a refresh fails, `GitHubCacheRefreshJob.refresh` writes one line through `PortfolioLog.info` (section 1.5) and returns without writing a cache row. The failure line names only the exception type, and the failure still counts toward the `github` breaker.
 
 ### 1.2 Jira Integration (Roadmap)
 
@@ -56,6 +57,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 - **Degraded Mode:**
   - After three consecutive failures, the `jira` circuit breaker skips Jira refreshes for 30 minutes, and `DeliveryController` reports `DEGRADED` while it is open.
   - With no usable cache row, the user sees a "Roadmap temporarily unavailable" message.
+- **Logging.** `JiraCacheRefreshJob.refresh` logs the same two cases (no config record, a failed refresh) through `PortfolioLog.info`, the failure by exception type only.
 
 ### 1.3 AI Content Generation (Agentforce switch off)
 
@@ -78,6 +80,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 - **Fallback message.** When the template letter is used, the page says "The AI model could not be reached" if the Gemini attempt failed in under 1 second (`coverLetterGenerator.UNREACHABLE_MS`), and "The AI model was busy or too slow" otherwise. Each letter sends the GA4 event `ai_generation_completed`, and a request with no letter sends `ai_complete_failure`.
 - **Footer.** `ContentGenerationController.providerStatus()` returns each provider's switch and state (`on`, `off`, `not built`) and `circuitOpenUntil` while its breaker is open, for the footer (section 2.6).
 - **Not built:** a real Agentforce provider and the hourly budget it needs (`Hourly_Budget__c` is in the config but not read yet).
+- **An unshipped agent prototype lives only in the production org** (pillar D decision D12 a, 2026-10-22). It holds the `Portfolio_Guide_Agent` Service Agent (version 1, inactive), its six custom topics (Data Integration Strategies, Zero Cost Architecture, Experience Object Queries, Skill Object Utilization, Real Time Data Validation, Technical Role Evaluation), two custom actions ("Get Portfolio Context", which calls the invocable `PortfolioAgentService.getPortfolioContext`, and "Contact Record Summary", the prompt template `0hffj000009W6ijAAC`), and the platform's default `Copilot_for_Salesforce` agent, also inactive. None of the agent, topic, action or template metadata is in source, and neither the site nor the API uses any of it. `PortfolioAgentService` is in source only as the action's Apex. The stray permission set `Contact_Information_Agent_Permissions`, which named another org's agent user, was removed from source in Round 5. The prototype is kept for a later real Agentforce provider (pillar D decision D5).
 
 ### 1.4 System API Security (The "Twin" Pattern)
 
@@ -89,6 +92,8 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 | **Consumer** | External Credential + `Portfolio_API` Named Credential | **Secure Storage:** holds the consumer key/secret in the platform vault | Used by `ApiLabController.invoke` (site proxy) and `PAPIHealth` (credential check). Token vending uses a second pair, `Portfolio_API_Token_Auth` and `Portfolio_API_Token`. No secret is ever stored in metadata or source.                                                                                                     |
 | **Vendor**   | `PAPIAuthToken` (`POST /papi/v1/auth/token`)           | **Evaluator access:** exchanges email + purpose for a short-lived token | The only REST class the guest user can execute ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)). Shares `TokenExchangeService` with the proxy.                                                                                                                                                                     |
 | **Context**  | `ApiRequestContext` (shared by every REST class)       | **Contract hygiene:** headers, pagination, errors, cache, rate limits   | Reads `X-Request-Id` and `X-API-Version` (sets `X-Request-Id` only when it generated one), bounds `limit`/`offset`, emits the `Error` schema, applies `Cache-Control` per resource, and enforces the [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21) tiers through `RateWindowLimiter`. |
+
+**Plain text resume.** `GET /papi/v1/resume/generate` honours `Accept: text/plain`. When the first media type in `Accept` is `text/plain` (`PAPIResume.wantsPlainText`, parameters after a semicolon ignored, the header name matched in any case), a 200 answer carries the generated text alone with `Content-Type: text/plain; charset=UTF-8`. `PAPIResume.getResume` still runs `ApiRequestContext.ok` first, so the status, the rate count, the cache directive, the other headers and the request log line are the same as for JSON, and then replaces the body with the text. Any other `Accept` keeps the JSON body, and errors are always JSON. `scripts/api-smoke.sh` makes one such call and prints the first line.
 
 **Rate limiting.** Rate limits are enforced in Apex by `RateWindowLimiter`, a custom-object counter: one `API_Rate_Window__c` row per caller key per minute. For SAPI and PAPI requests the caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null; the token endpoint keys by `papi-token:{SHA-256 of lowercase email|source IP}`. Tiers: `sapi` 120, `papi` 15, `papi-ai` (`/papi/v1/ai/*`) 10 requests per minute, over a fixed calendar minute. Request limit + 1 within a minute gets `429` `RATE_LIMIT_EXCEEDED` with `Retry-After` set to the seconds left in the minute. The check (`RateWindowLimiter.checkKey`) reads and locks the row and writes nothing; the count is written with the response (`ApiRequestContext.ok`/`error`) or by `ApiRequestContext.commitRateCounts()` for non-REST callers, so resources may make callouts after `begin()`. Full rules: [ADR-025 amendment (2026-10-21)](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21).
 
@@ -103,9 +108,10 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 5. **Named Credentials** (both in source, both the My Domain root `https://ryan-bumstead-dev-ed.develop.my.salesforce.com`):
    - `Portfolio_API`, authenticated by `Portfolio_API_Auth`. Callers append `/services/apexrest/...`.
    - `Portfolio_API_Token`, using `Portfolio_API_Token_Auth`, merge fields allowed in the body, no generated Authorization header. Used only for `/services/oauth2/token`.
-6. **Assign `Portfolio_Guest` to the site guest user** (in source, `packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`, no licence, assignable to the guest user). As of Round 4 it grants:
-   - class access to `ApiLabController`, `DeliveryController`, `FooterController`, `GovernanceController`, `PAPIAuthToken`, `ResumeController` and `TestimonialController`
+6. **Assign `Portfolio_Guest` to the site guest user** (in source, `packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`, no licence, assignable to the guest user). As of Round 5 it grants:
+   - class access to `ApiLabController`, `DecisionMatrixController`, `DeliveryController`, `FooterController`, `GovernanceController`, `PAPIAuthToken`, `ResumeController`, `SchemaService` and `TestimonialController` (the two pillar controllers added in Round 5)
    - read on `Experience__c`, `Experience_Skill__c`, `Project__c`, `Project_Asset__c`, `Project_Skill__c` and `Skill__c`, create on `Testimonial__c`, and read on `UserExternalCredential`
+   - read on `Experience__c.Start_Date__c` and `Experience__c.End_Date__c` (Round 5), which the skills matrix needs for "years used"
    - principal access to `Portfolio_API_Auth-Portfolio_API_Principal`, `Portfolio_API_Token_Auth-Portfolio_API_Token_Principal` and `Gemini_Auth-Gemini_Principal` (the last one for the in-process cover letter, ADR-015 Round 4 amendment)
    - no Contact, Account, certification or education access, and no GitHub or Jira principal.
 
