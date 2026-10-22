@@ -409,7 +409,10 @@ describe("c-cover-letter-generator", () => {
     await fillAndGenerate(unreachable);
     expect(trackEvent).toHaveBeenCalledWith(
       "ai_generation_completed",
-      expect.objectContaining({ fallback: true, outcome: "template_unreachable" })
+      expect.objectContaining({
+        fallback: true,
+        outcome: "template_unreachable"
+      })
     );
     document.body.removeChild(unreachable);
 
