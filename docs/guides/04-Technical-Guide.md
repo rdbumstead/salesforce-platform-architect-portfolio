@@ -214,6 +214,7 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
   - AI providers: one row per provider from `ContentGenerationController.providerStatus()`, for example "Agentforce: off", or "Gemini: circuit open until 14:05" while its breaker is open.
   - "AI requests today: N": `SUM(Count__c)` of today's `API_Rate_Window__c` rows whose key starts `papi-ai:`, through a `without sharing` inner class that returns only the number. It counts requests from the site page and from `/papi/v1/ai/generate`, not Gemini calls, so it is never called a Gemini quota (PD-D9). Hover or focus sends `finops_quota_visibility`.
   - If the snapshot call fails, the line shows "status unavailable".
+  - "GraphQL: live, N ms": at the same idle moment the footer loads `c/graphqlProbe` with a dynamic import and times one small read (the first `Skill__c` Id) from the moment the probe connects to the first answer. If the read fails the line says "GraphQL: unavailable". The probe is a separate module so the GraphQL adapter stack never loads before first paint (§2.11).
 - **Deploy badge:** `https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main`, alt text "Production deploy status", allowed by the `GitHub_Badge` CSP trusted site (img-src). If the image fails, a text link to the Actions page takes its place.
 - **Resilience toggle:** not in the footer. The "Simulate an outage" switch sits on the changelog and the roadmap (ADR-022 Round 4 amendment).
 
@@ -234,7 +235,7 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
   - `resilience_test_triggered` {`source`: `changelog` or `roadmap`}, sent when the "Simulate an outage" switch is turned on
   - `finops_quota_visibility`, `theme_changed` {`theme`}
   - Round 5: `skills_view_changed` {`view`}, `skill_selected` {`skill`, `years`}, `erd_scope_changed` {`scope`}, `erd_node_selected` {`object`}, `gallery_asset_opened` {`type`, `pillar`}, `matrix_weight_changed` {`criterion`}, `matrix_reset`, `pillar_video_opened`
-- **The tag.** The GA4 tag loads from head markup, with a page view sent on every route change, because the LWR router changes routes without a page load.
+- **The tag.** The GA4 tag loads from head markup, with a page view sent on every route change, because the LWR router changes routes without a page load. The route change page view is sent from the plain head script that wraps `history.pushState`, which calls the exported `gtag('event', 'page_view', ...)` with the new location. Before Round 5 that listener sat inside the privileged iframe, never received the outer window's event, and no page view was sent after the first page.
 - **CSP.** To load the tag the site runs on **Relaxed CSP** (owner decision, 2026-10-21). That lets inline scripts and `eval()` run on the site, so only reviewed head markup adds scripts, and `https://www.googletagmanager.com` is on the site's script allowlist (Experience Builder "Trusted Sites for Scripts"), kept in source in the site bundle at `digitalExperiences/site/Portfolio1/sfdc_cms__trustedSites/trustedSites/content.json`. It deploys with the site, so production needs no hand step. On the scratch site the tag loaded and a `g/collect` hit reached `google-analytics.com`. The GA4 image and connect hosts are trusted sites in source (`GA4_Tag_Manager`, `GA4_Analytics`, `GA4_Google`), so a Builder setting saved only in production cannot drift from the repo.
 
 ### 2.9 Site Theme, Tokens and Fonts
@@ -262,7 +263,22 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
 
 ### 2.11 Mobile Performance
 
-PENDING: the measured mobile performance changes and their before and after medians, from the performance stream's hand-over. This section is filled before the Round 5 docs branch merges.
+Round 5 measured every change with the Lighthouse CLI (11.4.0, mobile profile, simulated throttling), three runs per route on a scratch copy of the site, and kept or reverted it on the median.
+
+- **Kept: the footer's GraphQL probe loads after the page is idle.** `c/footer` imported `lightning/uiGraphQLApi` statically, so about 237 KB of GraphQL adapter modules were preloaded with the layout on every route before first paint. The probe now lives in `c/graphqlProbe`, which the footer loads with a literal `import("c/graphqlProbe")` after `load` plus idle and renders through `lwc:component` (the footer declares `lightning__dynamicComponent`). Rendering the child behind `lwc:if` was not enough, because the bundler still preloaded it.
+- **Kept: the hero reads `ResumeController.getHeader()`.** It returns only the header from the owner Contact, so the bio, which is the home page's LCP element on the live site, no longer waits on the full resume query.
+- **Tried and reverted:** loading `gtag/js` after the window `load` event (Total Blocking Time rose on all four routes) and preloading the headshot from the head markup (LCP rose on three of four routes, because a head preload is fetched on every route).
+- **Results**, medians of three runs, before in brackets:
+
+| Route      | FCP             | LCP              |
+| ---------- | --------------- | ---------------- |
+| `/`        | 4.61 s (5.91 s) | 7.30 s (8.20 s)  |
+| `/resume`  | 5.16 s (6.43 s) | 9.85 s (9.39 s)  |
+| `/skills`  | 5.75 s (5.75 s) | 9.28 s (9.42 s)  |
+| `/api-lab` | 5.27 s (6.50 s) | 8.65 s (10.02 s) |
+
+- **Reading them.** First paint came about 1.2 s sooner everywhere except `/skills`, which needs the GraphQL stack for the skills matrix itself. The `/resume` LCP lands near 8.6 s or near 10.1 s from run to run on identical code, so its median does not show a direction. Accessibility scored 1 on every run.
+- **What is left.** The launch target of LCP under 2.5 s on mobile is not met. The remaining cost is outside the site's own files: about 500 KB of LWR framework and data service modules on every route, about 420 ms of `gtag/js` script, and the platform's SLDS stylesheets. Fonts were not changed in Round 5, because dropping a weight the pages use would change how they look.
 
 ## 3. Quality Assurance Checklist
 
