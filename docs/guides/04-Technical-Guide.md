@@ -13,7 +13,7 @@
   - [2.3 `c-testimonial-submit` (Social Proof)](#23-c-testimonial-submit-social-proof)
   - [2.4 `c-schema-visualizer` (Dynamic ERD Visualizer)](#24-c-schema-visualizer-dynamic-erd-visualizer)
   - [2.5 `c-smart-checklist` (Executable Governance)](#25-c-smart-checklist-executable-governance)
-  - [2.6 `c-system-health-footer` (Glass Box Telemetry)](#26-c-system-health-footer-glass-box-telemetry)
+  - [2.6 `c-footer` (Glass Box Telemetry)](#26-c-footer-glass-box-telemetry)
   - [2.7 Architectural Decision Record: ADR-014 (Deferred Telemetry)](#27-architectural-decision-record-adr-014-deferred-telemetry)
   - [2.8 Analytics Instrumentation (GA4)](#28-analytics-instrumentation-ga4)
 - [3. Quality Assurance Checklist](#3-quality-assurance-checklist)
@@ -98,7 +98,14 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 5. **Named Credentials** (both in source, both the My Domain root `https://ryan-bumstead-dev-ed.develop.my.salesforce.com`):
    - `Portfolio_API`, authenticated by `Portfolio_API_Auth`. Callers append `/services/apexrest/...`.
    - `Portfolio_API_Token`, using `Portfolio_API_Token_Auth`, merge fields allowed in the body, no generated Authorization header. Used only for `/services/oauth2/token`.
-6. **Assign `Portfolio_Guest` to the site guest user** (in source, `packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`; no licence, assignable to the guest user): class access to `PAPIAuthToken` and `ApiLabController` only; principal access to `Portfolio_API_Auth-Portfolio_API_Principal` and `Portfolio_API_Token_Auth-Portfolio_API_Token_Principal`; read on `UserExternalCredential`; no portfolio object or field grants. Without it, the guest gets 403 on `POST /papi/v1/auth/token`. Assigning it to the guest user is a Setup step for the org owner. Once it is assigned, remove the temporary `Portfolio_API_Access` permission set created in Setup on 2026-10-02.
+6. **Assign `Portfolio_Guest` to the site guest user** (in source, `packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`, no licence, assignable to the guest user). As of Round 4 it grants:
+   - class access to `ApiLabController`, `DeliveryController`, `FooterController`, `GovernanceController`, `PAPIAuthToken`, `ResumeController` and `TestimonialController`
+   - read on `Experience__c`, `Experience_Skill__c`, `Project__c`, `Project_Asset__c`, `Project_Skill__c` and `Skill__c`, create on `Testimonial__c`, and read on `UserExternalCredential`
+   - principal access to `Portfolio_API_Auth-Portfolio_API_Principal`, `Portfolio_API_Token_Auth-Portfolio_API_Token_Principal` and `Gemini_Auth-Gemini_Principal` (the last one for the in-process cover letter, ADR-015 Round 4 amendment)
+   - no Contact, Account, certification or education access, and no GitHub or Jira principal.
+
+   Without it, the guest gets 403 on `POST /papi/v1/auth/token`. Assigning it to the guest user is a Setup step for the org owner.
+
 7. **Schedule the cache cleanup job daily at 03:00 org time** (decision 2026-10-20). `CacheCleanupScheduler` is not scheduled by any deploy. `CacheCleanupScheduler.execute` checks `CacheCleanupSettings.isEnabled()` and then calls `CacheCleanupOrchestrator.run()`, which starts `GithubCacheCleanupBatch` and, through `CacheCleanupOrchestrator.runRateWindowCleanup()`, `CacheCleanupRateWindowBatch`. That batch deletes `API_Rate_Window__c` rows whose `Window_Start__c` is older than `Cache_Cleanup_Settings__mdt.Rate_Window_Retention_Days__c` (`Default` record: 1 day). Schedule it once per org from anonymous Apex, as an administrator:
 
    ```apex
@@ -112,8 +119,9 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
    Check it with `SELECT CronJobDetail.Name, NextFireTime FROM CronTrigger WHERE CronJobDetail.Name = 'Cache Cleanup Daily'`.
 
 8. **Confirm `SAPIResume` is gone after the Round 2 deploy.** The class and its test were removed from source. A deploy that carries no destructive manifest leaves them in the org. After the deploy, run the Tooling query `SELECT Name FROM ApexClass WHERE Name LIKE 'SAPIResume%'`; if it returns rows, delete both classes with a destructive deploy.
-9. **Assign `Portfolio_Admin`** to administrators who need to report on `API_Access_Request__c` (the token audit trail) and `API_Rate_Window__c`. It grants read and View All on both objects and read on their fields; without it the fields are not readable, even in SOQL.
+9. **Assign `Portfolio_Admin`** to administrators who need to report on `API_Access_Request__c` (the token audit trail), `API_Rate_Window__c` and `Pipeline_Run__c`. It grants read and View All on the first two, read on `Pipeline_Run__c`, and read on their fields. Without it the fields are not readable, even in SOQL. It also grants the `GitHub_Auth-GitHub_Principal` and `Jira_Auth-Jira_Principal` principals, which the admin who schedules the cache refresh needs (owner decision E8, 2026-10-21). `Integration_Access` keeps those two principals as well.
 10. **Token settings.** `Portfolio_Config__mdt.Ryan_Bumstead.Token_Daily_Cap__c` sets the daily evaluator token cap (`TokenExchangeService.dailyCap`, default 50 when blank); `Last_Secret_Rotation__c` records the last rotation date.
+11. **Governance publisher.** CI publishes `Governance_Event__e` as each workflow's existing JWT user (`deploy.yml` and `keep-alive.yml`). Assign `Governance_Publisher` (Create on that event only) to whichever of those users cannot create it yet. The publish steps in the two workflows are the owner's edits, made after the event is deployed to production.
 
 **Operational notes:** rotation and revocation procedures are in the [Maintenance Guide §1.2](./05-Maintenance-Guide.md#12-external-client-app-secret-rotation).
 
@@ -164,19 +172,22 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 ### 2.5 `c-smart-checklist` (Executable Governance)
 
 - **No browser subscription.** `lightning-emp-api` is unsupported in LWR sites, and a guest has no token for Pub/Sub API, so the component imports no `lightning/empApi` and opens no channel ([ADR-019 Round 4 amendment](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-21-round-4)).
-- **Server side.** CI publishes `Governance_Event__e` after a production deploy and after the daily heartbeat. An Apex trigger upserts a `Pipeline_Run__c` record by `Run_Key__c`, so a replayed event changes nothing.
+- **Server side.** CI publishes `Governance_Event__e` after a production deploy and after the daily heartbeat. `GovernanceEventTrigger` hands each batch to `GovernanceEventHandler.handle`, which upserts a `Pipeline_Run__c` record by `Run_Key__c` (`<workflow>:<run id>`), so a replayed event changes nothing, skips events with an unknown workflow or status or no run id, and keeps the newest 60 rows per workflow.
 - **Read.** The component wires `GovernanceController.getPipelineStatus()` (cacheable): the latest run per workflow plus the age of the integration caches. It reads when the page is viewed and calls `refreshApex` when the tab becomes visible again (`visibilitychange`). There is no `setInterval` and no `setTimeout` loop.
-- **Items.** Production deploy green, heartbeat within 26 hours, integration caches under 30 minutes. Each shows its evidence (commit and time, linking to the run). An item with no data shows "No signal yet", never a tick. Nothing is kept in `localStorage`.
+- **Items.** "Production deploy green", "Org heartbeat in the last 26 hours" and "Integration caches under 30 minutes old", each worked out in `GovernanceController` from evidence only: no run is "No signal yet", a `Failure` is "Failed", old evidence is "Out of date", and only fresh success is "Passed". Each shows its evidence (commit and time, linking to the run). Nothing is kept in `localStorage`.
 
-### 2.6 `c-system-health-footer` (Glass Box Telemetry)
+### 2.6 `c-footer` (Glass Box Telemetry)
 
-- **Component:** `c-system-health-footer`
-- **Purpose:** Displays real-time Salesforce Limits (Heap, CPU) and GitHub API quotas.
-- **Implementation:** Uses the **Deferred Loading Pattern** (see ADR-014). The component loads with placeholder data and triggers the Apex data fetch only via requestIdleCallback() to ensure it never delays the main page load (LCP).
-- **Resilience Toggle:** Includes the "Resilience Simulation" switch that forces the GitHubService into a degraded state for testing.
+- **Component:** `c-footer`, one line: copyright, the deploy badge with a status dot, the telemetry in Fira Code, profile links and "Back to top".
+- **Links:** `FooterController.getLinks()` (cacheable) returns only `gitHubUrl` and `linkedInUrl` from `Portfolio_Config__mdt`. It never selects the owner's email or phone.
+- **Deferred load (ADR-014):** the component paints first and calls `FooterController.getSystemSnapshot()` from `requestIdleCallback`, or a zero delay timeout where the browser has none, so the fetch never delays the main page load (LCP). The method is not cacheable, so each visit reads current values.
 - **Telemetry Data:**
-  - AI Provider: Name, Health Status, Latency.
-  - FinOps Quota: Gemini requests remaining (Calculated from Org Cache).
+  - Limits: CPU time, heap size and SOQL queries used against their limits (`Limits.getCpuTime`, `getHeapSize`, `getQueries` and their limits).
+  - AI providers: one row per provider from `ContentGenerationController.providerStatus()`, for example "Agentforce: off", or "Gemini: circuit open until 14:05" while its breaker is open.
+  - "AI requests today: N": `SUM(Count__c)` of today's `API_Rate_Window__c` rows whose key starts `papi-ai:`, through a `without sharing` inner class that returns only the number. It counts requests from the site page and from `/papi/v1/ai/generate`, not Gemini calls, so it is never called a Gemini quota (PD-D9). Hover or focus sends `finops_quota_visibility`.
+  - If the snapshot call fails, the line shows "status unavailable".
+- **Deploy badge:** `https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main`, alt text "Production deploy status", allowed by the `GitHub_Badge` CSP trusted site (img-src). If the image fails, a text link to the Actions page takes its place.
+- **Resilience toggle:** not in the footer. The "Simulate an outage" switch sits on the changelog and the roadmap (ADR-022 Round 4 amendment).
 
 ### 2.7 Architectural Decision Record: ADR-014 (Deferred Telemetry)
 
@@ -186,12 +197,14 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 
 ### 2.8 Analytics Instrumentation (GA4)
 
-- **Global Tag:** Injected via Experience Builder Head Markup.
-- **Event Strategy:**
-  - `page_view`: Automatic (History State Change).
-  - `resume_download_pdf`: Triggered on PDF generation success (tracks conversion).
-  - `api_test_executed`: Triggered on REST Callout completion (tracks engagement).
-  - `resilience_test_triggered`: Triggered when the Resilience Simulation switch is flipped.
+- **One event layer.** `c/analyticsService` exports `trackEvent(name, params)` and `EVENTS`, the one event list. `trackEvent` does nothing when `window.gtag` is absent and never throws, so analytics can never break a component. Later rounds append to `EVENTS`.
+- **Events** (measurement id `G-G6P1S31J8L`):
+  - `api_test_executed` {`path`, `status`}, `api_reference_opened` {`spec`}
+  - `ai_generation_completed` {`provider`, `model`, `fallback`, `latency_ms`, `outcome`}, `ai_complete_failure` {`message_kind`}. The Charter's AI rates are computed in GA4 from these (PD-D8).
+  - `resume_downloaded` {`persona`, `format`}
+  - `roadmap_viewed`, `changelog_commit_clicked` {`sha`}, `governance_run_link_clicked` {`workflow`}
+  - `finops_quota_visibility`, `theme_changed` {`theme`}
+- **CSP.** The GA4 hosts are trusted sites in source (`GA4_Tag_Manager`, `GA4_Analytics`, `GA4_Google`), so a Builder setting saved only in production cannot drift from the repo.
 
 ## 3. Quality Assurance Checklist
 

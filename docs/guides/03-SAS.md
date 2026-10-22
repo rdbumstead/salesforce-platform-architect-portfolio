@@ -549,22 +549,25 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 
 ### 8.4 Resilience Simulation Operations
 
-Ensuring the system fails gracefully during outage events.
+Ensuring the system fails gracefully during outage events ([ADR-022 Round 4 amendment](../adr/022-resilience-engineering-resilience-simulation-toggle.md#amendment-2026-10-21-round-4)).
 
-| Failure Scenario              | Detection Method                                          | User Experience                                              | Auto-Recovery                      |
-| :---------------------------- | :-------------------------------------------------------- | :----------------------------------------------------------- | :--------------------------------- |
-| **GitHub API Rate Limit**     | HTTP 429 response                                         | Display cached commits with "Last Updated: 15m ago" badge    | Scheduler retries in 15 min        |
-| **G6 Library 404**            | `loadScript()` Promise rejection                          | Render static SVG immediately                                | Log error + email admin            |
-| **Jira API Down**             | 3 consecutive 503 errors                                  | Show "Roadmap temporarily unavailable" message               | Circuit Breaker opens for 30 min   |
-| **User-Triggered Simulation** | `Resilience_Simulation_Enabled__c = True` (Session Cache) | "Simulation Active" badge appears; API calls mock 500 errors | Reset via UI Toggle or Session End |
+| Failure Scenario                 | Detection Method                                                                                 | User Experience                                                                                                                                   | Auto-Recovery                                                 |
+| :------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------ |
+| **GitHub or Jira refresh fails** | The refresh job's callout fails. Three in a row open that source's breaker                       | The last good commits or roadmap with its age. `DEGRADED` while the breaker is open                                                               | The breaker closes after 30 minutes, the next refresh retries |
+| **No usable cache row**          | `DeliveryController` finds no row, or a payload that does not parse                              | "No recent updates found." or "Roadmap temporarily unavailable"                                                                                   | The next successful refresh                                   |
+| **Gemini fails**                 | An error, an exception or a timeout in `GeminiService`. Three in a row open the `gemini` breaker | The cover letter comes from the Local Template, and the attempts list shows why                                                                   | The breaker closes after 30 minutes                           |
+| **G6 Library 404**               | `loadScript()` Promise rejection in `c/g6Loader`                                                 | The inline SVG built from the same live data, with "The interactive graph could not load, so a static view is shown." Small screens never load G6 | The next page load tries again                                |
+| **User-Triggered Simulation**    | The "Simulate an outage" switch on the changelog or the roadmap passes `simulate`                | The cached data with a `SIMULATED` badge. No callout, nothing stored                                                                              | Switch it off                                                 |
 
 ## 9. Observability & Glass Box Telemetry
 
-The system exposes real-time telemetry to the user via the `c-system-health-footer` component to demonstrate "Glass Box Telemetry" architecture.
+The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box Telemetry". It loads after the first paint ([ADR-014](../adr/014-deferred-telemetry-loading-performance.md)) from `FooterController.getSystemSnapshot()`, which is not cacheable, so the values are current.
 
-- **Heap/CPU:** Visualized vs. Governor Limits.
-- **AI Provider Health:** Current active provider and estimated latency.
-- **FinOps Telemetry:** Real-time counter of Gemini API calls remaining (e.g., "Daily Quota: 85% Free").
+- **Limits:** CPU time, heap size and SOQL queries used against their governor limits, read from `Limits` in that transaction.
+- **AI provider health:** each provider's switch and state from `ContentGenerationController.providerStatus()`, including when an open circuit closes again.
+- **AI requests today:** the sum of today's AI tier counts in `API_Rate_Window__c` (the site cover letter and `/papi/v1/ai/generate` both count). It counts requests, not Gemini calls, so it is never labelled as a Gemini quota (owner decision PD-D9, 2026-10-21). Hovering over or focusing it sends the GA4 event `finops_quota_visibility`.
+- **Deploy status:** the GitHub Actions badge for `deploy.yml` on `main`, with a text link when the image cannot load.
+- **Logs:** Apex writes one line per API request through a logging seam that uses Nebula Logger when it is installed and debug logs when it is not (section A.3).
 
 ## Appendices
 

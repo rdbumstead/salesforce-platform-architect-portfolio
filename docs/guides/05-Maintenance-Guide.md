@@ -170,12 +170,12 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 
 - **Symptom:** PMD Scan or Health Check fails due to "Guest User Open Access".
 - **Mitigation:**
-  1. **Immediate Rollback:** Revert the guest permission set `Portfolio_Guest` (`packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`) to the previous commit. It must grant only class access to `PAPIAuthToken` and `ApiLabController`, the two External Credential principals and read on `UserExternalCredential`.
+  1. **Immediate Rollback:** Revert the guest permission set `Portfolio_Guest` (`packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`) to the previous commit. It must grant only what [Technical Guide §1.4, prerequisite 6](./04-Technical-Guide.md#14-system-api-security-the-twin-pattern) lists: class access to the seven site controllers and the token endpoint, read on the six portfolio objects, create on `Testimonial__c`, read on `UserExternalCredential`, and the `Portfolio_API_Auth`, `Portfolio_API_Token_Auth` and `Gemini_Auth` principals. Never a GitHub or Jira principal, and never Contact or Account access.
   2. **Nuke & Rebuild:** If unsure, delete the Permission Set from the org (`sf project delete source`) and redeploy the `main` branch version.
 
 ### 4.3 Scenario: GitHub Rate Limit Exhaustion
 
-- The system uses `GitHub_Cache__c` to store API responses. If the API fails (429/500), the Apex `GitHubService` will automatically serve cached data.
+- Visitors never call GitHub. `GitHubCacheRefreshJob` refreshes `Github_Cache__c` every 15 minutes, and a failed refresh (429, 500 or a timeout) inserts nothing, so the changelog keeps showing the last good list with its age. Three failures in a row open the `github` breaker for 30 minutes, and refreshes are skipped until it closes.
 
 ### 4.4 Scenario: Token Vending Abuse
 
@@ -195,6 +195,7 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed the owner above a threshold. **It is not built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
 
 - The Gemini API key's own limits for Gemma 4 31B: 30 requests per minute, 16,000 tokens per minute, 14,400 requests per day (AI Studio). Past them, `/papi/v1/ai/generate` falls back to the local template for cover letters and answers 503 `ALL_PROVIDERS_UNAVAILABLE` otherwise.
-- The `papi-ai` rate tier, 10 requests per minute per caller (`RateWindowLimiter`).
+- The `papi-ai` rate tier, 10 requests per minute (`RateWindowLimiter`). The site cover letter and `/papi/v1/ai/generate` both count against it, and every evaluator token is the same session, so evaluators share one bucket.
+- The footer's "AI requests today" line (`FooterController.getSystemSnapshot`), the sum of today's `papi-ai` counts. It counts requests, not Gemini calls.
 - The audit object `API_Access_Request__c` for evaluator token requests.
 - Setup → System Overview for the org's daily API request usage (15,000 per day in Developer Edition).
