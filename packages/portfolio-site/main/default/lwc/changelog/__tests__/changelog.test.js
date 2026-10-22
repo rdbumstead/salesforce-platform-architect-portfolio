@@ -6,9 +6,12 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 01/03/2026
  **/
+import { readFileSync } from "fs";
+import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
-import Changelog, { ageLabel, formatDate } from "c/changelog";
+import Changelog, { STATUS_NOTES, ageLabel, formatDate } from "c/changelog";
 import getRecentCommits from "@salesforce/apex/DeliveryController.getRecentCommits";
+import { trackEvent } from "c/analyticsService";
 
 jest.mock(
   "@salesforce/apex/DeliveryController.getRecentCommits",
@@ -16,6 +19,18 @@ jest.mock(
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
   },
+  { virtual: true }
+);
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    trackEvent: jest.fn(),
+    EVENTS: {
+      ROADMAP_VIEWED: "roadmap_viewed",
+      CHANGELOG_COMMIT_CLICKED: "changelog_commit_clicked"
+    }
+  }),
   { virtual: true }
 );
 
@@ -172,6 +187,87 @@ describe("c-changelog", () => {
     expect(q(element, '[data-id="empty"]')).not.toBeNull();
     expect(q(element, '[data-id="loading"]')).toBeNull();
     expect(element.shadowRoot.textContent).not.toContain("No access");
+  });
+
+  it("renders the outage switch off, labelled, and reads with simulate false", async () => {
+    const element = createComponent();
+    await flushPromises();
+
+    const input = q(element, '[data-id="simulate-switch"]');
+    expect(input.type).toBe("checkbox");
+    expect(input.getAttribute("role")).toBe("switch");
+    expect(input.checked).toBe(false);
+    expect(input.closest("label").textContent.trim()).toBe(
+      "Simulate an outage"
+    );
+    expect(getRecentCommits.getLastConfig()).toEqual({ simulate: false });
+  });
+
+  it("turning the switch on re-reads with simulate true and shows SIMULATED", async () => {
+    const element = createComponent();
+    getRecentCommits.emit(feed("FRESH"));
+    await flushPromises();
+
+    const input = q(element, '[data-id="simulate-switch"]');
+    input.checked = true;
+    input.dispatchEvent(new CustomEvent("change"));
+    await flushPromises();
+    expect(getRecentCommits.getLastConfig()).toEqual({ simulate: true });
+
+    getRecentCommits.emit(feed("SIMULATED"));
+    await flushPromises();
+    expect(q(element, '[data-id="status-badge"]').textContent).toBe(
+      "Simulated"
+    );
+    expect(element.shadowRoot.querySelectorAll("li.commit-item")).toHaveLength(
+      2
+    );
+    expect(q(element, '[data-id="status-note"]').textContent.trim()).toBe(
+      STATUS_NOTES.SIMULATED
+    );
+
+    input.checked = false;
+    input.dispatchEvent(new CustomEvent("change"));
+    await flushPromises();
+    expect(getRecentCommits.getLastConfig()).toEqual({ simulate: false });
+  });
+
+  it("DEGRADED explains itself in a live region, FRESH says nothing", async () => {
+    const element = createComponent();
+    getRecentCommits.emit(feed("DEGRADED"));
+    await flushPromises();
+
+    const note = q(element, '[data-id="status-note"]');
+    expect(note.getAttribute("aria-live")).toBe("polite");
+    expect(note.textContent.trim()).toBe(STATUS_NOTES.DEGRADED);
+
+    getRecentCommits.emit(feed("FRESH"));
+    await flushPromises();
+    expect(note.textContent.trim()).toBe("");
+  });
+
+  it("sends changelog_commit_clicked with the sha when a commit link is clicked", async () => {
+    const element = createComponent();
+    getRecentCommits.emit(feed("FRESH"));
+    await flushPromises();
+    expect(trackEvent).not.toHaveBeenCalled();
+
+    const link = qa(element, '[data-id="link"]')[1];
+    link.addEventListener("click", (event) => event.preventDefault());
+    link.click();
+
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("changelog_commit_clicked", {
+      sha: ITEMS[1].sha
+    });
+  });
+
+  it("styles only with design tokens, never a hex colour", () => {
+    const css = readFileSync(join(__dirname, "..", "changelog.css"), "utf8");
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(css).toMatch(
+      /\.simulate-input\s*\{[^}]*width:\s*24px;[^}]*height:\s*24px;/
+    );
   });
 
   it("formats labels and dates", () => {

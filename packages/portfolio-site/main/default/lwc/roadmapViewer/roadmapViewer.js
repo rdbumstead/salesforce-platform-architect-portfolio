@@ -2,7 +2,11 @@
  * @description       : Roadmap board for the Delivery page. Reads the newest Jira cache row
  *                      through DeliveryController.getRoadmap (plan K3, pillar-e-design section
  *                      4.3). Columns are keyed on Jira's statusCategory, never on status names,
- *                      so a renamed workflow status cannot empty a column.
+ *                      so a renamed workflow status cannot empty a column. The "Simulate an
+ *                      outage" switch (Round 4 plan L10, ADR-022) re-reads the feed with
+ *                      simulate=true, which returns the same cached board marked SIMULATED.
+ *                      DEGRADED means the Jira circuit breaker is open. roadmap_viewed is sent
+ *                      once when the board is first shown on the page (plan L4).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -10,6 +14,7 @@
  **/
 import { LightningElement, wire } from "lwc";
 import getRoadmap from "@salesforce/apex/DeliveryController.getRoadmap";
+import { trackEvent, EVENTS } from "c/analyticsService";
 
 export const COLUMNS = [
   { category: "new", label: "To Do" },
@@ -20,6 +25,13 @@ export const COLUMNS = [
 const STATUS_BADGES = {
   SIMULATED: { label: "Simulated", className: "status-badge badge-simulated" },
   DEGRADED: { label: "Degraded", className: "status-badge badge-degraded" }
+};
+
+export const STATUS_NOTES = {
+  SIMULATED:
+    "Simulated outage. This is the last cached roadmap, and no call was made to Jira.",
+  DEGRADED:
+    "Jira is not answering right now. This is the last roadmap we saved."
 };
 
 export function ageLabel(ageMinutes) {
@@ -44,8 +56,17 @@ function toCard(item) {
 export default class RoadmapViewer extends LightningElement {
   feed;
   hasError = false;
+  simulate = false;
+  viewTracked = false;
 
-  @wire(getRoadmap)
+  connectedCallback() {
+    if (!this.viewTracked) {
+      this.viewTracked = true;
+      trackEvent(EVENTS.ROADMAP_VIEWED);
+    }
+  }
+
+  @wire(getRoadmap, { simulate: "$simulate" })
   wiredRoadmap({ data, error }) {
     if (data) {
       this.feed = data;
@@ -54,6 +75,10 @@ export default class RoadmapViewer extends LightningElement {
       this.feed = undefined;
       this.hasError = true;
     }
+  }
+
+  handleSimulateChange(event) {
+    this.simulate = event.target.checked;
   }
 
   get isLoading() {
@@ -106,5 +131,9 @@ export default class RoadmapViewer extends LightningElement {
 
   get statusBadge() {
     return STATUS_BADGES[this.status] || null;
+  }
+
+  get statusNote() {
+    return STATUS_NOTES[this.status] || "";
   }
 }

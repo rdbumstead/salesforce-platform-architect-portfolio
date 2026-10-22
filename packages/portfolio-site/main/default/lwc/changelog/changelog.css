@@ -1,23 +1,20 @@
 /*
- * Contract K9: the site branding is dark. Every element here that sets a background
- * also sets its text colour. The feed sits on the site root surface with the DXP root
- * tokens. The badges are fixed colour pairs with their own dark text. Fallbacks are the
- * values the Portfolio branding set renders.
+ * Round 4 plan L1: colours, fonts, radii and spacing come only from the --pf- design
+ * tokens, so the feed follows the light and dark themes. Every element that sets a
+ * background also sets its text colour. The sha and the age label are metrics, so they
+ * use the mono font.
  */
 :host {
   display: block;
-  --feed-surface: var(--dxp-g-root, #020617);
-  --feed-text: var(--dxp-g-root-contrast, #e2e8f0);
-  --feed-muted: #94a3b8;
-  --feed-border: var(--dxp-g-neutral-3, #475569);
 }
 
 .changelog {
-  background-color: var(--feed-surface);
-  color: var(--feed-text);
-  padding: 1rem;
-  border: 1px solid var(--feed-border);
-  border-radius: 0.25rem;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  padding: var(--pf-space-4);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
   overflow-wrap: anywhere;
 }
 
@@ -26,12 +23,12 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: var(--pf-space-2);
+  margin-bottom: var(--pf-space-3);
 }
 
 .changelog-title {
-  color: var(--feed-text);
+  color: var(--pf-text);
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0;
@@ -41,43 +38,79 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--pf-space-2);
 }
 
 .age-label {
-  color: var(--feed-muted);
-  background-color: var(--feed-surface);
+  color: var(--pf-muted);
+  font-family: var(--pf-font-mono);
   font-size: 0.875rem;
 }
 
 .age-stale {
-  color: #fbbf24;
+  background-color: var(--pf-warn);
+  color: var(--pf-warn-text);
+  border-radius: var(--pf-radius-sm);
+  padding: 0 var(--pf-space-1);
   font-weight: 700;
 }
 
 .status-badge {
   display: inline-block;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.75rem;
+  padding: var(--pf-space-1) var(--pf-space-2);
+  border-radius: var(--pf-radius-sm);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .badge-simulated {
-  background-color: #7dd3fc;
-  color: #020617;
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border: 1px solid var(--pf-accent);
 }
 
 .badge-degraded {
-  background-color: #fbbf24;
-  color: #020617;
+  background-color: var(--pf-warn);
+  color: var(--pf-warn-text);
+}
+
+/* The switch: a native checkbox with role="switch", at least 24 by 24 px, inside its
+   label so a click anywhere on the text toggles it. */
+.simulate-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  min-height: 44px;
+  color: var(--pf-body);
+  cursor: pointer;
+}
+
+.simulate-input {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--pf-accent);
+  cursor: pointer;
+}
+
+.simulate-input:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+/* Always in the page, so screen readers announce the text when it appears. Empty, it
+   takes no space. */
+.status-note {
+  color: var(--pf-body);
+  font-size: 0.875rem;
+  margin: 0;
 }
 
 .changelog-message {
-  color: var(--feed-text);
+  color: var(--pf-text);
   margin: 0;
-  padding: 0.5rem 0;
+  padding: var(--pf-space-2) 0;
 }
 
 .commit-list {
@@ -87,31 +120,36 @@
 }
 
 .commit-item {
-  padding: 0.5rem 0;
-  border-top: 1px solid var(--feed-border);
+  padding: var(--pf-space-2) 0;
+  border-top: 1px solid var(--pf-border);
 }
 
 .commit-message {
-  color: var(--feed-text);
-  margin: 0 0 0.25rem;
+  color: var(--pf-text);
+  margin: 0 0 var(--pf-space-1);
 }
 
 .commit-details {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  align-items: center;
+  gap: var(--pf-space-3);
   margin: 0;
-  color: var(--feed-muted);
+  color: var(--pf-muted);
   font-size: 0.875rem;
 }
 
 .commit-link {
-  color: #38bdf8;
-  font-family: "Courier New", Courier, monospace;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  min-width: 24px;
+  color: var(--pf-accent);
+  font-family: var(--pf-font-mono);
   text-decoration: underline;
 }
 
 .commit-author,
 .commit-date {
-  color: var(--feed-muted);
+  color: var(--pf-muted);
 }
