@@ -42,6 +42,13 @@ const SYSTEM_FONTS =
 const MONO_FONTS = 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace';
 
 /**
+ * Link and primary colour inside the Redoc panel. The panel is white in both site themes,
+ * so it takes the light accent (L1 --pf-accent light, --pf-btn in both themes), 5.17:1
+ * on white, never the dark theme accent, which is 2.54:1 there.
+ */
+export const REDOC_LINK_COLOR = "#2563EB";
+
+/**
  * Redoc 2.5.4 options. System fonts instead of the default web fonts, no download
  * button, native scrollbars inside the component, and search off because Redoc runs
  * search in a web worker built from a blob URL, which Lightning Web Security may block.
@@ -54,10 +61,18 @@ export const REDOC_OPTIONS = {
   scrollYOffset: 0,
   expandResponses: "200",
   theme: {
+    colors: {
+      primary: { main: REDOC_LINK_COLOR }
+    },
     typography: {
       fontFamily: SYSTEM_FONTS,
       headings: { fontFamily: SYSTEM_FONTS },
-      code: { fontFamily: MONO_FONTS }
+      code: { fontFamily: MONO_FONTS },
+      links: {
+        color: REDOC_LINK_COLOR,
+        visited: REDOC_LINK_COLOR,
+        hover: REDOC_LINK_COLOR
+      }
     }
   }
 };

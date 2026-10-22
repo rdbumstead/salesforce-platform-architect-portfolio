@@ -13,6 +13,7 @@ import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
   HOSTED_REFERENCE_URL,
   REDOC_OPTIONS,
+  REDOC_LINK_COLOR,
   RENDER_TIMEOUT_MS,
   TIMEOUT_MESSAGE
 } from "c/apiReference";
@@ -376,5 +377,23 @@ describe("c-api-reference", () => {
     );
     expect(meta).toMatch(/name="fullWidth"/);
     expect(meta).toMatch(/name="openOnLoad"/);
+  });
+
+  it("gives Redoc's links the light accent, readable on its white panel in both themes", async () => {
+    const element = createComponent();
+    await flushPromises();
+    openButton(element).click();
+    await flushPromises();
+
+    const options = window.Redoc.init.mock.calls[0][1];
+    expect(REDOC_LINK_COLOR).toBe("#2563EB");
+    expect(options.theme.colors.primary.main).toBe(REDOC_LINK_COLOR);
+    expect(options.theme.typography.links.color).toBe(REDOC_LINK_COLOR);
+    expect(options.theme.typography.links.visited).toBe(REDOC_LINK_COLOR);
+    expect(options.theme.typography.links.hover).toBe(REDOC_LINK_COLOR);
+
+    const css = readFileSync(join(__dirname, "..", "apiReference.css"), "utf8");
+    expect(css).toMatch(/\.redoc-panel \{[^}]*--pf-accent: var\(--pf-btn\)/);
+    expect(css).toMatch(/\.redoc-panel a \{[^}]*color: var\(--pf-btn\)/);
   });
 });
