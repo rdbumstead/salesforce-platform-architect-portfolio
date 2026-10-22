@@ -5,6 +5,8 @@
  *                      getLinks(), and Back to top. The snapshot is requested only once the
  *                      page has loaded and the browser is idle, so it never delays first paint
  *                      (ADR-014). Every provider word on screen comes from the snapshot data.
+ *                      At the same moment one small GraphQL query is timed, and the footer says
+ *                      "GraphQL: live, N ms" or "GraphQL: unavailable" (log 155). Never a constant.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -14,11 +16,37 @@ import { LightningElement, wire } from "lwc";
 import getLinks from "@salesforce/apex/FooterController.getLinks";
 import getSystemSnapshot from "@salesforce/apex/FooterController.getSystemSnapshot";
 import { EVENTS, trackEvent } from "c/analyticsService";
+// Same module skillNetwork uses (Round 3 plan K5). The lint rule prefers lightning/graphql.
+// eslint-disable-next-line @lwc/lwc/newer-version-available
+import { gql, graphql } from "lightning/uiGraphQLApi";
 
 const REPO_URL =
   "https://github.com/rdbumstead/salesforce-platform-architect-portfolio";
 export const BADGE_URL = `${REPO_URL}/actions/workflows/deploy.yml/badge.svg?branch=main`;
 export const ACTIONS_URL = `${REPO_URL}/actions/workflows/deploy.yml`;
+
+// The smallest read the guest may make: one Skill__c Id (Round 3 plan K4).
+const GRAPHQL_PROBE = gql`
+  query FooterGraphqlProbe {
+    uiapi {
+      query {
+        Skill__c(first: 1) {
+          edges {
+            node {
+              Id
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+function nowMs() {
+  return typeof performance !== "undefined" && performance.now
+    ? performance.now()
+    : Date.now();
+}
 
 /**
  * Local HH:MM for a circuit reopen time.
@@ -84,8 +112,13 @@ export default class Footer extends LightningElement {
   badgeUrl = BADGE_URL;
   actionsUrl = ACTIONS_URL;
 
+  graphqlQuery;
+  graphqlMs;
+  graphqlFailed = false;
+
   _cancelDeferred;
   _quotaTracked = false;
+  _graphqlStartedAt;
 
   @wire(getLinks)
   wiredLinks({ data }) {
@@ -93,8 +126,31 @@ export default class Footer extends LightningElement {
     this.linkedInUrl = data?.linkedInUrl || null;
   }
 
+  // Not provisioned until graphqlQuery is set after first paint.
+  @wire(graphql, { query: "$graphqlQuery" })
+  wiredGraphqlProbe({ data, errors }) {
+    if (this._graphqlStartedAt === undefined) {
+      return;
+    }
+    if (errors && errors.length) {
+      this.graphqlFailed = true;
+      this.graphqlMs = undefined;
+    } else if (data) {
+      this.graphqlFailed = false;
+      this.graphqlMs = Math.round(nowMs() - this._graphqlStartedAt);
+    }
+  }
+
   connectedCallback() {
-    this._cancelDeferred = whenIdleAfterLoad(() => this.loadSnapshot());
+    this._cancelDeferred = whenIdleAfterLoad(() => {
+      this.startGraphqlProbe();
+      this.loadSnapshot();
+    });
+  }
+
+  startGraphqlProbe() {
+    this._graphqlStartedAt = nowMs();
+    this.graphqlQuery = GRAPHQL_PROBE;
   }
 
   disconnectedCallback() {
@@ -113,6 +169,15 @@ export default class Footer extends LightningElement {
 
   get currentYear() {
     return new Date().getFullYear();
+  }
+
+  get graphqlLabel() {
+    if (this.graphqlFailed) {
+      return "GraphQL: unavailable";
+    }
+    return this.graphqlMs === undefined
+      ? null
+      : `GraphQL: live, ${this.graphqlMs} ms`;
   }
 
   get snapshotLoaded() {

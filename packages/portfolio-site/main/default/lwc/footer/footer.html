@@ -37,6 +37,10 @@
         </template>
       </span>
 
+      <template lwc:if={graphqlLabel}>
+        <span class="metric" data-id="graphql">{graphqlLabel}</span>
+      </template>
+
       <template lwc:if={snapshotLoaded}>
         <template for:each={providerRows} for:item="row">
           <span key={row.key} class="metric" data-id="provider"

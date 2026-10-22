@@ -2,6 +2,8 @@
  * @description       : Unit tests for the Glass Box footer (Round 4 plan L8). getLinks is a
  *                      mocked wire adapter, getSystemSnapshot a mocked imperative call, and
  *                      requestIdleCallback is captured so a test decides when the page is idle.
+ *                      lightning/uiGraphQLApi passes the universal mock through and replaces only
+ *                      graphql and gql (trap 25).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -17,6 +19,8 @@ import Footer, {
 import getLinks from "@salesforce/apex/FooterController.getLinks";
 import getSystemSnapshot from "@salesforce/apex/FooterController.getSystemSnapshot";
 import { trackEvent } from "c/analyticsService";
+// eslint-disable-next-line @lwc/lwc/newer-version-available
+import { graphql } from "lightning/uiGraphQLApi";
 
 jest.mock(
   "@salesforce/apex/FooterController.getLinks",
@@ -30,6 +34,23 @@ jest.mock(
 jest.mock(
   "@salesforce/apex/FooterController.getSystemSnapshot",
   () => ({ default: jest.fn() }),
+  { virtual: true }
+);
+
+jest.mock(
+  "lightning/uiGraphQLApi",
+  () => {
+    const {
+      createTestWireAdapter
+    } = require("@salesforce/wire-service-jest-util");
+    const universal = jest.requireActual("lightning/uiGraphQLApi");
+    return {
+      __esModule: true,
+      default: universal.default,
+      graphql: createTestWireAdapter(jest.fn()),
+      gql: jest.fn((strings) => strings.join(""))
+    };
+  },
   { virtual: true }
 );
 
@@ -329,6 +350,46 @@ describe("c-footer", () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it("shows no GraphQL line before the page is idle", async () => {
+    const element = createComponent();
+    graphql.emit({ data: { uiapi: { query: { Skill__c: { edges: [] } } } } });
+    await flushPromises();
+
+    expect(q(element, '[data-id="graphql"]')).toBeNull();
+  });
+
+  it("measures the GraphQL probe and shows it live with its time", async () => {
+    const clock = jest.spyOn(performance, "now");
+    clock.mockReturnValue(1000);
+    const element = createComponent();
+    await runIdle();
+
+    clock.mockReturnValue(1042.4);
+    graphql.emit({
+      data: {
+        uiapi: { query: { Skill__c: { edges: [{ node: { Id: "a01" } }] } } }
+      }
+    });
+    await flushPromises();
+
+    expect(q(element, '[data-id="graphql"]').textContent).toBe(
+      "GraphQL: live, 42 ms"
+    );
+    clock.mockRestore();
+  });
+
+  it("shows GraphQL unavailable when the probe errors", async () => {
+    const element = createComponent();
+    await runIdle();
+
+    graphql.emit({ errors: [{ message: "denied" }] });
+    await flushPromises();
+
+    expect(q(element, '[data-id="graphql"]').textContent).toBe(
+      "GraphQL: unavailable"
+    );
   });
 
   it("labels a provider row from its own fields", () => {
