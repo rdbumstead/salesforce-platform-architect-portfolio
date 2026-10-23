@@ -67,10 +67,62 @@ function credentialLine(credential) {
     clean(credential.name),
     clean(credential.detail),
     clean(credential.issuer),
-    formatMonthYear(credential.dateValue)
+    formatMonthYear(credential.dateValue),
+    credential.isRetired === true ? "Retired" : ""
   ]
     .filter((part) => part)
     .join(", ");
+}
+
+const HTTP_URL = /^https?:\/\//i;
+
+/**
+ * The verification link (Round 6 plan N5, trap 54). The href is the stored value exactly, never
+ * trimmed, encoded or rebuilt, so a plus sign in the query string stays a plus sign. Only an
+ * http or https value becomes a link.
+ */
+function verificationUrl(value) {
+  return typeof value === "string" && HTTP_URL.test(value) ? value : null;
+}
+
+function byNewestDate(left, right) {
+  const leftDate = left.dateValue ? String(left.dateValue) : "";
+  const rightDate = right.dateValue ? String(right.dateValue) : "";
+  if (leftDate === rightDate) {
+    return 0;
+  }
+  return leftDate < rightDate ? 1 : -1;
+}
+
+/**
+ * The preview's certification block: the current ones newest first with name, issuer and
+ * earned month and year, then the retired ones with name and date only.
+ */
+function certificationBlock(list) {
+  const all = list || [];
+  const current = all
+    .filter((credential) => credential.isRetired !== true)
+    .sort(byNewestDate)
+    .map((credential, index) => ({
+      key: `current-cert-${index}`,
+      text: [
+        clean(credential.name),
+        clean(credential.issuer),
+        formatMonthYear(credential.dateValue)
+      ]
+        .filter((part) => part)
+        .join(", ")
+    }));
+  const retired = all
+    .filter((credential) => credential.isRetired === true)
+    .sort(byNewestDate)
+    .map((credential, index) => ({
+      key: `retired-cert-${index}`,
+      text: [clean(credential.name), formatMonthYear(credential.dateValue)]
+        .filter((part) => part)
+        .join(", ")
+    }));
+  return { current, retired };
 }
 
 /**
@@ -125,17 +177,26 @@ export function buildViewModel(resume, options) {
 
   const certifications = toCredentials(resume.certifications, "cert");
   const education = toCredentials(resume.education, "edu");
+  const certificationGroups = certificationBlock(resume.certifications);
+  const verifyUrl = verificationUrl(resume.credentialVerificationUrl);
 
   return {
     header,
     roles,
     skillGroups,
     certifications,
+    currentCertifications: certificationGroups.current,
+    retiredCertifications: certificationGroups.retired,
+    verificationUrl: verifyUrl,
     education,
     hasHeader: header !== null,
     hasRoles: roles.length > 0,
     hasSkills: skillGroups.length > 0,
     hasCertifications: certifications.length > 0,
+    hasCurrentCertifications: certificationGroups.current.length > 0,
+    hasRetiredCertifications: certificationGroups.retired.length > 0,
+    hasVerificationLink:
+      verifyUrl !== null && certificationGroups.current.length > 0,
     hasEducation: education.length > 0,
     isEmpty:
       header === null &&

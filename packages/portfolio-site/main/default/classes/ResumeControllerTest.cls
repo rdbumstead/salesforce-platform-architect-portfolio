@@ -1,6 +1,6 @@
 /**
- * @description       : Tests for ResumeController (Round 3 plan K1). Guest tests run as the
- *                      real Portfolio1 site guest user.
+ * @description       : Tests for ResumeController (Round 3 plan K1, Round 6 plan N5 and N6).
+ *                      Guest tests run as the real Portfolio1 site guest user.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -270,5 +270,247 @@ private class ResumeControllerTest {
       );
     }
     Test.stopTest();
+  }
+
+  private static final String VERIFY_URL = 'https://trailhead.salesforce.com/en/credentials/certification-detail-print/?searchString=abc+def+ghi';
+  private static final Set<String> ROLE_KEYS = new Set<String>{
+    'key',
+    'title',
+    'employer',
+    'startDate',
+    'endDate',
+    'isCurrent'
+  };
+  private static final Set<String> SCHOOL_KEYS = new Set<String>{
+    'key',
+    'school',
+    'credential',
+    'fieldOfStudy',
+    'completedDate'
+  };
+
+  @isTest
+  static void getResumeRetiredCertificationIsFlagged() {
+    Certification__c old = [
+      SELECT Id
+      FROM Certification__c
+      WHERE Name = 'Cert Old'
+    ];
+    old.Is_Retired__c = true;
+    update old;
+
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume(null);
+    Test.stopTest();
+
+    Assert.areEqual('Cert New', resume.certifications[0].name, 'Newest first');
+    Assert.isFalse(resume.certifications[0].isRetired, 'Current cert');
+    Assert.areEqual('Cert Old', resume.certifications[1].name, 'Older next');
+    Assert.isTrue(resume.certifications[1].isRetired, 'Retired cert');
+    Assert.isFalse(resume.education[0].isRetired, 'Education is never retired');
+  }
+
+  @isTest
+  static void getResumeVerificationUrlReturnedExactlyWithPlusSigns() {
+    ResumeController.configOverride = new Portfolio_Config__mdt(
+      DeveloperName = 'Test_Config',
+      Credential_Verification_URL__c = VERIFY_URL
+    );
+
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume(null);
+    Test.stopTest();
+
+    Assert.areEqual(
+      VERIFY_URL,
+      resume.credentialVerificationUrl,
+      'Stored value comes back unchanged, plus signs included'
+    );
+  }
+
+  @isTest
+  static void getResumeVerificationUrlNullWhenBlank() {
+    ResumeController.configOverride = new Portfolio_Config__mdt(
+      DeveloperName = 'Test_Config',
+      Credential_Verification_URL__c = '   '
+    );
+
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume(null);
+    Test.stopTest();
+
+    Assert.isNull(
+      resume.credentialVerificationUrl,
+      'A blank value means no link'
+    );
+  }
+
+  @isTest
+  static void getResumeVerificationUrlMatchesOrgRecordWhenNoOverride() {
+    String expected;
+    Portfolio_Config__mdt first;
+    for (
+      Portfolio_Config__mdt record : Portfolio_Config__mdt.getAll().values()
+    ) {
+      if (
+        first == null ||
+        record.DeveloperName.compareTo(first.DeveloperName) < 0
+      ) {
+        first = record;
+      }
+    }
+    if (
+      first != null && String.isNotBlank(first.Credential_Verification_URL__c)
+    ) {
+      expected = first.Credential_Verification_URL__c;
+    }
+
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume(null);
+    Test.stopTest();
+
+    Assert.areEqual(
+      expected,
+      resume.credentialVerificationUrl,
+      'Null when the org has no record or no value, else the first record by name'
+    );
+  }
+
+  @isTest
+  static void getTimelineAsGuestReturnsWorkAndEducation() {
+    User guest = SiteGuestTestSupport.preparedGuest();
+    ResumeController.Timeline timeline;
+
+    Test.startTest();
+    System.runAs(guest) {
+      timeline = ResumeController.getTimeline();
+    }
+    Test.stopTest();
+
+    Assert.areEqual(3, timeline.work.size(), 'Every role is returned');
+    Assert.areEqual('Test Employer', timeline.work[0].employer, 'Employer');
+    Assert.areEqual(
+      Date.newInstance(2024, 1, 1),
+      timeline.work[0].startDate,
+      'Start date'
+    );
+    Assert.isNotNull(timeline.work[0].key, 'Each role has a key');
+    Assert.areEqual(1, timeline.education.size(), 'One school');
+    Assert.areEqual(
+      'Test University',
+      timeline.education[0].school,
+      'School name'
+    );
+    Assert.areEqual('BSc', timeline.education[0].credential, 'Credential');
+    Assert.areEqual(
+      'Computer Science',
+      timeline.education[0].fieldOfStudy,
+      'Field of study'
+    );
+    Assert.areEqual(
+      Date.newInstance(2015, 5, 1),
+      timeline.education[0].completedDate,
+      'Completion date'
+    );
+  }
+
+  @isTest
+  static void getTimelineRolesNewestFirst() {
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual('Current Role', timeline.work[0].title, 'Current first');
+    Assert.isTrue(timeline.work[0].isCurrent, 'Current flag');
+    Assert.isNull(timeline.work[0].endDate, 'Current role has no end');
+    Assert.areEqual('Past Role', timeline.work[1].title, 'Newest end next');
+    Assert.isFalse(timeline.work[1].isCurrent, 'Past role is not current');
+    Assert.areEqual('Older Role', timeline.work[2].title, 'Oldest last');
+  }
+
+  @isTest
+  static void getTimelineSchoolsNewestFirst() {
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    Account school = [SELECT Id FROM Account WHERE Name = 'Test University'];
+    insert new Education__c(
+      Name = 'MSc',
+      Contact__c = owner.Id,
+      Issuer__c = school.Id,
+      Graduation_Date__c = Date.newInstance(2019, 12, 1),
+      Field_of_Study__c = 'Information Systems'
+    );
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(2, timeline.education.size(), 'Two schools');
+    Assert.areEqual('MSc', timeline.education[0].credential, 'Newest first');
+    Assert.areEqual('BSc', timeline.education[1].credential, 'Oldest last');
+  }
+
+  @isTest
+  static void getTimelineAsGuestHasNoContactDetailsAndFixedShape() {
+    User guest = SiteGuestTestSupport.preparedGuest();
+    String serialized;
+
+    Test.startTest();
+    System.runAs(guest) {
+      serialized = JSON.serialize(ResumeController.getTimeline());
+    }
+    Test.stopTest();
+
+    Assert.isFalse(
+      serialized.contains(SiteGuestTestSupport.OWNER_EMAIL),
+      'No email address may reach a guest'
+    );
+    Assert.isFalse(
+      serialized.contains(SiteGuestTestSupport.OWNER_PHONE),
+      'No phone number may reach a guest'
+    );
+    Assert.isFalse(
+      serialized.contains(SiteGuestTestSupport.OWNER_STREET),
+      'No address may reach a guest'
+    );
+    Assert.isFalse(serialized.contains('@'), 'No email-like value at all');
+    Assert.isFalse(serialized.contains('Owner'), 'No Owner_* value');
+
+    Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(
+      serialized
+    );
+    Assert.areEqual(
+      new Set<String>{ 'work', 'education' },
+      payload.keySet(),
+      'Only the two lists'
+    );
+    for (Object role : (List<Object>) payload.get('work')) {
+      Assert.areEqual(
+        ROLE_KEYS,
+        ((Map<String, Object>) role).keySet(),
+        'Role carries only the N6 fields'
+      );
+    }
+    for (Object entry : (List<Object>) payload.get('education')) {
+      Assert.areEqual(
+        SCHOOL_KEYS,
+        ((Map<String, Object>) entry).keySet(),
+        'School carries only the N6 fields'
+      );
+    }
+  }
+
+  @isTest
+  static void getTimelineEmptyReturnsEmptyLists() {
+    delete [SELECT Id FROM Experience__c];
+    delete [SELECT Id FROM Education__c];
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.isNotNull(timeline.work, 'Work list is never null');
+    Assert.isNotNull(timeline.education, 'Education list is never null');
+    Assert.areEqual(0, timeline.work.size(), 'No roles');
+    Assert.areEqual(0, timeline.education.size(), 'No schools');
   }
 }

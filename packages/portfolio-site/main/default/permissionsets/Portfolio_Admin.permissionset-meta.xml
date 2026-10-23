@@ -64,6 +64,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Certification__c.Is_Retired__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Certification__c.Issuer__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -232,6 +237,21 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Project__c.Date_Completed__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Project__c.Headline_Metric_Label__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Project__c.Headline_Metric__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Project__c.Hero_Image_Alt__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

@@ -8,7 +8,19 @@
       "Name": "Seed Platform Developer I",
       "Contact__c": "@SeedOwnerRef",
       "Issuer__c": "@SeedInstituteRef",
-      "Earned_Date__c": "2021-06-01"
+      "Earned_Date__c": "2021-06-01",
+      "Is_Retired__c": false
+    },
+    {
+      "attributes": {
+        "type": "Certification__c",
+        "referenceId": "SeedCertRetiredRef"
+      },
+      "Name": "Seed Certified AI Associate",
+      "Contact__c": "@SeedOwnerRef",
+      "Issuer__c": "@SeedInstituteRef",
+      "Earned_Date__c": "2020-07-22",
+      "Is_Retired__c": true
     }
   ]
 }

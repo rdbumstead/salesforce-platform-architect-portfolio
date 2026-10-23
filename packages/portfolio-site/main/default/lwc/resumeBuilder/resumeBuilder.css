@@ -37,6 +37,7 @@
 
 .preview-paper h2,
 .preview-paper h3,
+.preview-paper h4,
 .preview-paper p,
 .preview-paper li,
 .preview-paper strong,
@@ -71,4 +72,10 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+.retired-title {
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
 }

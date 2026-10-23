@@ -1,7 +1,9 @@
 /**
  * @description       : Serves the resume page (Round 3 plan K1). Returns the owner header,
  *                      roles with persona highlights, skill groups, certifications and education
- *                      in one fixed shape. Never returns an email, a phone number, an address or
+ *                      in one fixed shape, plus the certification verification link (Round 6
+ *                      plan N5). getTimeline serves the home page Work and Education timeline
+ *                      (Round 6 plan N6). Never returns an email, a phone number, an address or
  *                      any Owner_* value.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -17,6 +19,9 @@ public with sharing class ResumeController {
     'Developer',
     'Architect'
   };
+
+  @TestVisible
+  private static Portfolio_Config__mdt configOverride;
 
   /**
    * @description Builds the resume for a persona.
@@ -41,7 +46,82 @@ public with sharing class ResumeController {
     resume.skillGroups = toSkillGroups(selector.selectSkills());
     resume.certifications = toCertifications(selector.selectCertifications());
     resume.education = toEducation(selector.selectEducation());
+    resume.credentialVerificationUrl = credentialVerificationUrl();
     return resume;
+  }
+
+  /**
+   * @description Builds the home page Work and Education timeline (Round 6 plan N6). Roles come
+   *              current first, then newest end date, the same order as the resume. Schools come
+   *              newest completion first. Both lists are empty, never null, when there are no rows.
+   * @return Timeline The work and education lists.
+   * @example
+   * ResumeController.Timeline timeline = ResumeController.getTimeline();
+   */
+  @AuraEnabled(cacheable=true)
+  public static Timeline getTimeline() {
+    ResumeSelector selector = new ResumeSelector();
+    Timeline timeline = new Timeline();
+    timeline.work = toTimelineRoles(selector.selectTimelineRoles());
+    timeline.education = toTimelineSchools(selector.selectEducation());
+    return timeline;
+  }
+
+  private static List<TimelineRole> toTimelineRoles(
+    List<Experience__c> experiences
+  ) {
+    List<TimelineRole> roles = new List<TimelineRole>();
+    for (Experience__c experience : experiences) {
+      TimelineRole role = new TimelineRole();
+      role.key = experience.Id;
+      role.title = experience.Name;
+      role.employer = experience.Employer__r?.Name;
+      role.startDate = experience.Start_Date__c;
+      role.endDate = experience.End_Date__c;
+      role.isCurrent = experience.Is_Current_Role__c == true;
+      roles.add(role);
+    }
+    return roles;
+  }
+
+  private static List<TimelineSchool> toTimelineSchools(
+    List<Education__c> schools
+  ) {
+    List<TimelineSchool> entries = new List<TimelineSchool>();
+    for (Education__c school : schools) {
+      TimelineSchool entry = new TimelineSchool();
+      entry.key = school.Id;
+      entry.school = school.Issuer__r?.Name;
+      entry.credential = school.Name;
+      entry.fieldOfStudy = school.Field_of_Study__c;
+      entry.completedDate = school.Graduation_Date__c;
+      entries.add(entry);
+    }
+    return entries;
+  }
+
+  /**
+   * The one certification verification link (reading R8), or null when the org has no config
+   * record or the value is blank. Returned exactly as stored, so a plus sign stays a plus sign.
+   * The record is chosen by the rule FooterController uses: first by DeveloperName.
+   * getAll() reads custom metadata without SOQL.
+   */
+  private static String credentialVerificationUrl() {
+    Portfolio_Config__mdt config = configOverride;
+    if (config == null) {
+      for (
+        Portfolio_Config__mdt record : Portfolio_Config__mdt.getAll().values()
+      ) {
+        if (
+          config == null ||
+          record.DeveloperName.compareTo(config.DeveloperName) < 0
+        ) {
+          config = record;
+        }
+      }
+    }
+    String url = config?.Credential_Verification_URL__c;
+    return String.isBlank(url) ? null : url;
   }
 
   /**
@@ -150,6 +230,7 @@ public with sharing class ResumeController {
       credential.name = certification.Name;
       credential.issuer = certification.Issuer__r?.Name;
       credential.dateValue = certification.Earned_Date__c;
+      credential.isRetired = certification.Is_Retired__c == true;
       credentials.add(credential);
     }
     return credentials;
@@ -163,6 +244,7 @@ public with sharing class ResumeController {
       credential.issuer = school.Issuer__r?.Name;
       credential.dateValue = school.Graduation_Date__c;
       credential.detail = school.Field_of_Study__c;
+      credential.isRetired = false;
       credentials.add(credential);
     }
     return credentials;
@@ -242,16 +324,35 @@ public with sharing class ResumeController {
 
     private List<Certification__c> selectCertifications() {
       return [
-        SELECT Name, Issuer__r.Name, Earned_Date__c
+        SELECT Name, Issuer__r.Name, Earned_Date__c, Is_Retired__c
         FROM Certification__c
         WITH SYSTEM_MODE
         ORDER BY Earned_Date__c DESC NULLS LAST, Name ASC
       ];
     }
 
+    private List<Experience__c> selectTimelineRoles() {
+      return [
+        SELECT
+          Id,
+          Name,
+          Employer__r.Name,
+          Start_Date__c,
+          End_Date__c,
+          Is_Current_Role__c
+        FROM Experience__c
+        WITH SYSTEM_MODE
+        ORDER BY
+          Is_Current_Role__c DESC,
+          End_Date__c DESC NULLS FIRST,
+          Start_Date__c DESC NULLS LAST,
+          Name ASC
+      ];
+    }
+
     private List<Education__c> selectEducation() {
       return [
-        SELECT Name, Issuer__r.Name, Graduation_Date__c, Field_of_Study__c
+        SELECT Id, Name, Issuer__r.Name, Graduation_Date__c, Field_of_Study__c
         FROM Education__c
         WITH SYSTEM_MODE
         ORDER BY Graduation_Date__c DESC NULLS LAST, Name ASC
@@ -318,6 +419,8 @@ public with sharing class ResumeController {
     public List<Credential> certifications;
     @AuraEnabled
     public List<Credential> education;
+    @AuraEnabled
+    public String credentialVerificationUrl;
   }
 
   /**
@@ -384,5 +487,51 @@ public with sharing class ResumeController {
     public Date dateValue;
     @AuraEnabled
     public String detail;
+    @AuraEnabled
+    public Boolean isRetired;
+  }
+
+  /**
+   * @description The home page timeline: roles and schools, newest first.
+   */
+  public class Timeline {
+    @AuraEnabled
+    public List<TimelineRole> work;
+    @AuraEnabled
+    public List<TimelineSchool> education;
+  }
+
+  /**
+   * @description One role on the timeline. No highlights, no contact detail.
+   */
+  public class TimelineRole {
+    @AuraEnabled
+    public String key;
+    @AuraEnabled
+    public String title;
+    @AuraEnabled
+    public String employer;
+    @AuraEnabled
+    public Date startDate;
+    @AuraEnabled
+    public Date endDate;
+    @AuraEnabled
+    public Boolean isCurrent;
+  }
+
+  /**
+   * @description One school on the timeline.
+   */
+  public class TimelineSchool {
+    @AuraEnabled
+    public String key;
+    @AuraEnabled
+    public String school;
+    @AuraEnabled
+    public String credential;
+    @AuraEnabled
+    public String fieldOfStudy;
+    @AuraEnabled
+    public Date completedDate;
   }
 }
