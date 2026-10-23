@@ -286,4 +286,83 @@ private class SubmissionGuardTest {
       'The part after the last @, lower case'
     );
   }
+
+  @isTest
+  static void minElapsedSettingDropsASubmissionUnderIt() {
+    PortfolioSettings.overrideNumber('Contact_Min_Elapsed_Ms', HUMAN_MS + 1);
+
+    SubmissionGuard.Decision decision = SubmissionGuard.check(
+      request(SubmissionGuard.FORM_CONTACT, 'ada@example.com', 'Hello')
+    );
+
+    Assert.isTrue(decision.silentDrop, 'Under the set minimum drops silently');
+    Assert.areEqual(SubmissionGuard.REASON_TOO_FAST, decision.reason, 'Reason');
+  }
+
+  @isTest
+  static void minElapsedSettingAcceptsASubmissionOverIt() {
+    PortfolioSettings.overrideNumber('Contact_Min_Elapsed_Ms', 1000);
+    SubmissionGuard.Request req = request(
+      SubmissionGuard.FORM_CONTACT,
+      'ada@example.com',
+      'Hello'
+    );
+    req.elapsedMs = 2000;
+
+    Assert.isTrue(
+      SubmissionGuard.check(req).accept,
+      'Over the set minimum is accepted, though under the code default'
+    );
+  }
+
+  @isTest
+  static void contactCapSettingLimitsTheForm() {
+    PortfolioSettings.overrideNumber('Contact_Daily_Cap', 2);
+    insert new List<Lead>{
+      new Lead(
+        LastName = 'Cap 1',
+        Company = 'Cap',
+        LeadSource = SubmissionGuard.LEAD_SOURCE
+      ),
+      new Lead(
+        LastName = 'Cap 2',
+        Company = 'Cap',
+        LeadSource = SubmissionGuard.LEAD_SOURCE
+      )
+    };
+
+    SubmissionGuard.Decision decision = SubmissionGuard.check(
+      request(SubmissionGuard.FORM_CONTACT, 'late@example.com', 'Hi')
+    );
+
+    Assert.isTrue(decision.rateLimited, 'Two Leads reach a cap of two');
+  }
+
+  @isTest
+  static void testimonialRateSettingLimitsTheThirdInAMinute() {
+    PortfolioSettings.overrideNumber('Testimonial_Rate_Per_Minute', 2);
+    RateWindowLimiter.nowOverride = Datetime.newInstanceGmt(
+      2026,
+      10,
+      23,
+      9,
+      0,
+      5
+    );
+    List<Boolean> limited = new List<Boolean>();
+    for (Integer i = 0; i < 3; i++) {
+      limited.add(
+        SubmissionGuard.check(
+            request(SubmissionGuard.FORM_TESTIMONIAL, null, 'Great work')
+          )
+          .rateLimited
+      );
+    }
+
+    Assert.areEqual(
+      new List<Boolean>{ false, false, true },
+      limited,
+      'The third testimonial in a minute is limited'
+    );
+  }
 }

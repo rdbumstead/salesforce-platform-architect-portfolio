@@ -1,10 +1,10 @@
 /**
  * @description       : Generic circuit breaker keyed by dependency name. Three
- *                      consecutive failures
- *                      open the circuit for 30 minutes. While it is open, isOpen() is true and
- *                      callers skip the dependency. When the 30 minutes pass the next call is
- *                      tried again: a success closes the circuit, a failure opens it for
- *                      another 30 minutes. State lives in the list custom setting
+ *                      consecutive failures open the circuit for 30 minutes, both read from
+ *                      Portfolio_Setting__mdt with those numbers as the code defaults. While
+ *                      it is open, isOpen() is true and callers skip the dependency. When the
+ *                      open time passes the next call is tried again: a success closes the
+ *                      circuit, a failure opens it again. State lives in the list custom setting
  *                      Circuit_Breaker_State__c, one row per key, never in Platform Cache.
  *                      recordSuccess and recordFailure write that row, so a caller makes them
  *                      only after its callouts (no DML before a callout).
@@ -32,8 +32,31 @@ public without sharing class CircuitBreaker {
     KEY_AGENTFORCE
   };
 
+  // Code defaults. The Circuit_Failure_Threshold and Circuit_Open_Minutes settings give
+  // the values in force through failureThreshold() and openMinutes().
   public static final Integer FAILURE_THRESHOLD = 3;
   public static final Integer OPEN_MINUTES = 30;
+
+  /**
+   * @description Failures in a row that open a circuit: the Circuit_Failure_Threshold
+   *              setting, else FAILURE_THRESHOLD.
+   * @return Integer The threshold.
+   */
+  public static Integer failureThreshold() {
+    return PortfolioSettings.getInteger(
+      'Circuit_Failure_Threshold',
+      FAILURE_THRESHOLD
+    );
+  }
+
+  /**
+   * @description Minutes an open circuit stays open: the Circuit_Open_Minutes setting,
+   *              else OPEN_MINUTES.
+   * @return Integer The minutes.
+   */
+  public static Integer openMinutes() {
+    return PortfolioSettings.getInteger('Circuit_Open_Minutes', OPEN_MINUTES);
+  }
 
   /** Name is a Text(38) on a custom setting row. */
   private static final Integer MAX_KEY_LENGTH = 38;
@@ -84,8 +107,9 @@ public without sharing class CircuitBreaker {
   }
 
   /**
-   * @description Records a failed call. On the third failure in a row, and on every failure
-   *              after that, the circuit opens for OPEN_MINUTES. Call it after your callouts.
+   * @description Records a failed call. Once failureThreshold() failures come in a row, and
+   *              on every failure after that, the circuit opens for openMinutes(). Call it
+   *              after your callouts.
    * @param key Dependency name.
    */
   public static void recordFailure(String key) {
@@ -101,8 +125,8 @@ public without sharing class CircuitBreaker {
     Datetime current = now();
     state.Consecutive_Failures__c = failuresOf(state) + 1;
     state.Last_Failure_At__c = current;
-    if (state.Consecutive_Failures__c >= FAILURE_THRESHOLD) {
-      state.Open_Until__c = current.addMinutes(OPEN_MINUTES);
+    if (state.Consecutive_Failures__c >= failureThreshold()) {
+      state.Open_Until__c = current.addMinutes(openMinutes());
     }
     save(state);
   }

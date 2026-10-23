@@ -22,8 +22,10 @@ public with sharing class SourceCacheRefreshJob implements Queueable, Database.A
   public static final String OUTCOME_OPEN_CIRCUIT = 'skipped_open_circuit';
   public static final String OUTCOME_FAILED = 'failed';
 
+  // The next three are code defaults. The Source_Refresh_Hours, Source_Content_Max_Length
+  // and Source_Max_Files_Per_Run settings give the values in force.
   public static final Integer REFRESH_HOURS = 24;
-  /** Source_Cache__c.Content__c length. */
+  /** Source_Cache__c.Content__c length, so the setting's range stops there too. */
   public static final Integer CONTENT_MAX_LENGTH = 131072;
   /** Callouts per run, under the limit of 100 with room for the other work. */
   public static final Integer MAX_FILES_PER_RUN = 90;
@@ -108,8 +110,12 @@ public with sharing class SourceCacheRefreshJob implements Queueable, Database.A
     try {
       GitHubService.FileContent file = GitHubService.fetchFile(repoPath, path);
       String content = file.content ?? '';
-      row.Truncated__c = content.length() > CONTENT_MAX_LENGTH;
-      row.Content__c = content.left(CONTENT_MAX_LENGTH);
+      Integer maxLength = PortfolioSettings.getInteger(
+        'Source_Content_Max_Length',
+        CONTENT_MAX_LENGTH
+      );
+      row.Truncated__c = content.length() > maxLength;
+      row.Content__c = content.left(maxLength);
       row.Html_Url__c = file.htmlUrl;
       row.Fetched_At__c = checkedAt;
       row.Last_Status__c = STATUS_OK;
@@ -136,7 +142,14 @@ public with sharing class SourceCacheRefreshJob implements Queueable, Database.A
     if (configured.isEmpty()) {
       return due;
     }
-    Datetime staleBefore = System.now().addHours(-REFRESH_HOURS);
+    Datetime staleBefore = System.now()
+      .addHours(
+        -PortfolioSettings.getInteger('Source_Refresh_Hours', REFRESH_HOURS)
+      );
+    Integer maxFiles = PortfolioSettings.getInteger(
+      'Source_Max_Files_Per_Run',
+      MAX_FILES_PER_RUN
+    );
     Map<String, Datetime> checkedByPath = new Map<String, Datetime>();
     for (Source_Cache__c row : [
       SELECT Path__c, Checked_At__c
@@ -153,7 +166,7 @@ public with sharing class SourceCacheRefreshJob implements Queueable, Database.A
       if (checked == null || checked < staleBefore) {
         due.add(path);
       }
-      if (due.size() == MAX_FILES_PER_RUN) {
+      if (due.size() == maxFiles) {
         break;
       }
     }
