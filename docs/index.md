@@ -56,6 +56,7 @@ _Target Audience: Architects, Developers_
 - [ADR-028: Evaluator Access via Token Vending](adr/028-evaluator-access-via-token-vending.md)
 - [ADR-029: Schema Visualizer Scope, Discovery and Caching](adr/029-schema-visualizer-scope-discovery-and-caching.md)
 - [ADR-030: Decision Matrix as Custom Metadata](adr/030-decision-matrix-as-custom-metadata.md)
+- [ADR-031: Native Contact Form](adr/031-native-contact-form.md)
 
 **AI, Data & FinOps**
 

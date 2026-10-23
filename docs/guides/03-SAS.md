@@ -234,7 +234,7 @@ The architecture is designed to operate within the specific limits of the Salesf
 ### 3.1 Threat Model Summary
 
 - **Injection Attacks:** Mitigated by strict SOQL bind variable usage.
-- **Data Exposure:** Mitigated by one guest permission set (`Portfolio_Guest`) with read on six portfolio objects and create and read on `Testimonial__c`, sharing rules for the guest on `Project__c`, `Experience__c` and `Skill__c`, and a restriction rule that hides unapproved testimonials. Records the guest cannot read are reached only through `without sharing` Apex selectors with fixed field lists (section 4.6).
+- **Data Exposure:** Mitigated by one guest permission set (`Portfolio_Guest`) with read on six portfolio objects and create and read on `Testimonial__c`, sharing rules for the guest on `Project__c`, `Experience__c`, `Skill__c` and `Testimonial__c`, and a restriction rule that hides unapproved testimonials. The guest has no Lead access: the contact form's Lead is saved by a platform event trigger as the Automated Process user ([ADR-031](../adr/031-native-contact-form.md)). No visitor IP is used, because Apex cannot read one in a guest request. Records the guest cannot read are reached only through `without sharing` Apex selectors with fixed field lists (section 4.6).
 - **API Abuse:** Mitigated by read-only endpoints and hardcoded query limits in the SAPI layer.
 - **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): on the site page and on `POST /papi/v1/ai/generate`, a cover letter falls back from the Gemini API to a deterministic Local Template. Agentforce is not implemented and its switch ships off ([ADR-015 Round 4 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-4)).
 
@@ -303,31 +303,34 @@ erDiagram
 - **`Testimonial__c`:** Stores structured feedback.
   - `Author_Name__c` (Text): Stores the name of the submitter. Note: Standard `Contact` lookups are avoided to ensure Guest User compatibility.
   - `Relationship_Type__c` (Picklist): Manager, Peer, Client, Recruiter, Fan/Visitor.
-  - `Context__c` (Text/Picklist): Dynamic sentence fragments (e.g., "Absolute Beast", "Saved our Bacon").
-  - `Vibe_Mode__c` (Picklist): Professional vs. Casual (Controls display logic).
+  - `Context__c` (Text 255): the finished sentence, "I'm a [relationship], and Ryan [strength]. The result? [outcome]", composed on the server from `Testimonial_Fragment__mdt` records ([ADR-005 amendment](../adr/005-gamified-testimonial-ui.md)).
+  - `Strength_Fragment__c` and `Outcome_Fragment__c` (Text 80): the fragment names chosen, and `Note__c` (Text Area): the optional note.
+  - `Vibe_Mode__c` (Picklist): Professional vs. Casual. It chooses the fragment set on the form and drives the wall's "Professional / All" filter and the API feed.
   - `Approved__c` (Checkbox): Default false. Security gate for public display.
 
 ### 4.6 Data Security Matrix
 
 The following matrix records the object permissions in the two permission sets in source, `Portfolio_Guest` (the site guest) and `Integration_Access` (the API integration user), and how each object reaches the guest. The Admin column is the org administrator.
 
-| Object                                 | Admin (System) | Guest User (Public)                                                                                                                                                                                                                                        | Integration User (API) |
-| :------------------------------------- | :------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
-| **`Project__c`**                       | CRED / Full    | Read, shared by the guest sharing rule `Guest_Read_All_Projects`                                                                                                                                                                                           | Read-Only              |
-| **`Experience__c`**                    | CRED / Full    | Read, shared by `Guest_Read_All_Experience`                                                                                                                                                                                                                | Read-Only              |
-| **`Experience_Highlight__c`**          | CRED / Full    | **No object permission.** Read in Apex through `without sharing` selectors with a fixed field list (`ResumeController.ResumeSelector`, `PortfolioGroundingService.Selector`)                                                                               | Read-Only              |
-| **`Skill__c`**                         | CRED / Full    | Read, shared by `Guest_Read_All_Skills`                                                                                                                                                                                                                    | Read-Only              |
-| **`Testimonial__c`**                   | CRED / Full    | **Create and Read.** `TestimonialController` inserts the visitor's submission `as user`. The restriction rule `Block_Unapproved_Testimonials` limits reads to `Approved__c = true` for anyone without the `View_Unapproved_Testimonials` custom permission | Read-Only              |
-| **`Source_Cache__c`**                  | CRED / Full    | **No object permission.** `SourceController` reads the cached source in system mode and returns only the configured files                                                                                                                                  | No Access              |
-| **`Github_Cache__c`, `Jira_Cache__c`** | CRED / Full    | **No object permission.** `DeliveryController.CacheSelector` reads the newest row in system mode                                                                                                                                                           | Read-Only              |
-| **`Contact`, `Account`**               | CRED / Full    | **No object permission.** `ResumeController.ResumeSelector` reads the owner's Contact (name, title, objective and profile links, never email, phone or address) and employer names in system mode                                                          | Read-Only              |
-| **`Portfolio_Config__mdt`**            | CRED / Full    | No custom metadata grant. Apex reads it and returns selected fields only (`FooterController.getLinks` returns the GitHub and LinkedIn URLs)                                                                                                                | Read in Apex           |
-| **`API_Access_Request__c`**            | CRED / Full    | **No Access.** `TokenExchangeService.AuditStore` writes one row per token request in system mode                                                                                                                                                           | No Access              |
+| Object                                 | Admin (System) | Guest User (Public)                                                                                                                                                                                                                                                                                                                                                       | Integration User (API) |
+| :------------------------------------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------- |
+| **`Project__c`**                       | CRED / Full    | Read, shared by the guest sharing rule `Guest_Read_All_Projects`                                                                                                                                                                                                                                                                                                          | Read-Only              |
+| **`Experience__c`**                    | CRED / Full    | Read, shared by `Guest_Read_All_Experience`                                                                                                                                                                                                                                                                                                                               | Read-Only              |
+| **`Experience_Highlight__c`**          | CRED / Full    | **No object permission.** Read in Apex through `without sharing` selectors with a fixed field list (`ResumeController.ResumeSelector`, `PortfolioGroundingService.Selector`)                                                                                                                                                                                              | Read-Only              |
+| **`Skill__c`**                         | CRED / Full    | Read, shared by `Guest_Read_All_Skills`                                                                                                                                                                                                                                                                                                                                   | Read-Only              |
+| **`Testimonial__c`**                   | CRED / Full    | **Create and Read.** `TestimonialController` inserts the visitor's submission `as user`. The guest sharing rule `Guest_Read_Testimonials` shares every row, and the restriction rule `Block_Unapproved_Testimonials` limits reads to `Approved__c = true` for anyone without the `View_Unapproved_Testimonials` custom permission, as `TestimonialGuestAccessTest` proves | Read-Only              |
+| **`Source_Cache__c`**                  | CRED / Full    | **No object permission.** `SourceController` reads the cached source in system mode and returns only the configured files                                                                                                                                                                                                                                                 | No Access              |
+| **`Github_Cache__c`, `Jira_Cache__c`** | CRED / Full    | **No object permission.** `DeliveryController.CacheSelector` reads the newest row in system mode                                                                                                                                                                                                                                                                          | Read-Only              |
+| **`Contact`, `Account`**               | CRED / Full    | **No object permission.** `ResumeController.ResumeSelector` reads the owner's Contact (name, title, objective and profile links, never email, phone or address) and employer names in system mode                                                                                                                                                                         | Read-Only              |
+| **`Portfolio_Config__mdt`**            | CRED / Full    | No custom metadata grant. Apex reads it and returns selected fields only (`FooterController.getLinks` returns the GitHub and LinkedIn URLs)                                                                                                                                                                                                                               | Read in Apex           |
+| **`API_Access_Request__c`**            | CRED / Full    | **No Access.** `TokenExchangeService.AuditStore` writes one row per token request in system mode                                                                                                                                                                                                                                                                          | No Access              |
 
 > [!NOTE]
 > **Why system mode for these reads.** The guest sees only rows shared to it, so a `with sharing` read of a highlight, the owner's Contact or a cache row returns nothing. Granting the guest those objects would expose every field it can read through GraphQL. Instead each controller stays `with sharing`, and a private `without sharing` inner class runs one query with a fixed field list and hands back a fixed shape. The guest reaches that data only through the controller's return type. The rule is written into each selector's doc header (for example `ResumeController.cls` line 260 and `PortfolioGroundingService.cls` line 293).
 >
-> The Guest User holds **no execute access** on any `SAPI*` or `PAPI*` REST class except `PAPIAuthToken` ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)). Site components reach data through `@AuraEnabled` controllers or the API Lab proxy. The Integration User is the only identity that executes the REST classes, via OAuth 2.0 Client Credentials ([ADR-027](../adr/027-platform-native-api-authentication.md)).
+> The Guest User holds **no execute access** on any `SAPI*` or `PAPI*` REST class except `PAPIAuthToken` ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)). Its one other REST class is `OpenApiDocument`, which serves the specs read only (Appendix B.3).
+>
+> **Contact form objects.** The guest has no Lead permission. `Submission_Block__c` (the blocklist) and `Contact_Form_Failure__c` (messages that failed to save) are admin only, through `Portfolio_Admin`. `SubmissionGuard` reads the blocklist and writes its hit counts in system mode, and returns only its decision flags. Site components reach data through `@AuraEnabled` controllers or the API Lab proxy. The Integration User is the only identity that executes the REST classes, via OAuth 2.0 Client Credentials ([ADR-027](../adr/027-platform-native-api-authentication.md)).
 
 ## 5. Solution Components (The Pillars)
 
@@ -479,7 +482,9 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 ### 6.2 Lightning Web Components (LWC)
 
 - **`c-hero-banner`:** The hero, three "start here" paths (recruiters to the resume, architects to the pillars, developers to the API Lab), the pillar cards with computed numbers and an optional case study, and the 5 minute tour ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
-- **`c-testimonial-submit`:** "Mad Libs" style sentence builder.
+- **`c-testimonial-submit`:** The accessible "Mad Libs" sentence builder, gated by vibe ([ADR-005 amendment](../adr/005-gamified-testimonial-ui.md)).
+- **`c-testimonial-wall`:** Approved testimonials on `/testimonials` with a "Professional / All" filter. It renders nothing when there are none.
+- **`c-contact-form`:** The contact form on the home page, saved as a Lead ([ADR-031](../adr/031-native-contact-form.md)).
 - **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invoke`, which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3).
 - **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
 - **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with D3 that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
@@ -535,6 +540,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-028](../adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending                              | Accepted                 |
 | [ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema Visualizer Scope, Discovery and Caching                  | Accepted (2026-10-22)    |
 | [ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)                            | Decision Matrix as Custom Metadata                              | Accepted (2026-10-22)    |
+| [ADR-031](../adr/031-native-contact-form.md)                                           | Native Contact Form                                             | Accepted (2026-10-23)    |
 
 </details>
 
@@ -780,9 +786,9 @@ The `/testimonials/feed` endpoint applies business logic (`PAPITestimonialFeed.q
 
 #### B.3 API Documentation Access
 
-- **Interactive Documentation:** the Redoc 2.5.4 bundle (`Redoc_Script` static resource) renders both specifications on a full-width page at `/api-lab/reference`, with a SAPI and PAPI switch, linked from the API Lab. Where Redoc does not finish loading in 15 seconds (seen in WebKit), the page says so and links the hosted documentation.
-- **Machine-Readable Spec:** `/openapi.json` endpoint returns the complete OpenAPI 3.0 specification for code generation
-- **Developer Console:** Custom `c-api-tester` LWC component provides live endpoint testing with syntax highlighting. It calls an Apex proxy (`ApiLabController`) that invokes the APIs through the `Portfolio_API` Named Credential, so no secret reaches the browser.
+- **Interactive Documentation:** the Redoc 2.5.4 bundle (`Redoc_Script` static resource) renders both specifications on a full-width page at `/api-lab/reference`, with a SAPI and PAPI switch, linked from the API Lab. The menu and deep links (`#tag/...`, `#operation/...`, `?spec=`) land on their section below the header, and focus moves there. Redoc does not render in WebKit (Safari), so after 15 seconds the page says so and links the hosted documentation.
+- **Machine-Readable Spec:** `GET https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/openapi.json` returns the Process API's OpenAPI 3 document, and `?spec=sapi` the System API's (`OpenApiDocument`). It needs no token, answers with `Cache-Control: public, max-age=3600`, and returns 400 for an unknown spec. The Apex mapping is `/openapi`, because Salesforce reads a `.json` suffix as the response format. The body is the `PAPI_OpenAPI` or `SAPI_OpenAPI` static resource, generated from the same YAML the API reference shows
+- **Developer Console:** Custom `c-api-tester` LWC component provides live endpoint testing. It calls an Apex proxy (`ApiLabController`) that invokes the APIs through the `Portfolio_API` Named Credential, so no secret reaches the browser. Responses are syntax highlighted and checked against the path's OpenAPI response schema (documented keys present, missing, and not in the spec). Query parameters are controls built from the spec, and the path list comes from the specs' GET operations ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
 - **Evaluator Access:** `POST /papi/v1/auth/token` returns a short-lived Bearer token for external testing ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
 
 #### B.4 Reference Implementation
@@ -791,7 +797,7 @@ Complete OpenAPI specifications available in repository:
 
 - `packages/integration-api/specs/salesforce-sapi.yaml` - System API contract
 - `packages/integration-api/specs/portfolio-papi.yaml` - Process API contract
-- `/docs/api-examples/` - Postman collection with pre-configured requests
+- `docs/api/postman/portfolio-api.postman_collection.json` - a Postman collection of every operation in both specs, generated by `npm run specs:sync`. Run `POST /auth/token` first: it stores the token and instance URL for the other requests
 
 #### B.5 Authentication & Evaluator Access
 
@@ -950,14 +956,17 @@ Portfolio case studies.
 
 Social proof records.
 
-| Field Label      | API Name               | Type     | Length | Required | Description          |
-| :--------------- | :--------------------- | :------- | :----- | :------- | :------------------- |
-| **Author Name**  | `Author_Name__c`       | Text     | 255    | Yes      | Submitter Name.      |
-| **Author Title** | `Author_Title__c`      | Text     | 255    | No       | Submitter Job Title. |
-| **Relationship** | `Relationship_Type__c` | Picklist | -      | Yes      | Connection type.     |
-| **Context**      | `Context__c`           | Text     | 255    | No       | Short blurb/quote.   |
-| **Vibe Mode**    | `Vibe_Mode__c`         | Picklist | -      | Yes      | Display filter.      |
-| **Approved**     | `Approved__c`          | Checkbox | -      | No       | Security gate.       |
+| Field Label      | API Name               | Type      | Length | Required | Description               |
+| :--------------- | :--------------------- | :-------- | :----- | :------- | :------------------------ |
+| **Author Name**  | `Author_Name__c`       | Text      | 255    | Yes      | Submitter Name.           |
+| **Author Title** | `Author_Title__c`      | Text      | 255    | No       | Submitter Job Title.      |
+| **Relationship** | `Relationship_Type__c` | Picklist  | -      | Yes      | Connection type.          |
+| **Context**      | `Context__c`           | Text      | 255    | No       | The composed sentence.    |
+| **Strength**     | `Strength_Fragment__c` | Text      | 80     | No       | Chosen strength fragment. |
+| **Outcome**      | `Outcome_Fragment__c`  | Text      | 80     | No       | Chosen outcome fragment.  |
+| **Note**         | `Note__c`              | Text Area | 255    | No       | Optional free text note.  |
+| **Vibe Mode**    | `Vibe_Mode__c`         | Picklist  | -      | Yes      | Display filter.           |
+| **Approved**     | `Approved__c`          | Checkbox  | -      | No       | Security gate.            |
 
 #### D.5 Object: `GitHub_Cache__c`
 
@@ -1085,8 +1094,8 @@ A monorepo of five package directories, declared in `sfdx-project.json` and depl
 
 - **K.1 `Experience__c`:** one validation rule, `End_Date_Validation`: a role cannot have an end date while `Is_Current_Role__c` is checked. There is no rule comparing the end date with the start date.
 - **K.2 `Experience_Highlight__c`:** no validation rule. `Persona_Tag__c` is a required field instead.
-- **K.3 `Testimonial__c`:** no validation rule. `TestimonialController` validates a submission in Apex (required fields, allowed picklist values, the rate limit) before it inserts.
-- **K.4 Sharing Rules:** guest sharing rules give Read on `Project__c`, `Experience__c` and `Skill__c` (`Guest_Read_All_Projects`, `Guest_Read_All_Experience`, `Guest_Read_All_Skills`). `Testimonial__c` has no sharing rule, and the guest's reads are limited by the restriction rule in K.5.
+- **K.3 `Testimonial__c`:** no validation rule. `TestimonialController` validates a submission in Apex (required fields, allowed picklist values, a known fragment of the chosen vibe, the note's length) and runs `SubmissionGuard` before it inserts. `ContactFormController` does the same for the contact form.
+- **K.4 Sharing Rules:** guest sharing rules give Read on `Project__c`, `Experience__c` and `Skill__c` (`Guest_Read_All_Projects`, `Guest_Read_All_Experience`, `Guest_Read_All_Skills`). `Guest_Read_Testimonials` shares every `Testimonial__c` row with the guest, and the restriction rule in K.5 hides the unapproved ones.
 - **K.5** Restriction Rules on Guest User Profile verified compatible in Spring '26. Fallback to Criteria-Based Sharing Rule (`Approved__c = true`) remains documented if needed.
 
 ### Appendix L: Reference Artifacts

@@ -48,7 +48,7 @@ The primary problem this portfolio solves is that Recruiters and Hiring Managers
 
 ### 3.1 The "5-Minute Tour" User Journey
 
-How a recruiter or architect experiences this portfolio. The tour has one stop per pillar, one minute each, so its length is worked out from the number of stops (`c-hero-banner`, `MINUTES_PER_STEP`, over the pillars in `c/pillarData`):
+How a recruiter or architect experiences this portfolio. The tour has one stop per pillar, one minute each, so its length is worked out from the number of stops (`c-hero-banner`, `MINUTES_PER_STEP`, over the pillars in `c/pillarData`). On the way, each showcase component has a View source button. It opens a dialog with the component's JavaScript, HTML and main Apex class, highlighted by the shared Prism module, with a link to each file on GitHub. The files are listed in the Source File custom metadata, so they can change without a deploy. A scheduled job reads them from GitHub at most once a day per file into an admin only cache. Visitors read only the cache, never GitHub ([ADR-004 amendment](../adr/004-static-resource-code-rendering.md)):
 
 ```mermaid
 sequenceDiagram
@@ -59,6 +59,7 @@ sequenceDiagram
     participant C as C. API Lab
     participant D as D. AI Lab
     participant E as E. Delivery
+    participant S as View source
 
     R->>H: Lands on Portfolio
     H-->>R: "Take the 5 minute tour"
@@ -67,7 +68,9 @@ sequenceDiagram
     R->>C: A real API call with its headers
     R->>D: A cover letter grounded in portfolio data
     R->>E: The Jira roadmap and the commits that shipped the site
-    Note over R,E: "This isn't just a PDF."
+    R->>S: Clicks "View source" on any showcase component
+    S-->>R: Its real JavaScript, HTML and Apex, with links to GitHub
+    Note over R,S: "This isn't just a PDF."
 ```
 
 ## 4. Terminology & Acronyms

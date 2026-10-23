@@ -23,6 +23,8 @@
   - [2.12 Home Page Cards and Timeline](#212-home-page-cards-and-timeline)
   - [2.13 Cloudflare Cache Warmer Worker](#213-cloudflare-cache-warmer-worker)
   - [2.14 View Source (`c-view-source`)](#214-view-source-c-view-source)
+  - [2.15 API Lab and API Reference](#215-api-lab-and-api-reference)
+  - [2.16 Contact Form and Submission Guard](#216-contact-form-and-submission-guard)
 - [3. Quality Assurance Checklist](#3-quality-assurance-checklist)
   - [3.4 Concrete Testing Example](#34-concrete-testing-example)
 
@@ -115,9 +117,10 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
    - `Portfolio_API`, authenticated by `Portfolio_API_Auth`. Callers append `/services/apexrest/...`.
    - `Portfolio_API_Token`, using `Portfolio_API_Token_Auth`, merge fields allowed in the body, no generated Authorization header. Used only for `/services/oauth2/token`.
 6. **Assign `Portfolio_Guest` to the site guest user** (in source, `packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`, no licence, assignable to the guest user). It grants:
-   - class access to nine site controllers, `ApiLabController`, `DecisionMatrixController`, `DeliveryController`, `FooterController`, `GovernanceController`, `ProjectCardController`, `ResumeController`, `SchemaService` and `TestimonialController`, plus the token endpoint `PAPIAuthToken`
+   - class access to eleven site controllers, `ApiLabController`, `ContactFormController`, `DecisionMatrixController`, `DeliveryController`, `FooterController`, `GovernanceController`, `ProjectCardController`, `ResumeController`, `SchemaService`, `SourceController` and `TestimonialController`, plus two REST classes, the token endpoint `PAPIAuthToken` and the spec endpoint `OpenApiDocument`
    - read on `Experience__c`, `Experience_Skill__c`, `Project__c`, `Project_Asset__c`, `Project_Skill__c` and `Skill__c`, create and read on `Testimonial__c`, and read on `UserExternalCredential`
-   - read on `Experience__c.Start_Date__c` and `Experience__c.End_Date__c` (Round 5), which the skills matrix needs for "years used"
+   - read on `Experience__c.Start_Date__c` and `Experience__c.End_Date__c` (Round 5), which the skills matrix needs for "years used", on `Skill__c.Persona_Tag__c` (Round 7, the persona filter) and on the testimonial fields the wall shows (Round 7)
+   - no Lead permission: the contact form saves Leads through a platform event (section 2.16)
    - principal access to `Portfolio_API_Auth-Portfolio_API_Principal`, `Portfolio_API_Token_Auth-Portfolio_API_Token_Principal` and `Gemini_Auth-Gemini_Principal` (the last one for the in-process cover letter, ADR-015 Round 4 amendment)
    - no Contact, Account, certification or education access, and no GitHub or Jira principal.
 
@@ -143,6 +146,7 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 13. **Allow deployments while Apex jobs are scheduled.** In Setup > Deployment Settings, tick "Allow deployments of components when corresponding Apex jobs are pending or in progress". Items 7 and 12 schedule five jobs, and Salesforce refuses any deploy that changes a class one of them depends on (the error reads "You can bypass this error by allowing deployments with Apex jobs in the Deployment Settings page in Setup"). The setting is an org preference, not metadata in this repository, so set it in every org that runs the scheduled jobs. The production org has it since 2026-10-22. Scratch orgs do not need it, because nothing is scheduled in them.
 14. **Graph engine resource.** `D3_Library` (eleven D3 modules, 81,502 bytes since Round 7, Public cache) replaces `G6_Library` from Round 5. The delta deploy on `main` removes `G6_Library` and `c/g6Loader` as post-destructive changes (`deploy.yml`, "Generate Delta"). A full deploy does not delete anything, so after one, check with the Tooling query `SELECT Name FROM StaticResource WHERE Name = 'G6_Library'` and remove it with a destructive deploy if it is still there. Nothing on the site loads it.
 15. **Employer Hub demo objects.** The four `EH_` objects ship with the `EH_Demo_Read` permission set (read only). It is optional and for administrators only. The site guest needs no grant to see them in the diagram, because describe does not filter by object permission (ADR-029).
+16. **Contact form email rules (Setup, not in source).** The Lead assignment rule, the auto-response rule with its "Portfolio Website" entry, and the notification address they use are created in Setup, after the deploy, with the owner present. They are kept out of source on purpose, because they hold an email address. The email templates they use (`Portfolio_Contact_Auto_Response`, `Portfolio_Contact_New_Lead`) are in source.
 
 **Operational notes:** rotation and revocation procedures are in the [Maintenance Guide §1.2](./05-Maintenance-Guide.md#12-external-client-app-secret-rotation).
 
@@ -198,8 +202,9 @@ The Skills page (`c/skillNetwork`) opens on a matrix: one row per skill category
 
 ### 2.3 `c-testimonial-submit` (Social Proof)
 
-- Uses a "Mad Libs" style sentence builder.
-- Includes a "Vibe Toggle" (Professional/Casual) to implement the "Vibe-Gated" submission pattern.
+- **The form (Round 7, B9).** The sentence "I'm a [relationship], and Ryan [strength]. The result? [outcome]" sits inside one `fieldset` whose `legend` reads the sentence. Each blank is a labelled select, a polite live region previews the finished sentence, and an optional note follows. The vibe (Professional or Casual) chooses the `Testimonial_Fragment__mdt` set, and switching it clears the chosen phrases. A Recruiter, or a Fan or visitor, sees only the outcomes whose audience is Anyone.
+- **The server.** `TestimonialController` accepts only a known fragment of the chosen vibe, stores the composed sentence in `Context__c` and the fragment names and the note in fields of their own, runs `SubmissionGuard` (honeypot, minimum time, blocklist, 5 a minute across all visitors on the `testimonial-submit` key) and never sets `Approved__c` ([ADR-005 amendment](../adr/005-gamified-testimonial-ui.md)).
+- **The wall (Round 7, B2).** `c-testimonial-wall` on `/testimonials` shows approved testimonials from `TestimonialController.getApprovedTestimonials`, each in its tone, with a "Professional / All" filter that uses the API feed's rule (the Professional vibe from a Manager, Client or Peer). It renders nothing when there are none or the read fails. The guest reads the rows through the `Guest_Read_Testimonials` sharing rule, and the restriction rule hides unapproved ones ([ADR-012 amendment](../adr/012-guest-user-security-restriction-rules.md)).
 
 ### 2.4 `c-schema-visualizer` (Dynamic ERD Visualizer)
 
@@ -350,6 +355,30 @@ A "View source" button on the showcase components opens the component's real sou
 - **Highlighting.** `c/prismHighlighter` is the site's one Prism module. `loadPrism` loads the `Prism_JS` resource once per page, `highlight` builds HTML only from escaped text (Prism tokens for a known grammar, the `clike` grammar for an unknown one, escaped plain text if Prism is missing or throws), and `languageForPath` maps `.cls` and `.trigger` to Apex, `.js` to JavaScript, `.html` and `.xml` to markup, plus CSS, YAML and JSON. `Prism_JS` gained Prism 1.30.0's Apex, SQL, JSON and YAML grammars in Round 7. `c-code-viewer` uses it, and its scroll region is a named keyboard stop.
 - **Placed on:** the API Lab (`apiTester`), the skills page (`skillNetwork`), the Pillar A data model (`schemaVisualizer`), the Pillar B decision matrix (`decisionMatrix`), the resume (`resumeBuilder`) and the Delivery roadmap (`roadmapViewer`). The ERD hides `Source_Cache__c` through the `Hide_Source_Cache` record of `Schema_Visualizer_Object__mdt`.
 - **Not yet checked in production:** the first refresh through `GitHub_API` runs only after the deploy. The same credential serves the commits job today.
+
+### 2.15 API Lab and API Reference
+
+- **One source for the specs (Round 7, G2).** `packages/integration-api/specs` holds the two YAML specs. `npm run specs:sync` (`scripts/sync-specs.js`) generates every copy: the `SAPI_Spec` and `PAPI_Spec` YAML static resources the API reference reads, the `SAPI_OpenAPI` and `PAPI_OpenAPI` JSON resources `/openapi.json` serves, the `API_Lab_Catalog` resource the Lab reads, and the Postman collection. `npm run specs:check` writes nothing and fails when a copy differs, and a Jest test in `apiReference` fails the same way.
+- **Path list (G1).** `ApiLabController` allows only the paths in `API_Lab_Catalog`, built from the specs' GET operations, so a new spec path appears in the Lab with no code change. `/papi/v1/auth/token` and `/papi/v1/ai/generate` are left out on purpose, with the reason in the script. A missing or broken catalog refuses every path.
+- **The Lab (B3).** Query parameters are controls built from the spec: pills for up to four values, a picklist above that, true and false pills for a boolean, bounded `limit` and `offset`, hinted id fields, and every chosen value as a removable pill over the query string, plus the free text Advanced field, which wins on a shared name. "Next page" follows `X-Has-More`. The response body is highlighted by `c/prismHighlighter` and checked against the path's response schema: which documented keys are present, missing, or not in the spec. Each call sends `api_test_executed` with the path, the status and `param_count`.
+- **The reference (F5).** `c-api-reference` renders Redoc inside the component. Redoc looks its sections up on `document`, which cannot see inside the component, so the component scrolls a chosen section below the sticky header itself and moves focus to it, and answers Redoc's section lookups from the rendered reference. Menu links and deep links (`#tag/...`, `#operation/...`, `?spec=`) land on their section, on load too. Redoc does not render in WebKit (Safari), so there the page shows its fallback with a link to the hosted reference.
+- **Machine readable specs (B4).** `OpenApiDocument` (SAS Appendix B.3).
+- **Postman.** `docs/api/postman/portfolio-api.postman_collection.json`. Run `POST /auth/token` first: it stores the token and instance URL for the other requests.
+
+### 2.16 Contact Form and Submission Guard
+
+A native contact form on the home page that lands as a Lead ([ADR-031](../adr/031-native-contact-form.md), Round 7 E5).
+
+- **The form.** `c-contact-form` sits on the home view under a heading with `id="contact"`. First and last name, email, an optional company and a message, a one line privacy note, a hidden honeypot field, and the time since the form appeared. It thanks the visitor inline ("Thanks, check your inbox.") with no redirect. When the address ends in `#contact`, on load or later, the form scrolls into view and its heading takes focus, which is how the footer's Contact link reaches it.
+- **As the guest.** `ContactFormController` validates the input and runs `SubmissionGuard.check`, then publishes one `Contact_Form_Submission__e`. The guest has no Lead permission at all.
+- **The Lead.** `ContactFormSubmissionTrigger` runs as the Automated Process user and calls `ContactFormLeadWriter`, which inserts each Lead in system mode with `Database.DMLOptions`: the default assignment rule, the auto-response only when the event asks for it, and duplicates allowed so a returning visitor is never refused. `LeadSource` is "Portfolio Website". The hop through the event is needed because the auto-response rule fails in the guest's own context.
+- **Limits.** The auto-response is asked for only on the first message from an address in 24 hours, so the form cannot be used to send mail to someone again and again. The form takes at most 20 messages in 24 hours in all, and says so when the cap is reached.
+- **Silent drops.** `SubmissionGuard` drops a message when the honeypot is filled, when it was sent less than 3 seconds after the form appeared, or when the email, its domain or the text matches an active `Submission_Block__c` row (types Email, Domain, Keyword, IP Hash). The visitor sees the normal thanks, nothing is stored or sent, and the block's hit count and last hit are updated. The same guard runs for the testimonial form. No visitor IP is used, because Apex cannot read one in a guest request.
+- **Failures.** A batch that fails to insert is retried by the event bus three times, then kept as `Contact_Form_Failure__c` rows with the reason, and the `Portfolio_Admin` users get a custom notification. The visitor never sees an error.
+- **Reminders.** `LeadReminderService` stamps `Reply_Reminder_1_At__c` and `Reply_Reminder_2_At__c` at one and two business days after arrival, using the org's default Business Hours, and the `Lead_Contact_Form_Reminders` flow sends the `Portfolio_Contact_Reminder` custom notification at those times unless the Lead's status has moved on.
+- **Block sender.** The "Block sender" quick action on Lead (`Lead_Block_Sender` screen flow, `SubmissionBlockAction`) adds the Lead's email or domain to `Submission_Block__c` with a reason, turns an existing block back on, and marks the Lead as spam (`Spam__c`) so its reminders stop. It is on the Lead layout's action list, which the mobile app uses.
+- **Admin objects.** `Submission_Block__c` and `Contact_Form_Failure__c` have tabs and are admin only, through `Portfolio_Admin`. A starter list of disposable email domains is loaded by a data script the owner runs.
+- **Email rules.** The assignment and auto-response rules are set up in Setup (deployment prerequisite 16) and are not in source.
 
 ## 3. Quality Assurance Checklist
 

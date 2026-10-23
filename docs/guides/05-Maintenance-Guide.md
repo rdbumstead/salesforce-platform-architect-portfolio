@@ -138,6 +138,8 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 - **`npm run delta:validate -- --target-org <alias>`**: runs the delta generation and then a dry run deployment of the delta with `RunLocalTests` to the named org (`scripts/validate.js`). There is no `npm run validate` script.
   - _Note:_ `scripts/validate.js` exits cleanly when the delta is empty, and sets the manifest API version from `sfdx-project.json`. The org is required: the script never uses the CLI default.
 - **`npm run sf:coverage -- --target-org <alias>`**: runs every local Apex test in the named org and fails on a failed test or org wide coverage under 90% (`scripts/coverage-gate.js`).
+- **`npm run specs:sync`** and **`npm run specs:check`**: regenerate every copy of the API specs from `packages/integration-api/specs`, or fail when a copy differs (`scripts/sync-specs.js`). Edit the YAML there, never a copy.
+- **`npm run docs:counts`**: fails when the ADR count in README or STATUS, or an ADR link in the indexes, disagrees with `docs/adr` (`scripts/check-doc-counts.js`).
 - **`npm run pre-launch-check -- --target-org <alias>`**: the release checks in one command ([Technical Guide §3](./04-Technical-Guide.md#3-quality-assurance-checklist)).
 
 ### 3.2 Pipeline Triggers
@@ -175,7 +177,7 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 
 - **Symptom:** PMD Scan or Health Check fails due to "Guest User Open Access".
 - **Mitigation:**
-  1. **Immediate Rollback:** Revert the guest permission set `Portfolio_Guest` (`packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`) to the previous commit. It must grant only what [Technical Guide §1.4, prerequisite 6](./04-Technical-Guide.md#14-system-api-security-the-twin-pattern) lists: class access to the nine site controllers and the token endpoint, read on the six portfolio objects, create and read on `Testimonial__c`, read on `UserExternalCredential`, and the `Portfolio_API_Auth`, `Portfolio_API_Token_Auth` and `Gemini_Auth` principals. Never a GitHub or Jira principal, and never Contact or Account access.
+  1. **Immediate Rollback:** Revert the guest permission set `Portfolio_Guest` (`packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`) to the previous commit. It must grant only what [Technical Guide §1.4, prerequisite 6](./04-Technical-Guide.md#14-system-api-security-the-twin-pattern) lists: class access to the eleven site controllers (including `ContactFormController` and `SourceController`), the token endpoint `PAPIAuthToken` and the spec endpoint `OpenApiDocument`, read on the six portfolio objects, create and read on `Testimonial__c`, read on `UserExternalCredential`, and the `Portfolio_API_Auth`, `Portfolio_API_Token_Auth` and `Gemini_Auth` principals. Never a GitHub or Jira principal, and never Contact, Account or Lead access.
   2. **If unsure:** redeploy the `main` branch version of `Portfolio_Guest` to the affected org, then read the grants back (`SELECT SobjectType, PermissionsRead, PermissionsCreate FROM ObjectPermissions WHERE Parent.Name = 'Portfolio_Guest'`, and the same for `SetupEntityAccess`) and compare them with prerequisite 6. Do not plan on deleting the permission set first: it is assigned to the guest user, and whether the platform allows deleting an assigned permission set has not been tested here.
 
 ### 4.3 Scenario: GitHub Rate Limit Exhaustion
@@ -192,6 +194,13 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 - **Recovery:** rotate the secret (§1.2), review the audit rows (`Email__c`, `Source_IP__c`, `Outcome__c`, `Channel__c`) for the offending email/IP, reactivate the app, restore the cap.
 - **Per-caller limits already in place:** 15 token requests per minute per email and source IP, and the PAPI tier limits (`RateWindowLimiter`, [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)).
 - **Why this is enough:** tokens run as the integration user, whose only permissions are read-only on public portfolio data. The asset at risk is the API quota, not the data.
+
+### 4.5 Scenario: Contact Form Abuse
+
+- **Symptom:** unwanted Leads with `LeadSource` "Portfolio Website", or auto-responses to addresses nobody typed in.
+- **Mitigation:** on the Lead, run "Block sender" (email or domain), from desktop or the mobile app. The sender's next message is thanked and dropped. Add a Keyword row to `Submission_Block__c` for a phrase. Deactivate a row (`Active__c`) to undo a block.
+- **Already in place:** the honeypot, the 3 second minimum, one auto-response per address in 24 hours, and at most 20 messages in 24 hours ([Technical Guide §2.16](./04-Technical-Guide.md#216-contact-form-and-submission-guard)).
+- **Lost messages:** check the `Contact_Form_Failure__c` tab. A row there is a message that failed to save, with the reason.
 
 ## 5. Observability & Monitoring
 

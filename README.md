@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 > [!IMPORTANT]
-> **Project Status:** Live. Architecture complete (6 enterprise docs, 30 ADRs) • MVP launched.
+> **Project Status:** Live. Architecture complete (6 enterprise docs, 31 ADRs) • MVP launched.
 >
 > **Launched:** October 2026.
 
@@ -40,7 +40,7 @@ Principal-level Salesforce Platform Architecture including:
 **By The Numbers:**
 
 - **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
-- **30 Architectural Decisions (ADRs)**: Documented rationale for performance, security, and AI.
+- **31 Architectural Decisions (ADRs)**: Documented rationale for performance, security, and AI.
 - **16 Core Competencies**: Mapped to verifiable artifacts and validation methods.
 - **5 CI/CD Workflows**: Delta deploys, PR gates, heartbeat and worker automation, plus a Lighthouse audit run on demand.
 
@@ -101,7 +101,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 
 **Available Now:**
 
-- [Architecture decisions documented with rationale](docs/adr/): 30 ADRs covering performance, security, AI, FinOps
+- [Architecture decisions documented with rationale](docs/adr/): 31 ADRs covering performance, security, AI, FinOps
 - [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 5 workflows (deploy, PR validation, heartbeat and worker, plus a Lighthouse audit run on demand)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml) — Twin API pattern with SAPI + PAPI specifications
 - [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---2027-2028): a $0.00 forever design on the AWS Always-Free tier, for Phase 8. No AWS code is built yet
@@ -164,40 +164,41 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 ## Architectural Decision Records
 
 <details>
-<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 30 documented decisions)</summary>
+<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 31 documented decisions)</summary>
 
-| ID                                                                                       | Subject                                  | Strategic Driver               |
-| :--------------------------------------------------------------------------------------- | :--------------------------------------- | :----------------------------- |
-| [ADR-001](docs/adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura          | Performance (LCP target 2.5 s) |
-| [ADR-002](docs/adr/002-custom-objects-vs-standard-objects.md)                            | Custom Objects vs. Standard Objects      | Security / Guest Access        |
-| [ADR-003](docs/adr/003-apex-rest-vs-external-service.md)                                 | Apex REST vs. External Service           | Budget / FinOps                |
-| [ADR-004](docs/adr/004-static-resource-code-rendering.md)                                | Static Resource Code Rendering           | Rate Limiting                  |
-| [ADR-005](docs/adr/005-gamified-testimonial-ui.md)                                       | Gamified Testimonial UI                  | User Engagement                |
-| [ADR-006](docs/adr/006-jwt-bearer-flow-for-ci-cd.md)                                     | JWT Bearer Flow for CI/CD                | DevOps Automation              |
-| [ADR-007](docs/adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching           | Resilience                     |
-| [ADR-008](docs/adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Accelerator         | ALM Maturity                   |
-| [ADR-009](docs/adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model               | Persona-Based Filtering        |
-| [ADR-010](docs/adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Graph engine (now D3)                    | UI/UX Animation                |
-| [ADR-011](docs/adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Direct CRM vs. Data 360 (Deferred)       | AI Architecture                |
-| [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md)                         | Guest User Restriction Rules             | Zero Trust Security            |
-| [ADR-013](docs/adr/013-structured-logging-framework-nebula-logger.md)                    | Nebula Logger Implementation             | Observability                  |
-| [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading               | Performance                    |
-| [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI       | High Availability              |
-| [ADR-016](docs/adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as AI Proxy            | Multi-Cloud Scaling            |
-| [ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | API Security (superseded by ADR-027)     | Security Governance            |
-| [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | AWS Lambda URLs vs. API Gateway          | FinOps / Cost Control          |
-| [ADR-019](docs/adr/019-executable-governance-platform-events-for-documentation-logic.md) | Platform Events for Documentation        | Executable Governance          |
-| [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile: matrix first, graph on open      | Performance                    |
-| [ADR-021](docs/adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL vs. Apex REST             | Frontend Orchestration         |
-| [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Simulation Toggle             | Trust / Resilience             |
-| [ADR-023](docs/adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF)       | Tooling / MVP Speed            |
-| [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern                         | Contract Parity                |
-| [ADR-025](docs/adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling                  | Capacity Planning              |
-| [ADR-026](docs/adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning              | Versioning Strategy            |
-| [ADR-027](docs/adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication       | Zero Trust / Security          |
-| [ADR-028](docs/adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending       | Developer Experience           |
-| [ADR-029](docs/adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema visualizer without Platform Cache | Data Architecture              |
-| [ADR-030](docs/adr/030-decision-matrix-as-custom-metadata.md)                            | Decision matrix as Custom Metadata       | Solution Design                |
+| ID                                                                                       | Subject                                  | Strategic Driver                |
+| :--------------------------------------------------------------------------------------- | :--------------------------------------- | :------------------------------ |
+| [ADR-001](docs/adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura          | Performance (LCP target 2.5 s)  |
+| [ADR-002](docs/adr/002-custom-objects-vs-standard-objects.md)                            | Custom Objects vs. Standard Objects      | Security / Guest Access         |
+| [ADR-003](docs/adr/003-apex-rest-vs-external-service.md)                                 | Apex REST vs. External Service           | Budget / FinOps                 |
+| [ADR-004](docs/adr/004-static-resource-code-rendering.md)                                | Static Resource Code Rendering           | Rate Limiting                   |
+| [ADR-005](docs/adr/005-gamified-testimonial-ui.md)                                       | Gamified Testimonial UI                  | User Engagement                 |
+| [ADR-006](docs/adr/006-jwt-bearer-flow-for-ci-cd.md)                                     | JWT Bearer Flow for CI/CD                | DevOps Automation               |
+| [ADR-007](docs/adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching           | Resilience                      |
+| [ADR-008](docs/adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Accelerator         | ALM Maturity                    |
+| [ADR-009](docs/adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model               | Persona-Based Filtering         |
+| [ADR-010](docs/adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Graph engine (now D3)                    | UI/UX Animation                 |
+| [ADR-011](docs/adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Direct CRM vs. Data 360 (Deferred)       | AI Architecture                 |
+| [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md)                         | Guest User Restriction Rules             | Zero Trust Security             |
+| [ADR-013](docs/adr/013-structured-logging-framework-nebula-logger.md)                    | Nebula Logger Implementation             | Observability                   |
+| [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading               | Performance                     |
+| [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI       | High Availability               |
+| [ADR-016](docs/adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as AI Proxy            | Multi-Cloud Scaling             |
+| [ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | API Security (superseded by ADR-027)     | Security Governance             |
+| [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | AWS Lambda URLs vs. API Gateway          | FinOps / Cost Control           |
+| [ADR-019](docs/adr/019-executable-governance-platform-events-for-documentation-logic.md) | Platform Events for Documentation        | Executable Governance           |
+| [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile: matrix first, graph on open      | Performance                     |
+| [ADR-021](docs/adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL vs. Apex REST             | Frontend Orchestration          |
+| [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Simulation Toggle             | Trust / Resilience              |
+| [ADR-023](docs/adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF)       | Tooling / MVP Speed             |
+| [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern                         | Contract Parity                 |
+| [ADR-025](docs/adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling                  | Capacity Planning               |
+| [ADR-026](docs/adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning              | Versioning Strategy             |
+| [ADR-027](docs/adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication       | Zero Trust / Security           |
+| [ADR-028](docs/adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending       | Developer Experience            |
+| [ADR-029](docs/adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema visualizer without Platform Cache | Data Architecture               |
+| [ADR-030](docs/adr/030-decision-matrix-as-custom-metadata.md)                            | Decision matrix as Custom Metadata       | Solution Design                 |
+| [ADR-031](docs/adr/031-native-contact-form.md)                                           | Native contact form                      | Lead Capture / Abuse Protection |
 
 </details>
 
@@ -209,7 +210,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 | Term          | Meaning                                                                                                                   | Status                          |
 | :------------ | :------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |
 | **LWR**       | Lightning Web Runtime — Modern Salesforce frontend framework                                                              | Live at MVP                     |
-| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (30 records). |
+| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (31 records). |
 | **Dual-Door** | Native Salesforce + External API gateway strategy                                                                         | Door 1: MVP / Door 2: Phase 8   |
 | **FinOps**    | Financial Operations — Cloud cost governance and optimization                                                             | Design complete for Phase 8     |
 | **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live at MVP                     |
