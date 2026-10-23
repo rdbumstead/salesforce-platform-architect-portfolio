@@ -35,11 +35,13 @@
   overflow: hidden;
 }
 
-/* On its own page the reference is the page content, not a boxed card. */
+/* On its own page the reference is the page content, not a boxed card. It does not clip
+   either, because a clipping ancestor stops the spec switch and Redoc's menu from sticking. */
 .reference-card_full {
   border: 0;
   border-radius: 0;
   background-color: var(--pf-bg);
+  overflow: visible;
 }
 
 .reference-header {

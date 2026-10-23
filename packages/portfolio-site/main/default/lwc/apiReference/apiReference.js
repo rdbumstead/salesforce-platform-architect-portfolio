@@ -11,7 +11,11 @@
  *                      with no height cap and opens without a click, the SAPI and PAPI switch
  *                      staying at the top. There the component carries the page's only h1 and
  *                      the Pillar C intro, so the view needs no header of its own, and the
- *                      open button shows only when the reference is not on screen.
+ *                      open button shows only when the reference is not on screen. At desktop
+ *                      widths Redoc's menu sticks below the header and the switch, so it stays
+ *                      beside the reader. A tag row opens and closes with Redoc's own expand by
+ *                      click, Enter or Space and scrolls its intro into view. An operation row
+ *                      scrolls its section into view and moves focus there.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -169,15 +173,32 @@ const SECTION_HASH = /^(tag|operation|section|schema)\//;
  * underlined, because colour alone does not mark it (axe link-in-text-block).
  * The :link and :visited forms outrank the site platform's own link rule, specificity
  * 0,2,2, which otherwise takes the underline away.
+ * On its own page at desktop widths, Redoc's sticky menu sits just below the site header and
+ * the pinned spec switch (--reference-menu-top, measured after each render) and scrolls on its
+ * own, never taller than the viewport below that line. Redoc writes its own top and height
+ * inline from scrollYOffset, so these win with !important. Below 50rem Redoc folds the menu
+ * behind its own menu button, which these rules leave alone.
  */
-export const REDOC_STYLE_OVERRIDES =
-  ".redoc-target a[href]:link, .redoc-target a[href]:visited { text-decoration: underline; }";
+export const REDOC_STYLE_OVERRIDES = [
+  ".redoc-target a[href]:link, .redoc-target a[href]:visited { text-decoration: underline; }",
+  "@media (min-width: 50rem) { .redoc-panel_full .menu-content {",
+  " top: var(--reference-menu-top, 0px) !important;",
+  " height: calc(100vh - var(--reference-menu-top, 0px)) !important; } }"
+].join("\n");
 
 /** Space left between the header and a section scrolled into view. */
 const SECTION_GAP = 8;
 
-/** Redoc scrolls on its own after a menu click; the component settles the result after it. */
+/** Redoc scrolls on its own after a menu click. The component settles the result after it. */
 const CLICK_SETTLE_MS = 150;
+
+/**
+ * A tag's intro lands this many pixels higher than an operation's. Redoc's scroll tracking
+ * keeps a section active only once its top is at or above the header line, and lands its own
+ * scrolls 1 px past it, so a tag that lands exactly on the line can lose to the item before it,
+ * which closes the tag.
+ */
+const TAG_NUDGE = 1;
 
 /** The attribute Redoc 2.5.4 marks each section with and looks sections up by. */
 const SECTION_ATTRIBUTE = "data-section-id";
@@ -397,15 +418,18 @@ export default class ApiReference extends LightningElement {
    * its own page), and moves focus to it. Redoc cannot do this itself here: it finds
    * sections with document.querySelector, which cannot see inside this component's
    * shadow root, so its menu changed the URL and nothing moved.
+   * @param {string} id the Redoc section id
+   * @param {boolean} moveFocus whether focus moves to the section
+   * @param {number} [nudge] extra pixels to land the section higher, 0 by default
    * @returns {boolean} whether the section was found
    */
-  goToSection(id, moveFocus) {
+  goToSection(id, moveFocus, nudge = 0) {
     const section = this.findSection(id);
     if (!section) {
       return false;
     }
     const panel = this.template.querySelector(".redoc-panel");
-    const gap = SECTION_GAP;
+    const gap = SECTION_GAP - nudge;
     if (!this.fullWidth && panel && panel.scrollHeight > panel.clientHeight) {
       // Boxed layout: the panel scrolls, not the page.
       panel.scrollTop +=
@@ -413,7 +437,7 @@ export default class ApiReference extends LightningElement {
         panel.getBoundingClientRect().top -
         gap;
     } else {
-      const offset = this.sectionOffset();
+      const offset = this.sectionOffset() - nudge;
       window.scrollTo({
         top: Math.max(
           0,
@@ -441,15 +465,48 @@ export default class ApiReference extends LightningElement {
 
   /** A click on a Redoc menu item or an in page link: let Redoc update, then scroll. */
   handleRedocClick(event) {
+    this.settleAfterRedoc(event);
+  }
+
+  /**
+   * Enter or Space on a focused menu row. Redoc opens or follows the row itself. Space would
+   * also scroll the page, so it is cancelled here and the row is settled like a click.
+   */
+  handleRedocKeydown(event) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    const target = event.target;
+    if (!target || !target.dataset || !target.dataset.itemId) {
+      return;
+    }
+    if (event.key === " ") {
+      event.preventDefault();
+    }
+    this.settleAfterRedoc(event);
+  }
+
+  /**
+   * Finds the menu row or in page link an event came from and, once Redoc has handled it,
+   * scrolls its section below the header.
+   * A tag row (one with operations under it) opens and closes with Redoc's own expand. Once
+   * open, its intro is scrolled into view and focus stays on the row, so the operations under
+   * it are the next Tab stops. Once closed, nothing scrolls: a scroll would let Redoc's scroll
+   * tracking mark the tag active again and reopen it. An operation row or a link moves focus
+   * to its section.
+   */
+  settleAfterRedoc(event) {
     const path =
       typeof event.composedPath === "function" ? event.composedPath() : [];
     let id;
+    let row;
     for (const node of path) {
       if (!node || node.nodeType !== 1) {
         continue;
       }
       if (node.dataset && node.dataset.itemId) {
         id = node.dataset.itemId;
+        row = node;
         break;
       }
       const href = node.getAttribute && node.getAttribute("href");
@@ -458,16 +515,35 @@ export default class ApiReference extends LightningElement {
         break;
       }
     }
-    if (id && SECTION_HASH.test(id)) {
-      setTimeout(() => this.goToSection(id, true), CLICK_SETTLE_MS);
+    if (!id || !SECTION_HASH.test(id)) {
+      return;
     }
+    const isTagRow = Boolean(row && row.querySelector(":scope > ul"));
+    setTimeout(() => {
+      if (!isTagRow) {
+        this.goToSection(id, true);
+      } else if (row.getAttribute("aria-expanded") !== "false") {
+        this.goToSection(id, false, TAG_NUDGE);
+      }
+    }, CLICK_SETTLE_MS);
   }
 
-  /** After a render: pin the switch under the header and honour a deep link. */
+  /**
+   * After a render: pin the switch under the header, pin Redoc's menu under the switch and
+   * honour a deep link.
+   */
   afterRender() {
     const card = this.template.querySelector("article");
     if (card) {
-      card.style.setProperty("--reference-sticky-top", `${headerOffset()}px`);
+      const header = headerOffset();
+      const toggle = this.fullWidth
+        ? this.template.querySelector(".spec-toggle")
+        : null;
+      card.style.setProperty("--reference-sticky-top", `${header}px`);
+      card.style.setProperty(
+        "--reference-menu-top",
+        `${header + (toggle ? toggle.offsetHeight : 0)}px`
+      );
     }
     const hash = this.pendingHash;
     if (!hash) {
