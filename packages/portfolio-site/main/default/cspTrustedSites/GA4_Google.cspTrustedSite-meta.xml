@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CspTrustedSite xmlns="http://soap.sforce.com/2006/04/metadata">
     <context>Communities</context>
-    <description
-  >GA4 connect-src host per Google's GA4 CSP guide.</description>
+    <description>GA4 connect-src host per Google's GA4 CSP guide.</description>
     <endpointUrl>https://*.google.com</endpointUrl>
     <isActive>true</isActive>
     <isApplicableToConnectSrc>true</isApplicableToConnectSrc>
