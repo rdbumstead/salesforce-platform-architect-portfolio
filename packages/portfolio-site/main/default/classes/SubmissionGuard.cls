@@ -1,6 +1,6 @@
 /**
- * @description       : Shared abuse guard for the public contact and testimonial forms (Round 7
- *                      plan contract P3, ADR-031). It drops a submission silently when the
+ * @description       : Shared abuse guard for the public contact and testimonial forms
+ *                      (ADR-031). It drops a submission silently when the
  *                      honeypot is filled, when the form was sent faster than a person can type,
  *                      or when the email, its domain or the text matches an active
  *                      Submission_Block__c row. A silent drop shows the visitor the normal thanks

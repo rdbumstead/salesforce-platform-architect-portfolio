@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for SchemaService (Round 5 plan M3). The ERD reads no records, so the ERD
+ * @description       : Tests for SchemaService. The ERD reads no records, so the ERD
  *                      tests insert none. They read the org's real schema, the shipped
  *                      Schema_Visualizer_Object__mdt records, and the Employer Hub objects from the
  *                      employer-hub package. Guest tests run as the real Portfolio1 site guest user.
@@ -393,8 +393,8 @@ private class SchemaServiceTest {
     }
   }
 
-  // The gallery (Round 5 plan M5) stores static resource paths as resource:<Name>/<path>
-  // in the Url field. This proves the field accepts that form (reading R4).
+  // The gallery stores static resource paths as resource:<Name>/<path>
+  // in the Url field. This proves the field accepts that form.
   @isTest
   static void assetUrlFieldAcceptsResourcePath() {
     Project__c project = new Project__c(

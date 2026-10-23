@@ -1,11 +1,11 @@
 /**
- * @description       : Fills Source_Cache__c, the View source cache (Round 7 contract P2,
- *                      reading R17). It reads every Source_File__mdt path from GitHub on main
+ * @description       : Fills Source_Cache__c, the View source cache.
+ *                      It reads every Source_File__mdt path from GitHub on main
  *                      through GitHubService and upserts one row per path. A path is due when it
  *                      has no row or its last check is REFRESH_HOURS old, so each file is read
  *                      at most once a day, a failing one included. A failed read keeps the
  *                      newest good content and only records the check and the status. All
- *                      callouts happen before any write (contract C2). Rows for paths no longer
+ *                      callouts happen before any write. Rows for paths no longer
  *                      configured are deleted. IntegrationCacheRefreshScheduler enqueues it on
  *                      its existing schedule only when isDue() is true, so no new schedule and
  *                      no new Setup step is needed. It runs as the admin who scheduled that job.
@@ -80,7 +80,7 @@ public with sharing class SourceCacheRefreshJob implements Queueable, Database.A
       rows.add(row);
     }
 
-    // Every write follows every callout (contract C2).
+    // Every write follows every callout, because Apex refuses a callout after DML.
     upsert as system rows Path__c;
     deleteUnconfigured(configured);
     if (failures == rows.size()) {

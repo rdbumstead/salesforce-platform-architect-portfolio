@@ -1,6 +1,6 @@
 /**
- * @description       : The public testimonial form and wall (Round 3 plan K2, Round 7 B9 and B2,
- *                      ADR-005, ADR-012). The form is a sentence builder: "I'm a [relationship],
+ * @description       : The public testimonial form and wall
+ *                      (ADR-005, ADR-012). The form is a sentence builder: "I'm a [relationship],
  *                      and Ryan [strength]. The result? [outcome]" plus an optional note. The
  *                      strengths and outcomes are Testimonial_Fragment__mdt records, and only a
  *                      known fragment of the chosen vibe is accepted. The finished sentence is

@@ -1,7 +1,7 @@
 /**
  * @description       : Keeps Submission_Block__c values in lower case and fills Unique_Key__c
  *                      (Type:Value), so a block added by hand matches the guard and cannot be
- *                      added twice (Round 7 plan contract P3).
+ *                      added twice.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

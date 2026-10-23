@@ -1,13 +1,13 @@
 /**
- * @description       : Generic circuit breaker keyed by dependency name (Round 4 plan L6,
- *                      pillar-e-design 4.4, pillar-d-design T10). Three consecutive failures
+ * @description       : Generic circuit breaker keyed by dependency name. Three
+ *                      consecutive failures
  *                      open the circuit for 30 minutes. While it is open, isOpen() is true and
  *                      callers skip the dependency. When the 30 minutes pass the next call is
  *                      tried again: a success closes the circuit, a failure opens it for
  *                      another 30 minutes. State lives in the list custom setting
  *                      Circuit_Breaker_State__c, one row per key, never in Platform Cache.
  *                      recordSuccess and recordFailure write that row, so a caller makes them
- *                      only after its callouts (contract C2, no DML before a callout).
+ *                      only after its callouts (no DML before a callout).
  *                      isOpen and snapshot never write.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -17,7 +17,7 @@
  **/
 // without sharing: the state rows are custom setting data with no owner and no record
 // content. The scheduled refresh jobs, the site guest on the Delivery page and the guest
-// cover letter path (plan L9) must all read and write the same rows, whoever runs them.
+// cover letter path must all read and write the same rows, whoever runs them.
 public without sharing class CircuitBreaker {
   public static final String KEY_JIRA = 'jira';
   public static final String KEY_GITHUB = 'github';

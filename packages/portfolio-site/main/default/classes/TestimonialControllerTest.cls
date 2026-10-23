@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for TestimonialController (Round 3 plan K2, Round 7 B9 and B2).
+ * @description       : Tests for TestimonialController.
  *                      Guest tests run as the real Portfolio1 site guest user. The fragment
  *                      tests use the Testimonial_Fragment__mdt records in source. The guest read
  *                      side of the wall is proved by TestimonialGuestAccessTest on org data.
@@ -564,7 +564,7 @@ private class TestimonialControllerTest {
         Relationship_Type__c = 'Manager'
       )
     };
-    // Guest sharing never reaches rows made in a test (log 075), so this runs as an internal
+    // Guest sharing never reaches rows made in a test, so this runs as an internal
     // reader. TestimonialGuestAccessTest proves the guest side on the org's own rows.
     List<TestimonialController.WallItem> wall;
     User reader = adminReader();

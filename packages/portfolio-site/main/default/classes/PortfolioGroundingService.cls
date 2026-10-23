@@ -1,6 +1,6 @@
 /**
- * @description       : Builds the portfolio facts that ground a cover letter on the Gemini path
- *                      (pillar-d-design 3.7, decision PD-D4 a). Returns compact JSON of
+ * @description       : Builds the portfolio facts that ground a cover letter on the Gemini path.
+ *                      Returns compact JSON of
  *                      featured projects (name, challenge, solution, business value, skills)
  *                      and experience highlights (role, employer, text), ranked by keywords
  *                      from the job title and description. It never selects Email, Phone or any
@@ -8,10 +8,10 @@
  *                      phone number from the free text, because the prompt is sent to the model
  *                      and shown to the visitor. The output stays under MAX_CHARS (about 2,000
  *                      tokens), so Gemma's 16,000 tokens per minute still fit several letters.
- *                      The site page runs it as the guest (Round 4 decision 2 a), and guest
- *                      with sharing code sees no Experience_Highlight__c (trap 31), so the
+ *                      The site page runs it as the guest, and guest
+ *                      with sharing code sees no Experience_Highlight__c, so the
  *                      reads go through the without sharing Selector below, which selects a
- *                      fixed field list and returns only this PII-free shape (contract G1).
+ *                      fixed field list and returns only this PII-free shape.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -292,10 +292,10 @@ public with sharing class PortfolioGroundingService {
   /**
    * @description The three grounding reads, without sharing on purpose. The site guest sees
    *              only rows shared to it, which excludes every Experience_Highlight__c, so a
-   *              with sharing read would ground a guest's letter on nothing (trap 31). Each
+   *              with sharing read would ground a guest's letter on nothing. Each
    *              query selects a fixed list of public portfolio fields: no Contact, no
    *              Account other than an employer name, no email, phone or Owner field. The
-   *              caller cleans the free text before anything leaves this class (contract G1).
+   *              caller cleans the free text before anything leaves this class.
    */
   private without sharing class Selector {
     List<Project__c> featuredProjects() {

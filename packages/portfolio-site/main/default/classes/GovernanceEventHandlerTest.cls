@@ -1,6 +1,6 @@
 /**
- * @description       : Tests for GovernanceEventTrigger and GovernanceEventHandler (Round 4
- *                      plan L11). Events go through the real event bus with
+ * @description       : Tests for GovernanceEventTrigger and GovernanceEventHandler.
+ *                      Events go through the real event bus with
  *                      Test.getEventBus().deliver().
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead

@@ -1,6 +1,6 @@
 /**
- * @description       : Takes a message from the portfolio contact form (Round 7 E5, contract
- *                      P4, ADR-031). It validates the input and runs SubmissionGuard as the site
+ * @description       : Takes a message from the portfolio contact form
+ *                      (ADR-031). It validates the input and runs SubmissionGuard as the site
  *                      guest, then publishes one Contact_Form_Submission__e. A trigger saves the
  *                      Lead from that event as the Automated Process user, in system mode with
  *                      Database.DMLOptions, so the org's default assignment rule and

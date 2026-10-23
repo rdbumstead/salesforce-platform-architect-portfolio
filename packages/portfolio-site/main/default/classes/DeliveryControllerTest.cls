@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for DeliveryController (Round 3 plan K3). Guest tests run as the
+ * @description       : Tests for DeliveryController. Guest tests run as the
  *                      real Portfolio1 site guest user.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -271,7 +271,7 @@ private class DeliveryControllerTest {
     Assert.areEqual('SPAP-903', roadmap.items[0].key, 'Key');
   }
 
-  // --- Round 4 plan L10: the toggle and the breaker ---
+  // --- The simulation toggle and the breaker ---
 
   private static void openBreaker(String key) {
     for (Integer i = 0; i < CircuitBreaker.FAILURE_THRESHOLD; i++) {

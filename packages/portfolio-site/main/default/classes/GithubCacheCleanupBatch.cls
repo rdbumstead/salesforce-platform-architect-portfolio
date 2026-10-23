@@ -1,8 +1,8 @@
 /**
  * @description       : Batch job for cleaning up GitHub cache records. Deletes rows older than
  *                      two hours, except the newest row, which always stays so the Delivery
- *                      page keeps its last good commits through an outage (pillar-e-design
- *                      4.4, G10). "Newest" is the row DeliveryController serves:
+ *                      page keeps its last good commits through an outage.
+ *                      "Newest" is the row DeliveryController serves:
  *                      CreatedDate DESC, then Id DESC. Chains the Jira cleanup when it finishes.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead

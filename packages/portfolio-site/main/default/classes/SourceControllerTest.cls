@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for SourceController (Round 7 contract P2). The guest test runs as
+ * @description       : Tests for SourceController. The guest test runs as
  *                      the Portfolio1 site's real guest user and proves the guest gets cached
  *                      rows with no callout and without any access to Source_Cache__c.
  * @author            : Ryan Bumstead

@@ -1,12 +1,12 @@
 /**
- * @description       : Serves the home page pillar cards (Round 6 plan N7, Round 7 plan P5).
+ * @description       : Serves the home page pillar cards.
  *                      Returns one row per pillar letter, A to E, with the headline number and
  *                      its label, the card image with its alternative text, and the case study
  *                      (Challenge, Solution, Business Value, Live and Source links). The static
  *                      c/pillarData still drives every card, so heroBanner merges these rows in
  *                      by letter and a missing row changes nothing.
  *                      A card whose Headline_Metric_Source__c is set gets its number computed
- *                      from a live source (audit F11 and G5): the Employer Hub object count from
+ *                      from a live source: the Employer Hub object count from
  *                      the ERD's describe, the paths in the SAPI_Spec and PAPI_Spec resources,
  *                      the providers the AI fallback chain has switched on, or the passed test
  *                      count of the newest successful Pipeline_Run__c with a test count. The computed number
@@ -227,7 +227,7 @@ public with sharing class ProjectCardController {
 
   /**
    * @description Counts the keys of the top level paths: block of an OpenAPI YAML file, the
-   *              lines indented two spaces that start with a slash (Round 7 plan P6).
+   *              lines indented two spaces that start with a slash.
    * @param yaml The spec text.
    * @return Integer The number of paths, 0 when there is no paths: block.
    */
@@ -269,7 +269,7 @@ public with sharing class ProjectCardController {
       return null;
     }
     Computed computed = new Computed();
-    // The label says passing, so the number is the passed count (reading R21, log 328).
+    // The label says passing, so the number is the passed count.
     computed.n = runs[0].Tests_Passed__c?.intValue();
     computed.coverage = runs[0].Org_Coverage__c == null
       ? null

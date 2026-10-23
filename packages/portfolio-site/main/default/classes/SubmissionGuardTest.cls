@@ -1,7 +1,7 @@
 /**
- * @description       : Tests for SubmissionGuard and SubmissionBlockTrigger (Round 7 plan
- *                      contract P3). Blocks are built here, because TestFactory is shared and
- *                      out of this stream's ownership.
+ * @description       : Tests for SubmissionGuard and SubmissionBlockTrigger.
+ *                      Blocks are built here, because TestFactory is shared and stays
+ *                      unchanged.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

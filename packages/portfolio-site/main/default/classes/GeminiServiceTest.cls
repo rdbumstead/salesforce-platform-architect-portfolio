@@ -163,7 +163,7 @@ private class GeminiServiceTest {
     Assert.areEqual(60000, fallback, 'No record means 60 s');
   }
 
-  // --- Thinking models and the configured model (WS5b) ---
+  // --- Thinking models and the configured model ---
 
   /** The response shape the owner captured from Gemma 4 31B: reasoning first, answer second. */
   private static final String TWO_PART_RESPONSE = JSON.serialize(
