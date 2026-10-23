@@ -22,7 +22,7 @@
   - [4.6 Data Security Matrix](#46-data-security-matrix)
 - [5. Solution Components (The Pillars)](#5-solution-components-the-pillars)
   - [5.1 Pillar A: Business Architecture (Employer Hub)](#51-pillar-a-business-architecture-employer-hub)
-  - [5.2 Pillar B: Pre-Sales Consultancy (Nonprofit Literacy Platform)](#52-pillar-b-pre-sales-consultancy-nonprofit-literacy-platform)
+  - [5.2 Pillar B: Solution Architecture (Nonprofit Literacy Platform)](#52-pillar-b-solution-architecture-nonprofit-literacy-platform)
   - [5.3 Pillar C: Work Experience Verification API (Twin API Pattern)](#53-pillar-c-work-experience-verification-api-twin-api-pattern)
   - [5.4 Pillar D: AI & Innovation (Agentforce)](#54-pillar-d-ai--innovation-agentforce)
   - [5.5 Pillar E: Agile Delivery & DevOps (Roadmap)](#55-pillar-e-agile-delivery--devops-roadmap)
@@ -122,8 +122,9 @@ graph LR
 
 Live MVP (Door 1)
 
-- Native Salesforce GraphQL via lightning/uiGraphQLApi wire adapter
-- Apex REST services
+- `@AuraEnabled` Apex controllers, the main path for site components (resume, home cards and timeline, footer, Delivery page, ERD, decision matrix, API Lab and cover letter)
+- Native Salesforce GraphQL through the `lightning/uiGraphQLApi` wire adapter, used by three components only: `c-skill-network`, `c-project-asset-gallery` and the footer's `c-graphql-probe` ([ADR-021 amendment](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-23-round-7-scope))
+- Apex REST services (the SAPI and PAPI), for outside callers and the API Lab
 - Direct integrations (GitHub, Jira via Named Credentials)
 
 Phase 8 – 2027-2028 (Design Complete)
@@ -174,24 +175,24 @@ graph TD
 - **Apex REST Services:** Custom API layer for external integrations.
 - **Custom Metadata Types:** Configuration management.
 - **Generative AI:** one Apex dispatch (`ContentGenerationController.dispatch`) over Gemma 4 31B through the Gemini API and a local template. Agentforce is a switch in that dispatch that ships off and is not implemented (section 5.4).
-- **Unlocked Packages:** Modular deployment strategy.
+- **Package directories:** the source is split into five package directories in `sfdx-project.json` and deployed as source. No unlocked package is built (Appendix I).
 
 #### 1.3.1 Technology Selection Rationale
 
 Why specific technologies were chosen over alternatives.
 
-| Requirement             | Finalist Options      | Selected            | Rejection Reason                                                                                                                                                                                                                                                                                      |
-| :---------------------- | :-------------------- | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Frontend Framework**  | Aura vs. LWR          | **LWR**             | Aura's 3-5s LCP violates UX requirements for public sites.                                                                                                                                                                                                                                            |
-| **Graph Visualization** | Vis.js vs. G6 vs. D3  | **D3** (`d3-force`) | G6 is 1.57 MB and its force layout tangled 59 skills. Four D3 modules are about 18.5 KB and draw both the skills graph and the ERD ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)). |
-| **API Documentation**   | Swagger UI vs. Redoc  | **Redoc**           | Redoc's single-file static HTML works without Node.js server.                                                                                                                                                                                                                                         |
-| **CI/CD Auth**          | Username/Pass vs. JWT | **JWT**             | Username/Password is fragile and requires rotation. JWT is headless.                                                                                                                                                                                                                                  |
+| Requirement             | Finalist Options      | Selected            | Rejection Reason                                                                                                                                                                                                                                                                                                                          |
+| :---------------------- | :-------------------- | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Frontend Framework**  | Aura vs. LWR          | **LWR**             | Aura's 3-5s LCP violates UX requirements for public sites.                                                                                                                                                                                                                                                                                |
+| **Graph Visualization** | Vis.js vs. G6 vs. D3  | **D3** (`d3-force`) | G6 is 1.57 MB and its force layout tangled the 59 skills production held in October 2026. Four D3 modules are about 18.5 KB and draw both the skills graph and the ERD ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)). |
+| **API Documentation**   | Swagger UI vs. Redoc  | **Redoc**           | Redoc's single-file static HTML works without Node.js server.                                                                                                                                                                                                                                                                             |
+| **CI/CD Auth**          | Username/Pass vs. JWT | **JWT**             | Username/Password is fragile and requires rotation. JWT is headless.                                                                                                                                                                                                                                                                      |
 
 ### 1.4 Visual Architecture Standard (C4 Model)
 
 All architectural artifacts adhere to the C4 Model (Context, Containers, Components, Code) standard to ensure clarity across abstraction levels.
 
-- **Level 1 (Context):** Defines system boundaries and interactions (Recruiters, GitHub, Jira, Calendly).
+- **Level 1 (Context):** Defines system boundaries and interactions (Recruiters, GitHub, Jira, the Gemini API).
 - **Level 2 (Container):** Illustrates high-level technical building blocks (LWR, Apex Runtime, Data Layer, AI Agent).
 - **Level 3 (Component):** Details LWC composition and event-driven interactions.
 - **Level 4 (Deployment):** Infrastructure view (See Appendix H).
@@ -200,7 +201,8 @@ All architectural artifacts adhere to the C4 Model (Context, Containers, Compone
 
 Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Discipline](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for the authoritative definition of LCP and Coverage thresholds.
 
-- **Zero PMD Critical Violations** (Enforced via sfdx scanner:run in PR checks).
+- **No Critical or High violations** from Salesforce Code Analyzer (`npm run scan`, `sf code-analyzer` at `--severity-threshold 2`, run by the `quality-check` job of `pr.yml`).
+- **Apex tests pass with org wide coverage of 90% or more** (`scripts/coverage-gate.js --min 90` after a full test run in a scratch org, `pr.yml`).
 - **Reference:** See **[Guardrails & Executable Governance: Quality Gates](./06-Guardrails-and-Executable-Governance.md#4-quality-gates--devops-discipline)** for authoritative technical acceptance thresholds.
 
 ## 2. Non-Functional Requirements (NFRs)
@@ -214,25 +216,25 @@ Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Disciplin
   - **AI Generation Timeout:** 60 seconds for the Gemini callout, read from the `Gemini` record of `AI_Provider_Config__mdt` (`Timeout_Ms__c`, owner decision 2026-10-21). Gemma 4 reasons before it answers, so a cover letter can take up to about a minute. The earlier 2 second hard stop was dropped because a reasoning model almost never answers inside it.
   - **Total CPU Budget:** < 5000ms per request (Allocating 50% of the 10,000ms Synchronous Limit to ensure headroom for platform overhead).
   - **Schema describe budget:** an uncached `SchemaService.getSchemaGraph` call stays under 1,000 ms of CPU per scope. Measured in a scratch org on 2026-10-22: 141 ms for the portfolio scope and 96 ms for the Employer Hub scope, asserted by `SchemaServiceTest.eachScopeStaysUnderTheCpuBudget` ([ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)).
-- **Security:** Public access restricted strictly to custom objects. No PII stored.
+- **Security:** the guest has object permissions on custom objects only (apart from read on `UserExternalCredential`). Standard records a page needs, such as the owner's Contact for the resume header, are read by Apex in system mode with a fixed list of public fields (section 4.6). No email, phone or address reaches the site.
 - **Scalability:** Data model supports 10,000+ records via indexed Junction Objects.
 
 ### 2.2 Platform Constraints (Developer Edition)
 
 The architecture is designed to operate within the specific limits of the Salesforce Developer Edition.
 
-- **Storage Limits:** 5MB Data Storage / 20MB File Storage limit requires strict data hygiene and off-platform storage strategies (AWS S3) for artifacts.
+- **Storage Limits:** 5MB Data Storage / 20MB File Storage limit requires strict data hygiene. Images ship as static resources, and cleanup batches keep the cache and rate window objects small. Off-platform storage on AWS S3 is a Phase 8 design and is not built.
 - **API Limits:** 15,000 API requests/24hr requires caching strategies for high-traffic external integrations.
-- **Guest User:** Strict security policies prevent direct standard object access, necessitating a custom schema.
+- **Guest User:** the guest gets no object permission on standard objects, so the portfolio data lives in a custom schema, and the few standard records a page needs are read by Apex in system mode (section 4.6).
 - **No Shield:** Lack of Event Monitoring requires custom telemetry implementation for analytics.
-- **Middleware Constraints:** Heroku and paid AWS resources are unavailable. Architecture utilizes AWS Free Tier for serverless proxy and storage patterns to demonstrate multi-cloud capabilities without budget impact.
+- **Middleware Constraints:** Heroku and paid AWS resources are unavailable. The AWS Free Tier proxy and storage patterns are a Phase 8 design and are not built. The only service outside Salesforce that runs today is the Cloudflare redirect and the `portfolio-cache-warmer` Worker ([Technical Guide §2.13](./04-Technical-Guide.md#213-cloudflare-cache-warmer-worker)).
 
 ## 3. Risk & Security Architecture
 
 ### 3.1 Threat Model Summary
 
 - **Injection Attacks:** Mitigated by strict SOQL bind variable usage.
-- **Data Exposure:** Mitigated by enforcing "Guest User" profiles with strict Field Level Security (FLS) and Sharing Rules. Guest users have Read-Only access to specific Custom Objects only.
+- **Data Exposure:** Mitigated by one guest permission set (`Portfolio_Guest`) with read on six portfolio objects and create and read on `Testimonial__c`, sharing rules for the guest on `Project__c`, `Experience__c` and `Skill__c`, and a restriction rule that hides unapproved testimonials. Records the guest cannot read are reached only through `without sharing` Apex selectors with fixed field lists (section 4.6).
 - **API Abuse:** Mitigated by read-only endpoints and hardcoded query limits in the SAPI layer.
 - **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): on the site page and on `POST /papi/v1/ai/generate`, a cover letter falls back from the Gemini API to a deterministic Local Template. Agentforce is not implemented and its switch ships off ([ADR-015 Round 4 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-4)).
 
@@ -268,14 +270,14 @@ erDiagram
     }
 
     Experience__c {
-        string Employer
-        string Role
+        string Name "the role title"
+        id Employer "lookup to Account"
         date Start_Date
     }
 
     Experience_Highlight__c {
         string Description
-        picklist Persona_Tag
+        multipicklist Persona_Tag
         id Experience__c
     }
 ```
@@ -307,27 +309,28 @@ erDiagram
 
 ### 4.6 Data Security Matrix
 
-The following matrix defines the CRUD and Field Level Security (FLS) settings enforced by the Profile and Permission Set structure.
+The following matrix records the object permissions in the two permission sets in source, `Portfolio_Guest` (the site guest) and `Integration_Access` (the API integration user), and how each object reaches the guest. The Admin column is the org administrator.
 
-| Object                        | Admin (System) | Guest User (Public)              | Integration User (API) |
-| :---------------------------- | :------------- | :------------------------------- | :--------------------- |
-| **`Project__c`**              | CRED / Full    | Read-Only                        | Read-Only              |
-| **`Experience__c`**           | CRED / Full    | Read-Only                        | Read-Only              |
-| **`Experience_Highlight__c`** | CRED / Full    | Read-Only                        | Read-Only              |
-| **`Skill__c`**                | CRED / Full    | Read-Only                        | Read-Only              |
-| **`Testimonial__c`**          | CRED / Full    | **No Access** (Handled via Apex) | Read-Only              |
-| **`GitHub_Cache__c`**         | CRED / Full    | **No Access** (System Only)      | No Access              |
-| **`Portfolio_Config__mdt`**   | CRED / Full    | Read-Only (via App)              | Read-Only              |
-| **`API_Access_Request__c`**   | CRED / Full    | **No Access** (Created via Apex) | No Access              |
+| Object                                 | Admin (System) | Guest User (Public)                                                                                                                                                                                                                                        | Integration User (API) |
+| :------------------------------------- | :------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
+| **`Project__c`**                       | CRED / Full    | Read, shared by the guest sharing rule `Guest_Read_All_Projects`                                                                                                                                                                                           | Read-Only              |
+| **`Experience__c`**                    | CRED / Full    | Read, shared by `Guest_Read_All_Experience`                                                                                                                                                                                                                | Read-Only              |
+| **`Experience_Highlight__c`**          | CRED / Full    | **No object permission.** Read in Apex through `without sharing` selectors with a fixed field list (`ResumeController.ResumeSelector`, `PortfolioGroundingService.Selector`)                                                                               | Read-Only              |
+| **`Skill__c`**                         | CRED / Full    | Read, shared by `Guest_Read_All_Skills`                                                                                                                                                                                                                    | Read-Only              |
+| **`Testimonial__c`**                   | CRED / Full    | **Create and Read.** `TestimonialController` inserts the visitor's submission `as user`. The restriction rule `Block_Unapproved_Testimonials` limits reads to `Approved__c = true` for anyone without the `View_Unapproved_Testimonials` custom permission | Read-Only              |
+| **`Github_Cache__c`, `Jira_Cache__c`** | CRED / Full    | **No object permission.** `DeliveryController.CacheSelector` reads the newest row in system mode                                                                                                                                                           | Read-Only              |
+| **`Contact`, `Account`**               | CRED / Full    | **No object permission.** `ResumeController.ResumeSelector` reads the owner's Contact (name, title, objective and profile links, never email, phone or address) and employer names in system mode                                                          | Read-Only              |
+| **`Portfolio_Config__mdt`**            | CRED / Full    | No custom metadata grant. Apex reads it and returns selected fields only (`FooterController.getLinks` returns the GitHub and LinkedIn URLs)                                                                                                                | Read in Apex           |
+| **`API_Access_Request__c`**            | CRED / Full    | **No Access.** `TokenExchangeService.AuditStore` writes one row per token request in system mode                                                                                                                                                           | No Access              |
 
 > [!NOTE]
-> Guest User access to `Testimonial__c` records is strictly controlled via the `SAPITestimonial` Apex class which applies the "Vibe Mode" and "Approved" filters before returning data to the LWR site.
+> **Why system mode for these reads.** The guest sees only rows shared to it, so a `with sharing` read of a highlight, the owner's Contact or a cache row returns nothing. Granting the guest those objects would expose every field it can read through GraphQL. Instead each controller stays `with sharing`, and a private `without sharing` inner class runs one query with a fixed field list and hands back a fixed shape. The guest reaches that data only through the controller's return type. The rule is written into each selector's doc header (for example `ResumeController.cls` line 260 and `PortfolioGroundingService.cls` line 293).
 >
 > The Guest User holds **no execute access** on any `SAPI*` or `PAPI*` REST class except `PAPIAuthToken` ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)). Site components reach data through `@AuraEnabled` controllers or the API Lab proxy. The Integration User is the only identity that executes the REST classes, via OAuth 2.0 Client Credentials ([ADR-027](../adr/027-platform-native-api-authentication.md)).
 
 ## 5. Solution Components (The Pillars)
 
-The system is segmented into five distinct logical capabilities, each demonstrating a specific architectural discipline. **Pillar Relationships:** Pillar A (Business) → Pillar B (Consulting) → Pillar C (Integration) → Pillar D (AI) → Pillar E (DevOps)
+The system is segmented into five distinct logical capabilities, each demonstrating a specific architectural discipline. **Pillar Relationships:** Pillar A (Business) → Pillar B (Solution Architecture) → Pillar C (Integration) → Pillar D (AI) → Pillar E (DevOps)
 
 ### 5.1 Pillar A: Business Architecture (Employer Hub)
 
@@ -341,7 +344,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 - **Data Source:** Apex `Schema.getGlobalDescribe()` ensures the diagram never drifts from the actual deployment. A two-button toggle switches between the Employer Hub schema (the default on this page) and the portfolio's own schema. The internal objects `API_Rate_Window__c`, `API_Access_Request__c`, `Github_Cache__c` and `Jira_Cache__c` are hidden by `Schema_Visualizer_Object__mdt` records. There is no Platform Cache: the only cache is the browser's, through `cacheable=true` ([ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)).
 - **Reuse Signal:** the diagram draws with the same D3 engine as the skills page (`c/graphEngine` and the `D3_Library` static resource), loaded only on desktop and tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
 
-### 5.2 Pillar B: Pre-Sales Consultancy (Nonprofit Literacy Platform)
+### 5.2 Pillar B: Solution Architecture (Nonprofit Literacy Platform)
 
 > [!NOTE]
 > **Live since Round 5.** The owner reviewed every score and set the starting weights in Round 6, so no placeholder banner shows. The client is described as "a regional adult literacy nonprofit" and never named (owner decision D4 b). Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production (owner decision D1 a).
@@ -475,7 +478,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 
 - **`c-hero-banner`:** Includes "How to Evaluate Me" navigation guide.
 - **`c-testimonial-submit`:** "Mad Libs" style sentence builder.
-- **`c-api-tester`:** Developer console LWC utilizing fetch() to exercise endpoints.
+- **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invoke`, which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3).
 - **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
 - **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with D3 that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
 - **`c-code-viewer`:** Fetches raw source code via Prism.js.
@@ -508,7 +511,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-007](../adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching                                  | Accepted                 |
 | [ADR-008](../adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Agile Accelerator                          | Accepted                 |
 | [ADR-009](../adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model                                      | Accepted                 |
-| [ADR-010](../adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Visualization Engine (Vis.js vs. AntV G6)                       | Revisited 2026-10-22: D3 |
+| [ADR-010](../adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Visualization Engine (Vis.js vs. AntV G6)                       | Superseded by D3         |
 | [ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Context Grounding Strategy (Direct CRM vs. Data 360)            | Deferred (2026-10-22)    |
 | [ADR-012](../adr/012-guest-user-security-restriction-rules.md)                         | Guest User Security (Restriction Rules)                         | Accepted                 |
 | [ADR-013](../adr/013-structured-logging-framework-nebula-logger.md)                    | Structured Logging Framework (Nebula Logger)                    | Accepted                 |
@@ -516,13 +519,13 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI                              | Accepted                 |
 | [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as Edge AI Proxy                              | Deferred to V2.0         |
 | [ADR-017](../adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | System API Security & Dual-Sided Auth Pattern                   | Superseded (ADR-027)     |
-| [ADR-018](../adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | FinOps Constraint – AWS Lambda Function URLs vs. API Gateway    | Accepted                 |
+| [ADR-018](../adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | FinOps Constraint – AWS Lambda Function URLs vs. API Gateway    | Deferred (2026-10-23)    |
 | [ADR-019](../adr/019-executable-governance-platform-events-for-documentation-logic.md) | Executable Governance – Platform Events for Documentation Logic | Accepted                 |
 | [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Amended 2026-10-22       |
-| [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Accepted                 |
+| [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Amended 2026-10-23       |
 | [ADR-022](../adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Engineering – Resilience Simulation Toggle           | Accepted                 |
 | [ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF) for MVP                      | Accepted (Transitionary) |
-| [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern – Contract-First Parity                        | Accepted                 |
+| [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern – Contract-First Parity                        | Amended 2026-10-23       |
 | [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling (Capacity Planning)                     | Accepted (Amended)       |
 | [ADR-026](../adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning Strategy                            | Accepted (Amended)       |
 | [ADR-027](../adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication (ECA + Named Credential)     | Accepted                 |
@@ -594,7 +597,7 @@ The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box T
 - **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches to the `Github_Cache__c` custom object. Refreshed every 15 minutes by `GitHubCacheRefreshJob` (Queueable, enqueued by `IntegrationCacheRefreshScheduler`).
 - **A.5 Hero Banner Navigation:** (Refer to UI specs).
 - **A.6 Agentforce Configuration:** not built. Agentforce is a switch in the dispatch that ships off (section 5.4). The "Show your work" panel (section 5.4) replaces the Mirror Mode system instruction, so no instruction asks a model to reveal its prompt.
-- **A.7 Architecture Diagram Hosting:** Export C4 diagram and upload as Static Resource.
+- **A.7 Architecture Diagram Hosting:** not built. No C4 diagram is exported or uploaded as a static resource. The architecture diagrams are the Mermaid blocks in these guides, and the live data model is drawn by `c-schema-visualizer` (section 5.1).
 - **A.8 Jira Integration:** Endpoint: ryanbumstead.atlassian.net. Auth: Basic Auth with Named Credential.
 - **A.9 Advanced Visualization Strategy:**
   - **Mobile Guardrail:** on `FORM_FACTOR` `Small` or a viewport under 768 px the skills page shows its matrix and the ERD its accessible list, and neither requests the graph engine.
@@ -622,7 +625,7 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 - **Contract-First Design:** OpenAPI 3.0 specification defines the interface before implementation
 - **Explicit Caching:** `Cache-Control` headers distinguish between cacheable configuration (`max-age=300`) and dynamic data (`no-store`)
 - **Rate Limiting:** `RateWindowLimiter` allows 120 requests per minute per caller key, with no burst allowance. Every evaluator token is the same session, so all evaluators share that one limit ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4))
-- **Versioning:** `X-API-Version` header required for contract negotiation and backward compatibility
+- **Versioning:** `X-API-Version` is optional. A request without it is served as `v1`, any value other than `v1` gets 400 `Unsupported X-API-Version`, and every response Apex writes carries `X-API-Version: v1` (`ApiRequestContext.applyRequestRules`, `SUPPORTED_VERSION`)
 
 **Core Endpoints:**
 
@@ -665,22 +668,17 @@ All list endpoints support:
 
 **Schema Highlights:**
 
-All response schemas inherit from `SalesforceRecord` base type which includes:
-
-- `attributes` - Salesforce system metadata (type, url)
-- `LastModifiedDate` - Audit timestamp (ISO 8601)
-- `SystemModstamp` - System modification timestamp
-- `_links` - HATEOAS navigation links for discoverability
+Responses are camelCase JSON built field by field in Apex (for example `SAPIExperience.transformExperiences` returns `id`, `name`, `employerId`, `employerName`, the dates and flags). They carry no Salesforce `attributes` block, no audit timestamps and no HATEOAS `_links`: the specification defines none of these.
 
 **Governance Features:**
 
-- **Idempotency Support:** `X-Idempotency-Key` header prevents duplicate processing (prepared for future write operations)
-- **Observability:** All error responses include `correlationId` for incident tracking
+- **No idempotency header:** every SAPI path is a read, so no `X-Idempotency-Key` is defined or read
+- **Observability:** All error responses include `correlationId` for incident tracking (the `Error` schema in `salesforce-sapi.yaml` requires it)
 - **Future-Proof Versioning:** API version negotiation via header prevents breaking changes for existing consumers
 
 #### B.2 Process API (PAPI) - portfolio-papi.yaml
 
-**Purpose:** Orchestration layer that aggregates and transforms SAPI data for optimized frontend consumption.
+**Purpose:** Process layer that combines several portfolio objects into one response shaped for a client. The PAPI classes run their own SOQL. They make no call to a SAPI path, and the only PAPI callout is `PAPIHealth`'s credential check. The site does not load through the PAPI either: its components call `@AuraEnabled` controllers or GraphQL (section 1.1).
 
 **Base URL:** `https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/apexrest/papi/v1` (My Domain). `POST /auth/token` alone is served on the site domain: `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.
 
@@ -692,46 +690,53 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 **Key Design Principles:**
 
-- **Smart Aggregation:** Single `/profile/full` endpoint eliminates 15+ client round-trips by pre-fetching related objects
+- **Aggregation:** `/profile/full` returns the owner, roles, skills, projects, certifications, education and testimonials in one response. A caller that used the SAPI instead would need one request per object. Each section that fails to read is named in `integrityNote`, and the `X-Data-Integrity` header reads `partial` (`PAPITransformer.Aggregation`)
 - **Business Logic Encapsulation:** Applies "Vibe Mode" filtering, persona-based resume generation, and social proof curation
 - **Frontend Optimization:** Returns nested, denormalized JSON structures ready for immediate rendering
 - **Transformation Layer:** Converts Salesforce field names to frontend-friendly camelCase conventions
 
 **Core Endpoints:**
 
-| Endpoint              | Purpose                                                                               | Upstream SAPI Calls                                                                                                                                                                                                                                          | Benefit                                                                        |
+| Endpoint              | Purpose                                                                               | What it reads (its own SOQL, no SAPI call)                                                                                                                                                                                                                   | Benefit                                                                        |
 | :-------------------- | :------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------- |
-| `/profile/full`       | Complete portfolio hydration                                                          | 10+ endpoints (Config, Skills, Tests, etc.)                                                                                                                                                                                                                  | **Single Request** loads entire app state                                      |
-| `/profile/summary`    | Employment profile only                                                               | 5 (Contact, Experience, Skills, Certifications, Education)                                                                                                                                                                                                   | Lightweight profile for resume generation                                      |
-| `/resume/generate`    | ATS-optimized plain text resume                                                       | 3 (Experience, Experience Highlights filtered by persona, Skills)                                                                                                                                                                                            | Server-side text formatting eliminates client complexity                       |
-| `/projects/featured`  | Enriched project showcase                                                             | 3 (Projects, Project Assets, Project Skills)                                                                                                                                                                                                                 | Pre-joined data structure eliminates N+1 query problem                         |
-| `/testimonials/feed`  | Curated social proof                                                                  | 1 (Testimonials with Vibe Mode filter)                                                                                                                                                                                                                       | Server-side filtering ensures brand consistency                                |
+| `/profile/full`       | Complete portfolio payload                                                            | The owner Contact and `Portfolio_Config__mdt`, roles with highlights, skills, projects, certifications, education and testimonials (`PAPIProfile.getFullPortfolio`)                                                                                          | One request instead of one per object                                          |
+| `/profile/summary`    | Employment profile only                                                               | The owner Contact, roles with highlights, skills, certifications and education (`PAPIProfile.getProfileSummary`)                                                                                                                                             | Lightweight profile for resume generation                                      |
+| `/resume/generate`    | ATS-optimized plain text resume                                                       | The owner Contact, roles with highlights filtered by persona, the skills linked to those roles, certifications and education (`PAPIResume`)                                                                                                                  | Server-side text formatting eliminates client complexity                       |
+| `/projects/featured`  | Enriched project showcase                                                             | Projects with their skills and assets (`PAPIProjects`)                                                                                                                                                                                                       | Projects arrive already joined to their skills and assets                      |
+| `/testimonials/feed`  | Curated social proof                                                                  | Approved testimonials with the vibe rule below (`PAPITestimonialFeed`)                                                                                                                                                                                       | Server-side filtering ensures brand consistency                                |
 | `/ai/generate` (POST) | Generative content (cover letter, bio, skill blurb)                                   | `ContentGenerationController.dispatch`: Agentforce only when switched on (it ships off), then Gemma 4 31B (`gemma-4-31b-it`) through the Gemini API, then the Local Template for cover letters ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)) | Real model output with a deterministic fallback, `ai` rate tier (10 req/min)   |
 | `/auth/token` (POST)  | Evaluator token vending ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)) | Server-side client-credentials exchange via `Portfolio_API` Named Credential                                                                                                                                                                                 | External reviewers can `curl` the APIs without ever seeing the consumer secret |
 
 **Transformation Examples:**
 
-**SAPI Response (Raw Salesforce):**
+**SAPI Response (one record per row, `SAPIExperience.transformExperiences`):**
 
 ```json
 {
-  "Id": "a00xx000001",
-  "Employer__c": "Salesforce",
-  "Position_Title__c": "Technical Architect",
-  "Start_Date__c": "2023-01-15",
-  "End_Date__c": null,
-  "Is_Current_Role__c": true
+  "id": "a00xx000001",
+  "name": "Technical Architect",
+  "employerId": "001xx000003",
+  "employerName": "Salesforce",
+  "startDate": "2023-01-15",
+  "endDate": null,
+  "isCurrentRole": true,
+  "isRemote": true,
+  "sortOrder": 1
 }
 ```
 
-**PAPI Response (Frontend-Optimized):**
+The role title is the record's `Name`, and `Employer__c` is a lookup to Account, so the employer's name comes from `Employer__r.Name`. The response also carries `contactId`, `contactName` and the deprecated `accomplishments`.
+
+**PAPI Response (Frontend-Optimized, `PAPITransformer.transformExperience`):**
 
 ```json
 {
+  "id": "a00xx000001",
   "employer": "Salesforce",
   "role": "Technical Architect",
   "dateRange": "Jan 2023 - Present",
   "isCurrent": true,
+  "isRemote": true,
   "skillsUsed": ["Apex", "LWC", "Event Bus"],
   "highlights": [
     "Designed multi-cloud architectures",
@@ -744,26 +749,22 @@ All response schemas inherit from `SalesforceRecord` base type which includes:
 
 The `/resume/generate?persona=architect` endpoint applies server-side filtering logic:
 
-1. Fetches all Experience Highlight records
-2. Filters by `Persona_Tag__c IN ('Architect', 'General')`
-3. Sorts by `Architect_Sort_Order__c`
+1. Reads up to 10 roles, current first, each with its highlights in `Sort_Order__c` order (`PAPIResume`)
+2. Keeps a highlight when its multi-select `Persona_Tag__c` contains the persona. The values are Admin, Developer and Architect. There is no General value, and a blank persona keeps every highlight
+3. Prints at most 5 highlights per role
 4. Formats as ATS-compliant plain text with proper spacing and bullet points
+
+The per-persona sort fields (`Admin_Sort_Order__c`, `Developer_Sort_Order__c`, `Architect_Sort_Order__c`) exist on `Experience_Highlight__c` and are read by the site's resume (`ResumeController`), not by this endpoint.
 
 **Vibe Mode Social Proof:**
 
-The `/testimonials/feed?mode=professional` endpoint applies business logic:
+The `/testimonials/feed` endpoint applies business logic (`PAPITestimonialFeed.queryApproved`):
 
-- **Professional Mode:** Only includes testimonials where `Relationship_Type__c IN ('Manager', 'Client')` AND `Approved__c = true`
-- **Casual Mode:** Includes peer reviews and `Vibe_Mode__c = 'Casual'` entries for authenticity
+- **Professional Mode** (`mode=professional`, the default): `Approved__c = true`, `Vibe_Mode__c = 'Professional'` and `Relationship_Type__c` in Manager, Client or Peer
+- **Casual Mode** (`mode=casual`): every approved testimonial, whatever its vibe or relationship
+- Any other `mode` gets 400
 
-**Performance Impact:**
-
-| Metric                     | Without PAPI (Direct SAPI) | With PAPI             | Improvement             |
-| :------------------------- | :------------------------- | :-------------------- | :---------------------- |
-| Initial Page Load Requests | 15-20                      | 1                     | **95% reduction**       |
-| Total Payload Size         | ~180KB (uncompressed)      | ~45KB (pre-filtered)  | **75% reduction**       |
-| Time to Interactive (TTI)  | 4.2s                       | 1.8s                  | **57% faster**          |
-| Client-Side Processing     | High (filtering, joining)  | Minimal (render only) | Simplified architecture |
+**Performance:** no page load, payload or Time to Interactive comparison between the PAPI and the SAPI has been measured, so none is claimed. The site itself does not load through the PAPI.
 
 **Future Enhancements (Documented for Phase 8):**
 
@@ -894,29 +895,33 @@ The following policies were configured in API Manager to demonstrate enterprise 
 
 Represents an employment period.
 
-| Field Label         | API Name             | Type      | Length | Required | Description                       |
-| :------------------ | :------------------- | :-------- | :----- | :------- | :-------------------------------- |
-| **Employer**        | `Employer__c`        | Text      | 255    | Yes      | Company Name.                     |
-| **Position Title**  | `Position_Title__c`  | Text      | 255    | Yes      | Job Title.                        |
-| **Start Date**      | `Start_Date__c`      | Date      | -      | Yes      | Employment start.                 |
-| **End Date**        | `End_Date__c`        | Date      | -      | No       | Employment end (Null if current). |
-| **Is Current Role** | `Is_Current_Role__c` | Checkbox  | -      | No       | Logic flag for "Present".         |
-| **Is Remote**       | `Is_Remote__c`       | Checkbox  | -      | No       | Remote work flag.                 |
-| **Accomplishments** | `Accomplishments__c` | Long Text | 32768  | No       | Summary text. (Deprecated)        |
-| **Sort Order**      | `Sort_Order__c`      | Number    | 18,0   | No       | Custom sort logic.                |
+| Field Label         | API Name             | Type              | Length | Required | Description                                       |
+| :------------------ | :------------------- | :---------------- | :----- | :------- | :------------------------------------------------ |
+| **Position Title**  | `Name`               | Text (name field) | 80     | Yes      | Job title. There is no `Position_Title__c` field. |
+| **Employer**        | `Employer__c`        | Lookup (Account)  | -      | No       | The employer, read as `Employer__r.Name`.         |
+| **Contact**         | `Contact__c`         | Lookup (Contact)  | -      | No       | The person the role belongs to.                   |
+| **Start Date**      | `Start_Date__c`      | Date              | -      | No       | Employment start.                                 |
+| **End Date**        | `End_Date__c`        | Date              | -      | No       | Employment end (Null if current).                 |
+| **Is Current Role** | `Is_Current_Role__c` | Checkbox          | -      | No       | Logic flag for "Present".                         |
+| **Is Remote**       | `Is_Remote__c`       | Checkbox          | -      | No       | Remote work flag.                                 |
+| **Accomplishments** | `Accomplishments__c` | Rich Text         | 131072 | No       | Summary text. (Deprecated)                        |
+| **Sort Order**      | `Sort_Order__c`      | Number            | 3,0    | Yes      | Custom sort logic.                                |
 
 #### D.2 Object: `Experience_Highlight__c`
 
 Granular bullet points for resume generation.
 
-| Field Label     | API Name                  | Type          | Length | Required | Description                  |
-| :-------------- | :------------------------ | :------------ | :----- | :------- | :--------------------------- |
-| **Name**        | `Name`                    | Auto Number   | -      | Yes      | System ID.                   |
-| **Experience**  | `Experience__c`           | Master-Detail | -      | Yes      | Parent record.               |
-| **Description** | `Description__c`          | Long Text     | 5000   | Yes      | The bullet point text.       |
-| **Persona Tag** | `Persona_Tag__c`          | Picklist      | -      | Yes      | Target audience filter.      |
-| **Admin Sort**  | `Admin_Sort_Order__c`     | Number        | 2,0    | No       | Sort order for Admin resume. |
-| **Dev Sort**    | `Developer_Sort_Order__c` | Number        | 2,0    | No       | Sort order for Dev resume.   |
+| Field Label          | API Name                       | Type                  | Length | Required | Description                                                    |
+| :------------------- | :----------------------------- | :-------------------- | :----- | :------- | :------------------------------------------------------------- |
+| **Name**             | `Name`                         | Text (name field)     | 80     | Yes      | Record name.                                                   |
+| **Experience**       | `Experience__c`                | Master-Detail         | -      | Yes      | Parent record.                                                 |
+| **Description**      | `Description__c`               | Long Text             | 5000   | No       | The bullet point text.                                         |
+| **Persona Tag**      | `Persona_Tag__c`               | Multi-select Picklist | -      | Yes      | Target audience filter (Admin, Developer, Architect).          |
+| **Sort (Universal)** | `Sort_Order__c`                | Number                | 3,0    | Yes      | Default order within a role.                                   |
+| **Admin Sort**       | `Admin_Sort_Order__c`          | Number                | 3,0    | No       | Sort order for Admin resume.                                   |
+| **Dev Sort**         | `Developer_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for Dev resume.                                     |
+| **Architect Sort**   | `Architect_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for Architect resume.                               |
+| **Lock Sort**        | `Lock_Sort_Across_Personas__c` | Checkbox              | -      | No       | Field description: changing one persona sort syncs the others. |
 
 #### D.3 Object: `Project__c`
 
@@ -1013,23 +1018,22 @@ Media gallery assets, read by `c-project-asset-gallery`.
 
 | Field                       | Object                    | Values                                                                               |
 | :-------------------------- | :------------------------ | :----------------------------------------------------------------------------------- |
-| `Persona_Tag__c`            | `Experience_Highlight__c` | Admin, Developer, Architect, General                                                 |
+| `Persona_Tag__c`            | `Experience_Highlight__c` | Admin, Developer, Architect (multi-select, no General value)                         |
 | `Relationship_Type__c`      | `Testimonial__c`          | Manager, Peer, Client, Recruiter, Fan                                                |
 | `Vibe_Mode__c`              | `Testimonial__c`          | Professional (Clean/Corporate), Casual (Fun/Raw)                                     |
 | `Status__c`                 | `Project__c`              | Live - In Production, Live - Demo / Reference, Active Development, On Hold, Archived |
-| `Pillar__c`                 | `Project__c`              | A, B, C, D, E (Business, Consulting, Integration, AI, DevOps)                        |
+| `Pillar__c`                 | `Project__c`              | A, B, C, D, E (Business, Solution Architecture, Integration, AI, DevOps)             |
 | `Type__c`                   | `Project_Asset__c`        | Image, Video, Link, Document                                                         |
 | `EH_Academic_Focus_Area__c` | `Account`                 | Business, Health Sciences, Information Technology, Skilled Trades, General Studies   |
 
 #### D.12 Index & Query Optimization
 
-To support high-volume queries during traffic spikes (e.g., LinkedIn post viral shares):
+No custom index is defined in source or requested from Salesforce Support. The portfolio objects hold one person's portfolio, so they stay small and no query has needed one.
 
-- **Indexed Fields:** `Project__c.Status__c` + `Project__c.Pillar__c` (Composite Index)
-- **Query:** `SELECT Id FROM Project__c WHERE Status__c IN ('Live — Demo / Reference', 'Live — In Production', 'Active Development') AND Pillar__c = 'C'`
-- **Justification:** API Tester component filters by pillar (Section 5.3).
-- **Non-Indexed Fields:** `Testimonial__c.Context__c` (Text, rarely filtered).
-- **Why Skip:** Only queried via `Approved__c = true` (already indexed via checkbox).
+- **Pillar filters:** two reads filter `Project__c` by `Pillar__c`: `ProjectCardController` (`WHERE Pillar__c IN :PILLAR_LETTERS`) and `c-project-asset-gallery` (GraphQL `where: { Pillar__c: { eq: $pillar } }`). The API tester does not filter by pillar.
+- **Status values:** the `Status__c` picklist values use an en dash, for example `Live – In Production` and `Live – Demo / Reference`, so a query must use that character exactly.
+- **Testimonials:** reads filter on `Approved__c = true`, and `Context__c` is never filtered.
+- **When to revisit:** if a table grew to thousands of rows, a custom index on `Project__c.Pillar__c` would be the first request.
 
 ### Appendix E: Environment Strategy
 
@@ -1057,11 +1061,11 @@ Apex → Named Credential → External APIs (Jira/GitHub).
 
 ### Appendix I: Org & Package Structure
 
-Enterprise-grade monorepo structure using unlocked packages and source tracking.
+A monorepo of five package directories, declared in `sfdx-project.json` and deployed as source (`sf project deploy start --source-dir packages`, or a delta manifest). They are not built as unlocked packages: the project has no `packageAliases`, and the declared dependencies form a cycle, because `portfolio-site` declares `integration-api` while `integration-api` calls `ContentGenerationController` in `portfolio-site` (`PAPIAiGenerate`, `ApiLabController`). Packaging them would first need that cycle broken.
 
 - `/packages/portfolio-site`: Configurations, declarative, and programmatic resources focused on adding features to the Salesforce Architect Portfolio. Every pillar component and class lives here too (`SchemaService`, `DecisionMatrixController`, `c-schema-visualizer`, `c-project-asset-gallery`, `c-decision-matrix`, `c-pillar-b-story`), because Jest runs only on this package (Round 5 plan reading R1).
 - `/packages/integration-api`: the OpenAPI specifications (`specs/`), the Apex REST classes for the SAPI and PAPI, and the integration user's profile.
-- `/packages/shared-modules`: Shared modules reusable across packages, for example lightning web components use across the portfolio-site and integration-api focused lightning web components.
+- `/packages/shared-modules`: a placeholder for modules shared across packages. Today it holds only `main/default/lwc/jsconfig.json`, and no component lives there.
 - `/packages/demos/employer-hub`: the inert Employer Hub data model of a demonstration built for an education provider: `EH_Partner_Engagement__c`, `EH_Job_Posting__c` (master-detail to Partner Engagement), `EH_Sponsorship__c` and `EH_Letter_of_Support__c`, with lookups to Account, Contact, Case, Opportunity and Contract, and the Account picklist `EH_Academic_Focus_Area__c`. No automation, tabs, layouts or records. Also the `EH_Demo_Read` permission set (read on the four objects, optional for administrators) and the `EH_Assets` static resource (two process flows and two dashboards, redrawn from the original demo with no names and sample values).
 - `/packages/demos/nonprofit-literacy`: the analysis of a platform choice for a regional adult literacy nonprofit: the three decision matrix Custom Metadata Types (`Decision_Option__mdt`, `Decision_Criterion__mdt`, `Decision_Score__mdt`), their 43 records, and the `NL_Assets` static resource with the redrawn object model. It references no managed package, so it deploys to production and to CI's scratch orgs unchanged.
 
@@ -1071,10 +1075,10 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 ### Appendix K: Validation Rules & Logic
 
-- **K.1 `Experience__c`:** `VR_End_Date_After_Start`.
-- **K.2 `Experience_Highlight__c`:** `VR_Persona_Required`.
-- **K.3 `Testimonial__c`:** `VR_Vibe_Required`.
-- **K.4 Sharing Rules:** Guest User Read-Only for `Project__c`/`Experience__c`. `Testimonial__c` is Private (No Access).
+- **K.1 `Experience__c`:** one validation rule, `End_Date_Validation`: a role cannot have an end date while `Is_Current_Role__c` is checked. There is no rule comparing the end date with the start date.
+- **K.2 `Experience_Highlight__c`:** no validation rule. `Persona_Tag__c` is a required field instead.
+- **K.3 `Testimonial__c`:** no validation rule. `TestimonialController` validates a submission in Apex (required fields, allowed picklist values, the rate limit) before it inserts.
+- **K.4 Sharing Rules:** guest sharing rules give Read on `Project__c`, `Experience__c` and `Skill__c` (`Guest_Read_All_Projects`, `Guest_Read_All_Experience`, `Guest_Read_All_Skills`). `Testimonial__c` has no sharing rule, and the guest's reads are limited by the restriction rule in K.5.
 - **K.5** Restriction Rules on Guest User Profile verified compatible in Spring '26. Fallback to Criteria-Based Sharing Rule (`Approved__c = true`) remains documented if needed.
 
 ### Appendix L: Reference Artifacts
@@ -1085,14 +1089,14 @@ Enterprise-grade monorepo structure using unlocked packages and source tracking.
 
 ### Appendix M: Cross-Cutting Pattern - Dual-Door Integration Strategy
 
-| Feature               | Door 1 — Native Salesforce GraphQL (lightning/uiGraphQLApi) | Door 2 — AWS Lambda Polyglot BFF (Function URL)         |
-| :-------------------- | :---------------------------------------------------------- | :------------------------------------------------------ |
-| **Timeline**          | MVP – Q1 2027 (planned)                                     | Phase 8 – 2027-2028 (design complete)                   |
-| **Primary Consumers** | All internal LWC components (Skill Graph, Roadmap)          | API Lab "Enterprise Mode", future mobile apps           |
-| **Technology**        | lightning/uiGraphQLApi wire adapter                         | Single Lambda Function URL + in-function governance     |
-| **Latency**           | Lowest possible (LDS + UI cache)                            | Single external round-trip                              |
-| **Caching**           | Automatic via Lightning Data Service                        | In-memory or DynamoDB inside Lambda                     |
-| **Governance**        | Platform-managed                                            | Full enterprise policies (keys, rate limits, analytics) |
-| **Payload Reduction** | Platform-optimized                                          | 85—92% reduction vs parallel REST calls                 |
-| **Cost**              | $0                                                          | $0.00 forever (no API Gateway, no VPC)                  |
-| **Current Status**    | Planned for MVP launch                                      | Fully architected & documented – activation in Phase 8  |
+| Feature               | Door 1: Native Salesforce GraphQL (lightning/uiGraphQLApi)                                                                                                                       | Door 2: AWS Lambda Polyglot BFF (Function URL)          |
+| :-------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------ |
+| **Timeline**          | Live                                                                                                                                                                             | Phase 8, 2027 to 2028 (design only, not built)          |
+| **Primary Consumers** | Three components: `c-skill-network`, `c-project-asset-gallery` and the footer's `c-graphql-probe`. Every other component reads through `@AuraEnabled` Apex, the roadmap included | Future API Lab mode and mobile apps (none built)        |
+| **Technology**        | lightning/uiGraphQLApi wire adapter                                                                                                                                              | Single Lambda Function URL + in-function governance     |
+| **Latency**           | Lowest possible (LDS + UI cache)                                                                                                                                                 | Single external round-trip                              |
+| **Caching**           | Automatic via Lightning Data Service                                                                                                                                             | In-memory or DynamoDB inside Lambda                     |
+| **Governance**        | Platform-managed                                                                                                                                                                 | Full enterprise policies (keys, rate limits, analytics) |
+| **Payload Reduction** | Platform-optimized                                                                                                                                                               | Not measured, since nothing is built                    |
+| **Cost**              | $0                                                                                                                                                                               | $0.00 forever (no API Gateway, no VPC)                  |
+| **Current Status**    | Live on the three components above ([ADR-021 amendment](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-23-round-7-scope))                             | Designed, not built. Activation in Phase 8              |
