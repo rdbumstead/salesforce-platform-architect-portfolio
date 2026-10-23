@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <available>true</available>
+    <description
+  >Tells the Lead owner a portfolio contact form message has arrived. Chosen as the notification template on the default Lead assignment rule entry, which is created in the org and never kept in source.</description>
+    <encodingKey>UTF-8</encodingKey>
+    <name>Portfolio Contact New Lead</name>
+    <style>none</style>
+    <subject>New portfolio message from {!Lead.Name}</subject>
+    <type>text</type>
+    <uiType>Aloha</uiType>
+</EmailTemplate>

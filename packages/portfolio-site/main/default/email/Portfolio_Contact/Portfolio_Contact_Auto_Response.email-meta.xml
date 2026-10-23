@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <available>true</available>
+    <description
+  >Auto-response for the portfolio contact form (ADR-031). Sent by the Lead auto-response rule only on the first message from an address in 24 hours. The sender is set on the rule entry in the org, never here.</description>
+    <encodingKey>UTF-8</encodingKey>
+    <name>Portfolio Contact Auto Response</name>
+    <style>none</style>
+    <subject>Thanks for reaching out</subject>
+    <type>text</type>
+    <uiType>Aloha</uiType>
+</EmailTemplate>
