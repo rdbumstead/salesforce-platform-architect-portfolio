@@ -10,6 +10,43 @@
  **/
 @isTest
 private class TestimonialControllerTest {
+  // An internal reader made inside the test, with Portfolio_Admin assigned here, so the wall's
+  // user mode read never depends on what the org has assigned.
+  private static User adminReader() {
+    Profile admin = [
+      SELECT Id
+      FROM Profile
+      WHERE Name = 'System Administrator'
+      LIMIT 1
+    ];
+    User user = new User(
+      Alias = 'reader',
+      Email = 'reader@example.com',
+      EmailEncodingKey = 'UTF-8',
+      LastName = 'Reader',
+      LanguageLocaleKey = 'en_US',
+      LocaleSidKey = 'en_US',
+      ProfileId = admin.Id,
+      TimeZoneSidKey = 'America/Los_Angeles',
+      Username = 'reader.' + Crypto.getRandomInteger() + '@example.com.r7b'
+    );
+    // Setup records in their own runAs block avoid mixed DML with the test's own inserts.
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      insert user;
+      insert new PermissionSetAssignment(
+        AssigneeId = user.Id,
+        PermissionSetId = [
+          SELECT Id
+          FROM PermissionSet
+          WHERE Name = 'Portfolio_Admin'
+          LIMIT 1
+        ]
+        .Id
+      );
+    }
+    return user;
+  }
+
   private static final String NAME = 'Ada Lovelace';
   private static final String TITLE = 'Engineer';
   private static final Integer HUMAN_MS = 9000;
@@ -259,15 +296,20 @@ private class TestimonialControllerTest {
       'Fan',
       'Professional'
     );
-    Id saved = submit(
-      'Recruiter',
-      'Professional',
-      P_STRENGTH,
-      P_OUTCOME_ANYONE,
-      null,
-      null,
-      HUMAN_MS
-    );
+    // The save runs as the site guest, whose Portfolio_Guest grant SiteGuestTestSupport makes
+    // sure of, because the insert is in user mode.
+    Id saved;
+    System.runAs(SiteGuestTestSupport.preparedGuest()) {
+      saved = submit(
+        'Recruiter',
+        'Professional',
+        P_STRENGTH,
+        P_OUTCOME_ANYONE,
+        null,
+        null,
+        HUMAN_MS
+      );
+    }
     Assert.isNotNull(saved, 'An Anyone outcome is fine for a recruiter');
   }
 
@@ -522,10 +564,14 @@ private class TestimonialControllerTest {
         Relationship_Type__c = 'Manager'
       )
     };
-    // Guest sharing never reaches rows made in a test (log 075), so this runs as the test
-    // user. TestimonialGuestAccessTest proves the guest side on the org's own rows.
+    // Guest sharing never reaches rows made in a test (log 075), so this runs as an internal
+    // reader. TestimonialGuestAccessTest proves the guest side on the org's own rows.
+    List<TestimonialController.WallItem> wall;
+    User reader = adminReader();
     Test.startTest();
-    List<TestimonialController.WallItem> wall = TestimonialController.getApprovedTestimonials();
+    System.runAs(reader) {
+      wall = TestimonialController.getApprovedTestimonials();
+    }
     Test.stopTest();
 
     Assert.areEqual(3, wall.size(), 'Approved rows only');
