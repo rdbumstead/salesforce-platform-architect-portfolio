@@ -78,7 +78,7 @@ openssl req -new -key portfolio.key -x509 -days 400 -out portfolio.crt
 1. Navigate to Repo **Settings** > **Secrets and variables** > **Actions**.
 2. Update `SFDX_JWT_KEY` with the content of the _new_ portfolio.key.
 
-**3. Gemini API Key:** Rotate every 90 days. Update Named Credential Gemini_API
+**3. Gemini API Key:** Rotate every 90 days. The key is not on the `Gemini_API` Named Credential. It is the `API_Key` authentication parameter of the `Gemini_Principal` principal on the `Gemini_Auth` External Credential, which the Named Credential sends as the `x-goog-api-key` header. Setup → **Named Credentials** → **External Credentials** → **Gemini_Auth** → principal **Gemini_Principal** → **Edit** → set `API_Key` to the new key → **Save**. Then generate one cover letter on the site and check the badge names Gemini, not the Local Template.
 
 ### 1.2 External Client App Secret Rotation
 
@@ -110,7 +110,7 @@ The Developer Edition org shares space with Trailhead challenges and standard Sa
 ### 2.1 Organization Rules
 
 - **Authorized Code:** Only metadata present in `packages/` is authorized.
-- **Standard Sites:** The "Portfolio" site must **not** utilize standard controllers (e.g., SiteLogin, CommunitiesSelfReg) as Authenticated Users are Out of Scope.
+- **Standard Sites:** Authenticated users are out of scope, so no portfolio feature uses a login. The site template's own routes (`/login`, `/SelfRegister`, `/ForgotPassword`, `/news`) and their standard controllers (for example `LightningLoginFormController` and `CommunitiesSelfRegController`) are still in source and on the site. The owner chose to leave them in place (2026-10-23).
 
 ### 2.2 Emergency Cleanup Protocol
 
@@ -133,24 +133,28 @@ If standard Visualforce pages or Apex classes lock the deployment (Dependency He
 
 To prevent "Commit Shame" (failing pipelines after pushing), developers must execute validation scripts locally before pushing to GitHub. The project uses npm scripts to abstract complex CLI commands:
 
-- **`npm run scan`**: Executes the Salesforce Code Analyzer (PMD/ESLint) and outputs a human-readable scan-results.html report (visualized in browser). _Success Criteria: 0 Critical Violations_
+- **`npm run scan`**: Executes the Salesforce Code Analyzer (PMD/ESLint) and outputs a human-readable scan-results.html report (visualized in browser). _Success Criteria: no violation at severity 1 or 2 (`--severity-threshold 2`)_
 - **`npm run delta`**: Generates the incremental package.xml in the `changed/` folder by comparing local changes against origin/main.
-- **`npm run validate`**: The "Golden Command". It runs the delta generation and immediately triggers a check-only deployment to the org.
-  - _Note:_ Uses scripts/validate.js to handle "Empty Package" scenarios gracefully on Windows.
+- **`npm run delta:validate -- --target-org <alias>`**: runs the delta generation and then a dry run deployment of the delta with `RunLocalTests` to the named org (`scripts/validate.js`). There is no `npm run validate` script.
+  - _Note:_ `scripts/validate.js` exits cleanly when the delta is empty, and sets the manifest API version from `sfdx-project.json`. The org is required: the script never uses the CLI default.
+- **`npm run sf:coverage -- --target-org <alias>`**: runs every local Apex test in the named org and fails on a failed test or org wide coverage under 90% (`scripts/coverage-gate.js`).
+- **`npm run specs:sync`** and **`npm run specs:check`**: regenerate every copy of the API specs from `packages/integration-api/specs`, or fail when a copy differs (`scripts/sync-specs.js`). Edit the YAML there, never a copy.
+- **`npm run docs:counts`**: fails when the ADR count in README or STATUS, or an ADR link in the indexes, disagrees with `docs/adr` (`scripts/check-doc-counts.js`).
+- **`npm run pre-launch-check -- --target-org <alias>`**: the release checks in one command ([Technical Guide §3](./04-Technical-Guide.md#3-quality-assurance-checklist)).
 
 ### 3.2 Pipeline Triggers
 
-- **PR Validation (pr.yml):** Runs on Pull Requests modifying `packages/**`.
-  - _Quality Gate:_ Apex Coverage > 90% (Hard Gate).
-  - _Security Gate:_ Zero Critical PMD Violations.
-- **Production Deploy (deploy.yml):** Runs on Push to main modifying `packages/**`.
+- **PR Validation (pr.yml):** Runs on pull requests to `main` that modify `packages/**`, `sfdx-project.json`, `package.json` or `pr.yml` itself.
+  - _Quality Gate:_ every Apex test passes and org wide coverage is 90% or more (`scripts/coverage-gate.js --min 90`).
+  - _Security Gate:_ no Critical or High violation from Salesforce Code Analyzer (`npm run scan`), plus `npm run scan:secrets`, the Jest tests and `npm run docs:verify`.
+- **Production Deploy (deploy.yml):** Runs on a push to `main` that modifies `packages/**` (both `portfolio-site` and `integration-api`), `sfdx-project.json` or `package.json`, or by hand in delta or full mode. After a real deploy it runs every local test in production and publishes a `Governance_Event__e` with the run, the commit and, when the test run returned a summary, the tests run, the tests passed and org wide coverage. A failed deploy publishes a Failure event. A push with no metadata change deploys nothing and publishes nothing.
 
 ### 3.3 Pipeline Strategy: Delta Deployment
 
 To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipeline utilizes a "Delta Deployment" strategy using sfdx-git-delta.
 
-- **Validation (pr.yml):** Calculates the diff between the PR branch and origin/main. It generates a temporary package of _only_ the changed components and runs a "Dry Run" deployment with RunLocalTests to ensure validity without altering the org.
-- **Production (deploy.yml):** Calculates the diff between the current commit and the previous commit (HEAD~1). It deploys strictly the changed metadata to the Production environment.
+- **Validation (pr.yml):** creates a one day scratch org and deploys the whole of `packages` to it, then runs every local test through the coverage gate. Only when the scratch org cannot be created does it fall back to a delta: the diff between the PR branch and `origin/<base>`, deployed to production as a dry run with `RunLocalTests`, which changes nothing.
+- **Production (deploy.yml):** calculates the diff from `github.event.before`, the commit `main` pointed at before the push, to `HEAD`, so a push of several commits deploys all of them. `HEAD~1` is used only when the event has no earlier commit. It deploys strictly the changed metadata to the Production environment.
 - **Destructive Changes:** The pipeline is configured to respect `destructiveChanges.xml`. If metadata is deleted from the repo, sfdx-git-delta will generate the destructive manifest, and the pipeline will automatically delete those components from the Org during deployment.
 - **Cross-Platform Compatibility:** The `package.json` scripts leverage `shx` and `rimraf` to ensure all shell commands (mkdir, rm) execute consistently on both Windows (Local Development) and Ubuntu Linux (GitHub Actions Runners).
 
@@ -173,8 +177,8 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 
 - **Symptom:** PMD Scan or Health Check fails due to "Guest User Open Access".
 - **Mitigation:**
-  1. **Immediate Rollback:** Revert the guest permission set `Portfolio_Guest` (`packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`) to the previous commit. It must grant only what [Technical Guide §1.4, prerequisite 6](./04-Technical-Guide.md#14-system-api-security-the-twin-pattern) lists: class access to the seven site controllers and the token endpoint, read on the six portfolio objects, create on `Testimonial__c`, read on `UserExternalCredential`, and the `Portfolio_API_Auth`, `Portfolio_API_Token_Auth` and `Gemini_Auth` principals. Never a GitHub or Jira principal, and never Contact or Account access.
-  2. **Nuke & Rebuild:** If unsure, delete the Permission Set from the org (`sf project delete source`) and redeploy the `main` branch version.
+  1. **Immediate Rollback:** Revert the guest permission set `Portfolio_Guest` (`packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`) to the previous commit. It must grant only what [Technical Guide §1.4, prerequisite 6](./04-Technical-Guide.md#14-system-api-security-the-twin-pattern) lists: class access to the eleven site controllers (including `ContactFormController` and `SourceController`), the token endpoint `PAPIAuthToken` and the spec endpoint `OpenApiDocument`, read on the six portfolio objects, create and read on `Testimonial__c`, read on `UserExternalCredential`, and the `Portfolio_API_Auth`, `Portfolio_API_Token_Auth` and `Gemini_Auth` principals. Never a GitHub or Jira principal, and never Contact, Account or Lead access.
+  2. **If unsure:** redeploy the `main` branch version of `Portfolio_Guest` to the affected org, then read the grants back (`SELECT SobjectType, PermissionsRead, PermissionsCreate FROM ObjectPermissions WHERE Parent.Name = 'Portfolio_Guest'`, and the same for `SetupEntityAccess`) and compare them with prerequisite 6. Do not plan on deleting the permission set first: it is assigned to the guest user, and whether the platform allows deleting an assigned permission set has not been tested here.
 
 ### 4.3 Scenario: GitHub Rate Limit Exhaustion
 
@@ -190,6 +194,13 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 - **Recovery:** rotate the secret (§1.2), review the audit rows (`Email__c`, `Source_IP__c`, `Outcome__c`, `Channel__c`) for the offending email/IP, reactivate the app, restore the cap.
 - **Per-caller limits already in place:** 15 token requests per minute per email and source IP, and the PAPI tier limits (`RateWindowLimiter`, [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)).
 - **Why this is enough:** tokens run as the integration user, whose only permissions are read-only on public portfolio data. The asset at risk is the API quota, not the data.
+
+### 4.5 Scenario: Contact Form Abuse
+
+- **Symptom:** unwanted Leads with `LeadSource` "Portfolio Website", or auto-responses to addresses nobody typed in.
+- **Mitigation:** on the Lead, run "Block sender" (email or domain), from desktop or the mobile app. The sender's next message is thanked and dropped. Add a Keyword row to `Submission_Block__c` for a phrase. Deactivate a row (`Active__c`) to undo a block.
+- **Already in place:** the honeypot, the 3 second minimum, one auto-response per address in 24 hours, and at most 20 messages in 24 hours ([Technical Guide §2.16](./04-Technical-Guide.md#216-contact-form-and-submission-guard)).
+- **Lost messages:** check the `Contact_Form_Failure__c` tab. A row there is a message that failed to save, with the reason.
 
 ## 5. Observability & Monitoring
 

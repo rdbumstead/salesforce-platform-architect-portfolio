@@ -36,9 +36,13 @@ The owner replaced the static SVG fallback and the G6 graph on 2026-10-22 (Round
 
 **Why.**
 
-- With 59 skills in production the G6 force layout packed every skill into one tangle (owner feedback, 2026-10-21). A matrix reads at a glance on any screen, and the graph clusters skills by category with the roles and projects on a ring, drawing edges only for the hovered or selected node.
-- Size. `D3_Library` is about 18.5 KB (18,544 bytes as logged by the engine stream in log 190) against 1.57 MB for G6.
+- With the 59 skills production held in October 2026, the G6 force layout packed every skill into one tangle (owner feedback, 2026-10-21). A matrix reads at a glance on any screen, and the graph clusters skills by category with the roles and projects on a ring, drawing edges only for the hovered or selected node.
+- Size. `D3_Library` was 18,544 bytes in Round 5 against 1.57 MB for G6 (81,502 bytes since Round 7, see the amendment below).
 - One engine draws both diagrams, the skills graph and the ERD.
 - A build-time SVG of live data goes stale, which the ERD must not do, and the matrix already serves phones from live data.
 
 **Implications.** Planned in Round 5 and reconciled with the engine branch at merge. The engine contract is `loadGraphEngine(component)` and `layoutGraph(d3, nodes, edges, options)` in `c/graphEngine` (Technical Guide section 2.1). The Round 3 inline SVG for small screens is replaced by the matrix.
+
+## Amendment (2026-10-23, Round 7): pan, zoom and node drag
+
+The graph view gains pan, zoom and node drag (audit E1). `D3_Library` appends the official UMD builds of d3-selection, d3-color, d3-interpolate, d3-ease, d3-transition, d3-drag and d3-zoom, unchanged, so the resource grows from 18,544 to 81,502 bytes. The mobile rule stands: the resource still loads only when the graph view opens, and phones never request it. Zoom in, Zoom out and Reset view are buttons for keyboard users, and the zoom level is announced politely. Nothing animates on its own, so reduced motion still needs no special case (Technical Guide §2.1).
