@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Hero_Image_Alt__c</fullName>
+    <description
+  >Alternative text for Hero Image URL on this pillar's home page card. The card shows the image only when both the URL and this text are set (Round 6 plan N7).</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Describe what the image shows for someone who cannot see it, 255 characters at most. Never name a client.</inlineHelpText>
+    <label>Hero Image Alt Text</label>
+    <length>255</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
