@@ -5,11 +5,13 @@
  *   node scripts/sync-specs.js           writes the generated files
  *   node scripts/sync-specs.js --check   writes nothing, exits 1 when a file differs
  *
- * Outputs, all under packages/portfolio-site/main/default/staticresources:
+ * Outputs under packages/portfolio-site/main/default/staticresources:
  *   SAPI_Spec.yaml, PAPI_Spec.yaml   byte copies of the YAML specs (the API reference reads them)
  *   SAPI_OpenAPI.json, PAPI_OpenAPI.json   the same specs as JSON, served at /openapi.json
  *   API_Lab_Catalog.json   the API Lab's GET paths, their query parameters and the top level
  *                          keys of each JSON response, read by ApiLabController and apiTester
+ * and docs/api/postman/portfolio-api.postman_collection.json, a Postman collection of every
+ * operation in both specs.
  * The YAML copies are compared byte for byte. The JSON files are compared by content, so
  * Prettier may format them.
  */
@@ -20,10 +22,10 @@ const { execFileSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
 const SPEC_DIR = path.join(ROOT, "packages/integration-api/specs");
-const RESOURCE_DIR = path.join(
-  ROOT,
-  "packages/portfolio-site/main/default/staticresources"
-);
+const RESOURCE_REL = "packages/portfolio-site/main/default/staticresources";
+const RESOURCE_DIR = path.join(ROOT, RESOURCE_REL);
+const POSTMAN_COLLECTION =
+  "docs/api/postman/portfolio-api.postman_collection.json";
 
 /** Each spec, the API prefix its paths take in the Lab, and its resource names. */
 const SPECS = [
@@ -196,24 +198,219 @@ function catalogEntries(doc, spec) {
   return entries;
 }
 
+/** Path of a generated static resource, from the repository root. */
+function resource(name) {
+  return path.posix.join(RESOURCE_REL, name);
+}
+
+/** Resolves {variable} in a server URL with each variable's default. */
+function serverUrl(server) {
+  const variables = (server && server.variables) || {};
+  return String((server && server.url) || "").replace(
+    /\{(\w+)\}/g,
+    (match, name) => (variables[name] ? variables[name].default : match)
+  );
+}
+
+/** A request body example: the media example, else one built from the schema's examples. */
+function exampleFor(doc, schema, depth = 0) {
+  const resolved = flatten(doc, schema || {});
+  if (resolved.example !== undefined) {
+    return resolved.example;
+  }
+  if (depth > 4) {
+    return null;
+  }
+  if (resolved.type === "array" || resolved.items) {
+    return [exampleFor(doc, resolved.items || {}, depth + 1)];
+  }
+  if (resolved.properties) {
+    const value = {};
+    Object.keys(resolved.properties).forEach((key) => {
+      value[key] = exampleFor(doc, resolved.properties[key], depth + 1);
+    });
+    return value;
+  }
+  if (Array.isArray(resolved.enum)) {
+    return resolved.enum[0];
+  }
+  return { integer: 0, number: 0, boolean: false }[resolved.type] ?? "";
+}
+
+/**
+ * A Postman v2.1 collection of every operation in both specs (audit B4). Authenticated
+ * calls go to {{instanceUrl}} with {{accessToken}}. The token request and /openapi.json go
+ * to the site, {{siteUrl}}, with no auth, and the token request stores what it returns.
+ */
+function postmanCollection(specDocs) {
+  const myDomain = serverUrl(specDocs[0].doc.servers[0]).replace(
+    /\/services\/apexrest\/.*$/,
+    ""
+  );
+  let siteUrl = "";
+  const folders = specDocs.map(({ spec, doc }) => {
+    const items = [];
+    Object.keys(doc.paths || {}).forEach((specPath) => {
+      const pathItem = doc.paths[specPath];
+      const pathServer = pathItem.servers && pathItem.servers[0];
+      ["get", "post", "put", "patch", "delete"].forEach((method) => {
+        const operation = pathItem[method];
+        if (!operation) {
+          return;
+        }
+        const base = serverUrl(pathServer || doc.servers[0]);
+        const isSite = Boolean(pathServer);
+        if (isSite && !siteUrl) {
+          siteUrl = base.replace(/\/services\/apexrest\/.*$/, "");
+        }
+        const host = isSite ? "{{siteUrl}}" : "{{instanceUrl}}";
+        const apiPath = base.replace(
+          /^https:\/\/[^/]+(\/portfoliovforcesite)?/,
+          ""
+        );
+        const query = (operation.parameters || [])
+          .map((ref) => paramOf(doc, ref))
+          .filter(Boolean)
+          .map((param) => ({
+            key: param.name,
+            value:
+              param.default !== undefined
+                ? String(param.default)
+                : param.enum
+                  ? param.enum[0]
+                  : "",
+            description: param.description,
+            disabled: true
+          }));
+        const request = {
+          method: method.toUpperCase(),
+          header: [
+            { key: "Accept", value: "application/json" },
+            { key: "X-API-Version", value: "v1" },
+            { key: "X-Request-Id", value: "{{$guid}}" }
+          ],
+          url: {
+            raw: `${host}${apiPath}${specPath}`,
+            host: [host],
+            path: `${apiPath}${specPath}`.split("/").filter(Boolean),
+            query
+          },
+          description: hint(operation.summary)
+        };
+        const security = operation.security || doc.security || [];
+        if (isSite || security.length === 0) {
+          request.auth = { type: "noauth" };
+        }
+        const media =
+          operation.requestBody &&
+          resolveRef(doc, operation.requestBody).content &&
+          resolveRef(doc, operation.requestBody).content["application/json"];
+        if (media) {
+          request.header.push({
+            key: "Content-Type",
+            value: "application/json"
+          });
+          request.body = {
+            mode: "raw",
+            raw: JSON.stringify(
+              media.example !== undefined
+                ? media.example
+                : exampleFor(doc, media.schema),
+              null,
+              2
+            ),
+            options: { raw: { language: "json" } }
+          };
+        }
+        const item = { name: `${method.toUpperCase()} ${specPath}`, request };
+        if (isSite && specPath === "/auth/token") {
+          item.event = [
+            {
+              listen: "test",
+              script: {
+                type: "text/javascript",
+                exec: [
+                  "// Keeps the token and instance URL for the other requests.",
+                  "const body = pm.response.json();",
+                  "if (body.access_token) {",
+                  '  pm.collectionVariables.set("accessToken", body.access_token);',
+                  '  pm.collectionVariables.set("instanceUrl", body.instance_url);',
+                  "}"
+                ]
+              }
+            }
+          ];
+        }
+        items.push(item);
+      });
+    });
+    return {
+      name: doc.info.title,
+      description: hint(doc.info.description),
+      item: items
+    };
+  });
+  folders.push({
+    name: "OpenAPI documents",
+    description: "Both specs as OpenAPI 3 JSON, open to anyone.",
+    item: ["papi", "sapi"].map((spec) => ({
+      name: `GET /openapi.json?spec=${spec}`,
+      request: {
+        method: "GET",
+        auth: { type: "noauth" },
+        header: [{ key: "Accept", value: "application/json" }],
+        url: {
+          raw: `{{siteUrl}}/services/apexrest/openapi.json?spec=${spec}`,
+          host: ["{{siteUrl}}"],
+          path: ["services", "apexrest", "openapi.json"],
+          query: [{ key: "spec", value: spec }]
+        }
+      }
+    }))
+  });
+  return {
+    info: {
+      name: "Salesforce Architect Portfolio API",
+      description:
+        "Generated by scripts/sync-specs.js from packages/integration-api/specs. Run POST /auth/token first: it stores accessToken and instanceUrl for the other requests.",
+      schema:
+        "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    auth: {
+      type: "bearer",
+      bearer: [{ key: "token", value: "{{accessToken}}", type: "string" }]
+    },
+    variable: [
+      { key: "instanceUrl", value: myDomain },
+      { key: "siteUrl", value: siteUrl },
+      { key: "accessToken", value: "" }
+    ],
+    item: folders
+  };
+}
+
 /**
  * Builds every output in memory.
- * @returns {{ yaml: Object<string, Buffer>, json: Object<string, object> }} file name to content
+ * @returns {{ yaml: Object<string, Buffer>, json: Object<string, object> }} path from the
+ *          repository root to content
  */
 function build() {
   const outputs = { yaml: {}, json: {} };
   const paths = [];
+  const specDocs = [];
   SPECS.forEach((spec) => {
     const { raw, doc } = readSpec(spec);
-    outputs.yaml[spec.yamlResource] = raw;
-    outputs.json[spec.jsonResource] = doc;
+    specDocs.push({ spec, doc });
+    outputs.yaml[resource(spec.yamlResource)] = raw;
+    outputs.json[resource(spec.jsonResource)] = doc;
     paths.push(...catalogEntries(doc, spec));
   });
-  outputs.json[CATALOG_RESOURCE] = {
+  outputs.json[resource(CATALOG_RESOURCE)] = {
     source: SPECS.map((spec) => `packages/integration-api/specs/${spec.file}`),
     excluded: EXCLUDED_PATHS,
     paths
   };
+  outputs.json[POSTMAN_COLLECTION] = postmanCollection(specDocs);
   return outputs;
 }
 
@@ -229,29 +426,30 @@ function sameJson(file, expected) {
   }
 }
 
-/** Names of the generated files that differ from what build() makes. */
+/** Paths of the generated files that differ from what build() makes. */
 function differences(outputs = build()) {
   const differ = [];
-  Object.entries(outputs.yaml).forEach(([name, content]) => {
-    const file = path.join(RESOURCE_DIR, name);
+  Object.entries(outputs.yaml).forEach(([relative, content]) => {
+    const file = path.join(ROOT, relative);
     if (!fs.existsSync(file) || !fs.readFileSync(file).equals(content)) {
-      differ.push(name);
+      differ.push(relative);
     }
   });
-  Object.entries(outputs.json).forEach(([name, content]) => {
-    if (!sameJson(path.join(RESOURCE_DIR, name), content)) {
-      differ.push(name);
+  Object.entries(outputs.json).forEach(([relative, content]) => {
+    if (!sameJson(path.join(ROOT, relative), content)) {
+      differ.push(relative);
     }
   });
   return differ;
 }
 
 function write(outputs = build()) {
-  Object.entries(outputs.yaml).forEach(([name, content]) => {
-    fs.writeFileSync(path.join(RESOURCE_DIR, name), content);
+  Object.entries(outputs.yaml).forEach(([relative, content]) => {
+    fs.writeFileSync(path.join(ROOT, relative), content);
   });
-  const jsonFiles = Object.entries(outputs.json).map(([name, content]) => {
-    const file = path.join(RESOURCE_DIR, name);
+  const jsonFiles = Object.entries(outputs.json).map(([relative, content]) => {
+    const file = path.join(ROOT, relative);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, `${JSON.stringify(content, null, 2)}\n`);
     return file;
   });
@@ -287,6 +485,7 @@ if (require.main === module) {
 
 module.exports = {
   build,
+  POSTMAN_COLLECTION,
   differences,
   EXCLUDED_PATHS,
   RESOURCE_DIR,
