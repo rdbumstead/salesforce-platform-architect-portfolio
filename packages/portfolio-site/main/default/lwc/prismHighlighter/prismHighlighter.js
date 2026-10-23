@@ -69,10 +69,15 @@ export function loadPrism(component) {
     loadedPrism = undefined;
   }
   if (!prismPromise) {
-    prismPromise = Promise.all([
-      loadStyle(component, PRISM_JS + "/prism.css"),
-      loadScript(component, PRISM_JS + "/prism.js")
-    ])
+    // Started inside a then, so a loader that throws instead of rejecting still lands
+    // in the catch below.
+    prismPromise = Promise.resolve()
+      .then(() =>
+        Promise.all([
+          loadStyle(component, PRISM_JS + "/prism.css"),
+          loadScript(component, PRISM_JS + "/prism.js")
+        ])
+      )
       .then(() => {
         const prism = window.Prism;
         if (!isUsable(prism)) {
