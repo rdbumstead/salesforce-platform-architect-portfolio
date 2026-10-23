@@ -24,6 +24,11 @@
                 {
                   "children": [
                     {
+                      "definition": "c:testimonialWall",
+                      "id": "4f0c9a52-6d1e-4b8a-9e3f-2a7b5c8d1e60",
+                      "type": "component"
+                    },
+                    {
                       "definition": "c:testimonialSubmit",
                       "id": "8b7c8415-361d-493e-9d5b-ddbe45cc17ff",
                       "type": "component"
