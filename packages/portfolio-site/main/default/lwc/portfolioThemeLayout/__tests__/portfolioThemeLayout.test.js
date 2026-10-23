@@ -748,14 +748,33 @@ describe("c-portfolio-theme-layout", () => {
       expect(control.textContent.trim()).toBe("Back to top");
     });
 
-    it("hides while the footer is on screen", async () => {
+    it("rises above the footer while the footer is on screen", async () => {
       const element = renderWithFooter();
       await scrollTo(3000);
-      expect(button(element)).not.toBeNull();
+      expect(button(element).getAttribute("style") || "").toBe("");
 
       footerTop = 500;
       await scrollTo(3200);
-      expect(button(element)).toBeNull();
+      const control = button(element);
+      expect(control).not.toBeNull();
+      expect(control.getAttribute("style")).toContain(
+        "calc(300px + var(--pf-space-4))"
+      );
+    });
+
+    it("sits after the main content and before the footer in the tab order", async () => {
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      const control = button(element);
+      const main = element.shadowRoot.querySelector('[data-id="main-content"]');
+      const footer = element.shadowRoot.querySelector(".region-footer");
+      expect(
+        main.compareDocumentPosition(control) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        control.compareDocumentPosition(footer) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
     });
 
     it("scrolls smoothly to the top and moves focus to the main content", async () => {

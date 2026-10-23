@@ -162,7 +162,8 @@
 
 /*
  * Round 7 F6. Floating Back to top. Real button, 44 px target, button tokens in both themes,
- * above the iOS home bar through the safe area inset. Hidden while the footer is on screen.
+ * above the iOS home bar through the safe area inset. Lifted above the footer by an inline
+ * bottom value while the footer is on screen.
  */
 .back-to-top {
   position: fixed;
@@ -422,6 +423,11 @@
 @media screen and (max-width: 767.98px) {
   .portfolio-layout-wrapper {
     min-height: 100dvh;
+  }
+
+  /* Room under the last content, so the button never sits on it once the page is at its end. */
+  .region-content {
+    padding-bottom: 76px;
   }
 
   /* On a phone the button is a 44 px circle with the label kept for screen readers. */

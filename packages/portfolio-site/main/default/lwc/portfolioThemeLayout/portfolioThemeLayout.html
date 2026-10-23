@@ -173,15 +173,12 @@
       <slot></slot>
     </div>
 
-    <div class="region-footer">
-      <slot name="footer"></slot>
-    </div>
-
     <template lwc:if={showBackToTop}>
       <button
         class="back-to-top"
         type="button"
         data-id="floating-back-to-top"
+        style={backToTopStyle}
         onclick={handleBackToTop}
       >
         <svg
@@ -200,5 +197,9 @@
         <span class="back-to-top__label">Back to top</span>
       </button>
     </template>
+
+    <div class="region-footer">
+      <slot name="footer"></slot>
+    </div>
   </div>
 </template>

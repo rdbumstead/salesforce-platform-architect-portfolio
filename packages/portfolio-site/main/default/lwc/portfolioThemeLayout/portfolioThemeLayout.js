@@ -5,9 +5,10 @@
  *                      Owns the theme (Round 4 plan, contract L2): the stylesheet follows the system
  *                      setting, and the toggle writes data-theme and the portfolio-theme storage key.
  *                      Round 7 F6: a floating "Back to top" button appears once the visitor has
- *                      scrolled well down and hides while the footer is in view. It scrolls to the
- *                      top (instantly when reduced motion is asked for) and moves focus to the top
- *                      of the main content.
+ *                      scrolled well down and rises above the footer when the footer is in view.
+ *                      It sits right after the main content in the tab order, scrolls to the top
+ *                      (instantly when reduced motion is asked for) and moves focus to the top of
+ *                      the main content.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -101,6 +102,8 @@ export default class PortfolioThemeLayout extends LightningElement {
   _clickInPillars = false;
 
   showBackToTop = false;
+  // How far the footer reaches into the viewport, so the button can sit above it.
+  backToTopLift = 0;
   _scrollFrame = null;
 
   _onScroll = () => {
@@ -170,8 +173,8 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   /**
-   * Shows the floating button once the page is scrolled well down, and hides it while the
-   * footer is on screen, where the footer's own Back to top link already sits.
+   * Shows the floating button once the page is scrolled well down, and lifts it above the
+   * footer while the footer is on screen, so it never covers the footer.
    */
   updateBackToTop() {
     const viewport = window.innerHeight || 0;
@@ -181,10 +184,15 @@ export default class PortfolioThemeLayout extends LightningElement {
     );
     const scrolled = (window.scrollY || window.pageYOffset || 0) > threshold;
     const footer = this.template.querySelector(".region-footer");
-    const footerVisible = footer
-      ? footer.getBoundingClientRect().top < viewport
-      : false;
-    this.showBackToTop = scrolled && !footerVisible;
+    const footerTop = footer ? footer.getBoundingClientRect().top : viewport;
+    this.backToTopLift = Math.max(0, Math.ceil(viewport - footerTop));
+    this.showBackToTop = scrolled;
+  }
+
+  get backToTopStyle() {
+    return this.backToTopLift > 0
+      ? `bottom: calc(${this.backToTopLift}px + var(--pf-space-4));`
+      : "";
   }
 
   handleBackToTop() {
