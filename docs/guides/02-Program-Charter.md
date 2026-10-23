@@ -120,7 +120,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - No Critical or High violations from Salesforce Code Analyzer (`npm run scan`, `--severity-threshold 2`, run on every pull request).
 - The network log shows no `D3_Library` request until a graph view is opened.
 - Lighthouse Accessibility score remains 100 with the "Matrix | Graph" view switch present.
-- Skills graph: D3 force layout (`d3-force` and three helper modules, an 18,544 byte static resource, down from the 1.57 MB G6 library), loaded only when a visitor opens the graph view on desktop or tablet. Phones show the skills matrix and request no graph engine, and the Pillar A ERD shows its object list.
+- Skills graph: D3 force layout with pan, zoom and node drag (eleven D3 modules, an 81,502 byte static resource since Round 7, against the 1.57 MB G6 library), loaded only when a visitor opens the graph view on desktop or tablet. Phones show the skills matrix and request no graph engine, and the Pillar A ERD shows its object list.
 
 **Engagement:**
 
@@ -270,7 +270,7 @@ _Design artifacts complete; implementation begins post-launch._
 
 - **A.6:** Agentforce Service Agent and topic grounding. Not built: Agentforce is a switch in the dispatch that ships off (SAS Appendix A.6).
 - **Security:** Enable "Lightning Web Security" in Session Settings.
-- **Asset:** the `D3_Library` static resource (`d3-force` and its three dependencies, Public cache). It replaced `G6_Library` in Round 5.
+- **Asset:** the `D3_Library` static resource (`d3-force` and its dependencies, plus d3-zoom and d3-drag since Round 7, Public cache). It replaced `G6_Library` in Round 5.
 - **Dev:** `c-skill-network` shows the matrix and draws the graph view through `c/graphEngine`.
 - **Optimization:** the engine loads only when the graph view opens (network log proof).
 - **Mobile:** phones show the matrix and never request the engine. This replaced the planned static SVG fallback ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md)).
