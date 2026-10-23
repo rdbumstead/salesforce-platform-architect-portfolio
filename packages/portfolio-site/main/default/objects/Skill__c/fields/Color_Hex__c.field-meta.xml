@@ -3,7 +3,7 @@
     <fullName>Color_Hex__c</fullName>
     <defaultValue>&quot;#00A1E0&quot;</defaultValue>
     <description
-  >Exact color for a skill node fill. The site has not read this field since Round 5.</description>
+  >Exact color for a skill node fill. The site does not read this field. The SAPI skills endpoint still returns it as colorHex.</description>
     <externalId>false</externalId>
     <label>Color Hex</label>
     <length>7</length>

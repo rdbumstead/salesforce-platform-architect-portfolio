@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CspTrustedSite xmlns="http://soap.sforce.com/2006/04/metadata">
     <context>Communities</context>
-    <description
-  >Footer deploy badge image from GitHub Actions (Round 4 plan L5, pillar-e-design T11).</description>
+    <description>Footer deploy badge image from GitHub Actions.</description>
     <endpointUrl>https://github.com</endpointUrl>
     <isActive>true</isActive>
     <isApplicableToConnectSrc>false</isApplicableToConnectSrc>

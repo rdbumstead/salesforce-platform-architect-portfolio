@@ -1,5 +1,5 @@
 /*
- * Site design tokens (Round 4 plan, contract L1).
+ * Site design tokens.
  * Light is the fallback. Dark applies when the visitor's system asks for it, unless the header
  * toggle has set data-theme="light" on the html element. data-theme="dark" forces dark.
  * The portfolioThemeLayout :host mirrors these values, so keep the two in step.

@@ -75,7 +75,7 @@
         </rules>
     </decisions>
     <description
-  >The Block Sender quick action on Lead (Round 7 plan contract P3). It asks whether to block the Lead's email or its whole domain, calls SubmissionBlockAction to add the block and mark the Lead as spam, and says what happened. Works in the Salesforce mobile app.</description>
+  >The Block Sender quick action on Lead. It asks whether to block the Lead's email or its whole domain, calls SubmissionBlockAction to add the block and mark the Lead as spam, and says what happened. Works in the Salesforce mobile app.</description>
     <environments>Default</environments>
     <interviewLabel>Lead Block Sender {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Lead Block Sender</label>
