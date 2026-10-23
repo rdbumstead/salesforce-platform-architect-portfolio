@@ -478,7 +478,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 
 ### 6.2 Lightning Web Components (LWC)
 
-- **`c-hero-banner`:** Includes "How to Evaluate Me" navigation guide.
+- **`c-hero-banner`:** The hero, three "start here" paths (recruiters to the resume, architects to the pillars, developers to the API Lab), the pillar cards with computed numbers and an optional case study, and the 5 minute tour ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
 - **`c-testimonial-submit`:** "Mad Libs" style sentence builder.
 - **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invoke`, which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3).
 - **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
@@ -933,16 +933,18 @@ Granular bullet points for resume generation.
 
 Portfolio case studies.
 
-| Field Label        | API Name            | Type      | Length | Required | Description         |
-| :----------------- | :------------------ | :-------- | :----- | :------- | :------------------ |
-| **Project Name**   | `Name`              | Text      | 80     | Yes      | Project Title.      |
-| **Challenge**      | `Challenge__c`      | Rich Text | 32k    | No       | The "Problem".      |
-| **Solution**       | `Solution__c`       | Rich Text | 32k    | No       | The "Fix".          |
-| **Business Value** | `Business_Value__c` | Rich Text | 32k    | No       | The "ROI".          |
-| **Status**         | `Status__c`         | Picklist  | -      | Yes      | Project state.      |
-| **Hero Image**     | `Hero_Image_URL__c` | URL       | 255    | No       | Main display image. |
-| **Live URL**       | `Live_URL__c`       | URL       | 255    | No       | Link to demo.       |
-| **Repository**     | `Repository_URL__c` | URL       | 255    | No       | Link to code.       |
+| Field Label         | API Name                    | Type           | Length | Required | Description                                                                                          |
+| :------------------ | :-------------------------- | :------------- | :----- | :------- | :--------------------------------------------------------------------------------------------------- |
+| **Project Name**    | `Name`                      | Text           | 80     | Yes      | Project Title.                                                                                       |
+| **Challenge**       | `Challenge__c`              | Rich Text      | 32k    | No       | The "Problem".                                                                                       |
+| **Solution**        | `Solution__c`               | Rich Text      | 32k    | No       | The "Fix".                                                                                           |
+| **Business Value**  | `Business_Value__c`         | Rich Text      | 32k    | No       | The "ROI".                                                                                           |
+| **Status**          | `Status__c`                 | Picklist       | -      | Yes      | Project state.                                                                                       |
+| **Hero Image**      | `Hero_Image_URL__c`         | URL            | 255    | No       | Main display image.                                                                                  |
+| **Live URL**        | `Live_URL__c`               | URL            | 255    | No       | Link to demo.                                                                                        |
+| **Repository**      | `Repository_URL__c`         | URL            | 255    | No       | Link to code.                                                                                        |
+| **Headline Source** | `Headline_Metric_Source__c` | Picklist       | -      | No       | Where the card number is computed from: Employer Hub objects, API paths, AI providers or Apex tests. |
+| **Pillar Label**    | `Pillar_Label__c`           | Formula (Text) | -      | -        | "Pillar B: Solution Architecture" and so on, kept equal to `c/pillarData` by a Jest test.            |
 
 #### D.4 Object: `Testimonial__c`
 
