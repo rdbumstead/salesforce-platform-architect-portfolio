@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Default_Weight__c</fullName>
     <description
-  >The client's weight for this criterion, from 0 to 10. The slider starts here and Reset to the client's weights restores it.</description>
+  >The starting weight for this criterion, from 0 to 10, set by the portfolio owner from what the client said mattered most. The slider starts here and Reset to the starting weights restores it.</description>
     <fieldManageability>DeveloperControlled</fieldManageability>
     <inlineHelpText
   >Whole number from 0 (ignored) to 10 (decisive).</inlineHelpText>

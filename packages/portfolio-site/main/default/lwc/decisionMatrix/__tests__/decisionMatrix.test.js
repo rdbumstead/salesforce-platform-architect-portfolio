@@ -188,7 +188,7 @@ describe("c-decision-matrix", () => {
     });
   });
 
-  it("resets to the client's weights and the original ranking", async () => {
+  it("resets to the starting weights and the original ranking", async () => {
     const element = await createComponent();
     await moveSlider(element, "Product_Direction", 10);
     await moveSlider(element, "Licence_Cost", 0);
@@ -202,7 +202,7 @@ describe("c-decision-matrix", () => {
       expect(input.value).toBe("5")
     );
     expect(q(element, "button.reset-button").textContent.trim()).toBe(
-      "Reset to the client's weights"
+      "Reset to the starting weights"
     );
     expect(trackEvent).toHaveBeenCalledTimes(1);
     expect(trackEvent).toHaveBeenCalledWith("matrix_reset", {});

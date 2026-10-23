@@ -2,11 +2,13 @@
 
 ## Status
 
-Accepted (2026-10-22, Round 5).
+Accepted (2026-10-22, Round 5). Note added 2026-10-22 (Round 6) on whose weights these are.
 
 ## Context
 
 The Nonprofit Solutions page (Pillar B) tells a pre-sales story about a regional adult literacy nonprofit choosing a platform. Its centre is a decision matrix the visitor can reweight. The owner chose a three-way matrix (owner decision D2 b, 2026-10-22): NPSP with the Program Management Module, Education Cloud, and Nonprofit Cloud. The client's own decision was two-way, NPSP and PMM against Education Cloud, and it chose NPSP and PMM. That decision is the dated baseline, and Nonprofit Cloud is the option a reviewer would ask about today. The scores and weights are the owner's to set, and they are placeholders until he delivers them.
+
+> **Note, 2026-10-22 (Round 6).** This record first called the starting weights the client's. No client weighting exists in any source. The starting weights are the owner's, set from what the client said mattered most, and the reset button now reads "Reset to the starting weights".
 
 The matrix must be source controlled, deploy to production and to CI's scratch orgs with no managed package, use no data storage, and never ship with an empty cell.
 
@@ -14,11 +16,11 @@ The matrix must be source controlled, deploy to production and to CI's scratch o
 
 1. **Three Custom Metadata Types** in the `nonprofit-literacy` package:
    - `Decision_Option__mdt`: `Summary__c`, `Sort_Order__c`. Three records.
-   - `Decision_Criterion__mdt`: `Description__c`, `Default_Weight__c` (the client's weight, 0 to 10), `Sort_Order__c`. Ten records.
+   - `Decision_Criterion__mdt`: `Description__c`, `Default_Weight__c` (the owner's starting weight, 0 to 10), `Sort_Order__c`. Ten records.
    - `Decision_Score__mdt`: `Option__c` and `Criterion__c` as metadata relationships, `Score__c` (1 to 5), `Rationale__c`, `Evidence__c`, `Is_Placeholder__c`. Thirty records, one per option and criterion pair.
 2. **A placeholder flag.** Every score carries `Is_Placeholder__c` until the owner reviews it, and its rationale starts `PLACEHOLDER:`. While any score is flagged the page shows the banner "Scores and weights are provisional placeholders pending the owner's review."
 3. **One cacheable read.** `DecisionMatrixController.getMatrix()` (`with sharing`, `@AuraEnabled(cacheable=true)`) returns the options, the criteria, every score and `hasPlaceholders` in one payload. It reads the types with SOQL, because `getAll()` returns only the first 255 characters of a long text field, and maps each score to its option and criterion through the related record Ids it has already read.
-4. **Totals in the browser.** `c/decisionMatrix` computes every weighted total, the ranking and the sensitivity line (the single weight change that would first put the runner-up ahead), so moving a weight makes no server call. "Reset to the client's weights" restores each criterion's `Default_Weight__c`.
+4. **Totals in the browser.** `c/decisionMatrix` computes every weighted total, the ranking and the sensitivity line (the single weight change that would first put the runner-up ahead), so moving a weight makes no server call. "Reset to the starting weights" restores each criterion's `Default_Weight__c`.
 5. **No holes.** `DecisionMatrixControllerTest.shouldScoreEveryOptionAndCriterionPairExactlyOnce` fails when any option and criterion pair lacks a score or has two.
 
 ## Rationale
