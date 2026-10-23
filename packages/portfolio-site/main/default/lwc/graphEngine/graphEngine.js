@@ -1,10 +1,13 @@
 /**
  * @description       : The site's graph engine (Round 5 plan M1). loadGraphEngine loads the D3_Library
- *                      static resource (d3-dispatch, d3-quadtree, d3-timer and d3-force) once per page and
- *                      hands every caller the same window.d3. layoutGraph runs a d3-force simulation to the
- *                      end in one synchronous call and returns positions, so consumers draw SVG from their
- *                      own templates and nothing animates (reading R5). Consumers: skillNetwork and
- *                      schemaVisualizer. Callers never load the engine on a phone or before a graph opens.
+ *                      static resource (d3-force and its helpers, plus d3-selection, d3-drag and d3-zoom
+ *                      since Round 7 audit E1) once per page and hands every caller the same window.d3.
+ *                      layoutGraph runs a d3-force simulation to the end in one synchronous call and
+ *                      returns positions, so consumers draw SVG from their own templates and nothing
+ *                      animates (reading R5). attachPanZoom and attachNodeDrag wire d3-zoom and d3-drag to
+ *                      that SVG and report back through callbacks, so the template stays the only thing
+ *                      that draws. Consumers: skillNetwork and schemaVisualizer. Callers never load the
+ *                      engine on a phone or before a graph opens.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -227,4 +230,100 @@ export function layoutGraph(d3, nodes, edges, options = {}) {
     return { ...edge, x1: from.x, y1: from.y, x2: to.x, y2: to.y };
   });
   return { nodes: outNodes, edges: outEdges };
+}
+
+/** Zoom limits and the factor one zoom in or zoom out step applies. */
+export const ZOOM = Object.freeze({ min: 1, max: 4, step: 1.5 });
+
+function defaultZoomFilter(event) {
+  return (!event.ctrlKey || event.type === "wheel") && !event.button;
+}
+
+/**
+ * Wires d3-zoom to an SVG element for wheel, pinch and drag panning, and returns controls for
+ * buttons. The transform is never written to the DOM here: onZoom receives it and the caller
+ * draws it from its own template.
+ * @param {object} d3 the namespace from loadGraphEngine
+ * @param {SVGElement} svg the element that receives the pointer events
+ * @param {object} options onZoom (called with each d3 ZoomTransform, required), extent (the
+ *   visible box as [[x0, y0], [x1, y1]] in the SVG's own units, also the pan limit), min, max
+ *   and step (default ZOOM)
+ * @returns {object|undefined} { zoomIn, zoomOut, reset, scale, detach }, or undefined when the
+ *   loaded library has no d3-zoom (an older cached copy), so callers simply hide their controls
+ */
+export function attachPanZoom(d3, svg, options = {}) {
+  if (
+    !d3 ||
+    !svg ||
+    typeof d3.zoom !== "function" ||
+    typeof d3.select !== "function" ||
+    typeof options.onZoom !== "function"
+  ) {
+    return undefined;
+  }
+  const min = numberOr(options.min, ZOOM.min);
+  const max = numberOr(options.max, ZOOM.max);
+  const step = numberOr(options.step, ZOOM.step);
+  const selection = d3.select(svg);
+  const behaviour = d3
+    .zoom()
+    .scaleExtent([min, max])
+    // One finger at the resting scale scrolls the page, so a tablet visitor is never trapped.
+    // Two fingers, or any touch once zoomed in, pan and zoom.
+    .filter((event) => {
+      if (event.type === "touchstart") {
+        return event.touches.length > 1 || d3.zoomTransform(svg).k > min;
+      }
+      return defaultZoomFilter(event);
+    })
+    .on("zoom", (event) => options.onZoom(event.transform));
+  if (options.extent) {
+    behaviour.extent(options.extent).translateExtent(options.extent);
+  }
+  // A double click selects a node twice, so it never zooms.
+  selection.call(behaviour).on("dblclick.zoom", null);
+  return {
+    zoomIn: () => selection.call(behaviour.scaleBy, step),
+    zoomOut: () => selection.call(behaviour.scaleBy, 1 / step),
+    reset: () => selection.call(behaviour.transform, d3.zoomIdentity),
+    scale: () => d3.zoomTransform(svg).k,
+    detach: () => selection.on(".zoom", null)
+  };
+}
+
+/**
+ * Wires d3-drag to node elements. Each element names its node in a data-id attribute. The
+ * pointer is read in the coordinates of the element's parent, so a drag inside a zoomed group
+ * reports positions in layout units.
+ * @param {object} d3 the namespace from loadGraphEngine
+ * @param {NodeList|Array<Element>} elements the node elements
+ * @param {object} options position(id) returns the node's current { x, y } or nothing,
+ *   onDrag(id, x, y) is called on every move (both required), onEnd(id) when the drag ends
+ * @returns {boolean} false when the loaded library has no d3-drag, true otherwise
+ */
+export function attachNodeDrag(d3, elements, options = {}) {
+  if (
+    !d3 ||
+    typeof d3.drag !== "function" ||
+    typeof d3.selectAll !== "function" ||
+    typeof options.position !== "function" ||
+    typeof options.onDrag !== "function"
+  ) {
+    return false;
+  }
+  const behaviour = d3
+    .drag()
+    // A press that moves less than this is still a click, which selects the node.
+    .clickDistance(4)
+    .subject(function subject() {
+      const id = this.getAttribute("data-id");
+      const point = id ? options.position(id) : undefined;
+      return point ? { id, x: point.x, y: point.y } : null;
+    })
+    .on("drag", (event) => options.onDrag(event.subject.id, event.x, event.y));
+  if (typeof options.onEnd === "function") {
+    behaviour.on("end", (event) => options.onEnd(event.subject.id));
+  }
+  d3.selectAll(elements).call(behaviour);
+  return true;
 }

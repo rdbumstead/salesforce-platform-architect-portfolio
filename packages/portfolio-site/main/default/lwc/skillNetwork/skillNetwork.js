@@ -7,7 +7,12 @@
  *                      the roles and projects on a ring, and draws edges only for the hovered or selected node.
  *                      Phones and narrow viewports get the matrix only and never request the engine.
  *                      Nothing animates: positions are computed once and drawn as SVG from this template, so
- *                      prefers-reduced-motion needs no special case.
+ *                      prefers-reduced-motion needs no special case. Round 7 (audit E1) adds pan and zoom
+ *                      (d3-zoom) and node drag (d3-drag) from the same engine, plus Zoom in, Zoom out and
+ *                      Reset view buttons for keyboard users. Both report positions back here, so the
+ *                      template still draws everything. Round 7 (audit E4) adds a persona filter on the
+ *                      matrix with the resume's personas, read from Skill__c.Persona_Tag__c by a query of
+ *                      its own. It shows only once at least one skill is tagged.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -19,7 +24,12 @@ import { LightningElement, wire } from "lwc";
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { gql, graphql } from "lightning/uiGraphQLApi";
 import FORM_FACTOR from "@salesforce/client/formFactor";
-import { loadGraphEngine, layoutGraph } from "c/graphEngine";
+import {
+  attachNodeDrag,
+  attachPanZoom,
+  layoutGraph,
+  loadGraphEngine
+} from "c/graphEngine";
 import { EVENTS, trackEvent } from "c/analyticsService";
 
 // Reads only fields the guest can read: K4, the required Category_Order__c, and the two
@@ -100,6 +110,27 @@ const SKILL_NETWORK_QUERY = gql`
   }
 `;
 
+// The persona tags in a query of their own (audit E4). If the guest cannot read the field yet,
+// only this query fails: the filter stays hidden and the skills still load.
+const SKILL_PERSONAS_QUERY = gql`
+  query SkillPersonaTags {
+    uiapi {
+      query {
+        Skill__c(first: 200) {
+          edges {
+            node {
+              Id
+              Persona_Tag__c {
+                value
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 const NARROW_VIEWPORT_QUERY = "(max-width: 767px)";
 const OTHER_CATEGORY = "Other";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -108,6 +139,15 @@ const VIEW_MATRIX = "matrix";
 const VIEW_GRAPH = "graph";
 
 const KIND_LABELS = { skill: "Skill", role: "Role", project: "Project" };
+
+// The resume's personas: the same labels, values and order as PERSONA_OPTIONS in resumeBuilder.js,
+// which a test checks. The value is the Persona_Tag__c value.
+const PERSONA_OPTIONS = [
+  { label: "Platform Architect", value: "Architect" },
+  { label: "Salesforce Developer", value: "Developer" },
+  { label: "System Admin", value: "Admin" }
+];
+const PERSONA_ALL = "";
 
 // Graph geometry. The view box leaves room either side of the layout box for the labels.
 // The spacing was tuned on production shaped data (Round 6 plan N3, layoutSpacing.test.js).
@@ -121,6 +161,13 @@ const LABEL_MAX = 24;
 // the label's place, so skills settle round the label instead of under it (13px mono, 0.6em
 // a character, a circle 0.6 of the label's half width).
 const CATEGORY_RADIUS_PER_CHAR = 2.34;
+// The drawn box in view box units: the layout box plus the label room either side. It is also
+// the pan limit, so the graph can never be dragged out of sight.
+const VIEW_EXTENT = [
+  [-LABEL_ROOM, 0],
+  [GRAPH_WIDTH + LABEL_ROOM, GRAPH_HEIGHT]
+];
+const IDENTITY_TRANSFORM = "translate(0,0) scale(1)";
 
 function fieldValue(record, field) {
   return record && record[field] ? record[field].value : null;
@@ -298,6 +345,9 @@ export default class SkillNetwork extends LightningElement {
   isSmall = false;
   view = VIEW_MATRIX;
   selectedSkillId;
+  // Persona filter (audit E4): tags by skill id, and the chosen persona ("" for All).
+  personaTags = new Map();
+  persona = PERSONA_ALL;
 
   // Graph view state.
   graphLoading = false;
@@ -306,6 +356,17 @@ export default class SkillNetwork extends LightningElement {
   hoverId;
   selectedNodeId;
   disconnected = false;
+
+  // Pan, zoom and drag state (audit E1). moved holds the dragged positions by node id, on top of
+  // the computed layout. engine, panZoom and the bound markers are plain references, not drawn.
+  zoomTransform = IDENTITY_TRANSFORM;
+  zoomScale = 1;
+  moved = {};
+  canZoom = false;
+  engine;
+  panZoom;
+  boundSvg;
+  boundNodeCount = 0;
 
   connectedCallback() {
     this.disconnected = false;
@@ -317,6 +378,11 @@ export default class SkillNetwork extends LightningElement {
 
   disconnectedCallback() {
     this.disconnected = true;
+    this.unbindGraph();
+  }
+
+  renderedCallback() {
+    this.bindGraphInteractions();
   }
 
   isNarrowViewport() {
@@ -345,8 +411,27 @@ export default class SkillNetwork extends LightningElement {
     this.isLoading = false;
     // New data means new positions. An open graph lays itself out again.
     this.layout = undefined;
+    this.moved = {};
+    this.resetZoomState();
     if (this.isGraph) {
       this.openGraph();
+    }
+  }
+
+  @wire(graphql, { query: SKILL_PERSONAS_QUERY })
+  wiredPersonas({ data, errors }) {
+    const tags = new Map();
+    if (data && !(errors && errors.length)) {
+      rowsOf(data, "Skill__c").forEach((row) => {
+        const value = fieldValue(row, "Persona_Tag__c");
+        if (typeof value === "string" && value) {
+          tags.set(row.Id, value.split(";").filter(Boolean));
+        }
+      });
+    }
+    this.personaTags = tags;
+    if (!tags.size) {
+      this.persona = PERSONA_ALL;
     }
   }
 
@@ -392,7 +477,85 @@ export default class SkillNetwork extends LightningElement {
     return this.isGraph ? "view-button is-on" : "view-button";
   }
 
+  // ---------- persona filter (audit E4) ----------
+
+  get showPersonaFilter() {
+    return this.hasSkills && this.personaTags.size > 0;
+  }
+
+  get personaFilterActive() {
+    return this.showPersonaFilter && this.persona !== PERSONA_ALL;
+  }
+
+  get personaButtons() {
+    return [{ label: "All", value: PERSONA_ALL }, ...PERSONA_OPTIONS].map(
+      (option) => {
+        const on = option.value === this.persona;
+        return {
+          key: option.value || "all",
+          label: option.label,
+          value: option.value,
+          pressed: String(on),
+          className: on ? "persona-button is-on" : "persona-button"
+        };
+      }
+    );
+  }
+
+  matchesPersona(skill) {
+    if (!this.personaFilterActive) {
+      return true;
+    }
+    const tags = this.personaTags.get(skill.id);
+    return Boolean(tags) && tags.includes(this.persona);
+  }
+
+  get personaSummary() {
+    if (!this.personaFilterActive) {
+      return "";
+    }
+    const total = this.model.skills.size;
+    const shown = [...this.model.skills.values()].filter((skill) =>
+      this.matchesPersona(skill)
+    ).length;
+    const option = PERSONA_OPTIONS.find((item) => item.value === this.persona);
+    const word = total === 1 ? "skill" : "skills";
+    return `Showing ${shown} of ${total} ${word} for ${option.label}.`;
+  }
+
+  handlePersonaClick(event) {
+    const value = event.currentTarget.dataset.value || PERSONA_ALL;
+    if (value === this.persona) {
+      return;
+    }
+    this.persona = value;
+    const selected =
+      this.model && this.selectedSkillId
+        ? this.model.skills.get(this.selectedSkillId)
+        : undefined;
+    if (selected && !this.matchesPersona(selected)) {
+      this.selectedSkillId = undefined;
+    }
+    trackEvent(EVENTS.SKILLS_PERSONA_FILTERED, { persona: value || "All" });
+  }
+
   // ---------- matrix ----------
+
+  // The matrix rows under the persona filter. Categories left with no skill are left out.
+  get matrixRows() {
+    return this.categoryRows
+      .map((row) => ({
+        ...row,
+        chips: row.chips.filter((chip) =>
+          this.matchesPersona(this.model.skills.get(chip.id))
+        )
+      }))
+      .filter((row) => row.chips.length > 0);
+  }
+
+  get matrixIsEmpty() {
+    return this.personaFilterActive && this.matrixRows.length === 0;
+  }
 
   get categoryRows() {
     if (!this.model) {
@@ -510,6 +673,11 @@ export default class SkillNetwork extends LightningElement {
     }
     this.view = view;
     trackEvent(EVENTS.SKILLS_VIEW_CHANGED, { view });
+    if (view === VIEW_MATRIX) {
+      // The graph's SVG leaves the page, so its zoom starts fresh next time. Dragged nodes stay.
+      this.unbindGraph();
+      this.resetZoomState();
+    }
     if (view === VIEW_GRAPH) {
       this.openGraph();
     }
@@ -526,6 +694,7 @@ export default class SkillNetwork extends LightningElement {
     return loadGraphEngine(this)
       .then((d3) => {
         if (!this.disconnected) {
+          this.engine = d3;
           this.layout = this.computeLayout(d3);
         }
       })
@@ -660,17 +829,22 @@ export default class SkillNetwork extends LightningElement {
       if (active && (edge.source === active || edge.target === active)) {
         linked.add(edge.source);
         linked.add(edge.target);
+        const from = this.moved[edge.source] || { x: edge.x1, y: edge.y1 };
+        const to = this.moved[edge.target] || { x: edge.x2, y: edge.y2 };
         edges.push({
           key: edge.id,
-          x1: edge.x1,
-          y1: edge.y1,
-          x2: edge.x2,
-          y2: edge.y2
+          x1: from.x,
+          y1: from.y,
+          x2: to.x,
+          y2: to.y
         });
       }
     });
     const cx = GRAPH_WIDTH / 2;
-    const nodes = this.layout.nodes.map((node) => {
+    const nodes = this.layout.nodes.map((placed) => {
+      const node = this.moved[placed.id]
+        ? { ...placed, ...this.moved[placed.id] }
+        : placed;
       const isActive = node.id === active;
       const isLinked = linked.has(node.id) && !isActive;
       const rightSide = node.x >= cx;
@@ -699,6 +873,7 @@ export default class SkillNetwork extends LightningElement {
     });
     return {
       viewBox: `${-LABEL_ROOM} 0 ${GRAPH_WIDTH + LABEL_ROOM * 2} ${GRAPH_HEIGHT}`,
+      transform: this.zoomTransform,
       edges,
       nodes,
       categories: this.layout.categories
@@ -718,6 +893,111 @@ export default class SkillNetwork extends LightningElement {
     this.selectedNodeId = this.selectedNodeId === id ? undefined : id;
     if (this.selectedNodeId && this.model.skills.has(id)) {
       this.selectSkill(id);
+    }
+  }
+
+  // ---------- pan, zoom and drag (audit E1) ----------
+
+  // Wires d3-zoom to the SVG once per SVG element and d3-drag to the nodes once per node set.
+  // Guarded, so the re-render each zoom or drag step causes binds nothing new.
+  bindGraphInteractions() {
+    if (!this.engine || !this.layout) {
+      return;
+    }
+    const svg = this.template.querySelector(".graph-svg");
+    if (!svg) {
+      return;
+    }
+    if (svg !== this.boundSvg) {
+      this.unbindGraph();
+      this.boundSvg = svg;
+      this.panZoom = attachPanZoom(this.engine, svg, {
+        extent: VIEW_EXTENT,
+        onZoom: (transform) => this.applyZoom(transform)
+      });
+      const canZoom = Boolean(this.panZoom);
+      if (this.canZoom !== canZoom) {
+        this.canZoom = canZoom;
+      }
+    }
+    const nodes = this.template.querySelectorAll(".graph-node");
+    if (nodes.length && nodes.length !== this.boundNodeCount) {
+      this.boundNodeCount = nodes.length;
+      attachNodeDrag(this.engine, nodes, {
+        position: (id) => this.positionOf(id),
+        onDrag: (id, x, y) => this.moveNode(id, x, y)
+      });
+    }
+  }
+
+  unbindGraph() {
+    if (this.panZoom) {
+      this.panZoom.detach();
+    }
+    this.panZoom = undefined;
+    this.boundSvg = undefined;
+    this.boundNodeCount = 0;
+  }
+
+  resetZoomState() {
+    this.zoomTransform = IDENTITY_TRANSFORM;
+    this.zoomScale = 1;
+  }
+
+  applyZoom(transform) {
+    this.zoomTransform = `translate(${transform.x},${transform.y}) scale(${transform.k})`;
+    this.zoomScale = transform.k;
+  }
+
+  positionOf(id) {
+    if (this.moved[id]) {
+      return this.moved[id];
+    }
+    const node =
+      this.layout && this.layout.nodes.find((item) => item.id === id);
+    return node ? { x: node.x, y: node.y } : undefined;
+  }
+
+  // Keeps a dragged node inside the layout box, radius included, like the layout does.
+  moveNode(id, x, y) {
+    const node =
+      this.layout && this.layout.nodes.find((item) => item.id === id);
+    if (!node || !Number.isFinite(x) || !Number.isFinite(y)) {
+      return;
+    }
+    const r = node.radius || 0;
+    this.moved = {
+      ...this.moved,
+      [id]: {
+        x: Math.min(Math.max(x, r), GRAPH_WIDTH - r),
+        y: Math.min(Math.max(y, r), GRAPH_HEIGHT - r)
+      }
+    };
+  }
+
+  get zoomLabel() {
+    return `Zoom ${Math.round(this.zoomScale * 100)}%`;
+  }
+
+  handleZoomIn() {
+    if (this.panZoom) {
+      this.panZoom.zoomIn();
+    }
+  }
+
+  handleZoomOut() {
+    if (this.panZoom) {
+      this.panZoom.zoomOut();
+    }
+  }
+
+  // Puts every dragged node back and zooms out to the whole graph.
+  handleResetView() {
+    this.moved = {};
+    if (this.panZoom) {
+      this.panZoom.reset();
+    } else {
+      this.resetZoomState();
     }
   }
 

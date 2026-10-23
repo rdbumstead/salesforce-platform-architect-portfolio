@@ -1,5 +1,8 @@
 <template>
   <section class="matrix" aria-label="Decision matrix">
+    <div class="card-tools">
+      <c-view-source source-key="decisionMatrix"></c-view-source>
+    </div>
     <template lwc:if={isLoading}>
       <p class="matrix-note">Loading the decision matrix.</p>
     </template>
