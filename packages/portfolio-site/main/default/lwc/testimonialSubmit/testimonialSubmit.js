@@ -1,6 +1,6 @@
 /**
  * @description       : Testimonial form for the public site, rebuilt as an accessible sentence
- *                      builder (Round 7 B9, ADR-005). The sentence reads "I'm a [relationship],
+ *                      builder (ADR-005). The sentence reads "I'm a [relationship],
  *                      and Ryan [strength]. The result? [outcome]". One fieldset holds it, its
  *                      legend reads the sentence, and each blank is a labelled select. A polite
  *                      live region previews the finished sentence. The vibe switch chooses the

@@ -1,5 +1,5 @@
 /*
- * Token mirror (Round 4 plan, contract L1). Same names and values as styles.css, so the theme
+ * Token mirror of the --pf- site tokens. Same names and values as styles.css, so the theme
  * reaches every slotted page through this host even if the html attribute cannot be set.
  * Keep the three blocks in step with styles.css.
  */
@@ -161,7 +161,7 @@
 }
 
 /*
- * Round 7 F6. Floating Back to top. Real button, 44 px target, button tokens in both themes,
+ * Floating Back to top. Real button, 44 px target, button tokens in both themes,
  * above the iOS home bar through the safe area inset. Lifted above the footer by an inline
  * bottom value while the footer is on screen.
  */
@@ -227,7 +227,7 @@
   text-decoration: none;
 }
 
-/* Equal auto margins centre the links in the space between the brand and the actions (N1). */
+/* Equal auto margins centre the links in the space between the brand and the actions. */
 .site-nav {
   display: flex;
   align-items: center;

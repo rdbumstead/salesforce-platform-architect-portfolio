@@ -1,8 +1,8 @@
 /**
- * @description       : The one list of the five portfolio pillars (Round 4 plan, contract L3).
+ * @description       : The one list of the five portfolio pillars.
  *                      A service module with no template. heroBanner and portfolioThemeLayout import it.
  *                      Nobody else edits it. Text follows the agreed home mockup, route URLs follow
- *                      the urlPrefix of each route in the Portfolio1 site bundle (Round 3 plan, K7).
+ *                      the urlPrefix of each route in the Portfolio1 site bundle.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

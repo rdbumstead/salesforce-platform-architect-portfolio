@@ -1,9 +1,9 @@
 /*
- * Colours come only from the site tokens (contract L1), which hold the light and dark values.
+ * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching token
- * pair. Controls are at least 24 px and buttons 44 px high (trap 35). The one exception is
+ * pair. Controls are at least 24 px and buttons 44 px high. The one exception is
  * the Redoc panel: Redoc 2.5.4 draws dark text on a transparent background whatever the
- * site theme, so its panel stays white with black text in both themes. No L1 token is
+ * site theme, so its panel stays white with black text in both themes. No site token is
  * light in the dark theme, so the panel uses the white and black keywords.
  */
 :host {
@@ -17,7 +17,7 @@
   font-family: var(--pf-font-sans);
 }
 
-/* Pinned just below the site header, whose height the component measures (audit F5). */
+/* Pinned just below the site header, whose height the component measures. */
 .reference-body_full .spec-toggle {
   position: sticky;
   top: var(--reference-sticky-top, 0);

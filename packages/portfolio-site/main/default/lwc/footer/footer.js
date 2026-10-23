@@ -1,19 +1,19 @@
 /**
- * @description       : Glass Box footer (Round 4 plan L8, pillar-d-design 3.8). One line:
+ * @description       : Glass Box footer. One line:
  *                      copyright, the production deploy badge with a text link fallback, the
  *                      telemetry from FooterController.getSystemSnapshot(), profile links from
  *                      getLinks(), and Back to top. The snapshot is requested only once the
  *                      page has loaded and the browser is idle, so it never delays first paint
  *                      (ADR-014). Every provider word on screen comes from the snapshot data.
  *                      At the same moment one small GraphQL query is timed, and the footer says
- *                      "GraphQL: live, N ms" or "GraphQL: unavailable" (log 155). Never a constant.
+ *                      "GraphQL: live, N ms" or "GraphQL: unavailable". Never a constant.
  *                      The probe is the c/graphqlProbe child, imported with a literal dynamic import
  *                      only at that moment, so the GraphQL adapter stack is not part of what loads
  *                      before first paint. A statically rendered child, even behind lwc:if, still
- *                      put it in the layout's preloads (log 203). Round 7: the snapshot's
+ *                      put it in the layout's preloads. The snapshot's
  *                      org quotas (OrgLimits) and the GitHub and Jira breakers show next to
- *                      the AI providers (B7), the GraphQL line shows only a finite time (F4),
- *                      and a Contact link goes to the home page's contact form (P4).
+ *                      the AI providers, the GraphQL line shows only a finite time, and a
+ *                      Contact link goes to the home page's contact form.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -121,7 +121,7 @@ export default class Footer extends LightningElement {
 
   badgeUrl = BADGE_URL;
   actionsUrl = ACTIONS_URL;
-  // The contact form handles #contact itself (contract P4).
+  // The contact form handles #contact itself.
   contactUrl = `${basePath || ""}/#contact`;
 
   probeConstructor;

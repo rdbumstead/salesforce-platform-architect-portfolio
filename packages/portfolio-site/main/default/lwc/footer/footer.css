@@ -1,4 +1,4 @@
-/* Glass Box footer. Only Round 4 plan L1 token names, no literal colors. */
+/* Glass Box footer. Only --pf- site token names, no literal colors. */
 .footer {
   display: flex;
   flex-wrap: wrap;
@@ -49,7 +49,7 @@
   align-items: center;
 }
 
-/* Every link and control is at least 24 by 24 px (trap 35). */
+/* Every link and control is at least 24 by 24 px. */
 .target {
   display: inline-flex;
   align-items: center;

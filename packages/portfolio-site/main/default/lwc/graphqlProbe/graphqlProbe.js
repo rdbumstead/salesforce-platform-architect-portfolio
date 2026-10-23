@@ -1,21 +1,20 @@
 /**
- * @description       : The footer's measured GraphQL probe (log 155). One small read, timed from
+ * @description       : The footer's measured GraphQL probe. One small read, timed from
  *                      the moment this component is created to the first answer, reported to the
  *                      parent as a "probe" event with { ms } or { failed: true }. It lives in its
  *                      own module so the GraphQL adapter stack loads only when the footer asks
- *                      for it after the page is idle, never with the layout before first paint
- *                      (Round 5 WS5, log 203).
+ *                      for it after the page is idle, never with the layout before first paint.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/22/2026
  **/
 import { LightningElement, wire } from "lwc";
-// Same module skillNetwork uses (Round 3 plan K5). The lint rule prefers lightning/graphql.
+// Same module skillNetwork uses, which the site pins. The lint rule prefers lightning/graphql.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { gql, graphql } from "lightning/uiGraphQLApi";
 
-// The smallest read the guest may make: one Skill__c Id (Round 3 plan K4).
+// The smallest read the guest may make: one Skill__c Id.
 const GRAPHQL_PROBE = gql`
   query FooterGraphqlProbe {
     uiapi {
@@ -39,7 +38,7 @@ function nowMs() {
 }
 
 export default class GraphqlProbe extends LightningElement {
-  // Set when the field is created (audit F4). The engine connects the wire before
+  // Set when the field is created. The engine connects the wire before
   // connectedCallback runs, and a cached answer can arrive in that gap, so a timer started in
   // connectedCallback read as undefined and the footer showed "NaN ms".
   _startedAt = nowMs();

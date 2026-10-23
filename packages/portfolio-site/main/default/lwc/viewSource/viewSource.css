@@ -1,7 +1,7 @@
 /*
- * Colours come only from the site tokens (contract L1), which hold the light and dark values.
+ * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching pair.
- * Buttons and tabs are at least 44 px high (trap 35). The dialog fills a phone screen.
+ * Buttons and tabs are at least 44 px high. The dialog fills a phone screen.
  */
 :host {
   display: inline-block;
