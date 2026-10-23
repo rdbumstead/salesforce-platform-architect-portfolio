@@ -465,4 +465,32 @@ private class DeliveryControllerTest {
   static void parseTimestampReturnsNullForText() {
     Assert.isNull(DeliveryController.parseTimestamp('yesterday'), 'Not a time');
   }
+
+  @isTest
+  static void roadmapServesTheShippedColumnLimit() {
+    insertJiraRow(roadmapPayload('SPAP-902'), 5);
+    DeliveryController.nowOverride = NOW;
+
+    Test.startTest();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
+    Test.stopTest();
+
+    Assert.areEqual(
+      DeliveryController.ROADMAP_COLUMN_LIMIT,
+      feed.columnLimit,
+      'The shipped record matches the code default'
+    );
+  }
+
+  @isTest
+  static void roadmapServesTheColumnLimitSetting() {
+    PortfolioSettings.overrideNumber('Roadmap_Column_Limit', 4);
+
+    Test.startTest();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
+    Test.stopTest();
+
+    Assert.areEqual(4, feed.columnLimit, 'Served even with an empty feed');
+    Assert.areEqual(DeliveryController.STATUS_EMPTY, feed.status, 'Status');
+  }
 }

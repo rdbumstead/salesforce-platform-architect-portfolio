@@ -18,6 +18,9 @@
 public with sharing class DeliveryController {
   public static final Integer SCHEMA_VERSION = 1;
   public static final Integer FRESH_MINUTES = 30;
+  // Code default for the roadmap's cards per column. The Roadmap_Column_Limit setting
+  // gives the value in force, and roadmapViewer keeps the same default of its own.
+  public static final Integer ROADMAP_COLUMN_LIMIT = 8;
   public static final String STATUS_FRESH = 'FRESH';
   public static final String STATUS_STALE = 'STALE';
   public static final String STATUS_EMPTY = 'EMPTY';
@@ -66,12 +69,17 @@ public with sharing class DeliveryController {
    * @description The roadmap from the newest Jira cache row.
    * @param simulate True for the resilience toggle: the cached data comes back as SIMULATED.
    *                 Null or false is the normal read.
-   * @return RoadmapFeed The items, the row time, its age in minutes and the status.
+   * @return RoadmapFeed The items, the row time, its age in minutes, the status and the
+   *                     number of cards each column shows before its Show all button.
    */
   @AuraEnabled(cacheable=true)
   public static RoadmapFeed getRoadmap(Boolean simulate) {
     RoadmapFeed feed = new RoadmapFeed();
     feed.items = new List<RoadmapItem>();
+    feed.columnLimit = PortfolioSettings.getInteger(
+      'Roadmap_Column_Limit',
+      ROADMAP_COLUMN_LIMIT
+    );
     Snapshot row = new CacheSelector().newestJiraRow();
     RoadmapPayload payload = row == null
       ? null
@@ -286,5 +294,7 @@ public with sharing class DeliveryController {
     public Integer ageMinutes;
     @AuraEnabled
     public String status;
+    @AuraEnabled
+    public Integer columnLimit;
   }
 }

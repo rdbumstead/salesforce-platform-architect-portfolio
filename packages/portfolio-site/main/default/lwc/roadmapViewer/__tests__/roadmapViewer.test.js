@@ -465,6 +465,30 @@ describe("c-roadmap-viewer", () => {
       );
       expect(new Set(ids).size).toBe(3);
     });
+
+    it("caps each column at the columnLimit the feed serves", async () => {
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH", { items: doneItems(12), columnLimit: 3 }));
+      await flushPromises();
+
+      expect(doneKeys(element)).toHaveLength(3);
+      expect(q(element, '[data-id="show-all"]').textContent.trim()).toBe(
+        "Show all 12 shipped"
+      );
+    });
+
+    it.each([0, -2, 2.5, "5", null])(
+      "falls back to COLUMN_LIMIT when the feed serves %p",
+      async (served) => {
+        const element = createComponent();
+        getRoadmap.emit(
+          feed("FRESH", { items: doneItems(12), columnLimit: served })
+        );
+        await flushPromises();
+
+        expect(doneKeys(element)).toHaveLength(COLUMN_LIMIT);
+      }
+    );
   });
 
   it("SIMULATED shows a Simulated badge with the board", async () => {
