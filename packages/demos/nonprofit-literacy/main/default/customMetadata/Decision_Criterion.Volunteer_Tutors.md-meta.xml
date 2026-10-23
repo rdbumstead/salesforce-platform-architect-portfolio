@@ -14,7 +14,7 @@
     </values>
     <values>
         <field>Default_Weight__c</field>
-        <value xsi:type="xsd:double">5</value>
+        <value xsi:type="xsd:double">4</value>
     </values>
     <values>
         <field>Sort_Order__c</field>
