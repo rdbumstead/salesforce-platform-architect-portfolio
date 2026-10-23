@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Auto_Response_Requested__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >True when the portfolio contact form asked the auto-response rule to send its email for this Lead. Only the first message from an address in 24 hours asks, so a typed in address cannot be flooded.</description>
+    <inlineHelpText
+  >Set by the contact form. False on a repeat message from the same address within a day.</inlineHelpText>
+    <label>Auto-Response Requested</label>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>
