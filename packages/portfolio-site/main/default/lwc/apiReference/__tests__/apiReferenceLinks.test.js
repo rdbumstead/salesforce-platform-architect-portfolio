@@ -56,7 +56,9 @@ const SECTIONS = {
 function redocStub() {
   return {
     init: jest.fn((spec, options, element, callback) => {
-      element.innerHTML = "";
+      while (element.firstChild) {
+        element.removeChild(element.firstChild);
+      }
       const menu = document.createElement("ul");
       menu.className = "menu-content";
       SECTIONS[spec].forEach((id) => {
