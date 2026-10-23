@@ -3,7 +3,7 @@
  *                      skill with its proficiency and the years it was used, worked out from the dates of the
  *                      roles linked through Experience_Skill__c. Selecting a chip lists the roles and projects
  *                      that used it. On desktop and tablet a "Matrix | Graph" switch opens a graph view that
- *                      loads the D3 engine (c/graphEngine) on first open only, clusters skills by category with
+ *                      loads the d3-force graph engine (c/graphEngine) on first open only, clusters skills by category with
  *                      the roles and projects on a ring, and draws edges only for the hovered or selected node.
  *                      Phones and narrow viewports get the matrix only and never request the engine.
  *                      Nothing animates: positions are computed once and drawn as SVG from this template, so
