@@ -335,6 +335,10 @@ private class ContactFormControllerTest {
       'Auto-response asked'
     );
     Assert.isTrue(options.duplicateRuleHeader.allowSave, 'Duplicates allowed');
+    Assert.isTrue(
+      options.emailHeader.triggerUserEmail,
+      'The new owner is emailed'
+    );
   }
 
   @isTest
@@ -345,27 +349,36 @@ private class ContactFormControllerTest {
   }
 
   @isTest
-  static void aFailedInsertIsRetriedThenGivenUp() {
+  static void aFailedInsertIsRetriedThenKeptAsAFailureRow() {
     ContactFormLeadWriter.forceFailure = true;
     EventBus.publish(
       new Contact_Form_Submission__e(
         First_Name__c = 'Grace',
         Last_Name__c = 'Hopper',
         Email__c = 'grace@example.com',
+        Company__c = 'Navy',
         Message__c = 'Hi'
       )
     );
-    for (Integer i = 0; i <= ContactFormLeadWriter.MAX_RETRIES + 1; i++) {
-      try {
-        Test.getEventBus().deliver();
-      } catch (Exception e) {
-        // The last delivery rethrows the insert failure once retries are spent.
-        Assert.isTrue(
-          e.getMessage().contains('Forced'),
-          'The insert failure surfaces'
-        );
-      }
+    Integer deliveries = 0;
+    for (Integer i = 0; i <= ContactFormLeadWriter.MAX_RETRIES; i++) {
+      Test.getEventBus().deliver();
+      deliveries++;
     }
-    Assert.areEqual(0, contactLeads().size(), 'Nothing saved');
+
+    Assert.areEqual(
+      ContactFormLeadWriter.MAX_RETRIES + 1,
+      deliveries,
+      'Delivered once and retried three times'
+    );
+    Assert.areEqual(0, contactLeads().size(), 'No Lead');
+    Contact_Form_Failure__c kept = [
+      SELECT First_Name__c, Last_Name__c, Email__c, Company__c, Message__c, Error__c
+      FROM Contact_Form_Failure__c
+    ];
+    Assert.areEqual('grace@example.com', kept.Email__c, 'The message is kept');
+    Assert.areEqual('Hi', kept.Message__c, 'Message kept');
+    Assert.areEqual('Navy', kept.Company__c, 'Company kept');
+    Assert.isTrue(kept.Error__c.contains('Forced'), 'The reason is kept');
   }
 }
