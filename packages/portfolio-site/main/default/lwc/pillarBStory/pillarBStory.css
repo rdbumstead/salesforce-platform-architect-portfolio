@@ -55,6 +55,13 @@
   margin: var(--pf-space-3) 0;
 }
 
+/* The scroll region takes keyboard focus so it can be scrolled without a mouse (axe
+   scrollable-region-focusable, log 299). */
+.table-scroll:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
 .story-table {
   width: 100%;
   border-collapse: collapse;

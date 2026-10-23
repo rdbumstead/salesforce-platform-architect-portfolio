@@ -5,8 +5,8 @@
         class="hero-photo"
         src={headshotUrl}
         alt={name}
-        width="168"
-        height="168"
+        width="232"
+        height="232"
         fetchpriority="high"
       />
       <div class="hero-body">
@@ -114,11 +114,35 @@
       </div>
     </section>
 
+    <nav class="start" aria-labelledby="start-heading" data-id="start-paths">
+      <h2 id="start-heading" class="start-heading">Start here</h2>
+      <ul class="start-list">
+        <template for:each={startPaths} for:item="path">
+          <li key={path.key} class="start-item" data-key={path.key}>
+            <p class="start-audience">{path.audience}</p>
+            <a
+              class="start-link"
+              href={path.href}
+              data-target={path.target}
+              onclick={handleStartClick}
+              >{path.title} <span aria-hidden="true">{path.arrow}</span></a
+            >
+            <p class="start-text">{path.text}</p>
+          </li>
+        </template>
+      </ul>
+    </nav>
+
     <section class="section" aria-labelledby="pillars-heading">
-      <p class="section-label">
-        <span class="section-rule" aria-hidden="true"></span>01 / THE PILLARS
-      </p>
-      <h2 id="pillars-heading" class="section-heading">The pillars.</h2>
+      <p class="section-label">01 / THE PILLARS</p>
+      <h2
+        id="pillars-heading"
+        class="section-heading"
+        data-id="pillars-heading"
+        tabindex="-1"
+      >
+        The pillars.
+      </h2>
       <p class="section-intro">Pick a pillar, or take the tour below.</p>
       <ul class="pillar-grid" data-id="pillar-nav">
         <template for:each={pillars} for:item="pillar">
@@ -156,6 +180,54 @@
                 <li key={tag.key} class="tag">{tag.label}</li>
               </template>
             </ul>
+            <template lwc:if={pillar.hasCaseStudy}>
+              <div class="case-study" data-id="case-study">
+                <button
+                  type="button"
+                  class="case-toggle"
+                  aria-expanded={pillar.expandedText}
+                  aria-controls={pillar.caseId}
+                  data-key={pillar.key}
+                  onclick={handleCaseToggle}
+                >
+                  <span>{pillar.caseToggleLabel}</span>
+                  <span class="case-chevron" aria-hidden="true"
+                    >{pillar.caseChevron}</span
+                  >
+                </button>
+                <div
+                  id={pillar.caseId}
+                  class="case-body"
+                  data-id="case-body"
+                  hidden={pillar.caseHidden}
+                >
+                  <template for:each={pillar.caseBlocks} for:item="block">
+                    <div key={block.key} class="case-block">
+                      <h4 class="case-heading">{block.heading}</h4>
+                      <p class="case-text">{block.text}</p>
+                    </div>
+                  </template>
+                  <template lwc:if={pillar.hasCaseLinks}>
+                    <ul class="case-links" aria-label="Links">
+                      <template for:each={pillar.caseLinks} for:item="link">
+                        <li key={link.key}>
+                          <a
+                            class="case-link"
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-key={link.key}
+                            >{link.label}<span class="assistive-text"
+                              >{newTabNote}</span
+                            ></a
+                          >
+                        </li>
+                      </template>
+                    </ul>
+                  </template>
+                </div>
+              </div>
+            </template>
             <a class="pillar-link" href={pillar.href}
               >{pillar.linkLabel} <span aria-hidden="true">→</span></a
             >
@@ -181,10 +253,7 @@
     </section>
 
     <section class="section" aria-labelledby="tour-heading">
-      <p class="section-label">
-        <span class="section-rule" aria-hidden="true"></span>02 / HOW TO
-        EVALUATE ME
-      </p>
+      <p class="section-label">02 / HOW TO EVALUATE ME</p>
       <h2
         id="tour-heading"
         class="section-heading"

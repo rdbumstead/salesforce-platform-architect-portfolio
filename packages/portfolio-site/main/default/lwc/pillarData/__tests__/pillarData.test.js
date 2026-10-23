@@ -30,7 +30,7 @@ const EXPECTED = [
   [
     "B",
     "Nonprofit Solutions",
-    "Pre-Sales Consultancy",
+    "Solution Architecture",
     "/portfolio/nonprofit-solutions",
     false
   ],

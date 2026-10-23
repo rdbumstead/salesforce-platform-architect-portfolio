@@ -52,7 +52,7 @@ public with sharing class ResumeController {
 
   /**
    * @description Builds the home page Work and Education timeline (Round 6 plan N6). Roles come
-   *              current first, then newest end date, the same order as the resume. Schools come
+   *              current first, then newest start date, the same order as the resume. Schools come
    *              newest completion first. Both lists are empty, never null, when there are no rows.
    * @return Timeline The work and education lists.
    * @example
@@ -308,7 +308,7 @@ public with sharing class ResumeController {
         WITH SYSTEM_MODE
         ORDER BY
           Is_Current_Role__c DESC,
-          End_Date__c DESC NULLS FIRST,
+          Start_Date__c DESC NULLS LAST,
           Sort_Order__c ASC
       ];
     }
@@ -344,8 +344,8 @@ public with sharing class ResumeController {
         WITH SYSTEM_MODE
         ORDER BY
           Is_Current_Role__c DESC,
-          End_Date__c DESC NULLS FIRST,
           Start_Date__c DESC NULLS LAST,
+          Sort_Order__c ASC,
           Name ASC
       ];
     }

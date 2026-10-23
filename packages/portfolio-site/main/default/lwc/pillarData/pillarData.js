@@ -36,7 +36,7 @@ const SOURCE = [
     key: "nonprofit-solutions",
     letter: "B",
     pageLabel: "Nonprofit Solutions",
-    sasName: "Pre-Sales Consultancy",
+    sasName: "Solution Architecture",
     url: "nonprofit-solutions",
     summary:
       "A solution design, decision matrix and cost comparison for a regional adult literacy nonprofit.",

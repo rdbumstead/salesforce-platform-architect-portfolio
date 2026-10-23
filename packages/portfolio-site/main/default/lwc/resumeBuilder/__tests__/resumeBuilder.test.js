@@ -584,4 +584,13 @@ describe("c-resume-builder", () => {
       delete navigator.clipboard;
     });
   });
+
+  it("places View source with the resumeBuilder key under the card heading (contract P2)", () => {
+    const element = createComponent();
+    const control = element.shadowRoot.querySelector(
+      ".card-tools c-view-source"
+    );
+    expect(control).not.toBeNull();
+    expect(control.sourceKey).toBe("resumeBuilder");
+  });
 });

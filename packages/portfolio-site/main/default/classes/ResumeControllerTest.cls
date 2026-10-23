@@ -67,8 +67,29 @@ private class ResumeControllerTest {
     Assert.isFalse(serialized.contains('@'), 'No email-like value at all');
   }
 
+  /**
+   * Gives the two past roles start dates whose order is the reverse of their end dates, so
+   * the tests prove the roles sort by start date (audit F12): Past Role ended later but
+   * started earlier than Older Role.
+   */
+  private static void setStartDatesAgainstEndDates() {
+    List<Experience__c> roles = [
+      SELECT Id, Name
+      FROM Experience__c
+      WHERE Name IN ('Past Role', 'Older Role')
+    ];
+    for (Experience__c role : roles) {
+      role.Start_Date__c = role.Name == 'Past Role'
+        ? Date.newInstance(2015, 1, 1)
+        : Date.newInstance(2018, 1, 1);
+    }
+    update roles;
+  }
+
   @isTest
-  static void getResumeRolesOrderCurrentThenNewestEnd() {
+  static void getResumeRolesOrderCurrentThenNewestStart() {
+    setStartDatesAgainstEndDates();
+
     Test.startTest();
     ResumeController.ResumeData resume = ResumeController.getResume('');
     Test.stopTest();
@@ -79,8 +100,12 @@ private class ResumeControllerTest {
       'Current role first'
     );
     Assert.isTrue(resume.roles[0].isCurrent, 'Current flag');
-    Assert.areEqual('Past Role', resume.roles[1].title, 'Newest end date next');
-    Assert.areEqual('Older Role', resume.roles[2].title, 'Oldest last');
+    Assert.areEqual(
+      'Older Role',
+      resume.roles[1].title,
+      'Newest start date next, though it ended earlier'
+    );
+    Assert.areEqual('Past Role', resume.roles[2].title, 'Oldest start last');
   }
 
   @isTest
@@ -415,7 +440,9 @@ private class ResumeControllerTest {
   }
 
   @isTest
-  static void getTimelineRolesNewestFirst() {
+  static void getTimelineRolesCurrentThenNewestStart() {
+    setStartDatesAgainstEndDates();
+
     Test.startTest();
     ResumeController.Timeline timeline = ResumeController.getTimeline();
     Test.stopTest();
@@ -423,9 +450,13 @@ private class ResumeControllerTest {
     Assert.areEqual('Current Role', timeline.work[0].title, 'Current first');
     Assert.isTrue(timeline.work[0].isCurrent, 'Current flag');
     Assert.isNull(timeline.work[0].endDate, 'Current role has no end');
-    Assert.areEqual('Past Role', timeline.work[1].title, 'Newest end next');
+    Assert.areEqual(
+      'Older Role',
+      timeline.work[1].title,
+      'Newest start next, though it ended earlier'
+    );
     Assert.isFalse(timeline.work[1].isCurrent, 'Past role is not current');
-    Assert.areEqual('Older Role', timeline.work[2].title, 'Oldest last');
+    Assert.areEqual('Past Role', timeline.work[2].title, 'Oldest start last');
   }
 
   @isTest
