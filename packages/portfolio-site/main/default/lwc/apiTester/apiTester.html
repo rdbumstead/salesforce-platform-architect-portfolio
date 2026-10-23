@@ -11,7 +11,7 @@
         <div
           class="slds-grid slds-wrap slds-gutters slds-grid_vertical-align-end"
         >
-          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3">
             <lightning-combobox
               name="endpoint"
               label="Endpoint"
@@ -23,15 +23,6 @@
             </lightning-combobox>
           </div>
           <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
-            <lightning-input
-              label="Query parameters (optional)"
-              placeholder="limit=5&amp;offset=0"
-              value={queryText}
-              onchange={handleQueryChange}
-              class="query-input"
-            ></lightning-input>
-          </div>
-          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-6">
             <button
               type="button"
               class="execute-button"
@@ -41,6 +32,126 @@
               Execute GET
             </button>
           </div>
+        </div>
+
+        <p lwc:if={catalogError} class="catalog-error text-error" role="alert">
+          {catalogError}
+        </p>
+
+        <div class="param-section slds-m-top_medium">
+          <h3 class="slds-text-title_caps">Query parameters</h3>
+          <template lwc:if={hasParamControls}>
+            <div class="param-grid">
+              <template for:each={paramControls} for:item="control">
+                <div key={control.key} class="param-control">
+                  <template lwc:if={control.isPills}>
+                    <fieldset class="pill-group" data-param={control.name}>
+                      <legend class="param-label">{control.name}</legend>
+                      <template for:each={control.pills} for:item="pill">
+                        <button
+                          key={pill.key}
+                          type="button"
+                          class={pill.className}
+                          aria-pressed={pill.pressed}
+                          data-name={control.name}
+                          data-value={pill.value}
+                          onclick={handlePillClick}
+                        >
+                          {pill.value}
+                        </button>
+                      </template>
+                    </fieldset>
+                  </template>
+                  <template lwc:if={control.isSelect}>
+                    <label class="param-field">
+                      <span class="param-label">{control.name}</span>
+                      <select
+                        class="param-select"
+                        data-name={control.name}
+                        onchange={handleParamInput}
+                      >
+                        <template for:each={control.options} for:item="option">
+                          <option
+                            key={option.key}
+                            value={option.value}
+                            selected={option.selected}
+                          >
+                            {option.label}
+                          </option>
+                        </template>
+                      </select>
+                    </label>
+                  </template>
+                  <template lwc:if={control.isNumber}>
+                    <label class="param-field">
+                      <span class="param-label"
+                        >{control.name}
+                        <span class="param-hint">({control.hint})</span></span
+                      >
+                      <input
+                        type="number"
+                        class="param-input"
+                        inputmode="numeric"
+                        min={control.min}
+                        max={control.max}
+                        value={control.value}
+                        data-name={control.name}
+                        onchange={handleParamInput}
+                      />
+                    </label>
+                  </template>
+                  <template lwc:if={control.isText}>
+                    <label class="param-field">
+                      <span class="param-label"
+                        >{control.name}
+                        <span class="param-hint">{control.hint}</span></span
+                      >
+                      <input
+                        type="text"
+                        class="param-input"
+                        value={control.value}
+                        data-name={control.name}
+                        onchange={handleParamInput}
+                      />
+                    </label>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+          <template lwc:else>
+            <p class="param-none">This path takes no query parameters.</p>
+          </template>
+
+          <template lwc:if={hasChosenPills}>
+            <ul class="chosen-pills" aria-label="Chosen parameters">
+              <template for:each={chosenPills} for:item="pill">
+                <li key={pill.key} class="chosen-pill">
+                  <code class="chosen-text">{pill.text}</code>
+                  <button
+                    type="button"
+                    class="remove-pill"
+                    aria-label={pill.removeLabel}
+                    data-name={pill.name}
+                    onclick={handleRemovePill}
+                  >
+                    Remove
+                  </button>
+                </li>
+              </template>
+            </ul>
+          </template>
+
+          <lightning-input
+            label="Advanced: query parameters as text (optional)"
+            placeholder="limit=abc&amp;offset=0"
+            value={queryText}
+            onchange={handleQueryChange}
+            class="query-input"
+          ></lightning-input>
+          <p class="query-preview" aria-live="polite">
+            Query string: <code class="query-string">{queryPreview}</code>
+          </p>
         </div>
 
         <div aria-live="polite" class="slds-m-top_medium">
@@ -108,8 +219,16 @@
               </button>
             </div>
             <template lwc:if={isRawView}>
-              <div class="result-box">
-                <pre class="json-viewer response-body">{bodyText}</pre>
+              <div
+                class="result-box"
+                tabindex="0"
+                role="region"
+                aria-label="Response body"
+              >
+                <pre class="json-viewer response-body language-json"><code
+                    class="response-code"
+                    lwc:dom="manual"
+                  ></code></pre>
               </div>
             </template>
             <template lwc:else>
@@ -130,6 +249,44 @@
                 </template>
               </div>
             </template>
+
+            <template lwc:if={hasNextPage}>
+              <button
+                type="button"
+                class="next-page-button"
+                onclick={handleNextPage}
+              >
+                Next page
+              </button>
+            </template>
+
+            <section class="schema-check slds-m-top_small">
+              <h3 class="slds-text-title_caps">Response against the spec</h3>
+              <p class="schema-summary">{schemaCheck.summary}</p>
+              <template lwc:if={hasSchemaLists}>
+                <div class="schema-lists">
+                  <template for:each={schemaCheck.lists} for:item="list">
+                    <div
+                      key={list.key}
+                      class="schema-list"
+                      data-list={list.key}
+                    >
+                      <h4 class="schema-list-title">{list.title}</h4>
+                      <template lwc:if={list.isEmpty}>
+                        <p class="schema-none">None</p>
+                      </template>
+                      <template lwc:else>
+                        <ul>
+                          <template for:each={list.items} for:item="item">
+                            <li key={item.key}><code>{item.text}</code></li>
+                          </template>
+                        </ul>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </section>
           </template>
         </div>
       </section>

@@ -372,9 +372,11 @@ private class ApiLabControllerCoverLetterTest {
 
   @IsTest
   static void allowlistAndReturnedHeadersAreUnchanged() {
-    Assert.areEqual(21, ApiLabController.ALLOWED_PATHS.size(), 'GET only');
+    // The allowlist is the API_Lab_Catalog resource the specs generate (audit G1).
+    Set<String> allowed = ApiLabController.allowedPaths();
+    Assert.areEqual(21, allowed.size(), 'GET only');
     Assert.isFalse(
-      ApiLabController.ALLOWED_PATHS.contains('/papi/v1/ai/generate'),
+      allowed.contains('/papi/v1/ai/generate'),
       'The AI path is not in the GET allowlist'
     );
     Assert.areEqual(6, ApiLabController.RETURNED_HEADERS.size(), 'Headers');
