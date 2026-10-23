@@ -16,7 +16,7 @@ Implement a Static SVG Fallback for small viewports.
 
 Prevents heavy canvas rendering on mobile, ensuring the site passes Lighthouse performance audits on 4G networks.
 
-> **Note, 2026-10-22 (Round 6).** The site does not pass the 2.5 s mobile LCP target. Removing the graph from phones took the graph engine off the mobile critical path, but the LWR framework and the platform's stylesheets alone keep mobile LCP above 2.5 s. The gate is now the best the LWR shell allows, measured: mobile LCP medians of {{L2_RANGE}} on the six main routes ([Technical Guide §2.11](../guides/04-Technical-Guide.md#211-mobile-performance)).
+> **Note, 2026-10-22 (Round 6).** The site does not pass the 2.5 s mobile LCP target. Removing the graph from phones took the graph engine off the mobile critical path, but most of the mobile LCP is render delay in the LWR framework's own script, which the site's files do not control, and it stays above 2.5 s. The gate is now the best the LWR shell allows, measured: mobile LCP medians of {{L2_RANGE}} on the six main routes ([Technical Guide §2.11](../guides/04-Technical-Guide.md#211-mobile-performance)).
 
 ## Implications
 
