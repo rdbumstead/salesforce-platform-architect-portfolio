@@ -5,6 +5,10 @@
  *                      Name, title, location and photo are static so they paint without waiting on
  *                      Apex. The bio and profile links come from ResumeController.getHeader, which
  *                      reads only the owner Contact, so the bio does not wait on the full resume.
+ *                      Each card can gain a headline number and a screenshot from
+ *                      ProjectCardController.getPillarCards (Round 6 plan N7), merged in by
+ *                      letter. The number shows only with its label, the image only with its
+ *                      alt text, and a failed or empty wire leaves the cards as they were.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -13,11 +17,48 @@
 import { LightningElement, wire } from "lwc";
 import basePath from "@salesforce/community/basePath";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
+import getPillarCards from "@salesforce/apex/ProjectCardController.getPillarCards";
 import HEADSHOT from "@salesforce/resourceUrl/Portfolio_Headshot";
 import { LIVE_PILLARS, COMING_PILLARS } from "c/pillarData";
-import { toExternalUrl } from "c/externalUrl";
+import { toExternalUrl, toSiteAssetUrl } from "c/externalUrl";
 
 const MINUTES_PER_STEP = 1;
+// The card images are rendered at this size (Project_Card_Images), so the browser can
+// reserve the space before they load.
+const CARD_IMAGE_WIDTH = 640;
+const CARD_IMAGE_HEIGHT = 360;
+
+/**
+ * Trimmed text, or null when the value is not a non blank string.
+ * @param {*} value a value from the wire
+ * @returns {string|null} the text
+ */
+function textOrNull(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+/**
+ * The extras one Project__c row adds to its card: the headline only when both the number
+ * and its label are set, the image only when both the URL and the alt text are set.
+ * @param {object} row a ProjectCardController.PillarCard
+ * @returns {object} the card extras
+ */
+function toCardExtras(row) {
+  const metric = textOrNull(row && row.headlineMetric);
+  const label = textOrNull(row && row.headlineLabel);
+  const imageUrl = toSiteAssetUrl(row && row.imageUrl, basePath);
+  const imageAlt = textOrNull(row && row.imageAlt);
+  const hasHeadline = Boolean(metric && label);
+  const hasImage = Boolean(imageUrl && imageAlt);
+  return {
+    hasHeadline,
+    headlineMetric: hasHeadline ? metric : null,
+    headlineLabel: hasHeadline ? label : null,
+    hasImage,
+    imageUrl: hasImage ? imageUrl : null,
+    imageAlt: hasImage ? imageAlt : null
+  };
+}
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -61,6 +102,15 @@ export default class HeroBanner extends LightningElement {
   title = "Salesforce Platform Architect";
   location = "Greater Toledo, Ohio";
   header;
+  cardRows = [];
+  cardImageWidth = CARD_IMAGE_WIDTH;
+  cardImageHeight = CARD_IMAGE_HEIGHT;
+
+  @wire(getPillarCards)
+  wiredPillarCards({ data }) {
+    // An error or an empty result leaves every card exactly as the static data draws it.
+    this.cardRows = Array.isArray(data) ? data : [];
+  }
 
   @wire(getHeader)
   wiredHeader({ data }) {
@@ -119,7 +169,14 @@ export default class HeroBanner extends LightningElement {
   }
 
   get pillars() {
+    const rowsByLetter = new Map();
+    this.cardRows.forEach((row) => {
+      if (row && row.pillar && !rowsByLetter.has(row.pillar)) {
+        rowsByLetter.set(row.pillar, row);
+      }
+    });
     return LIVE_PILLARS.map((pillar) => ({
+      ...toCardExtras(rowsByLetter.get(pillar.letter)),
       key: pillar.key,
       letter: pillar.letter,
       eyebrow: `Pillar ${pillar.letter} · ${pillar.pageLabel}`,

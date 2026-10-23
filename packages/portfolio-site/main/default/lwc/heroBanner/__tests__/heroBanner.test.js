@@ -2,7 +2,8 @@
  * @description       : Unit tests for heroBanner LWC: the static hero, the bio and profile links
  *                      from the ResumeController header wire, the live pillar cards with the
  *                      "coming" line, and the tour (Round 4 plan WS4b, logs 155 and 164).
- *                      c/pillarData is a fixed stand in (Round 5 plan, log 192).
+ *                      c/pillarData is a fixed stand in (Round 5 plan, log 192). The card
+ *                      headline numbers and images from ProjectCardController (Round 6 N7).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -11,6 +12,7 @@
 import { createElement } from "@lwc/engine-dom";
 import HeroBanner from "c/heroBanner";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
+import getPillarCards from "@salesforce/apex/ProjectCardController.getPillarCards";
 import { reset, setComingLetters } from "c/pillarData";
 
 // A fixed five pillar list, all live unless a test marks some as coming with
@@ -119,6 +121,23 @@ jest.mock(
   },
   { virtual: true }
 );
+
+jest.mock(
+  "@salesforce/apex/ProjectCardController.getPillarCards",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+const CARD_C = {
+  pillar: "C",
+  headlineMetric: "23 API paths",
+  headlineLabel: "documented across two OpenAPI specs",
+  imageUrl: "resource:Project_Card_Images/pillar-c.webp",
+  imageAlt: "The API Lab request builder"
+};
 
 const HEADER = {
   name: "Ryan Bumstead",
@@ -410,6 +429,144 @@ describe("c-hero-banner", () => {
       await flush();
       expect(heading.scrollIntoView).toHaveBeenCalledTimes(2);
       expect(root.activeElement).toBe(heading);
+    });
+  });
+
+  describe("pillar card extras", () => {
+    function card(element, key) {
+      return element.shadowRoot.querySelector(
+        `.pillar-card[data-key="${key}"]`
+      );
+    }
+
+    function cardsMarkup(element) {
+      // Tag, class and text of every node in every card, so any added element shows.
+      return Array.from(
+        element.shadowRoot.querySelectorAll(".pillar-card")
+      ).map((node) =>
+        Array.from(node.querySelectorAll("*")).map(
+          (child) => `${child.tagName}.${child.className}:${text(child)}`
+        )
+      );
+    }
+
+    it("reads the cards from getPillarCards, which takes no parameters", () => {
+      render();
+      expect(getPillarCards.getLastConfig()).toEqual({});
+    });
+
+    it("shows the headline number and its label as the card's lead line", async () => {
+      const element = render();
+      getPillarCards.emit([CARD_C]);
+      await flush();
+      const apiLab = card(element, "api-lab");
+      const headline = apiLab.querySelector('[data-id="pillar-headline"]');
+      expect(text(headline.querySelector(".pillar-metric"))).toBe(
+        "23 API paths"
+      );
+      expect(text(headline.querySelector(".pillar-metric-label"))).toBe(
+        "documented across two OpenAPI specs"
+      );
+      expect(headline.nextElementSibling.classList.contains("pillar-top")).toBe(
+        true
+      );
+      expect(
+        card(element, "ai-lab").querySelector(".pillar-headline")
+      ).toBeNull();
+    });
+
+    it("shows no headline when the number or the label is missing", async () => {
+      const element = render();
+      getPillarCards.emit([
+        { ...CARD_C, headlineLabel: "   " },
+        { pillar: "D", headlineMetric: null, headlineLabel: "a label alone" }
+      ]);
+      await flush();
+      expect(
+        card(element, "api-lab").querySelector(".pillar-headline")
+      ).toBeNull();
+      expect(
+        card(element, "ai-lab").querySelector(".pillar-headline")
+      ).toBeNull();
+    });
+
+    it("shows the image lazily with its alt text and size, resolved like the gallery", async () => {
+      const element = render();
+      getPillarCards.emit([CARD_C]);
+      await flush();
+      const image = card(element, "api-lab").querySelector(".pillar-image");
+      expect(image.getAttribute("src")).toBe(
+        "/portfolio/sfsites/c/resource/Project_Card_Images/pillar-c.webp"
+      );
+      expect(image.getAttribute("alt")).toBe("The API Lab request builder");
+      expect(image.getAttribute("loading")).toBe("lazy");
+      expect(image.getAttribute("decoding")).toBe("async");
+      expect(image.getAttribute("width")).toBe("640");
+      expect(image.getAttribute("height")).toBe("360");
+    });
+
+    it("shows no image when the URL or the alt text is missing or the URL is unsafe", async () => {
+      const element = render();
+      getPillarCards.emit([
+        { ...CARD_C, imageAlt: "" },
+        { pillar: "D", imageUrl: null, imageAlt: "Alt with no image" },
+        // The script URL is the input under test, proving it never renders.
+        // eslint-disable-next-line no-script-url
+        { pillar: "E", imageUrl: "javascript:alert(1)", imageAlt: "Unsafe" }
+      ]);
+      await flush();
+      expect(element.shadowRoot.querySelectorAll(".pillar-image")).toHaveLength(
+        0
+      );
+    });
+
+    it("never adds an image or a number above the hero", async () => {
+      const element = render();
+      getPillarCards.emit([CARD_C]);
+      await flush();
+      const hero = element.shadowRoot.querySelector(".hero");
+      expect(hero.querySelector(".pillar-image")).toBeNull();
+      expect(hero.querySelectorAll("img")).toHaveLength(1);
+    });
+
+    it("renders the cards exactly as before when the wire fails", async () => {
+      const element = render();
+      const before = cardsMarkup(element);
+      getPillarCards.error();
+      await flush();
+      expect(cardsMarkup(element)).toEqual(before);
+      expect(element.shadowRoot.querySelectorAll(".pillar-card")).toHaveLength(
+        5
+      );
+    });
+
+    it("renders the cards exactly as before when the result is empty or null", async () => {
+      const element = render();
+      const before = cardsMarkup(element);
+      getPillarCards.emit([]);
+      await flush();
+      expect(cardsMarkup(element)).toEqual(before);
+      getPillarCards.emit(null);
+      await flush();
+      expect(cardsMarkup(element)).toEqual(before);
+    });
+
+    it("ignores a row for a pillar that is not live and keeps the first row per letter", async () => {
+      setComingLetters(["C"]);
+      const element = render();
+      getPillarCards.emit([
+        CARD_C,
+        { pillar: "D", headlineMetric: "3", headlineLabel: "first" },
+        { pillar: "D", headlineMetric: "9", headlineLabel: "second" }
+      ]);
+      await flush();
+      expect(card(element, "api-lab")).toBeNull();
+      expect(
+        element.shadowRoot.querySelectorAll(".pillar-headline")
+      ).toHaveLength(1);
+      expect(
+        text(card(element, "ai-lab").querySelector(".pillar-metric-label"))
+      ).toBe("first");
     });
   });
 });

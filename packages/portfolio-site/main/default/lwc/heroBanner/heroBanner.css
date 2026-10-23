@@ -198,6 +198,39 @@
   background: var(--pf-surface);
 }
 
+/* Optional card extras from ProjectCardController (Round 6 plan N7) */
+.pillar-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: top left;
+  border-radius: var(--pf-radius-sm);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-subtle);
+}
+
+.pillar-headline {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pillar-metric {
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--pf-accent);
+}
+
+.pillar-metric-label {
+  font-size: 13px;
+  color: var(--pf-muted);
+}
+
 .pillar-top {
   display: flex;
   align-items: center;
