@@ -1,6 +1,6 @@
 /**
  * @description       : Resume builder for the portfolio site. Reads the resume for the chosen
- *                      persona from ResumeController.getResume (plan K1), previews it, and
+ *                      persona from ResumeController.getResume, previews it, and
  *                      exports the same content as a text PDF (jsPDF, loaded on first download)
  *                      or as plain ATS text copied to the clipboard.
  * @author            : Ryan Bumstead

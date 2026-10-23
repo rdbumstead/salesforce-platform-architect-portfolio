@@ -1,5 +1,5 @@
 /**
- * @description       : Skills page (Round 5 plan M2). A matrix by default: one row per category, one chip per
+ * @description       : Skills page. A matrix by default: one row per category, one chip per
  *                      skill with its proficiency and the years it was used, worked out from the dates of the
  *                      roles linked through Experience_Skill__c. Selecting a chip lists the roles and projects
  *                      that used it. On desktop and tablet a "Matrix | Graph" switch opens a graph view that
@@ -7,10 +7,10 @@
  *                      the roles and projects on a ring, and draws edges only for the hovered or selected node.
  *                      Phones and narrow viewports get the matrix only and never request the engine.
  *                      Nothing animates: positions are computed once and drawn as SVG from this template, so
- *                      prefers-reduced-motion needs no special case. Round 7 (audit E1) adds pan and zoom
+ *                      prefers-reduced-motion needs no special case. The graph also has pan and zoom
  *                      (d3-zoom) and node drag (d3-drag) from the same engine, plus Zoom in, Zoom out and
  *                      Reset view buttons for keyboard users. Both report positions back here, so the
- *                      template still draws everything. Round 7 (audit E4) adds a persona filter on the
+ *                      template still draws everything. A persona filter sits on the
  *                      matrix with the resume's personas, read from Skill__c.Persona_Tag__c by a query of
  *                      its own. It shows only once at least one skill is tagged.
  * @author            : Ryan Bumstead
@@ -19,8 +19,8 @@
  * @Created           : 12/26/2025
  **/
 import { LightningElement, wire } from "lwc";
-// The Round 3 plan (K5) pins lightning/uiGraphQLApi. The lint rule prefers
-// lightning/graphql, a move left to the orchestrator.
+// The site pins lightning/uiGraphQLApi. The lint rule prefers lightning/graphql, and that
+// move is a separate change made for every GraphQL component at once.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { gql, graphql } from "lightning/uiGraphQLApi";
 import FORM_FACTOR from "@salesforce/client/formFactor";
@@ -32,8 +32,9 @@ import {
 } from "c/graphEngine";
 import { EVENTS, trackEvent } from "c/analyticsService";
 
-// Reads only fields the guest can read: K4, the required Category_Order__c, and the two
-// Experience__c dates Portfolio_Guest grants from Round 5 (trap 44).
+// Reads only fields the guest can read: the skill fields Portfolio_Guest grants, the required
+// Category_Order__c, and the two Experience__c dates. GraphQL returns a field to the guest
+// only when the guest has field level security on it.
 const SKILL_NETWORK_QUERY = gql`
   query SkillNetworkGraph {
     uiapi {
@@ -110,7 +111,7 @@ const SKILL_NETWORK_QUERY = gql`
   }
 `;
 
-// The persona tags in a query of their own (audit E4). If the guest cannot read the field yet,
+// The persona tags in a query of their own. If the guest cannot read the field yet,
 // only this query fails: the filter stays hidden and the skills still load.
 const SKILL_PERSONAS_QUERY = gql`
   query SkillPersonaTags {
@@ -150,7 +151,7 @@ const PERSONA_OPTIONS = [
 const PERSONA_ALL = "";
 
 // Graph geometry. The view box leaves room either side of the layout box for the labels.
-// The spacing was tuned on production shaped data (Round 6 plan N3, layoutSpacing.test.js).
+// The spacing was tuned on production shaped data (layoutSpacing.test.js measures it).
 const GRAPH_WIDTH = 960;
 const GRAPH_HEIGHT = 840;
 const LABEL_ROOM = 150;
@@ -345,7 +346,7 @@ export default class SkillNetwork extends LightningElement {
   isSmall = false;
   view = VIEW_MATRIX;
   selectedSkillId;
-  // Persona filter (audit E4): tags by skill id, and the chosen persona ("" for All).
+  // Persona filter: tags by skill id, and the chosen persona ("" for All).
   personaTags = new Map();
   persona = PERSONA_ALL;
 
@@ -357,7 +358,7 @@ export default class SkillNetwork extends LightningElement {
   selectedNodeId;
   disconnected = false;
 
-  // Pan, zoom and drag state (audit E1). moved holds the dragged positions by node id, on top of
+  // Pan, zoom and drag state. moved holds the dragged positions by node id, on top of
   // the computed layout. engine, panZoom and the bound markers are plain references, not drawn.
   zoomTransform = IDENTITY_TRANSFORM;
   zoomScale = 1;
@@ -477,7 +478,7 @@ export default class SkillNetwork extends LightningElement {
     return this.isGraph ? "view-button is-on" : "view-button";
   }
 
-  // ---------- persona filter (audit E4) ----------
+  // ---------- persona filter ----------
 
   get showPersonaFilter() {
     return this.hasSkills && this.personaTags.size > 0;
@@ -896,7 +897,7 @@ export default class SkillNetwork extends LightningElement {
     }
   }
 
-  // ---------- pan, zoom and drag (audit E1) ----------
+  // ---------- pan, zoom and drag ----------
 
   // Wires d3-zoom to the SVG once per SVG element and d3-drag to the nodes once per node set.
   // Guarded, so the re-render each zoom or drag step causes binds nothing new.
