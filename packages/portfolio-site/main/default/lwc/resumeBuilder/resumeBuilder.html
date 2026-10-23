@@ -165,11 +165,44 @@
                 class="resume-certifications slds-m-top_medium"
               >
                 <h3 class="section-title">Certifications</h3>
-                <ul>
-                  <template for:each={model.certifications} for:item="cert">
+                <ul
+                  lwc:if={model.hasCurrentCertifications}
+                  class="current-certifications"
+                >
+                  <template
+                    for:each={model.currentCertifications}
+                    for:item="cert"
+                  >
                     <li key={cert.key} class="certification">{cert.text}</li>
                   </template>
                 </ul>
+                <p
+                  lwc:if={model.hasVerificationLink}
+                  class="verify slds-m-top_x-small"
+                >
+                  <a
+                    class="verify-link"
+                    href={model.verificationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Verify on Trailhead<span class="slds-assistive-text">
+                      (opens in a new tab)</span
+                    ></a
+                  >
+                </p>
+                <template lwc:if={model.hasRetiredCertifications}>
+                  <h4 class="retired-title slds-m-top_small">Retired</h4>
+                  <ul class="retired-certifications">
+                    <template
+                      for:each={model.retiredCertifications}
+                      for:item="cert"
+                    >
+                      <li key={cert.key} class="retired-certification">
+                        {cert.text}
+                      </li>
+                    </template>
+                  </ul>
+                </template>
               </section>
 
               <section

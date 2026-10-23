@@ -433,4 +433,155 @@ describe("c-resume-builder", () => {
 
     delete navigator.clipboard;
   });
+
+  describe("certifications (Round 6 plan N5)", () => {
+    // A stored value with plus signs in the query string (trap 54).
+    const VERIFY_URL =
+      "https://trailhead.salesforce.com/en/credentials/certification-detail-print/?searchString=9mtUhy8GnfeJ+wZ2qMHSoTtn5Li90a2pHeJQ9ycm+2M7cecsvBBbSOauy5RarT+M";
+
+    const CERTS = [
+      {
+        name: "Salesforce Certified AI Associate",
+        issuer: "Salesforce",
+        dateValue: "2024-07-22",
+        detail: null,
+        isRetired: true
+      },
+      {
+        name: "Salesforce Certified Platform Administrator",
+        issuer: "Salesforce",
+        dateValue: "2024-06-19",
+        detail: null,
+        isRetired: false
+      },
+      {
+        name: "Salesforce Certified Data 360 Consultant",
+        issuer: "Salesforce",
+        dateValue: "2025-03-17",
+        detail: null,
+        isRetired: false
+      }
+    ];
+
+    async function render(resume) {
+      const element = createComponent();
+      getResume.emit(resume);
+      await flushPromises();
+      return element;
+    }
+
+    it("shows no verification link when the URL is not set", async () => {
+      const element = await render({ ...RESUME, certifications: CERTS });
+      expect(query(element, ".verify-link")).toBeNull();
+      expect(queryAll(element, ".certification")).toHaveLength(2);
+    });
+
+    it("shows no verification link when the URL is not http or https", async () => {
+      const element = await render({
+        ...RESUME,
+        certifications: CERTS,
+        // eslint-disable-next-line no-script-url
+        credentialVerificationUrl: "javascript:alert(1)"
+      });
+      expect(query(element, ".verify-link")).toBeNull();
+    });
+
+    it("links to the stored URL exactly, plus signs included, in a new tab", async () => {
+      const element = await render({
+        ...RESUME,
+        certifications: CERTS,
+        credentialVerificationUrl: VERIFY_URL
+      });
+      const link = query(element, ".verify-link");
+      expect(link).not.toBeNull();
+      expect(link.getAttribute("href")).toBe(VERIFY_URL);
+      expect(link.getAttribute("href")).toContain("+wZ2q");
+      expect(link.getAttribute("target")).toBe("_blank");
+      expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+      expect(link.textContent).toContain("Verify on Trailhead");
+    });
+
+    it("lists current certifications newest first with issuer and month", async () => {
+      const element = await render({ ...RESUME, certifications: CERTS });
+      expect(
+        queryAll(element, ".certification").map((li) => li.textContent)
+      ).toEqual([
+        "Salesforce Certified Data 360 Consultant, Salesforce, Mar 2025",
+        "Salesforce Certified Platform Administrator, Salesforce, Jun 2024"
+      ]);
+    });
+
+    it("puts the retired list after the link, outside the current list", async () => {
+      const element = await render({
+        ...RESUME,
+        certifications: CERTS,
+        credentialVerificationUrl: VERIFY_URL
+      });
+      const link = query(element, ".verify-link");
+      const retiredTitle = query(element, ".retired-title");
+      const retiredList = query(element, ".retired-certifications");
+      expect(retiredTitle.textContent).toBe("Retired");
+      expect(
+        queryAll(element, ".retired-certification").map((li) =>
+          li.textContent.trim()
+        )
+      ).toEqual(["Salesforce Certified AI Associate, Jul 2024"]);
+      // DOCUMENT_POSITION_FOLLOWING: the retired block comes after the link.
+      expect(
+        link.compareDocumentPosition(retiredTitle) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        link.compareDocumentPosition(retiredList) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        query(element, ".current-certifications").textContent
+      ).not.toContain("AI Associate");
+    });
+
+    it("shows no Retired heading when nothing is retired", async () => {
+      const element = await render({
+        ...RESUME,
+        certifications: CERTS.filter((cert) => !cert.isRetired),
+        credentialVerificationUrl: VERIFY_URL
+      });
+      expect(query(element, ".retired-title")).toBeNull();
+      expect(query(element, ".retired-certifications")).toBeNull();
+    });
+
+    it("shows no link and no current list when every certification is retired", async () => {
+      const element = await render({
+        ...RESUME,
+        certifications: CERTS.filter((cert) => cert.isRetired),
+        credentialVerificationUrl: VERIFY_URL
+      });
+      expect(query(element, ".verify-link")).toBeNull();
+      expect(query(element, ".current-certifications")).toBeNull();
+      expect(queryAll(element, ".retired-certification")).toHaveLength(1);
+    });
+
+    it("marks a retired certification in the ATS text", async () => {
+      const writeText = jest.fn().mockResolvedValue();
+      Object.defineProperty(navigator, "clipboard", {
+        value: { writeText },
+        configurable: true
+      });
+      const element = await render({
+        ...RESUME,
+        certifications: CERTS,
+        credentialVerificationUrl: VERIFY_URL
+      });
+      button(element, "copy-ats").click();
+      await flushPromises();
+      const text = writeText.mock.calls[0][0];
+      expect(text).toContain(
+        "Salesforce Certified AI Associate, Salesforce, Jul 2024, Retired"
+      );
+      expect(text).toContain(
+        "Salesforce Certified Data 360 Consultant, Salesforce, Mar 2025"
+      );
+      delete navigator.clipboard;
+    });
+  });
 });
