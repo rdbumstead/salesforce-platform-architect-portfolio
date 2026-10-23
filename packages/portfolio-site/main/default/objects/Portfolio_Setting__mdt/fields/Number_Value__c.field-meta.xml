@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Number_Value__c</fullName>
+    <description>The value the code reads for a numeric setting.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >The value the code reads for a numeric setting.</inlineHelpText>
+    <label>Number Value</label>
+    <required>false</required>
+    <type>Number</type>
+    <precision>18</precision>
+    <scale>4</scale>
+</CustomField>

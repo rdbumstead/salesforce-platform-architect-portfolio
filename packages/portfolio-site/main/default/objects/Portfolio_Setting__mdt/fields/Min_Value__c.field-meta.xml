@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Min_Value__c</fullName>
+    <description
+  >The lowest number the code accepts. A lower value gives the code default.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >The lowest number the code accepts. A lower value gives the code default.</inlineHelpText>
+    <label>Min Value</label>
+    <required>false</required>
+    <type>Number</type>
+    <precision>18</precision>
+    <scale>4</scale>
+</CustomField>
