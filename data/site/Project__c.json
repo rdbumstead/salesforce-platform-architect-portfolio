@@ -11,7 +11,11 @@
       "Sort_Order__c": 1,
       "Challenge__c": "Seed challenge text.",
       "Solution__c": "Seed solution text.",
-      "Business_Value__c": "Seed business value text."
+      "Business_Value__c": "Seed business value text.",
+      "Headline_Metric__c": "23 API paths",
+      "Headline_Metric_Label__c": "documented in two OpenAPI specs, a system API and a process API, both served by Apex REST",
+      "Hero_Image_URL__c": "resource:Project_Card_Images/pillar-c.webp",
+      "Hero_Image_Alt__c": "API Lab form with an endpoint picker set to GET /sapi/v1/health and a form to request an evaluator token."
     },
     {
       "attributes": {
@@ -24,7 +28,11 @@
       "Sort_Order__c": 2,
       "Challenge__c": "Seed challenge text.",
       "Solution__c": "Seed solution text.",
-      "Business_Value__c": "Seed business value text."
+      "Business_Value__c": "Seed business value text.",
+      "Headline_Metric__c": "646 Apex tests",
+      "Headline_Metric_Label__c": "passing with 97% org-wide coverage at the Round 5 release gate",
+      "Hero_Image_URL__c": "resource:Project_Card_Images/pillar-e.webp",
+      "Hero_Image_Alt__c": "Product roadmap board read from Jira, with To Do, In Progress and Done columns of stories and epics."
     }
   ]
 }
