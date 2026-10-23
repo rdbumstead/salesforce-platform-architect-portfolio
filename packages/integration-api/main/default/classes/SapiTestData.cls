@@ -1,5 +1,5 @@
 /**
- * @description       : Test data and assertion helpers for the Round 2 SAPI resource tests.
+ * @description       : Test data and assertion helpers for the SAPI resource tests.
  *                      Builds one small record graph covering every object the ten
  *                      resources read, and holds the spec schema key sets.
  * @author            : Ryan Bumstead
@@ -112,7 +112,7 @@ public class SapiTestData {
     'skillCategory',
     'skillProficiencyScore'
   };
-  // No owner email or phone: never returned (owner decision, log 155).
+  // No owner email or phone: never returned (owner decision).
   public static final Set<String> PORTFOLIO_CONFIG_KEYS = new Set<String>{
     'linkedInUrl',
     'gitHubProfileUrl',

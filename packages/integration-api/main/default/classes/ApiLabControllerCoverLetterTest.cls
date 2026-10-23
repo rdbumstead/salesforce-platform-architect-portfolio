@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for ApiLabController.generateCoverLetter, the site's cover
- *                      letter path in process (Round 4 decision 2 a, contract L9). The real
+ *                      letter path in process. The real
  *                      GeminiService runs against an HTTP mock that answers Gemini and records
  *                      every endpoint, so a call to the org's own Portfolio_API would show.
  * @author            : Ryan Bumstead
@@ -372,7 +372,7 @@ private class ApiLabControllerCoverLetterTest {
 
   @IsTest
   static void allowlistAndReturnedHeadersAreUnchanged() {
-    // The allowlist is the API_Lab_Catalog resource the specs generate (audit G1).
+    // The allowlist is the API_Lab_Catalog resource the specs generate.
     Set<String> allowed = ApiLabController.allowedPaths();
     Assert.areEqual(21, allowed.size(), 'GET only');
     Assert.isFalse(

@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for RateWindowLimiter: counting, keying, the 429 at limit + 1,
- *                      writes deferred to the response (contract C2) and concurrent inserts.
+ *                      writes deferred to the response (no DML before a callout) and concurrent inserts.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -198,7 +198,7 @@ private class RateWindowLimiterTest {
     );
   }
 
-  // ---------- Contract C2: no DML before a callout
+  // ---------- No DML before a callout
 
   @IsTest
   static void calloutAfterCheckOnLockedRowSucceeds() {
@@ -268,7 +268,7 @@ private class RateWindowLimiterTest {
 
   @IsTest
   static void commitRateCountsWritesWithoutRestResponse() {
-    // Contract C4: an Aura caller has no RestContext and never reaches ok() or error().
+    // An Aura caller has no RestContext and never reaches ok() or error().
     RateWindowLimiter.nowOverride = FIXED_NOW;
     RestContext.request = null;
     RestContext.response = null;

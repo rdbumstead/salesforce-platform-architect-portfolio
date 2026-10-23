@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for OpenApiDocument (audit B4): the default and named specs come back
+ * @description       : Tests for OpenApiDocument: the default and named specs come back
  *                      as the generated OpenAPI JSON with a public cache header, an unknown spec
  *                      is a 400 in the specs' Error shape, and the site guest can read it.
  * @author            : Ryan Bumstead

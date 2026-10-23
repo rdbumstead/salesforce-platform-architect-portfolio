@@ -173,7 +173,7 @@ private class ApiRequestContextTest {
     );
   }
 
-  // ---------- D3: the platform's own 32-hex id on PAPI
+  // ---------- The platform's own 32-hex id on PAPI
 
   private static final String PLATFORM_ID = '89b386134a6c191e614fc9ae695e52bf';
 
