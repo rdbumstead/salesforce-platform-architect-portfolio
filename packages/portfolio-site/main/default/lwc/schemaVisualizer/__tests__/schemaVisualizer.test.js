@@ -146,8 +146,9 @@ describe("c-schema-visualizer", () => {
     const [, nodes, edges, options] = layoutGraph.mock.calls[0];
     expect(nodes).toHaveLength(EXPECTED.nodes);
     expect(edges).toHaveLength(EXPECTED.drawnEdges);
+    // The layout runs squeezed sideways by 2.2 and is stretched back to the 960 by 720 view.
     expect(options).toEqual(
-      expect.objectContaining({ width: 960, height: 600 })
+      expect.objectContaining({ width: 960 / 2.2, height: 720 })
     );
     expect(qa(element, "g.node")).toHaveLength(EXPECTED.nodes);
     expect(qa(element, "g.edge")).toHaveLength(EXPECTED.drawnEdges);

@@ -160,16 +160,23 @@ async function measure(scope) {
     }
   }
 
-  // A drawn line runs from box edge to box edge. Any other box it passes through is a crossing.
-  const placed = new Map(lastCall.result.nodes.map((node) => [node.id, node]));
+  // A drawn line runs between two box centres, cut at the box edges. Any other box it passes
+  // through is a crossing. Centres come from the drawn boxes, so any stretch the component
+  // applies after the layout is included.
+  const centres = new Map(
+    boxes.map((box) => [
+      box.api,
+      { x: (box.left + box.right) / 2, y: (box.top + box.bottom) / 2 }
+    ])
+  );
   let linesThroughBoxes = 0;
   lastCall.result.edges.forEach((edge) => {
+    const from = centres.get(edge.source);
+    const to = centres.get(edge.target);
     boxes.forEach((box) => {
       if (box.api === edge.source || box.api === edge.target) {
         return;
       }
-      const from = placed.get(edge.source);
-      const to = placed.get(edge.target);
       if (segmentCrossesBox(from.x, from.y, to.x, to.y, box)) {
         linesThroughBoxes++;
       }
@@ -188,7 +195,9 @@ async function measure(scope) {
   return {
     nodes: boxes.length,
     lines: element.shadowRoot.querySelectorAll("g.edge").length,
-    box: `${options.width}x${options.height}`,
+    view: element.shadowRoot
+      .querySelector("svg.diagram-svg")
+      .getAttribute("viewBox"),
     boxOverlaps,
     smallestGap: Math.round(smallestGap * 10) / 10,
     linesThroughBoxes,
@@ -221,15 +230,18 @@ describe("c-schema-visualizer diagram spacing on the production scopes", () => {
     jest.clearAllMocks();
   });
 
+  // Before Round 6 (960 by 600, round nodes of radius 84, charge -600, link distance 180):
+  // Employer Hub gap 15.9, 4 lines through boxes, 4 on the clamp. Portfolio gap 11.6, 3 lines
+  // through boxes, 6 on the clamp. No box overlapped in either.
   it("measures the Employer Hub diagram", async () => {
     expect(await measure("employerHub")).toEqual({
       nodes: 9,
       lines: 17,
-      box: "960x600",
+      view: "0 0 960 720",
       boxOverlaps: 0,
-      smallestGap: 15.9,
-      linesThroughBoxes: 4,
-      onClamp: 4
+      smallestGap: 36,
+      linesThroughBoxes: 1,
+      onClamp: 0
     });
   });
 
@@ -237,11 +249,11 @@ describe("c-schema-visualizer diagram spacing on the production scopes", () => {
     expect(await measure("portfolio")).toEqual({
       nodes: 14,
       lines: 17,
-      box: "960x600",
+      view: "0 0 960 720",
       boxOverlaps: 0,
-      smallestGap: 11.6,
-      linesThroughBoxes: 3,
-      onClamp: 6
+      smallestGap: 42.3,
+      linesThroughBoxes: 2,
+      onClamp: 0
     });
   });
 });
