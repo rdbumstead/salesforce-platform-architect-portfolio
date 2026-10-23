@@ -7,7 +7,10 @@
  *                      the roles and projects on a ring, and draws edges only for the hovered or selected node.
  *                      Phones and narrow viewports get the matrix only and never request the engine.
  *                      Nothing animates: positions are computed once and drawn as SVG from this template, so
- *                      prefers-reduced-motion needs no special case.
+ *                      prefers-reduced-motion needs no special case. Round 7 (audit E1) adds pan and zoom
+ *                      (d3-zoom) and node drag (d3-drag) from the same engine, plus Zoom in, Zoom out and
+ *                      Reset view buttons for keyboard users. Both report positions back here, so the
+ *                      template still draws everything.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -19,7 +22,12 @@ import { LightningElement, wire } from "lwc";
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { gql, graphql } from "lightning/uiGraphQLApi";
 import FORM_FACTOR from "@salesforce/client/formFactor";
-import { loadGraphEngine, layoutGraph } from "c/graphEngine";
+import {
+  attachNodeDrag,
+  attachPanZoom,
+  layoutGraph,
+  loadGraphEngine
+} from "c/graphEngine";
 import { EVENTS, trackEvent } from "c/analyticsService";
 
 // Reads only fields the guest can read: K4, the required Category_Order__c, and the two
@@ -121,6 +129,13 @@ const LABEL_MAX = 24;
 // the label's place, so skills settle round the label instead of under it (13px mono, 0.6em
 // a character, a circle 0.6 of the label's half width).
 const CATEGORY_RADIUS_PER_CHAR = 2.34;
+// The drawn box in view box units: the layout box plus the label room either side. It is also
+// the pan limit, so the graph can never be dragged out of sight.
+const VIEW_EXTENT = [
+  [-LABEL_ROOM, 0],
+  [GRAPH_WIDTH + LABEL_ROOM, GRAPH_HEIGHT]
+];
+const IDENTITY_TRANSFORM = "translate(0,0) scale(1)";
 
 function fieldValue(record, field) {
   return record && record[field] ? record[field].value : null;
@@ -307,6 +322,17 @@ export default class SkillNetwork extends LightningElement {
   selectedNodeId;
   disconnected = false;
 
+  // Pan, zoom and drag state (audit E1). moved holds the dragged positions by node id, on top of
+  // the computed layout. engine, panZoom and the bound markers are plain references, not drawn.
+  zoomTransform = IDENTITY_TRANSFORM;
+  zoomScale = 1;
+  moved = {};
+  canZoom = false;
+  engine;
+  panZoom;
+  boundSvg;
+  boundNodeCount = 0;
+
   connectedCallback() {
     this.disconnected = false;
     this.isSmall = FORM_FACTOR === "Small" || this.isNarrowViewport();
@@ -317,6 +343,11 @@ export default class SkillNetwork extends LightningElement {
 
   disconnectedCallback() {
     this.disconnected = true;
+    this.unbindGraph();
+  }
+
+  renderedCallback() {
+    this.bindGraphInteractions();
   }
 
   isNarrowViewport() {
@@ -345,6 +376,8 @@ export default class SkillNetwork extends LightningElement {
     this.isLoading = false;
     // New data means new positions. An open graph lays itself out again.
     this.layout = undefined;
+    this.moved = {};
+    this.resetZoomState();
     if (this.isGraph) {
       this.openGraph();
     }
@@ -510,6 +543,11 @@ export default class SkillNetwork extends LightningElement {
     }
     this.view = view;
     trackEvent(EVENTS.SKILLS_VIEW_CHANGED, { view });
+    if (view === VIEW_MATRIX) {
+      // The graph's SVG leaves the page, so its zoom starts fresh next time. Dragged nodes stay.
+      this.unbindGraph();
+      this.resetZoomState();
+    }
     if (view === VIEW_GRAPH) {
       this.openGraph();
     }
@@ -526,6 +564,7 @@ export default class SkillNetwork extends LightningElement {
     return loadGraphEngine(this)
       .then((d3) => {
         if (!this.disconnected) {
+          this.engine = d3;
           this.layout = this.computeLayout(d3);
         }
       })
@@ -660,17 +699,22 @@ export default class SkillNetwork extends LightningElement {
       if (active && (edge.source === active || edge.target === active)) {
         linked.add(edge.source);
         linked.add(edge.target);
+        const from = this.moved[edge.source] || { x: edge.x1, y: edge.y1 };
+        const to = this.moved[edge.target] || { x: edge.x2, y: edge.y2 };
         edges.push({
           key: edge.id,
-          x1: edge.x1,
-          y1: edge.y1,
-          x2: edge.x2,
-          y2: edge.y2
+          x1: from.x,
+          y1: from.y,
+          x2: to.x,
+          y2: to.y
         });
       }
     });
     const cx = GRAPH_WIDTH / 2;
-    const nodes = this.layout.nodes.map((node) => {
+    const nodes = this.layout.nodes.map((placed) => {
+      const node = this.moved[placed.id]
+        ? { ...placed, ...this.moved[placed.id] }
+        : placed;
       const isActive = node.id === active;
       const isLinked = linked.has(node.id) && !isActive;
       const rightSide = node.x >= cx;
@@ -699,6 +743,7 @@ export default class SkillNetwork extends LightningElement {
     });
     return {
       viewBox: `${-LABEL_ROOM} 0 ${GRAPH_WIDTH + LABEL_ROOM * 2} ${GRAPH_HEIGHT}`,
+      transform: this.zoomTransform,
       edges,
       nodes,
       categories: this.layout.categories
@@ -718,6 +763,111 @@ export default class SkillNetwork extends LightningElement {
     this.selectedNodeId = this.selectedNodeId === id ? undefined : id;
     if (this.selectedNodeId && this.model.skills.has(id)) {
       this.selectSkill(id);
+    }
+  }
+
+  // ---------- pan, zoom and drag (audit E1) ----------
+
+  // Wires d3-zoom to the SVG once per SVG element and d3-drag to the nodes once per node set.
+  // Guarded, so the re-render each zoom or drag step causes binds nothing new.
+  bindGraphInteractions() {
+    if (!this.engine || !this.layout) {
+      return;
+    }
+    const svg = this.template.querySelector(".graph-svg");
+    if (!svg) {
+      return;
+    }
+    if (svg !== this.boundSvg) {
+      this.unbindGraph();
+      this.boundSvg = svg;
+      this.panZoom = attachPanZoom(this.engine, svg, {
+        extent: VIEW_EXTENT,
+        onZoom: (transform) => this.applyZoom(transform)
+      });
+      const canZoom = Boolean(this.panZoom);
+      if (this.canZoom !== canZoom) {
+        this.canZoom = canZoom;
+      }
+    }
+    const nodes = this.template.querySelectorAll(".graph-node");
+    if (nodes.length && nodes.length !== this.boundNodeCount) {
+      this.boundNodeCount = nodes.length;
+      attachNodeDrag(this.engine, nodes, {
+        position: (id) => this.positionOf(id),
+        onDrag: (id, x, y) => this.moveNode(id, x, y)
+      });
+    }
+  }
+
+  unbindGraph() {
+    if (this.panZoom) {
+      this.panZoom.detach();
+    }
+    this.panZoom = undefined;
+    this.boundSvg = undefined;
+    this.boundNodeCount = 0;
+  }
+
+  resetZoomState() {
+    this.zoomTransform = IDENTITY_TRANSFORM;
+    this.zoomScale = 1;
+  }
+
+  applyZoom(transform) {
+    this.zoomTransform = `translate(${transform.x},${transform.y}) scale(${transform.k})`;
+    this.zoomScale = transform.k;
+  }
+
+  positionOf(id) {
+    if (this.moved[id]) {
+      return this.moved[id];
+    }
+    const node =
+      this.layout && this.layout.nodes.find((item) => item.id === id);
+    return node ? { x: node.x, y: node.y } : undefined;
+  }
+
+  // Keeps a dragged node inside the layout box, radius included, like the layout does.
+  moveNode(id, x, y) {
+    const node =
+      this.layout && this.layout.nodes.find((item) => item.id === id);
+    if (!node || !Number.isFinite(x) || !Number.isFinite(y)) {
+      return;
+    }
+    const r = node.radius || 0;
+    this.moved = {
+      ...this.moved,
+      [id]: {
+        x: Math.min(Math.max(x, r), GRAPH_WIDTH - r),
+        y: Math.min(Math.max(y, r), GRAPH_HEIGHT - r)
+      }
+    };
+  }
+
+  get zoomLabel() {
+    return `Zoom ${Math.round(this.zoomScale * 100)}%`;
+  }
+
+  handleZoomIn() {
+    if (this.panZoom) {
+      this.panZoom.zoomIn();
+    }
+  }
+
+  handleZoomOut() {
+    if (this.panZoom) {
+      this.panZoom.zoomOut();
+    }
+  }
+
+  // Puts every dragged node back and zooms out to the whole graph.
+  handleResetView() {
+    this.moved = {};
+    if (this.panZoom) {
+      this.panZoom.reset();
+    } else {
+      this.resetZoomState();
     }
   }
 

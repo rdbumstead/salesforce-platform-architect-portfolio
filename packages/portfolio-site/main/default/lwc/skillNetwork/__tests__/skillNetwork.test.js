@@ -2,6 +2,7 @@
  * @description       : Unit tests for skillNetwork LWC on the Large form factor (the Jest default). Covers the
  *                      matrix, the years rule, chip selection, the view switch, the lazy graph and its engine
  *                      load, the accessible list, the analytics calls and the no hex rule (Round 5 plan M2).
+ *                      Round 7 (audit E1): the zoom controls, the zoom transform, node drag and reset view.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -12,7 +13,12 @@ import SkillNetwork from "c/skillNetwork";
 // Same module as the component, which the Round 3 plan pins.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { graphql } from "lightning/uiGraphQLApi";
-import { loadGraphEngine, layoutGraph } from "c/graphEngine";
+import {
+  attachNodeDrag,
+  attachPanZoom,
+  layoutGraph,
+  loadGraphEngine
+} from "c/graphEngine";
 import { trackEvent } from "c/analyticsService";
 
 const fs = require("fs");
@@ -57,7 +63,12 @@ jest.mock(
 
 jest.mock(
   "c/graphEngine",
-  () => ({ loadGraphEngine: jest.fn(), layoutGraph: jest.fn() }),
+  () => ({
+    loadGraphEngine: jest.fn(),
+    layoutGraph: jest.fn(),
+    attachPanZoom: jest.fn(),
+    attachNodeDrag: jest.fn()
+  }),
   { virtual: true }
 );
 
@@ -131,6 +142,8 @@ describe("c-skill-network (Large form factor)", () => {
     jest.useFakeTimers({ now: TODAY });
     loadGraphEngine.mockResolvedValue({ forceSimulation: jest.fn() });
     layoutGraph.mockImplementation(fakeLayout);
+    attachPanZoom.mockReturnValue(undefined);
+    attachNodeDrag.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -382,6 +395,168 @@ describe("c-skill-network (Large form factor)", () => {
     expect(element.shadowRoot.querySelector(".view-switch")).toBeNull();
     expect(count(element, ".matrix-row")).toBe(3);
     expect(loadGraphEngine).not.toHaveBeenCalled();
+  });
+
+  // Pan, zoom and drag (audit E1). The engine's own tests drive the real d3-zoom and d3-drag.
+  function fakeControls() {
+    return {
+      zoomIn: jest.fn(),
+      zoomOut: jest.fn(),
+      reset: jest.fn(),
+      scale: jest.fn(() => 1),
+      detach: jest.fn()
+    };
+  }
+
+  async function openGraph(element) {
+    switchButton(element, "graph").click();
+    await flushPromises();
+  }
+
+  function graphNode(element, id) {
+    return element.shadowRoot.querySelector(`.graph-node[data-id="${id}"]`);
+  }
+
+  it("shows no zoom controls when the loaded library has no d3-zoom", async () => {
+    const element = await mountWithData();
+    await openGraph(element);
+
+    expect(attachPanZoom).toHaveBeenCalledTimes(1);
+    expect(element.shadowRoot.querySelector(".graph-controls")).toBeNull();
+    expect(element.shadowRoot.querySelector(".graph-svg")).not.toBeNull();
+  });
+
+  it("wires zoom to the graph once and drives it from three named buttons", async () => {
+    const controls = fakeControls();
+    attachPanZoom.mockReturnValue(controls);
+    const element = await mountWithData();
+    await openGraph(element);
+
+    const svg = element.shadowRoot.querySelector(".graph-svg");
+    expect(attachPanZoom).toHaveBeenCalledTimes(1);
+    const [, target, options] = attachPanZoom.mock.calls[0];
+    expect(target).toBe(svg);
+    expect(options.extent).toEqual([
+      [-150, 0],
+      [1110, 840]
+    ]);
+
+    const buttons = [
+      ...element.shadowRoot.querySelectorAll(".graph-controls button")
+    ];
+    expect(buttons.map((button) => button.textContent.trim())).toEqual([
+      "Zoom in",
+      "Zoom out",
+      "Reset view"
+    ]);
+    buttons.forEach((button) => expect(button.type).toBe("button"));
+    expect(
+      element.shadowRoot
+        .querySelector(".graph-controls")
+        .getAttribute("aria-label")
+    ).toBe("Graph view controls");
+
+    buttons[0].click();
+    buttons[1].click();
+    buttons[2].click();
+    expect(controls.zoomIn).toHaveBeenCalledTimes(1);
+    expect(controls.zoomOut).toHaveBeenCalledTimes(1);
+    expect(controls.reset).toHaveBeenCalledTimes(1);
+
+    // Hovering re-renders the graph but binds nothing new.
+    graphNode(element, "a01S1").dispatchEvent(new CustomEvent("mouseenter"));
+    await flushPromises();
+    expect(attachPanZoom).toHaveBeenCalledTimes(1);
+    expect(attachNodeDrag).toHaveBeenCalledTimes(1);
+  });
+
+  it("draws the zoom transform it is given and says the zoom level", async () => {
+    attachPanZoom.mockReturnValue(fakeControls());
+    const element = await mountWithData();
+    await openGraph(element);
+    const viewport = () => element.shadowRoot.querySelector(".graph-viewport");
+    const level = () =>
+      element.shadowRoot.querySelector(".zoom-level").textContent;
+
+    expect(viewport().getAttribute("transform")).toBe(
+      "translate(0,0) scale(1)"
+    );
+    expect(level()).toBe("Zoom 100%");
+
+    const { onZoom } = attachPanZoom.mock.calls[0][2];
+    onZoom({ x: -240, y: -210, k: 1.5 });
+    await flushPromises();
+
+    expect(viewport().getAttribute("transform")).toBe(
+      "translate(-240,-210) scale(1.5)"
+    );
+    expect(level()).toBe("Zoom 150%");
+    expect(
+      element.shadowRoot.querySelector(".zoom-level").getAttribute("aria-live")
+    ).toBe("polite");
+  });
+
+  it("moves a dragged node and its edges, keeps it in the box, and resets the view", async () => {
+    const controls = fakeControls();
+    attachPanZoom.mockReturnValue(controls);
+    const element = await mountWithData();
+    await openGraph(element);
+
+    expect(attachNodeDrag).toHaveBeenCalledTimes(1);
+    const [, nodes, options] = attachNodeDrag.mock.calls[0];
+    expect(nodes).toHaveLength(EXPECTED.nodes);
+
+    const start = options.position("a01S1");
+    const circle = () => graphNode(element, "a01S1").querySelector("circle");
+    expect(Number(circle().getAttribute("cx"))).toBe(start.x);
+
+    options.onDrag("a01S1", 400, 300);
+    await flushPromises();
+    expect(Number(circle().getAttribute("cx"))).toBe(400);
+    expect(Number(circle().getAttribute("cy"))).toBe(300);
+    expect(options.position("a01S1")).toEqual({ x: 400, y: 300 });
+
+    graphNode(element, "a01S1").dispatchEvent(new CustomEvent("mouseenter"));
+    await flushPromises();
+    const edges = [...element.shadowRoot.querySelectorAll(".graph-edge")];
+    expect(edges).toHaveLength(4);
+    edges.forEach((edge) => {
+      expect(Number(edge.getAttribute("x1"))).toBe(400);
+      expect(Number(edge.getAttribute("y1"))).toBe(300);
+    });
+
+    options.onDrag("a01S1", -500, 5000);
+    await flushPromises();
+    const radius = Number(circle().getAttribute("r"));
+    expect(Number(circle().getAttribute("cx"))).toBe(radius);
+    expect(Number(circle().getAttribute("cy"))).toBe(840 - radius);
+
+    element.shadowRoot.querySelector('[data-action="reset"]').click();
+    await flushPromises();
+    expect(Number(circle().getAttribute("cx"))).toBe(start.x);
+    expect(controls.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it("detaches zoom when the matrix opens and starts the next graph unzoomed", async () => {
+    const first = fakeControls();
+    const second = fakeControls();
+    attachPanZoom.mockReturnValueOnce(first).mockReturnValueOnce(second);
+    const element = await mountWithData();
+    await openGraph(element);
+    attachPanZoom.mock.calls[0][2].onZoom({ x: -10, y: -10, k: 2 });
+    await flushPromises();
+
+    switchButton(element, "matrix").click();
+    await flushPromises();
+    expect(first.detach).toHaveBeenCalledTimes(1);
+
+    await openGraph(element);
+    expect(attachPanZoom).toHaveBeenCalledTimes(2);
+    expect(
+      element.shadowRoot
+        .querySelector(".graph-viewport")
+        .getAttribute("transform")
+    ).toBe("translate(0,0) scale(1)");
   });
 
   it("uses no hex colours in its CSS, template or JavaScript", () => {

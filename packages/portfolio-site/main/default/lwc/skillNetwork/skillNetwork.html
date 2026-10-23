@@ -139,8 +139,43 @@
             </template>
             <template lwc:if={showGraphCanvas}>
               <p class="graph-hint">
-                Hover or select a node to see its connections.
+                Hover or select a node to see its connections. Drag a node to
+                move it. Zoom with the buttons or the mouse wheel, and drag the
+                background to pan once zoomed in.
               </p>
+              <template lwc:if={canZoom}>
+                <div
+                  class="graph-controls"
+                  role="group"
+                  aria-label="Graph view controls"
+                >
+                  <button
+                    type="button"
+                    class="graph-control"
+                    data-action="zoom-in"
+                    onclick={handleZoomIn}
+                  >
+                    Zoom in
+                  </button>
+                  <button
+                    type="button"
+                    class="graph-control"
+                    data-action="zoom-out"
+                    onclick={handleZoomOut}
+                  >
+                    Zoom out
+                  </button>
+                  <button
+                    type="button"
+                    class="graph-control"
+                    data-action="reset"
+                    onclick={handleResetView}
+                  >
+                    Reset view
+                  </button>
+                  <span class="zoom-level" aria-live="polite">{zoomLabel}</span>
+                </div>
+              </template>
               <div class="graph-wrapper">
                 <svg
                   class="graph-svg"
@@ -148,53 +183,55 @@
                   aria-hidden="true"
                   focusable="false"
                 >
-                  <template for:each={graphModel.edges} for:item="edge">
-                    <line
-                      key={edge.key}
-                      class="graph-edge"
-                      x1={edge.x1}
-                      y1={edge.y1}
-                      x2={edge.x2}
-                      y2={edge.y2}
-                    ></line>
-                  </template>
-                  <template for:each={graphModel.nodes} for:item="node">
-                    <g
-                      key={node.key}
-                      class={node.className}
-                      data-id={node.id}
-                      onmouseenter={handleNodeEnter}
-                      onmouseleave={handleNodeLeave}
-                      onclick={handleNodeClick}
+                  <g class="graph-viewport" transform={graphModel.transform}>
+                    <template for:each={graphModel.edges} for:item="edge">
+                      <line
+                        key={edge.key}
+                        class="graph-edge"
+                        x1={edge.x1}
+                        y1={edge.y1}
+                        x2={edge.x2}
+                        y2={edge.y2}
+                      ></line>
+                    </template>
+                    <template for:each={graphModel.nodes} for:item="node">
+                      <g
+                        key={node.key}
+                        class={node.className}
+                        data-id={node.id}
+                        onmouseenter={handleNodeEnter}
+                        onmouseleave={handleNodeLeave}
+                        onclick={handleNodeClick}
+                      >
+                        <title>{node.title}</title>
+                        <circle cx={node.cx} cy={node.cy} r={node.r}></circle>
+                        <template lwc:if={node.showLabel}>
+                          <text
+                            class="node-label"
+                            x={node.labelX}
+                            y={node.labelY}
+                            text-anchor={node.anchor}
+                          >
+                            {node.label}
+                          </text>
+                        </template>
+                      </g>
+                    </template>
+                    <template
+                      for:each={graphModel.categories}
+                      for:item="category"
                     >
-                      <title>{node.title}</title>
-                      <circle cx={node.cx} cy={node.cy} r={node.r}></circle>
-                      <template lwc:if={node.showLabel}>
-                        <text
-                          class="node-label"
-                          x={node.labelX}
-                          y={node.labelY}
-                          text-anchor={node.anchor}
-                        >
-                          {node.label}
-                        </text>
-                      </template>
-                    </g>
-                  </template>
-                  <template
-                    for:each={graphModel.categories}
-                    for:item="category"
-                  >
-                    <text
-                      key={category.key}
-                      class="category-label"
-                      x={category.x}
-                      y={category.y}
-                      text-anchor="middle"
-                    >
-                      {category.name}
-                    </text>
-                  </template>
+                      <text
+                        key={category.key}
+                        class="category-label"
+                        x={category.x}
+                        y={category.y}
+                        text-anchor="middle"
+                      >
+                        {category.name}
+                      </text>
+                    </template>
+                  </g>
                 </svg>
               </div>
               <p class="graph-selection" aria-live="polite">

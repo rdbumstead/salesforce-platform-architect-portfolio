@@ -36,7 +36,12 @@ jest.mock(
 
 jest.mock(
   "c/graphEngine",
-  () => ({ loadGraphEngine: jest.fn(), layoutGraph: jest.fn() }),
+  () => ({
+    loadGraphEngine: jest.fn(),
+    layoutGraph: jest.fn(),
+    attachPanZoom: jest.fn(),
+    attachNodeDrag: jest.fn()
+  }),
   { virtual: true }
 );
 
