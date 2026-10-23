@@ -107,14 +107,14 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - Mobile responsive layout passes manual verification on iOS Safari and Android Chrome.
 
 **Technical Acceptance:**
-| Metric | Current Baseline (Est.) | Target (Hard Gate) |
+| Metric | Baseline (measured) | Target and gate |
 | :--- | :--- | :--- |
-| **LCP (Mobile)** | ~3.5s (Standard LWR) | **< 2.5s** |
+| **LCP (Mobile)** | 8.9 s on `/`, live, before Round 5 | Target **2.5 s**. Gate: the best the LWR shell allows, measured: mobile LCP medians of {{L2_RANGE}} on the six main routes |
 | **Apex Coverage** | 78% (Avg Project) | **> 90%** |
 | **Code Scanning** | N/A | **0 Critical Violations** |
 | **Accessibility** | 85 (Avg Theme) | **100** |
 
-- LCP < 2.5s measured via Lighthouse Mobile Audit.
+- LCP measured with a Lighthouse mobile audit, three runs per route, medians. The target is 2.5 s. The LWR framework and the platform's stylesheets alone keep mobile LCP above it, so the gate is the best the LWR shell allows, measured: mobile LCP medians of {{L2_RANGE}} on the six main routes (Technical Guide §2.11).
 - All Apex tests > 90% coverage (Hard Governance Gate).
 - CI/CD pipeline passing (Green build badge on Repo).
 - Zero critical security warnings from PMD Scanner.
@@ -214,7 +214,7 @@ The delivery is organized into four parallel execution tracks:
 | Phase       | Status                         | Rationale                                                               |
 | :---------- | :----------------------------- | :---------------------------------------------------------------------- |
 | **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
-| **MVP**     | **Live**                       | Focus on sub-2.5s LCP and Zero Cost constraint.                         |
+| **MVP**     | **Live**                       | Focus on measured mobile LCP and the Zero Cost constraint.              |
 
 _Design artifacts complete; implementation begins post-launch._
 

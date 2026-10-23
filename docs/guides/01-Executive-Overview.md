@@ -31,7 +31,7 @@ Date: MVP – Q1 2027
 > **For Non-Salesforce Readers:** It proves we can respect budget constraints without sacrificing capability.
 
 - **For Architects:** It demonstrates "Glass Box Telemetry" — showing exactly how the system behaves under load.
-- **For Recruiters:** It is a living proof-of-work that loads in < 2.5 seconds.
+- **For Recruiters:** It is a living proof of work, with its mobile load time measured and published rather than claimed.
 
 If you only inspect one thing, look at the **[Systems Architecture Specification (SAS)](./03-SAS.md)** to see the "North Star" diagram.
 
@@ -82,6 +82,6 @@ To clarify Salesforce-specific terms used throughout this portfolio:
 
 ## 5. Success Criteria (Definition of Done)
 
-This project adheres to strict functional and technical acceptance criteria, including Performance (LCP < 2.5s) and Code Quality (Apex Coverage > 90%).
+This project adheres to strict functional and technical acceptance criteria, including Performance (a 2.5 s mobile LCP target, gated at the best the LWR shell allows, measured: mobile LCP medians of {{L2_RANGE}} on the six main routes) and Code Quality (Apex Coverage > 90%).
 
 For the authoritative definition of all success metrics, quality gates, and "Definition of Done", please refer to the **[Program Charter: Success Criteria](./02-Program-Charter.md#22-success-criteria-definition-of-done)**.

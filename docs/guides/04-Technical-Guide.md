@@ -292,7 +292,7 @@ Round 5 measured every change with the Lighthouse CLI (11.4.0, mobile profile, s
 
 ### 3.1 Key Verification Items
 
-- [ ] **LCP:** Verify < 2.5s via Lighthouse Mobile Audit.
+- [ ] **LCP:** Run a Lighthouse mobile audit (three runs per route, medians) and compare with the 2.5 s target and the recorded gate in §2.11.
 - [ ] **Coverage:** Verify Apex tests > 90% coverage (Hard Gate).
 - [ ] **Security:** Verify Zero critical warnings from PMD Scanner.
 - [ ] **Accessibility:** Confirm the "Pause Animation" toggle exists and works.
