@@ -8,8 +8,8 @@
  *                      A card whose Headline_Metric_Source__c is set gets its number computed
  *                      from a live source (audit F11 and G5): the Employer Hub object count from
  *                      the ERD's describe, the paths in the SAPI_Spec and PAPI_Spec resources,
- *                      the providers the AI fallback chain has switched on, or the newest
- *                      successful Pipeline_Run__c with a test count. The computed number
+ *                      the providers the AI fallback chain has switched on, or the passed test
+ *                      count of the newest successful Pipeline_Run__c with a test count. The computed number
  *                      replaces the first number in the stored metric and fills the label's
  *                      {n} token ({coverage} too for Apex tests). When a source fails, the
  *                      stored text is shown, and a label whose token cannot be filled hides the
@@ -269,7 +269,8 @@ public with sharing class ProjectCardController {
       return null;
     }
     Computed computed = new Computed();
-    computed.n = runs[0].Tests_Run__c?.intValue();
+    // The label says passing, so the number is the passed count (reading R21, log 328).
+    computed.n = runs[0].Tests_Passed__c?.intValue();
     computed.coverage = runs[0].Org_Coverage__c == null
       ? null
       : runs[0]
@@ -358,7 +359,7 @@ public with sharing class ProjectCardController {
 
     private List<Pipeline_Run__c> selectLatestTestRun(String status) {
       return [
-        SELECT Tests_Run__c, Org_Coverage__c
+        SELECT Tests_Passed__c, Org_Coverage__c
         FROM Pipeline_Run__c
         WHERE Status__c = :status AND Tests_Run__c != NULL
         WITH SYSTEM_MODE

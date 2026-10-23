@@ -281,6 +281,27 @@ private class ProjectCardControllerTest {
   }
 
   @IsTest
+  static void shouldShowThePassedCountWhenATestFailedInTheNewestRun() {
+    Pipeline_Run__c newest = run('1', 'Success', 674, 97, Datetime.now());
+    newest.Tests_Passed__c = 673;
+    insert newest;
+    Project__c row = sourced('E', ProjectCardController.SOURCE_APEX_TESTS);
+    row.Headline_Metric__c = '646 Apex tests';
+    row.Headline_Metric_Label__c = TESTS_LABEL;
+    insert row;
+
+    Test.startTest();
+    ProjectCardController.PillarCard card = onlyCard();
+    Test.stopTest();
+
+    Assert.areEqual(
+      '673 Apex tests',
+      card.headlineMetric,
+      'The passed count, never the run count, under a passing label'
+    );
+  }
+
+  @IsTest
   static void shouldShowNoHeadlineWhenTheSourceFailsAndTheLabelHasAToken() {
     Project__c row = sourced('E', ProjectCardController.SOURCE_APEX_TESTS);
     row.Headline_Metric__c = '646 Apex tests';
