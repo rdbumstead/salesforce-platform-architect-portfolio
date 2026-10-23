@@ -54,11 +54,11 @@ All external API calls originate from a secure **Named Credential** accessed via
 
 - **Authentication:** Basic Auth through the `Jira_API` Named Credential (`Jira_Auth` External Credential, `Jira_Principal` principal).
 - **Refresh:** `JiraCacheRefreshJob`, enqueued by the same scheduler, runs the JQL `project = <key> AND labels = "portfolio-roadmap" ORDER BY updated DESC`, where the key is `Portfolio_Config__mdt.Jira_Project_Key__c` (`SPAP`), and inserts one `Jira_Cache__c` row from the first page of 50 issues. Only issues labelled `portfolio-roadmap` become public (owner decision E6, 2026-10-21).
-- **Component:** `c-roadmap-viewer` reads the newest row through `DeliveryController.getRoadmap(simulate)` and places issues in To Do, In Progress and Done by Jira status category, so a renamed workflow status cannot empty a column. It never calls Jira.
+- **Component:** `c-roadmap-viewer` reads the newest row through `DeliveryController.getRoadmap(simulate)` and places issues in To Do, In Progress and Done by Jira status category, so a renamed workflow status cannot empty a column. It never calls Jira. Cards name their epic as "Part of {name} | {key}", epic cards come first in each column, and the Done column shows the newest eight with a "Show all N shipped" button for the rest.
 - **Principal access:** the scheduling admin user reaches both principals through `Portfolio_Admin` (owner decision E8, 2026-10-21). `Integration_Access` keeps them too, by the owner's choice. `Portfolio_Guest` has neither.
 - **Degraded Mode:**
   - After three consecutive failures, the `jira` circuit breaker skips Jira refreshes for 30 minutes, and `DeliveryController` reports `DEGRADED` while it is open.
-  - With no usable cache row, the user sees a "Roadmap temporarily unavailable" message.
+  - With no usable cache row, the user sees a plain empty line ("Nothing on the roadmap yet"), and only a failed read shows "Roadmap temporarily unavailable".
 - **Logging.** `JiraCacheRefreshJob.refresh` logs the same two cases (no config record, a failed refresh) through `PortfolioLog.info`, the failure by exception type only.
 
 ### 1.3 AI Content Generation (Agentforce switch off)
