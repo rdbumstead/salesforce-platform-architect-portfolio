@@ -251,7 +251,7 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
 
 ### 2.10 Project Asset Gallery and Decision Matrix
 
-**`c/projectAssetGallery`** (properties `pillar` A to E and `heading`) reads `Project__c` by `Pillar__c` with `Project_Assets__r` through `lightning/uiGraphQLApi`, ordered by Sort Order. An Image shows with its alt text and opens full size in a new tab. A Document is a download link. A Video or Link is an external link with `rel="noopener"` and no embed. An asset with no URL shows its name and "Not available yet". URLs that start with http or https are used as they are. `resource:<Name>/<path>` becomes `<site base path>/sfsites/c/resource/<Name>/<path>`, so images ship as static resources deployed by CI. Any other value gets no link. Opening an asset sends `gallery_asset_opened` with the type and pillar. It is generic, so any project page can reuse it. A `Url` field accepts the `resource:` form (`SchemaServiceTest.assetUrlFieldAcceptsResourcePath`), so no extra field was needed.
+**`c/projectAssetGallery`** (properties `pillar` A to E and `heading`) reads `Project__c` by `Pillar__c` with `Project_Assets__r` through `lightning/uiGraphQLApi`, ordered by Sort Order. An Image shows with its alt text and opens full size in a new tab. A Document is a download link. A Video or Link is an external link with `rel="noopener"` and no embed. An asset with no URL shows its name and "Not available yet". URLs that start with http or https are used as they are. `resource:<Name>/<path>` becomes `<site base path>/sfsites/c/resource/<Name>/<path>`, so images ship as static resources deployed by CI. Any other value gets no link. Opening an asset sends `gallery_asset_opened` with the type and pillar. It is generic, so any project page can reuse it. With no assets, or when the read fails, it renders nothing at all, no heading and no note (Round 6), so a pillar with no published material shows no empty section. A `Url` field accepts the `resource:` form (`SchemaServiceTest.assetUrlFieldAcceptsResourcePath`), so no extra field was needed.
 
 **`c/decisionMatrix`** shows the Pillar B matrix ([ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)):
 
@@ -285,12 +285,7 @@ Round 5 measured every change with the Lighthouse CLI (11.4.0, mobile profile, s
 ## 3. Quality Assurance Checklist
 
 > [!TIP]
-> **Show, Don't Tell:** Instead of manually checking these items, run the unified verification script to audit the entire system state in one command:
->
-> ```bash
-> npm run pre-launch-check
-> # Runs: LCP audit (Lighthouse), PMD security scan, Apex test coverage, and Circuit Breaker simulation
-> ```
+> **Not a launch step.** `npm run pre-launch-check` was meant to run these checks in one command, but it cannot pass today: its Prettier step fails across the repo and its coverage step needs fixing. It is off the launch list until the owner fixes the script. The merge gates (lint, Jest, Prettier on changed files, the analyzer and a full Apex run) cover these checks instead.
 
 ### 3.1 Key Verification Items
 
