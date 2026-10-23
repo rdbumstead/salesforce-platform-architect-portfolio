@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Primary_Contact__c</fullName>
     <description
-  >The person at the employer the college works with first.</description>
+  >The person at the employer the education provider works with first.</description>
     <inlineHelpText
   >Pick the employer's main contact for this engagement.</inlineHelpText>
     <label>Primary Contact</label>

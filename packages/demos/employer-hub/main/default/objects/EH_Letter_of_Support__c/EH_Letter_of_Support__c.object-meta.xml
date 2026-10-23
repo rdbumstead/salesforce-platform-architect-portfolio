@@ -2,7 +2,7 @@
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <deploymentStatus>Deployed</deploymentStatus>
     <description
-  >The Letter of Support object tracks a letter an employer partner writes for a college grant or program, linked to the request Case and the signing Contact. It holds the status, requested and due dates and a summary. Inert demo schema for the Employer Hub ERD.</description>
+  >The Letter of Support object tracks a letter an employer partner writes for an education provider's grant or program, linked to the request Case and the signing Contact. It holds the status, requested and due dates and a summary. Inert demo schema for the Employer Hub ERD.</description>
     <externalSharingModel>Private</externalSharingModel>
     <label>Letter of Support</label>
     <nameField>
