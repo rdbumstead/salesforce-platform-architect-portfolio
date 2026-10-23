@@ -344,7 +344,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.2 Pillar B: Pre-Sales Consultancy (Nonprofit Literacy Solutions)
 
 > [!NOTE]
-> **Built in Round 5, awaiting the Round 5 pull request and the owner's deploy.** Every score and weight in the matrix is a placeholder until the owner reviews it, and the page says so in a banner. The client is described as "a regional adult literacy nonprofit" and never named (owner decision D4 b). Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production (owner decision D1 a).
+> **Live since Round 5.** Every score and weight in the matrix is a placeholder until the owner reviews it, and the page says so in a banner. The client is described as "a regional adult literacy nonprofit" and never named (owner decision D4 b). Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production (owner decision D1 a).
 
 - **Objective:** Demonstrate ROI analysis and Solution Design.
 - **Page:** `/nonprofit-solutions`. `c-pillar-b-story` tells the pre-sales story in six sections (the client, discovery, the decision matrix, ROI and cost, solution design, the outcome), then `c-decision-matrix`, then `c-project-asset-gallery` for the Pillar B media.

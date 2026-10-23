@@ -10,13 +10,13 @@
 [![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 > [!IMPORTANT]
-> **Project Status:** Architecture complete (6 enterprise docs, 30 ADRs) • MVP code in development.
+> **Project Status:** Live. Architecture complete (6 enterprise docs, 30 ADRs) • MVP launched.
 >
-> **Target Launch:** Q1 2027.
+> **Launched:** October 2026.
 
 **Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 
-**Live App:** [https://ryanbumstead.com](https://ryanbumstead.com) (Static placeholder until MVP launch)
+**Live App:** [https://ryanbumstead.com](https://ryanbumstead.com), which redirects to the Experience Cloud site and keeps the path
 
 > [!TIP]
 > **Non-Salesforce Reader?** This is a full enterprise-grade system built on the Salesforce CRM platform. It functions as a high-scale public web app with real-time data, AI-generated content, and strict DevOps protocols.
@@ -108,7 +108,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix) — Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
 - [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine): one dispatch from the Gemini API to a deterministic Local Template, grounded on portfolio records (Agentforce switch off, not implemented)
 
-**Available at MVP Launch (Q1 2027):**
+**Live on the site:**
 
 - **Real-time observability** — Glass Box footer showing live Salesforce governor limits (Heap, CPU, SOQL) and AI provider health
 - **Resilience simulation**: a "Simulate an outage" switch on the changelog and the roadmap shows the cached fallback, and a real outage opens a circuit breaker that the footer and the page report
@@ -118,10 +118,10 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 
 ---
 
-## Interactive Demonstrations (Live Q1 2027)
+## Interactive Demonstrations
 
 > [!NOTE]
-> Detailed preview of items from the "Available at Launch" section above. The live site is currently under development.
+> A closer look at the items in the "Live on the site" section above. Each one can be tried on the live site.
 
 **Resilience Engineering**
 
