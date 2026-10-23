@@ -38,7 +38,7 @@ private class ProjectCardControllerTest {
   }
 
   @IsTest
-  static void shouldReturnEmptyList_WhenNoProjectsExist() {
+  static void shouldReturnEmptyListWhenNoProjectsExist() {
     Test.startTest();
     List<ProjectCardController.PillarCard> cards = ProjectCardController.getPillarCards();
     Test.stopTest();
@@ -48,7 +48,7 @@ private class ProjectCardControllerTest {
   }
 
   @IsTest
-  static void shouldReturnOneRowPerLetterInLetterOrder_WhenLettersHaveSeveralProjects() {
+  static void shouldReturnOneRowPerLetterInLetterOrderWhenLettersHaveSeveralProjects() {
     List<Project__c> projects = new List<Project__c>{
       project('E one', 'E', false, 1),
       project('C one', 'C', false, 1),
@@ -74,7 +74,7 @@ private class ProjectCardControllerTest {
   }
 
   @IsTest
-  static void shouldPreferFeaturedThenSortOrderThenName_WhenChoosingTheRowForALetter() {
+  static void shouldPreferFeaturedThenSortOrderThenNameWhenChoosingTheRowForALetter() {
     Project__c featured = project('Z featured', 'D', true, 50);
     featured.Headline_Metric__c = 'featured';
     Project__c lowSort = project('A low sort', 'D', false, 1);
@@ -120,7 +120,7 @@ private class ProjectCardControllerTest {
   }
 
   @IsTest
-  static void shouldReturnEveryCardField_WhenFieldsAreSet() {
+  static void shouldReturnEveryCardFieldWhenFieldsAreSet() {
     Project__c apiLab = project('Work Experience API', 'C', true, 30);
     apiLab.Headline_Metric__c = '  ' + METRIC + '  ';
     apiLab.Headline_Metric_Label__c = LABEL;
@@ -142,7 +142,7 @@ private class ProjectCardControllerTest {
   }
 
   @IsTest
-  static void shouldReturnNulls_WhenCardFieldsAreBlank() {
+  static void shouldReturnNullsWhenCardFieldsAreBlank() {
     Project__c blank = project('Blank', 'E', false, 1);
     blank.Headline_Metric__c = '   ';
     insert blank;
@@ -160,7 +160,7 @@ private class ProjectCardControllerTest {
   }
 
   @IsTest
-  static void shouldIgnoreProjectsWithNoPillar_WhenSelecting() {
+  static void shouldIgnoreProjectsWithNoPillarWhenSelecting() {
     insert new List<Project__c>{
       project('No pillar', null, true, 1),
       project('Pillar A', 'A', false, 1)
