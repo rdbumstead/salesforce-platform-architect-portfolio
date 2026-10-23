@@ -183,6 +183,7 @@ The Skills page (`c/skillNetwork`) opens on a matrix: one row per skill category
 
 - **Pdf Generation:** Performs client-side PDF generation using **jsPDF**.
 - **Logic:** The underlying Apex logic filters `Experience_Highlight__c` records based on the user's requested **Persona Tag** (e.g., Admin vs. Architect).
+- **Certifications:** current certifications are listed newest first with issuer and earned month, then one "Verify on Trailhead" link, then the retired ones in their own list, so the link never reads as covering them. `Certification__c.Is_Retired__c` separates the two. The link comes from `Portfolio_Config__mdt.Credential_Verification_URL__c`, a Text field so the value renders exactly as stored, through `ResumeController` as `credentialVerificationUrl`. With no value set, no link shows.
 
 ### 2.3 `c-testimonial-submit` (Social Proof)
 
@@ -299,6 +300,12 @@ Round 5 measured every change with the Lighthouse CLI (11.4.0, mobile profile, s
 | `/nonprofit-solutions`   | 6.24 s | 8.43 s (8.61, 8.43, 7.33)  |
 
 - **The gate.** Mobile LCP on the scratch site measured 7.5 to 9.6 s with Lighthouse 11 mobile, which is the best the LWR shell allows, against a 2.5 s target. Accessibility scored 1 on every run. The same code measured twice spreads by up to 3.9 s on one route (`/skills`, 5.71 to 9.71 s), so a single run proves little. These are scratch numbers, not live ones.
+
+### 2.12 Home Page Cards and Timeline
+
+- **Pillar cards.** `ProjectCardController.getPillarCards()` is a cacheable Apex method that reads `Project__c` through a `without sharing` selector in system mode and returns one row per pillar letter (featured first, then sort order, then name) with five fields: `pillar`, `headlineMetric`, `headlineLabel`, `imageUrl`, `imageAlt`. `heroBanner` merges the rows into its cards by letter. A card leads with its number only when both `Headline_Metric__c` and `Headline_Metric_Label__c` are set, and shows its image only when both `Hero_Image_URL__c` and `Hero_Image_Alt__c` are set. The static `c/pillarData` still draws every card, so a missing row or a failed read changes nothing. The read goes through Apex rather than GraphQL because the Apex adapter is already on the home page for the hero.
+- **Card images.** `Project_Card_Images` holds one 640 by 360 WebP per pillar (`pillar-a.webp` to `pillar-e.webp`), each under 25 KB, cropped from that pillar's own public page in the light theme with nothing that identifies a person. Records point at them as `resource:Project_Card_Images/pillar-x.webp`, resolved by `c/externalUrl` `toSiteAssetUrl` the same way as the project gallery. Images load lazily below the hero, so the bio stays the first paint.
+- **Timeline.** `ResumeController.getTimeline()` returns roles and schools newest first through the same `without sharing`, system mode selector as the resume, in a fixed shape with no email, phone, address or `Owner_*` field. The site guest needs class access only. `c/experienceTimeline` follows the tabs pattern: a tab list with `aria-selected` and a roving tab index, ArrowLeft, ArrowRight, Home and End move between tabs, and each panel has `role="tabpanel"`. It renders nothing when both lists are empty, hides a tab whose list is empty, uses only the site tokens with 44 px tap targets, and sends `timeline_tab_changed` on a tab change.
 
 ## 3. Quality Assurance Checklist
 
