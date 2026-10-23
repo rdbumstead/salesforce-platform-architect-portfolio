@@ -22,6 +22,15 @@
 @font-face {
   font-family: "Inter";
   font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../../../resource/Portfolio_Fonts/inter-latin-500-normal.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
   font-weight: 600;
   font-display: swap;
   src: url("../../../resource/Portfolio_Fonts/inter-latin-600-normal.woff2")
