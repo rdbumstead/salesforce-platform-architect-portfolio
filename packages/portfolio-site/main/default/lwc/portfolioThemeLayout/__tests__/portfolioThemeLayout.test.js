@@ -30,7 +30,7 @@ jest.mock(
         "nonprofit-solutions",
         "B",
         "Nonprofit Solutions",
-        "Pre-Sales Consultancy",
+        "Solution Architecture",
         ["Solution design", "Decision matrix"]
       ],
       [
