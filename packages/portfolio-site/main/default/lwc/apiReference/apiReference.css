@@ -17,9 +17,10 @@
   font-family: var(--pf-font-sans);
 }
 
+/* Pinned just below the site header, whose height the component measures (audit F5). */
 .reference-body_full .spec-toggle {
   position: sticky;
-  top: 0;
+  top: var(--reference-sticky-top, 0);
   z-index: 1;
   padding: var(--pf-space-2) 0;
   background-color: var(--pf-surface);

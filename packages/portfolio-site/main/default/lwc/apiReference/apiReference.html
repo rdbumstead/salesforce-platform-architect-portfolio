@@ -83,7 +83,11 @@
 
       <div class={targetClass}>
         <div class="redoc-styles" lwc:dom="manual"></div>
-        <div class="redoc-target" lwc:dom="manual"></div>
+        <div
+          class="redoc-target"
+          lwc:dom="manual"
+          onclick={handleRedocClick}
+        ></div>
       </div>
     </div>
   </article>
