@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Path__c</fullName>
+    <description
+  >The file's path from the repository root on the main branch. The source refresh job reads this file from GitHub.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >Enter the path from the repository root, for example packages/portfolio-site/main/default/lwc/apiTester/apiTester.js. No leading slash.</inlineHelpText>
+    <label>Path</label>
+    <length>255</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

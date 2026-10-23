@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Source_Key__c</fullName>
+    <description
+  >The component key a c-view-source control passes, for example apiTester. Matched exactly.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >Enter one of the fixed keys: skillNetwork, schemaVisualizer, decisionMatrix, apiTester, resumeBuilder or roadmapViewer.</inlineHelpText>
+    <label>Source Key</label>
+    <length>40</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
