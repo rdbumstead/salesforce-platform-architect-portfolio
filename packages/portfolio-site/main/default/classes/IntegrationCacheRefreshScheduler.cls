@@ -15,6 +15,11 @@
 public with sharing class IntegrationCacheRefreshScheduler implements Schedulable {
   public static final String JOB_NAME_PREFIX = 'Integration Cache Refresh :';
 
+  // Tests schedule under their own prefix, because an org that runs the refresh already
+  // holds jobs with the real names and a second schedule under a name in use fails.
+  @TestVisible
+  private static String jobNamePrefix = JOB_NAME_PREFIX;
+
   /** Minutes past the hour the refresh runs. */
   public static final List<Integer> MINUTES = new List<Integer>{
     0,
@@ -46,7 +51,8 @@ public with sharing class IntegrationCacheRefreshScheduler implements Schedulabl
 
   /**
    * @description Schedules the four runs, named JOB_NAME_PREFIX plus the minute (":00" and
-   *              so on). Fails if a job with that name is already scheduled.
+   *              so on). A test sets its own prefix. Fails if a job with that name is
+   *              already scheduled.
    * @return List<Id> The CronTrigger ids, in MINUTES order.
    * @example
    * IntegrationCacheRefreshScheduler.scheduleAll();
@@ -56,7 +62,7 @@ public with sharing class IntegrationCacheRefreshScheduler implements Schedulabl
     for (Integer minute : MINUTES) {
       jobIds.add(
         System.schedule(
-          JOB_NAME_PREFIX + String.valueOf(minute).leftPad(2, '0'),
+          jobNamePrefix + String.valueOf(minute).leftPad(2, '0'),
           cronFor(minute),
           new IntegrationCacheRefreshScheduler()
         )
