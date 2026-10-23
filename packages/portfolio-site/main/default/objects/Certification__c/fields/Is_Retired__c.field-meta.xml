@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Retired__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Marks a certification Salesforce no longer lists on the public verification page. The resume shows it in a separate Retired list, below the Verify on Trailhead link, so the link never reads as covering it.</description>
+    <inlineHelpText
+  >Tick when the certification is retired and no longer appears on Trailhead.</inlineHelpText>
+    <label>Is Retired</label>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>
