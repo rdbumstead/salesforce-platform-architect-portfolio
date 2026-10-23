@@ -4,10 +4,10 @@
     <externalId>false</externalId>
     <formula>CASE(Pillar__c,
     &quot;A&quot;, &quot;Pillar A: Business Architecture&quot;,
-    &quot;B&quot;, &quot;Pillar B: Pre-Sales Consultancy&quot;,
-    &quot;C&quot;, &quot;Pillar C: Integration &amp; API-Led&quot;,
-    &quot;D&quot;, &quot;Pillar D: AI &amp; Agentforce&quot;,
-    &quot;E&quot;, &quot;Pillar E: DevOps &amp; Automation&quot;,
+    &quot;B&quot;, &quot;Pillar B: Solution Architecture&quot;,
+    &quot;C&quot;, &quot;Pillar C: Work Experience Verification API&quot;,
+    &quot;D&quot;, &quot;Pillar D: AI &amp; Innovation&quot;,
+    &quot;E&quot;, &quot;Pillar E: Agile Delivery &amp; DevOps&quot;,
     &quot;Unassigned&quot;
 )</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
