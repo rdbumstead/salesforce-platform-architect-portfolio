@@ -128,6 +128,14 @@ describe("c-decision-matrix", () => {
     jest.clearAllMocks();
   });
 
+  it("places View source with the decisionMatrix key at the top (contract P2)", async () => {
+    const element = await createComponent();
+
+    const control = q(element, ".card-tools c-view-source");
+    expect(control).not.toBeNull();
+    expect(control.sourceKey).toBe("decisionMatrix");
+  });
+
   it("renders an accessible table with a caption, column and row headers", async () => {
     const element = await createComponent();
     const table = q(element, "table");

@@ -1,6 +1,9 @@
 <template>
   <lightning-card title="Skill Network" icon-name="standard:invocable_action">
     <div class="slds-p-around_medium network-body">
+      <div class="card-tools">
+        <c-view-source source-key="skillNetwork"></c-view-source>
+      </div>
       <template lwc:if={isLoading}>
         <div class="state state-loading">
           <lightning-spinner

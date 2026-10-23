@@ -369,3 +369,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* View source (contract P2), at the top right of the card body. */
+.card-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--pf-space-2);
+}

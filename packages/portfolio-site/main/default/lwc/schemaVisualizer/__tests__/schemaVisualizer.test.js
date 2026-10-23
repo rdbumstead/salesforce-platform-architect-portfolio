@@ -103,6 +103,15 @@ describe("c-schema-visualizer", () => {
     jest.clearAllMocks();
   });
 
+  it("places View source with the schemaVisualizer key beside the heading (contract P2)", async () => {
+    const element = mount();
+    await flushPromises();
+
+    const control = q(element, ".erd-header c-view-source");
+    expect(control).not.toBeNull();
+    expect(control.sourceKey).toBe("schemaVisualizer");
+  });
+
   it("asks for the employerHub scope by default and shows a loading line", async () => {
     const element = mount();
     await flushPromises();
