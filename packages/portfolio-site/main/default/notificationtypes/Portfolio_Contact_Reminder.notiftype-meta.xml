@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomNotificationType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customNotifTypeName>Portfolio Contact Reminder</customNotifTypeName>
+    <description
+  >Tells the Lead owner a portfolio contact form message arrived, then reminds them at one and two business days while the Lead keeps its starting status. Sent to the desktop and the Salesforce mobile app.</description>
+    <desktop>true</desktop>
+    <masterLabel>Portfolio Contact Reminder</masterLabel>
+    <mobile>true</mobile>
+</CustomNotificationType>
