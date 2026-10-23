@@ -111,7 +111,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 
 **Live on the site:**
 
-- **Real-time observability** — Glass Box footer showing live Salesforce governor limits (Heap, CPU, SOQL) and AI provider health
+- **Real-time observability**: the Glass Box footer shows live governor limits (Heap, CPU, SOQL), the org's daily API request and async Apex quotas, AI provider health and the GitHub and Jira circuit breakers
 - **Resilience simulation**: a "Simulate an outage" switch on the changelog and the roadmap shows the cached fallback, and a real outage opens a circuit breaker that the footer and the page report
 - **Executable governance**: a checklist on the Delivery page ticks "production deploy green", "heartbeat in the last 26 hours" and "caches under 30 minutes" only from pipeline evidence, written by a platform event that CI publishes
 - **Interactive API testing** — Built-in developer console to call REST endpoints through a Named Credential proxy, compare against OpenAPI spec, verify `X-Request-Id` and rate-limit headers; external reviewers can request a short-lived token and `curl` the APIs directly

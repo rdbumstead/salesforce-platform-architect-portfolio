@@ -452,6 +452,7 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 - **Technical Detail:** For the refresh jobs, the caches and the governance event, refer to the **[Technical Guide: Jira Integration](./04-Technical-Guide.md#12-jira-integration-roadmap)** and **[Executable Governance](./04-Technical-Guide.md#25-c-smart-checklist-executable-governance)**.
 - **Mechanism:** the CI/CD pipeline publishes the `Governance_Event__e` platform event, an Apex trigger persists it as a `Pipeline_Run__c` record, and the `c-smart-checklist` component reads the result through cacheable Apex ([ADR-019 Round 4 amendment](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-21-round-4)).
 - **Workflow:** after a production deploy (`deploy.yml`) and after the daily heartbeat (`keep-alive.yml`), the workflow's existing JWT user publishes one event with the run's status, id, URL, commit and time. The trigger upserts `Pipeline_Run__c` by `Run_Key__c`, so a replayed event changes nothing. The component reads `GovernanceController.getPipelineStatus()` when the page is viewed and again when the tab becomes visible. There is no timer and no polling. Each item shows its evidence (the commit linking to the run, and the time), and an item with no data shows "No signal yet".
+- **Page text:** since Round 7 the Delivery page's introduction describes this in the present tense: after every production deploy and every daily heartbeat the pipeline publishes the result, passed or failed, and the checklist says so when a run failed or is out of date (`sfdc_cms__view/Delivery/content.json`).
 - **What it claims:** the production deploy is green, the heartbeat ran in the last 26 hours, and the integration caches are under 30 minutes old.
 - **Why no browser subscription:** `lightning-emp-api` is unsupported in LWR sites, and each subscribed browser would count against the org's 20 concurrent streaming clients. The event-driven part is server-side: publish, an asynchronous subscriber and idempotent handling of a replayed event.
 - **Roadmap and changelog:** `c-roadmap-viewer` and `c-changelog` read cached Jira and GitHub data through `DeliveryController` (cacheable Apex). Scheduled Queueable jobs refresh the caches every 15 minutes, so a visitor never triggers a callout ([ADR-007 Round 4 amendment](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-round-4)). The roadmap shows only `SPAP` issues labelled `portfolio-roadmap`. The site's CDN caching of guest Apex stays off (owner decision E9), so every visit reads the org.
@@ -485,8 +486,8 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-code-viewer`:** Shows one source file highlighted by `c/prismHighlighter`. It fetches nothing itself.
 - **`c-view-source`:** The View source button and dialog on the showcase components. It reads cached GitHub source through `SourceController.getSourceFiles` and never calls GitHub ([Technical Guide §2.14](./04-Technical-Guide.md#214-view-source-c-view-source)).
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
-- **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category. It makes no callout.
-- **`c-footer`:** Contains the GitHub Actions deploy badge and the Glass Box telemetry (section 9).
+- **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category, each capped at 8 cards with its own "Show all N" button. It makes no callout.
+- **`c-footer`:** Contains the GitHub Actions deploy badge, the Glass Box telemetry (section 9) and a Contact link to the home page's `#contact` section.
 - **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
 - **`c-schema-visualizer`:** The live ERD on the Pillar A page, drawn with the shared D3 engine (section 5.1).
 - **`c-project-asset-gallery`:** The image, document, video and link gallery for any pillar's project, from `Project_Asset__c`.
@@ -584,6 +585,8 @@ Ensuring the system fails gracefully during outage events ([ADR-022 Round 4 amen
 The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box Telemetry". It loads after the first paint ([ADR-014](../adr/014-deferred-telemetry-loading-performance.md)) from `FooterController.getSystemSnapshot()`, which is not cacheable, so the values are current.
 
 - **Limits:** CPU time, heap size and SOQL queries used against their governor limits, read from `Limits` in that transaction.
+- **Org quotas:** daily API requests and daily async Apex executions against their limits, from `OrgLimits`. A quota the org does not report is left out, never guessed.
+- **Integration breakers:** the GitHub and Jira circuit breakers, closed or open until a time, beside the AI providers.
 - **AI provider health:** each provider's switch and state from `ContentGenerationController.providerStatus()`, including when an open circuit closes again.
 - **AI requests today:** the sum of today's AI tier counts in `API_Rate_Window__c` (the site cover letter and `/papi/v1/ai/generate` both count). It counts requests, not Gemini calls, so it is never labelled as a Gemini quota (owner decision PD-D9, 2026-10-21). Hovering over or focusing it sends the GA4 event `finops_quota_visibility`.
 - **Deploy status:** the GitHub Actions badge for `deploy.yml` on `main`, with a text link when the image cannot load.

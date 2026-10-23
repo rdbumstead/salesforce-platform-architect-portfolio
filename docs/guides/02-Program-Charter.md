@@ -41,7 +41,7 @@ This Program Charter defines the strategic intent and delivery plan for the Sale
 
 This is not a static website. It is a live, observable platform governed by production constraints. It demonstrates "Enterprise Grade" as a mindset through:
 
-- **Glass Box Telemetry:** Real-time visibility into Governor Limits (Heap, CPU) and API quotas, proving FinOps and multi-tenant awareness.
+- **Glass Box Telemetry:** Real-time visibility into Governor Limits (Heap, CPU, SOQL), the org's daily API request and async Apex quotas, and the AI, GitHub and Jira circuit breakers, proving FinOps and multi-tenant awareness.
 - **Dynamic Architecture:** A live Entity Relationship Diagram (ERD) generated from the actual production schema, not a static image.
 - **Executable Governance:** Documentation that self-verifies against runtime state (e.g., "Pipeline Green" checks verify themselves).
 - **Resilience Simulation:** On-demand testing of fallback patterns and Circuit Breakers (e.g., severing GitHub integration to test graceful degradation).
