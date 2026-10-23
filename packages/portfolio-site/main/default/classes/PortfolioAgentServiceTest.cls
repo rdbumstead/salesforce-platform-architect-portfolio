@@ -132,7 +132,7 @@ private class PortfolioAgentServiceTest {
   }
 
   @IsTest
-  static void shouldLeaveOwnerEmailAndPhoneOut_WhenContextIsBuilt() {
+  static void leavesTheOwnerEmailAndPhoneOutOfTheContext() {
     Contact c = [SELECT Id FROM Contact LIMIT 1];
     PortfolioAgentService.PortfolioContextRequest req = new PortfolioAgentService.PortfolioContextRequest();
     req.contactId = c.Id;
