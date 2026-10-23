@@ -122,8 +122,9 @@ jest.mock(
 );
 
 // Every K7 route URL (Round 3 plan section 4) plus the API reference page (log 155).
-// Home is the brand link.
+// Home is the brand link and the first nav link (Round 6 plan, N1).
 const EXPECTED_HREFS = [
+  "/portfolio/",
   "/portfolio/",
   "/portfolio/resume",
   "/portfolio/skills",
@@ -259,6 +260,22 @@ describe("c-portfolio-theme-layout", () => {
         )
       ];
       expect(hrefs).toEqual(EXPECTED_HREFS);
+    });
+
+    it("lists Home first, with the brand href, then Resume, Skills and Testimonials", () => {
+      const element = render();
+      const brand = element.shadowRoot.querySelector(".site-brand");
+      const items = Array.from(
+        element.shadowRoot.querySelectorAll(".nav-list > .nav-item")
+      );
+      const first = items[0].querySelector("a");
+      expect(first.textContent).toBe("Home");
+      expect(first.dataset.key).toBe("home");
+      expect(first.getAttribute("href")).toBe(brand.getAttribute("href"));
+      expect(brand.textContent).toBe("Ryan Bumstead");
+      expect(
+        items.map((item) => item.querySelector(".nav-link").textContent.trim())
+      ).toEqual(["Home", "Resume", "Skills", "Testimonials", "Pillars"]);
     });
 
     it("lists pillars A to E from pillarData with their SAS names", () => {
@@ -544,6 +561,7 @@ describe("c-portfolio-theme-layout", () => {
       await flush();
 
       const link = element.shadowRoot.querySelector(".nav-link");
+      expect(link.dataset.key).toBe("home");
       link.addEventListener("click", (event) => event.preventDefault());
       link.click();
       await flush();

@@ -1,6 +1,6 @@
 /**
  * @description       : Site theme layout. Renders the slim sticky header for every portfolio page
- *                      (name, Resume, Skills, Testimonials, a Pillars menu and the theme toggle), the
+ *                      (name, Home, Resume, Skills, Testimonials, a Pillars menu and the theme toggle), the
  *                      page content in the unnamed slot, and the footer region.
  *                      Owns the theme (Round 4 plan, contract L2): the stylesheet follows the system
  *                      setting, and the toggle writes data-theme and the portfolio-theme storage key.
@@ -15,7 +15,9 @@ import { PILLARS } from "c/pillarData";
 import { trackEvent, EVENTS } from "c/analyticsService";
 
 // Route URLs match the urlPrefix of each route in the Portfolio1 site bundle (K7).
+// Home comes first and shares its href with the brand link (Round 6 plan, N1).
 const PAGES = [
+  { key: "home", label: "Home", url: "" },
   { key: "resume", label: "Resume", url: "resume" },
   { key: "skills", label: "Skills", url: "skills" },
   { key: "testimonials", label: "Testimonials", url: "testimonials" }
