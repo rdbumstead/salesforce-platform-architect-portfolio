@@ -327,7 +327,7 @@
             "node": {
               "Id": "S17",
               "Name": {
-                "value": "AntV G6 (Graph)"
+                "value": "D3.js"
               },
               "Category__c": {
                 "value": "Frontend"

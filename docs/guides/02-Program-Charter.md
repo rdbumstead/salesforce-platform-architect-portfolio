@@ -41,7 +41,7 @@ This Program Charter defines the strategic intent and delivery plan for the Sale
 
 This is not a static website. It is a live, observable platform governed by production constraints. It demonstrates "Enterprise Grade" as a mindset through:
 
-- **Glass Box Telemetry:** Real-time visibility into Governor Limits (Heap, CPU) and API quotas, proving FinOps and multi-tenant awareness.
+- **Glass Box Telemetry:** Real-time visibility into Governor Limits (Heap, CPU, SOQL), the org's daily API request and async Apex quotas, and the AI, GitHub and Jira circuit breakers, proving FinOps and multi-tenant awareness.
 - **Dynamic Architecture:** A live Entity Relationship Diagram (ERD) generated from the actual production schema, not a static image.
 - **Executable Governance:** Documentation that self-verifies against runtime state (e.g., "Pipeline Green" checks verify themselves).
 - **Resilience Simulation:** On-demand testing of fallback patterns and Circuit Breakers (e.g., severing GitHub integration to test graceful degradation).
@@ -52,7 +52,7 @@ This is not a static website. It is a live, observable platform governed by prod
 
 - 100% on-platform data access using Apex REST + native Salesforce GraphQL (lightning/uiGraphQLApi)
 - Skill Graph and Project Gallery use the native GraphQL wire adapter. The Roadmap and Changelog read cached Jira and GitHub data through Apex (`DeliveryController`), because the cache is one JSON row per refresh, not one record per item (owner decision E7, 2026-10-21)
-- No external dependencies required
+- External services the site depends on: the Gemini API for cover letters (with a local template when it fails), GitHub and Jira for the Delivery page (read by scheduled jobs into caches, never by a visitor), and Google Analytics 4 for events. No middleware, server or database outside Salesforce is required
 
 #### Target Enterprise State – Phase 8 (2027-2028) – _Design Complete / Implementation Deferred_
 
@@ -102,7 +102,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 
 - All 5 pillars accessible via guided navigation.
 - API tester successfully calls at least 3 endpoints (Experience, Skills, Certifications).
-- Resume generates in both ATS (Plain Text) and Creative (PDF) modes.
+- The resume downloads as one text based PDF, and a "Copy ATS text" button copies the plain text version (`c-resume-builder`).
 - The skills page shows the matrix on every device, and its graph view opens on desktop and tablet only.
 - Mobile responsive layout passes manual verification on iOS Safari and Android Chrome.
 
@@ -110,17 +110,17 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 | Metric | Current Baseline (Est.) | Target (Hard Gate) |
 | :--- | :--- | :--- |
 | **LCP (Mobile)** | 8.9 s on `/`, live, before Round 5 (measured) | Target **2.5 s**. Gate: the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes |
-| **Apex Coverage** | 78% (Avg Project) | **> 90%** |
-| **Code Scanning** | N/A | **0 Critical Violations** |
+| **Apex Coverage** | 97% org wide (`scripts/coverage-gate.js`, scratch org run, 2026-10-23) | **90% or more**, enforced on every pull request |
+| **Code Scanning** | N/A | **0 Critical or High violations** (`npm run scan`) |
 | **Accessibility** | 85 (Avg Theme) | **100** |
 
 - LCP measured with a Lighthouse mobile audit, three runs per route, medians. The target is 2.5 s. Most of the mobile LCP is render delay in the LWR framework's own script, which keeps it above the target, so the gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes (Technical Guide §2.11).
-- All Apex tests > 90% coverage (Hard Governance Gate).
+- Every Apex test passes and org wide coverage is 90% or more. `pr.yml` runs every local test in a scratch org and `scripts/coverage-gate.js --min 90` fails the pull request otherwise.
 - CI/CD pipeline passing (Green build badge on Repo).
-- Zero critical security warnings from PMD Scanner.
+- No Critical or High violations from Salesforce Code Analyzer (`npm run scan`, `--severity-threshold 2`, run on every pull request).
 - The network log shows no `D3_Library` request until a graph view is opened.
 - Lighthouse Accessibility score remains 100 with the "Matrix | Graph" view switch present.
-- Skills graph: D3 force layout (`d3-force` and three helper modules, an 18,544 byte static resource, down from the 1.57 MB G6 library), loaded only when a visitor opens the graph view on desktop or tablet. Phones show the skills matrix and request no graph engine, and the Pillar A ERD shows its object list.
+- Skills graph: D3 force layout with pan, zoom and node drag (eleven D3 modules, an 81,502 byte static resource since Round 7, against the 1.57 MB G6 library), loaded only when a visitor opens the graph view on desktop or tablet. Phones show the skills matrix and request no graph engine, and the Pillar A ERD shows its object list.
 
 **Engagement:**
 
@@ -135,7 +135,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 
 - Greater than 20% of visitors interact with "API Tester" or "Resume Builder" (verified via Custom Events).
   - **api_test_executed:** User successfully calls an endpoint in the API Tester.
-  - **resume_downloaded** (`format` `pdf`): User exports a resume in Creative Mode.
+  - **resume_downloaded** (`format` `pdf` or `ats`): User downloads the PDF or copies the ATS text.
   - **resilience_test_triggered:** User toggles the "Resilience Simulation" switch.
 
 **Reach:**
@@ -171,17 +171,17 @@ The delivery is organized into four parallel execution tracks:
 - **GitHub Repo Init:** (Branch Protection Rules).
 - **CI/CD Pipeline V1:** (Validation Only).
 
-**Phase 2: Data & API Layer (In Progress)**
+**Phase 2: Data & API Layer (Completed)**
 
 - **Schema Deployment:** (Completed)
-- **Apex REST Services:** (`SAPIProject`, `SAPIExperience`).
-- **Data Loading:** (Seed Data).
+- **Apex REST Services:** (Completed) 15 SAPI and 8 PAPI paths, contract v1.3.0.
+- **Data Loading:** (Completed) seed data in `data/site`.
 
-**Phase 3: UI Framework (Pending)**
+**Phase 3: UI Framework (Completed)**
 
-- **Theme Layout:** Component.
-- **Hero Banner:** (Dynamic).
-- **Navigation Service.**
+- **Theme Layout:** `c-portfolio-theme-layout`, with the header, the Pillars menu and the theme toggle.
+- **Hero Banner:** `c-hero-banner`, with the tour and the pillar cards.
+- **Navigation:** the header and the tour read one pillar list, `c/pillarData`.
 
 **Phase 4: Integrations**
 
@@ -197,7 +197,7 @@ The delivery is organized into four parallel execution tracks:
 
 **Phase 6: Observability & Launch**
 
-- **System Health "Glass Box Telemetry":** Develop `c-system-health-footer` with deferred loading (ADR-014) to visualize Heap/CPU/API limits.
+- **System Health "Glass Box Telemetry":** `c-footer` with deferred loading (ADR-014) shows CPU, heap and SOQL use against their limits, AI provider health and AI requests today.
 - **Enterprise Logging:** the owner installs Nebula Logger (unlocked package, no namespace) in production and sets 2-day retention. Apex reaches it only through the `PortfolioLog` seam.
 - **Resilience Simulation:** Implement "Resilience Simulation" toggle to force-test Circuit Breakers and cached data fallbacks.
 - **Analytics Instrumentation:** Deploy Google Analytics 4 (GA4) with custom events for API tests and resume downloads.
@@ -235,7 +235,7 @@ _Design artifacts complete; implementation begins post-launch._
 - **API Lab Upgrade:**
   - Enable "Enterprise Mode" toggle
   - Live payload comparison (Native vs Lambda)
-  - Real-time rate-limit counters in `c-system-health-footer`
+  - Real-time rate-limit counters in `c-footer`
 
 **Phase 9: Edge AI Proxy (Cloudflare Workers)**
 
@@ -246,8 +246,8 @@ _Design artifacts complete; implementation begins post-launch._
 - **A.1:** Configure Connected App (JWT) & GitHub Secrets.
 - **D.1:** Deploy `Project__c` Object.
 - **D.2:** Deploy `Testimonial__c` Object.
-- **E.1:** Write ProjectControllerTest (90% Hard Gate).
-- **A.7:** Generate C4 Level 1 diagram in IcePanel & Upload as Static Resource.
+- **E.1:** Apex tests for every class, with org wide coverage gated at 90% on every pull request (`scripts/coverage-gate.js`).
+- **A.7:** Not built: no C4 diagram was exported or uploaded as a static resource. The diagrams are the Mermaid blocks in the guides.
 - **1.3:** Verify Technical Acceptance Criteria (CI/CD Green, LCP Baseline).
 
 **Phase 2: Delivery**
@@ -263,14 +263,14 @@ _Design artifacts complete; implementation begins post-launch._
 - **Dev:** Implement `SAPIExperience` Apex Class (System API).
 - **Appendix C:** Configure MuleSoft Governance Policies (Reference Implementation).
 - **Docs:** Upload Redoc documentation as Static Resource.
-- **Dev:** Develop `c-api-tester` LWC with fetch() harness.
+- **Dev:** Develop `c-api-tester` LWC, which calls the APIs through the Apex proxy `ApiLabController` and the `Portfolio_API` Named Credential, with no browser `fetch()`.
 - **A.4:** Implement GitHub Live Feed, the custom object cache (`Github_Cache__c`), and the Queueable refresh with its scheduler.
 
 **Phase 4: Innovation**
 
 - **A.6:** Agentforce Service Agent and topic grounding. Not built: Agentforce is a switch in the dispatch that ships off (SAS Appendix A.6).
 - **Security:** Enable "Lightning Web Security" in Session Settings.
-- **Asset:** the `D3_Library` static resource (`d3-force` and its three dependencies, Public cache). It replaced `G6_Library` in Round 5.
+- **Asset:** the `D3_Library` static resource (`d3-force` and its dependencies, plus d3-zoom and d3-drag since Round 7, Public cache). It replaced `G6_Library` in Round 5.
 - **Dev:** `c-skill-network` shows the matrix and draws the graph view through `c/graphEngine`.
 - **Optimization:** the engine loads only when the graph view opens (network log proof).
 - **Mobile:** phones show the matrix and never request the engine. This replaced the planned static SVG fallback ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md)).
@@ -279,14 +279,14 @@ _Design artifacts complete; implementation begins post-launch._
 
 **Phase 5: Optimization**
 
-- **Dev:** Implement `LogService.cls` (Email Offloading).
+- **Dev:** Logging through one seam, `PortfolioLog`, to Nebula Logger when installed and debug logs otherwise. The planned `LogService.cls` with email offloading was not built.
 - **Dev:** Implement "Vibe-Gate" logic on `c-testimonial-submit`.
 - **Docs:** Generate C4 Level 2 & 3 Diagrams in IcePanel.
 
 **Phase 6: Observability & Launch**
 
 - **Dev:** Install Nebula Logger (Unlocked Pkg) & configure `LoggerSettings__c`.
-- **Dev:** Build `c-system-health-footer` LWC (Glass Box Telemetry) using requestIdleCallback.
+- **Dev:** Build `c-footer` LWC (Glass Box Telemetry) using requestIdleCallback.
 - **Dev:** Implement `AnalyticsService.js` for unified GA4 event tracking.
 - **Config:** Add "Resilience Simulation" toggle and resilience logic to `GitHubService.cls`.
 - **QA:** Verify "Glass Box Telemetry" matches actual Developer Console limits.
@@ -313,15 +313,15 @@ Before user stories are written, features are evaluated against a "Problem State
 
 ### 5.3 Core User Stories
 
-| ID          | Persona               | I Want To...                     | So That...                                                     |
-| :---------- | :-------------------- | :------------------------------- | :------------------------------------------------------------- |
-| **SPAP-47** | Motion-Sensitive User | Pause animations                 | The site is accessible and I avoid motion sickness triggers.   |
-| **SPAP-46** | Mobile User           | Have fast loading visuals        | Performance stays high and I don't burn data.                  |
-| **SPAP-44** | Visitor               | See an animated skill network    | I understand capability relationships visually.                |
-| **SPAP-40** | Recruiter             | Generate a tailored cover letter | I immediately see candidate fit without reading a generic bio. |
-| **SPAP-35** | Viewer                | See live roadmap data            | I know the current project status and active work.             |
-| **SPAP-31** | Recruiter             | See persona-specific bullets     | I see role-relevant accomplishments (Admin vs Architect).      |
-| **SPAP-30** | Recruiter             | Download resumes                 | I can store them in my ATS for compliance.                     |
-| **SPAP-29** | Recruiter             | View a dynamic resume            | I can evaluate relevant experience quickly.                    |
-| **SPAP-28** | Visitor               | Have guided navigation           | I can complete the 5-minute tour efficiently.                  |
-| **SPAP-27** | Site Visitor          | See a clear hero banner          | I immediately understand the purpose of the portfolio.         |
+| ID          | Persona               | I Want To...                     | So That...                                                                                                                               |
+| :---------- | :-------------------- | :------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| **SPAP-47** | Motion-Sensitive User | Avoid motion                     | The site is accessible and I avoid motion sickness triggers. Met by design: nothing on the site animates, so no pause control is needed. |
+| **SPAP-46** | Mobile User           | Have fast loading visuals        | Performance stays high and I don't burn data.                                                                                            |
+| **SPAP-44** | Visitor               | See a skill network              | I understand capability relationships visually. Built as a static D3 graph beside the skills matrix, with no animation.                  |
+| **SPAP-40** | Recruiter             | Generate a tailored cover letter | I immediately see candidate fit without reading a generic bio.                                                                           |
+| **SPAP-35** | Viewer                | See live roadmap data            | I know the current project status and active work.                                                                                       |
+| **SPAP-31** | Recruiter             | See persona-specific bullets     | I see role-relevant accomplishments (Admin vs Architect).                                                                                |
+| **SPAP-30** | Recruiter             | Download resumes                 | I can store them in my ATS for compliance.                                                                                               |
+| **SPAP-29** | Recruiter             | View a dynamic resume            | I can evaluate relevant experience quickly.                                                                                              |
+| **SPAP-28** | Visitor               | Have guided navigation           | I can complete the 5-minute tour efficiently.                                                                                            |
+| **SPAP-27** | Site Visitor          | See a clear hero banner          | I immediately understand the purpose of the portfolio.                                                                                   |

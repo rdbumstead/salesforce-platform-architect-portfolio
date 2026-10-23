@@ -175,3 +175,10 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* View source (contract P2), at the top right of the matrix. */
+.card-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--pf-space-2);
+}

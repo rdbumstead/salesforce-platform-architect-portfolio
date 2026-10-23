@@ -9,7 +9,8 @@
       "Category__c": "Backend",
       "Category_Order__c": 1,
       "Proficiency__c": 5,
-      "Color_Hex__c": "#1B96FF"
+      "Color_Hex__c": "#1B96FF",
+      "Persona_Tag__c": "Developer;Architect"
     },
     {
       "attributes": {
@@ -20,7 +21,8 @@
       "Category__c": "Backend",
       "Category_Order__c": 1,
       "Proficiency__c": 4,
-      "Color_Hex__c": "#1B96FF"
+      "Color_Hex__c": "#1B96FF",
+      "Persona_Tag__c": "Developer"
     },
     {
       "attributes": {
@@ -32,7 +34,8 @@
       "Category_Order__c": 1,
       "Proficiency__c": 3,
       "Color_Hex__c": "#1B96FF",
-      "Display_Name__c": "Seed Integration"
+      "Display_Name__c": "Seed Integration",
+      "Persona_Tag__c": "Architect"
     },
     {
       "attributes": {
@@ -44,7 +47,8 @@
       "Category_Order__c": 2,
       "Proficiency__c": 5,
       "Color_Hex__c": "#04844B",
-      "Display_Name__c": "Seed Lightning Web Components"
+      "Display_Name__c": "Seed Lightning Web Components",
+      "Persona_Tag__c": "Developer"
     },
     {
       "attributes": {
@@ -66,7 +70,8 @@
       "Category__c": "Frontend",
       "Category_Order__c": 2,
       "Proficiency__c": 3,
-      "Color_Hex__c": "#04844B"
+      "Color_Hex__c": "#04844B",
+      "Persona_Tag__c": "Admin"
     }
   ]
 }

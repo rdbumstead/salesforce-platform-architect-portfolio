@@ -11,7 +11,7 @@
 
 /** Event names, literal and final. The comment after each is its params. */
 export const EVENTS = Object.freeze({
-  API_TEST_EXECUTED: "api_test_executed", // path, status
+  API_TEST_EXECUTED: "api_test_executed", // path, status, param_count
   API_REFERENCE_OPENED: "api_reference_opened", // spec: sapi or papi
   AI_GENERATION_COMPLETED: "ai_generation_completed", // provider, model, fallback, latency_ms, outcome
   AI_COMPLETE_FAILURE: "ai_complete_failure", // message_kind
@@ -24,6 +24,7 @@ export const EVENTS = Object.freeze({
   RESILIENCE_TEST_TRIGGERED: "resilience_test_triggered", // source: changelog or roadmap
   SKILLS_VIEW_CHANGED: "skills_view_changed", // view
   SKILL_SELECTED: "skill_selected", // skill, years
+  SKILLS_PERSONA_FILTERED: "skills_persona_filtered", // persona
   ERD_SCOPE_CHANGED: "erd_scope_changed", // scope
   ERD_NODE_SELECTED: "erd_node_selected", // object
   GALLERY_ASSET_OPENED: "gallery_asset_opened", // type, pillar

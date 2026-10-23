@@ -13,6 +13,7 @@ import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
   HOSTED_REFERENCE_URL,
   REDOC_OPTIONS,
+  REDOC_STYLE_OVERRIDES,
   REDOC_LINK_COLOR,
   REDOC_TAB_COLORS,
   RENDER_TIMEOUT_MS,
@@ -180,7 +181,9 @@ describe("c-api-reference", () => {
     expect(window.Redoc.init).toHaveBeenCalledTimes(1);
     const [spec, options, target] = window.Redoc.init.mock.calls[0];
     expect(spec).toBe("SAPI_Spec");
-    expect(options).toBe(REDOC_OPTIONS);
+    expect(options.theme).toBe(REDOC_OPTIONS.theme);
+    expect(options.disableSearch).toBe(true);
+    expect(typeof options.scrollYOffset).toBe("number");
     expect(options.disableSearch).toBe(true);
     expect(options.disableTelemetry).toBeUndefined();
     expect(options.hideDownloadButton).toBe(true);
@@ -290,6 +293,10 @@ describe("c-api-reference", () => {
     const copied = query(element, ".redoc-styles style");
     expect(copied).not.toBeNull();
     expect(copied.textContent).toContain(".redoc-rule");
+    // The underline override comes after Redoc's rules, so it wins.
+    expect(copied.textContent.trim().endsWith(REDOC_STYLE_OVERRIDES)).toBe(
+      true
+    );
     document.head
       .querySelectorAll("style[data-styled]")
       .forEach((style) => style.remove());
@@ -333,6 +340,13 @@ describe("c-api-reference", () => {
       expect(copy.length).toBeGreaterThan(0);
       expect(copy.equals(source)).toBe(true);
     });
+  });
+
+  it("keeps every generated spec copy in step with scripts/sync-specs.js (audit G2)", () => {
+    // The one source is packages/integration-api/specs. A failure here means a spec changed
+    // without node scripts/sync-specs.js being run.
+    const sync = require(join(process.cwd(), "scripts/sync-specs.js"));
+    expect(sync.differences()).toEqual([]);
   });
 
   it("fills the page and opens without a click on its own page", async () => {

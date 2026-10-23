@@ -1,0 +1,61 @@
+{
+  "records": [
+    {
+      "attributes": {
+        "type": "Testimonial__c",
+        "referenceId": "TestimonialRef1"
+      },
+      "Author_Name__c": "Seed Manager",
+      "Author_Title__c": "Seed Director",
+      "Relationship_Type__c": "Manager",
+      "Vibe_Mode__c": "Professional",
+      "Context__c": "I'm a manager, and Ryan turns messy requirements into clean designs. The result? We launched on time.",
+      "Strength_Fragment__c": "Professional_Strength_02",
+      "Outcome_Fragment__c": "Professional_Outcome_01",
+      "Note__c": "Seed note for scratch orgs only.",
+      "Approved__c": true,
+      "Sort_Order__c": 1
+    },
+    {
+      "attributes": {
+        "type": "Testimonial__c",
+        "referenceId": "TestimonialRef2"
+      },
+      "Author_Name__c": "Seed Peer",
+      "Relationship_Type__c": "Peer",
+      "Vibe_Mode__c": "Casual",
+      "Context__c": "I'm a peer, and Ryan speaks fluent Flow. The result? It just works. Witchcraft.",
+      "Strength_Fragment__c": "Casual_Strength_03",
+      "Outcome_Fragment__c": "Casual_Outcome_04",
+      "Approved__c": true,
+      "Sort_Order__c": 2
+    },
+    {
+      "attributes": {
+        "type": "Testimonial__c",
+        "referenceId": "TestimonialRef3"
+      },
+      "Author_Name__c": "Seed Visitor",
+      "Relationship_Type__c": "Fan",
+      "Vibe_Mode__c": "Professional",
+      "Context__c": "I'm a fan or visitor, and Ryan explains the complex simply. The result? Every conversation left me sharper.",
+      "Strength_Fragment__c": "Professional_Strength_01",
+      "Outcome_Fragment__c": "Professional_Outcome_08",
+      "Approved__c": true,
+      "Sort_Order__c": 3
+    },
+    {
+      "attributes": {
+        "type": "Testimonial__c",
+        "referenceId": "TestimonialRef4"
+      },
+      "Author_Name__c": "Seed Pending",
+      "Relationship_Type__c": "Client",
+      "Vibe_Mode__c": "Professional",
+      "Context__c": "I'm a client, and Ryan documents everything, properly. The result? The handover was painless.",
+      "Strength_Fragment__c": "Professional_Strength_10",
+      "Outcome_Fragment__c": "Professional_Outcome_04",
+      "Approved__c": false
+    }
+  ]
+}

@@ -8,7 +8,10 @@
  * @Created           : 10/21/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import PortfolioThemeLayout from "c/portfolioThemeLayout";
+import PortfolioThemeLayout, {
+  BACK_TO_TOP_MIN_PX,
+  BACK_TO_TOP_SCREENS
+} from "c/portfolioThemeLayout";
 import { PILLARS, reset, setComingLetters } from "c/pillarData";
 import { trackEvent } from "c/analyticsService";
 
@@ -30,7 +33,7 @@ jest.mock(
         "nonprofit-solutions",
         "B",
         "Nonprofit Solutions",
-        "Pre-Sales Consultancy",
+        "Solution Architecture",
         ["Solution design", "Decision matrix"]
       ],
       [
@@ -688,6 +691,145 @@ describe("c-portfolio-theme-layout", () => {
           .querySelector(".theme-toggle")
           .getAttribute("aria-pressed")
       ).toBe("true");
+    });
+  });
+  describe("floating Back to top (Round 7 F6)", () => {
+    let frames;
+    let footerTop;
+
+    function scrollTo(y, height = 800) {
+      window.innerHeight = height;
+      window.scrollY = y;
+      window.dispatchEvent(new CustomEvent("scroll"));
+      frames.splice(0).forEach((callback) => callback());
+      return flush();
+    }
+
+    function button(element) {
+      return element.shadowRoot.querySelector(
+        '[data-id="floating-back-to-top"]'
+      );
+    }
+
+    function renderWithFooter() {
+      const element = render();
+      const footer = element.shadowRoot.querySelector(".region-footer");
+      footer.getBoundingClientRect = () => ({ top: footerTop });
+      return element;
+    }
+
+    beforeEach(() => {
+      frames = [];
+      footerTop = 5000;
+      window.requestAnimationFrame = jest.fn((callback) => {
+        frames.push(callback);
+        return frames.length;
+      });
+      window.scrollTo = jest.fn();
+      mockSystemTheme(false);
+    });
+
+    afterEach(() => {
+      delete window.requestAnimationFrame;
+      window.scrollY = 0;
+    });
+
+    it("stays hidden near the top and appears once well down the page", async () => {
+      const element = renderWithFooter();
+      expect(button(element)).toBeNull();
+
+      await scrollTo(BACK_TO_TOP_MIN_PX);
+      expect(button(element)).toBeNull();
+
+      await scrollTo(800 * BACK_TO_TOP_SCREENS + 1);
+      const control = button(element);
+      expect(control.tagName).toBe("BUTTON");
+      expect(control.getAttribute("type")).toBe("button");
+      expect(control.textContent.trim()).toBe("Back to top");
+    });
+
+    it("rises above the footer while the footer is on screen", async () => {
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      expect(button(element).getAttribute("style") || "").toBe("");
+
+      footerTop = 500;
+      await scrollTo(3200);
+      const control = button(element);
+      expect(control).not.toBeNull();
+      expect(control.getAttribute("style")).toContain(
+        "calc(300px + var(--pf-space-4))"
+      );
+    });
+
+    it("sits after the main content and before the footer in the tab order", async () => {
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      const control = button(element);
+      const main = element.shadowRoot.querySelector('[data-id="main-content"]');
+      const footer = element.shadowRoot.querySelector(".region-footer");
+      expect(
+        main.compareDocumentPosition(control) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        control.compareDocumentPosition(footer) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    });
+
+    it("stays while it has focus, even when the page scrolls back up", async () => {
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      button(element).focus();
+      await scrollTo(40);
+      expect(button(element)).not.toBeNull();
+
+      button(element).blur();
+      await flush();
+      expect(button(element)).toBeNull();
+    });
+
+    it("scrolls smoothly to the top and moves focus to the main content", async () => {
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      button(element).click();
+      await flush();
+
+      expect(window.scrollTo).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: "smooth"
+      });
+      const main = element.shadowRoot.querySelector('[data-id="main-content"]');
+      expect(main.getAttribute("tabindex")).toBe("-1");
+      expect(element.shadowRoot.activeElement).toBe(main);
+      expect(button(element)).toBeNull();
+    });
+
+    it("jumps without animation when reduced motion is asked for", async () => {
+      window.matchMedia = jest.fn().mockImplementation((query) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }));
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      button(element).click();
+
+      expect(window.scrollTo).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: "auto"
+      });
+    });
+
+    it("stops listening to scroll when removed", () => {
+      const remove = jest.spyOn(window, "removeEventListener");
+      const element = renderWithFooter();
+      document.body.removeChild(element);
+      expect(remove).toHaveBeenCalledWith("scroll", expect.any(Function));
+      remove.mockRestore();
     });
   });
 });

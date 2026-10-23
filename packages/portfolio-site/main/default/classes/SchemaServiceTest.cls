@@ -209,6 +209,38 @@ private class SchemaServiceTest {
   }
 
   @isTest
+  static void countObjectsMatchesTheGraphForEachScope() {
+    for (
+      String scope : new List<String>{
+        SchemaService.SCOPE_PORTFOLIO,
+        SchemaService.SCOPE_EMPLOYER_HUB
+      }
+    ) {
+      Assert.areEqual(
+        SchemaService.getSchemaGraph(scope).objectCount,
+        SchemaService.countObjects(scope),
+        'The card count equals the ERD count for ' + scope
+      );
+    }
+  }
+
+  @isTest
+  static void countObjectsRejectsAnUnknownOrNullScope() {
+    for (String scope : new List<String>{ 'everything', null }) {
+      try {
+        SchemaService.countObjects(scope);
+        Assert.fail('An unknown scope should throw');
+      } catch (AuraHandledException error) {
+        Assert.areEqual(
+          SchemaService.UNKNOWN_SCOPE_MESSAGE,
+          error.getMessage(),
+          'Error message'
+        );
+      }
+    }
+  }
+
+  @isTest
   static void nullScopeThrows() {
     try {
       SchemaService.getSchemaGraph(null);

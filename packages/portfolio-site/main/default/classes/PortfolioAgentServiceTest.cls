@@ -132,6 +132,40 @@ private class PortfolioAgentServiceTest {
   }
 
   @IsTest
+  static void leavesTheOwnerEmailAndPhoneOutOfTheContext() {
+    Contact c = [SELECT Id FROM Contact LIMIT 1];
+    PortfolioAgentService.PortfolioContextRequest req = new PortfolioAgentService.PortfolioContextRequest();
+    req.contactId = c.Id;
+
+    Test.startTest();
+    String jsonString = PortfolioAgentService.getPortfolioContext(
+        new List<PortfolioAgentService.PortfolioContextRequest>{ req }
+      )[0]
+      .jsonContext;
+    Test.stopTest();
+
+    Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(
+      jsonString
+    );
+    Map<String, Object> profile = (Map<String, Object>) payload.get('Profile');
+    Map<String, Object> contactInfo = (Map<String, Object>) profile.get(
+      'Contact_Info'
+    );
+    Assert.isFalse(
+      contactInfo.containsKey('Email'),
+      'The owner email must not be in the agent payload'
+    );
+    Assert.isFalse(
+      contactInfo.containsKey('Phone'),
+      'The owner phone must not be in the agent payload'
+    );
+    Assert.isTrue(
+      contactInfo.containsKey('LinkedIn'),
+      'The public profile links stay in the payload'
+    );
+  }
+
+  @IsTest
   static void testGetPortfolioContextInvalidId() {
     PortfolioAgentService.PortfolioContextRequest req = new PortfolioAgentService.PortfolioContextRequest();
     req.contactId = '003000000000000AAA'; // Fake ID

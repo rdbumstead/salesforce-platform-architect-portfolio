@@ -37,45 +37,6 @@
         />
       </div>
 
-      <div class="field">
-        <label class="field-label" for="relationship"
-          >How do you know Ryan?</label
-        >
-        <select
-          id="relationship"
-          class="field-input"
-          name="relationship"
-          required
-          onchange={handleInput}
-        >
-          <option value="" selected={noRelationship}>Choose one</option>
-          <template for:each={relationshipOptions} for:item="option">
-            <option
-              key={option.value}
-              value={option.value}
-              selected={option.selected}
-            >
-              {option.label}
-            </option>
-          </template>
-        </select>
-      </div>
-
-      <div class="field">
-        <label class="field-label" for="context">Your review</label>
-        <textarea
-          id="context"
-          class="field-input field-textarea"
-          name="context"
-          required
-          rows="4"
-          maxlength={maxContextLength}
-          aria-describedby="context-count"
-          oninput={handleInput}
-        ></textarea>
-        <p id="context-count" class="field-hint">{contextCount}</p>
-      </div>
-
       <div class="field vibe-field">
         <span class="field-label" id="vibe-label">Vibe</span>
         <button
@@ -84,6 +45,7 @@
           role="switch"
           aria-checked={vibeChecked}
           aria-labelledby="vibe-label vibe-value"
+          aria-describedby="vibe-hint"
           onclick={handleVibeToggle}
           data-id="vibe-toggle"
         >
@@ -92,6 +54,118 @@
           ></span>
           <span class="vibe-value" id="vibe-value">{vibeLabel}</span>
         </button>
+        <p id="vibe-hint" class="field-hint">{vibeHint}</p>
+      </div>
+
+      <template lwc:if={loadError}>
+        <p class="message message-error" role="alert" data-id="load-error">
+          {loadError}
+        </p>
+      </template>
+
+      <fieldset class="sentence" data-id="sentence">
+        <legend class="field-label sentence-legend">
+          Your sentence: I'm a [relationship], and Ryan [strength]. The result?
+          [outcome]
+        </legend>
+        <div class="blank">
+          <label class="blank-label" for="relationship">I'm a</label>
+          <select
+            id="relationship"
+            class="field-input blank-input"
+            name="relationship"
+            required
+            onchange={handleInput}
+          >
+            <option value="" selected={noRelationship}>
+              Choose a relationship
+            </option>
+            <template for:each={relationshipOptions} for:item="option">
+              <option
+                key={option.value}
+                value={option.value}
+                selected={option.selected}
+              >
+                {option.label}
+              </option>
+            </template>
+          </select>
+        </div>
+        <div class="blank">
+          <label class="blank-label" for="strength">and Ryan</label>
+          <select
+            id="strength"
+            class="field-input blank-input"
+            name="strength"
+            required
+            onchange={handleInput}
+          >
+            <option value="" selected={noStrength}>Choose a strength</option>
+            <template for:each={strengthOptions} for:item="option">
+              <option
+                key={option.value}
+                value={option.value}
+                selected={option.selected}
+              >
+                {option.label}
+              </option>
+            </template>
+          </select>
+        </div>
+        <div class="blank">
+          <label class="blank-label" for="outcome">The result?</label>
+          <select
+            id="outcome"
+            class="field-input blank-input"
+            name="outcome"
+            required
+            onchange={handleInput}
+          >
+            <option value="" selected={noOutcome}>Choose a result</option>
+            <template for:each={outcomeOptions} for:item="option">
+              <option
+                key={option.value}
+                value={option.value}
+                selected={option.selected}
+              >
+                {option.label}
+              </option>
+            </template>
+          </select>
+        </div>
+        <p class="preview" aria-live="polite" data-id="preview">
+          {previewText}
+        </p>
+      </fieldset>
+
+      <div class="field">
+        <label class="field-label" for="note"
+          >Anything to add? (optional)</label
+        >
+        <textarea
+          id="note"
+          class="field-input field-textarea"
+          name="note"
+          rows="3"
+          maxlength={maxNoteLength}
+          aria-describedby="note-count"
+          oninput={handleInput}
+        ></textarea>
+        <p id="note-count" class="field-hint">{noteCount}</p>
+      </div>
+
+      <div class="trap" aria-hidden="true">
+        <label for="website">Leave this field empty</label>
+        <input
+          id="website"
+          name="website"
+          type="text"
+          aria-label="Leave this field empty"
+          tabindex="-1"
+          autocomplete="off"
+          value={form.website}
+          oninput={handleInput}
+        />
       </div>
 
       <div class="actions">

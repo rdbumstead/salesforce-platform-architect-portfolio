@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted, made real in Round 7 (2026-10-23, see the amendment below).
 
 ## Context
 
@@ -19,3 +19,9 @@ Enforces a "Block First" policy for unapproved content at the kernel level, adhe
 ## Implications
 
 Operates as a hard filter on record visibility specifically for the Guest User profile.
+
+## Amendment (2026-10-23, Round 7): the rule now does the filtering
+
+Until Round 7 the guest could not read any testimonial, so `Block_Unapproved_Testimonials` filtered nothing. The testimonial wall (audit B2) needs the guest to read approved rows, so a guest sharing rule, `Guest_Read_Testimonials`, shares every testimonial read only with the guest, and the restriction rule alone hides the unapproved ones.
+
+That this holds is proven, not assumed: `TestimonialGuestAccessTest.theGuestNeverReadsAnUnapprovedTestimonial` runs as the real site guest over the seeded rows. With the restriction rule deployed inactive it fails, because the guest reads the pending row, and with the rule active it passes. `TestimonialController.getApprovedTestimonials` also filters on `Approved__c = true`, so the wall would stay correct even without the rule, and the rule protects every other path a guest could take to the object.

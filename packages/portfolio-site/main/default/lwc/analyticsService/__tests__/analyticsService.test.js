@@ -37,14 +37,17 @@ const M6_NAMES = [
 // Round 6 plan N6, appended under M6's append only rule.
 const N6_NAMES = ["timeline_tab_changed"];
 
+// Round 7, appended through the orchestrator under the same rule.
+const R7_NAMES = ["skills_persona_filtered"];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
   });
 
-  it("lists exactly the L4, M6 and N6 event names", () => {
+  it("lists exactly the event names of Rounds 4 to 7", () => {
     expect(Object.values(EVENTS).sort()).toEqual(
-      [...L4_NAMES, ...M6_NAMES, ...N6_NAMES].sort()
+      [...L4_NAMES, ...M6_NAMES, ...N6_NAMES, ...R7_NAMES].sort()
     );
   });
 

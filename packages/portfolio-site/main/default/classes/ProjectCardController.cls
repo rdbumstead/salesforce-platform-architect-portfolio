@@ -1,9 +1,19 @@
 /**
- * @description       : Serves the home page pillar cards (Round 6 plan N7, readings R7 and R9).
- *                      Returns one row per pillar letter, A to E, holding only the headline
- *                      number, its label and the card image with its alternative text. The
- *                      static c/pillarData still drives every card, so heroBanner merges these
- *                      rows in by letter and a missing row changes nothing.
+ * @description       : Serves the home page pillar cards (Round 6 plan N7, Round 7 plan P5).
+ *                      Returns one row per pillar letter, A to E, with the headline number and
+ *                      its label, the card image with its alternative text, and the case study
+ *                      (Challenge, Solution, Business Value, Live and Source links). The static
+ *                      c/pillarData still drives every card, so heroBanner merges these rows in
+ *                      by letter and a missing row changes nothing.
+ *                      A card whose Headline_Metric_Source__c is set gets its number computed
+ *                      from a live source (audit F11 and G5): the Employer Hub object count from
+ *                      the ERD's describe, the paths in the SAPI_Spec and PAPI_Spec resources,
+ *                      the providers the AI fallback chain has switched on, or the passed test
+ *                      count of the newest successful Pipeline_Run__c with a test count. The computed number
+ *                      replaces the first number in the stored metric and fills the label's
+ *                      {n} token ({coverage} too for Apex tests). When a source fails, the
+ *                      stored text is shown, and a label whose token cannot be filled hides the
+ *                      headline, so a broken number never reaches the page.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -11,6 +21,24 @@
  * @Test Class        : [ProjectCardControllerTest]
  **/
 public with sharing class ProjectCardController {
+  public static final String SOURCE_EMPLOYER_HUB_OBJECTS = 'Employer Hub objects';
+  public static final String SOURCE_API_PATHS = 'API paths';
+  public static final String SOURCE_AI_PROVIDERS = 'AI providers';
+  public static final String SOURCE_APEX_TESTS = 'Apex tests';
+  /** headlineSource when the card shows its stored text. */
+  public static final String SOURCE_STORED = 'stored';
+
+  private static final String TOKEN_N = '{n}';
+  private static final String TOKEN_COVERAGE = '{coverage}';
+  private static final Pattern ANY_TOKEN = Pattern.compile('\\{[a-z]+\\}');
+  private static final Pattern FIRST_NUMBER = Pattern.compile('\\d[\\d,]*');
+  private static final Pattern SPEC_PATH = Pattern.compile('^  /\\S*:\\s*$');
+  private static final List<String> SPEC_RESOURCES = new List<String>{
+    'SAPI_Spec',
+    'PAPI_Spec'
+  };
+  private static final String PIPELINE_SUCCESS = 'Success';
+
   private static final List<String> PILLAR_LETTERS = new List<String>{
     'A',
     'B',
@@ -19,9 +47,13 @@ public with sharing class ProjectCardController {
     'E'
   };
 
+  // Test seam: sources named here throw, so a test can prove the fallback.
+  @TestVisible
+  private static Set<String> failingSources = new Set<String>();
+
   /**
-   * @description The fixed shape of one card's extras. Every value is null when its field
-   *              is blank.
+   * @description The fixed shape of one card. Every value is null when its field is blank.
+   *              headlineSource names the source the number came from, or "stored".
    */
   public class PillarCard {
     @AuraEnabled
@@ -34,6 +66,26 @@ public with sharing class ProjectCardController {
     public String imageUrl;
     @AuraEnabled
     public String imageAlt;
+    @AuraEnabled
+    public String challenge;
+    @AuraEnabled
+    public String solution;
+    @AuraEnabled
+    public String businessValue;
+    @AuraEnabled
+    public String liveUrl;
+    @AuraEnabled
+    public String repositoryUrl;
+    @AuraEnabled
+    public String headlineSource;
+  }
+
+  /**
+   * @description One computed value: the number, plus the coverage for Apex tests.
+   */
+  private class Computed {
+    private Integer n;
+    private Integer coverage;
   }
 
   /**
@@ -55,6 +107,7 @@ public with sharing class ProjectCardController {
 
   private static List<PillarCard> toCards(List<Project__c> projects) {
     Map<String, PillarCard> cardsByLetter = new Map<String, PillarCard>();
+    Map<String, Computed> computedBySource = new Map<String, Computed>();
     for (Project__c project : projects) {
       // Rows arrive in priority order, so the first row for a letter is the one shown.
       if (cardsByLetter.containsKey(project.Pillar__c)) {
@@ -62,10 +115,14 @@ public with sharing class ProjectCardController {
       }
       PillarCard card = new PillarCard();
       card.pillar = project.Pillar__c;
-      card.headlineMetric = valueOrNull(project.Headline_Metric__c);
-      card.headlineLabel = valueOrNull(project.Headline_Metric_Label__c);
       card.imageUrl = valueOrNull(project.Hero_Image_URL__c);
       card.imageAlt = valueOrNull(project.Hero_Image_Alt__c);
+      card.challenge = valueOrNull(project.Challenge__c);
+      card.solution = valueOrNull(project.Solution__c);
+      card.businessValue = valueOrNull(project.Business_Value__c);
+      card.liveUrl = valueOrNull(project.Live_URL__c);
+      card.repositoryUrl = valueOrNull(project.Repository_URL__c);
+      applyHeadline(card, project, computedBySource);
       cardsByLetter.put(project.Pillar__c, card);
     }
     List<PillarCard> cards = new List<PillarCard>();
@@ -77,15 +134,191 @@ public with sharing class ProjectCardController {
     return cards;
   }
 
+  private static void applyHeadline(
+    PillarCard card,
+    Project__c project,
+    Map<String, Computed> computedBySource
+  ) {
+    String storedMetric = valueOrNull(project.Headline_Metric__c);
+    String storedLabel = valueOrNull(project.Headline_Metric_Label__c);
+    String source = valueOrNull(project.Headline_Metric_Source__c);
+    Computed computed = null;
+    if (source != null) {
+      if (!computedBySource.containsKey(source)) {
+        computedBySource.put(source, compute(source));
+      }
+      computed = computedBySource.get(source);
+    }
+
+    if (computed == null) {
+      // Stored text only. A label that still holds a token cannot be shown.
+      Boolean labelUsable = storedLabel == null || !hasToken(storedLabel);
+      card.headlineMetric = labelUsable ? storedMetric : null;
+      card.headlineLabel = labelUsable ? storedLabel : null;
+      card.headlineSource = card.headlineMetric == null ? null : SOURCE_STORED;
+      return;
+    }
+
+    String label = fillTokens(storedLabel, computed);
+    if (label != null && hasToken(label)) {
+      card.headlineMetric = null;
+      card.headlineLabel = null;
+      card.headlineSource = null;
+      return;
+    }
+    card.headlineMetric = fillMetric(storedMetric, computed.n);
+    card.headlineLabel = label;
+    card.headlineSource = source;
+  }
+
+  /**
+   * @description Computes one source. Any failure returns null so the card falls back to its
+   *              stored text. The catch is broad on purpose: a describe, a resource read, a
+   *              provider lookup or a query can each fail in its own way, and none of them may
+   *              break the home page.
+   * @param source A Headline_Metric_Source__c value.
+   * @return Computed The number, or null when the source fails or gives nothing above 0.
+   */
+  private static Computed compute(String source) {
+    try {
+      if (failingSources.contains(source)) {
+        throw new IllegalArgumentException('Forced failure for ' + source);
+      }
+      Computed computed = new Computed();
+      if (source == SOURCE_EMPLOYER_HUB_OBJECTS) {
+        computed.n = SchemaService.countObjects(
+          SchemaService.SCOPE_EMPLOYER_HUB
+        );
+      } else if (source == SOURCE_API_PATHS) {
+        computed.n = countSpecPaths();
+      } else if (source == SOURCE_AI_PROVIDERS) {
+        computed.n = countProvidersOn();
+      } else if (source == SOURCE_APEX_TESTS) {
+        computed = latestTestRun();
+      } else {
+        return null;
+      }
+      return computed != null &&
+        computed.n != null &&
+        computed.n > 0
+        ? computed
+        : null;
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  private static Integer countSpecPaths() {
+    List<StaticResource> specs = new ProjectCardSelector()
+      .selectSpecs(SPEC_RESOURCES);
+    if (specs.size() != SPEC_RESOURCES.size()) {
+      return null;
+    }
+    Integer total = 0;
+    for (StaticResource spec : specs) {
+      Integer paths = countPaths(spec.Body.toString());
+      if (paths == 0) {
+        return null;
+      }
+      total += paths;
+    }
+    return total;
+  }
+
+  /**
+   * @description Counts the keys of the top level paths: block of an OpenAPI YAML file, the
+   *              lines indented two spaces that start with a slash (Round 7 plan P6).
+   * @param yaml The spec text.
+   * @return Integer The number of paths, 0 when there is no paths: block.
+   */
+  @TestVisible
+  private static Integer countPaths(String yaml) {
+    Integer count = 0;
+    Boolean inPaths = false;
+    for (String line : yaml.replace('\r', '').split('\n')) {
+      if (line.startsWith('paths:')) {
+        inPaths = true;
+        continue;
+      }
+      if (inPaths && line.length() > 0 && !line.startsWith(' ')) {
+        inPaths = false;
+      }
+      if (inPaths && SPEC_PATH.matcher(line).matches()) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  private static Integer countProvidersOn() {
+    Integer count = 0;
+    for (
+      ContentGenerationController.ProviderStatus row : ContentGenerationController.providerStatus()
+    ) {
+      if (row.state == ContentGenerationController.STATE_ON) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  private static Computed latestTestRun() {
+    List<Pipeline_Run__c> runs = new ProjectCardSelector()
+      .selectLatestTestRun(PIPELINE_SUCCESS);
+    if (runs.isEmpty()) {
+      return null;
+    }
+    Computed computed = new Computed();
+    // The label says passing, so the number is the passed count (reading R21, log 328).
+    computed.n = runs[0].Tests_Passed__c?.intValue();
+    computed.coverage = runs[0].Org_Coverage__c == null
+      ? null
+      : runs[0]
+          .Org_Coverage__c.setScale(0, System.RoundingMode.DOWN)
+          .intValue();
+    return computed;
+  }
+
+  private static String fillMetric(String storedMetric, Integer n) {
+    if (storedMetric == null) {
+      return String.valueOf(n);
+    }
+    Matcher matcher = FIRST_NUMBER.matcher(storedMetric);
+    if (!matcher.find()) {
+      return String.valueOf(n) + ' ' + storedMetric;
+    }
+    return storedMetric.substring(0, matcher.start()) +
+      String.valueOf(n) +
+      storedMetric.substring(matcher.end());
+  }
+
+  private static String fillTokens(String label, Computed computed) {
+    if (label == null) {
+      return null;
+    }
+    String filled = label.replace(TOKEN_N, String.valueOf(computed.n));
+    if (computed.coverage != null) {
+      filled = filled.replace(
+        TOKEN_COVERAGE,
+        String.valueOf(computed.coverage)
+      );
+    }
+    return filled;
+  }
+
+  private static Boolean hasToken(String text) {
+    return ANY_TOKEN.matcher(text).find();
+  }
+
   private static String valueOrNull(String value) {
     return String.isBlank(value) ? null : value.trim();
   }
 
   /**
-   * @description Reads Project__c in system mode and without sharing, because the site
-   *              guest holds no read on the four card fields. The guest reaches these values
-   *              only through the fixed PillarCard shape the outer class builds. Selects
-   *              nothing beyond the letter, the ordering fields and the four card fields.
+   * @description Reads in system mode and without sharing, because the site guest holds no
+   *              read on the card fields, the pipeline runs or the static resources. The guest
+   *              reaches these values only through the fixed PillarCard shape the outer class
+   *              builds. Each query selects only what the cards need.
    */
   private without sharing class ProjectCardSelector {
     private List<Project__c> selectProjects() {
@@ -94,8 +327,14 @@ public with sharing class ProjectCardController {
           Pillar__c,
           Headline_Metric__c,
           Headline_Metric_Label__c,
+          Headline_Metric_Source__c,
           Hero_Image_URL__c,
-          Hero_Image_Alt__c
+          Hero_Image_Alt__c,
+          Challenge__c,
+          Solution__c,
+          Business_Value__c,
+          Live_URL__c,
+          Repository_URL__c
         FROM Project__c
         WHERE Pillar__c IN :PILLAR_LETTERS
         WITH SYSTEM_MODE
@@ -105,6 +344,27 @@ public with sharing class ProjectCardController {
           Sort_Order__c ASC NULLS LAST,
           Name ASC
         LIMIT 500
+      ];
+    }
+
+    private List<StaticResource> selectSpecs(List<String> names) {
+      return [
+        SELECT Name, Body
+        FROM StaticResource
+        WHERE Name IN :names
+        WITH SYSTEM_MODE
+        LIMIT 2
+      ];
+    }
+
+    private List<Pipeline_Run__c> selectLatestTestRun(String status) {
+      return [
+        SELECT Tests_Passed__c, Org_Coverage__c
+        FROM Pipeline_Run__c
+        WHERE Status__c = :status AND Tests_Run__c != NULL
+        WITH SYSTEM_MODE
+        ORDER BY Completed_At__c DESC NULLS LAST, CreatedDate DESC
+        LIMIT 1
       ];
     }
   }

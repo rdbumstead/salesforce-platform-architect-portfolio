@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Spam__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Marked by the Block sender action. A spam Lead gets no reply reminders.</description>
+    <inlineHelpText
+  >Set by Block sender. Clear it if the Lead was marked by mistake.</inlineHelpText>
+    <label>Spam</label>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

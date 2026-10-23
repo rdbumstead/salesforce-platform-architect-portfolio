@@ -14,15 +14,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--pf-space-6);
-  align-items: center;
+  /* F10: the photo lines up with the top of the text, not its middle. */
+  align-items: flex-start;
   padding-bottom: 56px;
   border-bottom: 1px solid var(--pf-border);
 }
 
 .hero-photo {
-  width: 168px;
-  height: 168px;
-  flex: 0 0 168px;
+  width: 232px;
+  height: 232px;
+  flex: 0 0 232px;
   border-radius: var(--pf-radius-lg);
   border: 1px solid var(--pf-border);
   object-fit: cover;
@@ -78,23 +79,34 @@
   text-decoration: none;
 }
 
-.btn-primary {
+/* F8: the site's link rule in dxp-slds-extensions.css (a:link:not(...), specificity 0,2,2)
+   outranks a plain class rule and empties the button fill. Matching :link and :visited
+   too puts these rules above it, in both themes. */
+.btn-primary,
+.btn-primary:link,
+.btn-primary:visited {
   background: var(--pf-btn);
   color: var(--pf-btn-text);
 }
 
-.btn-primary:hover {
+.btn-primary:hover,
+.btn-primary:link:hover,
+.btn-primary:visited:hover {
   background: var(--pf-btn-hover);
   color: var(--pf-btn-text);
 }
 
-.btn-ghost {
+.btn-ghost,
+.btn-ghost:link,
+.btn-ghost:visited {
   color: var(--pf-text);
   border: 1px solid var(--pf-border);
   background: var(--pf-surface);
 }
 
-.btn-ghost:hover {
+.btn-ghost:hover,
+.btn-ghost:link:hover,
+.btn-ghost:visited:hover {
   background: var(--pf-chip);
   color: var(--pf-text);
 }
@@ -121,6 +133,72 @@
   text-decoration: underline;
 }
 
+/* Start here paths (audit E2) */
+.start {
+  padding: 40px 0 0;
+}
+
+.start-heading {
+  margin: 0 0 var(--pf-space-4);
+  font-family: var(--pf-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pf-muted);
+}
+
+.start-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--pf-space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.start-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--pf-space-4) var(--pf-space-5);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-lg);
+  background: var(--pf-surface);
+}
+
+.start-audience {
+  margin: 0;
+  font-size: 13px;
+  color: var(--pf-muted);
+}
+
+.start-link,
+.start-link:link,
+.start-link:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  min-height: 44px;
+  color: var(--pf-text);
+  font-size: 18px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.start-link:hover,
+.start-link:link:hover,
+.start-link:visited:hover {
+  color: var(--pf-accent);
+  text-decoration: underline;
+}
+
+.start-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--pf-body);
+}
+
 /* Sections */
 .section {
   padding: 64px 0 24px;
@@ -136,12 +214,6 @@
   font-weight: 500;
   letter-spacing: 0.08em;
   color: var(--pf-muted);
-}
-
-.section-rule {
-  width: 28px;
-  height: 1px;
-  background: var(--pf-muted);
 }
 
 .section-heading {
@@ -300,6 +372,95 @@
   color: var(--pf-chip-text);
 }
 
+/* Case study disclosure (Round 7 plan P5, audit E3) */
+.case-study {
+  border-top: 1px solid var(--pf-border);
+  padding-top: var(--pf-space-3);
+}
+
+.case-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pf-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.case-toggle:hover {
+  color: var(--pf-accent);
+}
+
+.case-chevron {
+  font-family: var(--pf-font-mono);
+  font-size: 16px;
+}
+
+.case-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-space-3);
+  padding-top: var(--pf-space-2);
+}
+
+.case-body[hidden] {
+  display: none;
+}
+
+.case-heading {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.case-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--pf-body);
+  white-space: pre-line;
+}
+
+.case-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2) var(--pf-space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.case-link,
+.case-link:link,
+.case-link:visited {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--pf-accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.assistive-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .pillar-link {
   margin-top: auto;
   padding-top: var(--pf-space-4);
@@ -406,6 +567,9 @@
 }
 
 .btn:focus-visible,
+.start-link:focus-visible,
+.case-toggle:focus-visible,
+.case-link:focus-visible,
 .profile-link:focus-visible,
 .pillar-link:focus-visible,
 .tour-card-link:focus-visible,
@@ -417,6 +581,14 @@
 @media (prefers-reduced-motion: reduce) {
   .card {
     transition: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .hero-photo {
+    width: 184px;
+    height: 184px;
+    flex-basis: 184px;
   }
 }
 

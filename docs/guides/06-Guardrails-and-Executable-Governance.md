@@ -24,7 +24,7 @@ This document outlines the governance framework and constraint-based design prin
 
 ## 1. Strategic Intent: Constraint-Based Design
 
-This portfolio is built on a "Zero-Dollar Budget" requirement. This is not a limitation; it is an architectural challenge. We demonstrate **Constraint-Based Design** by building a resilient, observable system that survives within the strict limits of a Salesforce Developer Edition (free tier) and the AWS Always-Free Tier.
+This portfolio is built on a "Zero-Dollar Budget" requirement. That is not a limitation. It is an architectural challenge. We demonstrate **Constraint-Based Design** by building a resilient, observable system that runs within the strict limits of a Salesforce Developer Edition (free tier). The AWS Always-Free design in section 3 is for a later phase and is not built: the repository holds no AWS code.
 
 > [!TIP]
 > **Why Constraint-Based Design Matters**: Many architects treat free tiers as temporary scaffolding. This portfolio proves you can build production-grade systems within zero-budget constraints — a skill that translates directly to cost optimization in enterprise environments where every dollar of cloud spend requires justification.
@@ -35,13 +35,13 @@ This portfolio is built on a "Zero-Dollar Budget" requirement. This is not a lim
 
 We treat these limits as a blueprint for building high-performance systems.
 
-| Salesforce Constraint                | What It Means                                                                                                                                    | Enterprise Pattern Applied               | Portfolio Implementation                                                                                                                      |
-| :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| **100 SOQL Queries per transaction** | SOQL (Salesforce Object Query Language) is like SQL for databases. You get 100 database queries per page load. Exceed this and your app crashes. | **Bulkification** (batch processing)     | All `SAPI*` classes use map-based caching to ensure exactly 1 query per request, no matter how many records are processed.                    |
-| **10 second CPU timeout**            | Your code gets 10 seconds of processing time. After that, Salesforce kills it to protect other customers.                                        | **Async Strategy** (offload work)        | Heavy operations (like Resume PDF generation) are offloaded to AWS Lambda (Phase 8) so Salesforce only handles lightweight coordination.      |
-| **6MB Heap Size**                    | Your code can only use 6MB of memory per transaction. For context, a single high-res image is ~5MB.                                              | **Lazy Loading** (load only when needed) | The D3 graph engine (`D3_Library`, about 18.5 KB) loads only when a visitor opens a graph view, and never on a phone.                         |
-| **Guest User Security**              | Anonymous visitors have restricted permissions by default. They can't see sensitive data without explicit grants.                                | **Zero Trust** (deny by default)         | Restricted strictly to custom objects via Sharing and Restriction Rules. No access to standard Salesforce objects (Accounts, Contacts, etc.). |
-| **Real-time Telemetry**              | Salesforce provides APIs to check how close you are to hitting limits.                                                                           | **Glass Box Telemetry** (show your work) | Governor limits (SOQL count, heap usage, CPU time) displayed in site footer so visitors can see the system is healthy.                        |
+| Salesforce Constraint                | What It Means                                                                                                                                    | Enterprise Pattern Applied               | Portfolio Implementation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **100 SOQL Queries per transaction** | SOQL (Salesforce Object Query Language) is like SQL for databases. You get 100 database queries per page load. Exceed this and your app crashes. | **Bulkification** (batch processing)     | A `SAPI*` list read runs a fixed number of queries whatever the record count: one page query and one `COUNT()` query (for example `SAPIContact.cls` lines 41 and 47), plus the rate limit read in `RateWindowLimiter`.                                                                                                                                                                                                                                                                                                                                                                                             |
+| **10 second CPU timeout**            | Your code gets 10 seconds of processing time. After that, Salesforce kills it to protect other customers.                                        | **Async Strategy** (offload work)        | No heavy work runs in Apex while a visitor waits. The resume PDF is drawn in the browser with jsPDF ([ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)), and GitHub and Jira are read by scheduled Queueable jobs, so a page view never makes a callout. Moving PDF generation to AWS Lambda is a Phase 8 design and is not built.                                                                                                                                                                                                                                                                 |
+| **6MB Heap Size**                    | Your code can only use 6MB of memory per transaction. For context, a single high-res image is ~5MB.                                              | **Lazy Loading** (load only when needed) | The D3 graph engine (`D3_Library`, 81,502 bytes with pan, zoom and drag since Round 7) loads only when a visitor opens a graph view, and never on a phone.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Guest User Security**              | Anonymous visitors have restricted permissions by default. They can't see sensitive data without explicit grants.                                | **Zero Trust** (deny by default)         | `Portfolio_Guest` grants read on six portfolio objects, create and read on `Testimonial__c`, and no permission on Account, Contact or any other standard object apart from read on `UserExternalCredential`. The few records a page needs beyond that, such as the owner's Contact for the resume header, are read by Apex in system mode through `without sharing` selectors that select a fixed list of public fields and never an email, phone or address (`ResumeController.ResumeSelector`, `PortfolioGroundingService.Selector`). The guest reaches that data only through the shape the controller returns. |
+| **Real-time Telemetry**              | Salesforce provides APIs to check how close you are to hitting limits.                                                                           | **Glass Box Telemetry** (show your work) | Governor limits (SOQL count, heap usage, CPU time) displayed in site footer so visitors can see the system is healthy.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 **Key Insight:** These aren't arbitrary restrictions — they force the same discipline required in any high-scale system (database query optimization, memory management, async processing).
 
@@ -50,6 +50,9 @@ We treat these limits as a blueprint for building high-performance systems.
 | Phase       | Status                         | Rationale                                                               |
 | :---------- | :----------------------------- | :---------------------------------------------------------------------- |
 | **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
+
+> [!IMPORTANT]
+> **Nothing about AWS in this section is built.** The repository holds no AWS code, and no Lambda function, S3 bucket or CloudWatch log group serves the portfolio. The Lambda, VPC and CloudWatch parts below are the Phase 8 design. The Gemini quota part describes what runs today.
 
 > [!NOTE]
 > **Architectural Reference:** For the detailed system diagrams and component specifications of the Phase 8 architecture, please refer to the **[Systems Architecture Specification (SAS)](./03-SAS.md#11-architectural-north-star)**.
@@ -105,16 +108,15 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### Test Coverage (90% Required)
 
 **What it measures:** Percentage of code executed by automated tests.  
-**Our standard:** We enforce the strict coverage thresholds defined in the **[Program Charter: Success Criteria](./02-Program-Charter.md#22-success-criteria-definition-of-done)**.  
+**Our standard:** a pull request fails when any Apex test fails or when org wide coverage is under 90%. `pr.yml` deploys the branch to a fresh scratch org, runs every local test with coverage, and passes the result to `scripts/coverage-gate.js --min 90` (`pr.yml`, "Deploy & Test (Scratch Mode - FULL)"). The same script runs locally with `npm run sf:coverage -- --target-org <alias>` and as a step of `npm run pre-launch-check`. The threshold is also listed in the **[Program Charter: Success Criteria](./02-Program-Charter.md#22-success-criteria-definition-of-done)**.  
 **Why it matters:** Untested code fails in production. High coverage catches bugs before customers see them.
 
 ---
 
-### Static Analysis (PMD)
+### Static Analysis (Salesforce Code Analyzer)
 
-**What it does:** Scans code for common mistakes (unused variables, SQL injection risks, performance anti-patterns).  
-**Our rule:** Zero "Critical" violations. The CI/CD pipeline blocks merges if any critical issues are found.  
-**Example caught:** A developer accidentally wrote code that would query the database inside a loop (100 queries instead of 1). PMD flagged it before merge.
+**What it does:** Scans code for common mistakes (unused variables, SOQL injection risks, performance anti-patterns) with PMD and ESLint rules.  
+**Our rule:** `npm run scan` runs `sf code-analyzer` over `packages` with `--severity-threshold 2`, so any violation at severity 1 (Critical) or 2 (High) fails the run. The `quality-check` job of `pr.yml` runs it on every pull request.
 
 ---
 
@@ -129,8 +131,8 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 
 ### Delta Deployment Strategy
 
-**What it does:** Instead of deploying all 500+ metadata files on every change, only deploy what changed.  
-**Strategic Value:** Enables "Hyperspeed Iteration". Typical deployment time drops from ~8 minutes (full deploy) to ~90 seconds (delta deploy).  
+**What it does:** Instead of deploying every metadata file on every change, the production deploy sends only what changed since the previous push.  
+**Strategic Value:** A small change deploys as a small package, so a release is quicker and touches less of the org. No timing has been measured, so none is claimed.  
 **Implementation:** For the technical configuration of `sfdx-git-delta` in the pipeline, see **[Maintenance Guide: Delta Deployment](./05-Maintenance-Guide.md#33-pipeline-strategy-delta-deployment)**.
 
 ---
@@ -138,14 +140,14 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### Scratch Org Validation
 
 **What is a Scratch Org?** A temporary, isolated Salesforce environment created from source control. Think "Docker container for Salesforce."  
-**Our process:** Every Pull Request automatically spins up a scratch org, deploys the changes, runs all tests, then destroys the org.  
+**Our process:** Every pull request that touches `packages/**` creates a one day scratch org, deploys the whole of `packages` to it, runs every local test through the coverage gate above, then deletes the org. When the scratch org cannot be created, the job falls back to a delta dry run against production with `RunLocalTests` (`pr.yml`, "Deploy & Test (Fallback Mode - DELTA)").  
 **Why it matters:** Catches "works on my machine" issues. If the code can't deploy to a fresh org, it won't deploy to production.
 
 ## 5. Request Lifecycle & Governance Gates
 
 Every interaction passes through three distinct "Gating Layers" to ensure performance and security. This diagram shows the journey of a single user request:
 
-**Summary:** A 3-layer defense (Performance, Security, Governance) ensuring P95 latency < 400ms.
+**Summary:** A 3-layer defense (Performance, Security, Governance). No request latency is measured, so no latency target is claimed. The measured numbers are the mobile LCP figures in [Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance).
 
 <details>
 <summary>Click to view Request Lifecycle Diagram</summary>
@@ -167,40 +169,31 @@ sequenceDiagram
         Note right of U: no engine request
     else is Desktop
         B-->>U: Load D3_Library only when a graph view opens
-        Note right of U: about 18.5 KB, on demand
+        Note right of U: about 80 KB, on demand
     end
 
     Note over B,G: Layer 2: Zero Trust Security
-    B->>G: Data Request (REST/GraphQL)
-    G->>G: Validate CRUD/FLS (Read-Only)
-    alt Violation
-        G-->>B: 403 Forbidden
-        Note right of B: Logged to Event Monitoring
-    else Authorized
+    B->>G: Data Request (Apex or GraphQL)
+    G->>G: Class access, object and field permissions (Portfolio_Guest)
+    alt Not granted
+        G-->>B: Request refused
+    else Granted
         G->>A: Execute Logic
     end
 
     Note over G,A: Layer 3: Multitenant Governors
-    A->>A: Check Heap/SOQL Limits
-    alt Limit Approaching
-        A-->>B: Error: Deferred/Cached Result
-        Note right of B: Circuit Breaker triggered
-    else Healthy
-        A->>D: Fetch/Commit Data
-        Note right of D: ~150-300ms (API call)
-        D-->>A: Payload
-        A-->>B: Filtered Response
-    end
-
+    A->>D: Read records, or a cache row a scheduled job wrote
+    Note right of D: no callout while a visitor waits
+    D-->>A: Payload
+    A-->>B: Fixed response shape
     B-->>U: Render UI Update
-    Note over U,B: Total: 200-400ms (P95)
 ```
 
 </details>
 
-**What does P95 mean?** 95% of requests complete within 200-400ms. The slowest 5% might take longer (usually first-time visitors with cold caches).
+**Permission checks:** a GraphQL read is checked against the guest's object and field permissions, and a field without them makes the query fail. An `@AuraEnabled` call needs class access in `Portfolio_Guest`. Inside Apex, the controllers that read records the guest cannot see (the owner's Contact, experience highlights, the integration caches) do so in system mode through `without sharing` selectors with a fixed field list, and return only the shape the page needs.
 
-**CRUD/FLS Validation:** Salesforce checks if the Guest User profile has Create, Read, Update, Delete permissions (CRUD) and Field-Level Security (FLS) for each field being accessed. If not, request is rejected.
+**Limits:** nothing switches to a cached or deferred answer when a governor limit gets close. The protections that exist are a fixed number of queries per request, the caches that keep GitHub and Jira callouts out of page views, the rate limits in `RateWindowLimiter`, and the circuit breakers on Gemini, GitHub and Jira (`CircuitBreaker`).
 
 ## 6. The Three-Gate Approval Process
 
@@ -209,7 +202,6 @@ Every architectural decision follows a strict three-gate approval process before
 ### Gate 1: Technical Feasibility
 
 - Apex governor limits assessed (SOQL queries, DML rows).
-- LWC bundle size < 100KB verified.
 - Related ADR documented (for example ADR-020: why the graph engine loads only when a graph view opens).
 
 ### Gate 2: Security & Privacy
@@ -229,28 +221,28 @@ These guardrails aren't just technical controls — they translate directly to b
 ### Zero Runtime Costs
 
 **Technical:** The portfolio demonstrates skills that reduce cloud spend in production environments.
-**Business impact:** The same "No-VPC" and "Function URLs over API Gateway" patterns save $360+/year per service in AWS. Applied across 10 microservices, that's $3,600/year in avoided costs.
+**Business impact:** The same "No-VPC" and "Function URLs over API Gateway" patterns avoid the fixed monthly charges of a NAT Gateway and the paid API Gateway tier described in section 3. They are a design here, so no saving has been measured.
 
 ---
 
 ### Predictable Performance
 
 **Technical:** Hard limits prevent runaway processes that cause outages.
-**Business impact:** The 90% test coverage requirement has caught 14 governor limit violations before they reached production. Each prevented outage saves ~$5,000 in lost revenue and engineering time (conservative estimate).
+**Business impact:** The 90% coverage gate and the full test run on every pull request stop a change that breaks a test before it reaches production. No count of prevented failures is kept, so none is claimed.
 
 ---
 
 ### Audit-Ready Architecture
 
-**Technical:** Every request is gated and logged, enabling compliance workflows.
-**Business impact:** Guest user restrictions via Sharing Rules provide a clear audit trail for security reviews. This reduces SOC 2 audit prep from weeks to days.
+**Technical:** Every API request is gated by OAuth and the rate limiter and written as one log line (`RequestUtil.logRequest`), and every evaluator token request writes an `API_Access_Request__c` record.
+**Business impact:** The guest's access lives in one permission set in source (`Portfolio_Guest`), so a security review reads one file and its history.
 
 ---
 
 ### Fast Iteration
 
 **Technical:** Quality gates catch issues in CI/CD, not in production.
-**Business impact:** Delta deployments (90s vs 8min) enable 5x more deployment frequency without sacrificing quality. Teams ship features faster while maintaining stability.
+**Business impact:** Delta deployments keep each release small, so features ship in small steps without giving up the gates above.
 
 ---
 

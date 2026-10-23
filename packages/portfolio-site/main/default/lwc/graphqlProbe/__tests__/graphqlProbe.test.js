@@ -52,7 +52,7 @@ describe("c-graphql-probe", () => {
     expect(graphql.getLastConfig().query).toContain("Skill__c(first: 1)");
   });
 
-  it("reports the time from connect to the first answer", () => {
+  it("reports the time from creation to the first answer", () => {
     const clock = jest.spyOn(performance, "now").mockReturnValue(1000);
     const handler = jest.fn();
     render(handler);

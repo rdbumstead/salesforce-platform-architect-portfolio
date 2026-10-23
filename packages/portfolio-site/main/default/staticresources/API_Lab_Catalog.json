@@ -1,0 +1,2305 @@
+{
+  "source": [
+    "packages/integration-api/specs/salesforce-sapi.yaml",
+    "packages/integration-api/specs/portfolio-papi.yaml"
+  ],
+  "excluded": [
+    "/papi/v1/auth/token",
+    "/papi/v1/ai/generate"
+  ],
+  "paths": [
+    {
+      "path": "/sapi/v1/health",
+      "api": "sapi",
+      "summary": "Health Check",
+      "params": [],
+      "responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "status",
+            "checkType",
+            "timestamp",
+            "orgTimeZone",
+            "dependencies",
+            "limits"
+          ],
+          "required": []
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/contacts",
+      "api": "sapi",
+      "summary": "Get Contact records",
+      "params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "name",
+            "title",
+            "trailhead",
+            "careerObjective",
+            "linkedIn",
+            "portfolio"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/experience",
+      "api": "sapi",
+      "summary": "Get Experience records",
+      "params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "employerName",
+          "type": "string",
+          "description": "Filter by Employer Name."
+        },
+        {
+          "name": "currentlyEmployed",
+          "type": "boolean",
+          "description": "Filter by active employment status."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "employerName",
+            "employerId",
+            "name",
+            "startDate",
+            "endDate",
+            "isCurrentRole",
+            "isRemote",
+            "accomplishments",
+            "contactId",
+            "contactName",
+            "sortOrder"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/experience-highlights",
+      "api": "sapi",
+      "summary": "Get Experience Highlights",
+      "params": [
+        {
+          "name": "experienceId",
+          "type": "string",
+          "description": "Filter by Experience Salesforce ID."
+        },
+        {
+          "name": "persona",
+          "type": "string",
+          "description": "Filters records where the target field (Multi-Select Picklist) includes the specified persona(s)."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "experienceId",
+            "experienceName",
+            "name",
+            "description",
+            "sortOrder",
+            "personaTag"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/projects",
+      "api": "sapi",
+      "summary": "Get Project records",
+      "params": [
+        {
+          "name": "status",
+          "type": "string",
+          "description": "Filter by Project Status.",
+          "enum": [
+            "Live – In Production",
+            "Live – Demo / Reference",
+            "Active Development",
+            "On Hold",
+            "Archived"
+          ]
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        },
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "projectName",
+          "type": "string",
+          "description": "Filter by Project Name."
+        },
+        {
+          "name": "isFeatured",
+          "type": "boolean",
+          "description": "Filter only featured projects."
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "name",
+            "challenge",
+            "solution",
+            "businessValue",
+            "status",
+            "dateCompleted",
+            "heroImageUrl",
+            "liveUrl",
+            "repositoryUrl",
+            "pillar",
+            "pillarLabel",
+            "isFeatured",
+            "contactName",
+            "contactId",
+            "sortOrder"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/project-assets",
+      "api": "sapi",
+      "summary": "Get Project Assets",
+      "params": [
+        {
+          "name": "projectId",
+          "type": "string",
+          "description": "Filter by Project Salesforce ID."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "name",
+            "projectId",
+            "projectName",
+            "type",
+            "externalUrl",
+            "altText",
+            "sortOrder"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/testimonials",
+      "api": "sapi",
+      "summary": "Get Testimonials",
+      "params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "name",
+            "authorName",
+            "authorTitle",
+            "avatarUrl",
+            "relationshipType",
+            "vibeMode",
+            "context"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/portfolio-config",
+      "api": "sapi",
+      "summary": "Get Portfolio Configuration",
+      "params": [],
+      "responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "linkedInUrl",
+            "gitHubProfileUrl",
+            "calendlyUrl",
+            "trailblazerProfileUrl",
+            "personalWebsiteUrl",
+            "careerObjective",
+            "jiraProjectKey",
+            "gitHubRepoPath"
+          ],
+          "required": []
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/accounts",
+      "api": "sapi",
+      "summary": "Get Account records",
+      "params": [
+        {
+          "name": "accountName",
+          "type": "string",
+          "description": "Filter by Account Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "name",
+            "industry",
+            "abbreviation"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/skills",
+      "api": "sapi",
+      "summary": "Get Skill records",
+      "params": [
+        {
+          "name": "category",
+          "type": "string",
+          "description": "Filter skills by Category (e.g., 'Development', 'Architecture')"
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "name",
+            "displayName",
+            "category",
+            "proficiencyScore",
+            "iconName",
+            "svgPathData",
+            "colorHex",
+            "categoryOrder"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/certifications",
+      "api": "sapi",
+      "summary": "Get Certification records",
+      "params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "issuerName",
+          "type": "string",
+          "description": "Filter by Issuer Name."
+        },
+        {
+          "name": "certificationName",
+          "type": "string",
+          "description": "Filter by Certification Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "name",
+            "contactId",
+            "contactName",
+            "issuerId",
+            "issuerName",
+            "earnedDate"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/education",
+      "api": "sapi",
+      "summary": "Get Education records",
+      "params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "issuerName",
+          "type": "string",
+          "description": "Filter by Issuer Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "name",
+            "contactId",
+            "contactName",
+            "issuerId",
+            "issuerName",
+            "fieldOfStudy",
+            "graduationDate",
+            "gpa"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/project-skills",
+      "api": "sapi",
+      "summary": "Get Project-Skill Links",
+      "params": [
+        {
+          "name": "projectId",
+          "type": "string",
+          "description": "Filter by Project Salesforce ID."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "projectId",
+            "projectName",
+            "skillId",
+            "skillName",
+            "skillCategory",
+            "skillProficiencyScore"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/experience-skills",
+      "api": "sapi",
+      "summary": "Get Experience-Skill Links",
+      "params": [
+        {
+          "name": "experienceId",
+          "type": "string",
+          "description": "Filter by Experience Salesforce ID."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "experienceId",
+            "experienceName",
+            "skillId",
+            "skillName",
+            "skillCategory",
+            "skillProficiencyScore"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/sapi/v1/certification-skills",
+      "api": "sapi",
+      "summary": "Get Certification-Skill Links",
+      "params": [
+        {
+          "name": "certificationId",
+          "type": "string",
+          "description": "Filter by Certification Salesforce ID."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "certificationId",
+            "certificationName",
+            "skillId",
+            "skillName",
+            "skillCategory",
+            "skillProficiencyScore"
+          ],
+          "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/papi/v1/health",
+      "api": "papi",
+      "summary": "PAPI Health Check",
+      "params": [],
+      "responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "status",
+            "checkType",
+            "timestamp",
+            "dependencies",
+            "details"
+          ],
+          "required": []
+        }
+      }
+    },
+    {
+      "path": "/papi/v1/profile/full",
+      "api": "papi",
+      "summary": "Get Complete Portfolio State",
+      "params": [],
+      "responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "config",
+            "contactInfo",
+            "summary",
+            "skills",
+            "experience",
+            "projects",
+            "certifications",
+            "education",
+            "testimonials",
+            "integrityNote"
+          ],
+          "required": [
+            "config",
+            "contactInfo",
+            "skills",
+            "experience",
+            "projects",
+            "certifications",
+            "education",
+            "testimonials"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/papi/v1/profile/summary",
+      "api": "papi",
+      "summary": "Get Employment Profile Only",
+      "params": [],
+      "responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "contactInfo",
+            "summary",
+            "skills",
+            "experience",
+            "certifications",
+            "education",
+            "integrityNote"
+          ],
+          "required": [
+            "contactInfo",
+            "skills",
+            "experience",
+            "certifications",
+            "education"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/papi/v1/resume/generate",
+      "api": "papi",
+      "summary": "Generate Plain Text Resume",
+      "params": [
+        {
+          "name": "persona",
+          "type": "string",
+          "description": "Target audience for the resume. Omit for all highlights.",
+          "enum": [
+            "Admin",
+            "Developer",
+            "Architect"
+          ]
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "integrityNote",
+            "generatedText",
+            "persona",
+            "generatedAt"
+          ],
+          "required": [
+            "generatedText",
+            "persona",
+            "generatedAt"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/papi/v1/projects/featured",
+      "api": "papi",
+      "summary": "Get Featured Projects (Enriched)",
+      "params": [],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "title",
+            "challenge",
+            "solution",
+            "businessValue",
+            "status",
+            "completionDate",
+            "heroImageUrl",
+            "liveUrl",
+            "repositoryUrl",
+            "technologies",
+            "pillarLabel",
+            "assets"
+          ],
+          "required": [
+            "id"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/papi/v1/testimonials/feed",
+      "api": "papi",
+      "summary": "Get Curated Testimonials",
+      "params": [
+        {
+          "name": "mode",
+          "type": "string",
+          "description": "Filter testimonials by vibe",
+          "enum": [
+            "professional",
+            "casual"
+          ],
+          "default": "professional"
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "id",
+            "author",
+            "title",
+            "relationship",
+            "quote",
+            "vibe",
+            "avatarUrl"
+          ],
+          "required": [
+            "id",
+            "author",
+            "quote"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+/*
+ * Built on the site tokens (Round 4 plan, contract L1), so the wall follows the light and dark
+ * theme. Every element that sets a background also sets its text colour. The two tones differ
+ * in typeface weight, the accent edge and the tone tag, never in colour alone.
+ */
+:host {
+  display: block;
+}
+
+.wall {
+  background-color: var(--pf-bg);
+  color: var(--pf-text);
+  max-width: 60rem;
+  margin: 0 auto 2rem;
+  overflow-wrap: anywhere;
+}
+
+.wall-title {
+  color: var(--pf-text);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+}
+
+.filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--pf-muted);
+  border-radius: var(--pf-radius-sm);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-button[aria-pressed="true"] {
+  background-color: var(--pf-btn);
+  border-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+}
+
+.filter-button:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+.count,
+.empty {
+  color: var(--pf-muted);
+  background-color: var(--pf-bg);
+  margin: 0.75rem 0;
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 48em) {
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.card {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  padding: 1rem;
+}
+
+.card-professional {
+  border-left: 4px solid var(--pf-btn);
+}
+
+.card-casual {
+  border-left: 4px dashed var(--pf-accent);
+}
+
+.quote {
+  margin: 0;
+}
+
+.sentence {
+  margin: 0;
+}
+
+.sentence p {
+  margin: 0 0 0.5rem;
+  color: var(--pf-text);
+}
+
+.card-professional .sentence p:first-child {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+}
+
+.card-casual .sentence p:first-child {
+  font-weight: 700;
+}
+
+.note {
+  color: var(--pf-muted);
+}
+
+.byline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+  margin-top: 0.5rem;
+  color: var(--pf-muted);
+}
+
+.author {
+  color: var(--pf-text);
+  font-weight: 700;
+}
+
+.tone {
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-radius: var(--pf-radius-sm);
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Reply_Reminder_1_At__c</fullName>
+    <description
+  >When reply reminder 1 is due: 1 business day after a portfolio contact form Lead arrives, counted on the org's default Business Hours. The reminder flow's scheduled path runs from this time.</description>
+    <inlineHelpText
+  >Set automatically when the Lead comes from the portfolio contact form.</inlineHelpText>
+    <label>Reply Reminder 1 At</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

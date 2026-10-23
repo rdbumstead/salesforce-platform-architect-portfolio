@@ -1,0 +1,161 @@
+/*
+ * Built on the site tokens (Round 4 plan, contract L1), as testimonialSubmit is, so the form
+ * follows the light and dark theme. Every element that sets a background also sets its text
+ * colour. Input borders use the muted token for the 3:1 contrast a control boundary needs.
+ */
+:host {
+  display: block;
+  --form-surface: var(--pf-surface);
+  --form-text: var(--pf-text);
+  --form-muted: var(--pf-muted);
+  --form-border: var(--pf-muted);
+  --form-brand: var(--pf-btn);
+  --form-brand-text: var(--pf-btn-text);
+}
+
+.contact {
+  position: relative;
+  background-color: var(--form-surface);
+  color: var(--form-text);
+  padding: 1rem;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  max-width: 40rem;
+  margin: 2rem auto 0;
+  overflow-wrap: anywhere;
+}
+
+.contact-heading-wrap {
+  scroll-margin-top: 6rem;
+}
+
+.contact-title {
+  color: var(--form-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.contact-title:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+.contact-intro {
+  color: var(--form-muted);
+  margin: 0 0 1rem;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 1rem;
+}
+
+@media (min-width: 40em) {
+  .field-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field-label {
+  display: block;
+  color: var(--form-text);
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.field-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  background-color: var(--form-surface);
+  color: var(--form-text);
+  border: 1px solid var(--form-border);
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  font: inherit;
+}
+
+.field-input:focus {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 1px;
+}
+
+.field-textarea {
+  resize: vertical;
+}
+
+.field-hint,
+.privacy {
+  color: var(--form-muted);
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+}
+
+/*
+ * Off screen and transparent rather than display none, so simple bots still see and fill it,
+ * while people, screen readers and the keyboard never meet it.
+ */
+.trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.actions {
+  margin-top: 1.25rem;
+}
+
+.submit-button {
+  background-color: var(--form-brand);
+  color: var(--form-brand-text);
+  border: 1px solid var(--form-brand);
+  border-radius: var(--pf-radius-sm);
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submit-button:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+.submit-button:disabled {
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-color: var(--pf-chip);
+  cursor: not-allowed;
+}
+
+.message {
+  margin: 1rem 0 0;
+  background-color: var(--form-surface);
+}
+
+.message p {
+  margin: 0 0 0.25rem;
+}
+
+.message-success {
+  color: var(--form-text);
+}
+
+.success-title {
+  color: var(--pf-ok);
+  font-weight: 700;
+}
+
+.message-error {
+  color: var(--pf-error-text);
+}

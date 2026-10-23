@@ -79,3 +79,10 @@
   font-weight: bold;
   text-transform: uppercase;
 }
+
+/* View source sits under the card heading, on the right (Round 7 plan P2). */
+.card-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--pf-space-2);
+}

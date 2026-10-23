@@ -139,3 +139,181 @@
   font-family: var(--pf-font-mono);
   overflow-wrap: anywhere;
 }
+
+.card-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--pf-space-2);
+}
+
+/* Query parameter controls (audit B3, reading R16). Pills and buttons are 44 px high. */
+.param-section h3 {
+  margin-bottom: var(--pf-space-2);
+}
+
+.param-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--pf-space-3);
+  margin-bottom: var(--pf-space-3);
+}
+
+.pill-group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+}
+
+.param-label {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--pf-space-1);
+  color: var(--pf-text);
+  font-family: var(--pf-font-mono);
+  font-weight: 700;
+}
+
+.param-hint {
+  font-family: var(--pf-font-sans);
+  font-weight: 400;
+  color: var(--pf-body);
+}
+
+.param-field {
+  display: block;
+}
+
+.pill,
+.remove-pill,
+.next-page-button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--pf-space-3);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: 999px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pill_selected {
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-color: var(--pf-accent);
+  font-weight: 700;
+}
+
+.param-input,
+.param-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--pf-space-2);
+  background-color: var(--pf-bg);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  font: inherit;
+}
+
+.pill:focus-visible,
+.remove-pill:focus-visible,
+.next-page-button:focus-visible,
+.param-input:focus-visible,
+.param-select:focus-visible,
+.result-box:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+.chosen-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+  margin: 0 0 var(--pf-space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.chosen-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  padding-left: var(--pf-space-3);
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-radius: 999px;
+}
+
+.chosen-text,
+.query-string {
+  font-family: var(--pf-font-mono);
+  color: inherit;
+  background: none;
+  overflow-wrap: anywhere;
+}
+
+.query-preview,
+.param-none {
+  margin-top: var(--pf-space-2);
+  color: var(--pf-text);
+}
+
+.next-page-button {
+  margin-top: var(--pf-space-2);
+  border-radius: var(--pf-radius-sm);
+  font-weight: 700;
+}
+
+.response-code {
+  font-family: var(--pf-font-mono);
+  background: none;
+  color: var(--pf-code-text);
+  text-shadow: none;
+}
+
+/* Syntax colours from the text tokens, as codeViewer, each at 4.5:1 or more on --pf-code. */
+.response-code .token {
+  background: none;
+}
+
+.response-code .token.property {
+  color: var(--pf-accent);
+}
+
+.response-code .token.string {
+  color: var(--pf-ok);
+}
+
+.response-code .token.number,
+.response-code .token.boolean,
+.response-code .token.null {
+  color: var(--pf-error-text);
+}
+
+.response-code .token.punctuation,
+.response-code .token.operator {
+  color: var(--pf-code-text);
+}
+
+.schema-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--pf-space-3);
+}
+
+.schema-list ul {
+  margin: 0;
+  padding-left: var(--pf-space-4);
+  list-style: disc;
+}
+
+.schema-list-title,
+.schema-summary,
+.schema-none,
+.schema-list li {
+  color: var(--pf-text);
+}

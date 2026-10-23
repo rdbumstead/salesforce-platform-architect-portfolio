@@ -64,16 +64,64 @@ export const REDOC_TAB_COLORS = {
 };
 
 /**
+ * Text of Redoc's constraint chips such as "[ 1 .. 200 ]". Redoc draws them in the primary
+ * colour at 90% opacity on a 5% primary tint, 4.3:1 at 13 px (axe color-contrast, log 299).
+ * This darker blue at full opacity is 6.6:1 on that tint.
+ */
+export const REDOC_CONSTRAINT_COLOR = "#1D4ED8";
+
+/**
+ * The bottom edge of the sticky or fixed element at the top of the viewport, the site
+ * header, so a section scrolled into view lands below it. 0 when nothing is pinned there.
+ * The element is found through every open shadow root, because the header sits inside
+ * the theme layout component.
+ */
+export function headerOffset() {
+  try {
+    return pinnedBottom();
+  } catch {
+    // A runtime with no elementFromPoint (a test DOM) has no header to allow for.
+    return 0;
+  }
+}
+
+function pinnedBottom() {
+  const x = Math.round(window.innerWidth / 2);
+  let element = document.elementFromPoint(x, 2);
+  while (element && element.shadowRoot) {
+    const inner = element.shadowRoot.elementFromPoint
+      ? element.shadowRoot.elementFromPoint(x, 2)
+      : null;
+    if (!inner || inner === element) {
+      break;
+    }
+    element = inner;
+  }
+  let node = element;
+  while (node) {
+    if (node.nodeType === 1) {
+      const position = window.getComputedStyle(node).position;
+      if (position === "fixed" || position === "sticky") {
+        return Math.max(0, Math.round(node.getBoundingClientRect().bottom));
+      }
+    }
+    node = node.parentNode || node.host;
+  }
+  return 0;
+}
+
+/**
  * Redoc 2.5.4 options. System fonts instead of the default web fonts, no download
  * button, native scrollbars inside the component, and search off because Redoc runs
  * search in a web worker built from a blob URL, which Lightning Web Security may block.
- * The 2.5.4 bundle has no telemetry, so no telemetry option is needed.
+ * The 2.5.4 bundle has no telemetry, so no telemetry option is needed. scrollYOffset is
+ * the site header's height, so Redoc's own active item tracking allows for it.
  */
 export const REDOC_OPTIONS = {
   disableSearch: true,
   hideDownloadButton: true,
   nativeScrollbars: true,
-  scrollYOffset: 0,
+  scrollYOffset: headerOffset,
   expandResponses: "200",
   theme: {
     colors: {
@@ -98,11 +146,83 @@ export const REDOC_OPTIONS = {
       links: {
         color: REDOC_LINK_COLOR,
         visited: REDOC_LINK_COLOR,
-        hover: REDOC_LINK_COLOR
+        hover: REDOC_LINK_COLOR,
+        // A link inside text needs more than colour (axe link-in-text-block, log 299).
+        textDecoration: "underline",
+        hoverTextDecoration: "underline"
       }
+    },
+    // Redoc appends this CSS to the named styled component.
+    extensionsHook: (name) => {
+      return name === "ConstraintItem"
+        ? `color: ${REDOC_CONSTRAINT_COLOR}; font-weight: 600;`
+        : "";
     }
   }
 };
+
+/** A Redoc section id the menu and deep links use, such as tag/Skills or operation/getSkills. */
+const SECTION_HASH = /^(tag|operation|section|schema)\//;
+
+/**
+ * Rules added after Redoc's own: a link inside Redoc's text, such as the licence link, is
+ * underlined, because colour alone does not mark it (axe link-in-text-block, log 299).
+ * The :link and :visited forms outrank the site platform's own link rule, specificity
+ * 0,2,2, which otherwise takes the underline away.
+ */
+export const REDOC_STYLE_OVERRIDES =
+  ".redoc-target a[href]:link, .redoc-target a[href]:visited { text-decoration: underline; }";
+
+/** Space left between the header and a section scrolled into view. */
+const SECTION_GAP = 8;
+
+/** Redoc scrolls on its own after a menu click; the component settles the result after it. */
+const CLICK_SETTLE_MS = 150;
+
+/** The attribute Redoc 2.5.4 marks each section with and looks sections up by. */
+const SECTION_ATTRIBUTE = "data-section-id";
+
+// The rendered reference Redoc's section lookups should search, set on each render.
+let sectionRoot;
+let sectionLookupInstalled = false;
+
+/**
+ * Redoc looks its sections up with document.querySelector('[data-section-id="..."]'),
+ * which cannot see inside this component's shadow root, so its scroll tracking marked the
+ * last item active and rewrote the URL hash to it (audit F5). This lets that one kind of
+ * lookup fall back to the rendered reference when the document finds nothing. Every
+ * other query is untouched. If the runtime does not allow it, the component's own
+ * scrolling still works.
+ */
+export function installSectionLookup() {
+  if (sectionLookupInstalled) {
+    return;
+  }
+  sectionLookupInstalled = true;
+  try {
+    const original = document.querySelector;
+    document.querySelector = function querySelector(selector) {
+      const hit = original.call(this, selector);
+      if (
+        hit ||
+        typeof selector !== "string" ||
+        !selector.startsWith(`[${SECTION_ATTRIBUTE}=`) ||
+        !sectionRoot
+      ) {
+        return hit;
+      }
+      const root = sectionRoot();
+      return root ? root.querySelector(selector) : null;
+    };
+  } catch {
+    sectionLookupInstalled = false;
+  }
+}
+
+/** An id as the inside of a double quoted CSS attribute value. */
+function cssString(value) {
+  return String(value).replace(/["\\]/g, "\\$&");
+}
 
 function reduceError(error) {
   if (!error) {
@@ -221,8 +341,153 @@ export default class ApiReference extends LightningElement {
     this.renderReference();
   }
 
+  connectedCallback() {
+    // ?spec=papi or ?spec=sapi picks the spec a shared link opens on.
+    const params = new URLSearchParams(window.location.search || "");
+    const spec = (params.get("spec") || "").toLowerCase();
+    if (SPECS[spec]) {
+      this.selectedSpec = spec;
+    }
+    this.pendingHash = this.sectionHash();
+    this.boundHashChange = () => {
+      const hash = this.sectionHash();
+      if (hash) {
+        this.goToSection(hash, true);
+      }
+    };
+    window.addEventListener("hashchange", this.boundHashChange);
+  }
+
   disconnectedCallback() {
     this.clearRenderTimeout();
+    if (this.boundHashChange) {
+      window.removeEventListener("hashchange", this.boundHashChange);
+    }
+  }
+
+  /** The Redoc section named by the URL hash, or undefined. */
+  sectionHash() {
+    let hash = "";
+    try {
+      hash = decodeURIComponent((window.location.hash || "").slice(1));
+    } catch {
+      hash = "";
+    }
+    return SECTION_HASH.test(hash) ? hash : undefined;
+  }
+
+  /** The rendered section for a Redoc id. operation/{id} also finds tag/{tag}/operation/{id}. */
+  findSection(id) {
+    const target = this.template.querySelector(".redoc-target");
+    if (!target || !id) {
+      return null;
+    }
+    const exact = target.querySelector(`[id="${cssString(id)}"]`);
+    if (exact) {
+      return exact;
+    }
+    if (id.startsWith("operation/")) {
+      return target.querySelector(`[id$="/${cssString(id)}"]`);
+    }
+    return null;
+  }
+
+  /**
+   * Scrolls a Redoc section to just below the site header (and the pinned spec switch on
+   * its own page), and moves focus to it. Redoc cannot do this itself here: it finds
+   * sections with document.querySelector, which cannot see inside this component's
+   * shadow root, so its menu changed the URL and nothing moved (audit F5).
+   * @returns {boolean} whether the section was found
+   */
+  goToSection(id, moveFocus) {
+    const section = this.findSection(id);
+    if (!section) {
+      return false;
+    }
+    const panel = this.template.querySelector(".redoc-panel");
+    const gap = SECTION_GAP;
+    if (!this.fullWidth && panel && panel.scrollHeight > panel.clientHeight) {
+      // Boxed layout: the panel scrolls, not the page.
+      panel.scrollTop +=
+        section.getBoundingClientRect().top -
+        panel.getBoundingClientRect().top -
+        gap;
+    } else {
+      const offset = this.sectionOffset();
+      window.scrollTo({
+        top: Math.max(
+          0,
+          window.scrollY + section.getBoundingClientRect().top - offset
+        ),
+        behavior: "auto"
+      });
+    }
+    if (moveFocus) {
+      if (!section.hasAttribute("tabindex")) {
+        section.setAttribute("tabindex", "-1");
+      }
+      section.focus({ preventScroll: true });
+    }
+    return true;
+  }
+
+  /** Header, the pinned spec switch on its own page, and a small gap, in pixels. */
+  sectionOffset() {
+    const toggle = this.fullWidth
+      ? this.template.querySelector(".spec-toggle")
+      : null;
+    return headerOffset() + (toggle ? toggle.offsetHeight : 0) + SECTION_GAP;
+  }
+
+  /** A click on a Redoc menu item or an in page link: let Redoc update, then scroll. */
+  handleRedocClick(event) {
+    const path =
+      typeof event.composedPath === "function" ? event.composedPath() : [];
+    let id;
+    for (const node of path) {
+      if (!node || node.nodeType !== 1) {
+        continue;
+      }
+      if (node.dataset && node.dataset.itemId) {
+        id = node.dataset.itemId;
+        break;
+      }
+      const href = node.getAttribute && node.getAttribute("href");
+      if (href && href.startsWith("#")) {
+        id = decodeURIComponent(href.slice(1));
+        break;
+      }
+    }
+    if (id && SECTION_HASH.test(id)) {
+      setTimeout(() => this.goToSection(id, true), CLICK_SETTLE_MS);
+    }
+  }
+
+  /** After a render: pin the switch under the header and honour a deep link. */
+  afterRender() {
+    const card = this.template.querySelector("article");
+    if (card) {
+      card.style.setProperty("--reference-sticky-top", `${headerOffset()}px`);
+    }
+    const hash = this.pendingHash;
+    if (!hash) {
+      return;
+    }
+    if (this.goToSection(hash, true)) {
+      this.pendingHash = undefined;
+      // Redoc also scrolls to the hash once it has drawn; settle after it.
+      setTimeout(() => this.goToSection(hash, true), CLICK_SETTLE_MS * 2);
+      return;
+    }
+    // The section is in the other spec: switch once and try again.
+    this.pendingHash = undefined;
+    const other = Object.keys(SPECS).find((key) => key !== this.selectedSpec);
+    if (other && !this.hashSwitched) {
+      this.selectedSpec = other;
+      this.pendingHash = hash;
+      this.hashSwitched = true;
+      this.renderReference();
+    }
   }
 
   clearRenderTimeout() {
@@ -268,6 +533,9 @@ export default class ApiReference extends LightningElement {
     this.errorMessage = "";
     try {
       await Promise.race([this.renderSpec(), this.renderTimeout()]);
+      if (renderId === this.renderCount) {
+        this.afterRender();
+      }
     } catch (error) {
       if (renderId !== this.renderCount) {
         return;
@@ -293,6 +561,8 @@ export default class ApiReference extends LightningElement {
     if (!target) {
       throw new Error("The reference container is not on the page.");
     }
+    sectionRoot = () => this.template.querySelector(".redoc-target");
+    installSectionLookup();
     if (!this.styleBaseline) {
       // Style tags present before Redoc first renders are the site's own.
       this.styleBaseline = new Set(document.head.querySelectorAll("style"));
@@ -301,7 +571,8 @@ export default class ApiReference extends LightningElement {
       try {
         redoc.init(
           SPECS[this.selectedSpec].url,
-          REDOC_OPTIONS,
+          // A number, measured now, so Redoc scrolls a section below the header.
+          { ...REDOC_OPTIONS, scrollYOffset: this.sectionOffset() },
           target,
           (error) => (error ? reject(error) : resolve())
         );
@@ -343,7 +614,7 @@ export default class ApiReference extends LightningElement {
       .join("\n");
     host.textContent = "";
     const element = document.createElement("style");
-    element.textContent = text;
+    element.textContent = [text, REDOC_STYLE_OVERRIDES].join("\n");
     host.appendChild(element);
   }
 }

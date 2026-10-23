@@ -1,7 +1,8 @@
 /**
  * @description       : Home page: the hero (photo, name, title, location, bio, the tour button, a
- *                      direct link to the resume, profile links), the live pillar cards, an honest
- *                      line for the pillars that are coming, and the "How to evaluate me" tour.
+ *                      direct link to the resume, profile links), three "start here" paths (audit
+ *                      E2), the live pillar cards, an honest line for the pillars that are coming,
+ *                      and the "How to evaluate me" tour.
  *                      Name, title, location and photo are static so they paint without waiting on
  *                      Apex. The bio and profile links come from ResumeController.getHeader, which
  *                      reads only the owner Contact, so the bio does not wait on the full resume.
@@ -9,6 +10,10 @@
  *                      ProjectCardController.getPillarCards (Round 6 plan N7), merged in by
  *                      letter. The number shows only with its label, the image only with its
  *                      alt text, and a failed or empty wire leaves the cards as they were.
+ *                      Round 7 plan P5 (audit E3): a card with Challenge, Solution or Business
+ *                      Value text gets a case study disclosure, a real button with
+ *                      aria-expanded, showing those blocks and the Live and Source links that
+ *                      are set and safe.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -44,6 +49,23 @@ function textOrNull(value) {
  * @returns {object} the card extras
  */
 function toCardExtras(row) {
+  const caseBlocks = [
+    ["challenge", "Challenge"],
+    ["solution", "Solution"],
+    ["businessValue", "Business value"]
+  ]
+    .map(([field, heading]) => ({
+      key: field,
+      heading,
+      text: textOrNull(row && row[field])
+    }))
+    .filter((block) => block.text);
+  const caseLinks = [
+    ["live", "Live site", toExternalUrl(row && row.liveUrl)],
+    ["source", "Source code", toExternalUrl(row && row.repositoryUrl)]
+  ]
+    .filter(([, , href]) => href)
+    .map(([key, label, href]) => ({ key, label, href }));
   const metric = textOrNull(row && row.headlineMetric);
   const label = textOrNull(row && row.headlineLabel);
   const imageUrl = toSiteAssetUrl(row && row.imageUrl, basePath);
@@ -56,7 +78,12 @@ function toCardExtras(row) {
     headlineLabel: hasHeadline ? label : null,
     hasImage,
     imageUrl: hasImage ? imageUrl : null,
-    imageAlt: hasImage ? imageAlt : null
+    imageAlt: hasImage ? imageAlt : null,
+    caseBlocks,
+    caseLinks,
+    hasCaseLinks: caseLinks.length > 0,
+    // Links alone are no case study: the disclosure needs at least one text block.
+    hasCaseStudy: caseBlocks.length > 0
   };
 }
 
@@ -79,6 +106,23 @@ function joinNames(names) {
     return names.join("");
   }
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/**
+ * Scrolls to an element and moves focus to it, respecting reduced motion.
+ * @param {HTMLElement} target the heading to move to
+ */
+function moveTo(target) {
+  if (!target) {
+    return;
+  }
+  if (typeof target.scrollIntoView === "function") {
+    target.scrollIntoView({
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+      block: "start"
+    });
+  }
+  target.focus({ preventScroll: true });
 }
 
 /**
@@ -105,6 +149,8 @@ export default class HeroBanner extends LightningElement {
   cardRows = [];
   cardImageWidth = CARD_IMAGE_WIDTH;
   cardImageHeight = CARD_IMAGE_HEIGHT;
+  expandedKeys = {};
+  newTabNote = ", opens in a new tab";
 
   @wire(getPillarCards)
   wiredPillarCards({ data }) {
@@ -186,7 +232,53 @@ export default class HeroBanner extends LightningElement {
       tags: pillar.tags.map((tag) => ({ key: tag, label: tag })),
       href: pillar.href,
       linkLabel: `Open ${pillar.pageLabel}`
-    }));
+    })).map((card) => {
+      const expanded = Boolean(this.expandedKeys[card.key]);
+      return {
+        ...card,
+        caseId: `case-${card.key}`,
+        expandedText: expanded ? "true" : "false",
+        caseHidden: !expanded,
+        caseChevron: expanded ? "−" : "+",
+        caseToggleLabel: expanded
+          ? "Hide the case study"
+          : "Read the case study"
+      };
+    });
+  }
+
+  get startPaths() {
+    const paths = [
+      {
+        key: "resume",
+        audience: "For recruiters",
+        title: "Read the resume",
+        href: this.resumeHref,
+        arrow: "→",
+        text: "Filter it by Admin, Developer or Architect, then download the PDF."
+      },
+      {
+        key: "pillars",
+        audience: "For architects",
+        title: "Start with the pillars",
+        href: "#pillars-heading",
+        target: "pillars-heading",
+        arrow: "↓",
+        text: "Five pieces of work, each with its case study and a live page."
+      }
+    ];
+    const apiLab = LIVE_PILLARS.find((pillar) => pillar.letter === "C");
+    if (apiLab) {
+      paths.push({
+        key: "api-lab",
+        audience: "For developers",
+        title: "Call the API",
+        href: apiLab.href,
+        arrow: "→",
+        text: "Send a live request to the portfolio API and read the headers it returns."
+      });
+    }
+    return paths;
   }
 
   get hasComing() {
@@ -226,15 +318,24 @@ export default class HeroBanner extends LightningElement {
 
   handleTourClick(event) {
     event.preventDefault();
-    const heading = this.template.querySelector('[data-id="tour-heading"]');
-    if (heading) {
-      if (typeof heading.scrollIntoView === "function") {
-        heading.scrollIntoView({
-          behavior: prefersReducedMotion() ? "auto" : "smooth",
-          block: "start"
-        });
-      }
-      heading.focus({ preventScroll: true });
+    moveTo(this.template.querySelector('[data-id="tour-heading"]'));
+  }
+
+  handleStartClick(event) {
+    const target = event.currentTarget.dataset.target;
+    if (!target) {
+      // A plain link to another page.
+      return;
     }
+    event.preventDefault();
+    moveTo(this.template.querySelector(`[data-id="${target}"]`));
+  }
+
+  handleCaseToggle(event) {
+    const key = event.currentTarget.dataset.key;
+    this.expandedKeys = {
+      ...this.expandedKeys,
+      [key]: !this.expandedKeys[key]
+    };
   }
 }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Path__c</fullName>
+    <caseSensitive>true</caseSensitive>
+    <description
+  >The file's path from the repository root, the same value as Source_File__mdt.Path__c. One row per path.</description>
+    <externalId>true</externalId>
+    <inlineHelpText
+  >Set by the source refresh job. The path from the repository root on main.</inlineHelpText>
+    <label>Path</label>
+    <length>255</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

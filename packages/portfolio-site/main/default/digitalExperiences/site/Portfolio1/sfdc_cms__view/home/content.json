@@ -32,6 +32,15 @@
                       "definition": "c:experienceTimeline",
                       "id": "8553dc90-c92a-4a95-9d97-3a728367892e",
                       "type": "component"
+                    },
+                    {
+                      "attributes": {
+                        "heading": "Get in touch",
+                        "intro": "Questions about a project, a role or this site? Send a note and Ryan will reply."
+                      },
+                      "definition": "c:contactForm",
+                      "id": "1c5521dd-ac63-427c-8a4c-4e4e58450ea6",
+                      "type": "component"
                     }
                   ],
                   "id": "0ded21b3-6370-425a-9c83-e222f1b80e79",

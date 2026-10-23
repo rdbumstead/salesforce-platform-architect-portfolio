@@ -20,6 +20,11 @@
   - [2.9 Site Theme, Tokens and Fonts](#29-site-theme-tokens-and-fonts)
   - [2.10 Project Asset Gallery and Decision Matrix](#210-project-asset-gallery-and-decision-matrix)
   - [2.11 Mobile Performance](#211-mobile-performance)
+  - [2.12 Home Page Cards and Timeline](#212-home-page-cards-and-timeline)
+  - [2.13 Cloudflare Cache Warmer Worker](#213-cloudflare-cache-warmer-worker)
+  - [2.14 View Source (`c-view-source`)](#214-view-source-c-view-source)
+  - [2.15 API Lab and API Reference](#215-api-lab-and-api-reference)
+  - [2.16 Contact Form and Submission Guard](#216-contact-form-and-submission-guard)
 - [3. Quality Assurance Checklist](#3-quality-assurance-checklist)
   - [3.4 Concrete Testing Example](#34-concrete-testing-example)
 
@@ -43,6 +48,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 - **Caching Strategy ([ADR-007](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-round-4)):**
   - `IntegrationCacheRefreshScheduler` runs at :00, :15, :30 and :45 and enqueues `GitHubCacheRefreshJob` (`Queueable`, `Database.AllowsCallouts`, because scheduled Apex cannot call out synchronously).
   - The job reads the latest commits on `main` and inserts one row into the `Github_Cache__c` **custom object**, with the mapped commit list in `JSON_Payload__c`.
+  - The same scheduled run also enqueues `SourceCacheRefreshJob` when a View source file is due, which fills `Source_Cache__c` from the GitHub contents API (section 2.14). It needs no schedule of its own.
   - Guests never call out. The `c-changelog` component reads the newest row through `DeliveryController.getRecentCommits(simulate)`.
 - **Degraded Mode:**
   - A failed refresh inserts nothing, so the last good list keeps showing with its age.
@@ -54,7 +60,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 
 - **Authentication:** Basic Auth through the `Jira_API` Named Credential (`Jira_Auth` External Credential, `Jira_Principal` principal).
 - **Refresh:** `JiraCacheRefreshJob`, enqueued by the same scheduler, runs the JQL `project = <key> AND labels = "portfolio-roadmap" ORDER BY updated DESC`, where the key is `Portfolio_Config__mdt.Jira_Project_Key__c` (`SPAP`), and inserts one `Jira_Cache__c` row from the first page of 50 issues. Only issues labelled `portfolio-roadmap` become public (owner decision E6, 2026-10-21).
-- **Component:** `c-roadmap-viewer` reads the newest row through `DeliveryController.getRoadmap(simulate)` and places issues in To Do, In Progress and Done by Jira status category, so a renamed workflow status cannot empty a column. It never calls Jira. Cards name their epic as "Part of {name} | {key}", epic cards come first in each column, and the Done column shows the newest eight with a "Show all N shipped" button for the rest.
+- **Component:** `c-roadmap-viewer` reads the newest row through `DeliveryController.getRoadmap(simulate)` and places issues in To Do, In Progress and Done by Jira status category, so a renamed workflow status cannot empty a column. It never calls Jira. Cards name their epic as "Part of {name} | {key}" and epic cards come first in each column. Since Round 7 every column shows at most 8 cards (`COLUMN_LIMIT`) with its own "Show all N" button and state, which keeps `aria-expanded` and the count in the column heading. Done shows its newest 8 by `updatedAt`, and To Do and In Progress keep the feed order and cut at 8. Before Round 7 only Done was capped. The owner chose to cap every column, which replaced the test that pinned the Done only rule. A View source button in the roadmap header opens `roadmapViewer.js`, `roadmapViewer.html` and `DeliveryController.cls` (section 2.14).
 - **Principal access:** the scheduling admin user reaches both principals through `Portfolio_Admin` (owner decision E8, 2026-10-21). `Integration_Access` keeps them too, by the owner's choice. `Portfolio_Guest` has neither.
 - **Degraded Mode:**
   - After three consecutive failures, the `jira` circuit breaker skips Jira refreshes for 30 minutes, and `DeliveryController` reports `DEGRADED` while it is open.
@@ -82,7 +88,7 @@ All external API calls originate from a secure **Named Credential** accessed via
 - **Fallback message.** When the template letter is used, the page says "The AI model could not be reached" if the Gemini attempt failed in under 1 second (`coverLetterGenerator.UNREACHABLE_MS`), and "The AI model was busy or too slow" otherwise. Each letter sends the GA4 event `ai_generation_completed`, and a request with no letter sends `ai_complete_failure`.
 - **Footer.** `ContentGenerationController.providerStatus()` returns each provider's switch and state (`on`, `off`, `not built`) and `circuitOpenUntil` while its breaker is open, for the footer (section 2.6).
 - **Not built:** a real Agentforce provider and the hourly budget it needs (`Hourly_Budget__c` is in the config but not read yet).
-- **An unshipped agent prototype lives only in the production org** (pillar D decision D12 a, 2026-10-22). It holds the `Portfolio_Guide_Agent` Service Agent (version 1, inactive), its six custom topics (Data Integration Strategies, Zero Cost Architecture, Experience Object Queries, Skill Object Utilization, Real Time Data Validation, Technical Role Evaluation), two custom actions ("Get Portfolio Context", which calls the invocable `PortfolioAgentService.getPortfolioContext`, and "Contact Record Summary", the prompt template `0hffj000009W6ijAAC`), and the platform's default `Copilot_for_Salesforce` agent, also inactive. None of the agent, topic, action or template metadata is in source, and neither the site nor the API uses any of it. `PortfolioAgentService` is in source only as the action's Apex. The stray permission set `Contact_Information_Agent_Permissions`, which named another org's agent user, was removed from source in Round 5. The prototype is kept for a later real Agentforce provider (pillar D decision D5).
+- **An unshipped agent prototype lives only in the production org** (pillar D decision D12 a, 2026-10-22). It holds the `Portfolio_Guide_Agent` Service Agent (version 1, inactive), its six custom topics (Data Integration Strategies, Zero Cost Architecture, Experience Object Queries, Skill Object Utilization, Real Time Data Validation, Technical Role Evaluation), two custom actions ("Get Portfolio Context", which calls the invocable `PortfolioAgentService.getPortfolioContext`, and "Contact Record Summary", the prompt template `0hffj000009W6ijAAC`), and the platform's default `Copilot_for_Salesforce` agent, also inactive. None of the agent, topic, action or template metadata is in source, and neither the site nor the API uses any of it. `PortfolioAgentService` is in source only as the action's Apex. Since Round 7 it no longer reads or returns `Owner_Email__c` or `Owner_Phone__c`, so reviving the agent cannot expose the owner's email or phone (audit E6). The stray permission set `Contact_Information_Agent_Permissions`, which named another org's agent user, was removed from source in Round 5. The prototype is kept for a later real Agentforce provider (pillar D decision D5).
 
 ### 1.4 System API Security (The "Twin" Pattern)
 
@@ -110,10 +116,11 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 5. **Named Credentials** (both in source, both the My Domain root `https://ryan-bumstead-dev-ed.develop.my.salesforce.com`):
    - `Portfolio_API`, authenticated by `Portfolio_API_Auth`. Callers append `/services/apexrest/...`.
    - `Portfolio_API_Token`, using `Portfolio_API_Token_Auth`, merge fields allowed in the body, no generated Authorization header. Used only for `/services/oauth2/token`.
-6. **Assign `Portfolio_Guest` to the site guest user** (in source, `packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`, no licence, assignable to the guest user). As of Round 5 it grants:
-   - class access to `ApiLabController`, `DecisionMatrixController`, `DeliveryController`, `FooterController`, `GovernanceController`, `PAPIAuthToken`, `ResumeController`, `SchemaService` and `TestimonialController` (the two pillar controllers added in Round 5)
-   - read on `Experience__c`, `Experience_Skill__c`, `Project__c`, `Project_Asset__c`, `Project_Skill__c` and `Skill__c`, create on `Testimonial__c`, and read on `UserExternalCredential`
-   - read on `Experience__c.Start_Date__c` and `Experience__c.End_Date__c` (Round 5), which the skills matrix needs for "years used"
+6. **Assign `Portfolio_Guest` to the site guest user** (in source, `packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`, no licence, assignable to the guest user). It grants:
+   - class access to eleven site controllers, `ApiLabController`, `ContactFormController`, `DecisionMatrixController`, `DeliveryController`, `FooterController`, `GovernanceController`, `ProjectCardController`, `ResumeController`, `SchemaService`, `SourceController` and `TestimonialController`, plus two REST classes, the token endpoint `PAPIAuthToken` and the spec endpoint `OpenApiDocument`
+   - read on `Experience__c`, `Experience_Skill__c`, `Project__c`, `Project_Asset__c`, `Project_Skill__c` and `Skill__c`, create and read on `Testimonial__c`, and read on `UserExternalCredential`
+   - read on `Experience__c.Start_Date__c` and `Experience__c.End_Date__c` (Round 5), which the skills matrix needs for "years used", on `Skill__c.Persona_Tag__c` (Round 7, the persona filter) and on the testimonial fields the wall shows (Round 7)
+   - no Lead permission: the contact form saves Leads through a platform event (section 2.16)
    - principal access to `Portfolio_API_Auth-Portfolio_API_Principal`, `Portfolio_API_Token_Auth-Portfolio_API_Token_Principal` and `Gemini_Auth-Gemini_Principal` (the last one for the in-process cover letter, ADR-015 Round 4 amendment)
    - no Contact, Account, certification or education access, and no GitHub or Jira principal.
 
@@ -137,8 +144,9 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 11. **Governance publisher.** CI publishes `Governance_Event__e` as each workflow's existing JWT user (`deploy.yml` and `keep-alive.yml`). Assign `Governance_Publisher` (Create on that event only) to whichever of those users cannot create it yet. The publish steps in the two workflows are the owner's edits, made after the event is deployed to production.
 12. **Schedule the cache refresh** as the administrator who holds `Portfolio_Admin` (it carries the GitHub and Jira principals). From anonymous Apex, once per org: `IntegrationCacheRefreshScheduler.scheduleAll();`. It creates four jobs, `Integration Cache Refresh :00`, `:15`, `:30` and `:45`, each enqueuing `GitHubCacheRefreshJob` and `JiraCacheRefreshJob`. With no `Portfolio_Config__mdt` record (a scratch org), each job logs and exits.
 13. **Allow deployments while Apex jobs are scheduled.** In Setup > Deployment Settings, tick "Allow deployments of components when corresponding Apex jobs are pending or in progress". Items 7 and 12 schedule five jobs, and Salesforce refuses any deploy that changes a class one of them depends on (the error reads "You can bypass this error by allowing deployments with Apex jobs in the Deployment Settings page in Setup"). The setting is an org preference, not metadata in this repository, so set it in every org that runs the scheduled jobs. The production org has it since 2026-10-22. Scratch orgs do not need it, because nothing is scheduled in them.
-14. **Graph engine resource.** `D3_Library` (the four D3 modules, 18,544 bytes, Public cache) replaces `G6_Library` from Round 5. The delta deploy on `main` removes `G6_Library` and `c/g6Loader` as post-destructive changes (`deploy.yml`, "Generate Delta"). A full deploy does not delete anything, so after one, check with the Tooling query `SELECT Name FROM StaticResource WHERE Name = 'G6_Library'` and remove it with a destructive deploy if it is still there. Nothing on the site loads it.
+14. **Graph engine resource.** `D3_Library` (eleven D3 modules, 81,502 bytes since Round 7, Public cache) replaces `G6_Library` from Round 5. The delta deploy on `main` removes `G6_Library` and `c/g6Loader` as post-destructive changes (`deploy.yml`, "Generate Delta"). A full deploy does not delete anything, so after one, check with the Tooling query `SELECT Name FROM StaticResource WHERE Name = 'G6_Library'` and remove it with a destructive deploy if it is still there. Nothing on the site loads it.
 15. **Employer Hub demo objects.** The four `EH_` objects ship with the `EH_Demo_Read` permission set (read only). It is optional and for administrators only. The site guest needs no grant to see them in the diagram, because describe does not filter by object permission (ADR-029).
+16. **Contact form email rules (Setup, not in source).** The Lead assignment rule, the auto-response rule with its "Portfolio Website" entry, and the notification address they use are created in Setup, after the deploy, with the owner present. They are kept out of source on purpose, because they hold an email address. The email templates they use (`Portfolio_Contact_Auto_Response`, `Portfolio_Contact_New_Lead`) are in source.
 
 **Operational notes:** rotation and revocation procedures are in the [Maintenance Guide §1.2](./05-Maintenance-Guide.md#12-external-client-app-secret-rotation).
 
@@ -168,27 +176,35 @@ The front-end is based on **LWR** for sub-second page loads. **Lightning Web Sec
 
 ### 2.1 `c-skill-network` (Visualization)
 
-The Skills page (`c/skillNetwork`) opens on a matrix: one row per skill category, ordered by Category Order then name, with one chip per skill ordered by proficiency and then name. Each chip shows the skill's name, its proficiency out of 5 and the years it was used. Years used come from real role dates, not a self rating: the date ranges of the roles linked to the skill through Experience Skill are merged where they overlap, a current role or one with no end date counts to today, and the total shows to one decimal, as "under 1 yr" below a year, or not at all when no role is linked. Selecting a chip lists the roles and projects that used the skill. On desktop and tablet a Matrix and Graph switch opens a graph view. The graph engine is D3 (`d3-force` 3.0.0 with `d3-dispatch`, `d3-quadtree` and `d3-timer` 3.0.1, the `D3_Library` static resource, 18,544 bytes) behind `c/graphEngine`, and it is requested only when the graph is first opened. The layout runs to completion before anything is drawn: skills cluster by category on an inner ring, roles and projects sit on an outer ring, and edges appear only for the node that is hovered or selected. The component draws the result as SVG from its own template, so nothing animates and reduced motion needs no special case. Phones and viewports under 768 px get the matrix only and never request the engine. A visually hidden list names every node and its connections. G6 is no longer used anywhere on the site.
+The Skills page (`c/skillNetwork`) opens on a matrix: one row per skill category, ordered by Category Order then name, with one chip per skill ordered by proficiency and then name. Each chip shows the skill's name, its proficiency out of 5 and the years it was used. Years used come from real role dates, not a self rating: the date ranges of the roles linked to the skill through Experience Skill are merged where they overlap, a current role or one with no end date counts to today, and the total shows to one decimal, as "under 1 yr" below a year, or not at all when no role is linked. Selecting a chip lists the roles and projects that used the skill. On desktop and tablet a Matrix and Graph switch opens a graph view. The graph engine is D3 behind `c/graphEngine`, from the `D3_Library` static resource, and it is requested only when the graph is first opened. The layout runs to completion before anything is drawn: skills cluster by category on an inner ring, roles and projects sit on an outer ring, and edges appear only for the node that is hovered or selected. The component draws the result as SVG from its own template, so nothing animates on its own and reduced motion needs no special case. Phones and viewports under 768 px get the matrix only and never request the engine. A visually hidden list names every node and its connections. G6 is no longer used anywhere on the site.
 
 - **Data:** `Skill__c` with `Category_Order__c`, its `Project_Skill__c` and `Experience_Skill__c` junctions, and each linked role's `Start_Date__c`, `End_Date__c` and `Is_Current_Role__c`, through the `lightning/uiGraphQLApi` wire adapter. The site guest reads the two dates through `Portfolio_Guest` field permissions added in Round 5. Without them the query fails validation for the guest.
 - **Engine contract (`c/graphEngine`):**
   - `loadGraphEngine(component)` returns a Promise resolving to `window.d3`. It loads `D3_Library` through `loadScript` once per page. A failed load rejects and is not cached, so the next open tries again.
   - `layoutGraph(d3, nodes, edges, options)` is pure and synchronous. It runs `forceManyBody`, `forceCollide`, `forceLink`, `forceX` and `forceY` toward `options.anchors[node.group]` (groups on a ring when absent) for a fixed number of ticks with a seeded random source, keeps every node inside `options.width` by `options.height`, and returns `{ nodes, edges }` with `x` and `y` on each node and `x1 y1 x2 y2` on each edge. The same input gives the same output.
+- **Engine resource:** `D3_Library` holds the official UMD builds of d3-dispatch 3.0.1, d3-quadtree 3.0.1, d3-timer 3.0.1, d3-force 3.0.0, and since Round 7 d3-selection 3.0.0, d3-color 3.1.0, d3-interpolate 3.0.1, d3-ease 3.0.1, d3-transition 3.0.1, d3-drag 3.0.0 and d3-zoom 3.0.0, appended unchanged, 81,502 bytes. `graphEngine.test.js` pins each segment's SHA-256 to its npm package file.
+- **Pan, zoom and drag (Round 7):** `attachPanZoom(d3, svg, options)` and `attachNodeDrag(d3, elements, options)` in `c/graphEngine` wire d3-zoom and d3-drag to the drawn SVG and report the transform and the dragged positions back to the component, which still draws everything from its template. The visitor can drag the background to pan, use the wheel to zoom, and drag a node. Zoom runs from 1x to 4x in steps of 1.5 (`ZOOM`), so at the starting zoom, scrolling the wheel down scrolls the page and a one finger swipe scrolls a tablet page. Double click does not zoom. Zoom in, Zoom out and Reset view are real buttons for keyboard users, the zoom level is announced politely ("Zoom 150%"), and Reset view returns the zoom and every dragged node to the start.
+- **Persona filter (Round 7):** the matrix can be filtered by the resume's personas, with pressed buttons for All, Platform Architect, Salesforce Developer and System Admin and a polite summary such as "Showing 2 of 6 skills for Platform Architect." The tags are `Skill__c.Persona_Tag__c`, a multi-select with the same values as `Experience_Highlight__c.Persona_Tag__c` (Admin, Developer, Architect), read by a separate GraphQL query so the skills still load if the tags cannot be read. The filter appears only once at least one skill is tagged. The tags are set by a data script the owner reviews and runs, so until then the page looks as it did. Choosing a persona sends `skills_persona_filtered`.
+- **View source:** a View source button at the top of the component opens its `skillNetwork.js`, `skillNetwork.html` and `graphEngine.js` (section 2.14).
 - **Spacing:** both graphs were spread out in Round 6 and the spacing is measured by a Jest test on production shaped data (`skillNetwork/__tests__/layoutSpacing.test.js`). On the skills graph each category label holds its own place in the layout, so skills gather round it rather than under it.
 - **Failure:** if the engine cannot load, the graph view says "The graph could not load. The matrix still shows every skill."
 - **Analytics:** `skills_view_changed` with the view on every switch, `skill_selected` with the skill and its years on a selection (section 2.8).
+- **The D3.js skill:** the skill production listed as "AntV G6 (Graph)" is renamed "D3.js", keeping its links to roles and projects, by a data script the owner runs after the Round 7 deploy.
 - **History:** until Round 5 the page drew a G6 force graph and an inline SVG on phones ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
 
 ### 2.2 `c-resume-builder` (Resume Generation)
 
 - **Pdf Generation:** Performs client-side PDF generation using **jsPDF**.
+- **Role order (Round 7, audit F12):** current roles first, then the newest start date, then sort order (`ResumeController`). The same order drives the resume, its PDF and the home page timeline.
+- **View source:** a View source button opens `resumeBuilder.js`, `resumeBuilder.html` and `ResumeController.cls` (section 2.14).
 - **Logic:** The underlying Apex logic filters `Experience_Highlight__c` records based on the user's requested **Persona Tag** (e.g., Admin vs. Architect).
 - **Certifications:** current certifications are listed newest first with issuer and earned month, then one "Verify on Trailhead" link, then the retired ones in their own list, so the link never reads as covering them. `Certification__c.Is_Retired__c` separates the two. The link comes from `Portfolio_Config__mdt.Credential_Verification_URL__c`, a Text field so the value renders exactly as stored, through `ResumeController` as `credentialVerificationUrl`. With no value set, no link shows.
 
 ### 2.3 `c-testimonial-submit` (Social Proof)
 
-- Uses a "Mad Libs" style sentence builder.
-- Includes a "Vibe Toggle" (Professional/Casual) to implement the "Vibe-Gated" submission pattern.
+- **The form (Round 7, B9).** The sentence "I'm a [relationship], and Ryan [strength]. The result? [outcome]" sits inside one `fieldset` whose `legend` reads the sentence. Each blank is a labelled select, a polite live region previews the finished sentence, and an optional note follows. The vibe (Professional or Casual) chooses the `Testimonial_Fragment__mdt` set, and switching it clears the chosen phrases. A Recruiter, or a Fan or visitor, sees only the outcomes whose audience is Anyone.
+- **The server.** `TestimonialController` accepts only a known fragment of the chosen vibe, stores the composed sentence in `Context__c` and the fragment names and the note in fields of their own, runs `SubmissionGuard` (honeypot, minimum time, blocklist, 5 a minute across all visitors on the `testimonial-submit` key) and never sets `Approved__c` ([ADR-005 amendment](../adr/005-gamified-testimonial-ui.md)).
+- **The wall (Round 7, B2).** `c-testimonial-wall` on `/testimonials` shows approved testimonials from `TestimonialController.getApprovedTestimonials`, each in its tone, with a "Professional / All" filter that uses the API feed's rule (the Professional vibe from a Manager, Client or Peer). It renders nothing when there are none or the read fails. The guest reads the rows through the `Guest_Read_Testimonials` sharing rule, and the restriction rule hides unapproved ones ([ADR-012 amendment](../adr/012-guest-user-security-restriction-rules.md)).
 
 ### 2.4 `c-schema-visualizer` (Dynamic ERD Visualizer)
 
@@ -197,6 +213,7 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
 - **Deviation from the first design:** this section used to say edges came from `getChildRelationships()` and the result was cached in Platform Cache. Neither is built: child relationships on `Account` alone run to hundreds, and the org has no Platform Cache partition ([ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)).
 - **Spacing:** the layout treats each object box as an oval, so boxes keep at least 36 px apart without hitting the edge. Measured by `schemaVisualizer/__tests__/layoutSpacing.test.js` on both scopes (Round 6).
 - **Failure:** if the engine cannot load, the page says "The diagram could not load, so the object list is shown instead."
+- **View source:** a View source button beside the heading opens `schemaVisualizer.js`, `schemaVisualizer.html` and `SchemaService.cls` (section 2.14).
 - **Analytics:** `erd_scope_changed` with the scope, `erd_node_selected` with the object (section 2.8).
 - **Tests:** `SchemaServiceTest` proves, among others, that `Project_Skill__c` to `Project__c` is a master-detail edge, the four hidden objects are absent, an override moves an object, an `EH_` object lands in the Employer Hub, custom settings are left out, an unknown scope throws, each scope stays under the CPU budget, and the site guest gets the same objects as an admin.
 
@@ -209,15 +226,17 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
 
 ### 2.6 `c-footer` (Glass Box Telemetry)
 
-- **Component:** `c-footer`, one line: copyright, the deploy badge with a status dot, the telemetry in Fira Code, profile links and "Back to top".
+- **Component:** `c-footer`, one line: copyright, the deploy badge with a status dot, the telemetry in Fira Code, profile links, a Contact link and "Back to top". The Contact link goes to the home page with the `#contact` fragment (`{site base}/#contact`), built from the site base path in `footer.js`.
 - **Links:** `FooterController.getLinks()` (cacheable) returns only `gitHubUrl` and `linkedInUrl` from `Portfolio_Config__mdt`. It never selects the owner's email or phone.
 - **Deferred load (ADR-014):** the component paints first and calls `FooterController.getSystemSnapshot()` from `requestIdleCallback`, or a zero delay timeout where the browser has none, so the fetch never delays the main page load (LCP). The method is not cacheable, so each visit reads current values.
 - **Telemetry Data:**
   - Limits: CPU time, heap size and SOQL queries used against their limits (`Limits.getCpuTime`, `getHeapSize`, `getQueries` and their limits).
   - AI providers: one row per provider from `ContentGenerationController.providerStatus()`, for example "Agentforce: off", or "Gemini: circuit open until 14:05" while its breaker is open.
   - "AI requests today: N": `SUM(Count__c)` of today's `API_Rate_Window__c` rows whose key starts `papi-ai:`, through a `without sharing` inner class that returns only the number. It counts requests from the site page and from `/papi/v1/ai/generate`, not Gemini calls, so it is never called a Gemini quota (PD-D9). Hover or focus sends `finops_quota_visibility`.
+  - Org quotas (Round 7): `DailyApiRequests` and `DailyAsyncApexExecutions` from `OrgLimits.getMap()`, shown as "API requests today N of M" and "async Apex today N of M". A quota the org does not report is left out, and a failed `OrgLimits` read leaves the list empty, so the footer never shows a guessed number. `DataStorageMB` is not shown, because the site guest cannot read it (`FooterControllerTest`).
+  - GitHub and Jira breakers (Round 7): "GitHub: circuit closed" and "Jira: circuit closed" beside the AI providers, or open until a time, from `CircuitBreaker.snapshot()`.
   - If the snapshot call fails, the line shows "status unavailable".
-  - "GraphQL: live, N ms": at the same idle moment the footer loads `c/graphqlProbe` with a dynamic import and times one small read (the first `Skill__c` Id) from the moment the probe connects to the first answer. If the read fails the line says "GraphQL: unavailable". The probe is a separate module so the GraphQL adapter stack never loads before first paint (§2.11).
+  - "GraphQL: live, N ms": at the same idle moment the footer loads `c/graphqlProbe` with a dynamic import and times one small read (the first `Skill__c` Id) from the moment the probe connects to the first answer. If the read fails the line says "GraphQL: unavailable". The timer starts when the probe's field is created, not in `connectedCallback`, because the wire can answer before the component connects, and the footer shows a time only when it is a finite number. Before Round 7 that order showed "GraphQL: live, NaN ms" on `/skills` (`graphqlProbe.earlyWire.test.js`). On a page that has already run the same read, such as `/skills`, the answer comes from the client cache and reads 0 or 1 ms. The probe is a separate module so the GraphQL adapter stack never loads before first paint (§2.11).
 - **Deploy badge:** `https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main`, alt text "Production deploy status", allowed by the `GitHub_Badge` CSP trusted site (img-src). If the image fails, a text link to the Actions page takes its place.
 - **Resilience toggle:** not in the footer. The "Simulate an outage" switch sits on the changelog and the roadmap (ADR-022 Round 4 amendment).
 
@@ -238,6 +257,7 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
   - `resilience_test_triggered` {`source`: `changelog` or `roadmap`}, sent when the "Simulate an outage" switch is turned on
   - `finops_quota_visibility`, `theme_changed` {`theme`}
   - Round 5: `skills_view_changed` {`view`}, `skill_selected` {`skill`, `years`}, `erd_scope_changed` {`scope`}, `erd_node_selected` {`object`}, `gallery_asset_opened` {`type`, `pillar`}, `matrix_weight_changed` {`criterion`}, `matrix_reset`
+  - Round 7: `skills_persona_filtered` {`persona`}
 - **The tag.** The GA4 tag loads from head markup, with a page view sent on every route change, because the LWR router changes routes without a page load. The route change page view is sent from the plain head script that wraps `history.pushState`, which calls the exported `gtag('event', 'page_view', ...)` with the new location. Before Round 5 that listener sat inside the privileged iframe, never received the outer window's event, and no page view was sent after the first page.
 - **CSP.** To load the tag the site runs on **Relaxed CSP** (owner decision, 2026-10-21). That lets inline scripts and `eval()` run on the site, so only reviewed head markup adds scripts, and `https://www.googletagmanager.com` is on the site's script allowlist (Experience Builder "Trusted Sites for Scripts"), kept in source in the site bundle at `digitalExperiences/site/Portfolio1/sfdc_cms__trustedSites/trustedSites/content.json`. It deploys with the site, so production needs no hand step. On the scratch site the tag loaded and a `g/collect` hit reached `google-analytics.com`. The GA4 image and connect hosts are trusted sites in source (`GA4_Tag_Manager`, `GA4_Analytics`, `GA4_Google`), so a Builder setting saved only in production cannot drift from the repo.
 
@@ -248,7 +268,9 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
 - **Design tokens.** Components use only the `--pf-*` custom properties (background, surface, text, accent, chip, warning, success, code, button, error, fonts, radius and spacing), defined in `styles.css` and mirrored on the `:host` of `portfolioThemeLayout`. The stylesheet also maps the platform's `--dxp-g-*` globals onto them, because it loads after the branding set's inline styles.
 - **Fonts.** Inter (400 to 700) for text and Fira Code (400 and 500) for section labels, pillar letters, code, API output and the footer metrics. Both are Latin woff2 files in the `Portfolio_Fonts` static resource, loaded by `@font-face` with `font-display: swap` from a same-origin URL, so the site's CSP needs no new host (licences in [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)).
 - **Header.** A slim sticky header. It shows the name as the home link, then Home, Resume, Skills, Testimonials and the Pillars menu, centred between the name and the theme button on desktop. On phones (under 768 px) the links fold behind the menu button. The Pillars menu opens on a click, and closes on a click outside it, on Escape (focus returns to its button) and after a pillar link is followed. Primary controls are at least 44 px high.
-- **Shared pillar list.** `c/pillarData` exports `PILLARS` and `pillarByLetter`, the one list the header and the home page read.
+- **Back to top (Round 7).** `portfolioThemeLayout` adds a floating "Back to top" button on every page once the visitor has scrolled down 600 px or one and a half screens, whichever is more (`BACK_TO_TOP_MIN_PX`, `BACK_TO_TOP_SCREENS`). It is a real button, next after the main content in the tab order, lifted above the footer and clear of it at 320 px. Pressed, it scrolls to the top, instantly when `prefers-reduced-motion` is set, and moves focus to the top of the main content. While it has focus it stays on screen.
+- **Removed in Round 7.** The unused `placeholderTerminal` component, a pre-launch splash that no page placed. The `SiteSamples` static resource stays, because the site's Visualforce error pages (for example `FileNotFound` and `InMaintenance`) and `SitePoweredBy` load it.
+- **Shared pillar list.** `c/pillarData` exports `PILLARS` and `pillarByLetter`, the one list the header and the home page read. Pillar B's name there is "Solution Architecture" (audit F2), and its page label stays "Nonprofit Solutions". The `Project__c.Pillar_Label__c` formula, which the API returns as `pillarLabel`, and the pillar page descriptions in the site views repeat the names, so `pillarData/__tests__/pillarSources.test.js` fails when either disagrees with `c/pillarData` (audit G3).
 
 ### 2.10 Project Asset Gallery and Decision Matrix
 
@@ -260,9 +282,10 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
 - **In the browser:** `computeTotals` sums weight times score per option, `rankOptions` orders them, and `findFlip` searches each criterion's weight from 0 to 10 for the smallest single change that would put the runner-up ahead. That is the sensitivity line. Moving a slider makes no server call. "Reset to the starting weights" restores every `Default_Weight__c`.
 - **Placeholders:** while any score has `Is_Placeholder__c`, a banner says "Scores and weights are provisional placeholders pending the owner's review." Since Round 6 every score is reviewed and no flag is set, so no banner shows. At the starting weights the totals are NPSP and PMM 268, Nonprofit Cloud 262 and Education Cloud 152.
 - **Analytics:** `matrix_weight_changed` with the criterion, `matrix_reset`.
+- **View source:** a View source button at the top opens `decisionMatrix.js`, `decisionMatrix.html` and `DecisionMatrixController.cls` (section 2.14).
 - **Tests:** `DecisionMatrixControllerTest` fails when any option and criterion pair lacks a score, and proves the site guest gets the same matrix as an admin, cell for cell.
 
-**`c/pillarBStory`** holds the six sections of the Pillar B page: the client, discovery with the lifecycle to object table, the decision matrix introduction, the cost and effort table from public licence facts with a source per row, the solution design with the object model redrawn in `NL_Assets`, and the outcome. Discovery opens by saying the work was done in pre-sales (decision D3). There is no video prototype (decision D8), so the page has no video section and sends no video event.
+**`c/pillarBStory`** holds the six sections of the Pillar B page: the client, discovery with the lifecycle to object table, the decision matrix introduction, the cost and effort table from public licence facts with a source per row, the solution design with the object model redrawn in `NL_Assets`, and the outcome. Discovery opens by saying the work was done in pre-sales (decision D3). Since Round 7 each table that scrolls sideways is a named keyboard stop (`tabindex="0"`, `role="region"` and an `aria-label` such as "Lifecycle concepts table, scrolls sideways"), so a keyboard user can scroll it on a phone. There is no video prototype (decision D8), so the page has no video section and sends no video event.
 
 ### 2.11 Mobile Performance
 
@@ -303,59 +326,112 @@ Round 5 measured every change with the Lighthouse CLI (11.4.0, mobile profile, s
 
 ### 2.12 Home Page Cards and Timeline
 
-- **Pillar cards.** `ProjectCardController.getPillarCards()` is a cacheable Apex method that reads `Project__c` through a `without sharing` selector in system mode and returns one row per pillar letter (featured first, then sort order, then name) with five fields: `pillar`, `headlineMetric`, `headlineLabel`, `imageUrl`, `imageAlt`. `heroBanner` merges the rows into its cards by letter. A card leads with its number only when both `Headline_Metric__c` and `Headline_Metric_Label__c` are set, and shows its image only when both `Hero_Image_URL__c` and `Hero_Image_Alt__c` are set. The static `c/pillarData` still draws every card, so a missing row or a failed read changes nothing. The read goes through Apex rather than GraphQL because the Apex adapter is already on the home page for the hero.
-- **Card images.** `Project_Card_Images` holds one 640 by 360 WebP per pillar (`pillar-a.webp` to `pillar-e.webp`), each under 25 KB, cropped from that pillar's own public page in the light theme with nothing that identifies a person. Records point at them as `resource:Project_Card_Images/pillar-x.webp`, resolved by `c/externalUrl` `toSiteAssetUrl` the same way as the project gallery. Images load lazily below the hero, so the bio stays the first paint.
+- **Start here paths (Round 7, audit E2).** Under the hero, three paths by audience: "For recruiters" to the resume, "For architects" to the pillar cards further down the page (the link moves focus to the pillars heading), and "For developers" to the API Lab. The developer path shows only while Pillar C is live in `c/pillarData`.
+- **Pillar cards.** `ProjectCardController.getPillarCards()` is a cacheable Apex method that reads `Project__c` through a `without sharing` selector in system mode and returns one row per pillar letter (featured first, then sort order, then name) with `pillar`, `headlineMetric`, `headlineLabel`, `imageUrl`, `imageAlt`, and since Round 7 `challenge`, `solution`, `businessValue`, `liveUrl`, `repositoryUrl` and `headlineSource`. `heroBanner` merges the rows into its cards by letter. The static `c/pillarData` still draws every card, so a missing row or a failed read changes nothing. The read goes through Apex rather than GraphQL because the Apex adapter is already on the home page for the hero.
+- **Card numbers are computed (Round 7, audits F11 and G5).** `Project__c.Headline_Metric_Source__c` (a picklist) names where a card's number comes from, and the controller computes it each time the cards load: "Employer Hub objects" counts the Employer Hub objects the ERD draws (`SchemaService.countObjects`), "API paths" counts the paths in the `SAPI_Spec` and `PAPI_Spec` resources, "AI providers" counts the providers `ContentGenerationController.providerStatus()` reports as on, and "Apex tests" reads `Tests_Passed__c` and `Org_Coverage__c` from the newest `Pipeline_Run__c` with `Status__c` Success and a test count, so a run with a failed test shows the passed count, which CI writes after each production deploy. The number replaces the first number in `Headline_Metric__c`, and fills the label's `{n}` token (and `{coverage}` for Apex tests). With no source set, or when a source fails, the stored text shows (`headlineSource` reads `stored`). A label whose token cannot be filled hides the headline, so the card never shows `NaN` or a 0 from a failed read. A card leads with a number only when both a metric and a label result, and shows its image only when both `Hero_Image_URL__c` and `Hero_Image_Alt__c` are set. Setting the sources on the production rows is a data script the owner runs.
+- **Case study (Round 7, audit E3).** Each card can open a short case study: a real `button` with `aria-expanded` shows the Challenge, Solution and Business Value text and "Live site" and "Source code" links, each only when set. A card with no case study text shows no button. For Pillars C, D and E the owner's data script blanks the case study fields by default, because their stored text described things the site does not do, and keeps the old text in the script for the owner to review.
+- **Card images.** `Project_Card_Images` holds one 640 by 360 WebP per pillar (`pillar-a.webp` to `pillar-e.webp`), each under 28 KB, cropped from that pillar's own public page in the light theme with nothing that identifies a person. Records point at them as `resource:Project_Card_Images/pillar-x.webp`, resolved by `c/externalUrl` `toSiteAssetUrl` the same way as the project gallery. Images load lazily below the hero, so the bio stays the first paint.
+- **Hero (Round 7).** The headshot is 232 px square on desktop and lines up with the top of the text (audit F10), 184 px on tablets and 120 px on phones. The "Take the 5 minute tour" button keeps its fill in both themes: the platform's link rule outranked the plain `.btn-primary` class, so the button rules now also match `:link` and `:visited` (audit F8). The short rule before section labels such as "01 / THE PILLARS" is gone, the text stays (audit F9).
 - **Timeline.** `ResumeController.getTimeline()` returns roles and schools newest first through the same `without sharing`, system mode selector as the resume, in a fixed shape with no email, phone, address or `Owner_*` field. The site guest needs class access only. `c/experienceTimeline` follows the tabs pattern: a tab list with `aria-selected` and a roving tab index, ArrowLeft, ArrowRight, Home and End move between tabs, and each panel has `role="tabpanel"`. It renders nothing when both lists are empty, hides a tab whose list is empty, uses only the site tokens with 44 px tap targets, and sends `timeline_tab_changed` on a tab change.
+
+### 2.13 Cloudflare Cache Warmer Worker
+
+The one piece of the running system outside Salesforce, apart from the domain redirect (SAS section 6.1).
+
+- **What it is.** A Cloudflare Worker named `portfolio-cache-warmer` (`config/wrangler.toml`), whose code is `scripts/cache-warmer.js`. Its `scheduled` handler runs on a cron trigger every 5 minutes (`*/5 * * * *`) and sends one GET to `TARGET_URL`, `https://ryanbumstead.com/`, with `Cache-Control: no-cache` and `Pragma: no-cache`. It logs the status and never retries.
+- **Why.** To wake the site regularly, so a visitor is less likely to be the first request after a quiet spell. The Worker's own comment says the `no-cache` headers make sure the request reaches Salesforce rather than a cache. No measurement of the effect has been taken, so none is claimed.
+- **What it is not.** It is not the edge AI proxy of [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md), which stays deferred. It reads nothing, caches nothing and calls no API.
+- **Deploy.** `deploy-worker.yml` runs `wrangler deploy --config config/wrangler.toml` on a push to `main` that changes either file, or by hand, with the `CLOUDFLARE_API_TOKEN` secret.
+- **Not yet checked.** `TARGET_URL` is the redirect domain, so the request reaches the site only by following the 301. Whether the deployed Worker follows it, and whether it fires every 5 minutes, has not been read from Cloudflare's logs.
+
+### 2.14 View Source (`c-view-source`)
+
+A "View source" button on the showcase components opens the component's real source, read from GitHub ahead of time and cached in the org (Round 7, audit B1). A visitor never causes a GitHub call.
+
+- **The control.** `<c-view-source source-key="skillNetwork"></c-view-source>`. `sourceKey` is its only public property. It renders a real `button` labelled "View source" with a 44 px target. Pressed, it opens a native `<dialog>` with `showModal()`, so it sits above the sticky header and the page behind it is inert. The dialog is labelled by its heading, "Source: " and the component's name, and lists the files as tabs (the arrow keys move between them). The chosen file shows in `c-code-viewer` with a link to it on GitHub that opens in a new tab with `rel="noopener noreferrer"`. Focus moves to the heading when the dialog opens, Tab stays inside it, and Escape or Close returns focus to the button. When the key is unknown or no file is cached yet, nothing renders at all.
+- **Files per key.** `Source_File__mdt` records (`Source_Key__c`, `Path__c`, `Label__c`, `Sort_Order__c`) list the files, so the owner can change them without code. Each key lists the component's `.js` and `.html` and its main Apex class, or `graphEngine.js` for `skillNetwork`, which has no Apex. The keys are `skillNetwork`, `schemaVisualizer`, `decisionMatrix`, `apiTester`, `resumeBuilder` and `roadmapViewer`.
+- **Read.** `SourceController.getSourceFiles(sourceKey)` (`@AuraEnabled(cacheable=true)`) returns `path`, `label`, `language`, `content`, `htmlUrl`, `fetchedAt` and `truncated` per file, in sort order, from `Source_Cache__c` only. The guest has no permission on `Source_Cache__c`, so the controller reads it through a `without sharing` selector in system mode that returns those fields for the configured paths only. `SourceControllerTest` runs as the site guest and proves the read makes no callout.
+- **Fill.** `SourceCacheRefreshJob` (`Queueable`, callouts allowed) reads each configured path at `main` through `GitHubService` and the `GitHub_API` Named Credential and upserts one `Source_Cache__c` row per path. `IntegrationCacheRefreshScheduler` enqueues it on its existing quarter hour schedule only when a path is due, meaning it has no row or was last checked 24 hours ago (`REFRESH_HOURS`), so each file is read at most once a day, a failing one included. The first run after a deploy reads every path, 18 today. A run makes at most 90 callouts (`MAX_FILES_PER_RUN`), all before any write. A failed read keeps the last good content and records only the check time and status, and it counts toward the `github` circuit breaker, which also makes the job skip while open. Content longer than 131,072 characters is cut and marked `truncated`. Rows for paths no longer configured are deleted.
+- **Highlighting.** `c/prismHighlighter` is the site's one Prism module. `loadPrism` loads the `Prism_JS` resource once per page, `highlight` builds HTML only from escaped text (Prism tokens for a known grammar, the `clike` grammar for an unknown one, escaped plain text if Prism is missing or throws), and `languageForPath` maps `.cls` and `.trigger` to Apex, `.js` to JavaScript, `.html` and `.xml` to markup, plus CSS, YAML and JSON. `Prism_JS` gained Prism 1.30.0's Apex, SQL, JSON and YAML grammars in Round 7. `c-code-viewer` uses it, and its scroll region is a named keyboard stop.
+- **Placed on:** the API Lab (`apiTester`), the skills page (`skillNetwork`), the Pillar A data model (`schemaVisualizer`), the Pillar B decision matrix (`decisionMatrix`), the resume (`resumeBuilder`) and the Delivery roadmap (`roadmapViewer`). The ERD hides `Source_Cache__c` through the `Hide_Source_Cache` record of `Schema_Visualizer_Object__mdt`.
+- **Not yet checked in production:** the first refresh through `GitHub_API` runs only after the deploy. The same credential serves the commits job today.
+
+### 2.15 API Lab and API Reference
+
+- **One source for the specs (Round 7, G2).** `packages/integration-api/specs` holds the two YAML specs. `npm run specs:sync` (`scripts/sync-specs.js`) generates every copy: the `SAPI_Spec` and `PAPI_Spec` YAML static resources the API reference reads, the `SAPI_OpenAPI` and `PAPI_OpenAPI` JSON resources `/openapi.json` serves, the `API_Lab_Catalog` resource the Lab reads, and the Postman collection. `npm run specs:check` writes nothing and fails when a copy differs, and a Jest test in `apiReference` fails the same way.
+- **Path list (G1).** `ApiLabController` allows only the paths in `API_Lab_Catalog`, built from the specs' GET operations, so a new spec path appears in the Lab with no code change. `/papi/v1/auth/token` and `/papi/v1/ai/generate` are left out on purpose, with the reason in the script. A missing or broken catalog refuses every path.
+- **The Lab (B3).** Query parameters are controls built from the spec: pills for up to four values, a picklist above that, true and false pills for a boolean, bounded `limit` and `offset`, hinted id fields, and every chosen value as a removable pill over the query string, plus the free text Advanced field, which wins on a shared name. "Next page" follows `X-Has-More`. The response body is highlighted by `c/prismHighlighter` and checked against the path's response schema: which documented keys are present, missing, or not in the spec. Each call sends `api_test_executed` with the path, the status and `param_count`.
+- **The reference (F5).** `c-api-reference` renders Redoc inside the component. Redoc looks its sections up on `document`, which cannot see inside the component, so the component scrolls a chosen section below the sticky header itself and moves focus to it, and answers Redoc's section lookups from the rendered reference. Menu links and deep links (`#tag/...`, `#operation/...`, `?spec=`) land on their section, on load too. Redoc does not render in WebKit (Safari), so there the page shows its fallback with a link to the hosted reference.
+- **Machine readable specs (B4).** `OpenApiDocument` (SAS Appendix B.3).
+- **Postman.** `docs/api/postman/portfolio-api.postman_collection.json`. Run `POST /auth/token` first: it stores the token and instance URL for the other requests.
+
+### 2.16 Contact Form and Submission Guard
+
+A native contact form on the home page that lands as a Lead ([ADR-031](../adr/031-native-contact-form.md), Round 7 E5).
+
+- **The form.** `c-contact-form` sits on the home view under a heading with `id="contact"`. First and last name, email, an optional company and a message, a one line privacy note, a hidden honeypot field, and the time since the form appeared. It thanks the visitor inline ("Thanks, check your inbox.") with no redirect. When the address ends in `#contact`, on load or later, the form scrolls into view and its heading takes focus, which is how the footer's Contact link reaches it.
+- **As the guest.** `ContactFormController` validates the input and runs `SubmissionGuard.check`, then publishes one `Contact_Form_Submission__e`. The guest has no Lead permission at all.
+- **The Lead.** `ContactFormSubmissionTrigger` runs as the Automated Process user and calls `ContactFormLeadWriter`, which inserts each Lead in system mode with `Database.DMLOptions`: the default assignment rule, the auto-response only when the event asks for it, and duplicates allowed so a returning visitor is never refused. `LeadSource` is "Portfolio Website". The hop through the event is needed because the auto-response rule fails in the guest's own context.
+- **Limits.** The auto-response is asked for only on the first message from an address in 24 hours, so the form cannot be used to send mail to someone again and again. The form takes at most 20 messages in 24 hours in all, and says so when the cap is reached.
+- **Silent drops.** `SubmissionGuard` drops a message when the honeypot is filled, when it was sent less than 3 seconds after the form appeared, or when the email, its domain or the text matches an active `Submission_Block__c` row (types Email, Domain, Keyword, IP Hash). The visitor sees the normal thanks, nothing is stored or sent, and the block's hit count and last hit are updated. The same guard runs for the testimonial form. No visitor IP is used, because Apex cannot read one in a guest request.
+- **Failures.** A batch that fails to insert is retried by the event bus three times, then kept as `Contact_Form_Failure__c` rows with the reason, and the `Portfolio_Admin` users get a custom notification. The visitor never sees an error.
+- **Reminders.** `LeadReminderService` stamps `Reply_Reminder_1_At__c` and `Reply_Reminder_2_At__c` at one and two business days after arrival, using the org's default Business Hours, and the `Lead_Contact_Form_Reminders` flow sends the `Portfolio_Contact_Reminder` custom notification at those times unless the Lead's status has moved on.
+- **Block sender.** The "Block sender" quick action on Lead (`Lead_Block_Sender` screen flow, `SubmissionBlockAction`) adds the Lead's email or domain to `Submission_Block__c` with a reason, turns an existing block back on, and marks the Lead as spam (`Spam__c`) so its reminders stop. It is on the Lead layout's action list, which the mobile app uses.
+- **Admin objects.** `Submission_Block__c` and `Contact_Form_Failure__c` have tabs and are admin only, through `Portfolio_Admin`. A starter list of disposable email domains is loaded by a data script the owner runs.
+- **Email rules.** The assignment and auto-response rules are set up in Setup (deployment prerequisite 16) and are not in source.
 
 ## 3. Quality Assurance Checklist
 
 > [!TIP]
-> **Not a launch step.** `npm run pre-launch-check` was meant to run these checks in one command, but it cannot pass today: its Prettier step fails across the repo and its coverage step needs fixing. It is off the launch list until the owner fixes the script. The merge gates (lint, Jest, Prettier on changed files, the analyzer and a full Apex run) cover these checks instead.
+> **One command.** `npm run pre-launch-check -- --target-org <alias>` runs the release checks in order and stops at the first failure: Prettier on the files changed against `origin/main`, the code analyzer (`npm run scan`), a delta dry run with `RunLocalTests` against the named org (`scripts/validate.js`), the Jest tests, and the Apex test and coverage gate (`scripts/coverage-gate.js`, 90%). A Lighthouse run follows and is optional. The org is required and never taken from the CLI default, because the main checkout's default is production (`scripts/pre-launch-check.js`). Name a scratch org, never production, since the coverage step runs every local test in the org it is given.
 
 ### 3.1 Key Verification Items
 
 - [ ] **LCP:** Run a Lighthouse mobile audit (three runs per route, medians) and compare with the 2.5 s target and the recorded gate in §2.11.
-- [ ] **Coverage:** Verify Apex tests > 90% coverage (Hard Gate).
-- [ ] **Security:** Verify Zero critical warnings from PMD Scanner.
-- [ ] **Accessibility:** Confirm the "Pause Animation" toggle exists and works.
+- [ ] **Coverage:** every Apex test passes and org wide coverage is 90% or more (`npm run sf:coverage -- --target-org <alias>`). `pr.yml` enforces the same gate on every pull request.
+- [ ] **Security:** no Critical or High violation from Salesforce Code Analyzer (`npm run scan`).
+- [ ] **Accessibility:** confirm nothing animates (the skills graph and the ERD are drawn once, after the layout finishes), so no pause control is needed (SAS Appendix G.2).
 - [ ] **Degradation Test:** turn on "Simulate an outage" on the changelog or the roadmap. Verify the cached data stays on screen with a "Simulated" badge (status `SIMULATED`) and no request leaves for GitHub or Jira.
-- [ ] **Limit Visibility:** Verify "Glass Box Telemetry" footer accurately reflects Heap Size changes after running a heavy operation.
+- [ ] **Limit Visibility:** the footer shows CPU, heap and SOQL use against their limits. These are the figures of the `FooterController.getSystemSnapshot` call itself, so they cannot reflect another operation. Verify the line renders, and that it reads "status unavailable" when the call fails.
 - [ ] **Analytics:** Verify api_test_executed event fires in GA4 Real-Time view when using the API Tester.
 - [ ] Verify the Skill Graph uses `lightning/uiGraphQLApi` (the Network tab shows a `/graphql` call to the Salesforce domain). The Roadmap reads Apex over the cache (`DeliveryController.getRoadmap`), so it makes no GraphQL call
-- [ ] API Lab "Enterprise Mode" tab disabled with clear "Phase 8 – 2027-2028" messaging
 - [ ] **AI fallback:** with the Gemini API unavailable, `POST /papi/v1/ai/generate` with `type: CoverLetter` returns `provider: Local` and `fallbackOccurred: true`, and the site page shows the template letter with the reason. After three Gemini failures the footer shows "Gemini: circuit open until HH:MM" and the next letter skips Gemini.
 
 ## 3.4 Concrete Testing Example
 
-We don't just "aim" for quality; we enforce it. Here is a real example of an Apex test that mocks the GitHub API and enforces Governor Limits:
+Here is a real test from the repository, `GitHubCacheRefreshJobTest.shouldInsertNothingWhenGitHubFails` (`packages/portfolio-site/main/default/classes/GitHubCacheRefreshJobTest.cls`). It mocks a GitHub outage and proves the degraded mode in section 1.1: the job makes one callout, stores nothing, the page keeps serving the last good commits, and the `github` circuit breaker counts the failure. `useRepo` and `newestRow` are helpers in the same class, and `CountingMock` is its `HttpCalloutMock`, which counts the calls it answers.
 
 ```apex
 @IsTest
-private class GitHubServiceTest {
-  @IsTest
-  static void testGetRepoDetails_EnforcesLimits() {
-    // 1. Set Mock with specific payload
-    Test.setMock(
-      HttpCalloutMock.class,
-      new GitHubMockResponse(200, '{"stargazers_count": 5}')
-    );
+static void shouldInsertNothingWhenGitHubFails() {
+  useRepo('o/r');
+  CountingMock mock = new CountingMock(503, '{"message":"down"}');
+  Test.setMock(HttpCalloutMock.class, mock);
 
-    // 2. Execute within Governor Limit tracking
-    Test.startTest();
-    GitHubService.RepoDetails result = GitHubService.getRepoDetails('my-repo');
-    Test.stopTest();
+  Test.startTest();
+  String outcome = GitHubCacheRefreshJob.refresh();
+  Test.stopTest();
 
-    // 3. Assert Logic AND Governance
-    System.assertEquals(5, result.stars, 'Should parse JSON correctly');
-    System.assertEquals(
-      1,
-      Limits.getCallouts(),
-      'Should make exactly 1 callout'
-    );
-    System.assert(
-      Limits.getHeapSize() < 100000,
-      'Heap usage should be minimal'
-    );
-  }
+  Assert.areEqual(GitHubCacheRefreshJob.OUTCOME_FAILED, outcome, 'Outcome');
+  Assert.areEqual(1, mock.calls, 'The call was made');
+  Assert.areEqual(
+    1,
+    [SELECT COUNT() FROM Github_Cache__c],
+    'Nothing inserted'
+  );
+  Assert.isTrue(
+    newestRow().JSON_Payload__c.contains(GOOD_SHA),
+    'The newest good row is untouched'
+  );
+  Assert.areEqual(
+    GOOD_SHA,
+    DeliveryController.getRecentCommits(null).items[0].sha,
+    'The page keeps serving the last good commits'
+  );
+  Assert.areEqual(
+    1,
+    CircuitBreaker.snapshot()[1].failures,
+    'The github breaker counted the failure'
+  );
 }
 ```
