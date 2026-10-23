@@ -10,13 +10,17 @@
  *                      The probe is the c/graphqlProbe child, imported with a literal dynamic import
  *                      only at that moment, so the GraphQL adapter stack is not part of what loads
  *                      before first paint. A statically rendered child, even behind lwc:if, still
- *                      put it in the layout's preloads (log 203).
+ *                      put it in the layout's preloads (log 203). Round 7: the snapshot's
+ *                      org quotas (OrgLimits) and the GitHub and Jira breakers show next to
+ *                      the AI providers (B7), the GraphQL line shows only a finite time (F4),
+ *                      and a Contact link goes to the home page's contact form (P4).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/19/2025
  **/
 import { LightningElement, wire } from "lwc";
+import basePath from "@salesforce/community/basePath";
 import getLinks from "@salesforce/apex/FooterController.getLinks";
 import getSystemSnapshot from "@salesforce/apex/FooterController.getSystemSnapshot";
 import { EVENTS, trackEvent } from "c/analyticsService";
@@ -49,6 +53,34 @@ export function providerLabel(row) {
   const until = row.circuitOpenUntil ? formatTime(row.circuitOpenUntil) : "";
   const state = until ? `circuit open until ${until}` : row.state;
   return `${row.provider}: ${state}`;
+}
+
+/**
+ * One integration's breaker text, built only from the row's own fields.
+ * @param {object} row A FooterController.IntegrationState.
+ * @returns {string} For example "GitHub: circuit closed" or "Jira: circuit open until 14:05".
+ */
+export function integrationLabel(row) {
+  const until = row.open && row.openUntil ? formatTime(row.openUntil) : "";
+  if (until) {
+    return `${row.label}: circuit open until ${until}`;
+  }
+  return row.open
+    ? `${row.label}: circuit open`
+    : `${row.label}: circuit closed`;
+}
+
+/**
+ * One org quota's text, or null when either number is not a finite number, so a failed or
+ * partial read never shows as NaN or a made up 0.
+ * @param {object} row A FooterController.OrgQuota.
+ * @returns {string|null} For example "API requests today 739 of 5000000".
+ */
+export function quotaLabel(row) {
+  if (!row || !Number.isFinite(row.used) || !Number.isFinite(row.max)) {
+    return null;
+  }
+  return `${row.label} ${row.used} of ${row.max}`;
 }
 
 /**
@@ -89,6 +121,8 @@ export default class Footer extends LightningElement {
 
   badgeUrl = BADGE_URL;
   actionsUrl = ACTIONS_URL;
+  // The contact form handles #contact itself (contract P4).
+  contactUrl = `${basePath || ""}/#contact`;
 
   probeConstructor;
   graphqlMs;
@@ -129,7 +163,7 @@ export default class Footer extends LightningElement {
     if (detail.failed) {
       this.graphqlFailed = true;
       this.graphqlMs = undefined;
-    } else if (typeof detail.ms === "number") {
+    } else if (Number.isFinite(detail.ms)) {
       this.graphqlFailed = false;
       this.graphqlMs = detail.ms;
     }
@@ -175,6 +209,25 @@ export default class Footer extends LightningElement {
       key: row.provider,
       label: providerLabel(row)
     }));
+  }
+
+  get integrationRows() {
+    const rows = Array.isArray(this.snapshot?.integrations)
+      ? this.snapshot.integrations
+      : [];
+    return rows.map((row) => ({
+      key: row.key,
+      label: integrationLabel(row)
+    }));
+  }
+
+  get quotaRows() {
+    const rows = Array.isArray(this.snapshot?.orgQuotas)
+      ? this.snapshot.orgQuotas
+      : [];
+    return rows
+      .map((row) => ({ key: row.name, label: quotaLabel(row) }))
+      .filter((row) => row.label);
   }
 
   get aiRequestsToday() {

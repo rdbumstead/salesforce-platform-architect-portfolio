@@ -54,6 +54,11 @@
             >{row.label}</span
           >
         </template>
+        <template for:each={integrationRows} for:item="row">
+          <span key={row.key} class="metric" data-id="integration"
+            >{row.label}</span
+          >
+        </template>
         <span
           class="metric target ai-requests"
           data-id="ai-requests"
@@ -62,6 +67,9 @@
           onfocus={handleQuotaVisibility}
           >AI requests today: {aiRequestsToday}</span
         >
+        <template for:each={quotaRows} for:item="row">
+          <span key={row.key} class="metric" data-id="quota">{row.label}</span>
+        </template>
         <template for:each={limitRows} for:item="row">
           <span key={row.key} class="metric" data-id="limit">{row.label}</span>
         </template>
@@ -72,6 +80,7 @@
     </span>
 
     <span class="links">
+      <a class="target" data-id="contact" href={contactUrl}>Contact</a>
       <template lwc:if={gitHubUrl}>
         <a
           class="target"
