@@ -35,7 +35,7 @@ const SOURCE = [
   {
     key: "nonprofit-solutions",
     letter: "B",
-    pageLabel: "Nonprofit Solutions",
+    pageLabel: "Solution Architecture",
     sasName: "Solution Architecture",
     url: "nonprofit-solutions",
     summary:
