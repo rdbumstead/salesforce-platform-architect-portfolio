@@ -225,3 +225,22 @@
   font-size: 0.75rem;
   margin: var(--pf-space-1) 0 0;
 }
+
+/* The Done column's "Show all" control. A real button, at least 44 px high (trap 35). */
+.show-all {
+  min-height: 44px;
+  margin-top: var(--pf-space-2);
+  padding: 0 var(--pf-space-3);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  background: var(--pf-chip);
+  color: var(--pf-chip-text);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.show-all:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}

@@ -59,20 +59,65 @@
                     </template>
                   </div>
                   <p class="card-summary" data-id="summary">{card.summary}</p>
-                  <template lwc:if={card.epicKey}>
+                  <template lwc:if={card.parentText}>
                     <p class="card-parent" data-id="epic-key">
-                      Part of {card.epicKey}
+                      {card.parentText}
                     </p>
                   </template>
                 </li>
               </template>
             </ul>
+            <template lwc:if={column.isCapped}>
+              <ul
+                class="card-list card-list-more"
+                id="roadmap-done-more"
+                data-id="done-more"
+              >
+                <template for:each={column.hiddenCards} for:item="card">
+                  <li key={card.key} class={card.className} data-key={card.key}>
+                    <div class="card-top">
+                      <span class="card-key" data-id="key">{card.key}</span>
+                      <template lwc:if={card.isEpic}>
+                        <span class="epic-label" data-id="epic-label"
+                          >Epic</span
+                        >
+                      </template>
+                      <template lwc:else>
+                        <span class="card-type" data-id="type"
+                          >{card.type}</span
+                        >
+                      </template>
+                    </div>
+                    <p class="card-summary" data-id="summary">{card.summary}</p>
+                    <template lwc:if={card.parentText}>
+                      <p class="card-parent" data-id="epic-key">
+                        {card.parentText}
+                      </p>
+                    </template>
+                  </li>
+                </template>
+              </ul>
+              <button
+                type="button"
+                class="show-all"
+                data-id="show-all"
+                aria-expanded={column.toggleExpanded}
+                aria-controls="roadmap-done-more"
+                onclick={handleToggleDone}
+              >
+                {column.toggleLabel}
+              </button>
+            </template>
             <template lwc:if={column.isEmpty}>
               <p class="column-empty">Nothing here right now.</p>
             </template>
           </div>
         </template>
       </div>
+    </template>
+
+    <template lwc:if={showEmpty}>
+      <p class="roadmap-message" data-id="empty">{emptyText}</p>
     </template>
 
     <template lwc:if={showUnavailable}>

@@ -22,16 +22,16 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: A current Industries product.</value>
+    >The product Salesforce is investing in for nonprofits.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >Trailhead, Meet Nonprofit Success Pack</value>
+    >Nonprofit Success Pack and Other Managed Packages (salesforce.com)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

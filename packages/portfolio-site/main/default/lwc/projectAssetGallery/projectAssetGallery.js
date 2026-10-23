@@ -5,6 +5,8 @@
  *                      links, videos and links are external links with no embed (pillars D7 d). A URL is
  *                      used as is when it is http or https, and resource:<Name>/<path> becomes the site's
  *                      static resource path. Generic, so any project page can reuse it.
+ *                      With no assets, or when the read fails, it renders nothing at all,
+ *                      no heading and no note (Round 6, log 278).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -118,15 +120,6 @@ export default class ProjectAssetGallery extends LightningElement {
   @api heading;
 
   assets = [];
-  isLoading = true;
-  errorMessage;
-
-  connectedCallback() {
-    // Without a valid pillar the wire never runs, so the empty state shows at once.
-    if (!this.variables) {
-      this.isLoading = false;
-    }
-  }
 
   get variables() {
     return PILLAR_PATTERN.test(this.pillar || "")
@@ -136,18 +129,15 @@ export default class ProjectAssetGallery extends LightningElement {
 
   @wire(graphql, { query: GALLERY_QUERY, variables: "$variables" })
   wiredAssets({ data, errors }) {
+    // A failed read renders nothing, the same as a pillar with no assets.
     if (errors && errors.length) {
-      this.isLoading = false;
       this.assets = [];
-      this.errorMessage = "The project materials could not be loaded.";
       return;
     }
     if (!data) {
       return;
     }
-    this.errorMessage = undefined;
     this.assets = this.buildAssets(data);
-    this.isLoading = false;
   }
 
   buildAssets(data) {
@@ -191,15 +181,8 @@ export default class ProjectAssetGallery extends LightningElement {
     return Boolean(this.heading);
   }
 
+  /** The gallery renders only when it has something to show. */
   get hasAssets() {
     return this.assets.length > 0;
-  }
-
-  get hasError() {
-    return !this.isLoading && Boolean(this.errorMessage);
-  }
-
-  get isEmpty() {
-    return !this.isLoading && !this.errorMessage && !this.hasAssets;
   }
 }

@@ -6,7 +6,7 @@
           {
             "node": {
               "Id": "a0A000000000001AAA",
-              "Name": { "value": "Employer Hub for a community college" },
+              "Name": { "value": "Employer Hub for an education provider" },
               "Project_Assets__r": {
                 "edges": [
                   {

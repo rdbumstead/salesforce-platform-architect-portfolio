@@ -47,17 +47,6 @@
       "Alt_Text__c": "Executive dashboard with sample values: top employer partners by won opportunity amount, and the opportunity pipeline as a funnel from Needs Analysis to Closed Won.",
       "Sort_Order__c": 4,
       "External_URL__c": "resource:EH_Assets/dashboard-executive.svg"
-    },
-    {
-      "attributes": {
-        "type": "Project_Asset__c",
-        "referenceId": "PillarAAsset5Ref"
-      },
-      "Name": "Employer Hub demo deck",
-      "Project__c": "@PillarAProjectRef",
-      "Type__c": "Document",
-      "Alt_Text__c": "Employer Hub demo deck",
-      "Sort_Order__c": 5
     }
   ]
 }

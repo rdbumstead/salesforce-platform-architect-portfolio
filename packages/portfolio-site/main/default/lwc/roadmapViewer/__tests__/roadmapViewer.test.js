@@ -11,8 +11,11 @@ import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import RoadmapViewer, {
   COLUMNS,
+  DONE_LIMIT,
+  EMPTY_TEXT,
   STATUS_NOTES,
-  ageLabel
+  ageLabel,
+  parentLabel
 } from "c/roadmapViewer";
 import getRoadmap from "@salesforce/apex/DeliveryController.getRoadmap";
 import { trackEvent } from "c/analyticsService";
@@ -194,16 +197,179 @@ describe("c-roadmap-viewer", () => {
     expect(age.classList.contains("age-stale")).toBe(true);
   });
 
-  it("EMPTY shows the SAS wording and no board or age label", async () => {
+  it("EMPTY shows an honest empty line, not the outage line, and no board or age label", async () => {
     const element = createComponent();
     getRoadmap.emit(feed("EMPTY"));
     await flushPromises();
 
-    expect(q(element, '[data-id="unavailable"]').textContent.trim()).toBe(
-      "Roadmap temporarily unavailable"
-    );
+    expect(q(element, '[data-id="empty"]').textContent.trim()).toBe(EMPTY_TEXT);
+    expect(q(element, '[data-id="unavailable"]')).toBeNull();
     expect(q(element, ".roadmap-board")).toBeNull();
     expect(q(element, '[data-id="age-label"]')).toBeNull();
+  });
+
+  it("a feed with no items is empty, not an outage", async () => {
+    const element = createComponent();
+    getRoadmap.emit(feed("FRESH", { items: [] }));
+    await flushPromises();
+
+    expect(q(element, '[data-id="empty"]')).not.toBeNull();
+    expect(q(element, '[data-id="unavailable"]')).toBeNull();
+  });
+
+  it("names the epic as name and key, and falls back to the key alone", async () => {
+    const element = createComponent();
+    getRoadmap.emit(
+      feed("FRESH", {
+        items: [
+          { ...ITEMS[1], epicName: "Delivery pillar" },
+          { ...ITEMS[2], epicName: null }
+        ]
+      })
+    );
+    await flushPromises();
+
+    const named = q(element, 'li[data-key="SPAP-901"] [data-id="epic-key"]');
+    expect(named.textContent.trim()).toBe("Part of Delivery pillar | SPAP-900");
+    const keyOnly = q(element, 'li[data-key="SPAP-902"] [data-id="epic-key"]');
+    expect(keyOnly.textContent.trim()).toBe("Part of SPAP-900");
+    expect(parentLabel("Name", null)).toBe("");
+  });
+
+  it("puts epic cards above story cards in each column, keeping the order otherwise", async () => {
+    const element = createComponent();
+    const story = (key, category) => ({
+      ...ITEMS[1],
+      key,
+      statusCategory: category
+    });
+    const epic = (key, category) => ({
+      ...ITEMS[0],
+      key,
+      statusCategory: category
+    });
+    getRoadmap.emit(
+      feed("FRESH", {
+        items: [
+          story("SPAP-1", "new"),
+          epic("SPAP-2", "new"),
+          story("SPAP-3", "new"),
+          epic("SPAP-4", "new"),
+          story("SPAP-5", "indeterminate"),
+          epic("SPAP-6", "indeterminate")
+        ]
+      })
+    );
+    await flushPromises();
+
+    expect(keysIn(element, "new")).toEqual([
+      "SPAP-2",
+      "SPAP-4",
+      "SPAP-1",
+      "SPAP-3"
+    ]);
+    expect(keysIn(element, "indeterminate")).toEqual(["SPAP-6", "SPAP-5"]);
+  });
+
+  describe("the Done column cap", () => {
+    // Twelve done items, SPAP-101 the newest, each one hour older than the last.
+    // SPAP-112 (the oldest) and SPAP-104 are epics.
+    function doneItems(count) {
+      return Array.from({ length: count }, (unused, index) => ({
+        key: `SPAP-${101 + index}`,
+        summary: `Shipped ${index + 1}`,
+        status: "Done",
+        statusCategory: "done",
+        type: index === 11 || index === 3 ? "Epic" : "Story",
+        epicKey: null,
+        updatedAt: new Date(
+          Date.UTC(2026, 9, 21, 20 - index, 0, 0)
+        ).toISOString()
+      }));
+    }
+
+    function doneKeys(element) {
+      return keysIn(element, "done");
+    }
+
+    it("shows every done card and no button at the limit", async () => {
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH", { items: doneItems(DONE_LIMIT) }));
+      await flushPromises();
+
+      expect(doneKeys(element)).toHaveLength(DONE_LIMIT);
+      expect(q(element, '[data-id="show-all"]')).toBeNull();
+    });
+
+    it("shows the newest 8, epics first, then a real button that reveals the rest", async () => {
+      const element = createComponent();
+      // Feed order shuffled, so the cap must follow updatedAt.
+      const items = doneItems(12).reverse();
+      getRoadmap.emit(feed("FRESH", { items }));
+      await flushPromises();
+
+      expect(DONE_LIMIT).toBe(8);
+      expect(doneKeys(element)).toEqual([
+        "SPAP-104",
+        "SPAP-108",
+        "SPAP-107",
+        "SPAP-106",
+        "SPAP-105",
+        "SPAP-103",
+        "SPAP-102",
+        "SPAP-101"
+      ]);
+      const column = q(element, '.roadmap-column[data-category="done"]');
+      expect(
+        column.querySelector(".column-title").textContent.replace(/\s+/g, "")
+      ).toBe("Done(12)");
+
+      const button = q(element, '[data-id="show-all"]');
+      expect(button.tagName).toBe("BUTTON");
+      expect(button.getAttribute("type")).toBe("button");
+      expect(button.textContent.trim()).toBe("Show all 12 shipped");
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      const list = q(element, '[data-id="done-more"]');
+      expect(button.getAttribute("aria-controls")).toBe(list.id);
+
+      button.click();
+      await flushPromises();
+
+      expect(doneKeys(element)).toEqual([
+        "SPAP-104",
+        "SPAP-108",
+        "SPAP-107",
+        "SPAP-106",
+        "SPAP-105",
+        "SPAP-103",
+        "SPAP-102",
+        "SPAP-101",
+        "SPAP-112",
+        "SPAP-111",
+        "SPAP-110",
+        "SPAP-109"
+      ]);
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+      expect(button.textContent.trim()).toBe("Show fewer");
+
+      button.click();
+      await flushPromises();
+      expect(doneKeys(element)).toHaveLength(DONE_LIMIT);
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+    });
+
+    it("caps only the Done column", async () => {
+      const element = createComponent();
+      const items = doneItems(12).map((item) => ({
+        ...item,
+        statusCategory: "new"
+      }));
+      getRoadmap.emit(feed("FRESH", { items }));
+      await flushPromises();
+
+      expect(keysIn(element, "new")).toHaveLength(12);
+      expect(q(element, '[data-id="show-all"]')).toBeNull();
+    });
   });
 
   it("SIMULATED shows a Simulated badge with the board", async () => {

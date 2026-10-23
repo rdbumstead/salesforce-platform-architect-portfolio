@@ -180,7 +180,6 @@
   display: inline-flex;
   align-items: center;
   min-height: 40px;
-  margin-right: auto;
   color: var(--pf-text);
   font-weight: 600;
   font-size: 15px;
@@ -188,9 +187,11 @@
   text-decoration: none;
 }
 
+/* Equal auto margins centre the links in the space between the brand and the actions (N1). */
 .site-nav {
   display: flex;
   align-items: center;
+  margin: 0 auto;
 }
 
 .nav-list,
@@ -390,6 +391,7 @@
 
   .site-brand {
     order: 1;
+    margin-right: auto;
   }
 
   .site-actions {
@@ -404,6 +406,7 @@
     order: 3;
     display: none;
     flex-basis: 100%;
+    margin: 0;
     padding-bottom: var(--pf-space-2);
   }
 

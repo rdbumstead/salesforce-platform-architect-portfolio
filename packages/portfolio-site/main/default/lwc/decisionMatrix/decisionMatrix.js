@@ -3,7 +3,7 @@
  *                      criteria and scores once from DecisionMatrixController.getMatrix and
  *                      computes every weighted total in the browser, so moving a weight never
  *                      calls the server. Shows the ranking, the single weight change that would
- *                      first swap the top two options, and a reset to the client's weights.
+ *                      first swap the top two options, and a reset to the starting weights.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

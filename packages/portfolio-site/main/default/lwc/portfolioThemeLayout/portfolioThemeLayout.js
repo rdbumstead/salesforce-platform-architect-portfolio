@@ -1,6 +1,6 @@
 /**
  * @description       : Site theme layout. Renders the slim sticky header for every portfolio page
- *                      (name, Resume, Skills, Testimonials, a Pillars menu and the theme toggle), the
+ *                      (name, Home, Resume, Skills, Testimonials, a Pillars menu and the theme toggle), the
  *                      page content in the unnamed slot, and the footer region.
  *                      Owns the theme (Round 4 plan, contract L2): the stylesheet follows the system
  *                      setting, and the toggle writes data-theme and the portfolio-theme storage key.
@@ -15,7 +15,9 @@ import { PILLARS } from "c/pillarData";
 import { trackEvent, EVENTS } from "c/analyticsService";
 
 // Route URLs match the urlPrefix of each route in the Portfolio1 site bundle (K7).
+// Home comes first and shares its href with the brand link (Round 6 plan, N1).
 const PAGES = [
+  { key: "home", label: "Home", url: "" },
   { key: "resume", label: "Resume", url: "resume" },
   { key: "skills", label: "Skills", url: "skills" },
   { key: "testimonials", label: "Testimonials", url: "testimonials" }
@@ -87,20 +89,32 @@ export default class PortfolioThemeLayout extends LightningElement {
   systemDark = false;
 
   _query = null;
+  // True while a click that passed through the Pillars wrapper bubbles up to the document.
+  _clickInPillars = false;
 
   _onSystemChange = (event) => {
     this.systemDark = event.matches;
   };
 
-  _onDocumentClick = (event) => {
-    if (!this.pillarsOpen) {
-      return;
-    }
-    const wrapper = this.template.querySelector(".pillars");
-    const path =
-      typeof event.composedPath === "function" ? event.composedPath() : [];
-    if (wrapper && !path.includes(wrapper)) {
+  // On the published site the document listener sees a composed path that stops at this
+  // host, so it cannot tell a click in the menu from a click on the page in the slot (log 240).
+  // The wrapper marks its own clicks in handlePillarsClick, which runs first, and this
+  // listener closes the menu only for a click that was not marked.
+  _onDocumentClick = () => {
+    const inside = this._clickInPillars;
+    this._clickInPillars = false;
+    if (this.pillarsOpen && !inside) {
       this.pillarsOpen = false;
+    }
+  };
+
+  // Safari does not focus a button on a mouse click, so after a click on the toggle the focus is
+  // outside the header and its keydown handler never hears Escape. This listener closes the
+  // Pillars menu from anywhere. The header handler runs first when the focus is inside it.
+  _onDocumentKeydown = (event) => {
+    if (event.key === "Escape" && this.pillarsOpen) {
+      this.pillarsOpen = false;
+      this.focusControl(".pillars-toggle");
     }
   };
 
@@ -115,6 +129,7 @@ export default class PortfolioThemeLayout extends LightningElement {
       this.applyTheme(this.chosenTheme);
     }
     document.addEventListener("click", this._onDocumentClick);
+    document.addEventListener("keydown", this._onDocumentKeydown);
   }
 
   disconnectedCallback() {
@@ -122,6 +137,7 @@ export default class PortfolioThemeLayout extends LightningElement {
       this._query.removeEventListener("change", this._onSystemChange);
     }
     document.removeEventListener("click", this._onDocumentClick);
+    document.removeEventListener("keydown", this._onDocumentKeydown);
   }
 
   /**
@@ -205,6 +221,10 @@ export default class PortfolioThemeLayout extends LightningElement {
     if (!this.menuOpen) {
       this.pillarsOpen = false;
     }
+  }
+
+  handlePillarsClick() {
+    this._clickInPillars = true;
   }
 
   handlePillarsToggle() {
