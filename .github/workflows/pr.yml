@@ -97,6 +97,16 @@ jobs:
         run: |
           sf project deploy start --source-dir packages --target-org ci-org --wait 30
 
+          # Production's site guest already holds Portfolio_Guest. Give the scratch guest the same,
+          # so guest test classes running in parallel never race to assign it themselves.
+          GUEST_ID=$(sf data query --target-org ci-org --query "SELECT GuestUserId FROM Site WHERE Name = 'Portfolio1'" --json | jq -r '.result.records[0].GuestUserId // empty')
+          GUEST_USERNAME=$(sf data query --target-org ci-org --query "SELECT Username FROM User WHERE Id = '$GUEST_ID'" --json | jq -r '.result.records[0].Username // empty')
+          if [ -z "$GUEST_USERNAME" ]; then
+            echo "No guest user found for the Portfolio1 site."
+            exit 1
+          fi
+          sf org assign permset --name Portfolio_Guest --on-behalf-of "$GUEST_USERNAME" --target-org ci-org --json | jq '{status, successes: .result.successes, failures: .result.failures}'
+
           # The gate fails the PR on any failed test or org wide coverage under 90%.
           sf apex run test --target-org ci-org --test-level RunLocalTests --code-coverage --wait 30 --json > apex-tests.json || true
           node scripts/coverage-gate.js --file apex-tests.json --min 90

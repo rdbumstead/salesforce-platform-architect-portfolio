@@ -3,7 +3,12 @@
  *                      :15, :30 and :45, each run enqueues both refresh jobs, and the source
  *                      refresh joins them only when a file is due. Scheduling runs under a
  *                      test prefix, so the test passes in an org where the real four jobs are
- *                      already scheduled, as in production.
+ *                      already scheduled, as in production. Test.stopTest() runs the queued
+ *                      refresh jobs, and an org with real configuration (a GitHub repo path, a
+ *                      Jira project, source paths with no cache row) would make them call
+ *                      out, which a test method may not do. So each test that queues them
+ *                      stands in for that configuration and sets a mock that answers any
+ *                      callout that still happens.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -13,9 +18,32 @@
 private class IntegrationCacheRefreshSchedulerTest {
   private static final String TEST_PREFIX = 'Test Integration Cache Refresh :';
 
+  /** Answers every callout with 503, so a refresh records a failure and writes no data. */
+  private class UnavailableMock implements HttpCalloutMock {
+    public HttpResponse respond(HttpRequest request) {
+      HttpResponse response = new HttpResponse();
+      response.setStatusCode(503);
+      response.setBody('{}');
+      return response;
+    }
+  }
+
+  /**
+   * Keeps the queued refresh jobs from reading the org's own configuration: no GitHub or
+   * Jira record and no source file, so each job returns before any callout.
+   */
+  private static void isolateRefreshJobs() {
+    GitHubCacheRefreshJob.configOverridden = true;
+    JiraCacheRefreshJob.configOverridden = true;
+    SourceCacheRefreshJob.configOverridden = true;
+    SourceController.filesOverride = new List<Source_File__mdt>();
+    Test.setMock(HttpCalloutMock.class, new UnavailableMock());
+  }
+
   @IsTest
   static void shouldScheduleFourRunsWhenScheduleAll() {
     IntegrationCacheRefreshScheduler.jobNamePrefix = TEST_PREFIX;
+    isolateRefreshJobs();
 
     Test.startTest();
     List<Id> jobIds = IntegrationCacheRefreshScheduler.scheduleAll();
@@ -51,9 +79,8 @@ private class IntegrationCacheRefreshSchedulerTest {
 
   @IsTest
   static void shouldEnqueueSourceRefreshWhenAFileIsDue() {
-    GitHubCacheRefreshJob.configOverridden = true;
-    JiraCacheRefreshJob.configOverridden = true;
-    SourceCacheRefreshJob.configOverridden = true;
+    isolateRefreshJobs();
+    // One source file with no cache row, so the source refresh is due.
     SourceController.filesOverride = new List<Source_File__mdt>{
       new Source_File__mdt(
         Source_Key__c = 'apiTester',
@@ -72,10 +99,8 @@ private class IntegrationCacheRefreshSchedulerTest {
 
   @IsTest
   static void shouldEnqueueBothRefreshJobsWhenExecuted() {
-    GitHubCacheRefreshJob.configOverridden = true;
-    JiraCacheRefreshJob.configOverridden = true;
     // No source file configured, so nothing is due and only the two jobs run.
-    SourceController.filesOverride = new List<Source_File__mdt>();
+    isolateRefreshJobs();
 
     Test.startTest();
     new IntegrationCacheRefreshScheduler().execute(null);
