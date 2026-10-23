@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>AI rate per minute</label>
+    <protected>false</protected>
+    <values>
+        <field>Number_Value__c</field>
+        <value xsi:type="xsd:double">10</value>
+    </values>
+    <values>
+        <field>Text_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Min_Value__c</field>
+        <value xsi:type="xsd:double">1</value>
+    </values>
+    <values>
+        <field>Max_Value__c</field>
+        <value xsi:type="xsd:double">100</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >AI generation requests one caller may make in a minute before it answers 429. Safe from 1 to 100.</value>
+    </values>
+</CustomMetadata>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >One operational value per record, such as a page size, a rate limit or a refresh interval. PortfolioSettings reads it, checks it against the record's range and falls back to the code default when it is missing or out of range.</description>
+    <label>Portfolio Setting</label>
+    <pluralLabel>Portfolio Settings</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>
