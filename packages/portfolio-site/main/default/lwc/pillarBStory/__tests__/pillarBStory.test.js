@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for pillarBStory: the six sections, captioned tables, the
+ * @description       : Unit tests for pillarBStory: the six sections, captioned tables, the ROI sources,
  *                      pre-sales framing (D3), no video prototype (D8), the architecture image
  *                      and its alt text, and tokens only in the CSS.
  * @author            : Ryan Bumstead
@@ -79,6 +79,26 @@ describe("c-pillar-b-story", () => {
       expect(links.length).toBeGreaterThan(0);
       links.forEach((a) => expect(a.rel).toBe("noopener noreferrer"));
     });
+  });
+
+  it("cites the public Power of Us and Nonprofit pricing pages and has no placeholder left", () => {
+    const element = createComponent();
+    const rows = qa(element, "table")[1].querySelectorAll("tbody tr");
+    const hrefs = (row) =>
+      Array.from(row.querySelectorAll("a")).map((a) => a.getAttribute("href"));
+    const powerOfUs =
+      "https://help.salesforce.com/s/articleView?id=000385150&language=en_US&type=1";
+    expect(hrefs(rows[0])).toContain(powerOfUs);
+    expect(hrefs(rows[2])).toContain(powerOfUs);
+    expect(hrefs(rows[2])).toContain(
+      "https://www.salesforce.com/nonprofit/pricing/"
+    );
+    expect(text(rows[2])).toContain("$70 per user per month");
+    expect(q(element, ".placeholder")).toBeNull();
+    expect(text(q(element, "article"))).not.toMatch(/PLACEHOLDER/);
+    expect(text(q(element, '[data-id="licence-sources"]'))).toContain(
+      "read on 22 October 2026"
+    );
   });
 
   it("opens section 2 by framing the work as pre-sales (D3)", () => {
