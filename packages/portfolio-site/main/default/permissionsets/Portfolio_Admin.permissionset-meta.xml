@@ -180,6 +180,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Pipeline_Run__c.Org_Coverage__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Pipeline_Run__c.Run_Id__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -196,6 +201,16 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Pipeline_Run__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Pipeline_Run__c.Tests_Passed__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Pipeline_Run__c.Tests_Run__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

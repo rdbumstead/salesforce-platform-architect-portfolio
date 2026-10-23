@@ -52,7 +52,10 @@ private class GovernanceEventHandlerTest {
         Run_Id__c,
         Run_Url__c,
         Commit_Sha__c,
-        Completed_At__c
+        Completed_At__c,
+        Tests_Run__c,
+        Tests_Passed__c,
+        Org_Coverage__c
       FROM Pipeline_Run__c
       ORDER BY Run_Key__c
     ];
@@ -295,6 +298,80 @@ private class GovernanceEventHandlerTest {
 
     Assert.areEqual(0, afterFailure, 'Nothing stored on the failed attempt');
     Assert.areEqual(1, runs().size(), 'Stored on the retry');
+  }
+
+  @isTest
+  static void shouldStoreTestResultWhenEventCarriesOne() {
+    Governance_Event__e withTests = event('deploy', 'Success', '301');
+    withTests.Tests_Run__c = 671;
+    withTests.Tests_Passed__c = 671;
+    withTests.Org_Coverage__c = 97;
+
+    Test.startTest();
+    publishAndDeliver(new List<Governance_Event__e>{ withTests });
+    Test.stopTest();
+
+    List<Pipeline_Run__c> stored = runs();
+    Assert.areEqual(671, stored[0].Tests_Run__c, 'Tests run');
+    Assert.areEqual(671, stored[0].Tests_Passed__c, 'Tests passed');
+    Assert.areEqual(97, stored[0].Org_Coverage__c, 'Coverage');
+  }
+
+  @isTest
+  static void shouldDropTestResultWhenValuesDoNotFit() {
+    Governance_Event__e morePassed = event('deploy', 'Success', '302');
+    morePassed.Tests_Run__c = 10;
+    morePassed.Tests_Passed__c = 11;
+    morePassed.Org_Coverage__c = 90;
+    Governance_Event__e badCoverage = event('deploy', 'Success', '303');
+    badCoverage.Tests_Run__c = 10;
+    badCoverage.Tests_Passed__c = 10;
+    badCoverage.Org_Coverage__c = 120;
+    Governance_Event__e partial = event('deploy', 'Success', '304');
+    partial.Tests_Run__c = 10;
+
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{ morePassed, badCoverage, partial }
+    );
+    Test.stopTest();
+
+    List<Pipeline_Run__c> stored = runs();
+    Assert.areEqual(3, stored.size(), 'Every run is still stored');
+    for (Pipeline_Run__c run : stored) {
+      Assert.isNull(run.Tests_Run__c, 'No tests run on ' + run.Run_Key__c);
+      Assert.isNull(run.Tests_Passed__c, 'No passed on ' + run.Run_Key__c);
+      Assert.isNull(run.Org_Coverage__c, 'No coverage on ' + run.Run_Key__c);
+    }
+    Assert.isFalse(
+      GovernanceEventHandler.validTestResult(10.5, 10, 90),
+      'A fraction of a test is not a count'
+    );
+    Assert.isFalse(
+      GovernanceEventHandler.validTestResult(0, 0, 90),
+      'A run with no tests is not a result'
+    );
+  }
+
+  @isTest
+  static void shouldUpdateRowWhenReplayAddsTestResult() {
+    publishAndDeliver(
+      new List<Governance_Event__e>{ event('deploy', 'Success', '305') }
+    );
+    Governance_Event__e withTests = event('deploy', 'Success', '305');
+    withTests.Tests_Run__c = 5;
+    withTests.Tests_Passed__c = 4;
+    withTests.Org_Coverage__c = 91.5;
+
+    Test.startTest();
+    publishAndDeliver(new List<Governance_Event__e>{ withTests });
+    Test.stopTest();
+
+    List<Pipeline_Run__c> stored = runs();
+    Assert.areEqual(1, stored.size(), 'Same row');
+    Assert.areEqual(4, stored[0].Tests_Passed__c, 'Passed added');
+    Assert.areEqual(91.5, stored[0].Org_Coverage__c, 'Coverage added');
+    Assert.areEqual(1, GovernanceEventHandler.lastWriteCount, 'One write');
   }
 
   @isTest
