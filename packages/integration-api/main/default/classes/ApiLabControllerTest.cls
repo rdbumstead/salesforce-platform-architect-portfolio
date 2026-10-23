@@ -147,6 +147,97 @@ private class ApiLabControllerTest {
   }
 
   @IsTest
+  static void shouldAllowEveryCatalogPathWhenCatalogIsTheResource() {
+    // The org's API_Lab_Catalog, generated from the specs by scripts/sync-specs.js.
+    Test.startTest();
+    Set<String> allowed = ApiLabController.allowedPaths();
+    Map<String, Object> catalog = (Map<String, Object>) JSON.deserializeUntyped(
+      ApiLabController.getCatalog()
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      ((List<Object>) catalog.get('paths')).size(),
+      allowed.size(),
+      'One allowed path per catalog entry'
+    );
+    Assert.isTrue(allowed.contains('/sapi/v1/skills'), 'A SAPI GET path');
+    Assert.isTrue(
+      allowed.contains('/papi/v1/testimonials/feed'),
+      'A PAPI path'
+    );
+    Assert.isFalse(allowed.contains('/papi/v1/auth/token'), 'Excluded');
+  }
+
+  @IsTest
+  static void shouldReadTheCatalogWhenGuestOpensTheLab() {
+    User guest = SiteGuestTestSupport.preparedGuest();
+
+    Set<String> allowed;
+    String body;
+    Test.startTest();
+    System.runAs(guest) {
+      allowed = ApiLabController.allowedPaths();
+      body = ApiLabController.getCatalog();
+    }
+    Test.stopTest();
+
+    Assert.isTrue(allowed.contains('/sapi/v1/health'), 'Guest reads it');
+    Assert.isTrue(body.contains('"paths"'), 'Guest gets the catalog');
+  }
+
+  @IsTest
+  static void shouldFollowTheCatalogWhenItLists() {
+    ApiLabController.catalogOverride = '{"paths":[{"path":"/SAPI/v1/New-Path"},{"path":7}]}';
+
+    Test.startTest();
+    Set<String> allowed = ApiLabController.allowedPaths();
+    Test.stopTest();
+
+    Assert.areEqual(
+      new Set<String>{ '/sapi/v1/new-path' },
+      allowed,
+      'Lower cased, non text entries skipped, no code change for a new path'
+    );
+  }
+
+  @IsTest
+  static void shouldRefuseEveryPathWhenCatalogIsBroken() {
+    ApiLabController.catalogOverride = 'not json';
+    PortfolioApiCalloutMock mock = new PortfolioApiCalloutMock();
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    try {
+      ApiLabController.invoke('/sapi/v1/skills', null);
+      Assert.fail('Expected AuraHandledException');
+    } catch (AuraHandledException e) {
+      Assert.isTrue(e.getMessage().contains('not available'), 'Fails closed');
+    }
+    Test.stopTest();
+
+    Assert.areEqual(0, mock.requests.size(), 'No callout');
+  }
+
+  @IsTest
+  static void shouldThrowWhenCatalogIsEmpty() {
+    // An empty body stands in for a missing resource.
+    ApiLabController.catalogOverride = '';
+
+    Test.startTest();
+    try {
+      ApiLabController.getCatalog();
+      Assert.fail('Expected AuraHandledException');
+    } catch (AuraHandledException e) {
+      Assert.isTrue(e.getMessage().contains('catalog'), 'Says what is missing');
+    }
+    Set<String> allowed = ApiLabController.allowedPaths();
+    Test.stopTest();
+
+    Assert.isTrue(allowed.isEmpty(), 'No catalog, no path');
+  }
+
+  @IsTest
   static void shouldRejectTokenPathWhenInvoked() {
     Test.startTest();
     try {

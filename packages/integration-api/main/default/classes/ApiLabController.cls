@@ -19,30 +19,19 @@ public with sharing class ApiLabController {
   public static final String NAMED_CREDENTIAL = 'Portfolio_API';
   public static final String API_VERSION = 'v1';
 
-  /** GET paths in salesforce-sapi.yaml and portfolio-papi.yaml. */
-  public static final Set<String> ALLOWED_PATHS = new Set<String>{
-    '/sapi/v1/health',
-    '/sapi/v1/contacts',
-    '/sapi/v1/experience',
-    '/sapi/v1/experience-highlights',
-    '/sapi/v1/projects',
-    '/sapi/v1/project-assets',
-    '/sapi/v1/testimonials',
-    '/sapi/v1/portfolio-config',
-    '/sapi/v1/accounts',
-    '/sapi/v1/skills',
-    '/sapi/v1/certifications',
-    '/sapi/v1/education',
-    '/sapi/v1/project-skills',
-    '/sapi/v1/experience-skills',
-    '/sapi/v1/certification-skills',
-    '/papi/v1/health',
-    '/papi/v1/profile/full',
-    '/papi/v1/profile/summary',
-    '/papi/v1/resume/generate',
-    '/papi/v1/projects/featured',
-    '/papi/v1/testimonials/feed'
-  };
+  /**
+   * The static resource that lists the Lab's paths. scripts/sync-specs.js builds it from the
+   * GET operations of salesforce-sapi.yaml and portfolio-papi.yaml, less the paths it
+   * excludes on purpose (audit G1), so a new spec path needs no change here.
+   */
+  public static final String CATALOG_RESOURCE = 'API_Lab_Catalog';
+
+  // Read once per transaction.
+  private static String catalogBody;
+  private static Set<String> allowedPaths;
+
+  @TestVisible
+  private static String catalogOverride;
 
   /** Response headers returned to the API Lab. */
   public static final List<String> RETURNED_HEADERS = new List<String>{
@@ -156,6 +145,73 @@ public with sharing class ApiLabController {
   }
 
   /**
+   * @description The Lab's catalog as the API_Lab_Catalog resource holds it: each GET path,
+   *              its query parameters and the top level keys of its JSON responses.
+   * @return String The catalog JSON.
+   * @throws AuraHandledException When the resource is missing.
+   */
+  @AuraEnabled(cacheable=true)
+  public static String getCatalog() {
+    String body = catalog();
+    if (body == null) {
+      throw auraError('The API Lab catalog is not available.');
+    }
+    return body;
+  }
+
+  /**
+   * @description The paths invoke() accepts: every path in the catalog, lower case. Empty
+   *              when the catalog is missing or unreadable, so the Lab then refuses every
+   *              path rather than guess.
+   * @return Set<String> For example /sapi/v1/skills.
+   */
+  public static Set<String> allowedPaths() {
+    if (allowedPaths != null) {
+      return allowedPaths;
+    }
+    allowedPaths = new Set<String>();
+    String body = catalog();
+    if (body == null) {
+      return allowedPaths;
+    }
+    try {
+      Map<String, Object> root = (Map<String, Object>) JSON.deserializeUntyped(
+        body
+      );
+      for (Object entry : (List<Object>) root.get('paths')) {
+        Object entryPath = ((Map<String, Object>) entry).get('path');
+        if (entryPath instanceof String) {
+          allowedPaths.add(((String) entryPath).trim().toLowerCase());
+        }
+      }
+    } catch (Exception e) {
+      // Recovered on purpose: a broken catalog fails closed, with every path refused.
+      PortfolioLog.info(
+        'ApiLabController catalog unreadable: ' + e.getTypeName()
+      );
+      allowedPaths.clear();
+    }
+    return allowedPaths;
+  }
+
+  private static String catalog() {
+    if (catalogOverride != null) {
+      return String.isBlank(catalogOverride) ? null : catalogOverride;
+    }
+    if (catalogBody == null) {
+      List<StaticResource> rows = [
+        SELECT Body
+        FROM StaticResource
+        WHERE Name = :CATALOG_RESOURCE
+        WITH SYSTEM_MODE
+        LIMIT 1
+      ];
+      catalogBody = rows.isEmpty() ? null : rows[0].Body.toString();
+    }
+    return catalogBody;
+  }
+
+  /**
    * @description Calls an allowlisted GET path through Portfolio_API with a fresh
    *              X-Request-Id and X-API-Version v1.
    * @param path API path, e.g. /sapi/v1/skills.
@@ -166,7 +222,7 @@ public with sharing class ApiLabController {
   @AuraEnabled
   public static InvokeResult invoke(String path, Map<String, String> params) {
     String normalised = String.isBlank(path) ? '' : path.trim().toLowerCase();
-    if (!ALLOWED_PATHS.contains(normalised)) {
+    if (!allowedPaths().contains(normalised)) {
       throw auraError('Path is not available in the API Lab: ' + path);
     }
     String query = buildQuery(params);
