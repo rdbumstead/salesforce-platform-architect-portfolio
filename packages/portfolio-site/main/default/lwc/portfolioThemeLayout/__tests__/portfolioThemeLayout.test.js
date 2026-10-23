@@ -162,6 +162,60 @@ function flush() {
   return Promise.resolve();
 }
 
+/**
+ * Renders the layout so that its document click listener sees what it sees on the published
+ * site: a composed path that starts at the layout host and holds nothing inside its shadow
+ * root (log 240). Only that listener gets the short path, so the shadow tree dispatches as
+ * usual.
+ * @param {HTMLElement[]} [content] light DOM children for the default slot
+ * @returns {HTMLElement} the layout
+ */
+function renderPublished(content = []) {
+  const element = createElement("c-portfolio-theme-layout", {
+    is: PortfolioThemeLayout
+  });
+  content.forEach((node) => element.appendChild(node));
+  const shortPath = () => [
+    element,
+    document.body,
+    document.documentElement,
+    document,
+    window
+  ];
+  const wrapped = new Map();
+  const add = document.addEventListener.bind(document);
+  const remove = document.removeEventListener.bind(document);
+  jest
+    .spyOn(document, "addEventListener")
+    .mockImplementation((type, listener, options) => {
+      if (type !== "click") {
+        add(type, listener, options);
+        return;
+      }
+      const proxy = (event) =>
+        listener(
+          new Proxy(event, {
+            get: (target, key) => {
+              if (key === "composedPath") {
+                return shortPath;
+              }
+              const value = target[key];
+              return typeof value === "function" ? value.bind(target) : value;
+            }
+          })
+        );
+      wrapped.set(listener, proxy);
+      add(type, proxy, options);
+    });
+  jest
+    .spyOn(document, "removeEventListener")
+    .mockImplementation((type, listener, options) => {
+      remove(type, wrapped.get(listener) || listener, options);
+    });
+  document.body.appendChild(element);
+  return element;
+}
+
 function pressEscape(element) {
   element.shadowRoot
     .querySelector(".site-header")
@@ -181,6 +235,8 @@ describe("c-portfolio-theme-layout", () => {
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }
+    // After the removals, so a wrapped document listener is removed through its wrapper.
+    jest.restoreAllMocks();
     Object.defineProperty(window, "localStorage", {
       configurable: true,
       value: realLocalStorage
@@ -313,6 +369,127 @@ describe("c-portfolio-theme-layout", () => {
       // jsdom does not navigate, so stop the default action and keep the test output clean.
       link.addEventListener("click", (event) => event.preventDefault());
       link.click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+    });
+  });
+
+  describe("Pillars menu with the path the published site gives the document", () => {
+    it("stays open after the click that opened it", async () => {
+      const element = renderPublished();
+      const button = element.shadowRoot.querySelector(".pillars-toggle");
+      const menu = element.shadowRoot.querySelector(".pillar-menu");
+
+      button.click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+      expect(menu.hidden).toBe(false);
+    });
+
+    it("stays open on a click inside the menu that is not a link", async () => {
+      const element = renderPublished();
+      const button = element.shadowRoot.querySelector(".pillars-toggle");
+      button.click();
+      await flush();
+
+      element.shadowRoot.querySelector(".pillar-menu").click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+    });
+
+    it("closes on a click on the page content in the slot", async () => {
+      const content = document.createElement("p");
+      const element = renderPublished([content]);
+      const button = element.shadowRoot.querySelector(".pillars-toggle");
+      button.click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+
+      content.click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(element.shadowRoot.querySelector(".pillar-menu").hidden).toBe(
+        true
+      );
+    });
+
+    it("closes on a click elsewhere in the document", async () => {
+      const element = renderPublished();
+      const button = element.shadowRoot.querySelector(".pillars-toggle");
+      button.click();
+      await flush();
+
+      document.body.click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+    });
+
+    it("closes on Escape with focus back on the toggle", async () => {
+      const element = renderPublished();
+      const button = element.shadowRoot.querySelector(".pillars-toggle");
+      button.click();
+      await flush();
+
+      pressEscape(element);
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(element.shadowRoot.activeElement).toBe(button);
+    });
+
+    it("closes on Escape pressed with the focus outside the header, as after a click in Safari", async () => {
+      const element = renderPublished();
+      const button = element.shadowRoot.querySelector(".pillars-toggle");
+      button.click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(element.shadowRoot.querySelector(".pillar-menu").hidden).toBe(
+        true
+      );
+      expect(element.shadowRoot.activeElement).toBe(button);
+    });
+
+    it("leaves the menu alone on other keys pressed outside the header", async () => {
+      const element = renderPublished();
+      const button = element.shadowRoot.querySelector(".pillars-toggle");
+      button.click();
+      await flush();
+
+      document.body.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+      );
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+    });
+
+    it("closes after a pillar link is followed and opens again on the next click", async () => {
+      const element = renderPublished();
+      const button = element.shadowRoot.querySelector(".pillars-toggle");
+      button.click();
+      await flush();
+
+      const link = element.shadowRoot.querySelector(".pillar-link");
+      link.addEventListener("click", (event) => event.preventDefault());
+      link.click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+
+      button.click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+    });
+
+    it("toggles closed on a second click of the toggle", async () => {
+      const element = renderPublished();
+      const button = element.shadowRoot.querySelector(".pillars-toggle");
+      button.click();
+      await flush();
+      button.click();
       await flush();
       expect(button.getAttribute("aria-expanded")).toBe("false");
     });
