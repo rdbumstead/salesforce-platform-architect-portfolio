@@ -164,6 +164,14 @@ export const REDOC_OPTIONS = {
 /** A Redoc section id the menu and deep links use, such as tag/Skills or operation/getSkills. */
 const SECTION_HASH = /^(tag|operation|section|schema)\//;
 
+/**
+ * Rules added after Redoc's own, so they win: a link inside Redoc's text, such as the
+ * licence link, is underlined, because colour alone does not mark it (axe
+ * link-in-text-block, log 299).
+ */
+export const REDOC_STYLE_OVERRIDES =
+  ".redoc-target a[href] { text-decoration: underline; }";
+
 /** Space left between the header and a section scrolled into view. */
 const SECTION_GAP = 8;
 
@@ -605,7 +613,7 @@ export default class ApiReference extends LightningElement {
       .join("\n");
     host.textContent = "";
     const element = document.createElement("style");
-    element.textContent = text;
+    element.textContent = [text, REDOC_STYLE_OVERRIDES].join("\n");
     host.appendChild(element);
   }
 }

@@ -13,6 +13,7 @@ import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
   HOSTED_REFERENCE_URL,
   REDOC_OPTIONS,
+  REDOC_STYLE_OVERRIDES,
   REDOC_LINK_COLOR,
   REDOC_TAB_COLORS,
   RENDER_TIMEOUT_MS,
@@ -292,6 +293,10 @@ describe("c-api-reference", () => {
     const copied = query(element, ".redoc-styles style");
     expect(copied).not.toBeNull();
     expect(copied.textContent).toContain(".redoc-rule");
+    // The underline override comes after Redoc's rules, so it wins.
+    expect(copied.textContent.trim().endsWith(REDOC_STYLE_OVERRIDES)).toBe(
+      true
+    );
     document.head
       .querySelectorAll("style[data-styled]")
       .forEach((style) => style.remove());
