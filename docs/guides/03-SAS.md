@@ -468,7 +468,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 ### 6.1 Technology Stack
 
 - **Framework:** LWR.
-- **Domain Strategy:** Custom CNAME (RyanBumstead.com), 301 redirect to https://rbumstead-dev-ed.develop.my.site.com/portfolio/ since free development edition orgs do not have the ability to set up custom domains.
+- **Domain Strategy:** `ryanbumstead.com` is a Cloudflare 301 redirect to https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio/ that keeps the path and the query string, so `ryanbumstead.com/skills` lands on `/portfolio/skills`. A Developer Edition org cannot have a Salesforce custom domain, so the redirect is the domain.
 - **Navigation Strategy:** "5-Minute Tour" section embedded in Hero Banner.
 
 ### 6.2 Lightning Web Components (LWC)
