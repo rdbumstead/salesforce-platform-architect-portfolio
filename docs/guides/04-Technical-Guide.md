@@ -219,7 +219,7 @@ The Business Architecture page draws the live ERD with `c/schemaVisualizer`, fed
 
 ### 2.6 `c-footer` (Glass Box Telemetry)
 
-- **Component:** `c-footer`, one line: copyright, the deploy badge with a status dot, the telemetry in Fira Code, profile links, a Contact link and "Back to top". The Contact link goes to the home page with the `#contact` fragment (`{site base}/#contact`), where the contact form handles the fragment itself (Round 7 contract P4).
+- **Component:** `c-footer`, one line: copyright, the deploy badge with a status dot, the telemetry in Fira Code, profile links, a Contact link and "Back to top". The Contact link goes to the home page with the `#contact` fragment (`{site base}/#contact`), built from the site base path in `footer.js`.
 - **Links:** `FooterController.getLinks()` (cacheable) returns only `gitHubUrl` and `linkedInUrl` from `Portfolio_Config__mdt`. It never selects the owner's email or phone.
 - **Deferred load (ADR-014):** the component paints first and calls `FooterController.getSystemSnapshot()` from `requestIdleCallback`, or a zero delay timeout where the browser has none, so the fetch never delays the main page load (LCP). The method is not cacheable, so each visit reads current values.
 - **Telemetry Data:**
