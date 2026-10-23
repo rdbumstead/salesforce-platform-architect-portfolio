@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Note__c</fullName>
+    <description
+  >The optional free text answer to "Anything to add?" in the sentence builder, kept apart from the sentence in Context so neither crowds the other out of 255 characters.</description>
+    <inlineHelpText
+  >Optional words from the reviewer. Read it before approving, because it is free text.</inlineHelpText>
+    <label>Note</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>TextArea</type>
+</CustomField>

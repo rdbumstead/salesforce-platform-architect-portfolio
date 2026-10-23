@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Slot__c</fullName>
+    <description>Which blank of the sentence this fragment fills.</description>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText
+  >Strength fills "and Ryan ...". Outcome fills "The result? ...".</inlineHelpText>
+    <label>Slot</label>
+    <required>true</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Strength</fullName>
+                <default>false</default>
+                <label>Strength</label>
+            </value>
+            <value>
+                <fullName>Outcome</fullName>
+                <default>false</default>
+                <label>Outcome</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
