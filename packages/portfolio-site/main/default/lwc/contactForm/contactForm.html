@@ -1,0 +1,143 @@
+<template>
+  <section class="contact" aria-labelledby="contact-heading">
+    <div id="contact" class="contact-heading-wrap">
+      <h2
+        id="contact-heading"
+        class="contact-title"
+        tabindex="-1"
+        data-id="heading"
+      >
+        {heading}
+      </h2>
+    </div>
+    <template lwc:if={intro}>
+      <p class="contact-intro">{intro}</p>
+    </template>
+
+    <div aria-live="polite" data-id="status">
+      <template lwc:if={isSent}>
+        <div class="message message-success" data-id="success" tabindex="-1">
+          <p class="success-title">{successTitle}</p>
+          <p>{successDetail}</p>
+        </div>
+      </template>
+    </div>
+
+    <template lwc:if={showForm}>
+      <form class="contact-form" onsubmit={handleSubmit} novalidate>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="firstName">First name</label>
+            <input
+              id="firstName"
+              class="field-input"
+              name="firstName"
+              type="text"
+              required
+              autocomplete="given-name"
+              maxlength={maxFirstName}
+              value={form.firstName}
+              oninput={handleInput}
+            />
+          </div>
+          <div class="field">
+            <label class="field-label" for="lastName">Last name</label>
+            <input
+              id="lastName"
+              class="field-input"
+              name="lastName"
+              type="text"
+              required
+              autocomplete="family-name"
+              maxlength={maxLastName}
+              value={form.lastName}
+              oninput={handleInput}
+            />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="email">Email</label>
+          <input
+            id="email"
+            class="field-input"
+            name="email"
+            type="email"
+            required
+            aria-describedby="email-hint"
+            autocomplete="email"
+            maxlength={maxEmail}
+            value={form.email}
+            oninput={handleInput}
+          />
+          <p id="email-hint" class="field-hint">
+            Ryan replies to this address.
+          </p>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="company">Company (optional)</label>
+          <input
+            id="company"
+            class="field-input"
+            name="company"
+            type="text"
+            autocomplete="organization"
+            maxlength={maxCompany}
+            value={form.company}
+            oninput={handleInput}
+          />
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="message">Message</label>
+          <textarea
+            id="message"
+            class="field-input field-textarea"
+            name="message"
+            required
+            rows="5"
+            maxlength={maxMessage}
+            aria-describedby="message-count"
+            oninput={handleInput}
+          ></textarea>
+          <p id="message-count" class="field-hint">{messageCount}</p>
+        </div>
+
+        <div class="trap" aria-hidden="true">
+          <label for="website">Leave this field empty</label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabindex="-1"
+            autocomplete="off"
+            value={form.website}
+            oninput={handleInput}
+          />
+        </div>
+
+        <p class="privacy" data-id="privacy">{privacyNote}</p>
+
+        <div class="actions">
+          <button
+            type="submit"
+            class="submit-button"
+            disabled={isSubmitDisabled}
+            data-id="submit"
+          >
+            {submitLabel}
+          </button>
+        </div>
+
+        <div aria-live="polite">
+          <template lwc:if={serverError}>
+            <p class="message message-error" role="alert" data-id="error">
+              {serverError}
+            </p>
+          </template>
+        </div>
+      </form>
+    </template>
+  </section>
+</template>
