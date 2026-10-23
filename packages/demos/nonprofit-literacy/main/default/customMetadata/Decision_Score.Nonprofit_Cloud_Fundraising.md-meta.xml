@@ -22,16 +22,16 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: Fundraising is native, but it is out of scope.</value>
+    >Fundraising is native, but it is out of scope by agreement.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >Donations stay in an external donor system (not verified)</value>
+    >Donor management excluded by the engagement's signed scope</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

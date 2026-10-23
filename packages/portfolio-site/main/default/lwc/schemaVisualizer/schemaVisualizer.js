@@ -26,10 +26,17 @@ const KIND_MASTER_DETAIL = "masterDetail";
 
 // Diagram geometry, in viewBox units. The SVG scales to its container.
 export const VIEW_WIDTH = 960;
-export const VIEW_HEIGHT = 600;
+export const VIEW_HEIGHT = 720;
 const NODE_WIDTH = 156;
 const NODE_HEIGHT = 48;
-const NODE_RADIUS = 84;
+// The boxes are about three times wider than they are tall, and the engine keeps round nodes
+// apart. So the layout runs in a space squeezed sideways by LAYOUT_STRETCH and is stretched
+// back afterwards: each round node becomes an oval that fits a box with room to spare. The
+// radius keeps every box inside the view, the padding sets the space between boxes. Tuned on
+// both production scopes (Round 6 plan N3, layoutSpacing.test.js).
+const LAYOUT_STRETCH = 2.2;
+const LAYOUT_RADIUS = 40;
+const LAYOUT_PADDING = 16;
 const LABEL_MAX = 20;
 const DOT_RADIUS = 5;
 
@@ -170,7 +177,7 @@ export default class SchemaVisualizer extends LightningElement {
     const nodes = this.nodes.map((node) => ({
       id: node.apiName,
       group: node.isCustom ? "custom" : "standard",
-      radius: NODE_RADIUS
+      radius: LAYOUT_RADIUS
     }));
     // A self reference (Account.ParentId) has no length to draw. It stays in the list.
     const edges = this.edges
@@ -182,13 +189,25 @@ export default class SchemaVisualizer extends LightningElement {
         field: edge.field
       }));
     try {
-      this.diagram = layoutGraph(this.d3, nodes, edges, {
-        width: VIEW_WIDTH,
+      const squeezed = layoutGraph(this.d3, nodes, edges, {
+        width: VIEW_WIDTH / LAYOUT_STRETCH,
         height: VIEW_HEIGHT,
-        linkDistance: 180,
-        charge: -600,
-        anchorStrength: 0.05
+        linkDistance: 140,
+        charge: -450,
+        anchorStrength: 0.1,
+        padding: LAYOUT_PADDING
       });
+      this.diagram = {
+        nodes: squeezed.nodes.map((node) => ({
+          ...node,
+          x: node.x * LAYOUT_STRETCH
+        })),
+        edges: squeezed.edges.map((edge) => ({
+          ...edge,
+          x1: edge.x1 * LAYOUT_STRETCH,
+          x2: edge.x2 * LAYOUT_STRETCH
+        }))
+      };
     } catch {
       this.engineErrorMessage =
         "The diagram could not be drawn, so the object list is shown instead.";

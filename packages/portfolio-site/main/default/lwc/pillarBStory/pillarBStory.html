@@ -125,9 +125,10 @@
         The matrix below scores three options against ten criteria: NPSP with
         the Program Management Module, which the nonprofit chose, Education
         Cloud, and Nonprofit Cloud as the option a reviewer would ask about
-        today. The starting weights are the client's. Move any weight to see the
-        ranking change, and read the sensitivity line to see which single weight
-        would change the answer. Reset puts the client's weights back.
+        today. The starting weights are mine, set from what the client said
+        mattered most. Move any weight to see the ranking change, and read the
+        sensitivity line to see which single weight would change the answer.
+        Reset puts the starting weights back.
       </p>
     </section>
 
@@ -156,8 +157,9 @@
             <tr>
               <th scope="row">NPSP and PMM</th>
               <td>
-                Free, open source packages on Power of Us licences, ten free for
-                an eligible nonprofit
+                Free, open source packages on the ten donated Power of Us
+                licences (Sales and Service, Enterprise Edition) for an eligible
+                nonprofit
               </td>
               <td>Smallest</td>
               <td>
@@ -176,6 +178,12 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   >Install Program Management Module (Help)</a
+                >,
+                <a
+                  href="https://help.salesforce.com/s/articleView?id=000385150&amp;language=en_US&amp;type=1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Power of Us (P10) Application (Help)</a
                 >
               </td>
             </tr>
@@ -201,7 +209,11 @@
             </tr>
             <tr>
               <th scope="row">Nonprofit Cloud</th>
-              <td>A paid Nonprofit Cloud licence</td>
+              <td>
+                The ten donated Power of Us licences can be Nonprofit Cloud
+                instead. Paid editions start at $70 per user per month, billed
+                annually
+              </td>
               <td>Medium</td>
               <td>
                 Program, volunteer and outcome features are native, but Person
@@ -213,15 +225,28 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   >Scratch Org Features (Salesforce Developers)</a
+                >,
+                <a
+                  href="https://help.salesforce.com/s/articleView?id=000385150&amp;language=en_US&amp;type=1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Power of Us (P10) Application (Help)</a
+                >,
+                <a
+                  href="https://www.salesforce.com/nonprofit/pricing/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Nonprofit Pricing (Salesforce)</a
                 >
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p class="placeholder" data-placeholder="sources">
-        PLACEHOLDER: the public pages for the Power of Us licence count and the
-        Nonprofit Cloud licence are pending the owner's check.
+      <p class="footnote" data-id="licence-sources">
+        Licence counts and prices are from the public Salesforce pages linked in
+        each row, read on 22 October 2026. They change over time, so check the
+        pages before relying on them.
       </p>
     </section>
 
@@ -269,7 +294,8 @@
           more service delivered, so it needs no object of its own.
         </li>
         <li>
-          Donations external: the existing donor system keeps fundraising.
+          Donations external: donor management was out of scope by agreement,
+          and the existing donor system keeps fundraising.
         </li>
         <li>
           State reporting external: the state system stays where reports are
@@ -278,7 +304,7 @@
       </ul>
       <h3 class="sub-heading">What we deliberately did not build</h3>
       <ul class="not-built">
-        <li>Fundraising, gifts or donor records.</li>
+        <li>Fundraising, gifts or donor records, out of scope by agreement.</li>
         <li>A portal for learners or instructors, who hold no licences.</li>
         <li>An automated sync to the state reporting system.</li>
         <li>An integration with the accounting system.</li>
@@ -290,11 +316,14 @@
       <p>
         The build is on NPSP with the Program Management Module on the
         minimalist model, and the nonprofit is in user acceptance testing,
-        preparing for production. Staff will record classes, sessions and
-        attendance in one place, with assessment, employment and referral
-        outcomes on the learner's record, ready for the state report.
-        Fundraising and state filing stay in the systems that already do them
-        well.
+        preparing for production. The delivery covers a registration desk intake
+        that registers students and assigns cohorts, attendance and counselling
+        hours recorded as service deliveries with the bulk tool, recorded admin
+        and end user training, and a self paced learning path. Staff will record
+        classes, sessions and attendance in one place, with assessment,
+        employment and referral outcomes on the learner's record, ready for the
+        state report. Fundraising and state filing stay in the systems that
+        already do them well.
       </p>
     </section>
   </article>

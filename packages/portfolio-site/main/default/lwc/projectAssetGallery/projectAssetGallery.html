@@ -1,79 +1,70 @@
 <template>
-  <section class="gallery" aria-label={heading}>
+  <section lwc:if={hasAssets} class="gallery" aria-label={heading}>
     <template lwc:if={hasHeading}>
       <h2 class="gallery-title">{heading}</h2>
     </template>
 
-    <template lwc:if={hasError}>
-      <p class="note">{errorMessage}</p>
-    </template>
-    <template lwc:if={isEmpty}>
-      <p class="note">No project materials are published yet.</p>
-    </template>
-
-    <template lwc:if={hasAssets}>
-      <ul class="assets">
-        <template for:each={assets} for:item="asset">
-          <li key={asset.key} class="asset">
-            <template lwc:if={asset.isImage}>
-              <a
-                class="image-link"
-                href={asset.url}
-                target="_blank"
-                rel="noopener"
-                data-type={asset.type}
-                onclick={handleOpen}
-              >
-                <img
-                  class="image"
-                  src={asset.url}
-                  alt={asset.altText}
-                  width="960"
-                  height="540"
-                  loading="lazy"
-                />
-                <span class="assistive">, opens full size in a new tab</span>
-              </a>
-              <p class="asset-name">{asset.name}</p>
-            </template>
-            <template lwc:if={asset.isDocument}>
-              <a
-                class="asset-link"
-                href={asset.url}
-                target="_blank"
-                rel="noopener"
-                download
-                data-type={asset.type}
-                onclick={handleOpen}
-              >
-                <span class="asset-kind">Document</span>
-                <span class="asset-name">{asset.name}</span>
-              </a>
-            </template>
-            <template lwc:if={asset.isExternal}>
-              <a
-                class="asset-link"
-                href={asset.url}
-                target="_blank"
-                rel="noopener"
-                data-type={asset.type}
-                onclick={handleOpen}
-              >
-                <span class="asset-kind">{asset.type}</span>
-                <span class="asset-name">{asset.name}</span>
-                <span class="assistive">, opens in a new tab</span>
-              </a>
-            </template>
-            <template lwc:if={asset.isUnavailable}>
-              <p class="asset-unavailable">
-                <span class="asset-kind">{asset.type}</span>
-                <span class="asset-name">{asset.name}</span>
-                <span class="asset-status">Not available yet</span>
-              </p>
-            </template>
-          </li>
-        </template>
-      </ul>
-    </template>
+    <ul class="assets">
+      <template for:each={assets} for:item="asset">
+        <li key={asset.key} class="asset">
+          <template lwc:if={asset.isImage}>
+            <a
+              class="image-link"
+              href={asset.url}
+              target="_blank"
+              rel="noopener"
+              data-type={asset.type}
+              onclick={handleOpen}
+            >
+              <img
+                class="image"
+                src={asset.url}
+                alt={asset.altText}
+                width="960"
+                height="540"
+                loading="lazy"
+              />
+              <span class="assistive">, opens full size in a new tab</span>
+            </a>
+            <p class="asset-name">{asset.name}</p>
+          </template>
+          <template lwc:if={asset.isDocument}>
+            <a
+              class="asset-link"
+              href={asset.url}
+              target="_blank"
+              rel="noopener"
+              download
+              data-type={asset.type}
+              onclick={handleOpen}
+            >
+              <span class="asset-kind">Document</span>
+              <span class="asset-name">{asset.name}</span>
+            </a>
+          </template>
+          <template lwc:if={asset.isExternal}>
+            <a
+              class="asset-link"
+              href={asset.url}
+              target="_blank"
+              rel="noopener"
+              data-type={asset.type}
+              onclick={handleOpen}
+            >
+              <span class="asset-kind">{asset.type}</span>
+              <span class="asset-name">{asset.name}</span>
+              <span class="assistive">, opens in a new tab</span>
+            </a>
+          </template>
+          <template lwc:if={asset.isUnavailable}>
+            <p class="asset-unavailable">
+              <span class="asset-kind">{asset.type}</span>
+              <span class="asset-name">{asset.name}</span>
+              <span class="asset-status">Not available yet</span>
+            </p>
+          </template>
+        </li>
+      </template>
+    </ul>
   </section>
 </template>

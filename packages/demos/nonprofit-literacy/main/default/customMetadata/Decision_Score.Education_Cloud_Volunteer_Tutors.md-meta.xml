@@ -16,13 +16,13 @@
     </values>
     <values>
         <field>Score__c</field>
-        <value xsi:type="xsd:double">2</value>
+        <value xsi:type="xsd:double">1</value>
     </values>
     <values>
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: No volunteer objects in any Education Cloud domain list.</value>
+    >No volunteer objects in any Education Cloud domain list, so tutors would be custom or a second package.</value>
     </values>
     <values>
         <field>Evidence__c</field>
@@ -32,6 +32,6 @@
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

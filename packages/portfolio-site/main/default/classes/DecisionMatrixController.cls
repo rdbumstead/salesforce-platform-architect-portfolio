@@ -1,7 +1,7 @@
 /**
  * @description       : Serves the Pillar B decision matrix (Round 5 contract M7) from three
  *                      Custom Metadata Types in the nonprofit-literacy package: the options, the
- *                      criteria with the client's default weights, and one score per option and
+ *                      criteria with the owner's starting weights, and one score per option and
  *                      criterion pair. Read by c/decisionMatrix, which computes the weighted
  *                      totals in the browser, so a visitor's reweighting never calls the server.
  *                      SOQL reads the types because getAll() returns only the first 255
@@ -43,7 +43,7 @@ public with sharing class DecisionMatrixController {
   }
 
   /**
-   * @description One criterion, a row of the matrix, with the client's weight.
+   * @description One criterion, a row of the matrix, with the owner's starting weight.
    */
   public class Criterion {
     @AuraEnabled
