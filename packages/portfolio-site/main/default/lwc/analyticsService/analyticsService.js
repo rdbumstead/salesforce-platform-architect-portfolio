@@ -1,8 +1,9 @@
 /**
- * @description       : The one GA4 event list and the one way to send an event (Round 4 plan L4,
- *                      pillars-design T8). trackEvent does nothing when window.gtag is absent
+ * @description       : The one GA4 event list and the one way to send an event.
+ *                      trackEvent does nothing when window.gtag is absent
  *                      (no tag on the page, a blocker, Jest) and never throws, so analytics can
- *                      never break a component. Round 5 appends to EVENTS and edits nothing else.
+ *                      never break a component. New events are appended to EVENTS, and nothing
+ *                      else in this file is edited when one is added.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

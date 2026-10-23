@@ -1,9 +1,9 @@
 /**
- * @description       : Unit tests for the Glass Box footer (Round 4 plan L8). getLinks is a
+ * @description       : Unit tests for the Glass Box footer. getLinks is a
  *                      mocked wire adapter, getSystemSnapshot a mocked imperative call, and
  *                      requestIdleCallback is captured so a test decides when the page is idle.
  *                      lightning/uiGraphQLApi passes the universal mock through and replaces only
- *                      graphql and gql (trap 25). The probe is the real c/graphqlProbe, which the
+ *                      graphql and gql. The probe is the real c/graphqlProbe, which the
  *                      footer imports on demand after idle.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead

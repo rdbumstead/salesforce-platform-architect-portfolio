@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for experienceTimeline (Round 6 plan N6). The getTimeline wire
+ * @description       : Unit tests for experienceTimeline. The getTimeline wire
  *                      adapter and analyticsService are mocked.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead

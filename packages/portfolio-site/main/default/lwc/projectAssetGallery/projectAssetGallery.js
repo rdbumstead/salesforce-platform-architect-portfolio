@@ -1,19 +1,19 @@
 /**
- * @description       : Project asset gallery (Round 5 plan M5, pillars-design §2.5). Reads the projects of
+ * @description       : Project asset gallery. Reads the projects of
  *                      one pillar and their Project_Asset__c rows through the UI API GraphQL wire adapter,
  *                      ordered by Sort_Order__c. Images open full size in a new tab, documents are download
- *                      links, videos and links are external links with no embed (pillars D7 d). A URL is
+ *                      links, videos and links are external links with no embed. A URL is
  *                      used as is when it is http or https, and resource:<Name>/<path> becomes the site's
  *                      static resource path. Generic, so any project page can reuse it.
  *                      With no assets, or when the read fails, it renders nothing at all,
- *                      no heading and no note (Round 6, log 278).
+ *                      no heading and no note.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/22/2026
  **/
 import { LightningElement, api, wire } from "lwc";
-// The Round 3 plan (K5) pins lightning/uiGraphQLApi, as skillNetwork does.
+// The site pins lightning/uiGraphQLApi, as skillNetwork does.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { gql, graphql } from "lightning/uiGraphQLApi";
 import basePath from "@salesforce/community/basePath";

@@ -1,10 +1,10 @@
 /**
- * @description       : The site's graph engine (Round 5 plan M1). loadGraphEngine loads the D3_Library
- *                      static resource (d3-force and its helpers, plus d3-selection, d3-drag and d3-zoom
- *                      since Round 7 audit E1) once per page and hands every caller the same window.d3.
+ * @description       : The site's graph engine. loadGraphEngine loads the D3_Library
+ *                      static resource (d3-force and its helpers, plus d3-selection, d3-drag and d3-zoom)
+ *                      once per page and hands every caller the same window.d3.
  *                      layoutGraph runs a d3-force simulation to the end in one synchronous call and
  *                      returns positions, so consumers draw SVG from their own templates and nothing
- *                      animates (reading R5). attachPanZoom and attachNodeDrag wire d3-zoom and d3-drag to
+ *                      animates. attachPanZoom and attachNodeDrag wire d3-zoom and d3-drag to
  *                      that SVG and report back through callbacks, so the template stays the only thing
  *                      that draws. Consumers: skillNetwork and schemaVisualizer. Callers never load the
  *                      engine on a phone or before a graph opens.

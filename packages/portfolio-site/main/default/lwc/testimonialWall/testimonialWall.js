@@ -1,5 +1,5 @@
 /**
- * @description       : The testimonial wall on /testimonials (Round 7 B2, ADR-012). Shows the
+ * @description       : The testimonial wall on /testimonials (ADR-012). Shows the
  *                      approved testimonials from TestimonialController.getApprovedTestimonials,
  *                      each in its own tone. A "Professional / All" filter uses the API feed's
  *                      rule, worked out on the server: the Professional vibe from a Manager,

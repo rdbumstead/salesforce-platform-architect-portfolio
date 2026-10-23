@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for skillNetwork LWC on the Small form factor: the matrix only, no view
- *                      switch, and no request for the graph engine (Round 5 plan M2).
+ *                      switch, and no request for the graph engine.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -8,7 +8,7 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import SkillNetwork from "c/skillNetwork";
-// Same module as the component, which the Round 3 plan pins.
+// Same module as the component, which the site pins.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { graphql } from "lightning/uiGraphQLApi";
 import { loadGraphEngine, layoutGraph } from "c/graphEngine";

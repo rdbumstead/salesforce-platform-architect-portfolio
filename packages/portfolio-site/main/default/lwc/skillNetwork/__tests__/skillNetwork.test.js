@@ -1,9 +1,9 @@
 /**
  * @description       : Unit tests for skillNetwork LWC on the Large form factor (the Jest default). Covers the
  *                      matrix, the years rule, chip selection, the view switch, the lazy graph and its engine
- *                      load, the accessible list, the analytics calls and the no hex rule (Round 5 plan M2).
- *                      Round 7 (audit E1): the zoom controls, the zoom transform, node drag and reset view.
- *                      Round 7 (audit E4): the persona filter on the matrix.
+ *                      load, the accessible list, the analytics calls and the no hex rule.
+ *                      Also the zoom controls, the zoom transform, node drag and reset view, and the
+ *                      persona filter on the matrix.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -11,7 +11,7 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import SkillNetwork from "c/skillNetwork";
-// Same module as the component, which the Round 3 plan pins.
+// Same module as the component, which the site pins.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { graphql } from "lightning/uiGraphQLApi";
 import {
@@ -409,7 +409,7 @@ describe("c-skill-network (Large form factor)", () => {
     expect(loadGraphEngine).not.toHaveBeenCalled();
   });
 
-  // Pan, zoom and drag (audit E1). The engine's own tests drive the real d3-zoom and d3-drag.
+  // Pan, zoom and drag. The engine's own tests drive the real d3-zoom and d3-drag.
   function fakeControls() {
     return {
       zoomIn: jest.fn(),
@@ -571,7 +571,7 @@ describe("c-skill-network (Large form factor)", () => {
     ).toBe("translate(0,0) scale(1)");
   });
 
-  // Persona filter (audit E4). The test wire adapter hands every graphql wire the same payload,
+  // Persona filter. The test wire adapter hands every graphql wire the same payload,
   // so a payload with tags reaches both the skills query and the persona query.
   function taggedPayload() {
     const data = buildPayload();

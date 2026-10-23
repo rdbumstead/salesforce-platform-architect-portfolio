@@ -1,21 +1,21 @@
 /**
  * @description       : Roadmap board for the Delivery page. Reads the newest Jira cache row
- *                      through DeliveryController.getRoadmap (plan K3, pillar-e-design section
- *                      4.3). Columns are keyed on Jira's statusCategory, never on status names,
+ *                      through DeliveryController.getRoadmap.
+ *                      Columns are keyed on Jira's statusCategory, never on status names,
  *                      so a renamed workflow status cannot empty a column. The "Simulate an
- *                      outage" switch (Round 4 plan L10, ADR-022) re-reads the feed with
+ *                      outage" switch (ADR-022) re-reads the feed with
  *                      simulate=true, which returns the same cached board marked SIMULATED.
  *                      DEGRADED means the Jira circuit breaker is open. roadmap_viewed is sent
  *                      once when the board is first shown on the page, and turning the switch
- *                      on sends resilience_test_triggered (plan L4). Round 6 plan N8: epic
+ *                      on sends resilience_test_triggered. Epic
  *                      cards come first in each column, a story names its epic as
  *                      "Part of {name} | {key}" (the key alone when the name is missing), and an
  *                      empty feed says so instead of reading as an outage. The outage line is
- *                      kept for a real wire error. Round 7 F7 (owner, 2026-10-23): every column
+ *                      kept for a real wire error. Every column
  *                      shows at most COLUMN_LIMIT cards with its own "Show all N" button and
  *                      state. Done keeps its newest COLUMN_LIMIT by updatedAt and its "Show all
  *                      N shipped" label. To Do and In Progress keep the feed order and cut there.
- *                      The c-view-source control (contract P2) sits in the header.
+ *                      The c-view-source control sits in the header.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

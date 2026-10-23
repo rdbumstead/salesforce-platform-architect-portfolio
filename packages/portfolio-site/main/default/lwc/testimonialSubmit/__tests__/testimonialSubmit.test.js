@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the testimonialSubmit sentence builder (Round 7 B9).
+ * @description       : Unit tests for the testimonialSubmit sentence builder.
  *                      getFragments is a mocked wire adapter fed with fragments read from the
  *                      Testimonial_Fragment__mdt records in source, and submitTestimonial is a
  *                      mocked imperative call. The drift tests read the controller source so the

@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for roadmapViewer LWC. DeliveryController.getRoadmap is a
- *                      mocked wire adapter fed with the plan K3 RoadmapFeed shape.
+ *                      mocked wire adapter fed with the RoadmapFeed shape the controller returns.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

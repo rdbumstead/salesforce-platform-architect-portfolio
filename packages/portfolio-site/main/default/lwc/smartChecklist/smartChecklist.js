@@ -1,6 +1,6 @@
 /**
- * @description       : Governance checklist for the Delivery page (Round 4 plan L11,
- *                      pillar-e-design section 3.2, decision E4 items 1, 3 and 4). Reads
+ * @description       : Governance checklist for the Delivery page.
+ *                      Reads
  *                      GovernanceController.getPipelineStatus when the page opens and again
  *                      with refreshApex when the tab becomes visible. There is no timer and no
  *                      streaming subscription. The pipeline publishes a platform event, a

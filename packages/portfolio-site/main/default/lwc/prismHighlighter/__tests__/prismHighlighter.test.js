@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for c/prismHighlighter (Round 7 contract P1). The loader
+ * @description       : Unit tests for c/prismHighlighter. The loader
  *                      tests use a stub Prism. The grammar tests run the real Prism_JS/prism.js
  *                      resource, so they prove the apex, json and yaml grammars are in it.
  * @author            : Ryan Bumstead

@@ -1,6 +1,6 @@
 /**
- * @description       : Displays source code highlighted through c/prismHighlighter (Round 7
- *                      contract P1), which loads the Prism_JS static resource once per page. A
+ * @description       : Displays source code highlighted through c/prismHighlighter,
+ *                      which loads the Prism_JS static resource once per page. A
  *                      language with no grammar is highlighted with clike. If Prism fails to
  *                      load, the code shows as escaped plain text.
  * @author            : Ryan Bumstead

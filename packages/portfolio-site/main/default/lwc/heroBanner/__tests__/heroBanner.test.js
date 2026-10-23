@@ -1,9 +1,9 @@
 /**
  * @description       : Unit tests for heroBanner LWC: the static hero, the bio and profile links
  *                      from the ResumeController header wire, the live pillar cards with the
- *                      "coming" line, and the tour (Round 4 plan WS4b, logs 155 and 164).
- *                      c/pillarData is a fixed stand in (Round 5 plan, log 192). The card
- *                      headline numbers and images from ProjectCardController (Round 6 N7).
+ *                      "coming" line, and the tour.
+ *                      c/pillarData is a fixed stand in. The card
+ *                      headline numbers and images from ProjectCardController.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -16,8 +16,7 @@ import getPillarCards from "@salesforce/apex/ProjectCardController.getPillarCard
 import { reset, setComingLetters } from "c/pillarData";
 
 // A fixed five pillar list, all live unless a test marks some as coming with
-// setComingLetters, so these tests pass before and after the pillarData flags change
-// (Round 5 plan, log 192).
+// setComingLetters, so these tests pass before and after the pillarData flags change.
 jest.mock(
   "c/pillarData",
   () => {

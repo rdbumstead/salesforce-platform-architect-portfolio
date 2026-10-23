@@ -1,6 +1,6 @@
 /**
- * @description       : Work and Education timeline on the home page (Round 6 plan N6, owner
- *                      feedback 5b). Reads ResumeController.getTimeline and shows roles and
+ * @description       : Work and Education timeline on the home page.
+ *                      Reads ResumeController.getTimeline and shows roles and
  *                      schools under an accessible tab list. Renders nothing when both lists are
  *                      empty and hides a tab whose list is empty.
  * @author            : Ryan Bumstead

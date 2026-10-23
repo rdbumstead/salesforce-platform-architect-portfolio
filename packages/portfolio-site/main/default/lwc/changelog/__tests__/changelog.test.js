@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for changelog LWC. DeliveryController.getRecentCommits is a
- *                      mocked wire adapter fed with the plan K3 CommitFeed shape.
+ *                      mocked wire adapter fed with the CommitFeed shape the controller returns.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

@@ -1,4 +1,4 @@
-/* Home page, built on the L1 tokens only. */
+/* Home page, built on the --pf- site tokens only. */
 .home {
   max-width: 1024px;
   margin: 0 auto;
@@ -14,7 +14,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--pf-space-6);
-  /* F10: the photo lines up with the top of the text, not its middle. */
+  /* The photo lines up with the top of the text, not its middle. */
   align-items: flex-start;
   padding-bottom: 56px;
   border-bottom: 1px solid var(--pf-border);
@@ -79,7 +79,7 @@
   text-decoration: none;
 }
 
-/* F8: the site's link rule in dxp-slds-extensions.css (a:link:not(...), specificity 0,2,2)
+/* The site's link rule in dxp-slds-extensions.css (a:link:not(...), specificity 0,2,2)
    outranks a plain class rule and empties the button fill. Matching :link and :visited
    too puts these rules above it, in both themes. */
 .btn-primary,
@@ -133,7 +133,7 @@
   text-decoration: underline;
 }
 
-/* Start here paths (audit E2) */
+/* Start here paths */
 .start {
   padding: 40px 0 0;
 }
@@ -270,7 +270,7 @@
   background: var(--pf-surface);
 }
 
-/* Optional card extras from ProjectCardController (Round 6 plan N7) */
+/* Optional card extras from ProjectCardController */
 .pillar-image {
   display: block;
   width: 100%;
@@ -372,7 +372,7 @@
   color: var(--pf-chip-text);
 }
 
-/* Case study disclosure (Round 7 plan P5, audit E3) */
+/* Case study disclosure */
 .case-study {
   border-top: 1px solid var(--pf-border);
   padding-top: var(--pf-space-3);

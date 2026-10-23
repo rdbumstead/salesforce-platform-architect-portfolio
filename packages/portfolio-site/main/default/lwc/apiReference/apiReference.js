@@ -1,11 +1,11 @@
 /**
- * @description       : Interactive API reference for the API Lab page (plan K10). Shows the
+ * @description       : Interactive API reference for the API Lab page. Shows the
  *                      SAPI or PAPI OpenAPI spec from the SAPI_Spec and PAPI_Spec static
  *                      resources in Redoc. Redoc_Script loads only when the visitor opens the
  *                      reference. Any load or render failure shows a message and the hosted
  *                      reference link instead, and so does a render that has not finished 15 s
  *                      after the visitor opened it (Redoc never finishes under the site runtime
- *                      in WebKit, trap 32). Sends api_reference_opened on open (contract L4).
+ *                      in WebKit). Sends api_reference_opened on open.
  *                      On its own page (route Api_Reference, api-lab/reference) the builder
  *                      sets fullWidth and openOnLoad: the reference then fills the page width
  *                      with no height cap and opens without a click, the SAPI and PAPI switch
@@ -28,7 +28,7 @@ import basePath from "@salesforce/community/basePath";
 export const HOSTED_REFERENCE_URL =
   "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi";
 
-/** How long the visitor waits for Redoc before the page gives up (trap 32). */
+/** How long the visitor waits for Redoc before the page gives up. */
 export const RENDER_TIMEOUT_MS = 15000;
 export const TIMEOUT_MESSAGE =
   "The interactive reference could not load in this browser.";
@@ -46,7 +46,7 @@ const MONO_FONTS = 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace';
 
 /**
  * Link and primary colour inside the Redoc panel. The panel is white in both site themes,
- * so it takes the light accent (L1 --pf-accent light, --pf-btn in both themes), 5.17:1
+ * so it takes the light accent (the light --pf-accent, --pf-btn in both themes), 5.17:1
  * on white, never the dark theme accent, which is 2.54:1 there.
  */
 export const REDOC_LINK_COLOR = "#2563EB";
@@ -65,7 +65,7 @@ export const REDOC_TAB_COLORS = {
 
 /**
  * Text of Redoc's constraint chips such as "[ 1 .. 200 ]". Redoc draws them in the primary
- * colour at 90% opacity on a 5% primary tint, 4.3:1 at 13 px (axe color-contrast, log 299).
+ * colour at 90% opacity on a 5% primary tint, 4.3:1 at 13 px (axe color-contrast).
  * This darker blue at full opacity is 6.6:1 on that tint.
  */
 export const REDOC_CONSTRAINT_COLOR = "#1D4ED8";
@@ -147,7 +147,7 @@ export const REDOC_OPTIONS = {
         color: REDOC_LINK_COLOR,
         visited: REDOC_LINK_COLOR,
         hover: REDOC_LINK_COLOR,
-        // A link inside text needs more than colour (axe link-in-text-block, log 299).
+        // A link inside text needs more than colour (axe link-in-text-block).
         textDecoration: "underline",
         hoverTextDecoration: "underline"
       }
@@ -166,7 +166,7 @@ const SECTION_HASH = /^(tag|operation|section|schema)\//;
 
 /**
  * Rules added after Redoc's own: a link inside Redoc's text, such as the licence link, is
- * underlined, because colour alone does not mark it (axe link-in-text-block, log 299).
+ * underlined, because colour alone does not mark it (axe link-in-text-block).
  * The :link and :visited forms outrank the site platform's own link rule, specificity
  * 0,2,2, which otherwise takes the underline away.
  */
@@ -189,7 +189,7 @@ let sectionLookupInstalled = false;
 /**
  * Redoc looks its sections up with document.querySelector('[data-section-id="..."]'),
  * which cannot see inside this component's shadow root, so its scroll tracking marked the
- * last item active and rewrote the URL hash to it (audit F5). This lets that one kind of
+ * last item active and rewrote the URL hash to it. This lets that one kind of
  * lookup fall back to the rendered reference when the document finds nothing. Every
  * other query is untouched. If the runtime does not allow it, the component's own
  * scrolling still works.
@@ -396,7 +396,7 @@ export default class ApiReference extends LightningElement {
    * Scrolls a Redoc section to just below the site header (and the pinned spec switch on
    * its own page), and moves focus to it. Redoc cannot do this itself here: it finds
    * sections with document.querySelector, which cannot see inside this component's
-   * shadow root, so its menu changed the URL and nothing moved (audit F5).
+   * shadow root, so its menu changed the URL and nothing moved.
    * @returns {boolean} whether the section was found
    */
   goToSection(id, moveFocus) {

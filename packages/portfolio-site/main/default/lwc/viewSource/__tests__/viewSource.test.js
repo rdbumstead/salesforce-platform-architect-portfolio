@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for c-view-source (Round 7 contract P2). SourceController
+ * @description       : Unit tests for c-view-source. SourceController
  *                      .getSourceFiles is a mocked wire adapter. The tests cover the hidden
  *                      button for an unknown key or empty cache, the dialog's name and role,
  *                      the tabs, the GitHub link, focus moving in and back, Escape, and Tab

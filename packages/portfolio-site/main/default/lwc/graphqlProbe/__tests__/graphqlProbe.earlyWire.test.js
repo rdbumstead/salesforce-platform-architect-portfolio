@@ -1,5 +1,5 @@
 /**
- * @description       : Audit row F4. A wire adapter that already holds the answer (the Skills page
+ * @description       : A wire adapter that already holds the answer (the Skills page
  *                      ran the same GraphQL read earlier) can deliver it as soon as the wire
  *                      connects, which the engine does before connectedCallback runs. This mock
  *                      adapter does exactly that, so the probe must time from its own creation and

@@ -63,7 +63,7 @@ const LOCAL_RESULT = {
   requestId: "22222222-2222-4333-8444-555555555555"
 };
 
-// The live finding of log 129: the model attempt failed in 2 ms, before any request left.
+// A live finding: the model attempt failed in 2 ms, before any request left.
 const UNREACHABLE_RESULT = {
   ...LOCAL_RESULT,
   attempts: [
@@ -79,7 +79,7 @@ const UNREACHABLE_RESULT = {
 };
 
 // Provider and tier words the component may never print on its own. The tier words are split
-// so the repository wording grep (PD-D10) finds none of them in source.
+// so the repository wording grep finds none of them in source.
 const PROVIDER_WORDS = new RegExp(
   [
     "Agentforce",
@@ -137,7 +137,7 @@ describe("c-cover-letter-generator", () => {
       ["lightning-input.title-input", "Job Title", "jobTitle"]
     ]) {
       const input = query(element, selector);
-      // K9: the base asterisk fails contrast on the dark branding, so the base fields
+      // The base asterisk fails contrast on the dark branding, so the base fields
       // are not flagged required. Their accessible name says it instead.
       expect(input.label).toBe(`${label} (required)`);
       expect(input.variant).toBe("label-hidden");

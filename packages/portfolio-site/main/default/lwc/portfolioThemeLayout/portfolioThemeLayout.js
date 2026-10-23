@@ -2,9 +2,9 @@
  * @description       : Site theme layout. Renders the slim sticky header for every portfolio page
  *                      (name, Home, Resume, Skills, Testimonials, a Pillars menu and the theme toggle), the
  *                      page content in the unnamed slot, and the footer region.
- *                      Owns the theme (Round 4 plan, contract L2): the stylesheet follows the system
+ *                      Owns the theme: the stylesheet follows the system
  *                      setting, and the toggle writes data-theme and the portfolio-theme storage key.
- *                      Round 7 F6: a floating "Back to top" button appears once the visitor has
+ *                      A floating "Back to top" button appears once the visitor has
  *                      scrolled well down and rises above the footer when the footer is in view.
  *                      It sits right after the main content in the tab order, scrolls to the top
  *                      (instantly when reduced motion is asked for) and moves focus to the top of
@@ -19,8 +19,8 @@ import basePath from "@salesforce/community/basePath";
 import { PILLARS } from "c/pillarData";
 import { trackEvent, EVENTS } from "c/analyticsService";
 
-// Route URLs match the urlPrefix of each route in the Portfolio1 site bundle (K7).
-// Home comes first and shares its href with the brand link (Round 6 plan, N1).
+// Route URLs match the urlPrefix of each route in the Portfolio1 site bundle.
+// Home comes first and shares its href with the brand link.
 const PAGES = [
   { key: "home", label: "Home", url: "" },
   { key: "resume", label: "Resume", url: "resume" },
@@ -125,7 +125,7 @@ export default class PortfolioThemeLayout extends LightningElement {
   };
 
   // On the published site the document listener sees a composed path that stops at this
-  // host, so it cannot tell a click in the menu from a click on the page in the slot (log 240).
+  // host, so it cannot tell a click in the menu from a click on the page in the slot.
   // The wrapper marks its own clicks in handlePillarsClick, which runs first, and this
   // listener closes the menu only for a click that was not marked.
   _onDocumentClick = () => {

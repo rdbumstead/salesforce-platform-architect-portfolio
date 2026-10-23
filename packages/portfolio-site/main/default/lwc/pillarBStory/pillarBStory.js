@@ -1,10 +1,10 @@
 /**
- * @description       : The Pillar B story (pillars-design 3.2, Round 5 contract M7): the client,
+ * @description       : The Pillar B story: the client,
  *                      discovery with the lifecycle to object map, the lead into the decision
- *                      matrix, ROI and cost from public licence facts (D9 a), the solution
+ *                      matrix, ROI and cost from public licence facts, the solution
  *                      design with the redrawn architecture, and the outcome. The copy lives in
- *                      the template. The work is framed as pre-sales (D3), and there is no video
- *                      prototype (D8), both answered by the owner on 2026-10-22. The decision
+ *                      the template. The work is framed as pre-sales, and there is no video
+ *                      prototype. The decision
  *                      matrix itself is the sibling component c:decisionMatrix, placed after
  *                      this one.
  * @author            : Ryan Bumstead

@@ -1,7 +1,7 @@
 /**
- * @description       : Unit tests for smartChecklist LWC (Round 4 plan L11).
+ * @description       : Unit tests for smartChecklist LWC.
  *                      GovernanceController.getPipelineStatus is a mocked wire adapter, and
- *                      c/analyticsService is mocked because @Agent 1 provides it (L4).
+ *                      c/analyticsService is mocked so the bundle tests on its own.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

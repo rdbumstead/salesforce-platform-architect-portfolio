@@ -1,7 +1,7 @@
 /*
- * Round 4 plan L1: colours, fonts, radii and spacing come only from the --pf- design
+ * Colours, fonts, radii and spacing come only from the --pf- design
  * tokens, so the diagram follows the light and dark themes. The SVG takes its colours
- * from these classes too. Controls are at least 44 px high (trap 35).
+ * from these classes too. Controls are at least 44 px high.
  */
 :host {
   display: block;

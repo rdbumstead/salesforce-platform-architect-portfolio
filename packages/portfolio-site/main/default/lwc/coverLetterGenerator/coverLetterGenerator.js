@@ -1,10 +1,10 @@
 /**
  * @description       : Cover letter page (Pillar D). Calls ApiLabController.generateCoverLetter,
- *                      which writes the letter in process (Round 4 decision 2 a). The provider
+ *                      which writes the letter in process. The provider
  *                      badge and the show-your-work panel are filled only from the response,
  *                      never from a literal, so the page cannot claim a provider on its own. No
  *                      timer drives the progress line. Sends ai_generation_completed on a
- *                      result and ai_complete_failure on an error (contract L4).
+ *                      result and ai_complete_failure on an error.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -19,7 +19,7 @@ export const MAX_TITLE_LENGTH = 120;
 export const MAX_DESCRIPTION_LENGTH = 4000;
 /** Provider value the API returns when the local template wrote the letter. */
 const LOCAL_PROVIDER = "Local";
-/** An attempt that failed faster than this never reached the model (log 129). */
+/** An attempt that failed faster than this never reached the model. */
 export const UNREACHABLE_MS = 1000;
 const OUTCOME_FAILED = "failed";
 

@@ -1,5 +1,5 @@
 /**
- * @description       : Contact form for the home page (Round 7 E5, contract P4, ADR-031). It
+ * @description       : Contact form for the home page (ADR-031). It
  *                      sends the message to ContactFormController, which saves a Lead so the
  *                      org's Lead rules run. The page shows "Thanks, check your inbox" inline,
  *                      with no redirect. A honeypot field and the time since the form appeared

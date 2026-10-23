@@ -1,11 +1,11 @@
 /**
- * @description       : API Lab console (audit B3, G1). The path list, each path's query
+ * @description       : API Lab console. The path list, each path's query
  *                      parameters and its response shapes come from ApiLabController.getCatalog,
  *                      which serves the API_Lab_Catalog resource that scripts/sync-specs.js
  *                      builds from the specs, so a new spec path needs no change here. Each
  *                      parameter is a control (pills for up to four values, a picklist above
  *                      that, true and false pills for a boolean, bounded number inputs for limit
- *                      and offset, a text input with a hint for an id filter, reading R16), every
+ *                      and offset, a text input with a hint for an id filter), every
  *                      chosen value shows as a removable pill with the query string under them,
  *                      and the free text "Advanced" field stays. Calls go through
  *                      ApiLabController.invoke (ADR-027), which returns the status, latency,
@@ -16,7 +16,7 @@
  *                      X-Has-More. Also requests an evaluator token through
  *                      ApiLabController.requestEvaluatorToken (ADR-028) and shows the result as
  *                      the controller returns it. Sends api_test_executed with the path, status
- *                      and param_count after each call (contract L4).
+ *                      and param_count after each call through c/analyticsService.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -42,7 +42,7 @@ export const DISPLAYED_HEADERS = [
   "X-Has-More"
 ];
 
-/** An enum with this many values or fewer shows as pills, more as a picklist (R16). */
+/** An enum with this many values or fewer shows as pills, more as a picklist. */
 export const MAX_PILL_VALUES = 4;
 
 export const KIND_PILLS = "pills";
@@ -122,7 +122,7 @@ export function parseCatalog(text) {
   }
 }
 
-/** Which control a spec parameter becomes (reading R16). */
+/** Which control a spec parameter becomes. */
 export function controlKind(param) {
   if (Array.isArray(param.enum) && param.enum.length) {
     return param.enum.length <= MAX_PILL_VALUES ? KIND_PILLS : KIND_SELECT;

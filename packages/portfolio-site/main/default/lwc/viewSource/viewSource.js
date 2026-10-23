@@ -1,5 +1,5 @@
 /**
- * @description       : The "View source" control (Round 7 contract P2, audit B1). Placed once near
+ * @description       : The "View source" control. Placed once near
  *                      a showcase component's heading with a fixed source key. It reads the
  *                      component's files from SourceController.getSourceFiles, which serves a
  *                      cache only, and renders nothing when the key is unknown or the cache is

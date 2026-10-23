@@ -1,5 +1,5 @@
 /**
- * @description       : The Pillar B decision matrix (Round 5 contract M7). Reads the options,
+ * @description       : The Pillar B decision matrix. Reads the options,
  *                      criteria and scores once from DecisionMatrixController.getMatrix and
  *                      computes every weighted total in the browser, so moving a weight never
  *                      calls the server. Shows the ranking, the single weight change that would
