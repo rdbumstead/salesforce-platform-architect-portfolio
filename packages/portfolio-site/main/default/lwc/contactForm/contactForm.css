@@ -97,13 +97,17 @@
   margin: 0.25rem 0 0;
 }
 
-/* Off screen rather than display none, so simple bots still see and fill it. */
+/*
+ * Off screen and transparent rather than display none, so simple bots still see and fill it,
+ * while people, screen readers and the keyboard never meet it.
+ */
 .trap {
   position: absolute;
   left: -10000px;
   width: 1px;
   height: 1px;
   overflow: hidden;
+  opacity: 0;
 }
 
 .actions {
