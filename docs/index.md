@@ -13,7 +13,7 @@ _Target Audience: Stakeholders, Recruiters, Ops Team_
 
 | Artifact                                                                             | Purpose                                                               |
 | :----------------------------------------------------------------------------------- | :-------------------------------------------------------------------- |
-| [**01. Executive Overview**](guides/01-Executive-Overview.md)                        | Business value, "Definition of Done", and ROI analysis.               |
+| [**01. Executive Overview**](guides/01-Executive-Overview.md)                        | Business value, the tour, terminology and "Definition of Done".       |
 | [**02. Program Charter**](guides/02-Program-Charter.md)                              | Scope, timeline, user stories, and acceptance criteria.               |
 | [**03. Systems Architecture (SAS)**](guides/03-SAS.md)                               | The "North Star" architecture, data models, and integration patterns. |
 | [**04. Technical Guide**](guides/04-Technical-Guide.md)                              | Implementation details for LWC, Apex, and CI/CD.                      |

@@ -48,37 +48,39 @@ The primary problem this portfolio solves is that Recruiters and Hiring Managers
 
 ### 3.1 The "5-Minute Tour" User Journey
 
-How a recruiter or architect experiences this portfolio:
+How a recruiter or architect experiences this portfolio. The tour has one stop per pillar, one minute each, so its length is worked out from the number of stops (`c-hero-banner`, `MINUTES_PER_STEP`, over the pillars in `c/pillarData`):
 
 ```mermaid
 sequenceDiagram
     participant R as Recruiter
     participant H as Hero Banner
-    participant G as Skill Graph
-    participant C as Code Viewer
-    participant T as Trust
+    participant A as A. Business Architecture
+    participant B as B. Nonprofit Solutions
+    participant C as C. API Lab
+    participant D as D. AI Lab
+    participant E as E. Delivery
 
     R->>H: Lands on Portfolio
-    H-->>R: "5-Minute Tour" Guide
-    R->>G: Explores Skills (Graph)
-    G-->>R: Visualization of Expertise
-    R->>C: Clicks "View Source"
-    C-->>R: Live GitHub Code (Proof)
-    Note over R,T: "This isn't just a PDF."
-    R->>T: High Confidence Signal
+    H-->>R: "Take the 5 minute tour"
+    R->>A: A process mapped to its live data model
+    R->>B: The reasoning behind a platform choice
+    R->>C: A real API call with its headers
+    R->>D: A cover letter grounded in portfolio data
+    R->>E: The Jira roadmap and the commits that shipped the site
+    Note over R,E: "This isn't just a PDF."
 ```
 
 ## 4. Terminology & Acronyms
 
 To clarify Salesforce-specific terms used throughout this portfolio:
 
-| Term                  | Definition                                                                                                       |
-| :-------------------- | :--------------------------------------------------------------------------------------------------------------- |
-| **LWR**               | **Lightning Web Runtime**. A high-performance, standards-based framework for building fast Salesforce sites.     |
-| **SAPI**              | **System API**. The interface that directly touches the database/backend (Salesforce Core).                      |
-| **PAPI**              | **Process API**. The integration layer that orchestrates logic across systems (e.g., Calling SAPI + Agentforce). |
-| **FORM_FACTOR**       | A Salesforce constant that automatically detects the user's device type (Large, Medium, Small).                  |
-| **Developer Edition** | The free, zero-cost Salesforce environment used to host this portfolio.                                          |
+| Term                  | Definition                                                                                                                                                                                             |
+| :-------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LWR**               | **Lightning Web Runtime**. A high-performance, standards-based framework for building fast Salesforce sites.                                                                                           |
+| **SAPI**              | **System API**. The interface that directly touches the database/backend (Salesforce Core).                                                                                                            |
+| **PAPI**              | **Process API**. The layer that combines several portfolio objects into one response for a client, such as the full profile or the resume as text. It runs its own queries and does not call the SAPI. |
+| **FORM_FACTOR**       | A Salesforce constant that automatically detects the user's device type (Large, Medium, Small).                                                                                                        |
+| **Developer Edition** | The free, zero-cost Salesforce environment used to host this portfolio.                                                                                                                                |
 
 ## 5. Success Criteria (Definition of Done)
 
