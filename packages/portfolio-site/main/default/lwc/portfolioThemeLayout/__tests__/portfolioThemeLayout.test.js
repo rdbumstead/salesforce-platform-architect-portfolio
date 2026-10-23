@@ -777,6 +777,18 @@ describe("c-portfolio-theme-layout", () => {
       ).toBeTruthy();
     });
 
+    it("stays while it has focus, even when the page scrolls back up", async () => {
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      button(element).focus();
+      await scrollTo(40);
+      expect(button(element)).not.toBeNull();
+
+      button(element).blur();
+      await flush();
+      expect(button(element)).toBeNull();
+    });
+
     it("scrolls smoothly to the top and moves focus to the main content", async () => {
       const element = renderWithFooter();
       await scrollTo(3000);

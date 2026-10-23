@@ -186,7 +186,17 @@ export default class PortfolioThemeLayout extends LightningElement {
     const footer = this.template.querySelector(".region-footer");
     const footerTop = footer ? footer.getBoundingClientRect().top : viewport;
     this.backToTopLift = Math.max(0, Math.ceil(viewport - footerTop));
-    this.showBackToTop = scrolled;
+    // WebKit scrolls the page when a fixed button takes focus. A focused button stays put, so
+    // focus is never dropped to the page body under a keyboard visitor.
+    const button = this.template.querySelector(
+      '[data-id="floating-back-to-top"]'
+    );
+    const focused = Boolean(button) && this.template.activeElement === button;
+    this.showBackToTop = scrolled || focused;
+  }
+
+  handleBackToTopBlur() {
+    this.updateBackToTop();
   }
 
   get backToTopStyle() {
