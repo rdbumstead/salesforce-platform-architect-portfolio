@@ -26,6 +26,9 @@
     "delta": "npm run clean && shx mkdir -p changed && sf sgd source delta --to HEAD --from origin/main -o changed -s packages --generate-delta",
     "delta:validate": "node scripts/validate.js",
     "docs:api": "node scripts/generate-api-docs.js",
+    "docs:counts": "node scripts/check-doc-counts.js",
+    "specs:sync": "node scripts/sync-specs.js",
+    "specs:check": "node scripts/sync-specs.js --check",
     "docs:verify": "npm run docs:api && git diff --exit-code docs/api/oas/ && echo \"SUCCESS: API Documentation is synchronized.\""
   },
   "devDependencies": {
