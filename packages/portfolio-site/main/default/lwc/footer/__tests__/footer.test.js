@@ -426,6 +426,34 @@ describe("c-footer", () => {
     expect(graphql.getLastConfig().query).toContain("Skill__c(first: 1)");
   });
 
+  it("says cached, with no time, when the probe answered from the cache", async () => {
+    const element = createComponent();
+    await runIdle();
+    const probe = q(element, '[data-id="graphql-probe"]');
+    probe.dispatchEvent(
+      new CustomEvent("probe", { detail: { ms: 0, cached: true } })
+    );
+    await flushPromises();
+
+    expect(q(element, '[data-id="graphql"]').textContent).toBe(
+      "GraphQL: cached, no request made"
+    );
+  });
+
+  it("shows the live time when the probe says a request went out", async () => {
+    const element = createComponent();
+    await runIdle();
+    const probe = q(element, '[data-id="graphql-probe"]');
+    probe.dispatchEvent(
+      new CustomEvent("probe", { detail: { ms: 61, cached: false } })
+    );
+    await flushPromises();
+
+    expect(q(element, '[data-id="graphql"]').textContent).toBe(
+      "GraphQL: live, 61 ms"
+    );
+  });
+
   it("shows GraphQL unavailable when the probe errors", async () => {
     const element = createComponent();
     await runIdle();

@@ -6,7 +6,9 @@
  *                      page has loaded and the browser is idle, so it never delays first paint
  *                      (ADR-014). Every provider word on screen comes from the snapshot data.
  *                      At the same moment one small GraphQL query is timed, and the footer says
- *                      "GraphQL: live, N ms" or "GraphQL: unavailable". Never a constant.
+ *                      "GraphQL: live, N ms" or "GraphQL: unavailable". When the probe says the
+ *                      answer came from the data service cache with no request, the footer
+ *                      says so instead of showing a near zero time.
  *                      The probe is the c/graphqlProbe child, imported with a literal dynamic import
  *                      only at that moment, so the GraphQL adapter stack is not part of what loads
  *                      before first paint. A statically rendered child, even behind lwc:if, still
@@ -29,6 +31,7 @@ const REPO_URL =
   "https://github.com/rdbumstead/salesforce-platform-architect-portfolio";
 export const BADGE_URL = `${REPO_URL}/actions/workflows/deploy.yml/badge.svg?branch=main`;
 export const ACTIONS_URL = `${REPO_URL}/actions/workflows/deploy.yml`;
+export const CACHED_GRAPHQL_LABEL = "GraphQL: cached, no request made";
 
 /**
  * Local HH:MM for a circuit reopen time.
@@ -127,6 +130,7 @@ export default class Footer extends LightningElement {
   probeConstructor;
   graphqlMs;
   graphqlFailed = false;
+  graphqlCached = false;
 
   _cancelDeferred;
   _quotaTracked = false;
@@ -163,9 +167,11 @@ export default class Footer extends LightningElement {
     if (detail.failed) {
       this.graphqlFailed = true;
       this.graphqlMs = undefined;
+      this.graphqlCached = false;
     } else if (Number.isFinite(detail.ms)) {
       this.graphqlFailed = false;
       this.graphqlMs = detail.ms;
+      this.graphqlCached = detail.cached === true;
     }
   }
 
@@ -191,8 +197,12 @@ export default class Footer extends LightningElement {
     if (this.graphqlFailed) {
       return "GraphQL: unavailable";
     }
-    return this.graphqlMs === undefined
-      ? null
+    if (this.graphqlMs === undefined) {
+      return null;
+    }
+    // A cached answer made no request, so its time says nothing about the API.
+    return this.graphqlCached
+      ? CACHED_GRAPHQL_LABEL
       : `GraphQL: live, ${this.graphqlMs} ms`;
   }
 
