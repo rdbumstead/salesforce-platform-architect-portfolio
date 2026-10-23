@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Truncated__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >True when the file was longer than the Content field and only its start is stored.</description>
+    <inlineHelpText
+  >Set by the source refresh job. The dialog then says the file is cut and links to GitHub.</inlineHelpText>
+    <label>Truncated</label>
+    <type>Checkbox</type>
+</CustomField>

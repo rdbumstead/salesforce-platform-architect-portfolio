@@ -1,8 +1,9 @@
 /**
  * @description       : Schedules the integration cache refresh four times an hour, at :00,
  *                      :15, :30 and :45 (pillar-e-design 4.4). Each run enqueues
- *                      GitHubCacheRefreshJob and JiraCacheRefreshJob, which make the callouts.
- *                      Schedule it once, as the admin who holds the GitHub and Jira principal
+ *                      GitHubCacheRefreshJob and JiraCacheRefreshJob, which make the callouts,
+ *                      and SourceCacheRefreshJob when a source file is due, which is at most
+ *                      once a day per file (Round 7 contract P2). Schedule it once, as the admin who holds the GitHub and Jira principal
  *                      access, with IntegrationCacheRefreshScheduler.scheduleAll(). That takes 4
  *                      of the 100 scheduled job slots.
  * @author            : Ryan Bumstead
@@ -23,12 +24,15 @@ public with sharing class IntegrationCacheRefreshScheduler implements Schedulabl
   };
 
   /**
-   * @description Enqueues both refresh jobs.
+   * @description Enqueues both refresh jobs, and the source refresh when a file is due.
    * @param context Schedulable context.
    */
   public void execute(SchedulableContext context) {
     System.enqueueJob(new GitHubCacheRefreshJob());
     System.enqueueJob(new JiraCacheRefreshJob());
+    if (SourceCacheRefreshJob.isDue()) {
+      System.enqueueJob(new SourceCacheRefreshJob());
+    }
   }
 
   /**

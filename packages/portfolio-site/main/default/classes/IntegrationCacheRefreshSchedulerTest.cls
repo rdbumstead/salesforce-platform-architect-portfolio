@@ -1,6 +1,7 @@
 /**
  * @description       : Tests for IntegrationCacheRefreshScheduler: four runs an hour at :00,
- *                      :15, :30 and :45, and each run enqueues both refresh jobs.
+ *                      :15, :30 and :45, each run enqueues both refresh jobs, and the source
+ *                      refresh joins them only when a file is due.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -46,9 +47,32 @@ private class IntegrationCacheRefreshSchedulerTest {
   }
 
   @IsTest
+  static void shouldEnqueueSourceRefreshWhenAFileIsDue() {
+    GitHubCacheRefreshJob.configOverridden = true;
+    JiraCacheRefreshJob.configOverridden = true;
+    SourceCacheRefreshJob.configOverridden = true;
+    SourceController.filesOverride = new List<Source_File__mdt>{
+      new Source_File__mdt(
+        Source_Key__c = 'apiTester',
+        Path__c = 'a/b.js',
+        Label__c = 'b.js'
+      )
+    };
+
+    Test.startTest();
+    new IntegrationCacheRefreshScheduler().execute(null);
+    Integer queued = Limits.getQueueableJobs();
+    Test.stopTest();
+
+    Assert.areEqual(3, queued, 'GitHub, Jira and source jobs enqueued');
+  }
+
+  @IsTest
   static void shouldEnqueueBothRefreshJobsWhenExecuted() {
     GitHubCacheRefreshJob.configOverridden = true;
     JiraCacheRefreshJob.configOverridden = true;
+    // No source file configured, so nothing is due and only the two jobs run.
+    SourceController.filesOverride = new List<Source_File__mdt>();
 
     Test.startTest();
     new IntegrationCacheRefreshScheduler().execute(null);

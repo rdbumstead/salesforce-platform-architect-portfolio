@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Last_Status__c</fullName>
+    <description
+  >The outcome of the last attempt: the HTTP status, or the reason no call was made, for the admin to read.</description>
+    <inlineHelpText
+  >Set by the source refresh job. 200 is good. Anything else means the content shown is older or missing.</inlineHelpText>
+    <label>Last Status</label>
+    <length>80</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
