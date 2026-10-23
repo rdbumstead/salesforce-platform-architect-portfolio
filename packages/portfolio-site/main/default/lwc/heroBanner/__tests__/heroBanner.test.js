@@ -14,6 +14,7 @@ import HeroBanner from "c/heroBanner";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import getPillarCards from "@salesforce/apex/ProjectCardController.getPillarCards";
 import { reset, setComingLetters } from "c/pillarData";
+import { trackEvent } from "c/analyticsService";
 
 // A fixed five pillar list, all live unless a test marks some as coming with
 // setComingLetters, so these tests pass before and after the pillarData flags change.
@@ -31,7 +32,7 @@ jest.mock(
       [
         "nonprofit-solutions",
         "B",
-        "Nonprofit Solutions",
+        "Solution Architecture",
         "Solution Architecture",
         ["Solution design", "Decision matrix"]
       ],
@@ -103,6 +104,19 @@ jest.mock(
       }
     };
   },
+  { virtual: true }
+);
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    __esModule: true,
+    trackEvent: jest.fn(),
+    EVENTS: {
+      CASE_STUDY_OPENED: "case_study_opened",
+      START_PATH_FOLLOWED: "start_path_followed"
+    }
+  }),
   { virtual: true }
 );
 
@@ -382,7 +396,7 @@ describe("c-hero-banner", () => {
         ],
         [
           "02",
-          "Nonprofit Solutions",
+          "Solution Architecture",
           "/portfolio/nonprofit-solutions",
           "1 minute"
         ],
@@ -791,6 +805,67 @@ describe("c-hero-banner", () => {
           .querySelector(".case-toggle")
           .getAttribute("aria-expanded")
       ).toBe("false");
+    });
+
+    it("sends case_study_opened with the pillar letter on open, not on close", async () => {
+      const element = render();
+      getPillarCards.emit([CASE_E]);
+      await flush();
+      const button = delivery(element).querySelector(".case-toggle");
+      button.click();
+      await flush();
+      expect(trackEvent).toHaveBeenCalledTimes(1);
+      expect(trackEvent).toHaveBeenCalledWith("case_study_opened", {
+        pillar: "E"
+      });
+      button.click();
+      await flush();
+      expect(trackEvent).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("start path analytics", () => {
+    it("sends start_path_followed with resume, pillars or api", async () => {
+      const element = render();
+      const root = element.shadowRoot;
+      root.querySelector('[data-id="pillars-heading"]').scrollIntoView =
+        jest.fn();
+      ["resume", "pillars", "api-lab"].forEach((key) => {
+        const link = root.querySelector(`[data-key="${key}"] .start-link`);
+        // Stop the plain links from navigating the test page.
+        link.addEventListener("click", (event) => event.preventDefault());
+        link.click();
+      });
+      await flush();
+      expect(trackEvent.mock.calls).toEqual([
+        ["start_path_followed", { path: "resume" }],
+        ["start_path_followed", { path: "pillars" }],
+        ["start_path_followed", { path: "api" }]
+      ]);
+    });
+  });
+
+  describe("Pillar B name", () => {
+    it("reads Solution Architecture in the badge, the link and the tour stop", () => {
+      const element = render();
+      const root = element.shadowRoot;
+      const card = root.querySelector(
+        '.pillar-card[data-key="nonprofit-solutions"]'
+      );
+      expect(text(card.querySelector(".pillar-eyebrow"))).toBe(
+        "Pillar B · Solution Architecture"
+      );
+      expect(text(card.querySelector(".pillar-link"))).toBe(
+        "Open Solution Architecture →"
+      );
+      expect(card.querySelector(".pillar-link").getAttribute("href")).toBe(
+        "/portfolio/nonprofit-solutions"
+      );
+      const stop = root.querySelector(
+        '.tour-step[data-key="nonprofit-solutions"] .tour-link'
+      );
+      expect(text(stop)).toBe("Solution Architecture");
+      expect(root.textContent).not.toContain("Nonprofit Solutions");
     });
   });
 });

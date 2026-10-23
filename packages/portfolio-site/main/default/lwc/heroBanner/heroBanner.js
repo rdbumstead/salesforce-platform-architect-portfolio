@@ -14,6 +14,8 @@
  *                      Value text gets a case study disclosure, a real button with
  *                      aria-expanded, showing those blocks and the Live and Source links that
  *                      are set and safe.
+ *                      Opening a case study sends case_study_opened with the pillar letter,
+ *                      and following a start here path sends start_path_followed.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -26,6 +28,14 @@ import getPillarCards from "@salesforce/apex/ProjectCardController.getPillarCard
 import HEADSHOT from "@salesforce/resourceUrl/Portfolio_Headshot";
 import { LIVE_PILLARS, COMING_PILLARS } from "c/pillarData";
 import { toExternalUrl, toSiteAssetUrl } from "c/externalUrl";
+import { trackEvent, EVENTS } from "c/analyticsService";
+
+// The analytics value each start here path sends with start_path_followed.
+const START_PATH_EVENT_VALUES = {
+  resume: "resume",
+  pillars: "pillars",
+  "api-lab": "api"
+};
 
 const MINUTES_PER_STEP = 1;
 // The card images are rendered at this size (Project_Card_Images), so the browser can
@@ -322,7 +332,11 @@ export default class HeroBanner extends LightningElement {
   }
 
   handleStartClick(event) {
-    const target = event.currentTarget.dataset.target;
+    const { target, path } = event.currentTarget.dataset;
+    const eventPath = START_PATH_EVENT_VALUES[path];
+    if (eventPath) {
+      trackEvent(EVENTS.START_PATH_FOLLOWED, { path: eventPath });
+    }
     if (!target) {
       // A plain link to another page.
       return;
@@ -333,9 +347,16 @@ export default class HeroBanner extends LightningElement {
 
   handleCaseToggle(event) {
     const key = event.currentTarget.dataset.key;
+    const opening = !this.expandedKeys[key];
     this.expandedKeys = {
       ...this.expandedKeys,
-      [key]: !this.expandedKeys[key]
+      [key]: opening
     };
+    if (opening) {
+      const pillar = LIVE_PILLARS.find((entry) => entry.key === key);
+      if (pillar) {
+        trackEvent(EVENTS.CASE_STUDY_OPENED, { pillar: pillar.letter });
+      }
+    }
   }
 }
