@@ -2,95 +2,85 @@
   <template lwc:if={hasAny}>
     <div class="timeline">
       <section class="section" aria-labelledby="timeline-heading">
-        <p class="section-label">03 / WORK AND EDUCATION</p>
+        <p class="section-label">03 / WORK, EDUCATION AND CERTIFICATIONS</p>
         <h2 id="timeline-heading" class="section-heading">
-          Work and education.
+          Work, education and certifications.
         </h2>
         <p class="section-intro">Newest first.</p>
 
         <div
           class="tab-list"
           role="tablist"
-          aria-label="Work and education"
+          aria-label="Work, education and certifications"
           onkeydown={handleTabKeydown}
         >
-          <template lwc:if={hasWork}>
+          <template for:each={tabs} for:item="tab">
             <button
+              key={tab.key}
               type="button"
               class="tab"
               role="tab"
-              id="timeline-tab-work"
-              aria-controls="timeline-panel-work"
-              aria-selected={workSelected}
-              tabindex={workTabIndex}
-              data-tab="work"
+              id={tab.tabId}
+              aria-controls={tab.panelId}
+              aria-selected={tab.selected}
+              tabindex={tab.tabIndex}
+              data-tab={tab.key}
               onclick={handleTabClick}
             >
-              Work
-            </button>
-          </template>
-          <template lwc:if={hasEducation}>
-            <button
-              type="button"
-              class="tab"
-              role="tab"
-              id="timeline-tab-education"
-              aria-controls="timeline-panel-education"
-              aria-selected={educationSelected}
-              tabindex={educationTabIndex}
-              data-tab="education"
-              onclick={handleTabClick}
-            >
-              Education
+              {tab.label}
             </button>
           </template>
         </div>
 
-        <template lwc:if={hasWork}>
+        <template for:each={tabs} for:item="tab">
           <div
+            key={tab.key}
             class="tab-panel"
             role="tabpanel"
-            id="timeline-panel-work"
-            aria-labelledby="timeline-tab-work"
-            data-panel="work"
+            id={tab.panelId}
+            aria-labelledby={tab.tabId}
+            data-panel={tab.key}
             tabindex="0"
-            hidden={workPanelHidden}
+            hidden={tab.hidden}
           >
-            <ol class="entry-list">
-              <template for:each={work} for:item="role">
-                <li key={role.key} class="entry" data-key={role.key}>
+            <ol class="entry-list" id={tab.listId}>
+              <template for:each={tab.entries} for:item="entry">
+                <li key={entry.key} class="entry" data-key={entry.key}>
                   <div class="entry-main">
-                    <h3 class="entry-title">{role.title}</h3>
-                    <p class="entry-org">{role.employer}</p>
+                    <h3 class="entry-title">{entry.title}</h3>
+                    <p class="entry-org">{entry.org}</p>
                   </div>
-                  <p class="entry-dates">{role.dates}</p>
+                  <p class="entry-dates">{entry.dates}</p>
                 </li>
               </template>
             </ol>
-          </div>
-        </template>
-
-        <template lwc:if={hasEducation}>
-          <div
-            class="tab-panel"
-            role="tabpanel"
-            id="timeline-panel-education"
-            aria-labelledby="timeline-tab-education"
-            data-panel="education"
-            tabindex="0"
-            hidden={educationPanelHidden}
-          >
-            <ol class="entry-list">
-              <template for:each={education} for:item="school">
-                <li key={school.key} class="entry" data-key={school.key}>
-                  <div class="entry-main">
-                    <h3 class="entry-title">{school.school}</h3>
-                    <p class="entry-org">{school.credential}</p>
-                  </div>
-                  <p class="entry-dates">{school.completed}</p>
-                </li>
-              </template>
-            </ol>
+            <template lwc:if={tab.hasMore}>
+              <button
+                type="button"
+                class="toggle"
+                aria-expanded={tab.expandedText}
+                aria-controls={tab.listId}
+                data-toggle="true"
+                data-tab={tab.key}
+                onclick={handleToggle}
+              >
+                {tab.toggleLabel}
+              </button>
+            </template>
+            <template lwc:if={tab.showVerify}>
+              <p class="verify">
+                <a
+                  class="verify-link"
+                  href={verificationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-id="verify-link"
+                  >Verify on Trailhead<span class="assistive-text"
+                    >{newTabNote}</span
+                  ></a
+                >
+              </p>
+            </template>
           </div>
         </template>
       </section>

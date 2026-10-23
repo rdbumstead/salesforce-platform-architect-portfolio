@@ -10,7 +10,11 @@ import { createElement } from "@lwc/engine-dom";
 import ExperienceTimeline from "c/experienceTimeline";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import { trackEvent } from "c/analyticsService";
-import { formatMonthYear, formatRoleDates } from "../experienceTimeline";
+import {
+  formatMonthYear,
+  formatRoleDates,
+  toTabLimit
+} from "../experienceTimeline";
 
 jest.mock(
   "@salesforce/apex/ResumeController.getTimeline",
@@ -26,7 +30,10 @@ jest.mock(
   () => ({
     __esModule: true,
     trackEvent: jest.fn(),
-    EVENTS: { TIMELINE_TAB_CHANGED: "timeline_tab_changed" }
+    EVENTS: {
+      TIMELINE_TAB_CHANGED: "timeline_tab_changed",
+      TIMELINE_EXPANDED: "timeline_expanded"
+    }
   }),
   { virtual: true }
 );
@@ -120,7 +127,7 @@ describe("c-experience-timeline", () => {
   it("renders the section in the home page style", async () => {
     const element = await render(TIMELINE);
     expect(query(element, ".section-label").textContent).toContain(
-      "03 / WORK AND EDUCATION"
+      "03 / WORK, EDUCATION AND CERTIFICATIONS"
     );
     const heading = query(element, "h2.section-heading");
     expect(heading).not.toBeNull();
@@ -264,6 +271,283 @@ describe("c-experience-timeline", () => {
     await flushPromises();
     expect(tab(element, "work").getAttribute("aria-selected")).toBe("true");
     expect(trackEvent).not.toHaveBeenCalled();
+  });
+});
+
+const VERIFY_URL =
+  "https://trailhead.salesforce.com/en/credentials/verification/?searchString=a+b+c";
+
+const CERTIFICATIONS = [
+  {
+    id: "a07000000000001AAA",
+    name: "Application Architect",
+    issuer: "Salesforce",
+    earnedDate: "2025-03-01"
+  },
+  {
+    id: "a07000000000002AAA",
+    name: "Platform Developer I",
+    issuer: "Salesforce",
+    earnedDate: "2022-11-15"
+  }
+];
+
+function roles(count) {
+  return Array.from({ length: count }, (unused, index) => ({
+    key: `a0500000000010${index}AAA`,
+    title: `Role ${index + 1}`,
+    employer: "Acme",
+    startDate: "2020-01-01",
+    endDate: "2021-01-01",
+    isCurrent: false
+  }));
+}
+
+function schools(count) {
+  return Array.from({ length: count }, (unused, index) => ({
+    key: `a0600000000010${index}AAA`,
+    school: `School ${index + 1}`,
+    credential: "BSc",
+    fieldOfStudy: null,
+    completedDate: "2015-05-01"
+  }));
+}
+
+const toggle = (element, name) =>
+  query(element, `[data-panel="${name}"] button.toggle`);
+const rows = (element, name) =>
+  queryAll(element, `[data-panel="${name}"] .entry`);
+
+describe("c-experience-timeline certifications tab", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    jest.clearAllMocks();
+  });
+
+  it("adds a Certifications tab last, with name, issuer and earned month", async () => {
+    const element = await render({
+      ...TIMELINE,
+      certifications: CERTIFICATIONS
+    });
+    expect(
+      queryAll(element, '[role="tab"]').map((node) => node.textContent.trim())
+    ).toEqual(["Work", "Education", "Certifications"]);
+    const certificationTab = tab(element, "certifications");
+    expect(certificationTab.getAttribute("aria-selected")).toBe("false");
+    expect(certificationTab.getAttribute("aria-controls")).toBe(
+      panel(element, "certifications").getAttribute("id")
+    );
+    expect(panel(element, "certifications").hidden).toBe(true);
+    const entries = rows(element, "certifications");
+    expect(entries).toHaveLength(2);
+    expect(entries[0].querySelector(".entry-title").textContent).toBe(
+      "Application Architect"
+    );
+    expect(entries[0].querySelector(".entry-org").textContent).toBe(
+      "Salesforce"
+    );
+    expect(entries[0].querySelector(".entry-dates").textContent).toBe(
+      "Mar 2025"
+    );
+  });
+
+  it("sends timeline_tab_changed with the certifications tab value", async () => {
+    const element = await render({
+      ...TIMELINE,
+      certifications: CERTIFICATIONS
+    });
+    tab(element, "certifications").click();
+    await flushPromises();
+    expect(panel(element, "certifications").hidden).toBe(false);
+    expect(trackEvent).toHaveBeenCalledWith("timeline_tab_changed", {
+      tab: "certifications"
+    });
+  });
+
+  it("reaches the Certifications tab with End and wraps with ArrowRight", async () => {
+    const element = await render({
+      ...TIMELINE,
+      certifications: CERTIFICATIONS
+    });
+    keydown(tab(element, "work"), "End");
+    await flushPromises();
+    expect(tab(element, "certifications").getAttribute("aria-selected")).toBe(
+      "true"
+    );
+    expect(element.shadowRoot.activeElement).toBe(
+      tab(element, "certifications")
+    );
+    keydown(tab(element, "certifications"), "ArrowRight");
+    await flushPromises();
+    expect(tab(element, "work").getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("selects Certifications when it is the only list", async () => {
+    const element = await render({
+      work: [],
+      education: [],
+      certifications: CERTIFICATIONS
+    });
+    expect(queryAll(element, '[role="tab"]')).toHaveLength(1);
+    expect(tab(element, "certifications").getAttribute("aria-selected")).toBe(
+      "true"
+    );
+    expect(panel(element, "certifications").hidden).toBe(false);
+  });
+
+  it("hides the Certifications tab when there are none", async () => {
+    const element = await render({ ...TIMELINE, certifications: [] });
+    expect(tab(element, "certifications")).toBeNull();
+    expect(panel(element, "certifications")).toBeNull();
+  });
+
+  it("links Verify on Trailhead with the exact href, in a new tab", async () => {
+    const element = await render({
+      ...TIMELINE,
+      certifications: CERTIFICATIONS,
+      verificationUrl: VERIFY_URL
+    });
+    const links = queryAll(element, '[data-id="verify-link"]');
+    expect(links).toHaveLength(1);
+    const link = links[0];
+    expect(link.closest('[data-panel="certifications"]')).not.toBeNull();
+    expect(link.getAttribute("href")).toBe(VERIFY_URL);
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(link.textContent).toBe("Verify on Trailhead, opens in a new tab");
+  });
+
+  it("shows no verification link without a usable value", async () => {
+    // The script URL is the input under test, proving it never renders.
+    // eslint-disable-next-line no-script-url
+    for (const verificationUrl of [null, "", "javascript:alert(1)"]) {
+      const element = await render({
+        ...TIMELINE,
+        certifications: CERTIFICATIONS,
+        verificationUrl
+      });
+      expect(query(element, '[data-id="verify-link"]')).toBeNull();
+      document.body.removeChild(element);
+    }
+  });
+});
+
+describe("c-experience-timeline View all", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    jest.clearAllMocks();
+  });
+
+  it("shows the first five and a View all N button that names its list", async () => {
+    const element = await render({ work: roles(7), education: [] });
+    expect(rows(element, "work")).toHaveLength(5);
+    expect(
+      rows(element, "work")[0].querySelector(".entry-title").textContent
+    ).toBe("Role 1");
+    const button = toggle(element, "work");
+    expect(button.tagName).toBe("BUTTON");
+    expect(button.getAttribute("type")).toBe("button");
+    expect(button.textContent.trim()).toBe("View all 7");
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    const list = query(element, '[data-panel="work"] ol');
+    expect(button.getAttribute("aria-controls")).toBe(list.getAttribute("id"));
+  });
+
+  it("reveals the rest in place, keeps focus, then shows fewer again", async () => {
+    const element = await render({ work: roles(7), education: [] });
+    let button = toggle(element, "work");
+    button.focus();
+    button.click();
+    await flushPromises();
+
+    button = toggle(element, "work");
+    expect(rows(element, "work")).toHaveLength(7);
+    expect(button.textContent.trim()).toBe("Show fewer");
+    expect(button.getAttribute("aria-expanded")).toBe("true");
+    expect(element.shadowRoot.activeElement).toBe(button);
+    expect(trackEvent).toHaveBeenCalledWith("timeline_expanded", {
+      tab: "work",
+      expanded: true
+    });
+
+    button.click();
+    await flushPromises();
+    button = toggle(element, "work");
+    expect(rows(element, "work")).toHaveLength(5);
+    expect(button.textContent.trim()).toBe("View all 7");
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(element.shadowRoot.activeElement).toBe(button);
+    expect(trackEvent).toHaveBeenLastCalledWith("timeline_expanded", {
+      tab: "work",
+      expanded: false
+    });
+  });
+
+  it("keeps each tab's own state", async () => {
+    const element = await render({ work: roles(7), education: schools(6) });
+    toggle(element, "work").click();
+    await flushPromises();
+    tab(element, "education").click();
+    await flushPromises();
+    expect(rows(element, "education")).toHaveLength(5);
+    expect(toggle(element, "education").textContent.trim()).toBe("View all 6");
+    tab(element, "work").click();
+    await flushPromises();
+    expect(rows(element, "work")).toHaveLength(7);
+    expect(toggle(element, "work").textContent.trim()).toBe("Show fewer");
+  });
+
+  it("renders no button when a tab has the limit or fewer", async () => {
+    const element = await render({ work: roles(5), education: schools(2) });
+    expect(rows(element, "work")).toHaveLength(5);
+    expect(toggle(element, "work")).toBeNull();
+    expect(toggle(element, "education")).toBeNull();
+  });
+
+  it("uses the limit the server sends", async () => {
+    const element = await render({
+      work: roles(4),
+      education: [],
+      tabLimit: 2
+    });
+    expect(rows(element, "work")).toHaveLength(2);
+    expect(toggle(element, "work").textContent.trim()).toBe("View all 4");
+  });
+
+  it("caps the Certifications tab the same way", async () => {
+    const many = Array.from({ length: 6 }, (unused, index) => ({
+      id: `a0700000000010${index}AAA`,
+      name: `Certification ${index + 1}`,
+      issuer: "Salesforce",
+      earnedDate: "2024-01-01"
+    }));
+    const element = await render({
+      work: [],
+      education: [],
+      certifications: many,
+      verificationUrl: VERIFY_URL
+    });
+    expect(rows(element, "certifications")).toHaveLength(5);
+    expect(toggle(element, "certifications").textContent.trim()).toBe(
+      "View all 6"
+    );
+    expect(query(element, '[data-id="verify-link"]')).not.toBeNull();
+  });
+});
+
+describe("experienceTimeline tab limit", () => {
+  it("takes a whole number of one or more and falls back to five", () => {
+    expect(toTabLimit(3)).toBe(3);
+    expect(toTabLimit(1)).toBe(1);
+    expect(toTabLimit(0)).toBe(5);
+    expect(toTabLimit(-2)).toBe(5);
+    expect(toTabLimit(2.5)).toBe(5);
+    expect(toTabLimit("4")).toBe(5);
+    expect(toTabLimit(undefined)).toBe(5);
   });
 });
 
