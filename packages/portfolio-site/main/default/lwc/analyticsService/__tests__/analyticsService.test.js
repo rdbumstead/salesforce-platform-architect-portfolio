@@ -40,15 +40,34 @@ const N6_NAMES = ["timeline_tab_changed"];
 // Appended last under the same rule.
 const R7_NAMES = ["skills_persona_filtered"];
 
+// Appended for view source, contact, testimonials, the home page, the graph,
+// Back to top and the timeline, under the same rule.
+const SITE_NAMES = [
+  "view_source_opened",
+  "view_source_file_selected",
+  "contact_form_submitted",
+  "testimonial_submitted",
+  "testimonials_filtered",
+  "case_study_opened",
+  "start_path_followed",
+  "graph_zoom_used",
+  "back_to_top_used",
+  "timeline_expanded"
+];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
   });
 
-  it("lists exactly the event names of Rounds 4 to 7", () => {
+  it("lists exactly the event names the site sends", () => {
     expect(Object.values(EVENTS).sort()).toEqual(
-      [...L4_NAMES, ...M6_NAMES, ...N6_NAMES, ...R7_NAMES].sort()
+      [...L4_NAMES, ...M6_NAMES, ...N6_NAMES, ...R7_NAMES, ...SITE_NAMES].sort()
     );
+  });
+
+  it("keeps the newest names last, in the order they were appended", () => {
+    expect(Object.values(EVENTS).slice(-SITE_NAMES.length)).toEqual(SITE_NAMES);
   });
 
   it("cannot be changed at runtime", () => {
