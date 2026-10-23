@@ -22,13 +22,13 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: As of December 2025, NPSP is no longer offered as a preconfigured package in production orgs.</value>
+    >PLACEHOLDER: NPSP stays supported and free to install, but Nonprofit Cloud is the more modern product, the one Salesforce invests in and recommends to new customers.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >Trailhead, Meet Nonprofit Success Pack</value>
+    >Nonprofit Success Pack and Other Managed Packages (salesforce.com). Trailhead, Meet Nonprofit Success Pack</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

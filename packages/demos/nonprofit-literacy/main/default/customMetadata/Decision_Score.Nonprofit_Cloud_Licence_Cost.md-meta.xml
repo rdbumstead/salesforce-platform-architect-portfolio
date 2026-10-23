@@ -22,13 +22,13 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: Licence model not verified. Treated as a paid licence.</value>
+    >PLACEHOLDER: The ten donated Power of Us licences can be Nonprofit Cloud instead, so the first ten users cost nothing on either path. The difference starts with the eleventh user, where paid editions start at $70 per user per month.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >NPSP "free, open-source" (Trailhead, Meet Nonprofit Success Pack). Turn On Education Cloud (Help). Power of Us ten licences (not verified)</value>
+    >NPSP "free, open-source" (Trailhead, Meet Nonprofit Success Pack). Turn On Education Cloud (Help). Power of Us (P10) Application (Help). Nonprofit Pricing (salesforce.com)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>
