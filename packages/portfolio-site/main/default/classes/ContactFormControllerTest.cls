@@ -373,7 +373,13 @@ private class ContactFormControllerTest {
     );
     Assert.areEqual(0, contactLeads().size(), 'No Lead');
     Contact_Form_Failure__c kept = [
-      SELECT First_Name__c, Last_Name__c, Email__c, Company__c, Message__c, Error__c
+      SELECT
+        First_Name__c,
+        Last_Name__c,
+        Email__c,
+        Company__c,
+        Message__c,
+        Error__c
       FROM Contact_Form_Failure__c
     ];
     Assert.areEqual('grace@example.com', kept.Email__c, 'The message is kept');

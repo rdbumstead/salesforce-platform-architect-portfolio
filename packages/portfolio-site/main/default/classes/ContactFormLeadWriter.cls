@@ -114,7 +114,9 @@ public with sharing class ContactFormLeadWriter {
     for (PermissionSetAssignment assignment : [
       SELECT AssigneeId
       FROM PermissionSetAssignment
-      WHERE PermissionSet.Name = :ADMIN_PERMISSION_SET AND Assignee.IsActive = TRUE
+      WHERE
+        PermissionSet.Name = :ADMIN_PERMISSION_SET
+        AND Assignee.IsActive = TRUE
       WITH SYSTEM_MODE
       LIMIT 50
     ]) {
