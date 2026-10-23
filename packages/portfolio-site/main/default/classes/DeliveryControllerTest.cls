@@ -39,6 +39,7 @@ private class DeliveryControllerTest {
     item.statusCategory = 'indeterminate';
     item.type = 'Story';
     item.epicKey = 'SPAP-900';
+    item.epicName = 'Launch readiness';
     item.updatedAt = NOW.addHours(-2);
     DeliveryController.RoadmapPayload payload = new DeliveryController.RoadmapPayload();
     payload.schemaVersion = DeliveryController.SCHEMA_VERSION;
@@ -181,6 +182,24 @@ private class DeliveryControllerTest {
     Assert.areEqual('indeterminate', feed.items[0].statusCategory, 'Category');
     Assert.areEqual('Story', feed.items[0].type, 'Type');
     Assert.areEqual('SPAP-900', feed.items[0].epicKey, 'Epic');
+    Assert.areEqual('Launch readiness', feed.items[0].epicName, 'Epic name');
+  }
+
+  @isTest
+  static void roadmapRowCachedBeforeEpicNameHasNullName() {
+    insertJiraRow(
+      '{"schemaVersion":1,"items":[{"key":"SPAP-903","statusCategory":"new",' +
+      '"type":"Story","epicKey":"SPAP-900"}]}',
+      5
+    );
+    DeliveryController.nowOverride = NOW;
+
+    Test.startTest();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
+    Test.stopTest();
+
+    Assert.areEqual('SPAP-900', feed.items[0].epicKey, 'Epic key kept');
+    Assert.isNull(feed.items[0].epicName, 'Old rows have no epic name');
   }
 
   @isTest

@@ -1,0 +1,445 @@
+{
+  "employerHub": {
+    "scope": "employerHub",
+    "objectCount": 9,
+    "cpuMs": 96,
+    "nodes": [
+      {
+        "apiName": "Account",
+        "label": "Account",
+        "isCustom": false,
+        "fieldCount": 79,
+        "fields": []
+      },
+      {
+        "apiName": "Case",
+        "label": "Case",
+        "isCustom": false,
+        "fieldCount": 50,
+        "fields": []
+      },
+      {
+        "apiName": "Contact",
+        "label": "Contact",
+        "isCustom": false,
+        "fieldCount": 79,
+        "fields": []
+      },
+      {
+        "apiName": "Contract",
+        "label": "Contract",
+        "isCustom": false,
+        "fieldCount": 53,
+        "fields": []
+      },
+      {
+        "apiName": "EH_Job_Posting__c",
+        "label": "Job Posting",
+        "isCustom": true,
+        "fieldCount": 14,
+        "fields": []
+      },
+      {
+        "apiName": "EH_Letter_of_Support__c",
+        "label": "Letter of Support",
+        "isCustom": true,
+        "fieldCount": 15,
+        "fields": []
+      },
+      {
+        "apiName": "EH_Partner_Engagement__c",
+        "label": "Partner Engagement",
+        "isCustom": true,
+        "fieldCount": 15,
+        "fields": []
+      },
+      {
+        "apiName": "EH_Sponsorship__c",
+        "label": "Sponsorship",
+        "isCustom": true,
+        "fieldCount": 16,
+        "fields": []
+      },
+      {
+        "apiName": "Opportunity",
+        "label": "Opportunity",
+        "isCustom": false,
+        "fieldCount": 49,
+        "fields": []
+      }
+    ],
+    "edges": [
+      {
+        "fromObject": "Account",
+        "toObject": "Account",
+        "field": "MasterRecordId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Account",
+        "toObject": "Account",
+        "field": "ParentId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Case",
+        "toObject": "Account",
+        "field": "AccountId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Case",
+        "toObject": "Contact",
+        "field": "ContactId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Case",
+        "toObject": "Case",
+        "field": "MasterRecordId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Case",
+        "toObject": "Case",
+        "field": "ParentId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Contact",
+        "toObject": "Account",
+        "field": "AccountId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Contact",
+        "toObject": "Contact",
+        "field": "MasterRecordId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Contact",
+        "toObject": "Contact",
+        "field": "ReportsToId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Contract",
+        "toObject": "Account",
+        "field": "AccountId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Contract",
+        "toObject": "Contact",
+        "field": "CustomerSignedId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "EH_Job_Posting__c",
+        "toObject": "EH_Partner_Engagement__c",
+        "field": "Partner_Engagement__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "EH_Letter_of_Support__c",
+        "toObject": "Case",
+        "field": "Case__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "EH_Letter_of_Support__c",
+        "toObject": "Contact",
+        "field": "Signatory__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "EH_Partner_Engagement__c",
+        "toObject": "Account",
+        "field": "Account__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "EH_Partner_Engagement__c",
+        "toObject": "Contact",
+        "field": "Primary_Contact__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "EH_Sponsorship__c",
+        "toObject": "Account",
+        "field": "Account__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "EH_Sponsorship__c",
+        "toObject": "Contract",
+        "field": "Contract__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "EH_Sponsorship__c",
+        "toObject": "Opportunity",
+        "field": "Opportunity__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Opportunity",
+        "toObject": "Account",
+        "field": "AccountId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Opportunity",
+        "toObject": "Contact",
+        "field": "ContactId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Opportunity",
+        "toObject": "Contract",
+        "field": "ContractId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Opportunity",
+        "toObject": "Account",
+        "field": "PartnerAccountId",
+        "kind": "lookup"
+      }
+    ]
+  },
+  "portfolio": {
+    "scope": "portfolio",
+    "objectCount": 14,
+    "cpuMs": 110,
+    "nodes": [
+      {
+        "apiName": "Account",
+        "label": "Account",
+        "isCustom": false,
+        "fieldCount": 79,
+        "fields": []
+      },
+      {
+        "apiName": "Certification_Skill__c",
+        "label": "Certification Skill",
+        "isCustom": true,
+        "fieldCount": 12,
+        "fields": []
+      },
+      {
+        "apiName": "Certification__c",
+        "label": "Certification",
+        "isCustom": true,
+        "fieldCount": 14,
+        "fields": []
+      },
+      {
+        "apiName": "Contact",
+        "label": "Contact",
+        "isCustom": false,
+        "fieldCount": 79,
+        "fields": []
+      },
+      {
+        "apiName": "Education__c",
+        "label": "Education",
+        "isCustom": true,
+        "fieldCount": 16,
+        "fields": []
+      },
+      {
+        "apiName": "Experience_Highlight__c",
+        "label": "Experience Highlight",
+        "isCustom": true,
+        "fieldCount": 19,
+        "fields": []
+      },
+      {
+        "apiName": "Experience_Skill__c",
+        "label": "Experience Skill",
+        "isCustom": true,
+        "fieldCount": 12,
+        "fields": []
+      },
+      {
+        "apiName": "Experience__c",
+        "label": "Experience",
+        "isCustom": true,
+        "fieldCount": 20,
+        "fields": []
+      },
+      {
+        "apiName": "Pipeline_Run__c",
+        "label": "Pipeline Run",
+        "isCustom": true,
+        "fieldCount": 16,
+        "fields": []
+      },
+      {
+        "apiName": "Project_Asset__c",
+        "label": "Project Asset",
+        "isCustom": true,
+        "fieldCount": 16,
+        "fields": []
+      },
+      {
+        "apiName": "Project_Skill__c",
+        "label": "Project Skill",
+        "isCustom": true,
+        "fieldCount": 12,
+        "fields": []
+      },
+      {
+        "apiName": "Project__c",
+        "label": "Project",
+        "isCustom": true,
+        "fieldCount": 26,
+        "fields": []
+      },
+      {
+        "apiName": "Skill__c",
+        "label": "Skill",
+        "isCustom": true,
+        "fieldCount": 19,
+        "fields": []
+      },
+      {
+        "apiName": "Testimonial__c",
+        "label": "Testimonial",
+        "isCustom": true,
+        "fieldCount": 21,
+        "fields": []
+      }
+    ],
+    "edges": [
+      {
+        "fromObject": "Account",
+        "toObject": "Account",
+        "field": "MasterRecordId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Account",
+        "toObject": "Account",
+        "field": "ParentId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Certification_Skill__c",
+        "toObject": "Certification__c",
+        "field": "Certification__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "Certification_Skill__c",
+        "toObject": "Skill__c",
+        "field": "Skill__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "Certification__c",
+        "toObject": "Contact",
+        "field": "Contact__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "Certification__c",
+        "toObject": "Account",
+        "field": "Issuer__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Contact",
+        "toObject": "Account",
+        "field": "AccountId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Contact",
+        "toObject": "Contact",
+        "field": "MasterRecordId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Contact",
+        "toObject": "Contact",
+        "field": "ReportsToId",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Education__c",
+        "toObject": "Contact",
+        "field": "Contact__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "Education__c",
+        "toObject": "Account",
+        "field": "Issuer__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Experience_Highlight__c",
+        "toObject": "Experience__c",
+        "field": "Experience__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "Experience_Skill__c",
+        "toObject": "Experience__c",
+        "field": "Experience__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "Experience_Skill__c",
+        "toObject": "Skill__c",
+        "field": "Skill__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "Experience__c",
+        "toObject": "Contact",
+        "field": "Contact__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Experience__c",
+        "toObject": "Account",
+        "field": "Employer__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Project_Asset__c",
+        "toObject": "Project__c",
+        "field": "Project__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "Project_Skill__c",
+        "toObject": "Project__c",
+        "field": "Project__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "Project_Skill__c",
+        "toObject": "Skill__c",
+        "field": "Skill__c",
+        "kind": "masterDetail"
+      },
+      {
+        "fromObject": "Project__c",
+        "toObject": "Contact",
+        "field": "Contact__c",
+        "kind": "lookup"
+      },
+      {
+        "fromObject": "Testimonial__c",
+        "toObject": "Contact",
+        "field": "Contact__c",
+        "kind": "lookup"
+      }
+    ]
+  }
+}
