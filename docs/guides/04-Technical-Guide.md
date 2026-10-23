@@ -282,6 +282,24 @@ Round 5 measured every change with the Lighthouse CLI (11.4.0, mobile profile, s
 - **Reading them.** First paint came about 1.2 s sooner everywhere except `/skills`, which needs the GraphQL stack for the skills matrix itself. The `/resume` LCP lands near 8.6 s or near 10.1 s from run to run on identical code, so its median does not show a direction. Accessibility scored 1 on every run.
 - **What is left.** The launch target of LCP under 2.5 s on mobile is not met. The remaining cost is outside the site's own files: about 500 KB of LWR framework and data service modules on every route, about 420 ms of `gtag/js` script, and the platform's SLDS stylesheets. Fonts were not changed in Round 5, because dropping a weight the pages use would change how they look.
 
+**Round 6, the recorded gate.** One more measured try, on a scratch copy of the site with Lighthouse 11.4.0 (mobile profile, simulated throttling, three runs per route, medians). Two changes, each measured alone:
+
+- **Tried and reverted: fonts.** Dropping the unused Inter 500 face and preloading Inter 600 lowered LCP on three routes and raised it on three, and Total Blocking Time rose on three. A font preload cannot shorten script render delay, so the numbers did not earn it.
+- **Tried and reverted: deferring SLDS stylesheets 2 to 4.** Lighthouse never counted any stylesheet as render blocking (`render-blocking-resources` is empty on all six routes), so deferring them left the critical path as it was, and LCP rose on three routes.
+- **Why LCP stays high.** Every text LCP on these routes is render delay from script: the LWR framework and data service modules and the components' own data calls. The home page LCP is the hero photo, whose request waits on the component. None of that is in the site's own files.
+- **Results** of the shipped build (the same code as before the round), medians with all three runs:
+
+| Route                    | FCP    | LCP (runs)                 |
+| ------------------------ | ------ | -------------------------- |
+| `/`                      | 4.55 s | 7.51 s (7.21, 7.51, 8.72)  |
+| `/resume`                | 5.00 s | 7.66 s (7.66, 6.57, 10.01) |
+| `/skills`                | 6.11 s | 9.62 s (9.71, 9.02, 9.62)  |
+| `/api-lab`               | 5.18 s | 8.65 s (8.51, 9.92, 8.65)  |
+| `/business-architecture` | 5.92 s | 8.51 s (7.28, 8.57, 8.51)  |
+| `/nonprofit-solutions`   | 6.24 s | 8.43 s (8.61, 8.43, 7.33)  |
+
+- **The gate.** Mobile LCP on the scratch site measured 7.5 to 9.6 s with Lighthouse 11 mobile, which is the best the LWR shell allows, against a 2.5 s target. Accessibility scored 1 on every run. The same code measured twice spreads by up to 3.9 s on one route (`/skills`, 5.71 to 9.71 s), so a single run proves little. These are scratch numbers, not live ones.
+
 ## 3. Quality Assurance Checklist
 
 > [!TIP]

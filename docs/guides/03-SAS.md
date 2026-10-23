@@ -209,7 +209,7 @@ Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Disciplin
 
 - **Availability:** Organization persistence maintained via external CI/CD "Keep-Alive" heartbeat (GitHub Actions).
 - **Maintainability:** Codebase governed by automated quality gates (Prettier/PMD) ensuring architectural standards.
-- **Performance:** LCP target 2.5 s, pursued through Static Resource caching and a minimal DOM footprint. The gate is the best the LWR shell allows, measured: mobile LCP medians of {{L2_RANGE}} on the six main routes ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)).
+- **Performance:** LCP target 2.5 s, pursued through Static Resource caching and a minimal DOM footprint. The gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)).
   - **Latency:** measured with the Lighthouse mobile profile, which simulates a slow 4G network.
   - **AI Generation Timeout:** 60 seconds for the Gemini callout, read from the `Gemini` record of `AI_Provider_Config__mdt` (`Timeout_Ms__c`, owner decision 2026-10-21). Gemma 4 reasons before it answers, so a cover letter can take up to about a minute. The earlier 2 second hard stop was dropped because a reasoning model almost never answers inside it.
   - **Total CPU Budget:** < 5000ms per request (Allocating 50% of the 10,000ms Synchronous Limit to ensure headroom for platform overhead).

@@ -109,12 +109,12 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 **Technical Acceptance:**
 | Metric | Current Baseline (Est.) | Target (Hard Gate) |
 | :--- | :--- | :--- |
-| **LCP (Mobile)** | 8.9 s on `/`, live, before Round 5 (measured) | Target **2.5 s**. Gate: the best the LWR shell allows, measured: mobile LCP medians of {{L2_RANGE}} on the six main routes |
+| **LCP (Mobile)** | 8.9 s on `/`, live, before Round 5 (measured) | Target **2.5 s**. Gate: the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes |
 | **Apex Coverage** | 78% (Avg Project) | **> 90%** |
 | **Code Scanning** | N/A | **0 Critical Violations** |
 | **Accessibility** | 85 (Avg Theme) | **100** |
 
-- LCP measured with a Lighthouse mobile audit, three runs per route, medians. The target is 2.5 s. Most of the mobile LCP is render delay in the LWR framework's own script, which keeps it above the target, so the gate is the best the LWR shell allows, measured: mobile LCP medians of {{L2_RANGE}} on the six main routes (Technical Guide §2.11).
+- LCP measured with a Lighthouse mobile audit, three runs per route, medians. The target is 2.5 s. Most of the mobile LCP is render delay in the LWR framework's own script, which keeps it above the target, so the gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes (Technical Guide §2.11).
 - All Apex tests > 90% coverage (Hard Governance Gate).
 - CI/CD pipeline passing (Green build badge on Repo).
 - Zero critical security warnings from PMD Scanner.
