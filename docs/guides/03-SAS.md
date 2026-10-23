@@ -22,7 +22,7 @@
   - [4.6 Data Security Matrix](#46-data-security-matrix)
 - [5. Solution Components (The Pillars)](#5-solution-components-the-pillars)
   - [5.1 Pillar A: Business Architecture (Employer Hub)](#51-pillar-a-business-architecture-employer-hub)
-  - [5.2 Pillar B: Pre-Sales Consultancy (Nonprofit Literacy Solutions)](#52-pillar-b-pre-sales-consultancy-nonprofit-literacy-solutions)
+  - [5.2 Pillar B: Pre-Sales Consultancy (Nonprofit Literacy Platform)](#52-pillar-b-pre-sales-consultancy-nonprofit-literacy-platform)
   - [5.3 Pillar C: Work Experience Verification API (Twin API Pattern)](#53-pillar-c-work-experience-verification-api-twin-api-pattern)
   - [5.4 Pillar D: AI & Innovation (Agentforce)](#54-pillar-d-ai--innovation-agentforce)
   - [5.5 Pillar E: Agile Delivery & DevOps (Roadmap)](#55-pillar-e-agile-delivery--devops-roadmap)
@@ -341,7 +341,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 - **Data Source:** Apex `Schema.getGlobalDescribe()` ensures the diagram never drifts from the actual deployment. A two-button toggle switches between the Employer Hub schema (the default on this page) and the portfolio's own schema. The internal objects `API_Rate_Window__c`, `API_Access_Request__c`, `Github_Cache__c` and `Jira_Cache__c` are hidden by `Schema_Visualizer_Object__mdt` records. There is no Platform Cache: the only cache is the browser's, through `cacheable=true` ([ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)).
 - **Reuse Signal:** the diagram draws with the same D3 engine as the skills page (`c/graphEngine` and the `D3_Library` static resource), loaded only on desktop and tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
 
-### 5.2 Pillar B: Pre-Sales Consultancy (Nonprofit Literacy Solutions)
+### 5.2 Pillar B: Pre-Sales Consultancy (Nonprofit Literacy Platform)
 
 > [!NOTE]
 > **Live since Round 5.** Every score and weight in the matrix is a placeholder until the owner reviews it, and the page says so in a banner. The client is described as "a regional adult literacy nonprofit" and never named (owner decision D4 b). Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production (owner decision D1 a).
