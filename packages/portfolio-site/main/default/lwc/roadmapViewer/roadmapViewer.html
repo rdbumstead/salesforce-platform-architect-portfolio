@@ -70,8 +70,9 @@
             <template lwc:if={column.isCapped}>
               <ul
                 class="card-list card-list-more"
-                id="roadmap-done-more"
-                data-id="done-more"
+                id={column.moreId}
+                data-id="column-more"
+                data-category={column.category}
               >
                 <template for:each={column.hiddenCards} for:item="card">
                   <li key={card.key} class={card.className} data-key={card.key}>
@@ -101,9 +102,10 @@
                 type="button"
                 class="show-all"
                 data-id="show-all"
+                data-category={column.category}
                 aria-expanded={column.toggleExpanded}
-                aria-controls="roadmap-done-more"
-                onclick={handleToggleDone}
+                aria-controls={column.moreId}
+                onclick={handleToggle}
               >
                 {column.toggleLabel}
               </button>

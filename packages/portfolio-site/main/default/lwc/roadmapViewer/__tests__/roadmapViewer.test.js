@@ -11,7 +11,7 @@ import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import RoadmapViewer, {
   COLUMNS,
-  DONE_LIMIT,
+  COLUMN_LIMIT,
   EMPTY_TEXT,
   STATUS_NOTES,
   ageLabel,
@@ -271,7 +271,7 @@ describe("c-roadmap-viewer", () => {
     expect(keysIn(element, "indeterminate")).toEqual(["SPAP-6", "SPAP-5"]);
   });
 
-  describe("the Done column cap", () => {
+  describe("the column cap (Round 7 F7, every column)", () => {
     // Twelve done items, SPAP-101 the newest, each one hour older than the last.
     // SPAP-112 (the oldest) and SPAP-104 are epics.
     function doneItems(count) {
@@ -294,10 +294,10 @@ describe("c-roadmap-viewer", () => {
 
     it("shows every done card and no button at the limit", async () => {
       const element = createComponent();
-      getRoadmap.emit(feed("FRESH", { items: doneItems(DONE_LIMIT) }));
+      getRoadmap.emit(feed("FRESH", { items: doneItems(COLUMN_LIMIT) }));
       await flushPromises();
 
-      expect(doneKeys(element)).toHaveLength(DONE_LIMIT);
+      expect(doneKeys(element)).toHaveLength(COLUMN_LIMIT);
       expect(q(element, '[data-id="show-all"]')).toBeNull();
     });
 
@@ -308,7 +308,7 @@ describe("c-roadmap-viewer", () => {
       getRoadmap.emit(feed("FRESH", { items }));
       await flushPromises();
 
-      expect(DONE_LIMIT).toBe(8);
+      expect(COLUMN_LIMIT).toBe(8);
       expect(doneKeys(element)).toEqual([
         "SPAP-104",
         "SPAP-108",
@@ -329,7 +329,10 @@ describe("c-roadmap-viewer", () => {
       expect(button.getAttribute("type")).toBe("button");
       expect(button.textContent.trim()).toBe("Show all 12 shipped");
       expect(button.getAttribute("aria-expanded")).toBe("false");
-      const list = q(element, '[data-id="done-more"]');
+      const list = q(
+        element,
+        '.roadmap-column[data-category="done"] [data-id="column-more"]'
+      );
       expect(button.getAttribute("aria-controls")).toBe(list.id);
 
       button.click();
@@ -354,21 +357,113 @@ describe("c-roadmap-viewer", () => {
 
       button.click();
       await flushPromises();
-      expect(doneKeys(element)).toHaveLength(DONE_LIMIT);
+      expect(doneKeys(element)).toHaveLength(COLUMN_LIMIT);
       expect(button.getAttribute("aria-expanded")).toBe("false");
     });
 
-    it("caps only the Done column", async () => {
-      const element = createComponent();
-      const items = doneItems(12).map((item) => ({
-        ...item,
-        statusCategory: "new"
+    // Twelve items in one open column, in feed order. Item 10 (index 9) and item 3 (index 2)
+    // are epics, so one epic is inside the first 8 and one is past the cut.
+    function openItems(category, count) {
+      return Array.from({ length: count }, (unused, index) => ({
+        key: `SPAP-${(category === "new" ? 201 : 301) + index}`,
+        summary: `Open ${index + 1}`,
+        status: category === "new" ? "To Do" : "In Progress",
+        statusCategory: category,
+        type: index === 9 || index === 2 ? "Epic" : "Story",
+        epicKey: null,
+        updatedAt: new Date(Date.UTC(2026, 9, 21, index, 0, 0)).toISOString()
       }));
+    }
+
+    function toggleIn(element, category) {
+      return q(
+        element,
+        `.roadmap-column[data-category="${category}"] [data-id="show-all"]`
+      );
+    }
+
+    ["new", "indeterminate"].forEach((category) => {
+      it(`caps the ${category} column at 8 in feed order, epics first, with its own toggle`, async () => {
+        const element = createComponent();
+        const items = openItems(category, 12);
+        getRoadmap.emit(feed("FRESH", { items }));
+        await flushPromises();
+
+        const firstEight = items.slice(0, COLUMN_LIMIT);
+        const expectedVisible = [
+          ...firstEight.filter((item) => item.type === "Epic"),
+          ...firstEight.filter((item) => item.type !== "Epic")
+        ].map((item) => item.key);
+        expect(keysIn(element, category)).toEqual(expectedVisible);
+
+        const column = q(
+          element,
+          `.roadmap-column[data-category="${category}"]`
+        );
+        const label = COLUMNS.find((c) => c.category === category).label;
+        expect(
+          column.querySelector(".column-title").textContent.replace(/\s+/g, "")
+        ).toBe(`${label.replace(/\s+/g, "")}(12)`);
+
+        const button = toggleIn(element, category);
+        expect(button.tagName).toBe("BUTTON");
+        expect(button.getAttribute("type")).toBe("button");
+        expect(button.textContent.trim()).toBe("Show all 12");
+        expect(button.getAttribute("aria-expanded")).toBe("false");
+        const list = column.querySelector('[data-id="column-more"]');
+        expect(button.getAttribute("aria-controls")).toBe(list.id);
+
+        button.click();
+        await flushPromises();
+
+        const rest = items.slice(COLUMN_LIMIT);
+        expect(keysIn(element, category)).toEqual([
+          ...expectedVisible,
+          ...rest.filter((item) => item.type === "Epic").map((i) => i.key),
+          ...rest.filter((item) => item.type !== "Epic").map((i) => i.key)
+        ]);
+        expect(button.getAttribute("aria-expanded")).toBe("true");
+        expect(button.textContent.trim()).toBe("Show fewer");
+
+        button.click();
+        await flushPromises();
+        expect(keysIn(element, category)).toHaveLength(COLUMN_LIMIT);
+        expect(button.getAttribute("aria-expanded")).toBe("false");
+      });
+    });
+
+    it("keeps each column's toggle state separate", async () => {
+      const element = createComponent();
+      const items = [
+        ...openItems("new", 12),
+        ...openItems("indeterminate", 10),
+        ...doneItems(12)
+      ];
       getRoadmap.emit(feed("FRESH", { items }));
       await flushPromises();
 
+      toggleIn(element, "new").click();
+      await flushPromises();
+
       expect(keysIn(element, "new")).toHaveLength(12);
-      expect(q(element, '[data-id="show-all"]')).toBeNull();
+      expect(keysIn(element, "indeterminate")).toHaveLength(COLUMN_LIMIT);
+      expect(keysIn(element, "done")).toHaveLength(COLUMN_LIMIT);
+      expect(toggleIn(element, "new").getAttribute("aria-expanded")).toBe(
+        "true"
+      );
+      expect(
+        toggleIn(element, "indeterminate").getAttribute("aria-expanded")
+      ).toBe("false");
+      expect(toggleIn(element, "indeterminate").textContent.trim()).toBe(
+        "Show all 10"
+      );
+      expect(toggleIn(element, "done").textContent.trim()).toBe(
+        "Show all 12 shipped"
+      );
+      const ids = ["new", "indeterminate", "done"].map((c) =>
+        toggleIn(element, c).getAttribute("aria-controls")
+      );
+      expect(new Set(ids).size).toBe(3);
     });
   });
 
