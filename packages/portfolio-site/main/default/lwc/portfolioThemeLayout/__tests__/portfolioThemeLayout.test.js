@@ -706,7 +706,9 @@ describe("c-portfolio-theme-layout", () => {
     }
 
     function button(element) {
-      return element.shadowRoot.querySelector('[data-id="back-to-top"]');
+      return element.shadowRoot.querySelector(
+        '[data-id="floating-back-to-top"]'
+      );
     }
 
     function renderWithFooter() {
