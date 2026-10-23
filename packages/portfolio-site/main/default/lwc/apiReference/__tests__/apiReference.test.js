@@ -335,6 +335,13 @@ describe("c-api-reference", () => {
     });
   });
 
+  it("keeps every generated spec copy in step with scripts/sync-specs.js (audit G2)", () => {
+    // The one source is packages/integration-api/specs. A failure here means a spec changed
+    // without node scripts/sync-specs.js being run.
+    const sync = require(join(process.cwd(), "scripts/sync-specs.js"));
+    expect(sync.differences()).toEqual([]);
+  });
+
   it("fills the page and opens without a click on its own page", async () => {
     const element = createElement("c-api-reference", { is: ApiReference });
     element.fullWidth = true;
