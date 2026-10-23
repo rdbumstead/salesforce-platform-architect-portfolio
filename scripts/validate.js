@@ -33,6 +33,19 @@ if (!content.includes("<types>")) {
   process.exit(0);
 }
 
+// Older sfdx-git-delta releases write their own default API version into the manifest
+// instead of the project's, and metadata such as viewAllFields then fails to validate.
+const { sourceApiVersion } = JSON.parse(
+  fs.readFileSync("sfdx-project.json", "utf8")
+);
+fs.writeFileSync(
+  packageXmlPath,
+  content.replace(
+    /<version>[^<]*<\/version>/,
+    `<version>${sourceApiVersion}</version>`
+  )
+);
+
 console.log("--- 2. Validating Changes (Dry Run) ---");
 try {
   execSync(

@@ -23,7 +23,7 @@
     "sf:coverage": "node scripts/coverage-gate.js",
     "sf:validate": "sf project deploy validate --source-dir packages --test-level RunLocalTests",
     "clean": "rimraf changed",
-    "delta": "npm run clean && shx mkdir -p changed && sf sgd source delta --to HEAD --from origin/main --output-dir changed --source-dir packages --generate-delta",
+    "delta": "npm run clean && shx mkdir -p changed && sf sgd source delta --to HEAD --from origin/main -o changed -s packages --generate-delta",
     "delta:validate": "node scripts/validate.js",
     "docs:api": "node scripts/generate-api-docs.js",
     "docs:verify": "npm run docs:api && git diff --exit-code docs/api/oas/ && echo \"SUCCESS: API Documentation is synchronized.\""
