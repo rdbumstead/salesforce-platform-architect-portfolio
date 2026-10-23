@@ -20,7 +20,9 @@
     </values>
     <values>
         <field>Rationale__c</field>
-        <value xsi:type="xsd:string">PLACEHOLDER: Staff-only entry.</value>
+        <value
+      xsi:type="xsd:string"
+    >Staff-only entry, the same as the other options.</value>
     </values>
     <values>
         <field>Evidence__c</field>
@@ -30,6 +32,6 @@
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

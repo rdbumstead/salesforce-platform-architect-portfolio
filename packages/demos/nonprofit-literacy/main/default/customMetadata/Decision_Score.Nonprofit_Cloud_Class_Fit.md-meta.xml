@@ -16,13 +16,13 @@
     </values>
     <values>
         <field>Score__c</field>
-        <value xsi:type="xsd:double">5</value>
+        <value xsi:type="xsd:double">4</value>
     </values>
     <values>
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: Program Management model with Program, Program Enrollment, Benefit and Benefit Session.</value>
+    >Program, Program Enrollment, Benefit and Benefit Session cover classes and attendance, with cohorts less direct than PMM (not verified in an org).</value>
     </values>
     <values>
         <field>Evidence__c</field>
@@ -32,6 +32,6 @@
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for projectAssetGallery (Round 5 plan M5). The GraphQL wire adapter,
+ * @description       : Unit tests for projectAssetGallery (Round 5 plan M5, Round 6 empty rule). The GraphQL wire adapter,
  *                      the site base path and c/analyticsService are mocked.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -217,7 +217,7 @@ describe("c-project-asset-gallery", () => {
     });
   });
 
-  it("shows a one line note and no image when the pillar has no assets", async () => {
+  it("renders nothing, not even the heading, when the pillar has no assets", async () => {
     const element = mount();
     graphql.emit({
       data: { uiapi: { query: { Project__c: { edges: [] } } } },
@@ -225,29 +225,38 @@ describe("c-project-asset-gallery", () => {
     });
     await flushPromises();
 
-    expect(q(element, ".note").textContent).toBe(
-      "No project materials are published yet."
-    );
-    expect(q(element, "img")).toBeNull();
+    expect(element.shadowRoot.childNodes).toHaveLength(0);
+    expect(q(element, ".gallery-title")).toBeNull();
+    expect(element.shadowRoot.textContent).not.toMatch(/No project materials/);
   });
 
-  it("shows the empty note at once without a valid pillar", async () => {
-    const element = mount({ pillar: "Z" });
+  it("renders nothing without a valid pillar", async () => {
+    const element = mount({ pillar: "Z", heading: "Materials" });
     await flushPromises();
 
-    expect(q(element, ".note").textContent).toBe(
-      "No project materials are published yet."
-    );
-    expect(q(element, ".gallery-title")).toBeNull();
+    expect(element.shadowRoot.childNodes).toHaveLength(0);
   });
 
-  it("shows a plain error line when the query fails", async () => {
+  it("renders nothing, not even an error line, when the query fails", async () => {
     const element = mount();
     graphql.emit({ data: undefined, errors: [{ message: "boom" }] });
     await flushPromises();
 
-    expect(q(element, ".note").textContent).toBe(
-      "The project materials could not be loaded."
+    expect(element.shadowRoot.childNodes).toHaveLength(0);
+    expect(element.shadowRoot.textContent).not.toMatch(/could not be loaded/);
+  });
+
+  it("renders nothing while loading, then the heading and assets once they arrive", async () => {
+    const element = mount();
+    await flushPromises();
+    expect(q(element, ".gallery")).toBeNull();
+
+    graphql.emit({ data: PAYLOAD, errors: undefined });
+    await flushPromises();
+
+    expect(q(element, ".gallery-title").textContent).toBe(
+      "Process maps and dashboards"
     );
+    expect(qa(element, "li.asset").length).toBeGreaterThan(0);
   });
 });

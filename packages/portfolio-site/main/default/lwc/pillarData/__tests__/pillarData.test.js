@@ -115,7 +115,7 @@ describe("c/pillarData", () => {
       [pillar.summary, pillar.tour, ...pillar.tags].join(" ")
     ).join(" ");
     expect(copy).not.toMatch(
-      /being built|coming|MCC|GLA|Metropolitan|Greenville/i
+      /being built|coming|college|MCC|GLA|Metropolitan|Greenville/i
     );
   });
 
@@ -124,7 +124,7 @@ describe("c/pillarData", () => {
       "See how a business process maps to its data model, drawn live from the org."
     );
     expect(pillarByLetter("A").summary).toBe(
-      "How an employer hub for a community college models a business process and its data."
+      "How an employer hub for an education provider models a business process and its data."
     );
     expect(pillarByLetter("B").tour).toBe(
       "Follow the pre-sales reasoning behind a platform choice for a literacy program."

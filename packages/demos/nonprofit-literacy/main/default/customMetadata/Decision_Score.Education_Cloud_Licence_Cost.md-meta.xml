@@ -22,16 +22,16 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: Paid Education Cloud licence. Developer Edition qualifies only with Education Cloud.</value>
+    >A paid Education Cloud licence. The Power of Us bundles are Nonprofit Cloud or Sales and Service, not Education Cloud.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >NPSP "free, open-source" (Trailhead, Meet Nonprofit Success Pack). Turn On Education Cloud (Help). Power of Us ten licences (not verified)</value>
+    >NPSP "free, open-source" (Trailhead, Meet Nonprofit Success Pack). Turn On Education Cloud (Help). Power of Us (P10) Application (Help). Nonprofit Pricing (salesforce.com)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

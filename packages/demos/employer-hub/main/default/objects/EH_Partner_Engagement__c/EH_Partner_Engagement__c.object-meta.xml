@@ -2,7 +2,7 @@
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <deploymentStatus>Deployed</deploymentStatus>
     <description
-  >The Partner Engagement object records one relationship between the college and an employer partner, linked to the partner's Account and a primary Contact. It holds the stage, start date, lead department and a summary. Job postings sit beneath it. Inert demo schema for the Employer Hub ERD.</description>
+  >The Partner Engagement object records one relationship between the education provider and an employer partner, linked to the partner's Account and a primary Contact. It holds the stage, start date, lead department and a summary. Job postings sit beneath it. Inert demo schema for the Employer Hub ERD.</description>
     <externalSharingModel>Private</externalSharingModel>
     <label>Partner Engagement</label>
     <nameField>
