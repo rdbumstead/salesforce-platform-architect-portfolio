@@ -4,6 +4,9 @@
  *                      which is "<workflow>:<run id>", so a replayed event never adds a row and an
  *                      identical replay writes nothing. Only the newest 60 rows per workflow are
  *                      kept. Events with an unknown workflow or status, or no run id, are skipped.
+ *                      Test counts and org coverage are stored only when they make sense together
+ *                      (whole numbers, passed no more than run, coverage from 0 to 100), so the
+ *                      Pillar E card never shows a broken number.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -94,6 +97,11 @@ public with sharing class GovernanceEventHandler {
     }
     String sha = event.Commit_Sha__c?.trim();
     String url = event.Run_Url__c?.trim();
+    Boolean testsValid = validTestResult(
+      event.Tests_Run__c,
+      event.Tests_Passed__c,
+      event.Org_Coverage__c
+    );
     return new Pipeline_Run__c(
       Run_Key__c = workflow + ':' + runId,
       Workflow__c = workflow,
@@ -101,8 +109,30 @@ public with sharing class GovernanceEventHandler {
       Run_Id__c = runId,
       Run_Url__c = isRunUrl(url) ? url : null,
       Commit_Sha__c = matches(SHA_PATTERN, sha) ? sha : null,
-      Completed_At__c = event.Completed_At__c
+      Completed_At__c = event.Completed_At__c,
+      Tests_Run__c = testsValid ? event.Tests_Run__c : null,
+      Tests_Passed__c = testsValid ? event.Tests_Passed__c : null,
+      Org_Coverage__c = testsValid ? event.Org_Coverage__c : null
     );
+  }
+
+  // All three values arrive together from one test run, or none of them is kept.
+  @TestVisible
+  private static Boolean validTestResult(
+    Decimal testsRun,
+    Decimal testsPassed,
+    Decimal coverage
+  ) {
+    return testsRun != null &&
+      testsPassed != null &&
+      coverage != null &&
+      testsRun > 0 &&
+      testsRun == testsRun.round(System.RoundingMode.DOWN) &&
+      testsPassed >= 0 &&
+      testsPassed == testsPassed.round(System.RoundingMode.DOWN) &&
+      testsPassed <= testsRun &&
+      coverage >= 0 &&
+      coverage <= 100;
   }
 
   private static Boolean matches(Pattern valuePattern, String value) {
@@ -149,7 +179,10 @@ public with sharing class GovernanceEventHandler {
     return existing.Status__c == incoming.Status__c &&
       existing.Run_Url__c == incoming.Run_Url__c &&
       existing.Commit_Sha__c == incoming.Commit_Sha__c &&
-      existing.Completed_At__c == incoming.Completed_At__c;
+      existing.Completed_At__c == incoming.Completed_At__c &&
+      existing.Tests_Run__c == incoming.Tests_Run__c &&
+      existing.Tests_Passed__c == incoming.Tests_Passed__c &&
+      existing.Org_Coverage__c == incoming.Org_Coverage__c;
   }
 
   // Rows arrive grouped by workflow, newest first, so everything past the 60th of a group goes.
@@ -184,7 +217,10 @@ public with sharing class GovernanceEventHandler {
           Status__c,
           Run_Url__c,
           Commit_Sha__c,
-          Completed_At__c
+          Completed_At__c,
+          Tests_Run__c,
+          Tests_Passed__c,
+          Org_Coverage__c
         FROM Pipeline_Run__c
         WHERE Run_Key__c IN :keys
         WITH SYSTEM_MODE

@@ -97,7 +97,9 @@ jobs:
         run: |
           sf project deploy start --source-dir packages --target-org ci-org --wait 30
 
-          sf apex run test --target-org ci-org --code-coverage --result-format human --wait 20
+          # The gate fails the PR on any failed test or org wide coverage under 90%.
+          sf apex run test --target-org ci-org --test-level RunLocalTests --code-coverage --wait 30 --json > apex-tests.json || true
+          node scripts/coverage-gate.js --file apex-tests.json --min 90
 
       - name: Deploy & Test (Fallback Mode - DELTA)
         if: env.ORG_TYPE == 'fallback'
