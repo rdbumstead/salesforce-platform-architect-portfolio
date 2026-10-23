@@ -67,40 +67,73 @@ public with sharing class SchemaService {
       throw auraError(UNKNOWN_SCOPE_MESSAGE);
     }
 
-    List<String> objectNames = objectNamesInScope(
-      scope,
-      Schema.getGlobalDescribe().keySet(),
-      overridesByObjectName()
-    );
+    List<Schema.DescribeSObjectResult> objects = describeScope(scope);
+    Map<String, String> namesInScope = new Map<String, String>();
+    for (Schema.DescribeSObjectResult result : objects) {
+      namesInScope.put(result.getName().toLowerCase(), result.getName());
+    }
 
     SchemaGraph graph = new SchemaGraph();
     graph.scope = scope;
     graph.nodes = new List<SchemaNode>();
     graph.edges = new List<SchemaEdge>();
-    if (!objectNames.isEmpty()) {
-      List<Schema.DescribeSObjectResult> results = Schema.describeSObjects(
-        objectNames,
-        SObjectDescribeOptions.DEFERRED
-      );
-      // A custom setting ends in __c too, but it is configuration, not data model
-      // (log 192), so it is dropped once the describe says what it is.
-      List<Schema.DescribeSObjectResult> objects = new List<Schema.DescribeSObjectResult>();
-      Map<String, String> namesInScope = new Map<String, String>();
-      for (Schema.DescribeSObjectResult result : results) {
-        if (!result.isCustomSetting()) {
-          objects.add(result);
-          namesInScope.put(result.getName().toLowerCase(), result.getName());
-        }
-      }
-      for (Schema.DescribeSObjectResult result : objects) {
-        graph.nodes.add(toNode(result, namesInScope, graph.edges));
-      }
+    for (Schema.DescribeSObjectResult result : objects) {
+      graph.nodes.add(toNode(result, namesInScope, graph.edges));
     }
     graph.nodes.sort();
     graph.edges.sort();
     graph.objectCount = graph.nodes.size();
     graph.cpuMs = Limits.getCpuTime() - cpuStart;
     return graph;
+  }
+
+  /**
+   * @description Counts the objects the ERD draws for one scope, with the same discovery
+   *              rules as getSchemaGraph but without describing any field. The home page's
+   *              Pillar A card reads it (Round 7 plan P5, audit F11).
+   * @param scope portfolio or employerHub.
+   * @return Integer The object count, the same number as SchemaGraph.objectCount.
+   * @throws AuraHandledException When the scope is anything else.
+   * @example
+   * Integer count = SchemaService.countObjects(SchemaService.SCOPE_EMPLOYER_HUB);
+   */
+  public static Integer countObjects(String scope) {
+    if (scope == null || !STANDARD_OBJECTS_BY_SCOPE.containsKey(scope)) {
+      throw auraError(UNKNOWN_SCOPE_MESSAGE);
+    }
+    return describeScope(scope).size();
+  }
+
+  /**
+   * @description Describes the objects of one valid scope. A custom setting ends in __c
+   *              too, but it is configuration, not data model (log 192), so it is dropped
+   *              once the describe says what it is. Deferred describes, so no field is read.
+   * @param scope A valid scope.
+   * @return List<Schema.DescribeSObjectResult> The objects in the scope, never null.
+   */
+  private static List<Schema.DescribeSObjectResult> describeScope(
+    String scope
+  ) {
+    List<Schema.DescribeSObjectResult> objects = new List<Schema.DescribeSObjectResult>();
+    List<String> objectNames = objectNamesInScope(
+      scope,
+      Schema.getGlobalDescribe().keySet(),
+      overridesByObjectName()
+    );
+    if (objectNames.isEmpty()) {
+      return objects;
+    }
+    for (
+      Schema.DescribeSObjectResult result : Schema.describeSObjects(
+        objectNames,
+        SObjectDescribeOptions.DEFERRED
+      )
+    ) {
+      if (!result.isCustomSetting()) {
+        objects.add(result);
+      }
+    }
+    return objects;
   }
 
   /**
