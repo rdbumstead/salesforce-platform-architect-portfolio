@@ -20,6 +20,8 @@
   - [2.9 Site Theme, Tokens and Fonts](#29-site-theme-tokens-and-fonts)
   - [2.10 Project Asset Gallery and Decision Matrix](#210-project-asset-gallery-and-decision-matrix)
   - [2.11 Mobile Performance](#211-mobile-performance)
+  - [2.12 Home Page Cards and Timeline](#212-home-page-cards-and-timeline)
+  - [2.13 Cloudflare Cache Warmer Worker](#213-cloudflare-cache-warmer-worker)
 - [3. Quality Assurance Checklist](#3-quality-assurance-checklist)
   - [3.4 Concrete Testing Example](#34-concrete-testing-example)
 
@@ -110,9 +112,9 @@ The APIs use platform-native OAuth 2.0 on both sides of the boundary ([ADR-027](
 5. **Named Credentials** (both in source, both the My Domain root `https://ryan-bumstead-dev-ed.develop.my.salesforce.com`):
    - `Portfolio_API`, authenticated by `Portfolio_API_Auth`. Callers append `/services/apexrest/...`.
    - `Portfolio_API_Token`, using `Portfolio_API_Token_Auth`, merge fields allowed in the body, no generated Authorization header. Used only for `/services/oauth2/token`.
-6. **Assign `Portfolio_Guest` to the site guest user** (in source, `packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`, no licence, assignable to the guest user). As of Round 5 it grants:
-   - class access to `ApiLabController`, `DecisionMatrixController`, `DeliveryController`, `FooterController`, `GovernanceController`, `PAPIAuthToken`, `ResumeController`, `SchemaService` and `TestimonialController` (the two pillar controllers added in Round 5)
-   - read on `Experience__c`, `Experience_Skill__c`, `Project__c`, `Project_Asset__c`, `Project_Skill__c` and `Skill__c`, create on `Testimonial__c`, and read on `UserExternalCredential`
+6. **Assign `Portfolio_Guest` to the site guest user** (in source, `packages/portfolio-site/main/default/permissionsets/Portfolio_Guest.permissionset-meta.xml`, no licence, assignable to the guest user). It grants:
+   - class access to nine site controllers, `ApiLabController`, `DecisionMatrixController`, `DeliveryController`, `FooterController`, `GovernanceController`, `ProjectCardController`, `ResumeController`, `SchemaService` and `TestimonialController`, plus the token endpoint `PAPIAuthToken`
+   - read on `Experience__c`, `Experience_Skill__c`, `Project__c`, `Project_Asset__c`, `Project_Skill__c` and `Skill__c`, create and read on `Testimonial__c`, and read on `UserExternalCredential`
    - read on `Experience__c.Start_Date__c` and `Experience__c.End_Date__c` (Round 5), which the skills matrix needs for "years used"
    - principal access to `Portfolio_API_Auth-Portfolio_API_Principal`, `Portfolio_API_Token_Auth-Portfolio_API_Token_Principal` and `Gemini_Auth-Gemini_Principal` (the last one for the in-process cover letter, ADR-015 Round 4 amendment)
    - no Contact, Account, certification or education access, and no GitHub or Jira principal.
@@ -307,55 +309,68 @@ Round 5 measured every change with the Lighthouse CLI (11.4.0, mobile profile, s
 - **Card images.** `Project_Card_Images` holds one 640 by 360 WebP per pillar (`pillar-a.webp` to `pillar-e.webp`), each under 25 KB, cropped from that pillar's own public page in the light theme with nothing that identifies a person. Records point at them as `resource:Project_Card_Images/pillar-x.webp`, resolved by `c/externalUrl` `toSiteAssetUrl` the same way as the project gallery. Images load lazily below the hero, so the bio stays the first paint.
 - **Timeline.** `ResumeController.getTimeline()` returns roles and schools newest first through the same `without sharing`, system mode selector as the resume, in a fixed shape with no email, phone, address or `Owner_*` field. The site guest needs class access only. `c/experienceTimeline` follows the tabs pattern: a tab list with `aria-selected` and a roving tab index, ArrowLeft, ArrowRight, Home and End move between tabs, and each panel has `role="tabpanel"`. It renders nothing when both lists are empty, hides a tab whose list is empty, uses only the site tokens with 44 px tap targets, and sends `timeline_tab_changed` on a tab change.
 
+### 2.13 Cloudflare Cache Warmer Worker
+
+The one piece of the running system outside Salesforce, apart from the domain redirect (SAS section 6.1).
+
+- **What it is.** A Cloudflare Worker named `portfolio-cache-warmer` (`config/wrangler.toml`), whose code is `scripts/cache-warmer.js`. Its `scheduled` handler runs on a cron trigger every 5 minutes (`*/5 * * * *`) and sends one GET to `TARGET_URL`, `https://ryanbumstead.com/`, with `Cache-Control: no-cache` and `Pragma: no-cache`. It logs the status and never retries.
+- **Why.** To wake the site regularly, so a visitor is less likely to be the first request after a quiet spell. The Worker's own comment says the `no-cache` headers make sure the request reaches Salesforce rather than a cache. No measurement of the effect has been taken, so none is claimed.
+- **What it is not.** It is not the edge AI proxy of [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md), which stays deferred. It reads nothing, caches nothing and calls no API.
+- **Deploy.** `deploy-worker.yml` runs `wrangler deploy --config config/wrangler.toml` on a push to `main` that changes either file, or by hand, with the `CLOUDFLARE_API_TOKEN` secret.
+- **Not yet checked.** `TARGET_URL` is the redirect domain, so the request reaches the site only by following the 301. Whether the deployed Worker follows it, and whether it fires every 5 minutes, has not been read from Cloudflare's logs.
+
 ## 3. Quality Assurance Checklist
 
 > [!TIP]
-> **Not a launch step.** `npm run pre-launch-check` was meant to run these checks in one command, but it cannot pass today: its Prettier step fails across the repo and its coverage step needs fixing. It is off the launch list until the owner fixes the script. The merge gates (lint, Jest, Prettier on changed files, the analyzer and a full Apex run) cover these checks instead.
+> **One command.** `npm run pre-launch-check -- --target-org <alias>` runs the release checks in order and stops at the first failure: Prettier on the files changed against `origin/main`, the code analyzer (`npm run scan`), a delta dry run with `RunLocalTests` against the named org (`scripts/validate.js`), the Jest tests, and the Apex test and coverage gate (`scripts/coverage-gate.js`, 90%). A Lighthouse run follows and is optional. The org is required and never taken from the CLI default, because the main checkout's default is production (`scripts/pre-launch-check.js`). Name a scratch org, never production, since the coverage step runs every local test in the org it is given.
 
 ### 3.1 Key Verification Items
 
 - [ ] **LCP:** Run a Lighthouse mobile audit (three runs per route, medians) and compare with the 2.5 s target and the recorded gate in §2.11.
-- [ ] **Coverage:** Verify Apex tests > 90% coverage (Hard Gate).
-- [ ] **Security:** Verify Zero critical warnings from PMD Scanner.
-- [ ] **Accessibility:** Confirm the "Pause Animation" toggle exists and works.
+- [ ] **Coverage:** every Apex test passes and org wide coverage is 90% or more (`npm run sf:coverage -- --target-org <alias>`). `pr.yml` enforces the same gate on every pull request.
+- [ ] **Security:** no Critical or High violation from Salesforce Code Analyzer (`npm run scan`).
+- [ ] **Accessibility:** confirm nothing animates (the skills graph and the ERD are drawn once, after the layout finishes), so no pause control is needed (SAS Appendix G.2).
 - [ ] **Degradation Test:** turn on "Simulate an outage" on the changelog or the roadmap. Verify the cached data stays on screen with a "Simulated" badge (status `SIMULATED`) and no request leaves for GitHub or Jira.
-- [ ] **Limit Visibility:** Verify "Glass Box Telemetry" footer accurately reflects Heap Size changes after running a heavy operation.
+- [ ] **Limit Visibility:** the footer shows CPU, heap and SOQL use against their limits. These are the figures of the `FooterController.getSystemSnapshot` call itself, so they cannot reflect another operation. Verify the line renders, and that it reads "status unavailable" when the call fails.
 - [ ] **Analytics:** Verify api_test_executed event fires in GA4 Real-Time view when using the API Tester.
 - [ ] Verify the Skill Graph uses `lightning/uiGraphQLApi` (the Network tab shows a `/graphql` call to the Salesforce domain). The Roadmap reads Apex over the cache (`DeliveryController.getRoadmap`), so it makes no GraphQL call
-- [ ] API Lab "Enterprise Mode" tab disabled with clear "Phase 8 – 2027-2028" messaging
 - [ ] **AI fallback:** with the Gemini API unavailable, `POST /papi/v1/ai/generate` with `type: CoverLetter` returns `provider: Local` and `fallbackOccurred: true`, and the site page shows the template letter with the reason. After three Gemini failures the footer shows "Gemini: circuit open until HH:MM" and the next letter skips Gemini.
 
 ## 3.4 Concrete Testing Example
 
-We don't just "aim" for quality; we enforce it. Here is a real example of an Apex test that mocks the GitHub API and enforces Governor Limits:
+Here is a real test from the repository, `GitHubCacheRefreshJobTest.shouldInsertNothingWhenGitHubFails` (`packages/portfolio-site/main/default/classes/GitHubCacheRefreshJobTest.cls`). It mocks a GitHub outage and proves the degraded mode in section 1.1: the job makes one callout, stores nothing, the page keeps serving the last good commits, and the `github` circuit breaker counts the failure. `useRepo` and `newestRow` are helpers in the same class, and `CountingMock` is its `HttpCalloutMock`, which counts the calls it answers.
 
 ```apex
 @IsTest
-private class GitHubServiceTest {
-  @IsTest
-  static void testGetRepoDetails_EnforcesLimits() {
-    // 1. Set Mock with specific payload
-    Test.setMock(
-      HttpCalloutMock.class,
-      new GitHubMockResponse(200, '{"stargazers_count": 5}')
-    );
+static void shouldInsertNothingWhenGitHubFails() {
+  useRepo('o/r');
+  CountingMock mock = new CountingMock(503, '{"message":"down"}');
+  Test.setMock(HttpCalloutMock.class, mock);
 
-    // 2. Execute within Governor Limit tracking
-    Test.startTest();
-    GitHubService.RepoDetails result = GitHubService.getRepoDetails('my-repo');
-    Test.stopTest();
+  Test.startTest();
+  String outcome = GitHubCacheRefreshJob.refresh();
+  Test.stopTest();
 
-    // 3. Assert Logic AND Governance
-    System.assertEquals(5, result.stars, 'Should parse JSON correctly');
-    System.assertEquals(
-      1,
-      Limits.getCallouts(),
-      'Should make exactly 1 callout'
-    );
-    System.assert(
-      Limits.getHeapSize() < 100000,
-      'Heap usage should be minimal'
-    );
-  }
+  Assert.areEqual(GitHubCacheRefreshJob.OUTCOME_FAILED, outcome, 'Outcome');
+  Assert.areEqual(1, mock.calls, 'The call was made');
+  Assert.areEqual(
+    1,
+    [SELECT COUNT() FROM Github_Cache__c],
+    'Nothing inserted'
+  );
+  Assert.isTrue(
+    newestRow().JSON_Payload__c.contains(GOOD_SHA),
+    'The newest good row is untouched'
+  );
+  Assert.areEqual(
+    GOOD_SHA,
+    DeliveryController.getRecentCommits(null).items[0].sha,
+    'The page keeps serving the last good commits'
+  );
+  Assert.areEqual(
+    1,
+    CircuitBreaker.snapshot()[1].failures,
+    'The github breaker counted the failure'
+  );
 }
 ```
