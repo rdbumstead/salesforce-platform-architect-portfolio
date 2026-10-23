@@ -600,4 +600,10 @@ describe("c-roadmap-viewer", () => {
     expect(ageLabel(0)).toBe("Last updated 0 min ago");
     expect(ageLabel(undefined)).toBe("");
   });
+  it("places the View source control for its key next to the heading (contract P2)", () => {
+    const element = createComponent();
+    const control = q(element, ".roadmap-header c-view-source");
+    expect(control).not.toBeNull();
+    expect(control.sourceKey).toBe("roadmapViewer");
+  });
 });

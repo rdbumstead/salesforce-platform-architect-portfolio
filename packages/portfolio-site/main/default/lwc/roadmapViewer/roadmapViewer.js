@@ -15,6 +15,7 @@
  *                      shows at most COLUMN_LIMIT cards with its own "Show all N" button and
  *                      state. Done keeps its newest COLUMN_LIMIT by updatedAt and its "Show all
  *                      N shipped" label. To Do and In Progress keep the feed order and cut there.
+ *                      The c-view-source control (contract P2) sits in the header.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
