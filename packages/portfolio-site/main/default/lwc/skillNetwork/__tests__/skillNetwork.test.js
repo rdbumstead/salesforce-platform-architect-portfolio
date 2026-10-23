@@ -80,7 +80,8 @@ jest.mock(
     EVENTS: {
       SKILLS_VIEW_CHANGED: "skills_view_changed",
       SKILL_SELECTED: "skill_selected",
-      SKILLS_PERSONA_FILTERED: "skills_persona_filtered"
+      SKILLS_PERSONA_FILTERED: "skills_persona_filtered",
+      GRAPH_ZOOM_USED: "graph_zoom_used"
     }
   }),
   { virtual: true }
@@ -415,6 +416,7 @@ describe("c-skill-network (Large form factor)", () => {
       zoomIn: jest.fn(),
       zoomOut: jest.fn(),
       reset: jest.fn(),
+      panBy: jest.fn(),
       scale: jest.fn(() => 1),
       detach: jest.fn()
     };
@@ -547,6 +549,113 @@ describe("c-skill-network (Large form factor)", () => {
     await flushPromises();
     expect(Number(circle().getAttribute("cx"))).toBe(start.x);
     expect(controls.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it("pans a little past the drawn box at any zoom and leaves the plain wheel to the page", async () => {
+    attachPanZoom.mockReturnValue(fakeControls());
+    const element = await mountWithData();
+    await openGraph(element);
+
+    const options = attachPanZoom.mock.calls[0][2];
+    expect(options.translateExtent).toEqual([
+      [-270, -120],
+      [1230, 960]
+    ]);
+    expect(options.ctrlWheel).toBe(true);
+    expect(
+      element.shadowRoot.querySelector(".graph-hint").textContent
+    ).toContain("Ctrl and the mouse wheel");
+  });
+
+  it("sends graph_zoom_used for each button and for a wheel gesture, nothing for a drag", async () => {
+    attachPanZoom.mockReturnValue(fakeControls());
+    const element = await mountWithData();
+    await openGraph(element);
+    trackEvent.mockClear();
+
+    element.shadowRoot.querySelector('[data-action="zoom-in"]').click();
+    element.shadowRoot.querySelector('[data-action="zoom-out"]').click();
+    element.shadowRoot.querySelector('[data-action="reset"]').click();
+    const { onGestureEnd } = attachPanZoom.mock.calls[0][2];
+    onGestureEnd("wheel");
+    onGestureEnd("mouse");
+    onGestureEnd("touch");
+
+    expect(trackEvent.mock.calls).toEqual([
+      ["graph_zoom_used", { control: "in" }],
+      ["graph_zoom_used", { control: "out" }],
+      ["graph_zoom_used", { control: "reset" }],
+      ["graph_zoom_used", { control: "wheel" }]
+    ]);
+  });
+
+  it("pans with the arrow keys on the focused graph and shows how", async () => {
+    const controls = fakeControls();
+    attachPanZoom.mockReturnValue(controls);
+    const element = await mountWithData();
+    await openGraph(element);
+    trackEvent.mockClear();
+
+    const wrapper = element.shadowRoot.querySelector(".graph-wrapper");
+    expect(wrapper.getAttribute("tabindex")).toBe("0");
+    expect(wrapper.getAttribute("role")).toBe("group");
+    expect(wrapper.getAttribute("aria-label")).toBe("Skill graph");
+    const hint = element.shadowRoot.querySelector(".pan-hint");
+    expect(hint.textContent.trim()).toBe(
+      "Arrow keys pan the graph. Reset view centres it again."
+    );
+    expect(wrapper.getAttribute("aria-describedby")).toBe(
+      hint.getAttribute("id")
+    );
+
+    const press = (key, extra = {}) => {
+      const event = new KeyboardEvent("keydown", {
+        key,
+        bubbles: true,
+        cancelable: true,
+        ...extra
+      });
+      wrapper.dispatchEvent(event);
+      return event;
+    };
+    expect(press("ArrowRight").defaultPrevented).toBe(true);
+    press("ArrowLeft");
+    press("ArrowUp");
+    press("ArrowDown");
+    expect(controls.panBy.mock.calls).toEqual([
+      [-40, 0],
+      [40, 0],
+      [0, 40],
+      [0, -40]
+    ]);
+
+    // Other keys, and arrows with a modifier, are left to the page.
+    expect(press("Enter").defaultPrevented).toBe(false);
+    expect(press("ArrowDown", { ctrlKey: true }).defaultPrevented).toBe(false);
+    expect(controls.panBy).toHaveBeenCalledTimes(4);
+
+    // One event per focus, however many presses.
+    expect(trackEvent.mock.calls).toEqual([
+      ["graph_zoom_used", { control: "keyboard" }]
+    ]);
+    wrapper.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    press("ArrowRight");
+    expect(trackEvent).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the graph out of the tab order when the library has no d3-zoom", async () => {
+    const element = await mountWithData();
+    await openGraph(element);
+
+    const wrapper = element.shadowRoot.querySelector(".graph-wrapper");
+    expect(wrapper.getAttribute("tabindex")).toBe("-1");
+    const event = new KeyboardEvent("keydown", {
+      key: "ArrowRight",
+      bubbles: true,
+      cancelable: true
+    });
+    wrapper.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
   });
 
   it("detaches zoom when the matrix opens and starts the next graph unzoomed", async () => {

@@ -9,8 +9,10 @@
  *                      Nothing animates: positions are computed once and drawn as SVG from this template, so
  *                      prefers-reduced-motion needs no special case. The graph also has pan and zoom
  *                      (d3-zoom) and node drag (d3-drag) from the same engine, plus Zoom in, Zoom out and
- *                      Reset view buttons for keyboard users. Both report positions back here, so the
- *                      template still draws everything. A persona filter sits on the
+ *                      Reset view buttons for keyboard users. A background drag or the arrow keys on the
+ *                      focused graph pan it at any zoom level, a little past the graph's edge at most.
+ *                      A plain wheel scrolls the page, Ctrl with the wheel or a pinch zooms. Both report
+ *                      positions back here, so the template still draws everything. A persona filter sits on the
  *                      matrix with the resume's personas, read from Skill__c.Persona_Tag__c by a query of
  *                      its own. It shows only once at least one skill is tagged.
  * @author            : Ryan Bumstead
@@ -162,12 +164,27 @@ const LABEL_MAX = 24;
 // the label's place, so skills settle round the label instead of under it (13px mono, 0.6em
 // a character, a circle 0.6 of the label's half width).
 const CATEGORY_RADIUS_PER_CHAR = 2.34;
-// The drawn box in view box units: the layout box plus the label room either side. It is also
-// the pan limit, so the graph can never be dragged out of sight.
+// The drawn box in view box units: the layout box plus the label room either side.
 const VIEW_EXTENT = [
   [-LABEL_ROOM, 0],
   [GRAPH_WIDTH + LABEL_ROOM, GRAPH_HEIGHT]
 ];
+// The pan limit: the drawn box plus this margin on every side, so the view pans at 100% too,
+// and no further than the margin past the graph's edge, so the graph can never be lost.
+const PAN_MARGIN = 120;
+const PAN_EXTENT = [
+  [VIEW_EXTENT[0][0] - PAN_MARGIN, VIEW_EXTENT[0][1] - PAN_MARGIN],
+  [VIEW_EXTENT[1][0] + PAN_MARGIN, VIEW_EXTENT[1][1] + PAN_MARGIN]
+];
+// One arrow key press pans this far on screen, in view box units, at any zoom level.
+const PAN_STEP = 40;
+// Each arrow key moves the view that way, so the graph moves the other way.
+const PAN_KEYS = Object.freeze({
+  ArrowLeft: [PAN_STEP, 0],
+  ArrowRight: [-PAN_STEP, 0],
+  ArrowUp: [0, PAN_STEP],
+  ArrowDown: [0, -PAN_STEP]
+});
 const IDENTITY_TRANSFORM = "translate(0,0) scale(1)";
 
 function fieldValue(record, field) {
@@ -368,6 +385,7 @@ export default class SkillNetwork extends LightningElement {
   panZoom;
   boundSvg;
   boundNodeCount = 0;
+  keyboardPanTracked = false;
 
   connectedCallback() {
     this.disconnected = false;
@@ -914,7 +932,15 @@ export default class SkillNetwork extends LightningElement {
       this.boundSvg = svg;
       this.panZoom = attachPanZoom(this.engine, svg, {
         extent: VIEW_EXTENT,
-        onZoom: (transform) => this.applyZoom(transform)
+        translateExtent: PAN_EXTENT,
+        // A plain wheel scrolls the page. Ctrl with the wheel, or a pinch, zooms.
+        ctrlWheel: true,
+        onZoom: (transform) => this.applyZoom(transform),
+        onGestureEnd: (gesture) => {
+          if (gesture === "wheel") {
+            this.trackZoom("wheel");
+          }
+        }
       });
       const canZoom = Boolean(this.panZoom);
       if (this.canZoom !== canZoom) {
@@ -976,19 +1002,31 @@ export default class SkillNetwork extends LightningElement {
     };
   }
 
+  // The graph takes focus for arrow key panning only when pan and zoom are wired.
+  get graphTabIndex() {
+    return this.canZoom ? "0" : "-1";
+  }
+
   get zoomLabel() {
     return `Zoom ${Math.round(this.zoomScale * 100)}%`;
+  }
+
+  // control is one of in, out, reset, wheel or keyboard. No node name or id is sent.
+  trackZoom(control) {
+    trackEvent(EVENTS.GRAPH_ZOOM_USED, { control });
   }
 
   handleZoomIn() {
     if (this.panZoom) {
       this.panZoom.zoomIn();
+      this.trackZoom("in");
     }
   }
 
   handleZoomOut() {
     if (this.panZoom) {
       this.panZoom.zoomOut();
+      this.trackZoom("out");
     }
   }
 
@@ -997,9 +1035,29 @@ export default class SkillNetwork extends LightningElement {
     this.moved = {};
     if (this.panZoom) {
       this.panZoom.reset();
+      this.trackZoom("reset");
     } else {
       this.resetZoomState();
     }
+  }
+
+  // Arrow keys on the focused graph pan it. The key's own page scroll is cancelled only when the
+  // graph handles it. The event is sent once each time the graph has focus, not once per press.
+  handleGraphKeydown(event) {
+    const move = PAN_KEYS[event.key];
+    if (!move || !this.panZoom || event.altKey || event.ctrlKey) {
+      return;
+    }
+    event.preventDefault();
+    this.panZoom.panBy(move[0], move[1]);
+    if (!this.keyboardPanTracked) {
+      this.keyboardPanTracked = true;
+      this.trackZoom("keyboard");
+    }
+  }
+
+  handleGraphBlur() {
+    this.keyboardPanTracked = false;
   }
 
   get graphSelectionText() {

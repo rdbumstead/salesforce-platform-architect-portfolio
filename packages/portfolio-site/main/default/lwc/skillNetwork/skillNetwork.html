@@ -169,8 +169,9 @@
             <template lwc:if={showGraphCanvas}>
               <p class="graph-hint">
                 Hover or select a node to see its connections. Drag a node to
-                move it. Zoom with the buttons or the mouse wheel, and drag the
-                background to pan once zoomed in.
+                move it. Zoom with the buttons, Ctrl and the mouse wheel, or a
+                pinch. Drag the background, or use the arrow keys on the focused
+                graph, to pan.
               </p>
               <template lwc:if={canZoom}>
                 <div
@@ -205,7 +206,18 @@
                   <span class="zoom-level" aria-live="polite">{zoomLabel}</span>
                 </div>
               </template>
-              <div class="graph-wrapper">
+              <div
+                class="graph-wrapper"
+                role="group"
+                aria-label="Skill graph"
+                aria-describedby="pan-hint"
+                tabindex={graphTabIndex}
+                onkeydown={handleGraphKeydown}
+                onfocusout={handleGraphBlur}
+              >
+                <p class="pan-hint" id="pan-hint">
+                  Arrow keys pan the graph. Reset view centres it again.
+                </p>
                 <svg
                   class="graph-svg"
                   viewBox={graphModel.viewBox}
