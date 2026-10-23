@@ -26,8 +26,8 @@ public with sharing class ResumeController {
   @TestVisible
   private static Portfolio_Config__mdt configOverride;
 
-  // How many entries each timeline tab shows before "View all". The fallback when no setting
-  // is configured.
+  // How many entries each timeline tab shows before "View all", when the Timeline_Tab_Limit
+  // setting is missing or out of its range.
   @TestVisible
   private static final Integer DEFAULT_TIMELINE_TAB_LIMIT = 5;
 
@@ -89,7 +89,10 @@ public with sharing class ResumeController {
   }
 
   private static Integer timelineTabLimit() {
-    return DEFAULT_TIMELINE_TAB_LIMIT;
+    return PortfolioSettings.getInteger(
+      'Timeline_Tab_Limit',
+      DEFAULT_TIMELINE_TAB_LIMIT
+    );
   }
 
   private static List<TimelineCertification> toTimelineCertifications(

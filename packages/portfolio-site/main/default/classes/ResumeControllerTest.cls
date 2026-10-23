@@ -656,7 +656,9 @@ private class ResumeControllerTest {
   }
 
   @isTest
-  static void getTimelineTabLimitIsTheDefaultWhenNothingIsSet() {
+  static void getTimelineTabLimitIsTheDefaultWhenTheSettingIsMissing() {
+    PortfolioSettings.overrides.put('Timeline_Tab_Limit', null);
+
     Test.startTest();
     ResumeController.Timeline timeline = ResumeController.getTimeline();
     Test.stopTest();
@@ -664,7 +666,41 @@ private class ResumeControllerTest {
     Assert.areEqual(
       ResumeController.DEFAULT_TIMELINE_TAB_LIMIT,
       timeline.tabLimit,
-      'Five entries per tab when no setting overrides it'
+      'Five entries per tab when no setting is there'
+    );
+  }
+
+  @isTest
+  static void getTimelineTabLimitReadsTheSetting() {
+    PortfolioSettings.overrideNumber('Timeline_Tab_Limit', 3);
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(3, timeline.tabLimit, 'The configured value');
+  }
+
+  @isTest
+  static void getTimelineTabLimitIgnoresAValueOutsideItsRange() {
+    PortfolioSettings.overrides.put(
+      'Timeline_Tab_Limit',
+      new Portfolio_Setting__mdt(
+        DeveloperName = 'Timeline_Tab_Limit',
+        Number_Value__c = 0,
+        Min_Value__c = 1,
+        Max_Value__c = 50
+      )
+    );
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(
+      ResumeController.DEFAULT_TIMELINE_TAB_LIMIT,
+      timeline.tabLimit,
+      'A value below its minimum falls back to five'
     );
   }
 
