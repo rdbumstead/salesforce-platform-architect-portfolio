@@ -316,22 +316,24 @@ describe("c-skill-network graph spacing on production shaped data", () => {
     jest.clearAllMocks();
   });
 
+  // Before Round 6 (960 by 680, charge -25, padding 2, category ring 0.25, no label nodes):
+  // cluster gap 34.9, 28 labels on other nodes, 67 label overlaps over all hovers, 13 at worst.
   it("measures the layout the page draws", async () => {
     const result = await measure();
 
     expect(result).toEqual({
       nodes: 75,
-      box: "960x680",
+      box: "960x840",
       circleOverlaps: 0,
-      clusterGap: 34.9,
+      clusterGap: 65.8,
       onClamp: 0,
       restLabels: 28,
       restLabelOverlaps: 0,
-      restLabelsOnNodes: 28,
+      restLabelsOnNodes: 0,
       labelsOutsideView: 0,
-      hoverOverlapsTotal: 67,
-      hoverOverlapsMax: 13,
-      hoverLabelsOnNodesTotal: 2260
+      hoverOverlapsTotal: 9,
+      hoverOverlapsMax: 1,
+      hoverLabelsOnNodesTotal: 61
     });
   });
 });

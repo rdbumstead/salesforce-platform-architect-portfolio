@@ -110,12 +110,17 @@ const VIEW_GRAPH = "graph";
 const KIND_LABELS = { skill: "Skill", role: "Role", project: "Project" };
 
 // Graph geometry. The view box leaves room either side of the layout box for the labels.
+// The spacing was tuned on production shaped data (Round 6 plan N3, layoutSpacing.test.js).
 const GRAPH_WIDTH = 960;
-const GRAPH_HEIGHT = 680;
+const GRAPH_HEIGHT = 840;
 const LABEL_ROOM = 150;
 const CATEGORY_RING = 0.25;
 const WORK_RING = 0.45;
 const LABEL_MAX = 24;
+// A category label is drawn in its cluster. An unseen node of this radius per character holds
+// the label's place, so skills settle round the label instead of under it (13px mono, 0.6em
+// a character, a circle 0.6 of the label's half width).
+const CATEGORY_RADIUS_PER_CHAR = 2.34;
 
 function fieldValue(record, field) {
   return record && record[field] ? record[field].value : null;
@@ -599,24 +604,45 @@ export default class SkillNetwork extends LightningElement {
   computeLayout(d3) {
     const categoryNames = this.categoryRows.map((row) => row.name);
     const anchors = this.graphAnchors(categoryNames);
-    const result = layoutGraph(d3, this.graphNodes(), this.model.links, {
-      width: GRAPH_WIDTH,
-      height: GRAPH_HEIGHT,
-      anchors,
-      // Roles and projects hold their place on the ring. Skills gather by category.
-      anchorStrength: (node) => (node.kind === "skill" ? 0.2 : 0.9),
-      linkDistance: 80,
-      linkStrength: 0.01,
-      charge: -25,
-      padding: 2
-    });
-    const categories = categoryNames.map((name) => ({
-      key: name,
+    const labelNodes = categoryNames.map((name) => ({
+      id: `category:${name}`,
+      kind: "category",
       name,
-      x: anchors[`category:${name}`].x,
-      y: anchors[`category:${name}`].y
+      group: `category:${name}`,
+      radius: name.length * CATEGORY_RADIUS_PER_CHAR
     }));
-    return { ...result, categories };
+    const result = layoutGraph(
+      d3,
+      [...this.graphNodes(), ...labelNodes],
+      this.model.links,
+      {
+        width: GRAPH_WIDTH,
+        height: GRAPH_HEIGHT,
+        anchors,
+        // Category labels hold their anchor and roles and projects their place on the ring.
+        // Skills gather by category.
+        anchorStrength: (node) => {
+          if (node.kind === "skill") {
+            return 0.15;
+          }
+          return node.kind === "category" ? 1 : 0.9;
+        },
+        linkDistance: 80,
+        linkStrength: 0.01,
+        charge: -130,
+        padding: 18
+      }
+    );
+    const categories = result.nodes
+      .filter((node) => node.kind === "category")
+      .map((node) => ({
+        key: node.name,
+        name: node.name,
+        x: node.x,
+        y: node.y
+      }));
+    const nodes = result.nodes.filter((node) => node.kind !== "category");
+    return { nodes, edges: result.edges, categories };
   }
 
   get activeId() {

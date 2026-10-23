@@ -22,7 +22,7 @@ const PAYLOAD = require("./data/skillNetworkPayload.json");
 
 // Five skills in three categories, three roles, two projects. Five Experience_Skill__c and
 // four Project_Skill__c rows have both ends. One row of each points at a skill outside the result.
-const EXPECTED = { nodes: 10, links: 9 };
+const EXPECTED = { nodes: 10, links: 9, categories: 3 };
 
 // Fixed "today" for the years rule. Roles: Senior Developer 2018-01-01 to 2021-01-01,
 // Architect 2020-01-01 to now (current, no end date), Analyst 2024-01-01 to 2024-06-30.
@@ -283,7 +283,11 @@ describe("c-skill-network (Large form factor)", () => {
     expect(loadGraphEngine).toHaveBeenCalledTimes(1);
     expect(layoutGraph).toHaveBeenCalledTimes(1);
     const [, nodes, links, options] = layoutGraph.mock.calls[0];
-    expect(nodes).toHaveLength(EXPECTED.nodes);
+    // One unseen label node per category joins the drawn nodes in the layout.
+    expect(nodes).toHaveLength(EXPECTED.nodes + EXPECTED.categories);
+    expect(nodes.filter((node) => node.kind === "category")).toHaveLength(
+      EXPECTED.categories
+    );
     expect(links).toHaveLength(EXPECTED.links);
     expect(options.anchors["category:Frontend"]).toBeDefined();
     expect(count(element, ".graph-node")).toBe(EXPECTED.nodes);
