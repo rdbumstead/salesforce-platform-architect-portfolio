@@ -17,8 +17,8 @@ The project name and the three text fields are proposals. The owner judges the c
 
 - **Name:** "Employer Hub for an education provider". No client name.
 - **Challenge:** "Several departments at an education provider worked with the same employer partners, each from its own inbox and spreadsheet. Partners repeated themselves, and nobody could see the whole relationship. Leadership had no shared numbers for engagement, sponsorship or hiring."
-- **Solution:** "A working Employer Hub demo, built to extend the education provider's existing Salesforce org. Every inquiry is captured once from a web form, matched to the partner's account and routed by academic focus area. Service requests are fulfilled from the case, and monetary requests run through an opportunity to a contract. Operations and executive dashboards report from the same records."
-- **Business Value:** "Designed so that employer partners get one front door and a faster answer, departments stop duplicating outreach and see each other's work with a partner, and leadership can report on the employer relationship as a whole."
+- **Solution:** "A working Employer Hub demo, built on the education provider's existing Salesforce org, which I had extended from late 2021 with cases, a student record type and the reports a funding program needed each month, quarter and year. Every inquiry is captured once from a web form, matched to the partner's account and routed by academic focus area. Service requests are fulfilled from the case, and monetary requests run through an opportunity to a contract. Operations and executive dashboards report from the same records."
+- **Business Value:** "Designed so that employer partners get one front door and a faster answer, departments stop duplicating outreach and see each other's work with a partner, and leadership can report on the employer relationship as a whole. The provider later asked about reusing the same pattern for a second workforce funding stream."
 
 ## Load it
 
