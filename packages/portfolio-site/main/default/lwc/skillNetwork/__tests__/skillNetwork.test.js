@@ -3,6 +3,7 @@
  *                      matrix, the years rule, chip selection, the view switch, the lazy graph and its engine
  *                      load, the accessible list, the analytics calls and the no hex rule (Round 5 plan M2).
  *                      Round 7 (audit E1): the zoom controls, the zoom transform, node drag and reset view.
+ *                      Round 7 (audit E4): the persona filter on the matrix.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -78,7 +79,8 @@ jest.mock(
     trackEvent: jest.fn(),
     EVENTS: {
       SKILLS_VIEW_CHANGED: "skills_view_changed",
-      SKILL_SELECTED: "skill_selected"
+      SKILL_SELECTED: "skill_selected",
+      SKILLS_PERSONA_FILTERED: "skills_persona_filtered"
     }
   }),
   { virtual: true }
@@ -557,6 +559,143 @@ describe("c-skill-network (Large form factor)", () => {
         .querySelector(".graph-viewport")
         .getAttribute("transform")
     ).toBe("translate(0,0) scale(1)");
+  });
+
+  // Persona filter (audit E4). The test wire adapter hands every graphql wire the same payload,
+  // so a payload with tags reaches both the skills query and the persona query.
+  function taggedPayload() {
+    const data = buildPayload();
+    const tags = {
+      a01S1: "Developer;Architect",
+      a01S2: "Developer",
+      a01S4: "Architect;Admin"
+    };
+    data.uiapi.query.Skill__c.edges.forEach((edge) => {
+      edge.node.Persona_Tag__c = { value: tags[edge.node.Id] || null };
+    });
+    return data;
+  }
+
+  async function mountTagged() {
+    const element = mount();
+    graphql.emit({ data: taggedPayload(), errors: undefined });
+    await flushPromises();
+    return element;
+  }
+
+  function personaButton(element, label) {
+    return [...element.shadowRoot.querySelectorAll(".persona-button")].find(
+      (button) => button.textContent.trim() === label
+    );
+  }
+
+  function chipNames(element) {
+    return [...element.shadowRoot.querySelectorAll(".chip-name")].map(
+      (node) => node.textContent
+    );
+  }
+
+  it("shows no persona filter while no skill is tagged", async () => {
+    const element = await mountWithData();
+
+    expect(element.shadowRoot.querySelector(".persona-filter")).toBeNull();
+    expect(count(element, "button.chip")).toBe(5);
+  });
+
+  it("shows the resume's personas once a skill is tagged, All first and pressed", async () => {
+    const element = await mountTagged();
+
+    const group = element.shadowRoot.querySelector(".persona-filter");
+    expect(group.getAttribute("role")).toBe("group");
+    expect(group.getAttribute("aria-label")).toBe("Filter skills by persona");
+    const buttons = [...group.querySelectorAll("button")];
+    expect(buttons.map((button) => button.textContent.trim())).toEqual([
+      "All",
+      "Platform Architect",
+      "Salesforce Developer",
+      "System Admin"
+    ]);
+    expect(
+      buttons.map((button) => button.getAttribute("aria-pressed"))
+    ).toEqual(["true", "false", "false", "false"]);
+    expect(count(element, "button.chip")).toBe(5);
+  });
+
+  it("filters the matrix to the chosen persona, drops empty categories and tracks the change", async () => {
+    const element = await mountTagged();
+
+    personaButton(element, "Platform Architect").click();
+    await flushPromises();
+
+    expect(chipNames(element)).toEqual(["Apex", "Data Cloud"]);
+    expect(
+      [...element.shadowRoot.querySelectorAll(".row-name")].map(
+        (node) => node.textContent
+      )
+    ).toEqual(["Backend", "Data"]);
+    expect(
+      personaButton(element, "Platform Architect").getAttribute("aria-pressed")
+    ).toBe("true");
+    const summary = element.shadowRoot.querySelector(".persona-summary");
+    expect(summary.getAttribute("aria-live")).toBe("polite");
+    expect(summary.textContent).toBe(
+      "Showing 2 of 5 skills for Platform Architect."
+    );
+    expect(trackEvent).toHaveBeenCalledWith("skills_persona_filtered", {
+      persona: "Architect"
+    });
+
+    personaButton(element, "All").click();
+    await flushPromises();
+    expect(count(element, "button.chip")).toBe(5);
+    expect(trackEvent).toHaveBeenCalledWith("skills_persona_filtered", {
+      persona: "All"
+    });
+  });
+
+  it("closes a selected skill the persona hides and says when a persona has no skill", async () => {
+    const data = taggedPayload();
+    data.uiapi.query.Skill__c.edges.forEach((edge) => {
+      if (edge.node.Persona_Tag__c.value) {
+        edge.node.Persona_Tag__c.value = edge.node.Persona_Tag__c.value
+          .split(";")
+          .filter((tag) => tag !== "Admin")
+          .join(";");
+      }
+    });
+    const element = mount();
+    graphql.emit({ data, errors: undefined });
+    await flushPromises();
+
+    chipByName(element, "Flow").click();
+    await flushPromises();
+    expect(element.shadowRoot.querySelector(".selection-panel")).not.toBeNull();
+
+    personaButton(element, "Salesforce Developer").click();
+    await flushPromises();
+    expect(element.shadowRoot.querySelector(".selection-panel")).toBeNull();
+    expect(chipNames(element)).toEqual(["Lightning Web Components", "Apex"]);
+
+    personaButton(element, "System Admin").click();
+    await flushPromises();
+    expect(count(element, "button.chip")).toBe(0);
+    expect(
+      element.shadowRoot.querySelector(".persona-empty").textContent
+    ).toContain("No skill is tagged for this persona yet.");
+  });
+
+  it("uses the resume builder's persona labels and values in the same order", () => {
+    const read = (folder, file) =>
+      fs.readFileSync(path.join(__dirname, "..", "..", folder, file), "utf8");
+    const options = (text) =>
+      [...text.matchAll(/\{ label: "([^"]+)", value: "([^"]+)" \}/g)].map(
+        (match) => `${match[1]}=${match[2]}`
+      );
+    const resume = options(read("resumeBuilder", "resumeBuilder.js"));
+    const skills = options(read("skillNetwork", "skillNetwork.js"));
+
+    expect(resume).toHaveLength(3);
+    expect(skills).toEqual(resume);
   });
 
   it("uses no hex colours in its CSS, template or JavaScript", () => {

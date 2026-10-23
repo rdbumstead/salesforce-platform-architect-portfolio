@@ -48,8 +48,34 @@
         </template>
 
         <template lwc:if={isMatrix}>
+          <template lwc:if={showPersonaFilter}>
+            <div
+              class="persona-filter"
+              role="group"
+              aria-label="Filter skills by persona"
+            >
+              <template for:each={personaButtons} for:item="option">
+                <button
+                  key={option.key}
+                  type="button"
+                  class={option.className}
+                  data-value={option.value}
+                  aria-pressed={option.pressed}
+                  onclick={handlePersonaClick}
+                >
+                  {option.label}
+                </button>
+              </template>
+            </div>
+            <p class="persona-summary" aria-live="polite">{personaSummary}</p>
+          </template>
+          <template lwc:if={matrixIsEmpty}>
+            <p class="persona-empty">
+              No skill is tagged for this persona yet.
+            </p>
+          </template>
           <div class="matrix">
-            <template for:each={categoryRows} for:item="row">
+            <template for:each={matrixRows} for:item="row">
               <section
                 key={row.key}
                 class="matrix-row"

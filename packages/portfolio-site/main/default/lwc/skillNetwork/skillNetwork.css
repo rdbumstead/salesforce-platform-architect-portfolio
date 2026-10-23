@@ -60,6 +60,49 @@
   outline-offset: 2px;
 }
 
+/* Persona filter (audit E4). Pills 44 px high, the chosen one filled like the view switch. */
+.persona-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+  margin-bottom: var(--pf-space-2);
+}
+
+.persona-button {
+  min-height: 44px;
+  padding: 0 var(--pf-space-4);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-lg);
+  background: var(--pf-chip);
+  color: var(--pf-chip-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.persona-button:hover {
+  border-color: var(--pf-accent);
+}
+
+.persona-button.is-on {
+  border-color: var(--pf-btn);
+  background: var(--pf-btn);
+  color: var(--pf-btn-text);
+}
+
+.persona-button:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+.persona-summary,
+.persona-empty {
+  margin: 0 0 var(--pf-space-3);
+  font-size: 0.875rem;
+  color: var(--pf-muted);
+}
+
 /* Matrix */
 .matrix {
   display: flex;
