@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>apiTester js</label>
+    <protected>false</protected>
+    <values>
+        <field>Source_Key__c</field>
+        <value xsi:type="xsd:string">apiTester</value>
+    </values>
+    <values>
+        <field>Path__c</field>
+        <value
+      xsi:type="xsd:string"
+    >packages/portfolio-site/main/default/lwc/apiTester/apiTester.js</value>
+    </values>
+    <values>
+        <field>Label__c</field>
+        <value xsi:type="xsd:string">apiTester.js</value>
+    </values>
+    <values>
+        <field>Sort_Order__c</field>
+        <value xsi:type="xsd:double">1</value>
+    </values>
+</CustomMetadata>

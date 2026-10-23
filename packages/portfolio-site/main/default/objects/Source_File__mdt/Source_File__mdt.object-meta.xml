@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >The Source File type lists the repository files a View source dialog shows for one showcase component. Each record pairs a Source Key with a file Path, its tab Label and a Sort Order. Commonly used to change which files a component shows without a code change.</description>
+    <label>Source File</label>
+    <pluralLabel>Source Files</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>

@@ -82,4 +82,135 @@ private class GitHubServiceTest {
     Assert.isFalse(GitHubService.isValidRepoPath('a/b/c'), 'Extra segment');
     Assert.isFalse(GitHubService.isValidRepoPath(null), 'Null');
   }
+
+  private static String fileJson(String text) {
+    return JSON.serialize(
+      new Map<String, Object>{
+        'type' => 'file',
+        'encoding' => 'base64',
+        'path' => 'a/b.js',
+        'size' => 12,
+        'html_url' => 'https://github.com/o/r/blob/main/a/b.js',
+        // GitHub wraps base64 at 60 characters, so the decoder must drop line breaks.
+        'content' => EncodingUtil.base64Encode(Blob.valueOf(text)) + '\n'
+      }
+    );
+  }
+
+  @IsTest
+  static void shouldDecodeFileWhenContentsApiAnswers() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new StatusMock(200, fileJson('const a = 1;'))
+    );
+
+    Test.startTest();
+    GitHubService.FileContent file = GitHubService.fetchFile('o/r', 'a/b.js');
+    Test.stopTest();
+
+    Assert.areEqual('const a = 1;', file.content, 'Decoded text');
+    Assert.areEqual('a/b.js', file.path, 'Path');
+    Assert.areEqual(
+      'https://github.com/o/r/blob/main/a/b.js',
+      file.htmlUrl,
+      'html_url'
+    );
+    Assert.areEqual(12, file.size, 'Size');
+  }
+
+  @IsTest
+  static void shouldThrowWithStatusWhenFileIsMissing() {
+    Test.setMock(HttpCalloutMock.class, new StatusMock(404, '{}'));
+
+    Test.startTest();
+    try {
+      GitHubService.fetchFile('o/r', 'a/missing.js');
+      Assert.fail('A 404 must throw');
+    } catch (GitHubService.GitHubServiceException e) {
+      Assert.areEqual('HTTP 404', e.getMessage(), 'Status only');
+    }
+    Test.stopTest();
+  }
+
+  @IsTest
+  static void shouldThrowWhenFilePathIsUnsafe() {
+    try {
+      GitHubService.fetchFile('o/r', '../secrets');
+      Assert.fail('A parent segment must throw');
+    } catch (GitHubService.GitHubServiceException e) {
+      Assert.areEqual('Invalid file path.', e.getMessage(), 'Path refused');
+    }
+  }
+
+  @IsTest
+  static void shouldThrowWhenRepoPathIsInvalidForAFile() {
+    try {
+      GitHubService.fetchFile('not a repo', 'a/b.js');
+      Assert.fail('A bad repository must throw');
+    } catch (GitHubService.GitHubServiceException e) {
+      Assert.areEqual('Invalid repository path.', e.getMessage(), 'Refused');
+    }
+  }
+
+  @IsTest
+  static void shouldValidateFilePathsWhenChecked() {
+    Assert.isTrue(
+      GitHubService.isValidFilePath('packages/a-b/c_d/E.cls'),
+      'Valid'
+    );
+    Assert.isFalse(GitHubService.isValidFilePath('/a/b.js'), 'Leading slash');
+    Assert.isFalse(GitHubService.isValidFilePath('a//b.js'), 'Empty segment');
+    Assert.isFalse(GitHubService.isValidFilePath('a/./b.js'), 'Dot segment');
+    Assert.isFalse(GitHubService.isValidFilePath('a/b c.js'), 'Space');
+    Assert.isFalse(GitHubService.isValidFilePath('a?b=1'), 'Query');
+    Assert.isFalse(GitHubService.isValidFilePath(null), 'Null');
+    Assert.isFalse(
+      GitHubService.isValidFilePath('a/' + 'b'.repeat(255)),
+      'Too long'
+    );
+  }
+
+  @IsTest
+  static void shouldThrowWhenBodyIsADirectory() {
+    try {
+      GitHubService.parseFile('[{"type":"file"}]');
+      Assert.fail('A directory listing must throw');
+    } catch (GitHubService.GitHubServiceException e) {
+      Assert.areEqual('Body is not a file.', e.getMessage(), 'Not a file');
+    }
+  }
+
+  @IsTest
+  static void shouldThrowWhenFileIsTooLargeForTheApi() {
+    try {
+      GitHubService.parseFile('{"type":"file","encoding":"none","content":""}');
+      Assert.fail('No content must throw');
+    } catch (GitHubService.GitHubServiceException e) {
+      Assert.areEqual(
+        'File is too large for the API.',
+        e.getMessage(),
+        'Too large'
+      );
+    }
+  }
+
+  @IsTest
+  static void shouldThrowWhenFileBodyIsNotJson() {
+    try {
+      GitHubService.parseFile('not json');
+      Assert.fail('Must throw');
+    } catch (GitHubService.GitHubServiceException e) {
+      Assert.areEqual('Body is not JSON.', e.getMessage(), 'Not JSON');
+    }
+  }
+
+  @IsTest
+  static void shouldReturnEmptyTextWhenFileIsEmpty() {
+    GitHubService.FileContent file = GitHubService.parseFile(
+      '{"type":"file","encoding":"base64","content":"","path":"a.txt"}'
+    );
+
+    Assert.areEqual('', file.content, 'Empty file');
+    Assert.isNull(file.size, 'No size given');
+  }
 }

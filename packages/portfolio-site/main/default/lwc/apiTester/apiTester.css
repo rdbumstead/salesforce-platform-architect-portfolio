@@ -139,3 +139,9 @@
   font-family: var(--pf-font-mono);
   overflow-wrap: anywhere;
 }
+
+.card-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--pf-space-2);
+}

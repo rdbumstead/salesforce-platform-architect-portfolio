@@ -135,6 +135,18 @@ describe("c-code-viewer", () => {
     expect(element.shadowRoot.querySelector("lightning-spinner")).toBeNull();
   });
 
+  it("makes the scrolling code a named keyboard stop", async () => {
+    const element = createComponent({ code: SOURCE, title: "Hello.cls" });
+    await flushPromises();
+
+    const region = element.shadowRoot.querySelector(".code-container");
+    expect(region.getAttribute("tabindex")).toBe("0");
+    expect(region.getAttribute("role")).toBe("region");
+    expect(region.getAttribute("aria-label")).toBe(
+      "Hello.cls, scrollable code"
+    );
+  });
+
   it("uses a brand copy button (contract K9)", async () => {
     const element = createComponent({ code: SOURCE });
     await flushPromises();

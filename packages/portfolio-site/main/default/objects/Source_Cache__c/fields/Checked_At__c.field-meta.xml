@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Checked_At__c</fullName>
+    <description
+  >When the job last tried this path, good or not. The job runs again only when the oldest check is a day old, so a failing path is tried at most once a day.</description>
+    <inlineHelpText
+  >Set by the source refresh job on every attempt.</inlineHelpText>
+    <label>Checked At</label>
+    <required>false</required>
+    <type>DateTime</type>
+</CustomField>

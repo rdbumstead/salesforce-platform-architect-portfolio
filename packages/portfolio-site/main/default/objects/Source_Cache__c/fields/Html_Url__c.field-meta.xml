@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Html_Url__c</fullName>
+    <description
+  >The file's page on GitHub, as the contents API returns it in html_url.</description>
+    <inlineHelpText
+  >Set by the source refresh job. The View source dialog links to it.</inlineHelpText>
+    <label>GitHub URL</label>
+    <required>false</required>
+    <type>Url</type>
+</CustomField>

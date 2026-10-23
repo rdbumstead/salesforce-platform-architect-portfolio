@@ -106,6 +106,15 @@ describe("c-api-tester", () => {
     expect(ALLOWED_PATHS).toContain("/papi/v1/resume/generate");
   });
 
+  it("places View source with the apiTester key under the card heading (contract P2)", async () => {
+    const element = createComponent();
+    await flushPromises();
+
+    const control = query(element, ".card-tools c-view-source");
+    expect(control).not.toBeNull();
+    expect(control.sourceKey).toBe("apiTester");
+  });
+
   it("matches ApiLabController.ALLOWED_PATHS and RETURNED_HEADERS in source", () => {
     const source = readFileSync(
       join(

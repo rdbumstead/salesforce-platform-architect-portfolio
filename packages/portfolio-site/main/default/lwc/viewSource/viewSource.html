@@ -1,0 +1,95 @@
+<template>
+  <template lwc:if={hasFiles}>
+    <button
+      type="button"
+      class="view-source-button"
+      aria-haspopup="dialog"
+      onclick={handleOpen}
+    >
+      View source
+    </button>
+    <dialog
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="view-source-heading"
+      onkeydown={handleDialogKeydown}
+      onfocusout={handleDialogFocusOut}
+      oncancel={handleCancel}
+      onclick={handleDialogClick}
+    >
+      <template lwc:if={isOpen}>
+        <div class="dialog-body">
+          <header class="dialog-header">
+            <h2 id="view-source-heading" class="dialog-heading" tabindex="-1">
+              {heading}
+            </h2>
+            <button type="button" class="close-button" onclick={handleClose}>
+              Close
+            </button>
+          </header>
+          <div
+            class="tab-list"
+            role="tablist"
+            aria-label="Files"
+            onkeydown={handleTabKeydown}
+          >
+            <template for:each={tabs} for:item="tab">
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                class={tab.className}
+                data-index={tab.index}
+                aria-selected={tab.selected}
+                aria-controls="view-source-panel"
+                tabindex={tab.tabIndex}
+                onclick={handleTabClick}
+              >
+                {tab.label}
+              </button>
+            </template>
+          </div>
+          <div
+            id="view-source-panel"
+            class="tab-panel"
+            role="tabpanel"
+            aria-label={panelLabel}
+          >
+            <c-code-viewer
+              title={selected.label}
+              code={selected.content}
+              language={selected.language}
+            ></c-code-viewer>
+            <p lwc:if={isTruncated} class="truncated-note">
+              This file is longer than the cache holds, so only its start is
+              shown. GitHub has all of it.
+            </p>
+            <p class="source-meta">
+              <template lwc:if={hasGithubLink}>
+                <a
+                  class="github-link"
+                  href={selected.htmlUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >{githubLabel}</a
+                >
+              </template>
+              <span class="fetched-at"
+                >Read from GitHub
+                <lightning-formatted-date-time
+                  value={selected.fetchedAt}
+                  year="numeric"
+                  month="short"
+                  day="numeric"
+                  hour="2-digit"
+                  minute="2-digit"
+                ></lightning-formatted-date-time
+              ></span>
+            </p>
+          </div>
+        </div>
+      </template>
+    </dialog>
+  </template>
+</template>
