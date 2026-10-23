@@ -64,5 +64,11 @@
     "saveRefs": true,
     "resolveRefs": true,
     "files": ["Education__c.json"]
+  },
+  {
+    "sobject": "Testimonial__c",
+    "saveRefs": false,
+    "resolveRefs": false,
+    "files": ["Testimonial__c.json"]
   }
 ]
