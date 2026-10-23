@@ -33,7 +33,7 @@ jest.mock(
         "nonprofit-solutions",
         "B",
         "Nonprofit Solutions",
-        "Pre-Sales Consultancy",
+        "Solution Architecture",
         ["Solution design", "Decision matrix"]
       ],
       [
@@ -341,7 +341,7 @@ describe("c-hero-banner", () => {
       expect(root.querySelector('[data-key="nonprofit-solutions"]')).toBeNull();
       expect(root.querySelectorAll(".pillar-card")).toHaveLength(3);
       expect(text(root.querySelector('[data-id="coming-note"]'))).toBe(
-        "Pillars A and B, Business Architecture and Pre-Sales Consultancy, are coming."
+        "Pillars A and B, Business Architecture and Solution Architecture, are coming."
       );
     });
 
@@ -350,7 +350,7 @@ describe("c-hero-banner", () => {
       const element = render();
       expect(
         text(element.shadowRoot.querySelector('[data-id="coming-note"]'))
-      ).toBe("Pillar B, Pre-Sales Consultancy, is coming.");
+      ).toBe("Pillar B, Solution Architecture, is coming.");
     });
 
     it("labels the sections in the mockup's numbered style", () => {
@@ -567,6 +567,231 @@ describe("c-hero-banner", () => {
       expect(
         text(card(element, "ai-lab").querySelector(".pillar-metric-label"))
       ).toBe("first");
+    });
+  });
+
+  describe("start here paths (E2)", () => {
+    it("offers three paths in order with their audiences and links", () => {
+      const element = render();
+      const root = element.shadowRoot;
+      const nav = root.querySelector('[data-id="start-paths"]');
+      expect(nav.tagName).toBe("NAV");
+      expect(text(root.querySelector(".start-heading"))).toBe("Start here");
+      const items = Array.from(nav.querySelectorAll(".start-item"));
+      expect(items.map((item) => item.dataset.key)).toEqual([
+        "resume",
+        "pillars",
+        "api-lab"
+      ]);
+      expect(
+        items.map((item) => text(item.querySelector(".start-audience")))
+      ).toEqual(["For recruiters", "For architects", "For developers"]);
+      expect(
+        items.map((item) =>
+          item.querySelector(".start-link").getAttribute("href")
+        )
+      ).toEqual([
+        "/portfolio/resume",
+        `#${root.querySelector('[data-id="pillars-heading"]').getAttribute("id")}`,
+        "/portfolio/api-lab"
+      ]);
+      items.forEach((item) => {
+        expect(text(item.querySelector(".start-text")).length).toBeGreaterThan(
+          0
+        );
+      });
+    });
+
+    it("sits between the hero and the pillars", () => {
+      const element = render();
+      const home = element.shadowRoot.querySelector(".home");
+      const order = Array.from(home.children).map(
+        (child) => child.className.split(" ")[0]
+      );
+      expect(order.slice(0, 3)).toEqual(["hero", "start", "section"]);
+    });
+
+    it("moves focus to the pillars heading from the pillars path", async () => {
+      const element = render();
+      const root = element.shadowRoot;
+      const heading = root.querySelector('[data-id="pillars-heading"]');
+      heading.scrollIntoView = jest.fn();
+      root.querySelector('[data-key="pillars"] .start-link').click();
+      await flush();
+      expect(heading.scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(root.activeElement).toBe(heading);
+    });
+
+    it("leaves the resume and API paths as plain links", () => {
+      const element = render();
+      const root = element.shadowRoot;
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true
+      });
+      root
+        .querySelector('[data-key="resume"] .start-link')
+        .dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it("drops the API path when pillar C is coming", () => {
+      setComingLetters(["C"]);
+      const element = render();
+      const keys = Array.from(
+        element.shadowRoot.querySelectorAll(".start-item")
+      ).map((item) => item.dataset.key);
+      expect(keys).toEqual(["resume", "pillars"]);
+    });
+  });
+
+  describe("F8 to F10 layout", () => {
+    it("draws no rule before the section labels", () => {
+      const element = render();
+      expect(element.shadowRoot.querySelector(".section-rule")).toBeNull();
+    });
+
+    it("keeps the primary and ghost button classes on the hero links", () => {
+      const element = render();
+      const root = element.shadowRoot;
+      expect(root.querySelector('[data-id="tour-button"]').className).toBe(
+        "btn btn-primary"
+      );
+      expect(root.querySelector('[data-id="resume-button"]').className).toBe(
+        "btn btn-ghost"
+      );
+    });
+
+    it("reserves the larger headshot size", () => {
+      const element = render();
+      const photo = element.shadowRoot.querySelector(".hero-photo");
+      expect(photo.getAttribute("width")).toBe("232");
+      expect(photo.getAttribute("height")).toBe("232");
+    });
+  });
+
+  describe("case study disclosure (E3)", () => {
+    const CASE_E = {
+      pillar: "E",
+      challenge: "  The challenge.  ",
+      solution: "The solution.",
+      businessValue: "The value.",
+      liveUrl: "https://ryanbumstead.com/",
+      repositoryUrl:
+        "https://github.com/rdbumstead/salesforce-platform-architect-portfolio"
+    };
+
+    function delivery(element) {
+      return element.shadowRoot.querySelector(
+        '.pillar-card[data-key="delivery"]'
+      );
+    }
+
+    it("renders no disclosure before the wire or without case study text", async () => {
+      const element = render();
+      expect(element.shadowRoot.querySelector(".case-study")).toBeNull();
+      getPillarCards.emit([
+        { pillar: "E", liveUrl: "https://ryanbumstead.com/" }
+      ]);
+      await flush();
+      expect(element.shadowRoot.querySelector(".case-study")).toBeNull();
+    });
+
+    it("starts closed, with a real button that controls the hidden body", async () => {
+      const element = render();
+      getPillarCards.emit([CASE_E]);
+      await flush();
+      const card = delivery(element);
+      const button = card.querySelector(".case-toggle");
+      const body = card.querySelector('[data-id="case-body"]');
+      expect(button.tagName).toBe("BUTTON");
+      expect(button.getAttribute("type")).toBe("button");
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(button.getAttribute("aria-controls")).toBe(
+        body.getAttribute("id")
+      );
+      expect(text(button.querySelector("span"))).toBe("Read the case study");
+      expect(body.hidden).toBe(true);
+      expect(element.shadowRoot.querySelectorAll(".case-study")).toHaveLength(
+        1
+      );
+    });
+
+    it("opens and closes on press, showing the three blocks and both links", async () => {
+      const element = render();
+      getPillarCards.emit([CASE_E]);
+      await flush();
+      const card = delivery(element);
+      card.querySelector(".case-toggle").click();
+      await flush();
+      const button = card.querySelector(".case-toggle");
+      const body = card.querySelector('[data-id="case-body"]');
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+      expect(text(button.querySelector("span"))).toBe("Hide the case study");
+      expect(body.hidden).toBe(false);
+      expect(
+        Array.from(body.querySelectorAll(".case-heading")).map(text)
+      ).toEqual(["Challenge", "Solution", "Business value"]);
+      expect(Array.from(body.querySelectorAll(".case-text")).map(text)).toEqual(
+        ["The challenge.", "The solution.", "The value."]
+      );
+      const links = Array.from(body.querySelectorAll(".case-link"));
+      expect(links.map((link) => link.getAttribute("href"))).toEqual([
+        "https://ryanbumstead.com/",
+        "https://github.com/rdbumstead/salesforce-platform-architect-portfolio"
+      ]);
+      links.forEach((link) => {
+        expect(link.getAttribute("target")).toBe("_blank");
+        expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+      });
+      expect(text(links[0])).toBe("Live site, opens in a new tab");
+
+      button.click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(body.hidden).toBe(true);
+    });
+
+    it("shows only the blocks and links that are set and safe", async () => {
+      const element = render();
+      getPillarCards.emit([
+        {
+          pillar: "E",
+          solution: "Only a solution.",
+          // The script URL is the input under test, proving it never renders.
+          // eslint-disable-next-line no-script-url
+          liveUrl: "javascript:alert(1)"
+        }
+      ]);
+      await flush();
+      const card = delivery(element);
+      card.querySelector(".case-toggle").click();
+      await flush();
+      expect(
+        Array.from(card.querySelectorAll(".case-heading")).map(text)
+      ).toEqual(["Solution"]);
+      expect(card.querySelector(".case-links")).toBeNull();
+    });
+
+    it("opens each card on its own", async () => {
+      const element = render();
+      getPillarCards.emit([CASE_E, { pillar: "C", challenge: "API work." }]);
+      await flush();
+      const root = element.shadowRoot;
+      root
+        .querySelector('.pillar-card[data-key="api-lab"] .case-toggle')
+        .click();
+      await flush();
+      expect(
+        root
+          .querySelector('.pillar-card[data-key="api-lab"] .case-toggle')
+          .getAttribute("aria-expanded")
+      ).toBe("true");
+      expect(
+        delivery(element)
+          .querySelector(".case-toggle")
+          .getAttribute("aria-expanded")
+      ).toBe("false");
     });
   });
 });
