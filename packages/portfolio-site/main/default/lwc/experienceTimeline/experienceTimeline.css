@@ -1,0 +1,137 @@
+/* Home page timeline, on the L1 tokens only, matching heroBanner's section style. */
+.timeline {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 var(--pf-space-4);
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.section {
+  padding: 64px 0 24px;
+}
+
+.section-label {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: var(--pf-space-3);
+  font-family: var(--pf-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--pf-muted);
+}
+
+.section-rule {
+  width: 28px;
+  height: 1px;
+  background: var(--pf-muted);
+}
+
+.section-heading {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pf-text);
+}
+
+.section-intro {
+  margin: var(--pf-space-2) 0 var(--pf-space-6);
+  color: var(--pf-muted);
+}
+
+/* Tabs */
+.tab-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+  margin-bottom: var(--pf-space-4);
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.tab {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 18px;
+  margin-bottom: -1px;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--pf-muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--pf-text);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--pf-text);
+  border-bottom-color: var(--pf-accent);
+}
+
+.tab:focus-visible,
+.tab-panel:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+/* Entries */
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.entry {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--pf-space-2) var(--pf-space-5);
+  padding: 20px 0;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.entry-main {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.entry-title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.entry-org {
+  margin: 0;
+  color: var(--pf-body);
+}
+
+.entry-dates {
+  flex: 0 0 auto;
+  margin: 0;
+  font-family: var(--pf-font-mono);
+  font-size: 13px;
+  color: var(--pf-muted);
+}
+
+@media (max-width: 767.98px) {
+  .section-heading {
+    font-size: 26px;
+  }
+
+  .entry-dates {
+    flex-basis: 100%;
+  }
+}

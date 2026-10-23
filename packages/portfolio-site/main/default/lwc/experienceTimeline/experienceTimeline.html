@@ -1,0 +1,102 @@
+<template>
+  <template lwc:if={hasAny}>
+    <div class="timeline">
+      <section class="section" aria-labelledby="timeline-heading">
+        <p class="section-label">
+          <span class="section-rule" aria-hidden="true"></span>03 / WORK AND
+          EDUCATION
+        </p>
+        <h2 id="timeline-heading" class="section-heading">
+          Work and education.
+        </h2>
+        <p class="section-intro">Newest first.</p>
+
+        <div
+          class="tab-list"
+          role="tablist"
+          aria-label="Work and education"
+          onkeydown={handleTabKeydown}
+        >
+          <template lwc:if={hasWork}>
+            <button
+              type="button"
+              class="tab"
+              role="tab"
+              id="timeline-tab-work"
+              aria-controls="timeline-panel-work"
+              aria-selected={workSelected}
+              tabindex={workTabIndex}
+              data-tab="work"
+              onclick={handleTabClick}
+            >
+              Work
+            </button>
+          </template>
+          <template lwc:if={hasEducation}>
+            <button
+              type="button"
+              class="tab"
+              role="tab"
+              id="timeline-tab-education"
+              aria-controls="timeline-panel-education"
+              aria-selected={educationSelected}
+              tabindex={educationTabIndex}
+              data-tab="education"
+              onclick={handleTabClick}
+            >
+              Education
+            </button>
+          </template>
+        </div>
+
+        <template lwc:if={hasWork}>
+          <div
+            class="tab-panel"
+            role="tabpanel"
+            id="timeline-panel-work"
+            aria-labelledby="timeline-tab-work"
+            data-panel="work"
+            tabindex="0"
+            hidden={workPanelHidden}
+          >
+            <ol class="entry-list">
+              <template for:each={work} for:item="role">
+                <li key={role.key} class="entry" data-key={role.key}>
+                  <div class="entry-main">
+                    <h3 class="entry-title">{role.title}</h3>
+                    <p class="entry-org">{role.employer}</p>
+                  </div>
+                  <p class="entry-dates">{role.dates}</p>
+                </li>
+              </template>
+            </ol>
+          </div>
+        </template>
+
+        <template lwc:if={hasEducation}>
+          <div
+            class="tab-panel"
+            role="tabpanel"
+            id="timeline-panel-education"
+            aria-labelledby="timeline-tab-education"
+            data-panel="education"
+            tabindex="0"
+            hidden={educationPanelHidden}
+          >
+            <ol class="entry-list">
+              <template for:each={education} for:item="school">
+                <li key={school.key} class="entry" data-key={school.key}>
+                  <div class="entry-main">
+                    <h3 class="entry-title">{school.school}</h3>
+                    <p class="entry-org">{school.credential}</p>
+                  </div>
+                  <p class="entry-dates">{school.completed}</p>
+                </li>
+              </template>
+            </ol>
+          </div>
+        </template>
+      </section>
+    </div>
+  </template>
+</template>
