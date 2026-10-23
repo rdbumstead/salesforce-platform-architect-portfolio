@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <name>Block_Sender</name>
+        <label>Block Sender</label>
+        <locationX>176</locationX>
+        <locationY>120</locationY>
+        <actionName>SubmissionBlockAction</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>Blocked</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>leadId</name>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>blockType</name>
+            <value>
+                <elementReference>Block_Type</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>reason</name>
+            <value>
+                <elementReference>Reason</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>SubmissionBlockAction</nameSegment>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <apiVersion>64.0</apiVersion>
+    <choices>
+        <name>Choice_Domain</name>
+        <choiceText>The whole domain</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Domain</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <name>Choice_Email</name>
+        <choiceText>This email address</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Email</stringValue>
+        </value>
+    </choices>
+    <decisions>
+        <name>Blocked</name>
+        <label>Blocked</label>
+        <locationX>176</locationX>
+        <locationY>240</locationY>
+        <defaultConnector>
+            <targetReference>Not_Blocked_Screen</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Not blocked</defaultConnectorLabel>
+        <rules>
+            <name>Was_Blocked</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Block_Sender.isSuccess</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Blocked_Screen</targetReference>
+            </connector>
+            <label>Was blocked</label>
+        </rules>
+    </decisions>
+    <description
+  >The Block Sender quick action on Lead (Round 7 plan contract P3). It asks whether to block the Lead's email or its whole domain, calls SubmissionBlockAction to add the block and mark the Lead as spam, and says what happened. Works in the Salesforce mobile app.</description>
+    <environments>Default</environments>
+    <interviewLabel>Lead Block Sender {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Lead Block Sender</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <screens>
+        <name>Blocked_Screen</name>
+        <label>Blocked</label>
+        <locationX>176</locationX>
+        <locationY>360</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>Blocked_Message</name>
+            <fieldText
+      >&lt;p&gt;Blocked {!Block_Sender.blockedValue}. The Lead is marked as spam, and the contact and testimonial forms now drop this sender without a word.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Choose_Screen</name>
+        <label>Block Sender</label>
+        <locationX>176</locationX>
+        <locationY>480</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Block_Sender</targetReference>
+        </connector>
+        <fields>
+            <name>Block_Type</name>
+            <choiceReferences>Choice_Email</choiceReferences>
+            <choiceReferences>Choice_Domain</choiceReferences>
+            <dataType>String</dataType>
+            <defaultSelectedChoiceReference
+      >Choice_Email</defaultSelectedChoiceReference>
+            <fieldText>What should the forms block?</fieldText>
+            <fieldType>RadioButtons</fieldType>
+            <isRequired>true</isRequired>
+        </fields>
+        <fields>
+            <name>Reason</name>
+            <dataType>String</dataType>
+            <fieldText>Reason (optional)</fieldText>
+            <fieldType>InputField</fieldType>
+            <isRequired>false</isRequired>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Not_Blocked_Screen</name>
+        <label>Not Blocked</label>
+        <locationX>176</locationX>
+        <locationY>600</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>Not_Blocked_Message</name>
+            <fieldText
+      >&lt;p&gt;Nothing was blocked. {!Block_Sender.errorMessage}&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Choose_Screen</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>

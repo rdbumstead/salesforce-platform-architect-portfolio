@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<QuickAction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Adds the Lead's email or domain to the submission blocklist and marks the Lead as spam. Works in the Salesforce mobile app.</description>
+    <flowDefinition>Lead_Block_Sender</flowDefinition>
+    <label>Block Sender</label>
+    <optionsCreateFeedItem>false</optionsCreateFeedItem>
+    <type>Flow</type>
+</QuickAction>
