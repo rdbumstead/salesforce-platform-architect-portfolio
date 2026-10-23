@@ -6,7 +6,9 @@
  *                      footer after first paint (ADR-014) and returns this transaction's CPU,
  *                      heap and SOQL use against their limits (SAS 9, Guardrails guide), the
  *                      provider rows from ContentGenerationController.providerStatus() as they
- *                      are, and today's AI tier request count (PD-D9 b).
+ *                      are, and today's AI tier request count (PD-D9 b). Round 7 B7 adds the
+ *                      org's own quotas from OrgLimits (daily API requests and daily async
+ *                      Apex runs) and the GitHub and Jira circuit breaker state.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -17,6 +19,36 @@ public with sharing class FooterController {
   /** Key__c prefix RateWindowLimiter writes for /papi/v1/ai/ and the site AI path. */
   @TestVisible
   private static final String AI_TIER_KEY_PREFIX = 'papi-ai:';
+
+  /**
+   * The OrgLimits names the footer shows, in this order, with their footer labels. Each one is
+   * readable by the site guest. DataStorageMB is not (FooterControllerTest, Round 7 log).
+   */
+  @TestVisible
+  private static final List<String> QUOTA_NAMES = new List<String>{
+    'DailyApiRequests',
+    'DailyAsyncApexExecutions'
+  };
+  private static final Map<String, String> QUOTA_LABELS = new Map<String, String>{
+    'DailyApiRequests' => 'API requests today',
+    'DailyAsyncApexExecutions' => 'async Apex today'
+  };
+
+  /** The integrations whose breakers the footer shows, in this order. */
+  @TestVisible
+  private static final List<String> INTEGRATION_KEYS = new List<String>{
+    CircuitBreaker.KEY_GITHUB,
+    CircuitBreaker.KEY_JIRA
+  };
+  private static final Map<String, String> INTEGRATION_LABELS = new Map<String, String>{
+    CircuitBreaker.KEY_GITHUB => 'GitHub',
+    CircuitBreaker.KEY_JIRA => 'Jira'
+  };
+
+  @TestVisible
+  private static Map<String, System.OrgLimit> orgLimitsOverride;
+  @TestVisible
+  private static Boolean throwOnOrgLimits = false;
 
   @TestVisible
   private static Portfolio_Config__mdt configOverride;
@@ -53,6 +85,40 @@ public with sharing class FooterController {
     public List<ContentGenerationController.ProviderStatus> providers;
     @AuraEnabled
     public Integer aiRequestsToday;
+    /** The org's own quotas. Empty when OrgLimits cannot be read, never a made up number. */
+    @AuraEnabled
+    public List<OrgQuota> orgQuotas;
+    /** The GitHub and Jira circuit breakers. */
+    @AuraEnabled
+    public List<IntegrationState> integrations;
+  }
+
+  /**
+   * @description One org quota as the footer shows it, for example "API requests today 120 of 15000".
+   */
+  public class OrgQuota {
+    @AuraEnabled
+    public String name;
+    @AuraEnabled
+    public String label;
+    @AuraEnabled
+    public Integer used;
+    @AuraEnabled
+    public Integer max;
+  }
+
+  /**
+   * @description One integration's circuit breaker: closed, or open until a time.
+   */
+  public class IntegrationState {
+    @AuraEnabled
+    public String key;
+    @AuraEnabled
+    public String label;
+    @AuraEnabled
+    public Boolean open;
+    @AuraEnabled
+    public Datetime openUntil;
   }
 
   /**
@@ -84,9 +150,11 @@ public with sharing class FooterController {
       }
       snapshot.providers = ContentGenerationController.providerStatus();
       snapshot.aiRequestsToday = new AiRequestCounter().countToday();
+      snapshot.integrations = integrationStates();
     } catch (Exception e) {
       throw new AuraHandledException('System status is unavailable.');
     }
+    snapshot.orgQuotas = orgQuotas();
     // Read last, so the numbers include the work above.
     snapshot.cpuTimeMs = Limits.getCpuTime();
     snapshot.cpuTimeLimitMs = Limits.getLimitCpuTime();
@@ -95,6 +163,61 @@ public with sharing class FooterController {
     snapshot.soqlQueries = Limits.getQueries();
     snapshot.soqlQueryLimit = Limits.getLimitQueries();
     return snapshot;
+  }
+
+  /**
+   * The quotas in QUOTA_NAMES that OrgLimits reports. A quota missing from the map is left
+   * out, and a failure to read OrgLimits leaves the list empty, so the footer never shows a
+   * number it did not read.
+   */
+  @TestVisible
+  private static List<OrgQuota> orgQuotas() {
+    List<OrgQuota> quotas = new List<OrgQuota>();
+    Map<String, System.OrgLimit> limitsByName;
+    try {
+      if (throwOnOrgLimits) {
+        throw new NoAccessException();
+      }
+      limitsByName = orgLimitsOverride != null
+        ? orgLimitsOverride
+        : OrgLimits.getMap();
+    } catch (Exception e) {
+      return quotas;
+    }
+    for (String name : QUOTA_NAMES) {
+      System.OrgLimit orgLimit = limitsByName.get(name);
+      if (orgLimit == null) {
+        continue;
+      }
+      OrgQuota quota = new OrgQuota();
+      quota.name = name;
+      quota.label = QUOTA_LABELS.get(name);
+      quota.used = orgLimit.getValue();
+      quota.max = orgLimit.getLimit();
+      quotas.add(quota);
+    }
+    return quotas;
+  }
+
+  /**
+   * The GitHub and Jira breakers from CircuitBreaker.snapshot(), which never writes.
+   */
+  private static List<IntegrationState> integrationStates() {
+    Map<String, CircuitBreaker.BreakerState> statesByKey = new Map<String, CircuitBreaker.BreakerState>();
+    for (CircuitBreaker.BreakerState state : CircuitBreaker.snapshot()) {
+      statesByKey.put(state.key, state);
+    }
+    List<IntegrationState> integrations = new List<IntegrationState>();
+    for (String key : INTEGRATION_KEYS) {
+      CircuitBreaker.BreakerState state = statesByKey.get(key);
+      IntegrationState view = new IntegrationState();
+      view.key = key;
+      view.label = INTEGRATION_LABELS.get(key);
+      view.open = state?.open == true;
+      view.openUntil = state?.openUntil;
+      integrations.add(view);
+    }
+    return integrations;
   }
 
   /**

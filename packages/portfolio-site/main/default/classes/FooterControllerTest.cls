@@ -299,4 +299,124 @@ private class FooterControllerTest {
     }
     Test.stopTest();
   }
+
+  @isTest
+  static void getSystemSnapshotReportsTheOrgQuotasFromOrgLimits() {
+    Map<String, System.OrgLimit> expected = OrgLimits.getMap();
+
+    Test.startTest();
+    FooterController.SystemSnapshot snapshot = FooterController.getSystemSnapshot();
+    Test.stopTest();
+
+    Assert.areEqual(
+      FooterController.QUOTA_NAMES.size(),
+      snapshot.orgQuotas.size(),
+      'Every named quota is reported in this org'
+    );
+    for (Integer i = 0; i < snapshot.orgQuotas.size(); i++) {
+      FooterController.OrgQuota quota = snapshot.orgQuotas[i];
+      Assert.areEqual(
+        FooterController.QUOTA_NAMES[i],
+        quota.name,
+        'Quotas keep their order'
+      );
+      Assert.areEqual(
+        expected.get(quota.name).getLimit(),
+        quota.max,
+        'The ceiling comes from OrgLimits for ' + quota.name
+      );
+      Assert.isTrue(quota.used >= 0, 'Usage is a real count for ' + quota.name);
+      Assert.isFalse(String.isBlank(quota.label), 'Every quota has a label');
+    }
+  }
+
+  @isTest
+  static void getSystemSnapshotGuestReadsTheOrgQuotas() {
+    User guest = SiteGuestTestSupport.preparedGuest();
+
+    FooterController.SystemSnapshot snapshot;
+    Test.startTest();
+    System.runAs(guest) {
+      snapshot = FooterController.getSystemSnapshot();
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      FooterController.QUOTA_NAMES.size(),
+      snapshot.orgQuotas.size(),
+      'The site guest can read the org quotas, got ' +
+      JSON.serialize(snapshot.orgQuotas)
+    );
+    Assert.areEqual(
+      2,
+      snapshot.integrations.size(),
+      'The site guest can read the GitHub and Jira breakers'
+    );
+  }
+
+  @isTest
+  static void orgQuotasLeavesOutAQuotaTheOrgDoesNotReport() {
+    FooterController.orgLimitsOverride = new Map<String, System.OrgLimit>();
+
+    Test.startTest();
+    List<FooterController.OrgQuota> quotas = FooterController.orgQuotas();
+    Test.stopTest();
+
+    Assert.areEqual(0, quotas.size(), 'No quota is made up');
+  }
+
+  @isTest
+  static void orgQuotasIsEmptyWhenOrgLimitsCannotBeRead() {
+    FooterController.throwOnOrgLimits = true;
+
+    Test.startTest();
+    FooterController.SystemSnapshot snapshot = FooterController.getSystemSnapshot();
+    Test.stopTest();
+
+    Assert.areEqual(
+      0,
+      snapshot.orgQuotas.size(),
+      'A failed read shows no quota instead of a broken number'
+    );
+    Assert.isNotNull(
+      snapshot.providers,
+      'The rest of the snapshot still loads'
+    );
+  }
+
+  @isTest
+  static void getSystemSnapshotReportsClosedBreakersWhenNoRowExists() {
+    Test.startTest();
+    FooterController.SystemSnapshot snapshot = FooterController.getSystemSnapshot();
+    Test.stopTest();
+
+    Assert.areEqual(2, snapshot.integrations.size(), 'GitHub and Jira');
+    Assert.areEqual('github', snapshot.integrations[0].key, 'GitHub first');
+    Assert.areEqual('GitHub', snapshot.integrations[0].label, 'GitHub label');
+    Assert.areEqual('jira', snapshot.integrations[1].key, 'Jira second');
+    Assert.areEqual('Jira', snapshot.integrations[1].label, 'Jira label');
+    for (FooterController.IntegrationState state : snapshot.integrations) {
+      Assert.isFalse(state.open, state.key + ' is closed');
+      Assert.isNull(state.openUntil, state.key + ' has no reopen time');
+    }
+  }
+
+  @isTest
+  static void getSystemSnapshotReportsAnOpenJiraBreaker() {
+    Datetime openUntil = Datetime.now().addMinutes(20);
+    insert new Circuit_Breaker_State__c(
+      Name = CircuitBreaker.KEY_JIRA,
+      Consecutive_Failures__c = CircuitBreaker.FAILURE_THRESHOLD,
+      Open_Until__c = openUntil
+    );
+
+    Test.startTest();
+    FooterController.SystemSnapshot snapshot = FooterController.getSystemSnapshot();
+    Test.stopTest();
+
+    FooterController.IntegrationState jira = snapshot.integrations[1];
+    Assert.isTrue(jira.open, 'The Jira breaker is open');
+    Assert.areEqual(openUntil, jira.openUntil, 'It reopens at the stored time');
+    Assert.isFalse(snapshot.integrations[0].open, 'GitHub stays closed');
+  }
 }
