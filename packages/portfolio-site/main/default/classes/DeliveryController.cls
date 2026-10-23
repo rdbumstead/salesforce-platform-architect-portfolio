@@ -237,7 +237,9 @@ public with sharing class DeliveryController {
   }
 
   /**
-   * @description One Jira issue. statusCategory is new, indeterminate or done.
+   * @description One Jira issue. statusCategory is new, indeterminate or done. epicKey and
+   *              epicName come from the parent issue. Both are null when there is no parent,
+   *              and epicName is null on rows cached before Round 6.
    */
   public class RoadmapItem {
     @AuraEnabled
@@ -252,6 +254,8 @@ public with sharing class DeliveryController {
     public String type;
     @AuraEnabled
     public String epicKey;
+    @AuraEnabled
+    public String epicName;
     @AuraEnabled
     public Datetime updatedAt;
   }

@@ -135,7 +135,9 @@ public with sharing class JiraService {
     item.status = stringOf(status?.get('name'));
     item.statusCategory = stringOf(category?.get('key'));
     item.type = stringOf(mapOf(fields?.get('issuetype'))?.get('name'));
-    item.epicKey = stringOf(mapOf(fields?.get('parent'))?.get('key'));
+    Map<String, Object> parent = mapOf(fields?.get('parent'));
+    item.epicKey = stringOf(parent?.get('key'));
+    item.epicName = stringOf(mapOf(parent?.get('fields'))?.get('summary'));
     item.updatedAt = DeliveryController.parseTimestamp(
       stringOf(fields?.get('updated'))
     );
