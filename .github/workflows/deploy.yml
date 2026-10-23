@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - "packages/**"
-      - "!packages/integration-api/**"
       - "sfdx-project.json"
       - "package.json"
   workflow_dispatch:
@@ -26,6 +25,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    outputs:
+      deployed: ${{ steps.execute.outputs.deployed }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,12 +60,18 @@ jobs:
             --generate-delta \
             --ignore .forceignore
 
+      # Writes deployed=true only when metadata was actually deployed, so a skipped deploy
+      # publishes no Success event and runs no tests.
       - name: Execute Deployment
+        id: execute
         run: |
+          echo "deployed=false" >> "$GITHUB_OUTPUT"
+
           # 1. Handle Full Deployment
           if [ "${{ inputs.deployment_mode }}" == "full" ]; then
             echo "Starting FULL deployment..."
             sf project deploy start --source-dir packages --target-org portfolio --wait 60
+            echo "deployed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -80,10 +87,10 @@ jobs:
 
           if [ -s changed/destructiveChanges/destructiveChanges.xml ] && grep -q "<types>" changed/destructiveChanges/destructiveChanges.xml; then
              echo "Detected Destructive Changes"
-             
+
              TIMING="${{ inputs.destructive_timing }}"
              [ -z "$TIMING" ] && TIMING="post"
-             
+
              if [ "$TIMING" == "pre" ]; then
                 DEPLOY_CMD="$DEPLOY_CMD --pre-destructive-changes changed/destructiveChanges/destructiveChanges.xml"
              else
@@ -96,17 +103,61 @@ jobs:
           if [ "$HAS_CHANGES" == "true" ]; then
              echo "Executing: $DEPLOY_CMD"
              $DEPLOY_CMD
+             echo "deployed=true" >> "$GITHUB_OUTPUT"
           else
              echo "No metadata changes detected. Skipping deployment."
           fi
 
+      # Runs the local tests in production after a real deploy, for the Pillar E card. A
+      # failed test is reported here and on the run record, and does not undo the deploy.
+      - name: Run Apex Tests
+        id: tests
+        if: steps.execute.outputs.deployed == 'true'
+        continue-on-error: true
+        run: |
+          sf apex run test --target-org portfolio --test-level RunLocalTests --code-coverage --wait 30 --json > apex-tests.json || true
+
+          RAN=$(jq -r '.result.summary.testsRan // empty' apex-tests.json)
+          PASSED=$(jq -r '.result.summary.passing // empty' apex-tests.json)
+          COVERAGE=$(jq -r '.result.summary.orgWideCoverage // empty' apex-tests.json | tr -d '%')
+
+          if ! [[ "$RAN" =~ ^[0-9]+$ && "$PASSED" =~ ^[0-9]+$ && "$COVERAGE" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+             echo "::warning::The test run returned no usable summary, so no test counts are published."
+             jq -r '.message // empty' apex-tests.json
+             exit 0
+          fi
+
+          echo "Tests run: $RAN, passed: $PASSED, org wide coverage: $COVERAGE%"
+          echo "tests_run=$RAN" >> "$GITHUB_OUTPUT"
+          echo "tests_passed=$PASSED" >> "$GITHUB_OUTPUT"
+          echo "coverage=$COVERAGE" >> "$GITHUB_OUTPUT"
+
+          if [ "$PASSED" != "$RAN" ]; then
+             echo "::warning::$((RAN - PASSED)) Apex tests failed in production after the deploy."
+          fi
+
       - name: Publish Governance Event
-        if: success()
+        if: success() && steps.execute.outputs.deployed == 'true'
+        continue-on-error: true
+        run: |
+          VALUES="Workflow__c=deploy Status__c=Success Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          if [ -n "${{ steps.tests.outputs.tests_run }}" ]; then
+             VALUES="$VALUES Tests_Run__c=${{ steps.tests.outputs.tests_run }} Tests_Passed__c=${{ steps.tests.outputs.tests_passed }} Org_Coverage__c=${{ steps.tests.outputs.coverage }}"
+          fi
+
+          sf data create record \
+            --sobject Governance_Event__e \
+            --values "$VALUES" \
+            --target-org portfolio
+
+      - name: Publish Failure Event
+        if: failure()
         continue-on-error: true
         run: |
           sf data create record \
             --sobject Governance_Event__e \
-            --values "Workflow__c=deploy Status__c=Success Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --values "Workflow__c=deploy Status__c=Failure Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --target-org portfolio
 
   deploy-status:
@@ -119,8 +170,10 @@ jobs:
           echo "## Deployment Status" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ needs.deploy.result }}" = "success" ]; then
-             echo "**Result**: Deployment Successful (or Skipped safely)" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.deploy.result }}" = "success" ] && [ "${{ needs.deploy.outputs.deployed }}" = "true" ]; then
+             echo "**Result**: Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.deploy.result }}" = "success" ]; then
+             echo "**Result**: Skipped, no metadata changes" >> $GITHUB_STEP_SUMMARY
           else
              echo "**Result**: Deployment Failed" >> $GITHUB_STEP_SUMMARY
              exit 1
