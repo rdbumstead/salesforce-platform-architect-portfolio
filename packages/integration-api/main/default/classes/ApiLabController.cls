@@ -301,7 +301,7 @@ public with sharing class ApiLabController {
     String requestId = UUID.randomUUID().toString();
     Long started = System.currentTimeMillis();
     ApiRequestContext.RateDecision decision = ApiRequestContext.rateLimiter()
-      .checkKey(AI_RATE_KEY, ApiRequestContext.PAPI_AI_LIMIT_PER_MINUTE);
+      .checkKey(AI_RATE_KEY, ApiRequestContext.aiLimitPerMinute());
     if (!decision.allowed) {
       logCoverLetter(429, requestId, started);
       throw auraError(

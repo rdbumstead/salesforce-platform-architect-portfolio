@@ -509,4 +509,62 @@ private class TokenExchangeServiceTest {
       'No IP is recorded as unavailable'
     );
   }
+
+  @IsTest
+  static void shouldUseTheRateSettingWhenItIsSet() {
+    FakeLimiter limiter = installLimiter();
+    limiter.allowKey = false;
+    installMock();
+    PortfolioSettings.overrideNumber('Token_Requests_Per_Minute', 3);
+
+    Test.startTest();
+    TokenExchangeService.requestToken(attempt(EMAIL, PURPOSE));
+    Test.stopTest();
+
+    Assert.areEqual(3, limiter.lastLimit, 'The limiter gets the set rate');
+  }
+
+  @IsTest
+  static void shouldUseTheCapDefaultSettingWhenConfigHasNoCap() {
+    TokenExchangeService.configOverride = new Portfolio_Config__mdt();
+    PortfolioSettings.overrideNumber('Token_Daily_Cap_Default', 12);
+
+    Assert.areEqual(
+      12,
+      TokenExchangeService.dailyCap(),
+      'The setting is the default'
+    );
+  }
+
+  @IsTest
+  static void shouldLetTheConfigCapWinOverTheCapDefaultSetting() {
+    TokenExchangeService.configOverride = new Portfolio_Config__mdt(
+      Token_Daily_Cap__c = 7
+    );
+    PortfolioSettings.overrideNumber('Token_Daily_Cap_Default', 12);
+
+    Assert.areEqual(
+      7,
+      TokenExchangeService.dailyCap(),
+      'Portfolio Config wins when set'
+    );
+  }
+
+  @IsTest
+  static void shouldReject503AtTheCapDefaultSetting() {
+    installLimiter();
+    PortfolioApiCalloutMock mock = installMock();
+    TokenExchangeService.configOverride = new Portfolio_Config__mdt();
+    PortfolioSettings.overrideNumber('Token_Daily_Cap_Default', 1);
+    insert new API_Access_Request__c(Outcome__c = 'Issued');
+
+    Test.startTest();
+    TokenExchangeService.Result result = TokenExchangeService.requestToken(
+      attempt(EMAIL, PURPOSE)
+    );
+    Test.stopTest();
+
+    Assert.areEqual(503, result.statusCode, 'The set cap is reached');
+    Assert.areEqual(0, mock.requests.size(), 'No callout at the cap');
+  }
 }

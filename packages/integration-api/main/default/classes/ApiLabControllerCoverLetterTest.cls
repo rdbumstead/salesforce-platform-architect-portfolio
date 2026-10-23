@@ -381,4 +381,40 @@ private class ApiLabControllerCoverLetterTest {
     );
     Assert.areEqual(6, ApiLabController.RETURNED_HEADERS.size(), 'Headers');
   }
+
+  /**
+   * @description Refuses every request and keeps the limit it was asked to apply.
+   */
+  private class RecordingLimiter implements ApiRateLimiter {
+    public Integer lastLimit;
+
+    public ApiRequestContext.RateDecision check(
+      String key,
+      Integer limitPerMinute
+    ) {
+      return checkKey(key, limitPerMinute);
+    }
+
+    public ApiRequestContext.RateDecision checkKey(
+      String key,
+      Integer limitPerMinute
+    ) {
+      lastLimit = limitPerMinute;
+      return new ApiRequestContext.RateDecision(false, limitPerMinute, 0, 30);
+    }
+  }
+
+  @IsTest
+  static void coverLetterLimitComesFromTheAiRateSetting() {
+    RecordingLimiter limiter = new RecordingLimiter();
+    ApiRequestContext.limiterOverride = limiter;
+    PortfolioSettings.overrideNumber('Api_Ai_Rate_Per_Minute', 3);
+    mockGemini(200);
+
+    Test.startTest();
+    refusalMessage('Acme', 'Architect');
+    Test.stopTest();
+
+    Assert.areEqual(3, limiter.lastLimit, 'The AI tier setting is applied');
+  }
 }

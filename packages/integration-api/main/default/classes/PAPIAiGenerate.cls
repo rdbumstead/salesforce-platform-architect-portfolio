@@ -30,6 +30,8 @@ global with sharing class PAPIAiGenerate {
     'Casual'
   };
   public static final String DEFAULT_TONE = 'Professional';
+  // Code defaults for maxLength. The values in force come from the Ai_Min_Length,
+  // Ai_Max_Length and Ai_Default_Length settings.
   public static final Integer MIN_LENGTH = 100;
   public static final Integer MAX_LENGTH = 1000;
   public static final Integer DEFAULT_LENGTH = 500;
@@ -198,20 +200,33 @@ global with sharing class PAPIAiGenerate {
   }
 
   private static Integer readMaxLength(Map<String, Object> root) {
+    Integer minLength = PortfolioSettings.getInteger(
+      'Ai_Min_Length',
+      MIN_LENGTH
+    );
+    Integer maxLength = PortfolioSettings.getInteger(
+      'Ai_Max_Length',
+      MAX_LENGTH
+    );
     Object value = root.get('maxLength');
     if (value == null) {
-      return DEFAULT_LENGTH;
+      // The default stays inside the accepted range even if the settings disagree.
+      Integer defaultLength = PortfolioSettings.getInteger(
+        'Ai_Default_Length',
+        DEFAULT_LENGTH
+      );
+      return Math.max(minLength, Math.min(defaultLength, maxLength));
     }
     if (
       !(value instanceof Integer) ||
-      (Integer) value < MIN_LENGTH ||
-      (Integer) value > MAX_LENGTH
+      (Integer) value < minLength ||
+      (Integer) value > maxLength
     ) {
       throw new InvalidRequestException(
         'maxLength must be an integer between ' +
-          MIN_LENGTH +
+          minLength +
           ' and ' +
-          MAX_LENGTH +
+          maxLength +
           '.'
       );
     }

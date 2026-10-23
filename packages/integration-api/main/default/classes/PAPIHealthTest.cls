@@ -209,4 +209,30 @@ private class PAPIHealthTest {
       'A missing Named Credential degrades the service'
     );
   }
+
+  @IsTest
+  static void credentialTimeoutComesFromItsSetting() {
+    Integer shipped = PAPIHealth.credentialTimeoutMs();
+    PortfolioSettings.overrideNumber('Health_Credential_Timeout_Ms', 2500);
+
+    Integer overridden = PAPIHealth.credentialTimeoutMs();
+
+    Assert.areEqual(
+      PAPIHealth.CREDENTIAL_TIMEOUT_MS,
+      shipped,
+      'The shipped record matches the code default'
+    );
+    Assert.areEqual(2500, overridden, 'The setting changes the timeout');
+  }
+
+  @IsTest
+  static void credentialTimeoutFallsBackWhenTheSettingIsMissing() {
+    PortfolioSettings.overrides.put('Health_Credential_Timeout_Ms', null);
+
+    Assert.areEqual(
+      PAPIHealth.CREDENTIAL_TIMEOUT_MS,
+      PAPIHealth.credentialTimeoutMs(),
+      'No record means the code default'
+    );
+  }
 }
