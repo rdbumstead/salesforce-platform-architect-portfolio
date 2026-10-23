@@ -4,6 +4,10 @@
  *                      page content in the unnamed slot, and the footer region.
  *                      Owns the theme (Round 4 plan, contract L2): the stylesheet follows the system
  *                      setting, and the toggle writes data-theme and the portfolio-theme storage key.
+ *                      Round 7 F6: a floating "Back to top" button appears once the visitor has
+ *                      scrolled well down and hides while the footer is in view. It scrolls to the
+ *                      top (instantly when reduced motion is asked for) and moves focus to the top
+ *                      of the main content.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -26,6 +30,10 @@ const PAGES = [
 const THEME_STORAGE_KEY = "portfolio-theme";
 const THEMES = ["light", "dark"];
 const DARK_QUERY = "(prefers-color-scheme: dark)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+// The button appears after this many pixels, or one and a half screens, whichever is more.
+export const BACK_TO_TOP_MIN_PX = 600;
+export const BACK_TO_TOP_SCREENS = 1.5;
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -92,6 +100,23 @@ export default class PortfolioThemeLayout extends LightningElement {
   // True while a click that passed through the Pillars wrapper bubbles up to the document.
   _clickInPillars = false;
 
+  showBackToTop = false;
+  _scrollFrame = null;
+
+  _onScroll = () => {
+    if (this._scrollFrame !== null) {
+      return;
+    }
+    const schedule =
+      typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame.bind(window)
+        : (callback) => setTimeout(callback, 0);
+    this._scrollFrame = schedule(() => {
+      this._scrollFrame = null;
+      this.updateBackToTop();
+    });
+  };
+
   _onSystemChange = (event) => {
     this.systemDark = event.matches;
   };
@@ -130,6 +155,8 @@ export default class PortfolioThemeLayout extends LightningElement {
     }
     document.addEventListener("click", this._onDocumentClick);
     document.addEventListener("keydown", this._onDocumentKeydown);
+    window.addEventListener("scroll", this._onScroll, { passive: true });
+    window.addEventListener("resize", this._onScroll, { passive: true });
   }
 
   disconnectedCallback() {
@@ -138,6 +165,43 @@ export default class PortfolioThemeLayout extends LightningElement {
     }
     document.removeEventListener("click", this._onDocumentClick);
     document.removeEventListener("keydown", this._onDocumentKeydown);
+    window.removeEventListener("scroll", this._onScroll);
+    window.removeEventListener("resize", this._onScroll);
+  }
+
+  /**
+   * Shows the floating button once the page is scrolled well down, and hides it while the
+   * footer is on screen, where the footer's own Back to top link already sits.
+   */
+  updateBackToTop() {
+    const viewport = window.innerHeight || 0;
+    const threshold = Math.max(
+      BACK_TO_TOP_MIN_PX,
+      viewport * BACK_TO_TOP_SCREENS
+    );
+    const scrolled = (window.scrollY || window.pageYOffset || 0) > threshold;
+    const footer = this.template.querySelector(".region-footer");
+    const footerVisible = footer
+      ? footer.getBoundingClientRect().top < viewport
+      : false;
+    this.showBackToTop = scrolled && !footerVisible;
+  }
+
+  handleBackToTop() {
+    let reduce = false;
+    try {
+      reduce =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia(REDUCED_MOTION_QUERY).matches;
+    } catch {
+      reduce = false;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: reduce ? "auto" : "smooth" });
+    const main = this.template.querySelector(".region-content");
+    if (main) {
+      main.focus({ preventScroll: true });
+    }
+    this.showBackToTop = false;
   }
 
   /**
