@@ -73,6 +73,7 @@ function redocStub() {
       SECTIONS[spec].forEach((id, index) => {
         const section = document.createElement("div");
         section.id = id;
+        section.setAttribute("data-section-id", id);
         section.textContent = id;
         section.getBoundingClientRect = () => ({ top: 1000 + index * 500 });
         element.appendChild(section);
@@ -244,6 +245,20 @@ describe("c-api-reference section links (audit F5)", () => {
 
     expect(window.scrollTo).not.toHaveBeenCalled();
     expect(panel.scrollTop).toBe(1000 - 200 - 8);
+  });
+
+  it("lets Redoc's own section lookups find sections inside the component", async () => {
+    const element = create({ fullWidth: true });
+    await open(element);
+
+    // Redoc queries the document, so this test does too.
+    /* eslint-disable @lwc/lwc/no-document-query */
+    const found = document.querySelector('[data-section-id="tag/Objects"]');
+    expect(found).toBe($(element, '[id="tag/Objects"]'));
+    expect(document.querySelector('[data-section-id="tag/None"]')).toBeNull();
+    expect(document.querySelector(".nothing-here")).toBeNull();
+    expect(document.querySelector("body")).toBe(document.body);
+    /* eslint-enable @lwc/lwc/no-document-query */
   });
 
   it("gives Redoc the header offset and the contrast fixes", () => {

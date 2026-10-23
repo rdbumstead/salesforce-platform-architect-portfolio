@@ -164,6 +164,52 @@ export const REDOC_OPTIONS = {
 /** A Redoc section id the menu and deep links use, such as tag/Skills or operation/getSkills. */
 const SECTION_HASH = /^(tag|operation|section|schema)\//;
 
+/** Space left between the header and a section scrolled into view. */
+const SECTION_GAP = 8;
+
+/** Redoc scrolls on its own after a menu click; the component settles the result after it. */
+const CLICK_SETTLE_MS = 150;
+
+/** The attribute Redoc 2.5.4 marks each section with and looks sections up by. */
+const SECTION_ATTRIBUTE = "data-section-id";
+
+// The rendered reference Redoc's section lookups should search, set on each render.
+let sectionRoot;
+let sectionLookupInstalled = false;
+
+/**
+ * Redoc looks its sections up with document.querySelector('[data-section-id="..."]'),
+ * which cannot see inside this component's shadow root, so its scroll tracking marked the
+ * last item active and rewrote the URL hash to it (audit F5). This lets that one kind of
+ * lookup fall back to the rendered reference when the document finds nothing. Every
+ * other query is untouched. If the runtime does not allow it, the component's own
+ * scrolling still works.
+ */
+export function installSectionLookup() {
+  if (sectionLookupInstalled) {
+    return;
+  }
+  sectionLookupInstalled = true;
+  try {
+    const original = document.querySelector;
+    document.querySelector = function querySelector(selector) {
+      const hit = original.call(this, selector);
+      if (
+        hit ||
+        typeof selector !== "string" ||
+        !selector.startsWith(`[${SECTION_ATTRIBUTE}=`) ||
+        !sectionRoot
+      ) {
+        return hit;
+      }
+      const root = sectionRoot();
+      return root ? root.querySelector(selector) : null;
+    };
+  } catch {
+    sectionLookupInstalled = false;
+  }
+}
+
 /** An id as the inside of a double quoted CSS attribute value. */
 function cssString(value) {
   return String(value).replace(/["\\]/g, "\\$&");
@@ -350,7 +396,7 @@ export default class ApiReference extends LightningElement {
       return false;
     }
     const panel = this.template.querySelector(".redoc-panel");
-    const gap = 8;
+    const gap = SECTION_GAP;
     if (!this.fullWidth && panel && panel.scrollHeight > panel.clientHeight) {
       // Boxed layout: the panel scrolls, not the page.
       panel.scrollTop +=
@@ -358,10 +404,7 @@ export default class ApiReference extends LightningElement {
         panel.getBoundingClientRect().top -
         gap;
     } else {
-      const toggle = this.fullWidth
-        ? this.template.querySelector(".spec-toggle")
-        : null;
-      const offset = headerOffset() + (toggle ? toggle.offsetHeight : 0) + gap;
+      const offset = this.sectionOffset();
       window.scrollTo({
         top: Math.max(
           0,
@@ -377,6 +420,14 @@ export default class ApiReference extends LightningElement {
       section.focus({ preventScroll: true });
     }
     return true;
+  }
+
+  /** Header, the pinned spec switch on its own page, and a small gap, in pixels. */
+  sectionOffset() {
+    const toggle = this.fullWidth
+      ? this.template.querySelector(".spec-toggle")
+      : null;
+    return headerOffset() + (toggle ? toggle.offsetHeight : 0) + SECTION_GAP;
   }
 
   /** A click on a Redoc menu item or an in page link: let Redoc update, then scroll. */
@@ -399,7 +450,7 @@ export default class ApiReference extends LightningElement {
       }
     }
     if (id && SECTION_HASH.test(id)) {
-      setTimeout(() => this.goToSection(id, true), 0);
+      setTimeout(() => this.goToSection(id, true), CLICK_SETTLE_MS);
     }
   }
 
@@ -415,6 +466,8 @@ export default class ApiReference extends LightningElement {
     }
     if (this.goToSection(hash, true)) {
       this.pendingHash = undefined;
+      // Redoc also scrolls to the hash once it has drawn; settle after it.
+      setTimeout(() => this.goToSection(hash, true), CLICK_SETTLE_MS * 2);
       return;
     }
     // The section is in the other spec: switch once and try again.
@@ -499,6 +552,8 @@ export default class ApiReference extends LightningElement {
     if (!target) {
       throw new Error("The reference container is not on the page.");
     }
+    sectionRoot = () => this.template.querySelector(".redoc-target");
+    installSectionLookup();
     if (!this.styleBaseline) {
       // Style tags present before Redoc first renders are the site's own.
       this.styleBaseline = new Set(document.head.querySelectorAll("style"));
@@ -507,7 +562,8 @@ export default class ApiReference extends LightningElement {
       try {
         redoc.init(
           SPECS[this.selectedSpec].url,
-          REDOC_OPTIONS,
+          // A number, measured now, so Redoc scrolls a section below the header.
+          { ...REDOC_OPTIONS, scrollYOffset: this.sectionOffset() },
           target,
           (error) => (error ? reject(error) : resolve())
         );

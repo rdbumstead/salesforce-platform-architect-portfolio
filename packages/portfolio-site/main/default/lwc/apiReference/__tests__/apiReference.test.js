@@ -180,7 +180,9 @@ describe("c-api-reference", () => {
     expect(window.Redoc.init).toHaveBeenCalledTimes(1);
     const [spec, options, target] = window.Redoc.init.mock.calls[0];
     expect(spec).toBe("SAPI_Spec");
-    expect(options).toBe(REDOC_OPTIONS);
+    expect(options.theme).toBe(REDOC_OPTIONS.theme);
+    expect(options.disableSearch).toBe(true);
+    expect(typeof options.scrollYOffset).toBe("number");
     expect(options.disableSearch).toBe(true);
     expect(options.disableTelemetry).toBeUndefined();
     expect(options.hideDownloadButton).toBe(true);
