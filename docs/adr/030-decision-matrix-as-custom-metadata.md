@@ -41,5 +41,5 @@ The matrix must be source controlled, deploy to production and to CI's scratch o
 ## Implications
 
 - The Apex class and both components (`c/decisionMatrix`, `c/pillarBStory`) live in `portfolio-site`, because Jest only runs there (Round 5 plan reading R1). The package holds the types, their 43 records and the `NL_Assets` static resource.
-- Changing a score or weight is a metadata deploy. The owner reviews the scores and weights, clears each `Is_Placeholder__c` and commits the records.
+- Changing a score or weight is a metadata deploy. The owner reviews the scores and weights, clears each `Is_Placeholder__c` and commits the records. Done 2026-10-22 (Round 6): every score reviewed, every flag cleared, starting weights 2 to 10.
 - The cost and effort table on the page is built from public licence facts only, with a source per row (owner decision D9 a). No client rates or totals appear anywhere.
