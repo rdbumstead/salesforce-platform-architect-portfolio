@@ -3,8 +3,9 @@
  *                      a showcase component's heading with a fixed source key. It reads the
  *                      component's files from SourceController.getSourceFiles, which serves a
  *                      cache only, and renders nothing when the key is unknown or the cache is
- *                      empty. Pressed, it opens a modal dialog with one tab per file, the file in
- *                      c-code-viewer and its GitHub link. Focus moves into the dialog, Tab stays
+ *                      empty. Pressed, it opens a native modal dialog in the top layer, with
+ *                      the page behind it inert, one tab per file, the file in c-code-viewer
+ *                      and its GitHub link. Focus moves into the dialog, Tab stays
  *                      inside it, and Escape or Close returns focus to the button.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -99,11 +100,47 @@ export default class ViewSource extends LightningElement {
   }
 
   handleClose() {
+    const dialog = this.template.querySelector("dialog");
+    if (dialog && dialog.open && typeof dialog.close === "function") {
+      dialog.close();
+    }
     this.isOpen = false;
     this.focusOnRender = ".view-source-button";
   }
 
+  /** The browser's own Escape on a modal dialog: close it our way so focus returns. */
+  handleCancel(event) {
+    event.preventDefault();
+    this.handleClose();
+  }
+
+  /** A click on the dialog element itself, outside its body, is a click on the backdrop. */
+  handleDialogClick(event) {
+    if (event.target === event.currentTarget) {
+      this.handleClose();
+    }
+  }
+
+  /**
+   * Shows the dialog in the browser's top layer, above the sticky header and every
+   * stacking context of the page, with the page behind it inert.
+   */
+  showDialog() {
+    const dialog = this.template.querySelector("dialog");
+    if (!dialog || dialog.open) {
+      return;
+    }
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
+  }
+
   renderedCallback() {
+    if (this.isOpen) {
+      this.showDialog();
+    }
     if (!this.focusOnRender) {
       return;
     }
@@ -141,6 +178,22 @@ export default class ViewSource extends LightningElement {
     if (event.key in moves) {
       event.preventDefault();
       this.selectTab(moves[event.key], true);
+    }
+  }
+
+  /**
+   * Catches focus leaving the open dialog by any route the key handler cannot see, such as
+   * WebKit's Tab skipping the GitHub link, and brings it back to the first stop.
+   */
+  handleDialogFocusOut(event) {
+    const dialog = this.template.querySelector("dialog");
+    const next = event.relatedTarget;
+    if (!this.isOpen || !dialog || !next || dialog.contains(next)) {
+      return;
+    }
+    const first = this.template.querySelector(".close-button");
+    if (first) {
+      first.focus();
     }
   }
 

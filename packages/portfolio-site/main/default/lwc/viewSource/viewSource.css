@@ -38,23 +38,12 @@
   outline-offset: 2px;
 }
 
-.backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 9000;
-  background-color: color-mix(in srgb, var(--pf-bg) 80%, transparent);
-}
-
 .dialog {
-  position: fixed;
-  z-index: 9001;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   width: min(960px, calc(100vw - 2rem));
+  max-width: none;
   max-height: calc(100vh - 2rem);
+  padding: 0;
   overflow-y: auto;
-  padding: var(--pf-space-4);
   background-color: var(--pf-surface);
   color: var(--pf-text);
   border: 1px solid var(--pf-border);
@@ -62,6 +51,17 @@
   box-shadow: var(--pf-shadow);
   font-family: var(--pf-font-sans);
   text-align: left;
+}
+
+.dialog::backdrop {
+  background-color: rgb(0 0 0 / 50%);
+  background-color: color-mix(in srgb, var(--pf-bg) 80%, transparent);
+}
+
+.dialog-body {
+  padding: var(--pf-space-4);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
 }
 
 .dialog-header {
@@ -124,12 +124,10 @@
 
 @media (max-width: 600px) {
   .dialog {
-    top: 0;
-    left: 0;
-    transform: none;
     width: 100vw;
     max-height: 100vh;
     height: 100vh;
+    margin: 0;
     border-radius: 0;
   }
 }

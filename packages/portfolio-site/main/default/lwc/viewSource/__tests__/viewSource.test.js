@@ -126,7 +126,7 @@ describe("c-view-source", () => {
     expect(button.tagName).toBe("BUTTON");
     expect(button.textContent.trim()).toBe("View source");
     expect(button.getAttribute("aria-haspopup")).toBe("dialog");
-    expect($(element, "[role='dialog']")).toBeNull();
+    expect($(element, ".dialog-body")).toBeNull();
   });
 
   it("opens a labelled modal dialog and moves focus into it", async () => {
@@ -143,6 +143,54 @@ describe("c-view-source", () => {
       heading.getAttribute("id")
     );
     expect(element.shadowRoot.activeElement).toBe(heading);
+    expect(dialog.tagName).toBe("DIALOG");
+    expect(dialog.hasAttribute("open")).toBe(true);
+  });
+
+  it("uses showModal and close when the browser has them, and closes on cancel", async () => {
+    const proto = window.HTMLDialogElement.prototype;
+    const original = { showModal: proto.showModal, close: proto.close };
+    proto.showModal = jest.fn(function showModal() {
+      this.setAttribute("open", "");
+    });
+    proto.close = jest.fn(function close() {
+      this.removeAttribute("open");
+    });
+    try {
+      const element = create();
+      getSourceFiles.emit(FILES);
+      await flush();
+      await openDialog(element);
+
+      expect(proto.showModal).toHaveBeenCalledTimes(1);
+
+      const cancel = new CustomEvent("cancel", { cancelable: true });
+      $(element, "dialog").dispatchEvent(cancel);
+      await flush();
+      await flush();
+
+      expect(cancel.defaultPrevented).toBe(true);
+      expect(proto.close).toHaveBeenCalledTimes(1);
+      expect($(element, ".dialog-body")).toBeNull();
+      expect(element.shadowRoot.activeElement).toBe(
+        $(element, ".view-source-button")
+      );
+    } finally {
+      proto.showModal = original.showModal;
+      proto.close = original.close;
+    }
+  });
+
+  it("does not close when a click lands inside the dialog body", async () => {
+    const element = create();
+    getSourceFiles.emit(FILES);
+    await flush();
+    await openDialog(element);
+
+    $(element, ".dialog-heading").click();
+    await flush();
+
+    expect($(element, ".dialog-body")).not.toBeNull();
   });
 
   it("lists one tab per file and shows the first in the code viewer", async () => {
@@ -227,7 +275,7 @@ describe("c-view-source", () => {
     await flush();
 
     expect(event.defaultPrevented).toBe(true);
-    expect($(element, "[role='dialog']")).toBeNull();
+    expect($(element, ".dialog-body")).toBeNull();
     expect(element.shadowRoot.activeElement).toBe(
       $(element, ".view-source-button")
     );
@@ -241,12 +289,12 @@ describe("c-view-source", () => {
 
     $(element, ".close-button").click();
     await flush();
-    expect($(element, "[role='dialog']")).toBeNull();
+    expect($(element, ".dialog-body")).toBeNull();
 
     await openDialog(element);
-    $(element, ".backdrop").click();
+    $(element, "dialog").click();
     await flush();
-    expect($(element, "[role='dialog']")).toBeNull();
+    expect($(element, ".dialog-body")).toBeNull();
   });
 
   it("keeps Tab inside the dialog in both directions", async () => {
@@ -277,6 +325,32 @@ describe("c-view-source", () => {
     expect(middle.defaultPrevented).toBe(false);
   });
 
+  it("brings focus back when it leaves the open dialog another way", async () => {
+    const element = create();
+    getSourceFiles.emit(FILES);
+    await flush();
+    await openDialog(element);
+
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    const dialog = $(element, "[role='dialog']");
+    dialog.dispatchEvent(
+      new FocusEvent("focusout", { bubbles: true, relatedTarget: outside })
+    );
+    expect(element.shadowRoot.activeElement).toBe($(element, ".close-button"));
+
+    // Focus moving inside the dialog, or to nowhere, is left alone.
+    $(element, ".github-link").focus();
+    dialog.dispatchEvent(
+      new FocusEvent("focusout", {
+        bubbles: true,
+        relatedTarget: $(element, ".close-button")
+      })
+    );
+    dialog.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    expect(element.shadowRoot.activeElement).toBe($(element, ".github-link"));
+  });
+
   it("leaves other keys alone and shows the key when it has no label", async () => {
     const element = create("customKey");
     getSourceFiles.emit([{ ...FILES[0], htmlUrl: null }]);
@@ -300,7 +374,7 @@ describe("c-view-source", () => {
     getSourceFiles.emit([]);
     await flush();
 
-    expect($(element, "[role='dialog']")).toBeNull();
+    expect($(element, ".dialog-body")).toBeNull();
     expect($(element, ".view-source-button")).toBeNull();
   });
 });
