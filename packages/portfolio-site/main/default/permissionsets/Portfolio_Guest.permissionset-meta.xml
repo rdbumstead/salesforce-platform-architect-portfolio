@@ -139,6 +139,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Skill__c.Persona_Tag__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Skill__c.Proficiency__c</field>
         <readable>true</readable>
     </fieldPermissions>

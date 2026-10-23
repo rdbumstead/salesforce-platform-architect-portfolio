@@ -24,6 +24,7 @@ export const EVENTS = Object.freeze({
   RESILIENCE_TEST_TRIGGERED: "resilience_test_triggered", // source: changelog or roadmap
   SKILLS_VIEW_CHANGED: "skills_view_changed", // view
   SKILL_SELECTED: "skill_selected", // skill, years
+  SKILLS_PERSONA_FILTERED: "skills_persona_filtered", // persona
   ERD_SCOPE_CHANGED: "erd_scope_changed", // scope
   ERD_NODE_SELECTED: "erd_node_selected", // object
   GALLERY_ASSET_OPENED: "gallery_asset_opened", // type, pillar
