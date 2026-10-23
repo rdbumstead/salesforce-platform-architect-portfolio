@@ -1,6 +1,6 @@
 /**
  * @description       : The footer's measured GraphQL probe (log 155). One small read, timed from
- *                      the moment this component connects to the first answer, reported to the
+ *                      the moment this component is created to the first answer, reported to the
  *                      parent as a "probe" event with { ms } or { failed: true }. It lives in its
  *                      own module so the GraphQL adapter stack loads only when the footer asks
  *                      for it after the page is idle, never with the layout before first paint
@@ -39,12 +39,11 @@ function nowMs() {
 }
 
 export default class GraphqlProbe extends LightningElement {
-  _startedAt;
+  // Set when the field is created (audit F4). The engine connects the wire before
+  // connectedCallback runs, and a cached answer can arrive in that gap, so a timer started in
+  // connectedCallback read as undefined and the footer showed "NaN ms".
+  _startedAt = nowMs();
   _reported = false;
-
-  connectedCallback() {
-    this._startedAt = nowMs();
-  }
 
   @wire(graphql, { query: GRAPHQL_PROBE })
   wiredProbe({ data, errors }) {

@@ -15,7 +15,9 @@ import Footer, {
   ACTIONS_URL,
   BADGE_URL,
   formatTime,
-  providerLabel
+  integrationLabel,
+  providerLabel,
+  quotaLabel
 } from "c/footer";
 import getLinks from "@salesforce/apex/FooterController.getLinks";
 import getSystemSnapshot from "@salesforce/apex/FooterController.getSystemSnapshot";
@@ -52,6 +54,12 @@ jest.mock(
       gql: jest.fn((strings) => strings.join(""))
     };
   },
+  { virtual: true }
+);
+
+jest.mock(
+  "@salesforce/community/basePath",
+  () => ({ __esModule: true, default: "/portfolio" }),
   { virtual: true }
 );
 
@@ -101,6 +109,31 @@ function snapshot(overrides = {}) {
     ...overrides
   };
 }
+
+const INTEGRATIONS = [
+  { key: "github", label: "GitHub", open: false, openUntil: null },
+  {
+    key: "jira",
+    label: "Jira",
+    open: true,
+    openUntil: "2026-10-23T14:05:00.000Z"
+  }
+];
+
+const ORG_QUOTAS = [
+  {
+    name: "DailyApiRequests",
+    label: "API requests today",
+    used: 739,
+    max: 5000000
+  },
+  {
+    name: "DailyAsyncApexExecutions",
+    label: "async Apex today",
+    used: 0,
+    max: 250000
+  }
+];
 
 const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
 
@@ -410,5 +443,92 @@ describe("c-footer", () => {
       "Agentforce: not built"
     );
     expect(formatTime("not a date")).toBe("");
+  });
+  it("shows the GitHub and Jira breakers next to the AI providers", async () => {
+    getSystemSnapshot.mockResolvedValue(
+      snapshot({ integrations: INTEGRATIONS })
+    );
+    const element = createComponent();
+    await runIdle();
+
+    const rows = all(element, '[data-id="integration"]').map(
+      (n) => n.textContent
+    );
+    expect(rows).toEqual([
+      "GitHub: circuit closed",
+      `Jira: circuit open until ${formatTime(INTEGRATIONS[1].openUntil)}`
+    ]);
+    const lastProvider = all(element, '[data-id="provider"]').pop();
+    expect(lastProvider.nextElementSibling.dataset.id).toBe("integration");
+  });
+
+  it("shows the org quotas from the snapshot", async () => {
+    getSystemSnapshot.mockResolvedValue(snapshot({ orgQuotas: ORG_QUOTAS }));
+    const element = createComponent();
+    await runIdle();
+
+    const rows = all(element, '[data-id="quota"]').map((n) => n.textContent);
+    expect(rows).toEqual([
+      "API requests today 739 of 5000000",
+      "async Apex today 0 of 250000"
+    ]);
+  });
+
+  it("drops a quota whose numbers are not finite and shows none without data", async () => {
+    getSystemSnapshot.mockResolvedValue(
+      snapshot({
+        orgQuotas: [
+          { name: "A", label: "broken", used: NaN, max: 10 },
+          { name: "B", label: "missing", used: 1 },
+          ORG_QUOTAS[0]
+        ]
+      })
+    );
+    const element = createComponent();
+    await runIdle();
+
+    const rows = all(element, '[data-id="quota"]').map((n) => n.textContent);
+    expect(rows).toEqual(["API requests today 739 of 5000000"]);
+    expect(q(element, '[data-id="metrics"]').textContent).not.toMatch(/NaN/);
+  });
+
+  it("shows no breaker or quota row when the snapshot has none", async () => {
+    const element = createComponent();
+    await runIdle();
+
+    expect(all(element, '[data-id="integration"]')).toHaveLength(0);
+    expect(all(element, '[data-id="quota"]')).toHaveLength(0);
+  });
+
+  it("shows no GraphQL time when the probe reports a number that is not finite", () => {
+    const element = createComponent();
+    const footer = q(element, ".footer");
+    expect(footer).not.toBeNull();
+    // The probe event bubbles from the dynamic child. Send a NaN answer straight to the handler.
+    const probeEvent = new CustomEvent("probe", { detail: { ms: NaN } });
+    return runIdle().then(async () => {
+      const probe = q(element, '[data-id="graphql-probe"]');
+      probe.dispatchEvent(probeEvent);
+      await flushPromises();
+      expect(q(element, '[data-id="graphql"]')).toBeNull();
+    });
+  });
+
+  it("links Contact to the contact form on the home page", () => {
+    const element = createComponent();
+    const link = q(element, '[data-id="contact"]');
+    expect(link.textContent).toBe("Contact");
+    expect(link.getAttribute("href")).toBe("/portfolio/#contact");
+    expect(link.getAttribute("target")).toBeNull();
+  });
+
+  it("labels breaker and quota rows from their own fields", () => {
+    expect(integrationLabel({ label: "GitHub", open: true })).toBe(
+      "GitHub: circuit open"
+    );
+    expect(quotaLabel(null)).toBeNull();
+    expect(
+      quotaLabel({ label: "API requests today", used: 1, max: Infinity })
+    ).toBeNull();
   });
 });

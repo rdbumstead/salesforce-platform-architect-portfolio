@@ -9,10 +9,13 @@
  *                      once when the board is first shown on the page, and turning the switch
  *                      on sends resilience_test_triggered (plan L4). Round 6 plan N8: epic
  *                      cards come first in each column, a story names its epic as
- *                      "Part of {name} | {key}" (the key alone when the name is missing), the
- *                      Done column shows the newest DONE_LIMIT cards behind a "Show all N
- *                      shipped" button, and an empty feed says so instead of reading as an
- *                      outage. The outage line is kept for a real wire error.
+ *                      "Part of {name} | {key}" (the key alone when the name is missing), and an
+ *                      empty feed says so instead of reading as an outage. The outage line is
+ *                      kept for a real wire error. Round 7 F7 (owner, 2026-10-23): every column
+ *                      shows at most COLUMN_LIMIT cards with its own "Show all N" button and
+ *                      state. Done keeps its newest COLUMN_LIMIT by updatedAt and its "Show all
+ *                      N shipped" label. To Do and In Progress keep the feed order and cut there.
+ *                      The c-view-source control (contract P2) sits in the header.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -40,7 +43,7 @@ export const STATUS_NOTES = {
     "Jira is not answering right now. This is the last roadmap we saved."
 };
 
-export const DONE_LIMIT = 8;
+export const COLUMN_LIMIT = 8;
 export const EMPTY_TEXT =
   "Nothing on the roadmap yet. It fills in from Jira after the next sync.";
 
@@ -81,14 +84,14 @@ function updatedTime(item) {
   return Number.isNaN(time) ? 0 : time;
 }
 
-// The newest DONE_LIMIT items by updatedAt, and the rest. Ties keep the feed order.
+// The newest COLUMN_LIMIT items by updatedAt, and the rest. Ties keep the feed order.
 function splitNewest(items) {
   const newest = items
     .map((item, index) => ({ item, index }))
     .sort(
       (a, b) => updatedTime(b.item) - updatedTime(a.item) || a.index - b.index
     )
-    .slice(0, DONE_LIMIT)
+    .slice(0, COLUMN_LIMIT)
     .map((entry) => entry.item);
   const shown = new Set(newest);
   return {
@@ -97,12 +100,21 @@ function splitNewest(items) {
   };
 }
 
+// The first COLUMN_LIMIT items in feed order, and the rest.
+function splitFirst(items) {
+  return {
+    visible: items.slice(0, COLUMN_LIMIT),
+    hidden: items.slice(COLUMN_LIMIT)
+  };
+}
+
 export default class RoadmapViewer extends LightningElement {
   feed;
   hasError = false;
   simulate = false;
   viewTracked = false;
-  showAllDone = false;
+  // Which columns show every card, keyed by category. Each column has its own state.
+  expanded = {};
 
   connectedCallback() {
     if (!this.viewTracked) {
@@ -166,33 +178,40 @@ export default class RoadmapViewer extends LightningElement {
       const items = this.items.filter(
         (item) => item.statusCategory === column.category
       );
-      const isCapped = column.category === "done" && items.length > DONE_LIMIT;
-      const split = isCapped
-        ? splitNewest(items)
-        : { visible: items, hidden: [] };
+      const isDone = column.category === "done";
+      const isCapped = items.length > COLUMN_LIMIT;
+      const isExpanded = Boolean(this.expanded[column.category]);
+      let split = { visible: items, hidden: [] };
+      if (isCapped) {
+        split = isDone ? splitNewest(items) : splitFirst(items);
+      }
       const hiddenCards =
-        isCapped && this.showAllDone
-          ? epicsFirst(split.hidden.map(toCard))
-          : [];
+        isCapped && isExpanded ? epicsFirst(split.hidden.map(toCard)) : [];
+      const showAllLabel = isDone
+        ? `Show all ${items.length} shipped`
+        : `Show all ${items.length}`;
       return {
         ...column,
         headingId: `roadmap-column-${column.category}`,
+        moreId: `roadmap-${column.category}-more`,
         cards: epicsFirst(split.visible.map(toCard)),
         hiddenCards,
         hasHidden: hiddenCards.length > 0,
         isCapped,
-        toggleLabel: this.showAllDone
-          ? "Show fewer"
-          : `Show all ${items.length} shipped`,
-        toggleExpanded: String(this.showAllDone),
+        toggleLabel: isExpanded ? "Show fewer" : showAllLabel,
+        toggleExpanded: String(isExpanded),
         count: items.length,
         isEmpty: items.length === 0
       };
     });
   }
 
-  handleToggleDone() {
-    this.showAllDone = !this.showAllDone;
+  handleToggle(event) {
+    const category = event.currentTarget.dataset.category;
+    this.expanded = {
+      ...this.expanded,
+      [category]: !this.expanded[category]
+    };
   }
 
   get ageText() {
