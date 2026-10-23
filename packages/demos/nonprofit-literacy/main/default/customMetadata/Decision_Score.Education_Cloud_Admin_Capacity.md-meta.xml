@@ -22,16 +22,16 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: Largest model, Person Accounts and an OmniStudio-heavy setup (not verified).</value>
+    >Largest model, Person Accounts and an OmniStudio-heavy setup (not verified in an org).</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >The engagement chose a minimalist model in its first architecture decision (not verified)</value>
+    >The engagement's signed scope has the client name staff to run Salesforce, and its first architecture decision chose a minimalist model</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

@@ -22,7 +22,7 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: Free packages on the ten donated Sales and Service licences from Power of Us.</value>
+    >Free packages on the ten donated Sales and Service licences.</value>
     </values>
     <values>
         <field>Evidence__c</field>
@@ -32,6 +32,6 @@
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

@@ -20,16 +20,18 @@
     </values>
     <values>
         <field>Rationale__c</field>
-        <value xsi:type="xsd:string">PLACEHOLDER: Medium time to value.</value>
+        <value
+      xsi:type="xsd:string"
+    >Medium. Native features save build, but the model is newer and needs more design.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >Engagement scope. Rates and totals stay private</value>
+    >The engagement's signed scope, a small steps approach. Rates and totals stay private</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

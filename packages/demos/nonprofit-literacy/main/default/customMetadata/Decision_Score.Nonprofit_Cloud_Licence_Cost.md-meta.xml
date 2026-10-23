@@ -16,13 +16,13 @@
     </values>
     <values>
         <field>Score__c</field>
-        <value xsi:type="xsd:double">2</value>
+        <value xsi:type="xsd:double">5</value>
     </values>
     <values>
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: The ten donated Power of Us licences can be Nonprofit Cloud instead, so the first ten users cost nothing on either path. The difference starts with the eleventh user, where paid editions start at $70 per user per month.</value>
+    >The ten donated Power of Us licences can be Nonprofit Cloud, so the first ten users cost nothing on either path. The difference starts with the eleventh user.</value>
     </values>
     <values>
         <field>Evidence__c</field>
@@ -32,6 +32,6 @@
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

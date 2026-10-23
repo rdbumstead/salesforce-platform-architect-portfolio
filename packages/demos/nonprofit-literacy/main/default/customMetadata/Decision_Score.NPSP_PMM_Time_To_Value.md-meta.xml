@@ -22,16 +22,16 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: Shortest time to value.</value>
+    >Shortest. Managed packages plus a handful of custom fields and objects reach a working system first.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >Engagement scope. Rates and totals stay private</value>
+    >The engagement's signed scope, a small steps approach. Rates and totals stay private</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>

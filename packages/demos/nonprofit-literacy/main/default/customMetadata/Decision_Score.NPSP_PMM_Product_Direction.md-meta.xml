@@ -22,7 +22,7 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >PLACEHOLDER: NPSP stays supported and free to install, but Nonprofit Cloud is the more modern product, the one Salesforce invests in and recommends to new customers.</value>
+    >NPSP stays supported and free to install, but Nonprofit Cloud is the product Salesforce invests in and recommends to new customers.</value>
     </values>
     <values>
         <field>Evidence__c</field>
@@ -32,6 +32,6 @@
     </values>
     <values>
         <field>Is_Placeholder__c</field>
-        <value xsi:type="xsd:boolean">true</value>
+        <value xsi:type="xsd:boolean">false</value>
     </values>
 </CustomMetadata>
