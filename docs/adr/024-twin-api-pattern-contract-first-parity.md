@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted, amended 2026-10-23 (Round 7, see the amendment below): the MuleSoft parity rationale is gone. Contract first stays.
 
 ## Context
 
@@ -19,3 +19,9 @@ Ensures the Apex implementation (SAPI) and MuleSoft proxy remain interchangeable
 ## Implications
 
 Schema changes require a corresponding YAML update before implementation.
+
+## Amendment (2026-10-23, Round 7)
+
+**The MuleSoft twin no longer exists.** The Anypoint trial ended, its live deployment expired, and the Anypoint Studio project was removed from the repository on 2026-10-20 (SAS Appendix C). Authentication moved on platform with [ADR-027](027-platform-native-api-authentication.md). So the rationale above, keeping Apex and a MuleSoft proxy interchangeable, no longer applies: the Apex REST classes are the only runtime.
+
+**What the decision still means.** The OpenAPI 3.0 files in `packages/integration-api/specs/` remain the contract for the Apex SAPI and PAPI. A change to a path, parameter or schema is made in the YAML first, then in Apex. The same files feed the rendered docs in `docs/api/oas/` (`npm run docs:api`, checked in CI by `npm run docs:verify`) and `scripts/api-smoke.sh`, which calls every GET path in both files. The site's API reference page reads identical copies in the `SAPI_Spec` and `PAPI_Spec` static resources. "Twin" now names the two API layers described by one pair of contracts, the System API and the Process API, not two runtimes.

@@ -36,7 +36,7 @@ The owner replaced the static SVG fallback and the G6 graph on 2026-10-22 (Round
 
 **Why.**
 
-- With 59 skills in production the G6 force layout packed every skill into one tangle (owner feedback, 2026-10-21). A matrix reads at a glance on any screen, and the graph clusters skills by category with the roles and projects on a ring, drawing edges only for the hovered or selected node.
+- With the 59 skills production held in October 2026, the G6 force layout packed every skill into one tangle (owner feedback, 2026-10-21). A matrix reads at a glance on any screen, and the graph clusters skills by category with the roles and projects on a ring, drawing edges only for the hovered or selected node.
 - Size. `D3_Library` is about 18.5 KB (18,544 bytes as logged by the engine stream in log 190) against 1.57 MB for G6.
 - One engine draws both diagrams, the skills graph and the ERD.
 - A build-time SVG of live data goes stale, which the ERD must not do, and the matrix already serves phones from live data.
