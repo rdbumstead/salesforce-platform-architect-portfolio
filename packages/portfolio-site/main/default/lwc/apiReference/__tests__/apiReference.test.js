@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for apiReference LWC. The resource loader is mocked (trap 25)
+ * @description       : Unit tests for apiReference LWC. The resource loader is mocked
  *                      and Redoc is a stub on window, so the tests prove the loading contract,
  *                      the spec toggle and the fallback, not Redoc's own rendering.
  * @author            : Ryan Bumstead
@@ -115,7 +115,7 @@ describe("c-api-reference", () => {
 
   it("stops waiting after 15 s and offers the hosted reference", async () => {
     jest.useFakeTimers();
-    window.Redoc.init = jest.fn(); // never calls back, as under WebKit (trap 32)
+    window.Redoc.init = jest.fn(); // never calls back, as under WebKit
     const element = createComponent();
     await Promise.resolve();
 

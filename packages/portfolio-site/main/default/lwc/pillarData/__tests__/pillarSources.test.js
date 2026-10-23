@@ -1,5 +1,5 @@
 /**
- * @description       : Static gate for audit row G3 (Round 7). The pillar names live in pillarData,
+ * @description       : Static gate that keeps the pillar names in step. The pillar names live in pillarData,
  *                      the Project__c.Pillar_Label__c formula and the pillar page descriptions in the
  *                      Portfolio1 site views. pillarData stays static on purpose (the header menu
  *                      renders before any Apex call), so this test reads the other two sources from
@@ -30,7 +30,7 @@ const VIEWS_DIR = path.join(
   "digitalExperiences/site/Portfolio1/sfdc_cms__view"
 );
 
-// Names a pillar carried before, which no source may bring back (F2 and the Round 6 labels).
+// Names a pillar carried before, which no source may bring back.
 const FORMER_NAMES = {
   B: ["Pre-Sales Consultancy", "Pre-sales consultancy"],
   C: ["Integration & API-Led"],

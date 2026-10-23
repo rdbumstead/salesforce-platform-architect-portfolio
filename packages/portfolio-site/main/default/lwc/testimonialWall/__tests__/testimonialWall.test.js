@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the testimonialWall LWC (Round 7 B2).
+ * @description       : Unit tests for the testimonialWall LWC.
  *                      getApprovedTestimonials is a mocked wire adapter.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead

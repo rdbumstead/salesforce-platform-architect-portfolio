@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the contactForm LWC (Round 7 E5, contract P4).
+ * @description       : Unit tests for the contactForm LWC.
  *                      ContactFormController.submitContact is a mocked imperative call. The drift
  *                      test reads the controller source so the form limits stay in step.
  * @author            : Ryan Bumstead

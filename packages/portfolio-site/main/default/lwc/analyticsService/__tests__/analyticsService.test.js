@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the analyticsService module (Round 4 plan L4). Covers the
+ * @description       : Unit tests for the analyticsService module. Covers the
  *                      event list, the call into gtag, and the silent paths with no tag or a
  *                      failing tag.
  * @author            : Ryan Bumstead
@@ -23,7 +23,7 @@ const L4_NAMES = [
   "resilience_test_triggered"
 ];
 
-// Round 5 plan M6, appended in WS1's first commit.
+// Appended to the first list under the append only rule.
 const M6_NAMES = [
   "skills_view_changed",
   "skill_selected",
@@ -34,10 +34,10 @@ const M6_NAMES = [
   "matrix_reset"
 ];
 
-// Round 6 plan N6, appended under M6's append only rule.
+// Appended later under the same rule.
 const N6_NAMES = ["timeline_tab_changed"];
 
-// Round 7, appended through the orchestrator under the same rule.
+// Appended last under the same rule.
 const R7_NAMES = ["skills_persona_filtered"];
 
 describe("c/analyticsService", () => {

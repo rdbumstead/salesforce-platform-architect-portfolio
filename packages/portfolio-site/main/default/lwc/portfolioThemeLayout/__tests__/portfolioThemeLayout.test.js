@@ -1,7 +1,7 @@
 /**
  * @description       : Unit tests for portfolioThemeLayout LWC: header navigation, Pillars menu,
- *                      phone menu and the theme toggle (Round 4 plan, contracts L2 and L3).
- *                      c/pillarData is a fixed stand in (Round 5 plan, log 192).
+ *                      phone menu and the theme toggle.
+ *                      c/pillarData is a fixed stand in.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -16,8 +16,7 @@ import { PILLARS, reset, setComingLetters } from "c/pillarData";
 import { trackEvent } from "c/analyticsService";
 
 // A fixed five pillar list, all live unless a test marks some as coming with
-// setComingLetters, so these tests pass before and after the pillarData flags change
-// (Round 5 plan, log 192).
+// setComingLetters, so these tests pass before and after the pillarData flags change.
 jest.mock(
   "c/pillarData",
   () => {
@@ -113,7 +112,7 @@ jest.mock(
   { virtual: true }
 );
 
-// c/analyticsService is built by WS1 (contract L4). Mocked so this bundle tests on its own.
+// c/analyticsService is mocked so this bundle tests on its own.
 jest.mock(
   "c/analyticsService",
   () => ({
@@ -124,8 +123,8 @@ jest.mock(
   { virtual: true }
 );
 
-// Every K7 route URL (Round 3 plan section 4) plus the API reference page (log 155).
-// Home is the brand link and the first nav link (Round 6 plan, N1).
+// Every route URL the header links, the API reference page included.
+// Home is the brand link and the first nav link.
 const EXPECTED_HREFS = [
   "/portfolio/",
   "/portfolio/",
@@ -169,7 +168,7 @@ function flush() {
 /**
  * Renders the layout so that its document click listener sees what it sees on the published
  * site: a composed path that starts at the layout host and holds nothing inside its shadow
- * root (log 240). Only that listener gets the short path, so the shadow tree dispatches as
+ * root. Only that listener gets the short path, so the shadow tree dispatches as
  * usual.
  * @param {HTMLElement[]} [content] light DOM children for the default slot
  * @returns {HTMLElement} the layout

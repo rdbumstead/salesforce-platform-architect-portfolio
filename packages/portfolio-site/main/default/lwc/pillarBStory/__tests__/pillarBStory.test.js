@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for pillarBStory: the six sections, captioned tables, the ROI sources,
- *                      pre-sales framing (D3), no video prototype (D8), the architecture image
+ *                      pre-sales framing, no video prototype, the architecture image
  *                      and its alt text, and tokens only in the CSS.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead

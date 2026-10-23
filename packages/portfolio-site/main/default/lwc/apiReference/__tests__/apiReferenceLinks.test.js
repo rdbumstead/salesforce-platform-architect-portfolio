@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the API reference's section links (audit F5). Redoc is a
+ * @description       : Unit tests for the API reference's section links. Redoc is a
  *                      stub that renders a menu and sections inside the component, as the real
  *                      one does, so the tests prove the component scrolls to a section below the
  *                      header, moves focus there, follows deep links (switching spec once when

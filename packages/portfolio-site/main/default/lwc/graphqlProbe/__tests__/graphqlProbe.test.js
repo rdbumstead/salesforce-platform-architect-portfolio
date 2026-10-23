@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for the footer's GraphQL probe. lightning/uiGraphQLApi passes the
- *                      universal mock through and replaces only graphql and gql (trap 25).
+ *                      universal mock through and replaces only graphql and gql.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

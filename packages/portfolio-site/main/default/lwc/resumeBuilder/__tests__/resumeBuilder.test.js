@@ -21,7 +21,7 @@ jest.mock(
   { virtual: true }
 );
 
-// c/analyticsService (contract L4) is mocked so the bundle tests on its own.
+// c/analyticsService is mocked so the bundle tests on its own.
 jest.mock(
   "c/analyticsService",
   () => ({
@@ -435,7 +435,7 @@ describe("c-resume-builder", () => {
   });
 
   describe("certifications (Round 6 plan N5)", () => {
-    // A stored value with plus signs in the query string (trap 54).
+    // A stored value with plus signs in the query string, which must survive as plus signs.
     const VERIFY_URL =
       "https://trailhead.salesforce.com/en/credentials/certification-detail-print/?searchString=9mtUhy8GnfeJ+wZ2qMHSoTtn5Li90a2pHeJQ9ycm+2M7cecsvBBbSOauy5RarT+M";
 

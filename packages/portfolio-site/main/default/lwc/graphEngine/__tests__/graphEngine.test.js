@@ -1,10 +1,10 @@
 /**
- * @description       : Unit tests for the graphEngine service module (Round 5 plan M1). Covers the
+ * @description       : Unit tests for the graphEngine service module. Covers the
  *                      one load per page, a failed load that is not cached, the D3_Library resource
  *                      itself (read from disk and run in a vm context with a fake window), and
  *                      layoutGraph on the real d3-force build: inside the box, anchors pull groups
- *                      apart, the same input gives the same output, inputs are not changed. Round 7
- *                      (audit E1): the seven added builds, and attachPanZoom and attachNodeDrag on
+ *                      apart, the same input gives the same output, inputs are not changed. Also
+ *                      the seven builds added for pan, zoom and drag, and attachPanZoom and attachNodeDrag on
  *                      the real d3-zoom and d3-drag builds.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -33,8 +33,8 @@ const RESOURCE_PATH = path.join(
   "D3_Library.js"
 );
 
-// The official UMD builds: the first four as logged by WS1, the last seven added in Round 7
-// (audit E1). Bytes and SHA-256 of each dist/<name>.min.js file from its npm tarball.
+// The official UMD builds: the first four for the force layout, the last seven added for pan,
+// zoom and drag. Bytes and SHA-256 of each dist/<name>.min.js file from its npm tarball.
 const MODULES = [
   {
     banner: "// https://d3js.org/d3-dispatch/ v3.0.1",

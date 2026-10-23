@@ -1,5 +1,5 @@
 /**
- * @description       : Spacing measure for the Pillar A ERD (Round 6 plan N3). Mounts the real component on
+ * @description       : Spacing measure for the Pillar A ERD. Mounts the real component on
  *                      the two production scopes (Employer Hub, 9 objects, and Portfolio, 14 objects, with
  *                      every reference field, read from the live page's object list), runs the real
  *                      layoutGraph on the real D3_Library build, and measures what the template draws:
@@ -230,7 +230,7 @@ describe("c-schema-visualizer diagram spacing on the production scopes", () => {
     jest.clearAllMocks();
   });
 
-  // Before Round 6 (960 by 600, round nodes of radius 84, charge -600, link distance 180):
+  // Before the spacing was tuned (960 by 600, round nodes of radius 84, charge -600, link distance 180):
   // Employer Hub gap 15.9, 4 lines through boxes, 4 on the clamp. Portfolio gap 11.6, 3 lines
   // through boxes, 6 on the clamp. No box overlapped in either.
   it("measures the Employer Hub diagram", async () => {

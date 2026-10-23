@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the pillarData service module (Round 4 plan, contract L3).
+ * @description       : Unit tests for the pillarData service module.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -18,7 +18,7 @@ jest.mock(
   { virtual: true }
 );
 
-// Route URLs from the Round 3 plan, K7. Short SAS names as in the mockup and heroBanner.
+// Route URLs as each route's urlPrefix in the site bundle. Short SAS names as in the mockup and heroBanner.
 const EXPECTED = [
   [
     "A",
