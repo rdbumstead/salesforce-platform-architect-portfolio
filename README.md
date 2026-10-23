@@ -101,7 +101,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 **Available Now:**
 
 - [Architecture decisions documented with rationale](docs/adr/): 30 ADRs covering performance, security, AI, FinOps
-- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) — 5 workflows (deploy, PR validation, heartbeat and worker, plus a Lighthouse audit run on demand)
+- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 5 workflows (deploy, PR validation, heartbeat and worker, plus a Lighthouse audit run on demand)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml) — Twin API pattern with SAPI + PAPI specifications
 - [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---2027-2028) — $0.00 forever architecture using AWS Always-Free tier
 - [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
