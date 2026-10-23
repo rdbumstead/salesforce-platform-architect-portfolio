@@ -165,12 +165,13 @@ export const REDOC_OPTIONS = {
 const SECTION_HASH = /^(tag|operation|section|schema)\//;
 
 /**
- * Rules added after Redoc's own, so they win: a link inside Redoc's text, such as the
- * licence link, is underlined, because colour alone does not mark it (axe
- * link-in-text-block, log 299).
+ * Rules added after Redoc's own: a link inside Redoc's text, such as the licence link, is
+ * underlined, because colour alone does not mark it (axe link-in-text-block, log 299).
+ * The :link and :visited forms outrank the site platform's own link rule, specificity
+ * 0,2,2, which otherwise takes the underline away.
  */
 export const REDOC_STYLE_OVERRIDES =
-  ".redoc-target a[href] { text-decoration: underline; }";
+  ".redoc-target a[href]:link, .redoc-target a[href]:visited { text-decoration: underline; }";
 
 /** Space left between the header and a section scrolled into view. */
 const SECTION_GAP = 8;
