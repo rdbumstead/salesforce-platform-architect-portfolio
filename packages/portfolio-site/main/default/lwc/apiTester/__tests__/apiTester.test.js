@@ -10,12 +10,12 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ApiTester, {
-  ALLOWED_PATHS,
   DISPLAYED_HEADERS,
   parseQuery,
   longTextFields,
   RENDERED_MIN_LENGTH
 } from "c/apiTester";
+import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
 import invoke from "@salesforce/apex/ApiLabController.invoke";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
 import { trackEvent } from "c/analyticsService";
@@ -29,6 +29,14 @@ jest.mock(
   { virtual: true }
 );
 
+jest.mock(
+  "@salesforce/apex/ApiLabController.getCatalog",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
 jest.mock(
   "@salesforce/apex/ApiLabController.invoke",
   () => ({ default: jest.fn() }),
@@ -59,9 +67,22 @@ const INVOKE_RESULT = {
 
 const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
 
-function createComponent() {
+// The real generated catalog, so the tests follow the specs (audit G1).
+const CATALOG_TEXT = readFileSync(
+  join(
+    process.cwd(),
+    "packages/portfolio-site/main/default/staticresources/API_Lab_Catalog.json"
+  ),
+  "utf8"
+);
+const CATALOG_PATHS = JSON.parse(CATALOG_TEXT).paths.map((entry) => entry.path);
+
+function createComponent({ emitCatalog = true } = {}) {
   const element = createElement("c-api-tester", { is: ApiTester });
   document.body.appendChild(element);
+  if (emitCatalog) {
+    getCatalog.emit(CATALOG_TEXT);
+  }
   return element;
 }
 
@@ -87,7 +108,7 @@ describe("c-api-tester", () => {
     jest.clearAllMocks();
   });
 
-  it("offers only the controller allowlist and no SAPI resume path", async () => {
+  it("offers every catalog GET path and no SAPI resume path", async () => {
     const element = createComponent();
     await flushPromises();
 
@@ -95,15 +116,29 @@ describe("c-api-tester", () => {
       element,
       "lightning-combobox.endpoint-picker"
     ).options;
-    expect(options.map((option) => option.value)).toEqual(ALLOWED_PATHS);
-    expect(ALLOWED_PATHS).toHaveLength(21);
+    expect(options.map((option) => option.value)).toEqual(CATALOG_PATHS);
+    expect(options[0].label).toBe("GET /sapi/v1/health");
+    expect(CATALOG_PATHS).toHaveLength(21);
     // SAPIResume was removed in Round 2. No SAPI path may end in /resume.
     expect(
-      ALLOWED_PATHS.filter(
+      CATALOG_PATHS.filter(
         (path) => path.startsWith("/sapi/") && path.endsWith("/resume")
       )
     ).toEqual([]);
-    expect(ALLOWED_PATHS).toContain("/papi/v1/resume/generate");
+    expect(CATALOG_PATHS).toContain("/papi/v1/resume/generate");
+    expect(CATALOG_PATHS).not.toContain("/papi/v1/auth/token");
+    expect(CATALOG_PATHS).not.toContain("/papi/v1/ai/generate");
+  });
+
+  it("shows an alert and disables Execute when the catalog cannot load", async () => {
+    const element = createComponent({ emitCatalog: false });
+    getCatalog.error({ message: "No access" });
+    await flushPromises();
+
+    expect(query(element, ".catalog-error").textContent).toContain(
+      "could not be loaded"
+    );
+    expect(query(element, "button.execute-button").disabled).toBe(true);
   });
 
   it("places View source with the apiTester key under the card heading (contract P2)", async () => {
@@ -115,7 +150,7 @@ describe("c-api-tester", () => {
     expect(control.sourceKey).toBe("apiTester");
   });
 
-  it("matches ApiLabController.ALLOWED_PATHS and RETURNED_HEADERS in source", () => {
+  it("reads the catalog the controller allows and matches RETURNED_HEADERS in source", () => {
     const source = readFileSync(
       join(
         process.cwd(),
@@ -129,7 +164,7 @@ describe("c-api-tester", () => {
       ).exec(source);
       return Array.from(match[1].matchAll(/'([^']+)'/g), (m) => m[1]);
     };
-    expect([...ALLOWED_PATHS].sort()).toEqual(block("ALLOWED_PATHS").sort());
+    expect(source).toContain("CATALOG_RESOURCE = 'API_Lab_Catalog'");
     expect(DISPLAYED_HEADERS).toEqual(block("RETURNED_HEADERS"));
   });
 
@@ -181,7 +216,7 @@ describe("c-api-tester", () => {
     await flushPromises();
 
     expect(invoke).toHaveBeenCalledWith({
-      path: ALLOWED_PATHS[0],
+      path: "/sapi/v1/health",
       params: {}
     });
     expect(query(element, ".status-value").textContent).toBe("429");
@@ -209,7 +244,7 @@ describe("c-api-tester", () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
   });
 
-  it("sends api_test_executed with the path and status after each call", async () => {
+  it("sends api_test_executed with the path, status and param_count after each call", async () => {
     invoke.mockResolvedValueOnce({ ...INVOKE_RESULT, statusCode: 429 });
     invoke.mockRejectedValueOnce({ body: { message: "unreachable" } });
     const element = createComponent();
@@ -223,14 +258,16 @@ describe("c-api-tester", () => {
     await flushPromises();
     expect(trackEvent).toHaveBeenLastCalledWith("api_test_executed", {
       path: "/sapi/v1/skills",
-      status: 429
+      status: 429,
+      param_count: 0
     });
 
     query(element, "button.execute-button").click();
     await flushPromises();
     expect(trackEvent).toHaveBeenLastCalledWith("api_test_executed", {
       path: "/sapi/v1/skills",
-      status: "error"
+      status: "error",
+      param_count: 0
     });
     expect(trackEvent).toHaveBeenCalledTimes(2);
   });

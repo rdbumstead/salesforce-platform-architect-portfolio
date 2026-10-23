@@ -1,52 +1,36 @@
 /**
- * @description       : API Lab console. Calls allowlisted SAPI and PAPI GET paths through
- *                      ApiLabController.invoke (ADR-027) and shows the status, latency, tracing
- *                      and paging headers, the Named Credential and the body. Also requests an
- *                      evaluator token through ApiLabController.requestEvaluatorToken (ADR-028)
- *                      and shows the result exactly as the controller returns it. Sends
- *                      api_test_executed with the path and status after each call (contract L4).
- *                      The body has a Raw JSON view and a Rendered view that shows long text
- *                      fields, such as the resume's generatedText, with their line breaks.
+ * @description       : API Lab console (audit B3, G1). The path list, each path's query
+ *                      parameters and its response shapes come from ApiLabController.getCatalog,
+ *                      which serves the API_Lab_Catalog resource that scripts/sync-specs.js
+ *                      builds from the specs, so a new spec path needs no change here. Each
+ *                      parameter is a control (pills for up to four values, a picklist above
+ *                      that, true and false pills for a boolean, bounded number inputs for limit
+ *                      and offset, a text input with a hint for an id filter, reading R16), every
+ *                      chosen value shows as a removable pill with the query string under them,
+ *                      and the free text "Advanced" field stays. Calls go through
+ *                      ApiLabController.invoke (ADR-027), which returns the status, latency,
+ *                      tracing and paging headers, the Named Credential and the body. The body
+ *                      has a highlighted Raw JSON view (c/prismHighlighter) and a Rendered view
+ *                      for long text, and is checked against the path's response schema: which
+ *                      documented keys are present, missing or extra. "Next page" follows
+ *                      X-Has-More. Also requests an evaluator token through
+ *                      ApiLabController.requestEvaluatorToken (ADR-028) and shows the result as
+ *                      the controller returns it. Sends api_test_executed with the path, status
+ *                      and param_count after each call (contract L4).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 01/03/2026
  **/
-import { LightningElement } from "lwc";
+import { LightningElement, wire } from "lwc";
+import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
 import invoke from "@salesforce/apex/ApiLabController.invoke";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { loadPrism, highlight } from "c/prismHighlighter";
 
 /** api_test_executed status when the call itself failed and no HTTP status came back. */
 export const STATUS_CALL_FAILED = "error";
-
-/**
- * Mirrors ApiLabController.ALLOWED_PATHS. The controller refuses any other path, so a
- * path added there must be added here to show in the picker.
- */
-export const ALLOWED_PATHS = [
-  "/sapi/v1/health",
-  "/sapi/v1/contacts",
-  "/sapi/v1/accounts",
-  "/sapi/v1/experience",
-  "/sapi/v1/experience-highlights",
-  "/sapi/v1/experience-skills",
-  "/sapi/v1/projects",
-  "/sapi/v1/project-assets",
-  "/sapi/v1/project-skills",
-  "/sapi/v1/skills",
-  "/sapi/v1/certifications",
-  "/sapi/v1/certification-skills",
-  "/sapi/v1/education",
-  "/sapi/v1/testimonials",
-  "/sapi/v1/portfolio-config",
-  "/papi/v1/health",
-  "/papi/v1/profile/full",
-  "/papi/v1/profile/summary",
-  "/papi/v1/resume/generate",
-  "/papi/v1/projects/featured",
-  "/papi/v1/testimonials/feed"
-];
 
 /** Mirrors ApiLabController.RETURNED_HEADERS, in display order. */
 export const DISPLAYED_HEADERS = [
@@ -57,6 +41,18 @@ export const DISPLAYED_HEADERS = [
   "X-Total-Count",
   "X-Has-More"
 ];
+
+/** An enum with this many values or fewer shows as pills, more as a picklist (R16). */
+export const MAX_PILL_VALUES = 4;
+
+export const KIND_PILLS = "pills";
+export const KIND_SELECT = "select";
+export const KIND_NUMBER = "number";
+export const KIND_ID = "id";
+export const KIND_TEXT = "text";
+
+export const ID_HINT =
+  "Paste an Id from an earlier response, for example from /sapi/v1/projects.";
 
 const NOT_RETURNED = "(not returned)";
 
@@ -105,6 +101,108 @@ export function parseQuery(text) {
     params[decodeURIComponent(name.trim())] = decodeURIComponent(value.trim());
   });
   return params;
+}
+
+/** "?a=1&b=two" from a map, encoded, in the map's order. "" for an empty map. */
+export function buildQueryString(params) {
+  const pairs = Object.keys(params || {}).map(
+    (name) =>
+      `${encodeURIComponent(name)}=${encodeURIComponent(String(params[name]))}`
+  );
+  return pairs.length ? `?${pairs.join("&")}` : "";
+}
+
+/** Parses the catalog JSON the controller returns. Undefined when it cannot be read. */
+export function parseCatalog(text) {
+  try {
+    const catalog = JSON.parse(text);
+    return catalog && Array.isArray(catalog.paths) ? catalog : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Which control a spec parameter becomes (reading R16). */
+export function controlKind(param) {
+  if (Array.isArray(param.enum) && param.enum.length) {
+    return param.enum.length <= MAX_PILL_VALUES ? KIND_PILLS : KIND_SELECT;
+  }
+  if (param.type === "boolean") {
+    return KIND_PILLS;
+  }
+  if (param.type === "integer" || param.type === "number") {
+    return KIND_NUMBER;
+  }
+  if (/Id$/.test(param.name)) {
+    return KIND_ID;
+  }
+  return KIND_TEXT;
+}
+
+function pillValues(param) {
+  return Array.isArray(param.enum) && param.enum.length
+    ? param.enum
+    : ["true", "false"];
+}
+
+/** "1 to 200, default 50" from a parameter's bounds. */
+export function numberHint(param) {
+  const parts = [];
+  if (param.minimum !== undefined && param.maximum !== undefined) {
+    parts.push(`${param.minimum} to ${param.maximum}`);
+  } else if (param.minimum !== undefined) {
+    parts.push(`${param.minimum} or more`);
+  }
+  if (param.default !== undefined) {
+    parts.push(`default ${param.default}`);
+  }
+  return parts.join(", ");
+}
+
+function objectKeys(value) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? Object.keys(value)
+    : [];
+}
+
+/**
+ * Compares a parsed body with a response shape from the catalog
+ * ({ type, properties, required }): the documented keys present, the documented keys
+ * missing (required ones flagged) and the keys the spec does not document. For an array
+ * the keys of every item are checked together.
+ */
+export function checkAgainstSchema(body, shape) {
+  if (!shape) {
+    return { status: "noSchema" };
+  }
+  let actualKeys;
+  if (shape.type === "array") {
+    if (!Array.isArray(body)) {
+      return { status: "wrongType", expected: "array" };
+    }
+    if (!body.length) {
+      return { status: "empty" };
+    }
+    actualKeys = new Set();
+    body.forEach((item) =>
+      objectKeys(item).forEach((key) => actualKeys.add(key))
+    );
+  } else {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return { status: "wrongType", expected: "object" };
+    }
+    actualKeys = new Set(Object.keys(body));
+  }
+  const documented = shape.properties || [];
+  const required = new Set(shape.required || []);
+  return {
+    status: "checked",
+    present: documented.filter((key) => actualKeys.has(key)),
+    missing: documented
+      .filter((key) => !actualKeys.has(key))
+      .map((key) => ({ key, required: required.has(key) })),
+    extra: [...actualKeys].filter((key) => !documented.includes(key))
+  };
 }
 
 /** A string field this long, or with a line break, is shown in the Rendered view. */
@@ -177,12 +275,18 @@ function formatBody(body) {
 }
 
 export default class ApiTester extends LightningElement {
-  selectedPath = ALLOWED_PATHS[0];
+  catalog;
+  catalogError = "";
+  selectedPath;
+  paramValues = {};
   queryText = "";
   isLoading = false;
   result;
   invokeError = "";
   bodyView = VIEW_RAW;
+  prism;
+  paintedBody;
+  paintedTarget;
 
   email = "";
   purpose = "";
@@ -190,12 +294,153 @@ export default class ApiTester extends LightningElement {
   tokenResult;
   tokenError = "";
 
+  @wire(getCatalog)
+  wiredCatalog({ data, error }) {
+    if (data) {
+      const catalog = parseCatalog(data);
+      this.catalog = catalog;
+      this.catalogError = catalog ? "" : "The API catalog could not be read.";
+      if (catalog && !this.selectedPath && catalog.paths.length) {
+        this.selectedPath = catalog.paths[0].path;
+      }
+    } else if (error) {
+      this.catalog = undefined;
+      this.catalogError = `The API catalog could not be loaded: ${reduceError(error)}`;
+    }
+  }
+
+  connectedCallback() {
+    loadPrism(this).then((prism) => {
+      this.prism = prism;
+      this.paintedBody = undefined;
+      this.paintBody();
+    });
+  }
+
+  renderedCallback() {
+    this.paintBody();
+  }
+
+  /** Writes the highlighted body into the manual DOM node of the Raw JSON view. */
+  paintBody() {
+    const target = this.template.querySelector("code.response-code");
+    if (!target) {
+      this.paintedBody = undefined;
+      return;
+    }
+    const text = this.bodyText;
+    const isJson = Boolean(this.result) && this.lastBody !== undefined;
+    const key = `${this.prism ? "prism" : "plain"}:${isJson}:${text}`;
+    if (key === this.paintedBody && target === this.paintedTarget) {
+      return;
+    }
+    // c/prismHighlighter returns markup built only from escaped text.
+    // eslint-disable-next-line @lwc/lwc/no-inner-html
+    target.innerHTML = isJson
+      ? highlight(this.prism, text, "json")
+      : highlight(undefined, text, "none");
+    this.paintedBody = key;
+    this.paintedTarget = target;
+  }
+
+  get hasCatalog() {
+    return Boolean(this.catalog);
+  }
+
+  get catalogPaths() {
+    return this.catalog ? this.catalog.paths : [];
+  }
+
   get endpointOptions() {
-    return ALLOWED_PATHS.map((path) => ({ label: `GET ${path}`, value: path }));
+    return this.catalogPaths.map((entry) => ({
+      label: `GET ${entry.path}`,
+      value: entry.path
+    }));
+  }
+
+  get currentEntry() {
+    return this.catalogPaths.find((entry) => entry.path === this.selectedPath);
+  }
+
+  get paramControls() {
+    const entry = this.currentEntry;
+    if (!entry) {
+      return [];
+    }
+    return entry.params.map((param) => this.controlFor(entry, param));
+  }
+
+  controlFor(entry, param) {
+    const kind = controlKind(param);
+    const value = this.paramValues[param.name];
+    let hint = param.description;
+    if (kind === KIND_NUMBER) {
+      hint = numberHint(param);
+    } else if (kind === KIND_ID) {
+      hint = ID_HINT;
+    }
+    const control = {
+      name: param.name,
+      key: `${entry.path}:${param.name}`,
+      value: value === undefined ? "" : value,
+      isPills: kind === KIND_PILLS,
+      isSelect: kind === KIND_SELECT,
+      isNumber: kind === KIND_NUMBER,
+      isText: kind === KIND_TEXT || kind === KIND_ID,
+      min: param.minimum,
+      max: param.maximum,
+      hint
+    };
+    if (kind === KIND_PILLS) {
+      control.pills = pillValues(param).map((option) => ({
+        value: option,
+        key: `${param.name}=${option}`,
+        pressed: value === option ? "true" : "false",
+        className: value === option ? "pill pill_selected" : "pill"
+      }));
+    }
+    if (kind === KIND_SELECT) {
+      control.options = [
+        { value: "", label: "Any", key: `${param.name}-any`, selected: !value },
+        ...param.enum.map((option) => ({
+          value: option,
+          label: option,
+          key: `${param.name}-${option}`,
+          selected: value === option
+        }))
+      ];
+    }
+    return control;
+  }
+
+  get hasParamControls() {
+    return this.paramControls.length > 0;
+  }
+
+  /** Control values first, then the Advanced text, which wins on a shared name. */
+  get mergedParams() {
+    return { ...this.paramValues, ...parseQuery(this.queryText) };
+  }
+
+  get chosenPills() {
+    return Object.keys(this.paramValues).map((name) => ({
+      name,
+      key: `chosen-${name}`,
+      text: `${name}=${this.paramValues[name]}`,
+      removeLabel: `Remove ${name}=${this.paramValues[name]}`
+    }));
+  }
+
+  get hasChosenPills() {
+    return this.chosenPills.length > 0;
+  }
+
+  get queryPreview() {
+    return buildQueryString(this.mergedParams) || "(no query parameters)";
   }
 
   get isExecuteDisabled() {
-    return !this.selectedPath || this.isLoading;
+    return !this.selectedPath || !this.hasCatalog || this.isLoading;
   }
 
   get hasResult() {
@@ -238,6 +483,78 @@ export default class ApiTester extends LightningElement {
     return this.result ? formatBody(this.result.body) : "";
   }
 
+  get lastBody() {
+    return this.result ? parseBody(this.result.body) : undefined;
+  }
+
+  get hasNextPage() {
+    const headers = (this.result && this.result.headers) || {};
+    const entry = this.currentEntry;
+    return (
+      String(headers["X-Has-More"]).toLowerCase() === "true" &&
+      Boolean(entry && entry.params.some((param) => param.name === "offset"))
+    );
+  }
+
+  get schemaCheck() {
+    if (!this.result) {
+      return undefined;
+    }
+    const parsed = this.lastBody;
+    const status = String(this.result.statusCode);
+    if (parsed === undefined) {
+      return { summary: "The body is not JSON, so it was not checked." };
+    }
+    const entry = this.currentEntry;
+    const shape =
+      entry && entry.responses ? entry.responses[status] : undefined;
+    const check = checkAgainstSchema(parsed, shape);
+    if (check.status === "noSchema") {
+      return {
+        summary: `The spec documents no JSON body for status ${status}.`
+      };
+    }
+    if (check.status === "wrongType") {
+      return {
+        summary: `The spec says status ${status} returns an ${check.expected}, and this body is not one.`
+      };
+    }
+    if (check.status === "empty") {
+      return {
+        summary: `The spec says status ${status} returns a list, and this one is empty, so there are no keys to check.`
+      };
+    }
+    const requiredMissing = check.missing.filter((item) => item.required);
+    const lists = [
+      {
+        key: "present",
+        title: `Present (${check.present.length})`,
+        items: check.present.map((key) => ({ key, text: key }))
+      },
+      {
+        key: "missing",
+        title: `Missing (${check.missing.length})`,
+        items: check.missing.map((item) => ({
+          key: item.key,
+          text: item.required ? `${item.key} (required)` : item.key
+        }))
+      },
+      {
+        key: "extra",
+        title: `Not in the spec (${check.extra.length})`,
+        items: check.extra.map((key) => ({ key, text: key }))
+      }
+    ].map((list) => ({ ...list, isEmpty: list.items.length === 0 }));
+    return {
+      lists,
+      summary: `Checked against the status ${status} schema: ${check.present.length} documented keys present, ${check.missing.length} missing (${requiredMissing.length} required), ${check.extra.length} not in the spec.`
+    };
+  }
+
+  get hasSchemaLists() {
+    return Boolean(this.schemaCheck && this.schemaCheck.lists);
+  }
+
   get isRawView() {
     return this.bodyView === VIEW_RAW;
   }
@@ -259,8 +576,7 @@ export default class ApiTester extends LightningElement {
   }
 
   get renderedFields() {
-    const parsed = this.result ? parseBody(this.result.body) : undefined;
-    return longTextFields(parsed).map((field, index) => ({
+    return longTextFields(this.lastBody).map((field, index) => ({
       ...field,
       key: `${index}-${field.path}`
     }));
@@ -314,6 +630,32 @@ export default class ApiTester extends LightningElement {
 
   handleEndpointChange(event) {
     this.selectedPath = event.detail.value;
+    // The controls belong to a path. The Advanced text stays, as it always has.
+    this.paramValues = {};
+  }
+
+  setParam(name, value) {
+    const next = { ...this.paramValues };
+    if (value === undefined || value === null || value === "") {
+      delete next[name];
+    } else {
+      next[name] = String(value);
+    }
+    this.paramValues = next;
+  }
+
+  /** A pill pressed again clears its parameter. */
+  handlePillClick(event) {
+    const { name, value } = event.currentTarget.dataset;
+    this.setParam(name, this.paramValues[name] === value ? "" : value);
+  }
+
+  handleParamInput(event) {
+    this.setParam(event.target.dataset.name, String(event.target.value).trim());
+  }
+
+  handleRemovePill(event) {
+    this.setParam(event.currentTarget.dataset.name, "");
   }
 
   handleQueryChange(event) {
@@ -327,6 +669,27 @@ export default class ApiTester extends LightningElement {
     }
   }
 
+  /** Moves offset on by one page, keeps the limit, and calls again. */
+  handleNextPage() {
+    const entry = this.currentEntry;
+    const merged = this.mergedParams;
+    const limitParam = entry.params.find((param) => param.name === "limit");
+    const body = this.lastBody;
+    const limit =
+      Number(merged.limit) ||
+      (limitParam && Number(limitParam.default)) ||
+      (Array.isArray(body) ? body.length : 0);
+    const offset = Number(merged.offset) || 0;
+    // The Advanced text would win over the new offset, so its offset goes.
+    const advanced = parseQuery(this.queryText);
+    if (advanced.offset !== undefined) {
+      delete advanced.offset;
+      this.queryText = buildQueryString(advanced).replace(/^\?/, "");
+    }
+    this.setParam("offset", offset + limit);
+    this.handleExecute();
+  }
+
   async handleExecute() {
     if (this.isExecuteDisabled) {
       return;
@@ -335,20 +698,21 @@ export default class ApiTester extends LightningElement {
     this.invokeError = "";
     this.result = undefined;
     const path = this.selectedPath;
+    const params = this.mergedParams;
+    const paramCount = Object.keys(params).length;
     try {
-      this.result = await invoke({
-        path,
-        params: parseQuery(this.queryText)
-      });
+      this.result = await invoke({ path, params });
       trackEvent(EVENTS.API_TEST_EXECUTED, {
         path,
-        status: this.result?.statusCode
+        status: this.result?.statusCode,
+        param_count: paramCount
       });
     } catch (error) {
       this.invokeError = reduceError(error);
       trackEvent(EVENTS.API_TEST_EXECUTED, {
         path,
-        status: STATUS_CALL_FAILED
+        status: STATUS_CALL_FAILED,
+        param_count: paramCount
       });
     } finally {
       this.isLoading = false;
