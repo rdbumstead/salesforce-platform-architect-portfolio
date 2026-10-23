@@ -160,8 +160,8 @@ public with sharing class PAPITransformer {
   public static final String INTEGRITY_PARTIAL = 'partial';
 
   /**
-   * @description Cache policy of each upstream SAPI resource, from the decisions block
-   *              (build plan Part 2, "Cache-Control by path").
+   * @description Cache policy of each upstream SAPI resource, the same policy each
+   *              SAPI path sets on its own response.
    */
   public static final Map<String, ApiRequestContext.CachePolicy> UPSTREAM_CACHE = new Map<String, ApiRequestContext.CachePolicy>{
     'contacts' => ApiRequestContext.CachePolicy.NO_STORE,

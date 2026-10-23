@@ -1,6 +1,6 @@
 /**
- * @description       : Tests for FooterController (Round 4 plan L8). getLinks never returns the
- *                      owner email or phone (trap 34). The AI request aggregate returns only a
+ * @description       : Tests for FooterController. getLinks never returns the
+ *                      owner email or phone. The AI request aggregate returns only a
  *                      number, counts only today's papi-ai windows, and sees every caller's rows
  *                      when run as the real Portfolio1 site guest.
  * @author            : Ryan Bumstead

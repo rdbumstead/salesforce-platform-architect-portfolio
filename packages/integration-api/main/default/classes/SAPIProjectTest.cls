@@ -189,7 +189,7 @@ private class SAPIProjectTest {
     System.assertEquals('1', res.headers.get('X-Total-Count'), 'Total count');
   }
 
-  // Property names of the Project schema in salesforce-sapi.yaml (decision D4).
+  // Property names of the Project schema in salesforce-sapi.yaml.
   private static final Set<String> SPEC_PROJECT_KEYS = new Set<String>{
     'id',
     'name',

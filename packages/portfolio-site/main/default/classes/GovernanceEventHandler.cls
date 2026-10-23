@@ -1,6 +1,6 @@
 /**
- * @description       : Stores Governance_Event__e messages as Pipeline_Run__c rows (Round 4 plan
- *                      L11, pillar-e-design section 3.2). Each event is upserted on Run_Key__c,
+ * @description       : Stores Governance_Event__e messages as Pipeline_Run__c rows.
+ *                      Each event is upserted on Run_Key__c,
  *                      which is "<workflow>:<run id>", so a replayed event never adds a row and an
  *                      identical replay writes nothing. Only the newest 60 rows per workflow are
  *                      kept. Events with an unknown workflow or status, or no run id, are skipped.

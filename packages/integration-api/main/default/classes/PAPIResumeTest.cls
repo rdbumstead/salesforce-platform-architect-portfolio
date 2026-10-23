@@ -367,7 +367,7 @@ private class PAPIResumeTest {
     Assert.isTrue(text.contains('EXPERIENCE'), 'Other sections remain');
   }
 
-  // Accept: text/plain on /resume/generate (Round 5 plan §5 WS3, owner feedback 3).
+  // Accept: text/plain on /resume/generate.
 
   private static final String GENERATE_URI = '/services/apexrest/papi/v1/resume/generate';
 

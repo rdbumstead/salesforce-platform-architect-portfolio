@@ -106,7 +106,7 @@ private class AgentforceServiceTest {
 
   @IsTest
   static void shippedRecordKeepsAgentforceSwitchedOff() {
-    // Reads the record deployed from source. It must ship disabled (PD-D2 b).
+    // Reads the record deployed from source. It must ship disabled.
     AI_Provider_Config__mdt shipped = AgentforceService.config();
 
     Assert.isNotNull(shipped, 'The Agentforce record is in source');

@@ -1,5 +1,5 @@
 /**
- * @description       : Serves the schema visualizer (Round 5 plan M3, pillars-design §2.3). Discovers
+ * @description       : Serves the schema visualizer. Discovers
  *                      the objects of one ERD scope from the global describe, describes only those,
  *                      and returns nodes with their fields and edges drawn from reference fields whose
  *                      target is in the same scope. Reads no records. Overrides and hidden objects
@@ -90,7 +90,7 @@ public with sharing class SchemaService {
   /**
    * @description Counts the objects the ERD draws for one scope, with the same discovery
    *              rules as getSchemaGraph but without describing any field. The home page's
-   *              Pillar A card reads it (Round 7 plan P5, audit F11).
+   *              Pillar A card reads it.
    * @param scope portfolio or employerHub.
    * @return Integer The object count, the same number as SchemaGraph.objectCount.
    * @throws AuraHandledException When the scope is anything else.
@@ -106,7 +106,7 @@ public with sharing class SchemaService {
 
   /**
    * @description Describes the objects of one valid scope. A custom setting ends in __c
-   *              too, but it is configuration, not data model (log 192), so it is dropped
+   *              too, but it is configuration, not data model, so it is dropped
    *              once the describe says what it is. Deferred describes, so no field is read.
    * @param scope A valid scope.
    * @return List<Schema.DescribeSObjectResult> The objects in the scope, never null.
@@ -251,7 +251,7 @@ public with sharing class SchemaService {
     edge.fromObject = fromObject;
     edge.toObject = toObject;
     edge.field = describe.getName();
-    // Only a master-detail field carries a relationship order (trap 47, pillars-design §2.3).
+    // Only a master-detail field carries a relationship order.
     edge.kind = describe.getRelationshipOrder() != null
       ? KIND_MASTER_DETAIL
       : KIND_LOOKUP;

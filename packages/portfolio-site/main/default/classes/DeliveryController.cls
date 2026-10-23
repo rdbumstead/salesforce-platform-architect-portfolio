@@ -1,11 +1,11 @@
 /**
- * @description       : Serves the Delivery page from the integration caches (Round 3 plan K3,
- *                      pillar-e-design section 4.2). getRecentCommits() reads the newest
+ * @description       : Serves the Delivery page from the integration caches.
+ *                      getRecentCommits() reads the newest
  *                      Github_Cache__c row and getRoadmap() the newest Jira_Cache__c row. Each
  *                      payload is {"schemaVersion":1,"items":[...]} built from the DTOs below,
- *                      which the Round 4 refresh jobs serialize. A missing or unreadable row
- *                      returns EMPTY, never an exception. No callout happens here. Round 4
- *                      plan L10: simulate=true returns the cached data as SIMULATED (the
+ *                      which the refresh jobs serialize. A missing or unreadable row
+ *                      returns EMPTY, never an exception. No callout happens here.
+ *                      simulate=true returns the cached data as SIMULATED (the
  *                      Resilience Simulation toggle, ADR-022), and while a source's circuit
  *                      breaker is open its feed reports DEGRADED. EMPTY wins over both,
  *                      because there is nothing to show.
@@ -155,7 +155,7 @@ public with sharing class DeliveryController {
 
   /**
    * @description Reads the two cache objects in system mode and without sharing. The site
-   *              guest has no grant on either cache object on purpose (pillar-e-design T5),
+   *              guest has no grant on either cache object on purpose,
    *              and the rows hold only public commit and roadmap data, which the outer class
    *              returns in the fixed DTO shape.
    */
@@ -239,7 +239,7 @@ public with sharing class DeliveryController {
   /**
    * @description One Jira issue. statusCategory is new, indeterminate or done. epicKey and
    *              epicName come from the parent issue. Both are null when there is no parent,
-   *              and epicName is null on rows cached before Round 6.
+   *              and epicName is null on rows cached before the epic fields existed.
    */
   public class RoadmapItem {
     @AuraEnabled

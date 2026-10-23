@@ -61,7 +61,7 @@ global with sharing class SAPIExperience {
 
   /**
    * @description Transforms Experience__c records to the Experience schema in
-   *              salesforce-sapi.yaml (decision D4). accomplishments is the deprecated HTML
+   *              salesforce-sapi.yaml. accomplishments is the deprecated HTML
    *              field the spec keeps. Highlights are served by /experience-highlights.
    */
   @TestVisible

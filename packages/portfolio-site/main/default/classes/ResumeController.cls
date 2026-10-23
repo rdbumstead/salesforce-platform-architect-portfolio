@@ -1,9 +1,9 @@
 /**
- * @description       : Serves the resume page (Round 3 plan K1). Returns the owner header,
+ * @description       : Serves the resume page. Returns the owner header,
  *                      roles with persona highlights, skill groups, certifications and education
- *                      in one fixed shape, plus the certification verification link (Round 6
- *                      plan N5). getTimeline serves the home page Work and Education timeline
- *                      (Round 6 plan N6). Never returns an email, a phone number, an address or
+ *                      in one fixed shape, plus the certification verification link.
+ *                      getTimeline serves the home page Work and Education timeline.
+ *                      Never returns an email, a phone number, an address or
  *                      any Owner_* value.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -26,7 +26,7 @@ public with sharing class ResumeController {
   /**
    * @description Builds the resume for a persona.
    * @param persona Blank for every highlight, or one of Admin, Developer, Architect.
-   * @return ResumeData The resume in the K1 shape.
+   * @return ResumeData The resume in its fixed shape.
    * @throws AuraHandledException When the persona is not blank and not a valid value.
    * @example
    * ResumeController.ResumeData resume = ResumeController.getResume('Architect');
@@ -51,7 +51,7 @@ public with sharing class ResumeController {
   }
 
   /**
-   * @description Builds the home page Work and Education timeline (Round 6 plan N6). Roles come
+   * @description Builds the home page Work and Education timeline. Roles come
    *              current first, then newest start date, the same order as the resume. Schools come
    *              newest completion first. Both lists are empty, never null, when there are no rows.
    * @return Timeline The work and education lists.
@@ -101,7 +101,7 @@ public with sharing class ResumeController {
   }
 
   /**
-   * The one certification verification link (reading R8), or null when the org has no config
+   * The one certification verification link, or null when the org has no config
    * record or the value is blank. Returned exactly as stored, so a plus sign stays a plus sign.
    * The record is chosen by the rule FooterController uses: first by DeveloperName.
    * getAll() reads custom metadata without SOQL.
@@ -127,7 +127,7 @@ public with sharing class ResumeController {
   /**
    * @description Returns only the owner header, for the home page hero. One query on the owner
    *              Contact, so the hero bio never waits on the roles, skills and credentials that
-   *              getResume reads. Same fields and same selector as getResume's header (K1).
+   *              getResume reads. Same fields and same selector as getResume's header.
    * @return Header The owner header, or null when no Contact is the portfolio owner.
    * @example
    * ResumeController.Header header = ResumeController.getHeader();
@@ -257,8 +257,8 @@ public with sharing class ResumeController {
   }
 
   /**
-   * @description Reads every resume record in system mode and without sharing. Guarded by
-   *              Round 3 plan G1: certifications and education are master-detail to Contact and
+   * @description Reads every resume record in system mode and without sharing, because
+   *              certifications and education are master-detail to Contact and
    *              roles look up to Account, and the site guest has no Contact or Account access.
    *              The guest reaches this data only through the fixed, contact-detail-free shape
    *              the outer class builds. Selects no Email, Phone, address or Owner_* field.

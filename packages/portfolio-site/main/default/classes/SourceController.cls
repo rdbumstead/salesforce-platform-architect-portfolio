@@ -1,7 +1,7 @@
 /**
- * @description       : Serves the View source dialog (Round 7 contract P2, audit B1).
+ * @description       : Serves the View source dialog.
  *                      getSourceFiles(sourceKey) returns the files Source_File__mdt lists for a
- *                      showcase component, read from Source_Cache__c only (reading R17). No
+ *                      showcase component, read from Source_Cache__c only. No
  *                      method here calls GitHub: SourceCacheRefreshJob fills the cache as the
  *                      admin. The site guest has no access to Source_Cache__c, so the read goes
  *                      through CacheSelector, which runs without sharing and in system mode and

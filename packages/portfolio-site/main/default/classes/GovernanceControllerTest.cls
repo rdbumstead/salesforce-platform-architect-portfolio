@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for GovernanceController (Round 4 plan L11). Checklist items
+ * @description       : Tests for GovernanceController. Checklist items
  *                      tick only on evidence. The guest test runs as the real Portfolio1 site
  *                      guest user with Portfolio_Guest.
  * @author            : Ryan Bumstead

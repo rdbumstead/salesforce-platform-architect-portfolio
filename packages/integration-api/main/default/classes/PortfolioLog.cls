@@ -4,7 +4,7 @@
  *                      found at run time with Type.forName. No source file names a Nebula type,
  *                      so CI, scratch orgs and any org without Nebula compile and run unchanged,
  *                      and every line then goes to System.debug instead. Nebula is an optional
- *                      dependency the owner installs by hand (Round 4 plan, Nebula decision a).
+ *                      dependency the owner installs by hand.
  *                      Callers pass only what may be logged: never a body, a header value or a
  *                      token. A logging failure never reaches the caller.
  * @author            : Ryan Bumstead

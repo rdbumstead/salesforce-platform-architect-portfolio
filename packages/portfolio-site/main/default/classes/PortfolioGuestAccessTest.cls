@@ -1,14 +1,14 @@
 /**
- * @description       : Proves the real Portfolio1 site guest cannot read the objects Round 3
- *                      plan K4 keeps closed: Contact, Account, Certification__c, Education__c
- *                      and Experience_Highlight__c. Testimonial__c left this list in Round 7
- *                      (B2): the guest now reads approved rows, and TestimonialGuestAccessTest
+ * @description       : Proves the real Portfolio1 site guest cannot read the objects that
+ *                      stay closed to it: Contact, Account, Certification__c, Education__c
+ *                      and Experience_Highlight__c. Testimonial__c is no longer on this
+ *                      list: the guest now reads approved rows, and TestimonialGuestAccessTest
  *                      proves it never reads another. Reads the org's own data
  *                      (SeeAllData), because guest sharing rules never reach records inserted
- *                      inside an Apex test, so test-made rows would prove nothing (log 075).
+ *                      inside an Apex test, so test-made rows would prove nothing.
  *                      The guest parity check on the shared objects is not here: it fails in
  *                      any deploy that adds the guest sharing rules, because the rules only
- *                      take effect after the deploy commits (log 075).
+ *                      take effect after the deploy commits.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

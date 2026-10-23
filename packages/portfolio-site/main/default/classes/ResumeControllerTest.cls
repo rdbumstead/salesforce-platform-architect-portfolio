@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for ResumeController (Round 3 plan K1, Round 6 plan N5 and N6).
+ * @description       : Tests for ResumeController.
  *                      Guest tests run as the real Portfolio1 site guest user.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -69,7 +69,7 @@ private class ResumeControllerTest {
 
   /**
    * Gives the two past roles start dates whose order is the reverse of their end dates, so
-   * the tests prove the roles sort by start date (audit F12): Past Role ended later but
+   * the tests prove the roles sort by start date: Past Role ended later but
    * started earlier than Older Role.
    */
   private static void setStartDatesAgainstEndDates() {

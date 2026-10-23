@@ -41,7 +41,7 @@ public with sharing class ApiRequestContext {
   private static final Pattern UUID_PATTERN = Pattern.compile(
     '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
   );
-  // The id the platform injects on My Domain when the caller sends none (round-2-post-deploy D3).
+  // The id the platform injects on My Domain when the caller sends none.
   private static final Pattern PLATFORM_ID_PATTERN = Pattern.compile(
     '^[0-9a-fA-F]{32}$'
   );
@@ -309,7 +309,7 @@ public with sharing class ApiRequestContext {
     header('Content-Type', 'application/json');
 
     String suppliedId = headerValue(HEADER_REQUEST_ID);
-    // On PAPI the platform's own 32-hex id means the caller sent none (decision D3).
+    // On PAPI the platform's own 32-hex id means the caller sent none.
     Boolean platformId =
       family == ApiFamily.PAPI &&
       String.isNotBlank(suppliedId) &&
@@ -318,8 +318,8 @@ public with sharing class ApiRequestContext {
     Boolean idValid =
       !idMissing && UUID_PATTERN.matcher(suppliedId.trim()).matches();
     correlationId = idValid ? suppliedId.trim() : UUID.randomUUID().toString();
-    // The platform echoes whatever X-Request-Id the request carries on every response (Round 2
-    // pre-flight 1), the id it injected included. So Apex sets the header only when it
+    // The platform echoes whatever X-Request-Id the request carries on every response,
+    // the id it injected included. So Apex sets the header only when it
     // generated the id and the request carried none, or the response gets two (id;id).
     if (!idValid && !platformId) {
       header(HEADER_REQUEST_ID, correlationId);

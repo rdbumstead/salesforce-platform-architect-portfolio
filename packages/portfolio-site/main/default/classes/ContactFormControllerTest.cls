@@ -1,6 +1,6 @@
 /**
  * @description       : Tests for ContactFormController, ContactFormLeadWriter and
- *                      ContactFormSubmissionTrigger (Round 7 E5, ADR-031). Guest tests run as
+ *                      ContactFormSubmissionTrigger (ADR-031). Guest tests run as
  *                      the real Portfolio1 site guest, then deliver the event so the trigger
  *                      saves the Lead as it does in the org.
  * @author            : Ryan Bumstead

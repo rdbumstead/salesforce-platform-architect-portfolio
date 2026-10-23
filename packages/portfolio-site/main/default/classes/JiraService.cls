@@ -1,8 +1,8 @@
 /**
  * @description       : Reads the public roadmap from Jira through the Jira_API Named Credential
  *                      and maps it to DeliveryController.RoadmapItem, the payload DTO of the
- *                      Delivery page (pillar-e-design 4.2 and 4.4). The search is
- *                      POST /rest/api/3/search/jql with the JQL of owner decision E6 (a): only
+ *                      Delivery page. The search is
+ *                      POST /rest/api/3/search/jql with the owner's roadmap JQL: only
  *                      issues labelled portfolio-roadmap in the configured project, SPAP by
  *                      default. Only JiraCacheRefreshJob calls it, as the scheduling admin.
  *                      A failure throws JiraServiceException so the job inserts nothing and
@@ -49,7 +49,7 @@ public with sharing class JiraService {
   }
 
   /**
-   * @description The roadmap JQL for a project (E6 a). The label is quoted because it holds
+   * @description The roadmap JQL for a project. The label is quoted because it holds
    *              a hyphen.
    * @param projectKey A valid Jira project key.
    * @return String The JQL.

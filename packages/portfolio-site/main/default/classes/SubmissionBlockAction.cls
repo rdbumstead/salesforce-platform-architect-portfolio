@@ -1,6 +1,6 @@
 /**
- * @description       : The work behind the "Block sender" quick action on Lead (Round 7 plan
- *                      contract P3). It adds the Lead's email or its domain to
+ * @description       : The work behind the "Block sender" quick action on Lead.
+ *                      It adds the Lead's email or its domain to
  *                      Submission_Block__c, turns an existing block back on, and marks the Lead
  *                      as spam so its reply reminders stop. Called from the Lead_Block_Sender
  *                      screen flow, which works in the Salesforce mobile app.

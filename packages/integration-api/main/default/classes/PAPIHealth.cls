@@ -1,9 +1,9 @@
 /**
  * @description       : PAPI health check (/papi/v1/health). Reports per-dependency states:
- *                      SAPI (in-process, contract C3), the Portfolio_API credential (one GET
+ *                      SAPI (in-process), the Portfolio_API credential (one GET
  *                      through callout:Portfolio_API to /sapi/v1/health, the only check that
  *                      exercises the credential), and presence of the Jira, GitHub and Gemini
- *                      Named Credentials (no callouts). Performs no DML (contract C2).
+ *                      Named Credentials (no callouts). Performs no DML.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

@@ -1,6 +1,5 @@
 /**
- * @description       : Serves the Delivery page governance checklist (Round 4 plan L11,
- *                      pillar-e-design section 3.2, decision E4 items 1, 3 and 4).
+ * @description       : Serves the Delivery page governance checklist.
  *                      getPipelineStatus() returns the latest Pipeline_Run__c per workflow, the
  *                      newest CreatedDate of each integration cache, and three checklist items
  *                      worked out from that evidence. An item passes only on evidence: no run
@@ -61,7 +60,7 @@ public with sharing class GovernanceController {
     return result;
   }
 
-  // E4 item 1. A deploy has no age limit: the last production deploy stays the evidence.
+  // The deploy item. A deploy has no age limit: the last production deploy stays the evidence.
   private static ChecklistItem deployItem(RunInfo run) {
     ChecklistItem item = new ChecklistItem(
       ITEM_DEPLOY,
@@ -72,7 +71,7 @@ public with sharing class GovernanceController {
     return item;
   }
 
-  // E4 item 3. A heartbeat older than 26 hours is stale, never a tick.
+  // The heartbeat item. A heartbeat older than 26 hours is stale, never a tick.
   private static ChecklistItem heartbeatItem(RunInfo run, Datetime now) {
     ChecklistItem item = new ChecklistItem(
       ITEM_HEARTBEAT,
@@ -91,7 +90,7 @@ public with sharing class GovernanceController {
     return item;
   }
 
-  // E4 item 4, computed in the org. Both caches must be under 30 minutes old.
+  // The cache item, computed in the org. Both caches must be under 30 minutes old.
   private static ChecklistItem cacheItem(
     Datetime githubAt,
     Datetime jiraAt,
@@ -132,8 +131,8 @@ public with sharing class GovernanceController {
 
   /**
    * @description Reads Pipeline_Run__c and the two cache objects in system mode and without
-   *              sharing. The site guest has no grant on any of them on purpose
-   *              (pillar-e-design section 3.2 and T5), so no guest sharing rule is needed. The
+   *              sharing. The site guest has no grant on any of them on purpose,
+   *              so no guest sharing rule is needed. The
    *              outer class returns only public pipeline metadata and two timestamps.
    */
   private without sharing class EvidenceSelector {

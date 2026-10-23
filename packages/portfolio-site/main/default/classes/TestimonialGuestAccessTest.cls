@@ -1,10 +1,10 @@
 /**
- * @description       : Proves ADR-012's restriction rule on the org's own testimonials (Round 7
- *                      B2). The Guest_Read_Testimonials sharing rule shares every row with the
+ * @description       : Proves ADR-012's restriction rule on the org's own testimonials.
+ *                      The Guest_Read_Testimonials sharing rule shares every row with the
  *                      site guest, so the Block_Unapproved_Testimonials restriction rule is the
  *                      only thing between the guest and an unapproved row. Reads the org's data
  *                      (SeeAllData), because guest sharing rules never reach records inserted
- *                      inside an Apex test (log 075). In an org with no testimonials the checks
+ *                      inside an Apex test. In an org with no testimonials the checks
  *                      hold trivially. The scratch seed data/site/Testimonial__c.json gives it
  *                      three approved rows and one pending row to prove against.
  * @author            : Ryan Bumstead

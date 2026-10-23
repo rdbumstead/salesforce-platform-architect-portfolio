@@ -4,7 +4,7 @@
  *                      issuance cap, exchanges client credentials for a token through the
  *                      Portfolio_API_Token Named Credential, and writes exactly one
  *                      API_Access_Request__c audit row per attempt. No DML runs before the
- *                      token callout (contract C2); the audit row is written after it.
+ *                      token callout. The audit row is written after it.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -140,7 +140,7 @@ public with sharing class TokenExchangeService {
      * @description The /auth/token 200 body: access_token, token_type, instance_url and
      *              docs. There is no expires_in: every vended token is the same session of
      *              the integration user, which ends after 30 minutes without use, so no
-     *              lifetime per token can be stated honestly (owner decision, log 155).
+     *              lifetime per token can be stated honestly (owner decision).
      * @return Map<String, Object> The response body.
      */
     public Map<String, Object> toTokenBody() {

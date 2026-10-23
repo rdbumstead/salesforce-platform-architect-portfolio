@@ -1,11 +1,11 @@
 /**
- * @description       : Tests for SourceCacheRefreshJob (Round 7 contract P2, reading R17). GitHub
+ * @description       : Tests for SourceCacheRefreshJob. GitHub
  *                      is an HttpCalloutMock. A good read upserts content, link and times, a
  *                      failed read keeps the newest good content and records the check, a path
  *                      checked within a day is not read again, an open circuit or no config
  *                      skips the calls, and rows for paths no longer configured are deleted.
  *                      Seed rows come from @TestSetup, a separate transaction, so no test
- *                      writes before its callouts (contract C2).
+ *                      writes before its callouts.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

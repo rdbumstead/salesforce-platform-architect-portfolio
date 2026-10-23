@@ -129,7 +129,7 @@ global with sharing class PAPIResume {
   }
 
   // The owner Contact without email, phone or address: the resume never prints them
-  // (owner decision, log 155). Null when there is none.
+  // (owner decision). Null when there is none.
   private static Contact ownerContact(PAPITransformer.Aggregation agg) {
     agg.source('contacts');
     try {
@@ -242,7 +242,7 @@ global with sharing class PAPIResume {
   /**
    * @description The skills linked through Experience_Skill__c to the roles the resume
    *              prints, each once, grouped by category in Category_Order__c order and by
-   *              proficiency within a category (owner feedback 4c, log 155).
+   *              proficiency within a category.
    */
   private static String skillsSection(
     PAPITransformer.Aggregation agg,

@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for CircuitBreaker (Round 4 plan L6): three failures open the
+ * @description       : Tests for CircuitBreaker: three failures open the
  *                      circuit, it skips for 30 minutes and then closes, a success resets it,
  *                      snapshot reports every key, and the site guest can read and write it.
  * @author            : Ryan Bumstead

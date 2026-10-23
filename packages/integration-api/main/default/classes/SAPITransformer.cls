@@ -1,7 +1,7 @@
 /**
  * @description       : Field mapping from Salesforce records to the SAPI response schemas
- *                      (salesforce-sapi.yaml). Every SAPI resource added in Round 2 maps
- *                      its records here so the schema keys live in one place.
+ *                      (salesforce-sapi.yaml). Every SAPI resource other than experience, projects, skills and
+ *                      testimonials maps its records here so the schema keys live in one place.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -243,8 +243,7 @@ public with sharing class SAPITransformer {
 
   /**
    * @description Maps the Portfolio_Config__mdt record to the PortfolioConfig schema.
-   *              Owner_Email__c and Owner_Phone__c are never returned (owner decision,
-   *              log 155).
+   *              Owner_Email__c and Owner_Phone__c are never returned (owner decision).
    * @param config The configuration record; null yields an empty object.
    * @return Map<String, Object> PortfolioConfig schema object.
    */

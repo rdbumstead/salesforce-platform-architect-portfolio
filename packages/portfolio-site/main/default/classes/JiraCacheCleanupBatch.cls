@@ -1,8 +1,8 @@
 /**
  * @description       : Batch job for cleaning up Jira cache records. Deletes rows older than
  *                      30 minutes, except the newest row, which always stays so the Delivery
- *                      page keeps its last good roadmap through an outage (pillar-e-design
- *                      4.4, G10). "Newest" is the row DeliveryController serves:
+ *                      page keeps its last good roadmap through an outage.
+ *                      "Newest" is the row DeliveryController serves:
  *                      CreatedDate DESC, then Id DESC.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead

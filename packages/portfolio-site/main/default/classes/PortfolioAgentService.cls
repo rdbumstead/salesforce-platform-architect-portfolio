@@ -135,7 +135,7 @@ public with sharing class PortfolioAgentService {
         'Name' => profile.Name,
         'Title' => profile.Title,
         'Bio' => config.Career_Objective__c,
-        // The owner's email and phone stay out of this payload (audit E6, log 155).
+        // The owner's email and phone stay out of this payload.
         'Contact_Info' => new Map<String, String>{
           'LinkedIn' => config.LinkedIn_URL__c,
           'GitHub' => config.GitHub_Profile_URL__c

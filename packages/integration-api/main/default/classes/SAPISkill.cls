@@ -54,8 +54,7 @@ global with sharing class SAPISkill {
   }
 
   /**
-   * @description Transforms Skill__c records to the Skill schema in salesforce-sapi.yaml
-   *              (decision D4).
+   * @description Transforms Skill__c records to the Skill schema in salesforce-sapi.yaml.
    */
   @TestVisible
   private static List<Map<String, Object>> transformSkills(

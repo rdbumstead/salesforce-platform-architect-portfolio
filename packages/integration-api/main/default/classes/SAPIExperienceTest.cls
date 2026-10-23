@@ -156,7 +156,7 @@ private class SAPIExperienceTest {
     );
   }
 
-  // Property names of the Experience schema in salesforce-sapi.yaml (decision D4).
+  // Property names of the Experience schema in salesforce-sapi.yaml.
   private static final Set<String> SPEC_EXPERIENCE_KEYS = new Set<String>{
     'id',
     'employerName',

@@ -133,7 +133,7 @@ global with sharing class PAPIProfile {
       Map<String, Object> contactInfo = PAPITransformer.transformContact(
         contacts[0]
       );
-      // The owner's email and phone are never returned (owner decision, log 155).
+      // The owner's email and phone are never returned (owner decision).
       // PAPITransformer.transformContact reads them, so they stay in the query.
       contactInfo.remove('email');
       contactInfo.remove('phone');
