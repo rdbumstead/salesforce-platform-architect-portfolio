@@ -4,21 +4,21 @@ Seed records for the pillar pages, for walking the site in a scratch org. One pl
 
 ## What `plan-a.json` holds
 
-| Object             | Records                                                                                                                                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Project__c`       | 1: "Employer Hub for a community college", Pillar A, with a proposed Challenge, Solution and Business Value                                                                                                      |
-| `Project_Asset__c` | 5: four Image rows pointing at the images in the `EH_Assets` static resource (`resource:EH_Assets/<file>.svg`, sort order 1 to 4, each with alt text), and one Document row "Employer Hub demo deck" with no URL |
+| Object             | Records                                                                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Project__c`       | 1: "Employer Hub for an education provider", Pillar A, with a proposed Challenge, Solution and Business Value                                    |
+| `Project_Asset__c` | 4: Image rows pointing at the images in the `EH_Assets` static resource (`resource:EH_Assets/<file>.svg`, sort order 1 to 4, each with alt text) |
 
 The four images are redrawn for the portfolio from the original Employer Hub demo deck, step for step for the two flows and chart for chart for the two dashboards. They carry no names, and the dashboard values are samples, which each image says.
 
 ## Copy for the owner's review
 
-The project name and the three text fields are proposals. The owner judges the copy (Round 5 plan §0 item 6). The name and the Business Value are also in the production script, so a change to either is made in both places. The production script leaves Challenge and Solution as they are.
+The project name and the three text fields are proposals. The owner judges the copy (Round 6 plan §2, reading R11). The same text is in the production script `.claude/data-changes/2026-10-22-pillar-a-reword.apex`, so a change to any of them is made in both places. Pillar A is described as "an education provider" everywhere, so one search for "education provider" finds every place to change.
 
-- **Name:** "Employer Hub for a community college". No client name.
-- **Challenge:** "Several departments at a community college worked with the same employer partners, each from its own inbox and spreadsheet. Partners repeated themselves, and nobody could see the whole relationship. Leadership had no shared numbers for engagement, sponsorship or hiring."
-- **Solution:** "One Employer Hub in Salesforce captures every inquiry once, triages it and routes it to the right department. Partner engagements, job postings, sponsorships and letters of support sit on the partner's account. Operations and executive dashboards report from the same records."
-- **Business Value:** "Employer partners get one front door and a faster answer. Departments stop duplicating outreach and can see each other's work with a partner. Leadership can report on the employer relationship as a whole for the first time."
+- **Name:** "Employer Hub for an education provider". No client name.
+- **Challenge:** "Several departments at an education provider worked with the same employer partners, each from its own inbox and spreadsheet. Partners repeated themselves, and nobody could see the whole relationship. Leadership had no shared numbers for engagement, sponsorship or hiring."
+- **Solution:** "A working Employer Hub demo, built to extend the education provider's existing Salesforce org. Every inquiry is captured once from a web form, matched to the partner's account and routed by academic focus area. Service requests are fulfilled from the case, and monetary requests run through an opportunity to a contract. Operations and executive dashboards report from the same records."
+- **Business Value:** "Designed so that employer partners get one front door and a faster answer, departments stop duplicating outreach and see each other's work with a partner, and leadership can report on the employer relationship as a whole."
 
 ## Load it
 
@@ -32,7 +32,7 @@ Run it from Git Bash with stdin closed, or it can hang. The running user needs f
 
 ## Production
 
-Production records change only through the owner's script, run by hand: `.claude\data-changes\2026-10-22-pillar-a-production.apex` in the owner's local checkout. It renames the existing Pillar A project, sets its Business Value, removes the old deck asset and inserts the same five asset rows as this plan.
+Production records change only through the owner's scripts, run by hand from the owner's local checkout. `.claude/data-changes/2026-10-22-pillar-a-production.apex` (Round 5, already run) renamed the Pillar A project, removed the old deck asset and inserted the four image rows. `.claude/data-changes/2026-10-22-pillar-a-reword.apex` (Round 6) sets the name, Challenge, Solution and Business Value to the text above. No deck row is published.
 
 ## Pillar B
 

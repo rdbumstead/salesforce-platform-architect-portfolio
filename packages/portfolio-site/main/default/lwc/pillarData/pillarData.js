@@ -27,7 +27,7 @@ const SOURCE = [
     sasName: "Business Architecture",
     url: "business-architecture",
     summary:
-      "How an employer hub for a community college models a business process and its data.",
+      "How an employer hub for an education provider models a business process and its data.",
     tour: "See how a business process maps to its data model, drawn live from the org.",
     tags: ["Employer Hub", "Data model"],
     inProgress: false
