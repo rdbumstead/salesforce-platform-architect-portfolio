@@ -1,7 +1,9 @@
 /**
  * @description       : Proves the real Portfolio1 site guest cannot read the objects Round 3
- *                      plan K4 keeps closed: Contact, Account, Certification__c, Education__c,
- *                      Experience_Highlight__c and Testimonial__c. Reads the org's own data
+ *                      plan K4 keeps closed: Contact, Account, Certification__c, Education__c
+ *                      and Experience_Highlight__c. Testimonial__c left this list in Round 7
+ *                      (B2): the guest now reads approved rows, and TestimonialGuestAccessTest
+ *                      proves it never reads another. Reads the org's own data
  *                      (SeeAllData), because guest sharing rules never reach records inserted
  *                      inside an Apex test, so test-made rows would prove nothing (log 075).
  *                      The guest parity check on the shared objects is not here: it fails in
@@ -22,8 +24,7 @@ private class PortfolioGuestAccessTest {
       'Account',
       'Certification__c',
       'Education__c',
-      'Experience_Highlight__c',
-      'Testimonial__c'
+      'Experience_Highlight__c'
     };
     Map<String, Integer> visibleByObject = new Map<String, Integer>();
 

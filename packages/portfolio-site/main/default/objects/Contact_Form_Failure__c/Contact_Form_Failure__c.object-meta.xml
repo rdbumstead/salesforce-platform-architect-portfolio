@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The Contact Form Failure object keeps a contact form message whose Lead could not be saved after every retry, so no message is lost. It holds the First Name, Last Name, Email, Company, Message and the Error. Admin only. Commonly used for following up by hand and finding what blocked the save.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>Contact Form Failure</label>
+    <nameField>
+        <displayFormat>CFF-{00000}</displayFormat>
+        <label>Contact Form Failure Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Contact Form Failures</pluralLabel>
+    <searchLayouts />
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

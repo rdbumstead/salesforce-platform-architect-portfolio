@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<SharingRules xmlns="http://soap.sforce.com/2006/04/metadata">
+    <sharingGuestRules>
+        <fullName>Guest_Read_Testimonials</fullName>
+        <accessLevel>Read</accessLevel>
+        <booleanFilter>1 OR 2</booleanFilter>
+        <criteriaItems>
+            <field>Approved__c</field>
+            <operation>equals</operation>
+            <value>True</value>
+        </criteriaItems>
+        <criteriaItems>
+            <field>Approved__c</field>
+            <operation>equals</operation>
+            <value>False</value>
+        </criteriaItems>
+        <description
+    >Shares every testimonial read only with the site guest, so the testimonial wall can read. The Block_Unapproved_Testimonials restriction rule is what hides unapproved rows from the guest (ADR-012), and TestimonialControllerTest proves it.</description>
+        <includeHVUOwnedRecords>false</includeHVUOwnedRecords>
+        <label>Guest Read Testimonials</label>
+        <sharedTo>
+            <guestUser>Portfolio</guestUser>
+        </sharedTo>
+    </sharingGuestRules>
+</SharingRules>

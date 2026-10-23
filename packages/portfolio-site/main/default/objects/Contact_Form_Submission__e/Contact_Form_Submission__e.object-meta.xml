@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The Contact Form Submission event carries one accepted message from the portfolio contact form to a trigger that saves it as a Lead. The trigger runs as the Automated Process user, because the Lead auto-response rule cannot send from the site guest's context. It holds the name, email, company, message and whether to send the auto-response.</description>
+    <eventType>HighVolume</eventType>
+    <label>Contact Form Submission</label>
+    <pluralLabel>Contact Form Submissions</pluralLabel>
+    <publishBehavior>PublishImmediately</publishBehavior>
+</CustomObject>

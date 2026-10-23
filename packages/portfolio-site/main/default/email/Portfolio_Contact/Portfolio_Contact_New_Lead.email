@@ -1,0 +1,11 @@
+New message from the portfolio contact form.
+
+From: {!Lead.Name}
+Company: {!Lead.Company}
+Email: {!Lead.Email}
+
+{!Lead.Description}
+
+Reply within two business days. Reminders follow at one and two business days while the Lead stays at its starting status.
+
+Open the Lead: {!Lead.Link}

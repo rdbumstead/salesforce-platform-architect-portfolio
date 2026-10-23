@@ -1,0 +1,58 @@
+<template>
+  <template lwc:if={hasItems}>
+    <section class="wall" aria-labelledby="wall-heading">
+      <h2 id="wall-heading" class="wall-title">What people say</h2>
+      <div class="filter" role="group" aria-label="Show testimonials">
+        <button
+          type="button"
+          class="filter-button"
+          aria-pressed={allPressed}
+          data-filter="all"
+          data-id="filter-all"
+          onclick={handleFilter}
+        >
+          All
+        </button>
+        <button
+          type="button"
+          class="filter-button"
+          aria-pressed={professionalPressed}
+          data-filter="professional"
+          data-id="filter-professional"
+          onclick={handleFilter}
+        >
+          Professional
+        </button>
+      </div>
+      <p class="count" aria-live="polite" data-id="count">{countText}</p>
+      <template lwc:if={hasVisible}>
+        <ul class="cards">
+          <template for:each={visibleItems} for:item="item">
+            <li key={item.key} class={item.cardClass} data-id="card">
+              <figure class="quote">
+                <blockquote class="sentence">
+                  <p>{item.sentence}</p>
+                  <template lwc:if={item.note}>
+                    <p class="note">{item.note}</p>
+                  </template>
+                </blockquote>
+                <figcaption class="byline">
+                  <span class="author">{item.authorName}</span>
+                  <template lwc:if={item.byline}>
+                    <span class="detail">{item.byline}</span>
+                  </template>
+                  <span class="tone">{item.toneLabel}</span>
+                </figcaption>
+              </figure>
+            </li>
+          </template>
+        </ul>
+      </template>
+      <template lwc:else>
+        <p class="empty" data-id="empty">
+          No professional testimonials yet. Choose All to see every one.
+        </p>
+      </template>
+    </section>
+  </template>
+</template>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Send_Auto_Response__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >True only for the first message from an address in 24 hours, so the auto-response rule sends at most once a day to any address.</description>
+    <isFilteringDisabled>false</isFilteringDisabled>
+    <isNameField>false</isNameField>
+    <isSortingDisabled>false</isSortingDisabled>
+    <label>Send Auto-Response</label>
+    <type>Checkbox</type>
+</CustomField>

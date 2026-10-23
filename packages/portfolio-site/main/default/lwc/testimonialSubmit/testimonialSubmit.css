@@ -167,3 +167,58 @@
 .message-error {
   color: var(--pf-error-text);
 }
+
+.sentence {
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem 1rem;
+  background-color: var(--form-surface);
+  color: var(--form-text);
+}
+
+.sentence-legend {
+  padding: 0 0.25rem;
+}
+
+.blank {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.blank-label {
+  color: var(--form-text);
+  font-weight: 700;
+  min-width: 6rem;
+}
+
+.blank-input {
+  flex: 1 1 14rem;
+  width: auto;
+  min-height: 44px;
+}
+
+.preview {
+  margin: 1rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--pf-accent);
+  background-color: var(--form-surface);
+  color: var(--form-text);
+  font-style: italic;
+}
+
+/*
+ * Off screen and transparent rather than display none, so simple bots still see and fill it,
+ * while people, screen readers and the keyboard never meet it.
+ */
+.trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}

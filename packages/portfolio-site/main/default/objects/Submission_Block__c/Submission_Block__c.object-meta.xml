@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The Submission Block object lists senders the public contact and testimonial forms drop silently. It holds Type (Email, Domain, Keyword or IP Hash), Value (lower case), Active, Reason, Hit Count, Last Hit and Unique Key (unique, external ID). Admin only. Commonly used for spam control from the Block sender action.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>Submission Block</label>
+    <nameField>
+        <displayFormat>SB-{00000}</displayFormat>
+        <label>Submission Block Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Submission Blocks</pluralLabel>
+    <searchLayouts />
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>
