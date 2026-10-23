@@ -88,6 +88,17 @@ function evaluate(rawJson, min) {
   }
   if (!Number.isFinite(failing) || failing > 0) {
     lines.push("FAIL: at least one test failed.");
+    // Name each failure, so a red run can be read from its log alone.
+    const tests = (parsed.result && parsed.result.tests) || [];
+    tests
+      .filter((test) => test.Outcome && test.Outcome !== "Pass")
+      .forEach((test) => {
+        const name = `${(test.ApexClass && test.ApexClass.Name) || "?"}.${test.MethodName}`;
+        const message = String(test.Message || "")
+          .replace(/\s+/g, " ")
+          .slice(0, 300);
+        lines.push(`  ${test.Outcome}: ${name}: ${message}`);
+      });
     ok = false;
   }
   if (!Number.isFinite(coverage)) {
