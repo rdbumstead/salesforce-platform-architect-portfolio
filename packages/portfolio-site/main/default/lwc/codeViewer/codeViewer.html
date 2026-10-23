@@ -7,7 +7,12 @@
           size="small"
         ></lightning-spinner>
       </template>
-      <div class="code-container">
+      <div
+        class="code-container"
+        tabindex="0"
+        role="region"
+        aria-label={regionLabel}
+      >
         <pre class={languageClass}><code
             class="code-block"
             lwc:dom="manual"

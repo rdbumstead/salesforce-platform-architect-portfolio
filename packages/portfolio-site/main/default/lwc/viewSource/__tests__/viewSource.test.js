@@ -339,7 +339,7 @@ describe("c-view-source", () => {
     );
     expect(element.shadowRoot.activeElement).toBe($(element, ".close-button"));
 
-    // Focus moving inside the dialog, or to nowhere, is left alone.
+    // Focus moving inside the dialog is left alone.
     $(element, ".github-link").focus();
     dialog.dispatchEvent(
       new FocusEvent("focusout", {
@@ -347,8 +347,11 @@ describe("c-view-source", () => {
         relatedTarget: $(element, ".close-button")
       })
     );
-    dialog.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
     expect(element.shadowRoot.activeElement).toBe($(element, ".github-link"));
+
+    // Focus going to the page itself, as WebKit's Tab does past the last stop, comes back.
+    dialog.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    expect(element.shadowRoot.activeElement).toBe($(element, ".close-button"));
   });
 
   it("leaves other keys alone and shows the key when it has no label", async () => {

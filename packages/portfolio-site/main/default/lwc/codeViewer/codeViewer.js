@@ -48,6 +48,11 @@ export default class CodeViewer extends LightningElement {
     });
   }
 
+  /** The scroll region is a keyboard stop, so it needs a name. */
+  get regionLabel() {
+    return `${this.title || "Source code"}, scrollable code`;
+  }
+
   get languageClass() {
     return `language-${this.language || "none"}`;
   }

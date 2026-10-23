@@ -78,7 +78,7 @@ export default class ViewSource extends LightningElement {
   }
 
   get githubLabel() {
-    return `Open ${this.selectedLabel} on GitHub`;
+    return `Open ${this.selectedLabel} on GitHub (opens in a new tab)`;
   }
 
   get panelLabel() {
@@ -100,12 +100,13 @@ export default class ViewSource extends LightningElement {
   }
 
   handleClose() {
+    // isOpen goes false first, so the focusout that close() fires is not pulled back.
+    this.isOpen = false;
+    this.focusOnRender = ".view-source-button";
     const dialog = this.template.querySelector("dialog");
     if (dialog && dialog.open && typeof dialog.close === "function") {
       dialog.close();
     }
-    this.isOpen = false;
-    this.focusOnRender = ".view-source-button";
   }
 
   /** The browser's own Escape on a modal dialog: close it our way so focus returns. */
@@ -183,12 +184,13 @@ export default class ViewSource extends LightningElement {
 
   /**
    * Catches focus leaving the open dialog by any route the key handler cannot see, such as
-   * WebKit's Tab skipping the GitHub link, and brings it back to the first stop.
+   * WebKit's Tab moving from the last stop to the page itself (no related target), and
+   * brings it back to the first stop.
    */
   handleDialogFocusOut(event) {
     const dialog = this.template.querySelector("dialog");
     const next = event.relatedTarget;
-    if (!this.isOpen || !dialog || !next || dialog.contains(next)) {
+    if (!this.isOpen || !dialog || (next && dialog.contains(next))) {
       return;
     }
     const first = this.template.querySelector(".close-button");
