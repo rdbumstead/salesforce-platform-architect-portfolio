@@ -68,8 +68,5 @@ Thumbs.db
 **/layouts/sfdcInternalInt__*.layout-meta.xml
 **/customMetadata/sfdcInternalInt__*.md-meta.xml
 
-# Permission sets requiring licenses unavailable in scratch orgs
-**/permissionsets/Contact_Information_Agent_Permissions.permissionset-meta.xml
-
 # Legacy/deprecated permission sets with missing dependencies
 **/permissionsets/Mass_Delete_Admin.permissionset-meta.xml

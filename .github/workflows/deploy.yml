@@ -100,6 +100,15 @@ jobs:
              echo "No metadata changes detected. Skipping deployment."
           fi
 
+      - name: Publish Governance Event
+        if: success()
+        continue-on-error: true
+        run: |
+          sf data create record \
+            --sobject Governance_Event__e \
+            --values "Workflow__c=deploy Status__c=Success Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --target-org portfolio
+
   deploy-status:
     if: always()
     needs: [deploy]

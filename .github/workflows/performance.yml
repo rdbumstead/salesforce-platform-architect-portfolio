@@ -6,7 +6,7 @@ on:
       audit_url:
         description: "Target URL to Audit"
         required: true
-        default: "https://ryanbumstead.com/"
+        default: "https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio"
 
 jobs:
   lighthouse-monitor:
