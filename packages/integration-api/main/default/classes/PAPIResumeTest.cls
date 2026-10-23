@@ -367,6 +367,101 @@ private class PAPIResumeTest {
     Assert.isTrue(text.contains('EXPERIENCE'), 'Other sections remain');
   }
 
+  // Skills follow the persona: the tagged ones for it plus every untagged one.
+
+  private static void linkTaggedSkills() {
+    Experience__c role = [SELECT Id FROM Experience__c LIMIT 1];
+    Skill__c apex = [SELECT Id FROM Skill__c WHERE Name = 'Apex'];
+    apex.Persona_Tag__c = 'Developer;Architect';
+    update apex;
+    Skill__c flows = new Skill__c(
+      Name = 'Flow',
+      Category__c = 'Process Automation',
+      Proficiency__c = 4,
+      Persona_Tag__c = 'Admin'
+    );
+    Skill__c git = new Skill__c(
+      Name = 'Git',
+      Category__c = 'Backend',
+      Proficiency__c = 3
+    );
+    insert new List<Skill__c>{ flows, git };
+    insert new List<Experience_Skill__c>{
+      new Experience_Skill__c(Experience__c = role.Id, Skill__c = apex.Id),
+      new Experience_Skill__c(Experience__c = role.Id, Skill__c = flows.Id),
+      new Experience_Skill__c(Experience__c = role.Id, Skill__c = git.Id)
+    };
+  }
+
+  private static String generatedTextFor(String persona) {
+    RestTestUtil.initGet(
+      GENERATE_URI,
+      persona == null
+        ? new Map<String, String>()
+        : new Map<String, String>{ 'persona' => persona }
+    );
+    PAPIResume.getResume();
+    return (String) RestTestUtil.getBodyAsMap().get('generatedText');
+  }
+
+  @IsTest
+  static void personaKeepsItsTaggedSkillsAndEveryUntaggedOne() {
+    linkTaggedSkills();
+
+    Test.startTest();
+    String developer = generatedTextFor('Developer');
+    String admin = generatedTextFor('Admin');
+    Test.stopTest();
+
+    Assert.isTrue(
+      developer.contains('Backend: Apex, Git\n'),
+      'Developer keeps Apex and the untagged Git: ' + developer
+    );
+    Assert.isFalse(
+      developer.contains('Flow'),
+      'A skill tagged only Admin is left out for Developer'
+    );
+    Assert.isTrue(
+      admin.contains('Process Automation: Flow\n'),
+      'Admin keeps Flow: ' + admin
+    );
+    Assert.isTrue(
+      admin.contains('Backend: Git\n'),
+      'Admin keeps the untagged Git and drops Apex: ' + admin
+    );
+  }
+
+  @IsTest
+  static void noPersonaKeepsEverySkill() {
+    linkTaggedSkills();
+
+    Test.startTest();
+    String text = generatedTextFor(null);
+    Test.stopTest();
+
+    Assert.isTrue(text.contains('Apex'), 'Apex: ' + text);
+    Assert.isTrue(text.contains('Flow'), 'Flow: ' + text);
+    Assert.isTrue(text.contains('Git'), 'Git: ' + text);
+  }
+
+  @IsTest
+  static void showsSkillForMatchesWholeTagsOnly() {
+    Assert.isTrue(PAPIResume.showsSkillFor(null, 'Admin'), 'Untagged');
+    Assert.isTrue(PAPIResume.showsSkillFor('Admin', null), 'No persona');
+    Assert.isTrue(
+      PAPIResume.showsSkillFor('Admin;Architect', 'Architect'),
+      'One of several tags'
+    );
+    Assert.isFalse(
+      PAPIResume.showsSkillFor('Developer', 'Admin'),
+      'Another persona'
+    );
+    Assert.isFalse(
+      PAPIResume.showsSkillFor('Administrator', 'Admin'),
+      'A tag that only starts with the persona is not a match'
+    );
+  }
+
   // Accept: text/plain on /resume/generate.
 
   private static final String GENERATE_URI = '/services/apexrest/papi/v1/resume/generate';
