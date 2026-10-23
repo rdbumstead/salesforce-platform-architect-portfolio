@@ -1,7 +1,9 @@
 /**
  * @description       : Tests for IntegrationCacheRefreshScheduler: four runs an hour at :00,
  *                      :15, :30 and :45, each run enqueues both refresh jobs, and the source
- *                      refresh joins them only when a file is due.
+ *                      refresh joins them only when a file is due. Scheduling runs under a
+ *                      test prefix, so the test passes in an org where the real four jobs are
+ *                      already scheduled, as in production.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -9,8 +11,12 @@
  **/
 @IsTest
 private class IntegrationCacheRefreshSchedulerTest {
+  private static final String TEST_PREFIX = 'Test Integration Cache Refresh :';
+
   @IsTest
   static void shouldScheduleFourRunsWhenScheduleAll() {
+    IntegrationCacheRefreshScheduler.jobNamePrefix = TEST_PREFIX;
+
     Test.startTest();
     List<Id> jobIds = IntegrationCacheRefreshScheduler.scheduleAll();
     Test.stopTest();
@@ -24,25 +30,22 @@ private class IntegrationCacheRefreshSchedulerTest {
     ]) {
       cronByName.put(scheduled.CronJobDetail.Name, scheduled.CronExpression);
     }
+    Assert.areEqual('0 0 * * * ?', cronByName.get(TEST_PREFIX + '00'), ':00');
+    Assert.areEqual('0 15 * * * ?', cronByName.get(TEST_PREFIX + '15'), ':15');
+    Assert.areEqual('0 30 * * * ?', cronByName.get(TEST_PREFIX + '30'), ':30');
+    Assert.areEqual('0 45 * * * ?', cronByName.get(TEST_PREFIX + '45'), ':45');
+  }
+
+  @IsTest
+  static void shouldUseTheRealNamesOutsideTests() {
+    Test.startTest();
+    String prefix = IntegrationCacheRefreshScheduler.jobNamePrefix;
+    Test.stopTest();
+
     Assert.areEqual(
-      '0 0 * * * ?',
-      cronByName.get('Integration Cache Refresh :00'),
-      ':00'
-    );
-    Assert.areEqual(
-      '0 15 * * * ?',
-      cronByName.get('Integration Cache Refresh :15'),
-      ':15'
-    );
-    Assert.areEqual(
-      '0 30 * * * ?',
-      cronByName.get('Integration Cache Refresh :30'),
-      ':30'
-    );
-    Assert.areEqual(
-      '0 45 * * * ?',
-      cronByName.get('Integration Cache Refresh :45'),
-      ':45'
+      IntegrationCacheRefreshScheduler.JOB_NAME_PREFIX,
+      prefix,
+      'Production schedules under Integration Cache Refresh :'
     );
   }
 
