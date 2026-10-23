@@ -34,14 +34,17 @@ const M6_NAMES = [
   "matrix_reset"
 ];
 
+// Round 6 plan N6, appended under M6's append only rule.
+const N6_NAMES = ["timeline_tab_changed"];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
   });
 
-  it("lists exactly the L4 and M6 event names", () => {
+  it("lists exactly the L4, M6 and N6 event names", () => {
     expect(Object.values(EVENTS).sort()).toEqual(
-      [...L4_NAMES, ...M6_NAMES].sort()
+      [...L4_NAMES, ...M6_NAMES, ...N6_NAMES].sort()
     );
   });
 

@@ -15,8 +15,10 @@ A small, known record graph for walking the public site in a scratch org. Every 
 | `Project__c`              | 2: Seed Project Alpha (Pillar C, featured), Seed Project Beta (Pillar E)                                                    |
 | `Project_Skill__c`        | 3                                                                                                                           |
 | `Project_Asset__c`        | 1: a link on Seed Project Alpha                                                                                             |
-| `Certification__c`        | 1: Seed Platform Developer I                                                                                                |
+| `Certification__c`        | 2: Seed Platform Developer I (current), Seed Certified AI Associate (`Is_Retired__c` true)                                  |
 | `Education__c`            | 1: Seed Bachelor of Science                                                                                                 |
+
+The two projects also carry a pillar card headline number with its label and a card image with alt text (`Headline_Metric__c`, `Headline_Metric_Label__c`, `Hero_Image_URL__c`, `Hero_Image_Alt__c`), the image from the `Project_Card_Images` static resource.
 
 ## Load it
 

@@ -123,6 +123,23 @@
       <ul class="pillar-grid" data-id="pillar-nav">
         <template for:each={pillars} for:item="pillar">
           <li key={pillar.key} class="card pillar-card" data-key={pillar.key}>
+            <template lwc:if={pillar.hasImage}>
+              <img
+                class="pillar-image"
+                src={pillar.imageUrl}
+                alt={pillar.imageAlt}
+                width={cardImageWidth}
+                height={cardImageHeight}
+                loading="lazy"
+                decoding="async"
+              />
+            </template>
+            <template lwc:if={pillar.hasHeadline}>
+              <p class="pillar-headline" data-id="pillar-headline">
+                <span class="pillar-metric">{pillar.headlineMetric}</span>
+                <span class="pillar-metric-label">{pillar.headlineLabel}</span>
+              </p>
+            </template>
             <div class="pillar-top">
               <span class="pillar-letter" aria-hidden="true"
                 >{pillar.letter}</span

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
+    <cacheControl>Public</cacheControl>
+    <contentType>application/zip</contentType>
+    <description>Home page pillar card images, pillar-a.webp to pillar-e.webp, 640 by 360. Cropped screenshots of each pillar's own public page in the light theme, with no names and nothing that identifies a person (Round 6 plan N7, reading R7).</description>
+</StaticResource>
