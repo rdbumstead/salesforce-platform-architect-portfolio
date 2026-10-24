@@ -267,6 +267,44 @@ export function installSectionLookup() {
   }
 }
 
+/** How many React fibers disposePreviousRedoc looks through before it gives up. */
+const FIBER_SEARCH_LIMIT = 400;
+
+/**
+ * Redoc 2.5.4's init renders a new React root into the element on every call and never
+ * unmounts the one before (its destroy makes yet another root and unmounts that). So after a
+ * spec switch the previous spec's store keeps its window scroll listener. Its scroll tracking
+ * cannot find its own sections any more, runs to its last menu item and writes that item's id
+ * into the URL hash. This finds that store through the element's React root and disposes it,
+ * which removes the listener. It does nothing when no earlier render is found.
+ * @returns {boolean} whether a store was disposed
+ */
+export function disposePreviousRedoc(element) {
+  try {
+    const key = Object.keys(element).find((name) =>
+      name.startsWith("__reactContainer$")
+    );
+    const stack = key && element[key] ? [element[key]] : [];
+    for (let seen = 0; stack.length && seen < FIBER_SEARCH_LIMIT; seen++) {
+      const fiber = stack.pop();
+      const store = fiber.memoizedProps && fiber.memoizedProps.store;
+      if (store && store.menu && typeof store.dispose === "function") {
+        store.dispose();
+        return true;
+      }
+      if (fiber.sibling) {
+        stack.push(fiber.sibling);
+      }
+      if (fiber.child) {
+        stack.push(fiber.child);
+      }
+    }
+  } catch {
+    // An unexpected shape is left alone. Only the hash after a spec switch is affected.
+  }
+  return false;
+}
+
 /** An id as the inside of a double quoted CSS attribute value. */
 function cssString(value) {
   return String(value).replace(/["\\]/g, "\\$&");
@@ -674,6 +712,7 @@ export default class ApiReference extends LightningElement {
       // Style tags present before Redoc first renders are the site's own.
       this.styleBaseline = new Set(document.head.querySelectorAll("style"));
     }
+    disposePreviousRedoc(target);
     await new Promise((resolve, reject) => {
       try {
         redoc.init(

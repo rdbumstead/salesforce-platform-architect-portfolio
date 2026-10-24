@@ -4,8 +4,9 @@
  *                      Redoc's aria-expanded, so the tests prove an open tag scrolls its intro
  *                      into view with focus left on the row, a closed tag scrolls nothing,
  *                      Enter and Space settle a row like a click, the menu is pinned below
- *                      the header and the spec switch on the full width page, and the header is
- *                      measured through a layout whose shadow root cannot be read.
+ *                      the header and the spec switch on the full width page, the header is
+ *                      measured through a layout whose shadow root cannot be read, and a spec
+ *                      switch disposes the store Redoc left behind from the render before.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -14,6 +15,7 @@
 import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
   REDOC_STYLE_OVERRIDES,
+  disposePreviousRedoc,
   headerOffset
 } from "c/apiReference";
 import { loadScript } from "lightning/platformResourceLoader";
@@ -325,5 +327,54 @@ describe("c-api-reference menu rows", () => {
       document.elementFromPoint = jest.fn(() => layout);
       expect(headerOffset(host)).toBe(0);
     });
+  });
+
+  it("disposes the store an earlier Redoc render left on the element", () => {
+    const store = { menu: {}, dispose: jest.fn() };
+    const element = document.createElement("div");
+    // React keeps its root on the element under a key like this one, then fibers below it.
+    element.__reactContainer$test = {
+      child: {
+        memoizedProps: {},
+        sibling: { memoizedProps: { other: true } },
+        child: { memoizedProps: { store } }
+      }
+    };
+
+    expect(disposePreviousRedoc(element)).toBe(true);
+    expect(store.dispose).toHaveBeenCalledTimes(1);
+    expect(disposePreviousRedoc(document.createElement("div"))).toBe(false);
+    expect(
+      disposePreviousRedoc({
+        get __reactContainer$broken() {
+          throw new Error("no access");
+        }
+      })
+    ).toBe(false);
+  });
+
+  it("disposes the first spec's store when the visitor switches spec", async () => {
+    const stores = [];
+    window.Redoc = {
+      init: jest.fn((spec, options, element, callback) => {
+        const store = { menu: {}, dispose: jest.fn() };
+        stores.push(store);
+        element.__reactContainer$test = {
+          child: { memoizedProps: { store } }
+        };
+        callback();
+      })
+    };
+    const element = create({ fullWidth: true });
+    await open(element);
+    expect(stores).toHaveLength(1);
+
+    $(element, 'button[data-spec="papi"]').click();
+    await flush();
+    await flush();
+
+    expect(stores).toHaveLength(2);
+    expect(stores[0].dispose).toHaveBeenCalledTimes(1);
+    expect(stores[1].dispose).not.toHaveBeenCalled();
   });
 });
