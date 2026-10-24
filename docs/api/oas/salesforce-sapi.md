@@ -1127,7 +1127,7 @@ Retrieves technical skills and proficiency scores.
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|category|query|string|false|Filter skills by Category (e.g., 'Development', 'Architecture')|
+|category|query|string|false|Filter skills by Category, one of the Skill Category picklist values, for example 'Backend', 'Frontend' or 'Integration'.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 

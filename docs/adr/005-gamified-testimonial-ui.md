@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, amended 2026-10-23 (Round 7, B9, see the amendment below).
+Accepted, amended 2026-10-23 (see the amendment below).
 
 ## Context
 
@@ -20,9 +20,9 @@ Ensures structured data entry while providing a unique, engaging experience for 
 
 Requires custom LWC logic to handle dynamic sentence fragments and "Vibe" toggles.
 
-## Amendment (2026-10-23, Round 7, B9): the accessible sentence builder
+## Amendment (2026-10-23): the accessible sentence builder
 
-The Round 3 form had replaced the sentence with plain labelled fields, and the vibe toggle chose nothing. Round 7 brings the sentence back in an accessible form.
+An earlier version of the form had replaced the sentence with plain labelled fields, and the vibe toggle chose nothing. This amendment brings the sentence back in an accessible form.
 
 - **The sentence.** "I'm a [relationship], and Ryan [strength]. The result? [outcome]" sits inside one `fieldset` whose `legend` reads the sentence. Each blank is a labelled select. A polite live region previews the finished sentence, and an optional note follows.
 - **The vibe chooses the fragments.** Strengths and outcomes are `Testimonial_Fragment__mdt` records with a vibe (Professional or Casual), a slot (Strength or Outcome), a sort order and an audience (Worked together or Anyone), so the owner edits them without a code change. A Recruiter, or a Fan or visitor, sees only the Anyone outcomes.

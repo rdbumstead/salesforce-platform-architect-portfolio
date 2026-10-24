@@ -15,7 +15,9 @@
  * @Created           : 10/21/2026
  * @Test Class        : [DeliveryControllerTest]
  **/
-public with sharing class DeliveryController {
+public with sharing class DeliveryController implements QueryDefinitions.Provider {
+  private static final String GITHUB_QUERY = 'DeliveryController_GithubCache';
+  private static final String JIRA_QUERY = 'DeliveryController_JiraCache';
   public static final Integer SCHEMA_VERSION = 1;
   public static final Integer FRESH_MINUTES = 30;
   // Code default for the roadmap's cards per column. The Roadmap_Column_Limit setting
@@ -162,6 +164,49 @@ public with sharing class DeliveryController {
   }
 
   /**
+   * @description The newest GitHub cache row as code, in system mode.
+   *              Query_Definition.DeliveryController_GithubCache ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault githubDefault() {
+    return newestRowDefault('Github_Cache__c');
+  }
+
+  /**
+   * @description The newest Jira cache row as code, in system mode.
+   *              Query_Definition.DeliveryController_JiraCache ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault jiraDefault() {
+    return newestRowDefault('Jira_Cache__c');
+  }
+
+  private static QueryDefinitions.QueryDefault newestRowDefault(
+    String objectName
+  ) {
+    return new QueryDefinitions.QueryDefault(
+        objectName,
+        'CreatedDate, JSON_Payload__c'
+      )
+      .orderBy('CreatedDate DESC, Id DESC')
+      .rowLimit(1)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      GITHUB_QUERY => githubDefault(),
+      JIRA_QUERY => jiraDefault()
+    };
+  }
+
+  /**
    * @description Reads the two cache objects in system mode and without sharing. The site
    *              guest has no grant on either cache object on purpose,
    *              and the rows hold only public commit and roadmap data, which the outer class
@@ -169,26 +214,22 @@ public with sharing class DeliveryController {
    */
   private without sharing class CacheSelector {
     private Snapshot newestGithubRow() {
-      List<Github_Cache__c> rows = [
-        SELECT CreatedDate, JSON_Payload__c
-        FROM Github_Cache__c
-        WITH SYSTEM_MODE
-        ORDER BY CreatedDate DESC, Id DESC
-        LIMIT 1
-      ];
+      List<Github_Cache__c> rows = (List<Github_Cache__c>) QueryDefinitions.run(
+        GITHUB_QUERY,
+        new Map<String, Object>(),
+        githubDefault()
+      );
       return rows.isEmpty()
         ? null
         : new Snapshot(rows[0].CreatedDate, rows[0].JSON_Payload__c);
     }
 
     private Snapshot newestJiraRow() {
-      List<Jira_Cache__c> rows = [
-        SELECT CreatedDate, JSON_Payload__c
-        FROM Jira_Cache__c
-        WITH SYSTEM_MODE
-        ORDER BY CreatedDate DESC, Id DESC
-        LIMIT 1
-      ];
+      List<Jira_Cache__c> rows = (List<Jira_Cache__c>) QueryDefinitions.run(
+        JIRA_QUERY,
+        new Map<String, Object>(),
+        jiraDefault()
+      );
       return rows.isEmpty()
         ? null
         : new Snapshot(rows[0].CreatedDate, rows[0].JSON_Payload__c);

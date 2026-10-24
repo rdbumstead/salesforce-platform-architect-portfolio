@@ -16,6 +16,7 @@ import ApiReference, {
   REDOC_STYLE_OVERRIDES,
   REDOC_LINK_COLOR,
   REDOC_TAB_COLORS,
+  REFERENCE_EVENT,
   RENDER_TIMEOUT_MS,
   TIMEOUT_MESSAGE
 } from "c/apiReference";
@@ -274,6 +275,54 @@ describe("c-api-reference", () => {
 
     expect(query(element, ".error-text").textContent).toContain("Invalid spec");
     expect(query(element, "a.hosted-link")).not.toBeNull();
+  });
+
+  describe("the portfolio-reference signal for the theme layout", () => {
+    let heard;
+    const listener = (event) => heard.push(event.detail);
+
+    beforeEach(() => {
+      heard = [];
+      document.addEventListener(REFERENCE_EVENT, listener);
+    });
+
+    afterEach(() => {
+      document.removeEventListener(REFERENCE_EVENT, listener);
+    });
+
+    it("is named portfolio-reference", () => {
+      expect(REFERENCE_EVENT).toBe("portfolio-reference");
+    });
+
+    it("says nothing before Redoc renders, then mounted true once it has", async () => {
+      const element = createComponent();
+      await flushPromises();
+      expect(heard).toEqual([]);
+
+      openButton(element).click();
+      await flushPromises();
+      expect(heard).toEqual([{ mounted: true }]);
+    });
+
+    it("says mounted false when the render fails", async () => {
+      window.Redoc.init.mockImplementation((spec, options, element, callback) =>
+        callback(new Error("Invalid spec"))
+      );
+      const element = createComponent();
+      await flushPromises();
+      openButton(element).click();
+      await flushPromises();
+      expect(heard).toEqual([{ mounted: false }]);
+    });
+
+    it("says mounted false when it leaves the page", async () => {
+      const element = createComponent();
+      await flushPromises();
+      openButton(element).click();
+      await flushPromises();
+      document.body.removeChild(element);
+      expect(heard).toEqual([{ mounted: true }, { mounted: false }]);
+    });
   });
 
   it("copies the style tags Redoc adds to the head into the component", async () => {

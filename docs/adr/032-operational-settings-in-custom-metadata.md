@@ -44,3 +44,7 @@ A mistyped value must never break a request. A rate limit of 0 or a page size of
 - A value changed in Setup takes effect on the next transaction. A full mode deploy writes every record in source, so the same value has to be committed to source or a later deploy can put the shipped one back ([Maintenance Guide §3.5](../guides/05-Maintenance-Guide.md#35-changing-an-operational-setting)).
 - Two labels do not follow a changed value: the Delivery checklist reads "Org heartbeat today" and "Integration caches under 30 minutes old" from fixed text in `c/smartChecklist`, while `GovernanceController` applies the settings.
 - The rate tiers of [ADR-025](025-papi-fan-out-throttling-capacity-planning.md) and the token rate and default cap of [ADR-028](028-evaluator-access-via-token-vending.md) are unchanged as decisions. Only where their numbers are kept has moved.
+
+## Note (2026-10-24)
+
+Content reads follow the same pattern in [ADR-033](033-queries-in-custom-metadata.md): a Public custom metadata type, the code's own value as the fallback, a record that fails a check ignored, and one `getAll()` per transaction. One difference: `Query_Definition__mdt` has long text fields, and `getAll()` returns only their first 255 characters, so a longer field list or filter is read again with one SOQL query. `Portfolio_Setting__mdt` has no long text field, so a setting still costs no query.

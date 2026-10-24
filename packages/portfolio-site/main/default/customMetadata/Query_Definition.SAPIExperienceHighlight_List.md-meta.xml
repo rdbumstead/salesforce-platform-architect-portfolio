@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>SAPIExperienceHighlight List</label>
+    <protected>false</protected>
+    <values>
+        <field>Object__c</field>
+        <value xsi:type="xsd:string">Experience_Highlight__c</value>
+    </values>
+    <values>
+        <field>Fields__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Id, Name, Experience__c, Experience__r.Name, Description__c, Sort_Order__c, Persona_Tag__c</value>
+    </values>
+    <values>
+        <field>Filter__c</field>
+        <value
+      xsi:type="xsd:string"
+    >(IsDeleted = :hasExperienceId OR Experience__c = :experienceId) AND (IsDeleted = :hasPersonas OR (IsDeleted = :adminOff AND Persona_Tag__c INCLUDES ('Admin')) OR (IsDeleted = :developerOff AND Persona_Tag__c INCLUDES ('Developer')) OR (IsDeleted = :architectOff AND Persona_Tag__c INCLUDES ('Architect')))</value>
+    </values>
+    <values>
+        <field>Order_By__c</field>
+        <value xsi:type="xsd:string">Sort_Order__c ASC, Name ASC</value>
+    </values>
+    <values>
+        <field>Row_Limit__c</field>
+        <value xsi:type="xsd:double">50000</value>
+    </values>
+    <values>
+        <field>Access_Mode__c</field>
+        <value xsi:type="xsd:string">SYSTEM_MODE</value>
+    </values>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >GET /sapi/v1/experience-highlights, filtered by experienceId and persona.</value>
+    </values>
+</CustomMetadata>

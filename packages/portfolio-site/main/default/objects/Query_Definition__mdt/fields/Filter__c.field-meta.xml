@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Filter__c</fullName>
+    <description
+  >Optional WHERE body. It may use only the named binds the calling class supplies, written as :name. It is always combined with the code's own filter by AND, so it can only narrow the rows.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >Optional WHERE body without the word WHERE. Use only the binds the calling class supplies, such as :category.</inlineHelpText>
+    <label>Filter</label>
+    <length>4000</length>
+    <type>LongTextArea</type>
+    <visibleLines>4</visibleLines>
+</CustomField>

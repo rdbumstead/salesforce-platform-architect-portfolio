@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for heroBanner LWC: the static hero, the bio and profile links
+ * @description       : Unit tests for heroBanner LWC: the static hero, the hero line, the bio and profile links
  *                      from the ResumeController header wire, the live pillar cards with the
  *                      "coming" line, and the tour.
  *                      c/pillarData is a fixed stand in. The card
@@ -238,6 +238,65 @@ describe("c-hero-banner", () => {
       );
     });
 
+    it("shows the hero line trimmed, directly under the name and before the bio", async () => {
+      const element = render();
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+      getHeader.emit({
+        ...HEADER,
+        heroLine: "  I build platforms people can check for themselves.  "
+      });
+      await flush();
+      const line = element.shadowRoot.querySelector('[data-id="hero-line"]');
+      expect(line.tagName).toBe("P");
+      expect(text(line)).toBe(
+        "I build platforms people can check for themselves."
+      );
+      const name = element.shadowRoot.querySelector("h1");
+      expect(name.nextElementSibling).toBe(line);
+      expect(line.nextElementSibling.className).toBe("hero-bio");
+    });
+
+    it("shows no hero line and no placeholder when it is blank, missing, or the wire fails", async () => {
+      const element = render();
+      getHeader.emit({ ...HEADER, heroLine: "   " });
+      await flush();
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+
+      getHeader.emit(HEADER);
+      await flush();
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+
+      getHeader.emit({ ...HEADER, heroLine: 42 });
+      await flush();
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+
+      getHeader.error();
+      await flush();
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+      expect(element.shadowRoot.querySelector(".hero-photo")).not.toBeNull();
+    });
+
+    it("paints the photo before the header wire returns", () => {
+      const element = render();
+      const photo = element.shadowRoot.querySelector(".hero-photo");
+      expect(photo).not.toBeNull();
+      expect(photo.getAttribute("width")).toBe("232");
+      expect(photo.getAttribute("height")).toBe("232");
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+    });
+
     it("links straight to the resume from the hero", () => {
       const element = render();
       const resume = element.shadowRoot.querySelector(
@@ -442,6 +501,88 @@ describe("c-hero-banner", () => {
       await flush();
       expect(heading.scrollIntoView).toHaveBeenCalledTimes(2);
       expect(root.activeElement).toBe(heading);
+    });
+  });
+
+  describe("motion preference", () => {
+    const originalMatchMedia = window.matchMedia;
+
+    function systemReduces(matches) {
+      window.matchMedia = jest.fn(() => ({
+        matches,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }));
+    }
+
+    afterEach(() => {
+      window.localStorage.clear();
+      window.matchMedia = originalMatchMedia;
+    });
+
+    function tourScroll(element) {
+      const root = element.shadowRoot;
+      const heading = root.querySelector('[data-id="tour-heading"]');
+      heading.scrollIntoView = jest.fn();
+      root.querySelector('[data-id="tour-button"]').click();
+      return heading.scrollIntoView.mock.calls[0][0];
+    }
+
+    it("scrolls smoothly and keeps the card transition with no choice and no system setting", () => {
+      systemReduces(false);
+      const element = render();
+      expect(tourScroll(element)).toEqual({
+        behavior: "smooth",
+        block: "start"
+      });
+      expect(
+        element.shadowRoot
+          .querySelector(".home")
+          .classList.contains("motion-reduced")
+      ).toBe(false);
+    });
+
+    it("follows the system setting when the visitor has made no choice", () => {
+      systemReduces(true);
+      const element = render();
+      expect(tourScroll(element).behavior).toBe("auto");
+      expect(
+        element.shadowRoot
+          .querySelector(".home")
+          .classList.contains("motion-reduced")
+      ).toBe(true);
+    });
+
+    it("lets the visitor's stored choice win over the system setting", () => {
+      systemReduces(true);
+      window.localStorage.setItem("portfolio-motion", "full");
+      const element = render();
+      expect(tourScroll(element).behavior).toBe("smooth");
+    });
+
+    it("follows a change made while the page is open, and stops listening when removed", async () => {
+      systemReduces(false);
+      const element = render();
+      document.dispatchEvent(
+        new CustomEvent("portfolio-motion", {
+          detail: { motion: "reduce", reduced: true }
+        })
+      );
+      await flush();
+      expect(
+        element.shadowRoot
+          .querySelector(".home")
+          .classList.contains("motion-reduced")
+      ).toBe(true);
+      expect(tourScroll(element).behavior).toBe("auto");
+
+      const removeSpy = jest.spyOn(document, "removeEventListener");
+      document.body.removeChild(element);
+      expect(removeSpy).toHaveBeenCalledWith(
+        "portfolio-motion",
+        expect.any(Function)
+      );
+      removeSpy.mockRestore();
     });
   });
 

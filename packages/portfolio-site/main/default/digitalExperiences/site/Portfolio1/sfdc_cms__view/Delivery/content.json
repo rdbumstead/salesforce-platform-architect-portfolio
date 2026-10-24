@@ -25,11 +25,14 @@
                   "children": [
                     {
                       "attributes": {
-                        "imageInfos": "",
-                        "richTextValue": "<h1>Delivery</h1><p>Pillar E: Agile Delivery and DevOps. Work on this site is planned in Jira, and GitHub Actions validates and deploys every change to Salesforce. The roadmap and changelog below read copies of the Jira and GitHub data that are stored in Salesforce, so your browser never calls either service directly. After every production deploy and every daily heartbeat, the pipeline publishes a platform event with the result, passed or failed. The governance checklist at the end of the page shows the newest run of each with its commit and time, and it says so when a run failed or is out of date.</p>"
+                        "designLabel": "Read the design",
+                        "designUrl": "/docs?doc=sas#5-5-pillar-e-agile-delivery-devops-roadmap",
+                        "eyebrow": "Pillar E",
+                        "heading": "Delivery",
+                        "lead": "Agile Delivery and DevOps. Work on this site is planned in Jira, and GitHub Actions validates and deploys every change to Salesforce. The roadmap and changelog below read copies of the Jira and GitHub data that are stored in Salesforce, so your browser never calls either service directly. After every production deploy and every daily heartbeat, the pipeline publishes a platform event with the result, passed or failed. The governance checklist at the end of the page shows the newest run of each with its commit and time, and it says so when a run failed or is out of date."
                       },
-                      "definition": "community_builder:richTextEditor",
-                      "id": "b4ae3b8e-6ac1-4bdc-8320-bc576a9de6a0",
+                      "definition": "c:pageIntro",
+                      "id": "34ca758c-d413-4393-a89e-d9e104b2344b",
                       "type": "component"
                     },
                     {

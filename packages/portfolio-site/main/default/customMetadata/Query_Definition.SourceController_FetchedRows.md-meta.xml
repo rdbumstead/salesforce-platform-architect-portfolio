@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>SourceController FetchedRows</label>
+    <protected>false</protected>
+    <values>
+        <field>Object__c</field>
+        <value xsi:type="xsd:string">Source_Cache__c</value>
+    </values>
+    <values>
+        <field>Fields__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Path__c, Content__c, Html_Url__c, Fetched_At__c, Truncated__c</value>
+    </values>
+    <values>
+        <field>Filter__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Path__c IN :paths AND Fetched_At__c != NULL</value>
+    </values>
+    <values>
+        <field>Order_By__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Row_Limit__c</field>
+        <value xsi:type="xsd:double">200</value>
+    </values>
+    <values>
+        <field>Access_Mode__c</field>
+        <value xsi:type="xsd:string">SYSTEM_MODE</value>
+    </values>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >View source dialog and docs page: cached rows.</value>
+    </values>
+</CustomMetadata>

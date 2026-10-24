@@ -350,24 +350,89 @@ private class ApiLabControllerCoverLetterTest {
   }
 
   @IsTest
-  static void promptMatchesTheApiCoverLetterPrompt() {
+  static void promptIsTheSharedCoverLetterPrompt() {
     Test.startTest();
     String prompt = ApiLabController.coverLetterPrompt(
       'Acme',
       'Architect',
       'Apex'
     );
+    String shared = ContentGenerationController.coverLetterPrompt(
+      'Acme',
+      'Architect',
+      'Apex'
+    );
     Test.stopTest();
 
-    List<String> lines = prompt.split('\n');
-    Assert.areEqual(
-      'Write a cover letter for Ryan Bumstead in a professional tone, no longer than 1000 characters.',
-      lines[0],
-      'Same opening line as /papi/v1/ai/generate'
+    Assert.areEqual(shared, prompt, 'One prompt builder for both paths');
+    Assert.isTrue(
+      prompt.contains(
+        '\ncompanyName: Acme\nrole: Architect\njobDescription: Apex'
+      ),
+      'The job lines'
     );
-    Assert.areEqual('companyName: Acme', lines[1], 'Company');
-    Assert.areEqual('role: Architect', lines[2], 'Role');
-    Assert.areEqual('jobDescription: Apex', lines[3], 'Description');
+    Assert.isFalse(
+      prompt.contains('characters'),
+      'No character cap in the prompt'
+    );
+  }
+
+  @IsTest
+  static void longLetterIsReturnedWhole() {
+    String longAnswer = 'word '.repeat(600).trim();
+    ContentGenerationController.mockGeminiService = new FixedProvider(
+      longAnswer
+    );
+    RoutingMock mock = mockGemini(200);
+
+    Test.startTest();
+    ApiLabController.CoverLetterResult result = ApiLabController.generateCoverLetter(
+      'Acme',
+      'Architect',
+      null
+    );
+    Test.stopTest();
+
+    Assert.areEqual(longAnswer, result.content, 'No cut on the letter');
+    Assert.areEqual(0, mock.endpoints.size(), 'The double served');
+  }
+
+  @IsTest
+  static void geminiRequestFromThePageCarriesTheGenerationConfig() {
+    RoutingMock mock = mockGemini(200);
+
+    Test.startTest();
+    ApiLabController.generateCoverLetter('Acme', 'Architect', null);
+    Test.stopTest();
+
+    Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(
+      mock.bodies[0]
+    );
+    Map<String, Object> config = (Map<String, Object>) body.get(
+      'generationConfig'
+    );
+    Assert.isNotNull(config, 'generationConfig is sent');
+    Assert.isNotNull(config.get('maxOutputTokens'), 'Output limit sent');
+    Assert.isNotNull(config.get('temperature'), 'Temperature sent');
+  }
+
+  /**
+   * @description A provider that always serves the same text.
+   */
+  private class FixedProvider implements IAIGenerationService {
+    private final String text;
+
+    FixedProvider(String text) {
+      this.text = text;
+    }
+
+    public String generateContent(String prompt, Map<String, Object> context) {
+      return text;
+    }
+
+    public Boolean isAvailable() {
+      return true;
+    }
   }
 
   @IsTest

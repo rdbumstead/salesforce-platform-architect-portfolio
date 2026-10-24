@@ -175,6 +175,9 @@
   padding: 0.75rem 1rem 1rem;
   background-color: var(--form-surface);
   color: var(--form-text);
+  /* A fieldset is as wide as its widest content by default. This lets it shrink to a phone. */
+  min-width: 0;
+  min-inline-size: 0;
 }
 
 .sentence-legend {
@@ -195,9 +198,15 @@
   min-width: 6rem;
 }
 
+/*
+ * A select is as wide as its longest option, here a whole sentence. Capped at the row's width,
+ * so the long text wraps in the native picker instead of pushing the form off screen.
+ */
 .blank-input {
   flex: 1 1 14rem;
   width: auto;
+  min-width: 0;
+  max-width: 100%;
   min-height: 44px;
 }
 

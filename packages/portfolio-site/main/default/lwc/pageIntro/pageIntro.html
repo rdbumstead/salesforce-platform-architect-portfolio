@@ -1,0 +1,22 @@
+<template>
+  <div class="intro">
+    <template lwc:if={eyebrowText}>
+      <p class="intro-eyebrow">{eyebrowText}</p>
+    </template>
+    <h1 class="intro-heading">{headingText}</h1>
+    <template lwc:if={leadText}>
+      <p class="intro-lead">{leadText}</p>
+    </template>
+    <template lwc:if={designHref}>
+      <p class="intro-actions">
+        <a
+          class="intro-design"
+          href={designHref}
+          target={designTarget}
+          rel={designRel}
+          >{designText}</a
+        >
+      </p>
+    </template>
+  </div>
+</template>

@@ -7,7 +7,23 @@
  * @Test Class        : [PAPIProjectsTest]
  **/
 @RestResource(urlMapping='/papi/v1/projects/*')
-global with sharing class PAPIProjects {
+global with sharing class PAPIProjects implements QueryDefinitions.Provider {
+  private static final String FEATURED_QUERY = 'PAPIProjects_Featured';
+  private static final String ALL_QUERY = 'PAPIProjects_All';
+  private static final String SKILLS_QUERY = 'PAPIProjects_Skills';
+  private static final String ASSETS_QUERY = 'PAPIProjects_Assets';
+
+  /** Every Project__c field the EnrichedProject schema reads. PAPIProfile reads the same. */
+  public static final String PROJECT_FIELDS = 'Id, Name, Challenge__c, Solution__c, Business_Value__c, Status__c, Hero_Image_URL__c, Live_URL__c, Repository_URL__c, Date_Completed__c, Is_Featured__c';
+
+  /** The statuses a visitor may see. PAPIProfile filters on the same. */
+  public static final String LISTED_STATUS_FILTER =
+    'Status__c IN (\'Live – In Production\', \'Live – Demo / Reference\', ' +
+    '\'Active Development\')';
+
+  /** The project order. PAPIProfile uses the same. */
+  public static final String PROJECT_ORDER = 'Sort_Order__c ASC NULLS LAST, Name ASC';
+
   /**
    * @description GET method to retrieve projects.
    *              /projects/featured - Featured projects only
@@ -42,30 +58,11 @@ global with sharing class PAPIProjects {
   private static void getFeaturedProjects(ApiRequestContext ctx) {
     PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
     agg.source('projects');
-    List<Project__c> projects = [
-      SELECT
-        Id,
-        Name,
-        Challenge__c,
-        Solution__c,
-        Business_Value__c,
-        Status__c,
-        Hero_Image_URL__c,
-        Live_URL__c,
-        Repository_URL__c,
-        Date_Completed__c,
-        Is_Featured__c
-      FROM Project__c
-      WHERE
-        Is_Featured__c = TRUE
-        AND Status__c IN (
-          'Live – In Production',
-          'Live – Demo / Reference',
-          'Active Development'
-        )
-      ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
-      LIMIT 10
-    ];
+    List<Project__c> projects = (List<Project__c>) QueryDefinitions.run(
+      FEATURED_QUERY,
+      new Map<String, Object>(),
+      featuredDefault()
+    );
 
     respond(ctx, enrichProjects(projects, agg), agg);
   }
@@ -76,29 +73,11 @@ global with sharing class PAPIProjects {
   private static void getAllProjects(ApiRequestContext ctx) {
     PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();
     agg.source('projects');
-    List<Project__c> projects = [
-      SELECT
-        Id,
-        Name,
-        Challenge__c,
-        Solution__c,
-        Business_Value__c,
-        Status__c,
-        Hero_Image_URL__c,
-        Live_URL__c,
-        Repository_URL__c,
-        Date_Completed__c,
-        Is_Featured__c
-      FROM Project__c
-      WHERE
-        Status__c IN (
-          'Live – In Production',
-          'Live – Demo / Reference',
-          'Active Development'
-        )
-      ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
-      LIMIT 50
-    ];
+    List<Project__c> projects = (List<Project__c>) QueryDefinitions.run(
+      ALL_QUERY,
+      new Map<String, Object>(),
+      allDefault()
+    );
 
     respond(ctx, enrichProjects(projects, agg), agg);
   }
@@ -166,11 +145,13 @@ global with sharing class PAPIProjects {
     Map<Id, List<String>> skillsMap = new Map<Id, List<String>>();
     try {
       PAPITransformer.guardSection('project-skills');
-      for (Project_Skill__c ps : [
-        SELECT Project__c, Skill__r.Name
-        FROM Project_Skill__c
-        WHERE Project__c IN :projIds
-      ]) {
+      for (
+        Project_Skill__c ps : (List<Project_Skill__c>) QueryDefinitions.run(
+          SKILLS_QUERY,
+          projectBinds(projIds),
+          skillsDefault()
+        )
+      ) {
         if (!skillsMap.containsKey(ps.Project__c)) {
           skillsMap.put(ps.Project__c, new List<String>());
         }
@@ -191,12 +172,13 @@ global with sharing class PAPIProjects {
     Map<Id, List<Map<String, Object>>> assetsMap = new Map<Id, List<Map<String, Object>>>();
     try {
       PAPITransformer.guardSection('project-assets');
-      for (Project_Asset__c pa : [
-        SELECT Project__c, Name, Type__c, External_URL__c, Alt_Text__c
-        FROM Project_Asset__c
-        WHERE Project__c IN :projIds
-        ORDER BY Sort_Order__c ASC
-      ]) {
+      for (
+        Project_Asset__c pa : (List<Project_Asset__c>) QueryDefinitions.run(
+          ASSETS_QUERY,
+          projectBinds(projIds),
+          assetsDefault()
+        )
+      ) {
         if (!assetsMap.containsKey(pa.Project__c)) {
           assetsMap.put(pa.Project__c, new List<Map<String, Object>>());
         }
@@ -214,6 +196,84 @@ global with sharing class PAPIProjects {
       assetsMap.clear();
     }
     return assetsMap;
+  }
+
+  /**
+   * @description The featured read as code. Query_Definition.PAPIProjects_Featured ships
+   *              equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault featuredDefault() {
+    return new QueryDefinitions.QueryDefault('Project__c', PROJECT_FIELDS)
+      .filter('Is_Featured__c = TRUE AND ' + LISTED_STATUS_FILTER)
+      .orderBy(PROJECT_ORDER)
+      .rowLimit(10)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The read of every listed project as code. Query_Definition.PAPIProjects_All
+   *              ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault allDefault() {
+    return new QueryDefinitions.QueryDefault('Project__c', PROJECT_FIELDS)
+      .filter(LISTED_STATUS_FILTER)
+      .orderBy(PROJECT_ORDER)
+      .rowLimit(50)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The project skill read as code. Query_Definition.PAPIProjects_Skills ships
+   *              equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault skillsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Project_Skill__c',
+        'Project__c, Skill__r.Name'
+      )
+      .filter('Project__c IN :projectIds')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(projectBinds(new Set<Id>()));
+  }
+
+  /**
+   * @description The project asset read as code. Query_Definition.PAPIProjects_Assets ships
+   *              equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault assetsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Project_Asset__c',
+        'Project__c, Name, Type__c, External_URL__c, Alt_Text__c'
+      )
+      .filter('Project__c IN :projectIds')
+      .orderBy('Sort_Order__c ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(projectBinds(new Set<Id>()));
+  }
+
+  private static Map<String, Object> projectBinds(Set<Id> projectIds) {
+    return new Map<String, Object>{ 'projectIds' => projectIds };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      FEATURED_QUERY => featuredDefault(),
+      ALL_QUERY => allDefault(),
+      SKILLS_QUERY => skillsDefault(),
+      ASSETS_QUERY => assetsDefault()
+    };
   }
 
   @TestVisible

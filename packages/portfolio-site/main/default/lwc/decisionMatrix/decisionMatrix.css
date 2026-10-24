@@ -176,9 +176,15 @@
   white-space: nowrap;
 }
 
-/* View source, at the top right of the matrix. */
+/* View source, at the top right of the matrix on desktop and at the left on phones. */
 .card-tools {
   display: flex;
   justify-content: flex-end;
   margin-bottom: var(--pf-space-2);
+}
+
+@media (max-width: 767.98px) {
+  .card-tools {
+    justify-content: flex-start;
+  }
 }

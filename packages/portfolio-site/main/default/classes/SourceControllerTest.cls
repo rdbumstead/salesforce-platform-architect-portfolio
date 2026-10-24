@@ -1,7 +1,9 @@
 /**
  * @description       : Tests for SourceController. The guest test runs as
  *                      the Portfolio1 site's real guest user and proves the guest gets cached
- *                      rows with no callout and without any access to Source_Cache__c.
+ *                      rows with no callout and without any access to Source_Cache__c, for the
+ *                      View source dialog and for the docs page. A file stored in parts comes
+ *                      back joined in order.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -14,6 +16,12 @@ private class SourceControllerTest {
   private static final String HTML_PATH = 'lwc/apiTester/apiTester.html';
   private static final String APEX_PATH = 'classes/ApiLabController.cls';
   private static final String OTHER_PATH = 'lwc/decisionMatrix/decisionMatrix.js';
+  private static final String SAS_PATH = 'docs/guides/03-SAS.md';
+  private static final String ADR_PATH = 'docs/adr/027-auth.md';
+  private static final String UNFETCHED_DOC_PATH = 'docs/adr/028-tokens.md';
+  // Cut the way the refresh job cuts: inside the heading's ##, no whitespace at either end.
+  private static final String SAS_FIRST = '# SAS\n## One\nfirst part\n#';
+  private static final String SAS_SECOND = '# Two\nsecond part';
 
   /** Fails any callout, so a test that reaches GitHub fails loudly. */
   private class NoCalloutMock implements HttpCalloutMock {
@@ -35,6 +43,37 @@ private class SourceControllerTest {
       Label__c = label,
       Sort_Order__c = sortOrder
     );
+  }
+
+  /** DeveloperName cannot be set on a new record, so docs records are built from JSON. */
+  private static Source_File__mdt docFile(
+    String developerName,
+    String path,
+    String label,
+    Integer sortOrder
+  ) {
+    return (Source_File__mdt) JSON.deserialize(
+      JSON.serialize(
+        new Map<String, Object>{
+          'DeveloperName' => developerName,
+          'Source_Key__c' => SourceController.DOCS_KEY,
+          'Path__c' => path,
+          'Label__c' => label,
+          'Sort_Order__c' => sortOrder
+        }
+      ),
+      Source_File__mdt.class
+    );
+  }
+
+  private static void configureDocs() {
+    // Listed out of order on purpose: the controller sorts by Sort_Order__c.
+    SourceController.filesOverride = new List<Source_File__mdt>{
+      docFile('docs_adr_027', ADR_PATH, 'Platform auth', 27),
+      docFile('docs_adr_028', UNFETCHED_DOC_PATH, 'Token vending', 28),
+      docFile('docs_sas', SAS_PATH, 'Systems Architecture Specification', 0),
+      file(KEY, JS_PATH, 'apiTester.js', 1)
+    };
   }
 
   private static void configure() {
@@ -71,6 +110,43 @@ private class SourceControllerTest {
       // Checked but never fetched: left out of the dialog.
       new Source_Cache__c(
         Path__c = HTML_PATH,
+        Checked_At__c = fetched,
+        Last_Status__c = 'HTTP 404'
+      ),
+      new Source_Cache__c(
+        Path__c = SAS_PATH,
+        Content__c = SAS_FIRST,
+        Html_Url__c = 'https://github.com/o/r/blob/main/' + SAS_PATH,
+        Fetched_At__c = fetched,
+        Checked_At__c = fetched,
+        Last_Status__c = '200'
+      ),
+      new Source_Cache__c(
+        Path__c = SAS_PATH + '#part-2',
+        Content__c = SAS_SECOND,
+        Html_Url__c = 'https://github.com/o/r/blob/main/' + SAS_PATH,
+        Fetched_At__c = fetched,
+        Checked_At__c = fetched,
+        Last_Status__c = '200'
+      ),
+      // Part 4 with no part 3 is never joined.
+      new Source_Cache__c(
+        Path__c = SAS_PATH + '#part-4',
+        Content__c = 'orphan part',
+        Fetched_At__c = fetched,
+        Checked_At__c = fetched,
+        Last_Status__c = '200'
+      ),
+      new Source_Cache__c(
+        Path__c = ADR_PATH,
+        Content__c = '# ADR-027: Platform auth\n',
+        Html_Url__c = 'https://github.com/o/r/blob/main/' + ADR_PATH,
+        Fetched_At__c = fetched,
+        Checked_At__c = fetched,
+        Last_Status__c = '200'
+      ),
+      new Source_Cache__c(
+        Path__c = UNFETCHED_DOC_PATH,
         Checked_At__c = fetched,
         Last_Status__c = 'HTTP 404'
       ),
@@ -252,5 +328,130 @@ private class SourceControllerTest {
     Test.stopTest();
 
     Assert.areEqual(expected, actual, 'Same mapping as c/prismHighlighter');
+  }
+
+  @IsTest
+  static void shouldListFetchedDocsInOrderWhenGuestAsks() {
+    configureDocs();
+    User guest = SiteGuestTestSupport.preparedGuest();
+    Test.setMock(HttpCalloutMock.class, new NoCalloutMock());
+
+    List<SourceController.DocSummary> docs;
+    Test.startTest();
+    System.runAs(guest) {
+      docs = SourceController.getDocs();
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      2,
+      docs.size(),
+      'The two fetched docs, not the unfetched one'
+    );
+    Assert.areEqual(
+      'sas',
+      docs[0].key,
+      'Sort order 0 first, key from the name'
+    );
+    Assert.areEqual(
+      'Systems Architecture Specification',
+      docs[0].title,
+      'Title from the label'
+    );
+    Assert.areEqual(SAS_PATH, docs[0].path, 'Path');
+    Assert.areEqual('adr-027', docs[1].key, 'Underscore becomes a hyphen');
+  }
+
+  @IsTest
+  static void shouldJoinTheDocsPartsWhenGuestOpensOne() {
+    configureDocs();
+    User guest = SiteGuestTestSupport.preparedGuest();
+    Test.setMock(HttpCalloutMock.class, new NoCalloutMock());
+
+    SourceController.DocContent doc;
+    Integer callouts;
+    Test.startTest();
+    System.runAs(guest) {
+      doc = SourceController.getDoc(' SAS ');
+      callouts = Limits.getCallouts();
+    }
+    Test.stopTest();
+
+    Assert.areEqual(0, callouts, 'No callout from the guest read');
+    Assert.areEqual('sas', doc.key, 'Key');
+    Assert.areEqual(
+      SAS_FIRST + SAS_SECOND,
+      doc.content,
+      'Parts 1 and 2 in order, nothing after the gap'
+    );
+    Assert.areEqual(
+      'https://github.com/o/r/blob/main/' + SAS_PATH,
+      doc.htmlUrl,
+      'GitHub link of the first part'
+    );
+    Assert.areEqual(
+      Datetime.newInstanceGmt(2026, 10, 23, 6, 0, 0),
+      doc.fetchedAt,
+      'Fetch time'
+    );
+    Assert.isFalse(doc.truncated, 'Whole document');
+    Assert.areEqual('Systems Architecture Specification', doc.title, 'Title');
+  }
+
+  @IsTest
+  static void shouldReturnNullWhenDocIsUnknownBlankOrNotFetched() {
+    configureDocs();
+
+    Test.startTest();
+    SourceController.DocContent unknown = SourceController.getDoc('adr-999');
+    SourceController.DocContent blank = SourceController.getDoc(' ');
+    SourceController.DocContent unfetched = SourceController.getDoc('adr-028');
+    SourceController.DocContent notADoc = SourceController.getDoc('apitester');
+    Test.stopTest();
+
+    Assert.isNull(unknown, 'Unknown key');
+    Assert.isNull(blank, 'Blank key');
+    Assert.isNull(unfetched, 'Never fetched');
+    Assert.isNull(notADoc, 'A component file is not a doc');
+  }
+
+  @IsTest
+  static void shouldReturnNoDocsWhenNoneAreConfigured() {
+    configure();
+
+    Test.startTest();
+    List<SourceController.DocSummary> docs = SourceController.getDocs();
+    Test.stopTest();
+
+    Assert.areEqual(0, docs.size(), 'No docs records, no docs');
+  }
+
+  @IsTest
+  static void shouldJoinPartsWhenASourceFileIsStoredInParts() {
+    SourceController.filesOverride = new List<Source_File__mdt>{
+      file('docsAsSource', SAS_PATH, 'SAS', 1)
+    };
+
+    Test.startTest();
+    List<SourceController.SourceFile> files = SourceController.getSourceFiles(
+      'docsAsSource'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(SAS_FIRST + SAS_SECOND, files[0].content, 'Joined');
+    Assert.areEqual('none', files[0].language, 'Markdown has no grammar');
+  }
+
+  @IsTest
+  static void shouldBuildTheDocKeyFromTheRecordName() {
+    Test.startTest();
+    String adr = SourceController.docKeyFor(
+      docFile('docs_ADR_031', ADR_PATH, 'x', 1)
+    );
+    String none = SourceController.docKeyFor(null);
+    Test.stopTest();
+
+    Assert.areEqual('adr-031', adr, 'Prefix gone, lower case, hyphen');
+    Assert.areEqual('', none, 'No record, no key');
   }
 }

@@ -1,11 +1,13 @@
 /**
- * @description       : Implementation of the Portfolio Agent Service.
+ * @description       : Implementation of the Portfolio Agent Service. The Contact read
+ *                      selects no Email or Phone, so neither can reach the agent's context.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 01/13/2025
  * @Test Class        : [PortfolioAgentServiceTest]
  **/
+// Reads stay static SOQL, not query definitions: the child lists are serialized as they come back.
 public with sharing class PortfolioAgentService {
   public class PortfolioContextRequest {
     @InvocableVariable(label='Contact ID' required=true)
@@ -54,8 +56,6 @@ public with sharing class PortfolioAgentService {
         Id,
         Name,
         Title,
-        Email,
-        Phone,
         (
           SELECT
             Name,

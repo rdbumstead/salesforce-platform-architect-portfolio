@@ -10,7 +10,10 @@
  * @Created           : 10/21/2026
  * @Test Class        : [GovernanceControllerTest]
  **/
-public with sharing class GovernanceController {
+public with sharing class GovernanceController implements QueryDefinitions.Provider {
+  private static final String RUNS_QUERY = 'GovernanceController_PipelineRuns';
+  private static final String GITHUB_QUERY = 'GovernanceController_GithubCache';
+  private static final String JIRA_QUERY = 'GovernanceController_JiraCache';
   public static final String ITEM_DEPLOY = 'deploy';
   public static final String ITEM_HEARTBEAT = 'heartbeat';
   public static final String ITEM_CACHES = 'caches';
@@ -151,20 +154,12 @@ public with sharing class GovernanceController {
     private List<RunInfo> latestRunPerWorkflow() {
       List<RunInfo> latest = new List<RunInfo>();
       Set<String> seen = new Set<String>();
-      for (Pipeline_Run__c row : [
-        SELECT
-          Workflow__c,
-          Status__c,
-          Run_Id__c,
-          Run_Url__c,
-          Commit_Sha__c,
-          Completed_At__c
-        FROM Pipeline_Run__c
-        WHERE Workflow__c IN :WORKFLOWS
-        WITH SYSTEM_MODE
-        ORDER BY Completed_At__c DESC NULLS LAST, CreatedDate DESC, Id DESC
-        LIMIT 200
-      ]) {
+      List<Pipeline_Run__c> rows = (List<Pipeline_Run__c>) QueryDefinitions.run(
+        RUNS_QUERY,
+        runBinds(),
+        runsDefault()
+      );
+      for (Pipeline_Run__c row : rows) {
         if (seen.add(row.Workflow__c)) {
           latest.add(new RunInfo(row));
         }
@@ -173,26 +168,86 @@ public with sharing class GovernanceController {
     }
 
     private Datetime newestGithubCache() {
-      List<Github_Cache__c> rows = [
-        SELECT CreatedDate
-        FROM Github_Cache__c
-        WITH SYSTEM_MODE
-        ORDER BY CreatedDate DESC
-        LIMIT 1
-      ];
+      List<Github_Cache__c> rows = (List<Github_Cache__c>) QueryDefinitions.run(
+        GITHUB_QUERY,
+        new Map<String, Object>(),
+        githubDefault()
+      );
       return rows.isEmpty() ? null : rows[0].CreatedDate;
     }
 
     private Datetime newestJiraCache() {
-      List<Jira_Cache__c> rows = [
-        SELECT CreatedDate
-        FROM Jira_Cache__c
-        WITH SYSTEM_MODE
-        ORDER BY CreatedDate DESC
-        LIMIT 1
-      ];
+      List<Jira_Cache__c> rows = (List<Jira_Cache__c>) QueryDefinitions.run(
+        JIRA_QUERY,
+        new Map<String, Object>(),
+        jiraDefault()
+      );
       return rows.isEmpty() ? null : rows[0].CreatedDate;
     }
+  }
+
+  /**
+   * @description The runs read as code: the deploy and heartbeat runs, newest first, in
+   *              system mode. Query_Definition.GovernanceController_PipelineRuns ships equal
+   *              to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault runsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Pipeline_Run__c',
+        'Workflow__c, Status__c, Run_Id__c, Run_Url__c, Commit_Sha__c, Completed_At__c'
+      )
+      .filter('Workflow__c IN :workflows')
+      .orderBy('Completed_At__c DESC NULLS LAST, CreatedDate DESC, Id DESC')
+      .rowLimit(200)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(runBinds());
+  }
+
+  private static Map<String, Object> runBinds() {
+    return new Map<String, Object>{ 'workflows' => WORKFLOWS };
+  }
+
+  /**
+   * @description The newest GitHub cache time as code, in system mode.
+   *              Query_Definition.GovernanceController_GithubCache ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault githubDefault() {
+    return newestCacheDefault('Github_Cache__c');
+  }
+
+  /**
+   * @description The newest Jira cache time as code, in system mode.
+   *              Query_Definition.GovernanceController_JiraCache ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault jiraDefault() {
+    return newestCacheDefault('Jira_Cache__c');
+  }
+
+  private static QueryDefinitions.QueryDefault newestCacheDefault(
+    String objectName
+  ) {
+    return new QueryDefinitions.QueryDefault(objectName, 'CreatedDate')
+      .orderBy('CreatedDate DESC')
+      .rowLimit(1)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      RUNS_QUERY => runsDefault(),
+      GITHUB_QUERY => githubDefault(),
+      JIRA_QUERY => jiraDefault()
+    };
   }
 
   /**

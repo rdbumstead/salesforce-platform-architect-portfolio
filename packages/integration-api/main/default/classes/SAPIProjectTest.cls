@@ -263,4 +263,72 @@ private class SAPIProjectTest {
       'Single record keys equal the spec'
     );
   }
+
+  // A second project held by another contact, so each filter has something to leave out.
+  private static void addSecondProject() {
+    List<Contact> people = new List<Contact>{
+      new Contact(FirstName = 'Ryan', LastName = 'Owner'),
+      new Contact(FirstName = 'Pat', LastName = 'Other')
+    };
+    insert people;
+    Project__c first = [SELECT Id FROM Project__c LIMIT 1];
+    first.Contact__c = people[0].Id;
+    update first;
+    insert new Project__c(
+      Name = 'Second Project',
+      Status__c = 'Active Development',
+      Pillar__c = 'A',
+      Sort_Order__c = 2,
+      Contact__c = people[1].Id
+    );
+  }
+
+  private static List<Object> listWith(Map<String, String> params) {
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/projects/', params);
+    Test.startTest();
+    SAPIProject.getProjects();
+    Test.stopTest();
+    RestResponse res = RestTestUtil.getResponse();
+    Assert.areEqual(200, res.statusCode, 'Should return 200 OK');
+    return (List<Object>) JSON.deserializeUntyped(res.responseBody.toString());
+  }
+
+  @IsTest
+  static void contactNameFilterNarrowsToThatContact() {
+    addSecondProject();
+
+    List<Object> items = listWith(
+      new Map<String, String>{ 'contactName' => 'Pat Other' }
+    );
+
+    Assert.areEqual(1, items.size(), 'Only the named contact');
+    Map<String, Object> item = (Map<String, Object>) items[0];
+    Assert.areEqual('Pat Other', item.get('contactName'), 'Matched by name');
+    Assert.areEqual(SPEC_PROJECT_KEYS, item.keySet(), 'Keys equal the spec');
+  }
+
+  @IsTest
+  static void projectNameFilterNarrowsToThatProject() {
+    addSecondProject();
+
+    List<Object> items = listWith(
+      new Map<String, String>{ 'projectName' => 'Second Project' }
+    );
+
+    Assert.areEqual(1, items.size(), 'Only the named project');
+    Map<String, Object> item = (Map<String, Object>) items[0];
+    Assert.areEqual('Second Project', item.get('name'), 'Matched by name');
+    Assert.areEqual(SPEC_PROJECT_KEYS, item.keySet(), 'Keys equal the spec');
+  }
+
+  @IsTest
+  static void blankContactAndProjectNamesAreIgnored() {
+    addSecondProject();
+
+    List<Object> items = listWith(
+      new Map<String, String>{ 'contactName' => '', 'projectName' => ' ' }
+    );
+
+    Assert.areEqual(2, items.size(), 'Blank filters return every project');
+  }
 }

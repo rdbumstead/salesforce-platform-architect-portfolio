@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>PortfolioGroundingService SkillLinks</label>
+    <protected>false</protected>
+    <values>
+        <field>Object__c</field>
+        <value xsi:type="xsd:string">Project_Skill__c</value>
+    </values>
+    <values>
+        <field>Fields__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Project__c, Skill__r.Name, Skill__r.Display_Name__c</value>
+    </values>
+    <values>
+        <field>Filter__c</field>
+        <value xsi:type="xsd:string">Project__c IN :projectIds</value>
+    </values>
+    <values>
+        <field>Order_By__c</field>
+        <value xsi:type="xsd:string">Skill__r.Name ASC</value>
+    </values>
+    <values>
+        <field>Row_Limit__c</field>
+        <value xsi:type="xsd:double">2000</value>
+    </values>
+    <values>
+        <field>Access_Mode__c</field>
+        <value xsi:type="xsd:string">SYSTEM_MODE</value>
+    </values>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Cover letter grounding: skills of the projects read before.</value>
+    </values>
+</CustomMetadata>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>AI temperature</label>
+    <protected>false</protected>
+    <values>
+        <field>Number_Value__c</field>
+        <value xsi:type="xsd:double">0.7</value>
+    </values>
+    <values>
+        <field>Text_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Min_Value__c</field>
+        <value xsi:type="xsd:double">0</value>
+    </values>
+    <values>
+        <field>Max_Value__c</field>
+        <value xsi:type="xsd:double">2</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >temperature sent to Gemini. Lower is plainer and sticks closer to the facts. The model's own default is 1.0. Safe from 0 to 2.</value>
+    </values>
+</CustomMetadata>

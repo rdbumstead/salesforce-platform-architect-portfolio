@@ -194,4 +194,59 @@ private class SAPIExperienceTest {
     );
     Assert.isFalse(item.containsKey('highlights'), 'highlights is gone');
   }
+
+  // Two experiences, each held by its own contact.
+  private static void addSecondContactExperience() {
+    List<Contact> people = new List<Contact>{
+      new Contact(FirstName = 'Ryan', LastName = 'Owner'),
+      new Contact(FirstName = 'Pat', LastName = 'Other')
+    };
+    insert people;
+    Experience__c first = [SELECT Id FROM Experience__c LIMIT 1];
+    first.Contact__c = people[0].Id;
+    update first;
+    insert new Experience__c(
+      Employer__c = [SELECT Id FROM Account LIMIT 1]
+      .Id,
+      Contact__c = people[1].Id,
+      Name = 'Salesforce Developer',
+      Start_Date__c = Date.today().addYears(-3),
+      Sort_Order__c = 2
+    );
+  }
+
+  private static List<Object> getWith(Map<String, String> params) {
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/experience/', params);
+    Test.startTest();
+    SAPIExperience.getExperiences();
+    Test.stopTest();
+    RestResponse res = RestTestUtil.getResponse();
+    Assert.areEqual(200, res.statusCode, 'Should return 200 OK');
+    return (List<Object>) JSON.deserializeUntyped(res.responseBody.toString());
+  }
+
+  @IsTest
+  static void contactNameFilterNarrowsToThatContact() {
+    addSecondContactExperience();
+
+    List<Object> items = getWith(
+      new Map<String, String>{ 'contactName' => 'Pat Other' }
+    );
+
+    Assert.areEqual(1, items.size(), 'Only the named contact');
+    Map<String, Object> item = (Map<String, Object>) items[0];
+    Assert.areEqual('Pat Other', item.get('contactName'), 'Matched by name');
+    Assert.areEqual(SPEC_EXPERIENCE_KEYS, item.keySet(), 'Keys equal the spec');
+  }
+
+  @IsTest
+  static void blankContactNameIsIgnored() {
+    addSecondContactExperience();
+
+    List<Object> items = getWith(
+      new Map<String, String>{ 'contactName' => '' }
+    );
+
+    Assert.areEqual(2, items.size(), 'A blank filter returns every experience');
+  }
 }

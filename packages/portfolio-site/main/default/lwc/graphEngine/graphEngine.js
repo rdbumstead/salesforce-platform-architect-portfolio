@@ -245,6 +245,13 @@ const GESTURES = Object.freeze({
   touchstart: "touch"
 });
 
+/** The gesture name for a touch gesture that had two or more fingers down at any point. */
+const PINCH = "pinch";
+
+function touchCount(event) {
+  return event && event.touches ? event.touches.length : 0;
+}
+
 function defaultZoomFilter(event) {
   return (!event.ctrlKey || event.type === "wheel") && !event.button;
 }
@@ -272,7 +279,9 @@ function cappedWheelDelta(step) {
  *   translateExtent is given), translateExtent (the pan limit, a box larger than extent lets the
  *   view pan at the resting scale), ctrlWheel (true: a plain wheel scrolls the page and only a
  *   wheel with Ctrl held, which is also how a trackpad pinch arrives, zooms, one step at most per
- *   event), onGestureEnd (called with "wheel", "mouse" or "touch" when a pointer gesture ends),
+ *   event), onGestureEnd (called with "wheel", "mouse", "touch" or "pinch" when a pointer gesture
+ *   ends, once per gesture. "pinch" is a touch gesture that had two or more fingers down at any
+ *   point, also when the second finger joined after the first had started to pan),
  *   min, max and step (default ZOOM)
  * @returns {object|undefined} { zoomIn, zoomOut, reset, panBy, scale, detach }, or undefined
  *   when the loaded library has no d3-zoom (an older cached copy), so callers simply hide their
@@ -293,6 +302,8 @@ export function attachPanZoom(d3, svg, options = {}) {
   const step = numberOr(options.step, ZOOM.step);
   const ctrlWheel = options.ctrlWheel === true;
   const selection = d3.select(svg);
+  // The pointer gesture in progress, named as onGestureEnd reports it.
+  let gesture;
   const behaviour = d3
     .zoom()
     .scaleExtent([min, max])
@@ -308,7 +319,16 @@ export function attachPanZoom(d3, svg, options = {}) {
       }
       return defaultZoomFilter(event);
     })
-    .on("zoom", (event) => options.onZoom(event.transform));
+    .on("zoom", (event) => {
+      // A second finger can join a one finger pan, so a touch gesture becomes a pinch here too.
+      if (
+        gesture === GESTURES.touchstart &&
+        touchCount(event.sourceEvent) > 1
+      ) {
+        gesture = PINCH;
+      }
+      options.onZoom(event.transform);
+    });
   if (ctrlWheel) {
     behaviour.wheelDelta(cappedWheelDelta(step));
   }
@@ -319,11 +339,16 @@ export function attachPanZoom(d3, svg, options = {}) {
   }
   if (typeof options.onGestureEnd === "function") {
     // A button or key move has no source event, so only pointer gestures are reported.
-    let gesture;
     behaviour
       .on("start", (event) => {
         const type = event.sourceEvent && event.sourceEvent.type;
         gesture = type ? GESTURES[type] : undefined;
+        if (
+          gesture === GESTURES.touchstart &&
+          touchCount(event.sourceEvent) > 1
+        ) {
+          gesture = PINCH;
+        }
       })
       .on("end", () => {
         if (gesture) {

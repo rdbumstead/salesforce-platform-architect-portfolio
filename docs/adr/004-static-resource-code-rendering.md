@@ -2,7 +2,7 @@
 
 ## Status
 
-Amended 2026-10-23 (Round 7, see the amendment below): built, with the source read from GitHub into an org cache, not from a static resource. Originally Accepted.
+Amended 2026-10-23 (see the amendment below): built, with the source read from GitHub into an org cache, not from a static resource. Originally Accepted.
 
 ## Context
 
@@ -20,9 +20,9 @@ Decouples code visualization from external API availability and prevents 429 err
 
 Code snippets must be packaged and deployed as part of the Salesforce metadata.
 
-## Amendment (2026-10-23, Round 7): source from GitHub, cached in the org
+## Amendment (2026-10-23): source from GitHub, cached in the org
 
-**As built (audit B1).** The code is not packaged into static resources. Each showcase component (the API Lab, the skills graph, the Pillar A data model, the Pillar B decision matrix, the resume builder and the Delivery roadmap) has a View source button. It opens a dialog with the component's JavaScript, HTML and main Apex class, highlighted by the shared Prism module (`c/prismHighlighter`), with a link to each file on GitHub.
+**As built.** The code is not packaged into static resources. Each showcase component (the API Lab, the skills graph, the Pillar A data model, the Pillar B decision matrix, the resume builder and the Delivery roadmap) has a View source button. It opens a dialog with the component's JavaScript, HTML and main Apex class, highlighted by the shared Prism module (`c/prismHighlighter`), with a link to each file on GitHub.
 
 - **Files:** listed in `Source_File__mdt` records, so they can change without a code change.
 - **Fetch:** `SourceCacheRefreshJob` reads each file from GitHub through the `GitHub_API` Named Credential at most once a day per file, into `Source_Cache__c`, an admin only object. `IntegrationCacheRefreshScheduler` enqueues it on its existing schedule only when a file is due.

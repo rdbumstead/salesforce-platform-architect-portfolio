@@ -9,11 +9,8 @@
  * @Test Class        : [SAPIExperienceHighlightTest]
  **/
 @RestResource(urlMapping='/sapi/v1/experience-highlights/*')
-global with sharing class SAPIExperienceHighlight {
-  private static final String SELECT_FIELDS =
-    'SELECT Id, Name, Experience__c, Experience__r.Name, Description__c, Sort_Order__c, Persona_Tag__c ' +
-    'FROM Experience_Highlight__c';
-  private static final String ORDER_BY = ' ORDER BY Sort_Order__c ASC, Name ASC';
+global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Provider {
+  private static final String LIST_QUERY = 'SAPIExperienceHighlight_List';
 
   // Persona enum from the spec, keyed by lower case for case-insensitive matching.
   private static final Map<String, String> PERSONAS = new Map<String, String>{
@@ -63,26 +60,18 @@ global with sharing class SAPIExperienceHighlight {
         return;
       }
 
-      String whereClause = ' WHERE Id != null';
-      if (String.isNotBlank(experienceId)) {
-        experienceId = experienceId.trim();
-        whereClause += ' AND Experience__c = :experienceId';
-      }
-      if (!personas.isEmpty()) {
-        whereClause +=
-          ' AND Persona_Tag__c INCLUDES (' +
-          String.join(personas, ', ') +
-          ')';
-      }
-
-      List<Experience_Highlight__c> records = Database.query(
-        SELECT_FIELDS +
-          whereClause +
-          ORDER_BY +
-          ' LIMIT :limitParam OFFSET :offsetParam'
+      Map<String, Object> binds = listBinds(experienceId?.trim(), personas);
+      List<Experience_Highlight__c> records = (List<Experience_Highlight__c>) QueryDefinitions.runPage(
+        LIST_QUERY,
+        binds,
+        listDefault(),
+        limitParam,
+        offsetParam
       );
-      Integer totalCount = Database.countQuery(
-        'SELECT COUNT() FROM Experience_Highlight__c' + whereClause
+      Integer totalCount = QueryDefinitions.count(
+        LIST_QUERY,
+        binds,
+        listDefault()
       );
 
       ctx.paginate(totalCount, records.size());
@@ -94,16 +83,16 @@ global with sharing class SAPIExperienceHighlight {
   }
 
   /**
-   * @description Parses the persona parameter into quoted SOQL literals taken from the
-   *              PERSONAS allowlist, never from the caller's text.
+   * @description Parses the persona parameter into values taken from the PERSONAS allowlist,
+   *              never from the caller's text. Each one turns on its own clause in the filter.
    * @param raw Raw parameter value.
-   * @return List<String> Quoted literals (empty when absent), or null when any value is not
-   *         a known persona.
+   * @return List<String> Persona values (empty when absent), or null when any value is not a
+   *         known persona.
    */
   private static List<String> parsePersonas(String raw) {
-    List<String> literals = new List<String>();
+    List<String> values = new List<String>();
     if (String.isBlank(raw)) {
-      return literals;
+      return values;
     }
     Set<String> seen = new Set<String>();
     for (String part : raw.split(',')) {
@@ -112,12 +101,66 @@ global with sharing class SAPIExperienceHighlight {
         return null;
       }
       if (seen.add(key)) {
-        literals.add(
-          '\'' + String.escapeSingleQuotes(PERSONAS.get(key)) + '\''
-        );
+        values.add(PERSONAS.get(key));
       }
     }
-    return literals;
+    return values;
+  }
+
+  /**
+   * @description The list read as code: every field the response returns, the optional
+   *              filters and the order. Query_Definition.SAPIExperienceHighlight_List ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault listDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience_Highlight__c',
+        'Id, Name, Experience__c, Experience__r.Name, Description__c, ' +
+        'Sort_Order__c, Persona_Tag__c'
+      )
+      .filter(
+        '(IsDeleted = :hasExperienceId OR Experience__c = :experienceId) AND ' +
+          '(IsDeleted = :hasPersonas OR ' +
+          '(IsDeleted = :adminOff AND Persona_Tag__c INCLUDES (\'Admin\')) OR ' +
+          '(IsDeleted = :developerOff AND ' +
+          'Persona_Tag__c INCLUDES (\'Developer\')) OR ' +
+          '(IsDeleted = :architectOff AND ' +
+          'Persona_Tag__c INCLUDES (\'Architect\')))'
+      )
+      .orderBy('Sort_Order__c ASC, Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(listBinds(null, null));
+  }
+
+  // A bind inside INCLUDES matches no row, so each persona is a literal in the filter with
+  // its own switch. A persona the request did not ask for binds its switch to true, which
+  // turns its clause off. No persona at all binds hasPersonas to false, which matches all.
+  private static Map<String, Object> listBinds(
+    String experienceId,
+    List<String> personas
+  ) {
+    Set<String> chosen = personas == null
+      ? new Set<String>()
+      : new Set<String>(personas);
+    return new Map<String, Object>{
+      'hasExperienceId' => String.isNotBlank(experienceId),
+      'experienceId' => experienceId,
+      'hasPersonas' => !chosen.isEmpty(),
+      'adminOff' => !chosen.contains('Admin'),
+      'developerOff' => !chosen.contains('Developer'),
+      'architectOff' => !chosen.contains('Architect')
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      LIST_QUERY => listDefault()
+    };
   }
 
   @TestVisible

@@ -6,6 +6,8 @@
  *                      Name, title, location and photo are static so they paint without waiting on
  *                      Apex. The bio and profile links come from ResumeController.getHeader, which
  *                      reads only the owner Contact, so the bio does not wait on the full resume.
+ *                      The owner's one line (heroLine) shows under the name when it is set and
+ *                      not at all when it is blank or the read fails.
  *                      Each card can gain a headline number and a screenshot from
  *                      ProjectCardController.getPillarCards, merged in by
  *                      letter. The number shows only with its label, the image only with its
@@ -14,6 +16,8 @@
  *                      Value text gets a case study disclosure, a real button with
  *                      aria-expanded, showing those blocks and the Live and Source links that
  *                      are set and safe.
+ *                      Smooth scrolling and the card hover transition follow
+ *                      c/motionPreference: the visitor's own choice, else the system setting.
  *                      Opening a case study sends case_study_opened with the pillar letter,
  *                      and following a start here path sends start_path_followed.
  * @author            : Ryan Bumstead
@@ -29,6 +33,7 @@ import HEADSHOT from "@salesforce/resourceUrl/Portfolio_Headshot";
 import { LIVE_PILLARS, COMING_PILLARS } from "c/pillarData";
 import { toExternalUrl, toSiteAssetUrl } from "c/externalUrl";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { isReduced, onMotionChange } from "c/motionPreference";
 
 // The analytics value each start here path sends with start_path_followed.
 const START_PATH_EVENT_VALUES = {
@@ -119,35 +124,22 @@ function joinNames(names) {
 }
 
 /**
- * Scrolls to an element and moves focus to it, respecting reduced motion.
+ * Scrolls to an element and moves focus to it, smoothly unless motion is reduced.
  * @param {HTMLElement} target the heading to move to
+ * @param {boolean} reduced true when the visitor's motion preference (their own choice, else
+ *        the system setting) asks for less motion
  */
-function moveTo(target) {
+function moveTo(target, reduced) {
   if (!target) {
     return;
   }
   if (typeof target.scrollIntoView === "function") {
     target.scrollIntoView({
-      behavior: prefersReducedMotion() ? "auto" : "smooth",
+      behavior: reduced ? "auto" : "smooth",
       block: "start"
     });
   }
   target.focus({ preventScroll: true });
-}
-
-/**
- * Whether the visitor asked the system for less motion.
- * @returns {boolean} true when reduced motion is set
- */
-function prefersReducedMotion() {
-  try {
-    return (
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    );
-  } catch {
-    return false;
-  }
 }
 
 export default class HeroBanner extends LightningElement {
@@ -161,6 +153,27 @@ export default class HeroBanner extends LightningElement {
   cardImageHeight = CARD_IMAGE_HEIGHT;
   expandedKeys = {};
   newTabNote = ", opens in a new tab";
+  motionReduced = isReduced();
+  stopMotionListener;
+
+  connectedCallback() {
+    this.motionReduced = isReduced();
+    this.stopMotionListener = onMotionChange((reduced) => {
+      this.motionReduced = reduced;
+    });
+  }
+
+  disconnectedCallback() {
+    if (typeof this.stopMotionListener === "function") {
+      this.stopMotionListener();
+    }
+    this.stopMotionListener = undefined;
+  }
+
+  // The card hover transition follows the same preference through this class.
+  get homeClass() {
+    return this.motionReduced ? "home motion-reduced" : "home";
+  }
 
   @wire(getPillarCards)
   wiredPillarCards({ data }) {
@@ -172,6 +185,10 @@ export default class HeroBanner extends LightningElement {
   wiredHeader({ data }) {
     // An error or an empty header renders nothing extra: never a placeholder sentence.
     this.header = data || undefined;
+  }
+
+  get heroLine() {
+    return textOrNull(this.header && this.header.heroLine);
   }
 
   get bio() {
@@ -328,7 +345,10 @@ export default class HeroBanner extends LightningElement {
 
   handleTourClick(event) {
     event.preventDefault();
-    moveTo(this.template.querySelector('[data-id="tour-heading"]'));
+    moveTo(
+      this.template.querySelector('[data-id="tour-heading"]'),
+      this.motionReduced
+    );
   }
 
   handleStartClick(event) {
@@ -342,7 +362,10 @@ export default class HeroBanner extends LightningElement {
       return;
     }
     event.preventDefault();
-    moveTo(this.template.querySelector(`[data-id="${target}"]`));
+    moveTo(
+      this.template.querySelector(`[data-id="${target}"]`),
+      this.motionReduced
+    );
   }
 
   handleCaseToggle(event) {

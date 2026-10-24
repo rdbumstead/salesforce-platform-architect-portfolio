@@ -25,8 +25,20 @@
                   "children": [
                     {
                       "attributes": {
+                        "designLabel": "Read the design",
+                        "designUrl": "/docs?doc=sas#5-3-pillar-c-work-experience-verification-api-twin-api-pattern",
+                        "eyebrow": "Pillar C",
+                        "heading": "API Lab",
+                        "lead": "Work Experience Verification API. Send a request to the portfolio REST API and read what comes back."
+                      },
+                      "definition": "c:pageIntro",
+                      "id": "de389c1b-f666-40cc-b967-689496f263b5",
+                      "type": "component"
+                    },
+                    {
+                      "attributes": {
                         "imageInfos": "",
-                        "richTextValue": "<h1>API Lab</h1><p>Pillar C: Work Experience Verification API. Send a request to the portfolio REST API and read what comes back. The full contract is in the <a href=\"https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi\" target=\"_blank\" rel=\"noopener noreferrer\">hosted API reference</a>.</p>"
+                        "richTextValue": "<p>The full contract is in the <a href=\"https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi\" target=\"_blank\" rel=\"noopener noreferrer\">hosted API reference</a>.</p>"
                       },
                       "definition": "community_builder:richTextEditor",
                       "id": "fde2f7b7-4676-4a60-9193-c0abb21c347e",

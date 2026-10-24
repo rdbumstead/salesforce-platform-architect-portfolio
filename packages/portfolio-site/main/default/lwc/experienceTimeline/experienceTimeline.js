@@ -1,7 +1,8 @@
 /**
- * @description       : Work, Education and Certifications timeline on the home page.
- *                      Reads ResumeController.getTimeline and shows roles, schools and current
- *                      certifications under an accessible tab list. Renders nothing when every
+ * @description       : Work, Certifications and Education timeline on the home page.
+ *                      Reads ResumeController.getTimeline and shows roles, current
+ *                      certifications and schools under an accessible tab list, in that order,
+ *                      with Work selected first. Renders nothing when every
  *                      list is empty and hides a tab whose list is empty.
  *                      Each tab shows its first tabLimit entries (from the server, 5 when it
  *                      sends nothing usable). A longer tab gets a real "View all N" button with
@@ -37,11 +38,12 @@ const WORK = "work";
 const EDUCATION = "education";
 const CERTIFICATIONS = "certifications";
 
-// Tab order and labels. The keys are also the analytics tab values.
+// Tab order and labels: Work, Certifications, Education. The arrow, Home and End keys follow
+// this order. The keys are also the analytics tab values.
 const TAB_LABELS = [
   [WORK, "Work"],
-  [EDUCATION, "Education"],
-  [CERTIFICATIONS, "Certifications"]
+  [CERTIFICATIONS, "Certifications"],
+  [EDUCATION, "Education"]
 ];
 
 // Entries per tab before "View all" when the server sends no usable limit.

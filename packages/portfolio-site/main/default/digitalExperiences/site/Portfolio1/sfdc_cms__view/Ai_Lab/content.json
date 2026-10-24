@@ -24,6 +24,18 @@
                 {
                   "children": [
                     {
+                      "attributes": {
+                        "designLabel": "Read the design",
+                        "designUrl": "/docs?doc=sas#5-4-pillar-d-ai-innovation-agentforce",
+                        "eyebrow": "Pillar D",
+                        "heading": "AI Lab",
+                        "lead": ""
+                      },
+                      "definition": "c:pageIntro",
+                      "id": "83d7a9b3-59ed-4147-8d69-bbc21c38483a",
+                      "type": "component"
+                    },
+                    {
                       "definition": "c:coverLetterGenerator",
                       "id": "e96518b8-43b1-433d-8052-0d8a27e65f1d",
                       "type": "component"

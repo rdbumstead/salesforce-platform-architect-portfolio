@@ -1,5 +1,5 @@
 <template>
-  <div class="home">
+  <div class={homeClass}>
     <section class="hero" aria-labelledby="hero-name">
       <img
         class="hero-photo"
@@ -12,6 +12,9 @@
       <div class="hero-body">
         <p class="hero-meta">{title} · {location}</p>
         <h1 id="hero-name" class="hero-name">{name}</h1>
+        <template lwc:if={heroLine}>
+          <p class="hero-line" data-id="hero-line">{heroLine}</p>
+        </template>
         <template lwc:if={bio}>
           <p class="hero-bio">{bio}</p>
         </template>

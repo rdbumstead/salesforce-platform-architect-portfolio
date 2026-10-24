@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >One instruction per record for an AI generation, such as the cover letter. The code reads the Instruction and falls back to its own text when the record is missing or blank, so the wording can be tuned without a deploy.</description>
+    <label>AI Prompt</label>
+    <pluralLabel>AI Prompts</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>

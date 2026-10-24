@@ -9,14 +9,46 @@
  *                      have fields of their own. SubmissionGuard drops spam silently and applies
  *                      the rate limit. Approved__c is never set here. The wall reads approved
  *                      rows only, and the Block_Unapproved_Testimonials restriction rule hides
- *                      every other row from the guest as well.
+ *                      every other row from the guest as well. getHomeTestimonials serves the
+ *                      home page from the same read: nothing while fewer than
+ *                      Home_Testimonials_Min rows are approved, else up to three.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/21/2026
  * @Test Class        : [TestimonialControllerTest]
  **/
-public with sharing class TestimonialController {
+public with sharing class TestimonialController implements QueryDefinitions.Provider {
+  private static final String APPROVED_QUERY = 'TestimonialController_Approved';
+
+  /**
+   * @description The wall's read as code: approved rows only, in user mode, curated order
+   *              first, then newest. Query_Definition.TestimonialController_Approved ships
+   *              equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault approvedDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Testimonial__c',
+        'Id, Author_Name__c, Author_Title__c, Relationship_Type__c, Vibe_Mode__c, Context__c, Note__c'
+      )
+      .filter('Approved__c = TRUE')
+      .orderBy('Sort_Order__c ASC NULLS LAST, CreatedDate DESC')
+      .rowLimit(200)
+      .mode(QueryDefinitions.Mode.USER_MODE);
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      APPROVED_QUERY => approvedDefault()
+    };
+  }
+
   @TestVisible
   private static final Integer RATE_LIMIT_PER_MINUTE = SubmissionGuard.TESTIMONIAL_RATE_PER_MINUTE;
   @TestVisible
@@ -33,6 +65,13 @@ public with sharing class TestimonialController {
   private static Boolean forceSaveFailure = false;
   @TestVisible
   private static List<Testimonial_Fragment__mdt> fragmentsOverride;
+  // How many approved testimonials the home page needs before it shows any, when the
+  // Home_Testimonials_Min setting is missing or out of its range.
+  @TestVisible
+  private static final Integer DEFAULT_HOME_MINIMUM = 3;
+  // The most quotes the home page shows.
+  @TestVisible
+  private static final Integer HOME_MAX_SHOWN = 3;
 
   private static final Set<String> RELATIONSHIPS = new Set<String>{
     'Manager',
@@ -146,21 +185,12 @@ public with sharing class TestimonialController {
   @AuraEnabled(cacheable=true)
   public static List<WallItem> getApprovedTestimonials() {
     List<WallItem> items = new List<WallItem>();
-    for (Testimonial__c row : [
-      SELECT
-        Id,
-        Author_Name__c,
-        Author_Title__c,
-        Relationship_Type__c,
-        Vibe_Mode__c,
-        Context__c,
-        Note__c
-      FROM Testimonial__c
-      WHERE Approved__c = TRUE
-      WITH USER_MODE
-      ORDER BY Sort_Order__c ASC NULLS LAST, CreatedDate DESC
-      LIMIT 200
-    ]) {
+    List<Testimonial__c> rows = (List<Testimonial__c>) QueryDefinitions.run(
+      APPROVED_QUERY,
+      new Map<String, Object>(),
+      approvedDefault()
+    );
+    for (Testimonial__c row : rows) {
       WallItem item = new WallItem();
       item.key = EncodingUtil.convertToHex(
           Crypto.generateDigest('SHA-256', Blob.valueOf(row.Id))
@@ -179,6 +209,42 @@ public with sharing class TestimonialController {
       items.add(item);
     }
     return items;
+  }
+
+  /**
+   * @description The home page's testimonials, from the wall's own read. Returns an empty
+   *              list while fewer than Home_Testimonials_Min testimonials are approved, so the
+   *              section stays hidden until there are enough real quotes. Once there are, it
+   *              returns up to three: the professional ones first, then the rest, each group
+   *              in the wall's order.
+   * @return List<WallItem> Nothing, or up to three approved testimonials.
+   * @example
+   * List<TestimonialController.WallItem> quotes = TestimonialController.getHomeTestimonials();
+   */
+  @AuraEnabled(cacheable=true)
+  public static List<WallItem> getHomeTestimonials() {
+    List<WallItem> approved = getApprovedTestimonials();
+    Integer minimum = PortfolioSettings.getInteger(
+      'Home_Testimonials_Min',
+      DEFAULT_HOME_MINIMUM
+    );
+    List<WallItem> shown = new List<WallItem>();
+    if (approved.size() < minimum) {
+      return shown;
+    }
+    List<WallItem> others = new List<WallItem>();
+    for (WallItem item : approved) {
+      if (item.professional == true) {
+        shown.add(item);
+      } else {
+        others.add(item);
+      }
+    }
+    shown.addAll(others);
+    while (shown.size() > HOME_MAX_SHOWN) {
+      shown.remove(shown.size() - 1);
+    }
+    return shown;
   }
 
   /**

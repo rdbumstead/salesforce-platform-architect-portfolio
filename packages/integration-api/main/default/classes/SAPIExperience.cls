@@ -7,9 +7,12 @@
  * @Test Class        : [SAPIExperienceTest]
  **/
 @RestResource(urlMapping='/sapi/v1/experience/*')
-global with sharing class SAPIExperience {
+global with sharing class SAPIExperience implements QueryDefinitions.Provider {
+  private static final String LIST_QUERY = 'SAPIExperience_List';
+
   /**
-   * @description GET method to retrieve Experience records with pagination.
+   * @description GET method to retrieve Experience records with pagination and the
+   *              currentlyEmployed, employerName and contactName filters.
    */
   @HttpGet
   global static void getExperiences() {
@@ -30,28 +33,23 @@ global with sharing class SAPIExperience {
       }
       Boolean currentlyEmployed = ctx.boolParam('currentlyEmployed');
       String employerName = ctx.stringParam('employerName');
+      String contactName = ctx.stringParam('contactName');
 
-      // Build dynamic query
-      String baseQuery =
-        'SELECT Id, Name, Employer__c, Employer__r.Name, ' +
-        'Start_Date__c, End_Date__c, Is_Current_Role__c, Is_Remote__c, Sort_Order__c, ' +
-        'Contact__c, Contact__r.Name, Accomplishments__c ' +
-        'FROM Experience__c WHERE Id != null';
+      List<Experience__c> experiences = (List<Experience__c>) QueryDefinitions.runPage(
+        LIST_QUERY,
+        listBinds(currentlyEmployed, employerName, contactName),
+        listDefault(),
+        limitParam,
+        offsetParam
+      );
+      // The total counts every experience, whatever the filters.
+      Integer totalCount = QueryDefinitions.count(
+        LIST_QUERY,
+        listBinds(null, null, null),
+        listDefault()
+      );
 
-      if (currentlyEmployed != null) {
-        baseQuery += ' AND Is_Current_Role__c = :currentlyEmployed';
-      }
-      if (String.isNotBlank(employerName)) {
-        baseQuery += ' AND Employer__r.Name LIKE :employerName';
-      }
-
-      // Sort by Is_Current_Role__c desc, then by Sort_Order__c, or Date
-      baseQuery += ' ORDER BY Is_Current_Role__c DESC, Sort_Order__c ASC, End_Date__c DESC NULLS FIRST, Start_Date__c DESC';
-      baseQuery += ' LIMIT :limitParam OFFSET :offsetParam';
-
-      List<Experience__c> experiences = Database.query(baseQuery);
-
-      ctx.paginate(countExperiences(), experiences.size());
+      ctx.paginate(totalCount, experiences.size());
       ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
       ctx.ok(transformExperiences(experiences));
     } catch (Exception e) {
@@ -93,8 +91,57 @@ global with sharing class SAPIExperience {
     return result;
   }
 
-  private static Integer countExperiences() {
-    return [SELECT COUNT() FROM Experience__c];
+  /**
+   * @description The list read as code: every field the response returns, the optional
+   *              filters and the order. Query_Definition.SAPIExperience_List ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault listDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience__c',
+        'Id, Name, Employer__c, Employer__r.Name, Start_Date__c, End_Date__c, ' +
+          'Is_Current_Role__c, Is_Remote__c, Sort_Order__c, Contact__c, ' +
+          'Contact__r.Name, Accomplishments__c'
+      )
+      .filter(
+        '(IsDeleted = :hasCurrentlyEmployed OR ' +
+          'Is_Current_Role__c = :currentlyEmployed) AND ' +
+          '(IsDeleted = :hasEmployerName OR Employer__r.Name LIKE :employerName) AND ' +
+          '(IsDeleted = :hasContactName OR Contact__r.Name = :contactName)'
+      )
+      .orderBy(
+        'Is_Current_Role__c DESC, Sort_Order__c ASC, End_Date__c DESC NULLS FIRST, Start_Date__c DESC'
+      )
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(listBinds(null, null, null));
+  }
+
+  // employerName keeps its LIKE match with no wildcard added, as before. A blank name binds
+  // an empty text so the LIKE never sees null.
+  private static Map<String, Object> listBinds(
+    Boolean currentlyEmployed,
+    String employerName,
+    String contactName
+  ) {
+    return new Map<String, Object>{
+      'hasCurrentlyEmployed' => currentlyEmployed != null,
+      'currentlyEmployed' => currentlyEmployed,
+      'hasEmployerName' => String.isNotBlank(employerName),
+      'employerName' => String.isBlank(employerName) ? '' : employerName,
+      'hasContactName' => String.isNotBlank(contactName),
+      'contactName' => contactName
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      LIST_QUERY => listDefault()
+    };
   }
 
   @TestVisible

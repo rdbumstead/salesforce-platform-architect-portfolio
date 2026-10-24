@@ -1,5 +1,6 @@
 /**
- * @description       : Unit tests for the Glass Box footer. getLinks is a
+ * @description       : Unit tests for the Glass Box footer, its four metric groups and its
+ *                      links. getLinks is a
  *                      mocked wire adapter, getSystemSnapshot a mocked imperative call, and
  *                      requestIdleCallback is captured so a test decides when the page is idle.
  *                      lightning/uiGraphQLApi passes the universal mock through and replaces only
@@ -290,7 +291,10 @@ describe("c-footer", () => {
 
     const rows = all(element, '[data-id="provider"]').map((n) => n.textContent);
     expect(rows).toEqual(["TestProvider: test-state"]);
-    const text = q(element, '[data-id="metrics"]').textContent;
+    // The rows only: the group label "Quotas and limits" is fixed text, not data.
+    const text = all(element, ".group-list")
+      .map((list) => list.textContent)
+      .join(" ");
     expect(text).not.toMatch(/Agentforce|Gemini|Local|quota/i);
   });
 
@@ -551,6 +555,112 @@ describe("c-footer", () => {
       await flushPromises();
       expect(q(element, '[data-id="graphql"]')).toBeNull();
     });
+  });
+
+  describe("metric groups", () => {
+    function groups(element) {
+      return all(element, ".metric-group").map((group) => {
+        const label = group.querySelector(".group-label");
+        const list = group.querySelector("ul.group-list");
+        return {
+          group,
+          label: label.textContent.trim(),
+          labelled: list.getAttribute("aria-labelledby") === label.id,
+          ids: Array.from(list.children).map(
+            (li) =>
+              li.dataset.id ||
+              (li.querySelector("[data-id]") || {}).dataset?.id ||
+              li.className
+          )
+        };
+      });
+    }
+
+    async function loadEverything() {
+      getSystemSnapshot.mockResolvedValue(
+        snapshot({ integrations: INTEGRATIONS, orgQuotas: ORG_QUOTAS })
+      );
+      const element = createComponent();
+      await runIdle();
+      graphql.emit({
+        data: { uiapi: { query: { Skill__c: { edges: [] } } } }
+      });
+      await flushPromises();
+      return element;
+    }
+
+    it("shows four labelled groups in order once everything has loaded", async () => {
+      const element = await loadEverything();
+      const found = groups(element);
+      expect(found.map((g) => g.label)).toEqual([
+        "Deploy",
+        "Platform",
+        "Integrations",
+        "Quotas and limits"
+      ]);
+      found.forEach((g) => {
+        expect(g.labelled).toBe(true);
+        expect(g.group.querySelector(".group-label").id).not.toBe("");
+      });
+    });
+
+    it("puts each metric in its group, each one a list item", async () => {
+      const element = await loadEverything();
+      const [deploy, platform, integrations, quotas] = groups(element);
+      expect(deploy.group.querySelector('[data-id="badge"]')).not.toBeNull();
+      expect(platform.ids).toEqual(["graphql"]);
+      expect(integrations.ids).toEqual([
+        "provider",
+        "provider",
+        "provider",
+        "integration",
+        "integration"
+      ]);
+      expect(quotas.ids).toEqual([
+        "ai-requests",
+        "quota",
+        "quota",
+        "limit",
+        "limit",
+        "limit"
+      ]);
+      all(element, ".group-list > *").forEach((child) => {
+        expect(child.tagName).toBe("LI");
+      });
+    });
+
+    it("shows only Deploy before the page is idle", () => {
+      const element = createComponent();
+      expect(groups(element).map((g) => g.label)).toEqual(["Deploy"]);
+    });
+
+    it("shows the snapshot error under Platform and no empty group when the call fails", async () => {
+      getSystemSnapshot.mockRejectedValue(new Error("boom"));
+      const element = createComponent();
+      await runIdle();
+      const found = groups(element);
+      expect(found.map((g) => g.label)).toEqual(["Deploy", "Platform"]);
+      expect(found[1].ids).toEqual(["snapshot-error"]);
+    });
+
+    it("leaves Integrations out when the snapshot has no provider or breaker", async () => {
+      getSystemSnapshot.mockResolvedValue(snapshot({ providers: [] }));
+      const element = createComponent();
+      await runIdle();
+      expect(groups(element).map((g) => g.label)).toEqual([
+        "Deploy",
+        "Quotas and limits"
+      ]);
+    });
+  });
+
+  it("links Docs to the /docs page, right after Contact", () => {
+    const element = createComponent();
+    const link = q(element, '[data-id="docs"]');
+    expect(link.textContent).toBe("Docs");
+    expect(link.getAttribute("href")).toBe("/portfolio/docs");
+    expect(link.getAttribute("target")).toBeNull();
+    expect(q(element, '[data-id="contact"]').nextElementSibling).toBe(link);
   });
 
   it("links Contact to the /contact page", () => {

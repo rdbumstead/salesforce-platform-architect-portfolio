@@ -10,16 +10,14 @@
 [![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 > [!IMPORTANT]
-> **Project Status:** Live. Architecture complete (6 enterprise docs, 32 ADRs) • MVP launched.
->
-> **Launched:** October 2026.
+> **Project Status:** Live since October 2026. 6 enterprise docs and 33 ADRs. This README describes what runs in production.
 
 **Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 
 **Live App:** [https://ryanbumstead.com](https://ryanbumstead.com), which redirects to the Experience Cloud site and keeps the path
 
 > [!TIP]
-> **Non-Salesforce Reader?** This is a full enterprise-grade system built on the Salesforce CRM platform. It functions as a high-scale public web app with real-time data, AI-generated content, and strict DevOps protocols.
+> **Non-Salesforce Reader?** This is a public website built on the Salesforce CRM platform. It shows live data from the org, writes cover letters with an AI model, and is deployed by an automated pipeline with quality gates.
 
 ---
 
@@ -27,24 +25,23 @@
 
 ### What This Demonstrates
 
-Principal-level Salesforce Platform Architecture including:
+Salesforce platform architecture, including:
 
-- **Multi-Cloud Design**: the LWR site and Apex APIs run today, and an AWS Lambda BFF with a $0.00-forever cost model is designed for Phase 8 and not built.
-- **DevOps Maturity**: Delta deployments, automated quality gates, and JWT-based CI/CD.
-- **Contract-First APIs**: OpenAPI 3.0 specs proving Salesforce/MuleSoft parity.
-- **Applied AI Governance**: one provider dispatch behind `POST /papi/v1/ai/generate` (Gemma 4 31B through the Gemini API, then a deterministic Local Template), with cover letters grounded on portfolio records. The site's cover letter page runs the same dispatch in process, under its own AI rate limit of 10 a minute, and shows which provider wrote each letter. Agentforce is a switch that ships off and is not implemented.
-- **Observability**: Real-time Glass Box telemetry and constraint-aware monitoring.
+- **DevOps Maturity**: delta deployments, automated quality gates, and JWT-based CI/CD.
+- **Contract-First APIs**: OpenAPI 3.0 specs for a System API and a Process API, written before the Apex REST classes that serve them.
+- **Applied AI Governance**: one provider dispatch behind `POST /papi/v1/ai/generate`. Gemma 4 31B through the Gemini API writes the content, and a deterministic Local Template serves a cover letter when Gemini fails. Cover letters are grounded on portfolio records. The site's cover letter page runs the same dispatch in process, under its own AI rate limit of 10 a minute, and shows which provider wrote each letter.
+- **Observability**: the Glass Box footer shows live governor limits, the org's daily quotas, and the AI provider and circuit breaker states.
 
 ### Portfolio Overview
 
 **By The Numbers:**
 
 - **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
-- **32 Architectural Decisions (ADRs)**: Documented rationale for performance, security, and AI.
-- **16 Core Competencies**: Mapped to verifiable artifacts and validation methods.
-- **6 CI/CD Workflows**: Delta deploys, PR gates (including a check only validation against production), a read only live smoke test after each deploy, heartbeat and worker automation, plus a Lighthouse audit run on demand.
+- **33 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
+- **15 Core Competencies**: mapped to verifiable artifacts and validation methods.
+- **6 CI/CD Workflows**: delta deploys, PR gates (including a check only validation against production), a read only live smoke test after each deploy, the daily heartbeat, the cache warmer worker deploy, and a Lighthouse audit run on demand.
 
-**Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [Architecture Diagram](#north-star-architecture) • [Full Docs](#full-architecture-documentation)
+**Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [Architecture Diagram](#architecture) • [Full Docs](#full-architecture-documentation)
 
 ---
 
@@ -57,20 +54,18 @@ Principal-level Salesforce Platform Architecture including:
 | :------------------------------ | :-------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **API Design & Contract-First** | Twin API Pattern with OpenAPI 3.0                                                                               | [SAPI Specification](packages/integration-api/specs/salesforce-sapi.yaml) • [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md) • [`scripts/api-smoke.sh`](scripts/api-smoke.sh)           | Review spec vs. Apex parity, then run the [evaluator curl flow](#evaluator-curl-flow): a token from `POST /papi/v1/auth/token`, then every GET path ([ADR-028](docs/adr/028-evaluator-access-via-token-vending.md))                                                                                                                                                                                                                                                     |
 | **Enterprise DevOps & CI/CD**   | Delta deployments with quality gates                                                                            | [GitHub Actions Workflows](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) • [ADR-006](docs/adr/006-jwt-bearer-flow-for-ci-cd.md)                                         | Check pipeline badges and deployment history: every PR also validates check only against production, and every deploy that changes production is followed by a read only live smoke test ([Maintenance Guide §3.2](docs/guides/05-Maintenance-Guide.md#32-pipeline-triggers))                                                                                                                                                                                           |
-| **Multi-Cloud Architecture**    | AWS Lambda BFF + Salesforce LWR hybrid (Phase 8 design, not built)                                              | [Phase 8 Design](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---2027-2028) • [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)                      | Review FinOps strategy and dual-door pattern                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| **AI/ML Governance**            | One dispatch, Gemini then Local                                                                                 | [AI Strategy Section](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) • [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                                        | Review the dispatch and failover logic (Agentforce switch off)                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **AI/ML Governance**            | One dispatch, Gemini then the Local Template                                                                    | [AI Strategy Section](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) • [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                                        | Open `/ai-lab`, generate a letter, and open the panel that shows the provider, the attempts and the prompt that was sent                                                                                                                                                                                                                                                                                                                                                |
 | **Security Architecture**       | Zero Trust with Guest User restrictions                                                                         | [Data Security Matrix](docs/guides/03-SAS.md#46-data-security-matrix) • [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md) • [ADR-027](docs/adr/027-platform-native-api-authentication.md) | Examine FLS, guest restrictions, and OAuth client-credentials auth                                                                                                                                                                                                                                                                                                                                                                                                      |
 | **Resilience Engineering**      | Circuit breaker pattern with degraded mode                                                                      | [Contingency Plans](docs/guides/03-SAS.md#8-contingency--rollback-plans) • [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)                                                | Turn on "Simulate an outage" on the Delivery page's changelog or roadmap and watch the cached data carry a "Simulated" badge (status `SIMULATED`)                                                                                                                                                                                                                                                                                                                       |
-| **Performance Optimization**    | Mobile-first with measured LCP targets                                                                          | [NFRs Section](docs/guides/03-SAS.md#21-core-nfrs) • [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)                                                                          | Read the measured mobile numbers in the Technical Guide §2.11, or run the Lighthouse workflow on demand against any URL                                                                                                                                                                                                                                                                                                                                                 |
+| **Performance Optimization**    | Mobile-first with measured LCP                                                                                  | [NFRs Section](docs/guides/03-SAS.md#21-core-nfrs) • [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)                                                                          | Read the measured mobile numbers in the Technical Guide §2.11, or run the Lighthouse workflow on demand against any URL                                                                                                                                                                                                                                                                                                                                                 |
 | **Data Modeling**               | Persona-based resume generation schema                                                                          | [ERD Diagram](docs/guides/03-SAS.md#41-logical-data-model-simplified-erd) • [Data Dictionary](docs/guides/03-SAS.md#appendix-d-data-dictionary-detailed-schema)                                          | Examine junction object strategy and filtering logic                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| **Cloud FinOps**                | $0.00 forever architecture                                                                                      | [FinOps Appendix](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---2027-2028) • [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)                     | Verify Always-Free tier governance model                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Observability & Monitoring**  | Real-time telemetry with Glass Box pattern                                                                      | [Observability Section](docs/guides/03-SAS.md#9-observability--glass-box-telemetry) • [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                                                  | Open any page and read the footer: live CPU, heap and SOQL use, the org's daily API and async Apex quotas, the AI provider and circuit breaker states, and the deploy badge                                                                                                                                                                                                                                                                                             |
+| **Observability & Monitoring**  | Live telemetry in the Glass Box footer                                                                          | [Observability Section](docs/guides/03-SAS.md#9-observability--glass-box-telemetry) • [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                                                  | Open any page and read the footer: live CPU, heap and SOQL use, the org's daily API and async Apex quotas, the AI provider and circuit breaker states, and the deploy badge                                                                                                                                                                                                                                                                                             |
 | **Event-Driven Architecture**   | Executable governance: CI publishes a platform event, an Apex trigger persists it                               | [Pillar E](docs/guides/03-SAS.md#55-pillar-e-agile-delivery--devops-roadmap) • [ADR-019](docs/adr/019-executable-governance-platform-events-for-documentation-logic.md)                                  | Open the Delivery page and compare the checklist's commit and run link with the GitHub Actions history                                                                                                                                                                                                                                                                                                                                                                  |
-| **Integration Patterns**        | Server-side caching for external APIs                                                                           | [GitHub Integration](docs/guides/03-SAS.md#appendix-a-engineering-implementation-notes) • [ADR-007](docs/adr/007-github-api-server-side-caching.md)                                                      | Review Named Credential configuration                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Integration Patterns**        | Server-side caching for external APIs                                                                           | [GitHub Integration](docs/guides/03-SAS.md#appendix-a-engineering-implementation-notes) • [ADR-007](docs/adr/007-github-api-server-side-caching.md)                                                      | Open the Delivery page: the changelog and the roadmap read GitHub and Jira data that a scheduled job caches, so a page view never makes a callout                                                                                                                                                                                                                                                                                                                       |
 | **Business Architecture**       | Pillar A, an employer hub for an education provider                                                             | [Pillar A](docs/guides/03-SAS.md#51-pillar-a-business-architecture-employer-hub) • [ADR-029](docs/adr/029-schema-visualizer-scope-discovery-and-caching.md)                                              | Open `/business-architecture`: the process map and dashboard gallery (redrawn from the original demo, with no names and sample values), the live data model with its Employer Hub and portfolio toggle, and the walkthrough                                                                                                                                                                                                                                             |
 | **Solution Architecture**       | Pillar B, a platform choice for a regional adult literacy nonprofit                                             | [Pillar B](docs/guides/03-SAS.md#52-pillar-b-solution-architecture-nonprofit-literacy-platform) • [ADR-030](docs/adr/030-decision-matrix-as-custom-metadata.md)                                          | Open `/nonprofit-solutions` (titled Solution Architecture): move the weights in the three-way decision matrix and watch the ranking and the sensitivity line                                                                                                                                                                                                                                                                                                            |
-| **Data Visualization**          | Skills matrix with years from linked roles, and a D3 graph on demand                                            | [Technical Guide 2.1](docs/guides/04-Technical-Guide.md#21-c-skill-network-visualization) • [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)                                   | Open `/skills`: the matrix first, then Graph on a desktop, and check in the network log that `D3_Library` loads only then                                                                                                                                                                                                                                                                                                                                               |
-| **Evaluator Experience**        | Headline numbers, card screenshots, a Work, Education and Certifications timeline and verifiable certifications | [Technical Guide 2.12](docs/guides/04-Technical-Guide.md#212-home-page-cards-and-timeline) • [Technical Guide 2.2](docs/guides/04-Technical-Guide.md#22-c-resume-builder-resume-generation)              | Open `/`: three start here paths, card numbers computed from live sources (the ERD's objects, the spec paths, the AI providers, the latest CI test run), a case study behind each card that has one, and Work, Education and Certifications timeline tabs that move with the arrow keys, each showing five entries and a View all button for the rest. Open `/resume`: pick a persona and the skills follow it, and retired certifications sit below the Trailhead link |
+| **Data Visualization**          | Skills matrix with years from linked roles, and a d3-force graph on demand                                      | [Technical Guide 2.1](docs/guides/04-Technical-Guide.md#21-c-skill-network-visualization) • [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)                                   | Open `/skills`: the matrix first, then Graph on a desktop, and check in the network log that `D3_Library` loads only then                                                                                                                                                                                                                                                                                                                                               |
+| **Evaluator Experience**        | Headline numbers, card screenshots, a Work, Certifications and Education timeline and verifiable certifications | [Technical Guide 2.12](docs/guides/04-Technical-Guide.md#212-home-page-cards-and-timeline) • [Technical Guide 2.2](docs/guides/04-Technical-Guide.md#22-c-resume-builder-resume-generation)              | Open `/`: three start here paths, card numbers computed from live sources (the ERD's objects, the spec paths, the AI providers, the latest CI test run), a case study behind each card that has one, and Work, Certifications and Education timeline tabs that move with the arrow keys, each showing five entries and a View all button for the rest. Open `/resume`: pick a persona and the skills follow it, and retired certifications sit below the Trailhead link |
 | **Technical Documentation**     | Enterprise-grade architecture suite                                                                             | [6 Architecture Guides](#full-architecture-documentation) • [SAS](docs/guides/03-SAS.md)                                                                                                                 | Review documentation structure and C4 model diagrams                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 </details>
@@ -83,14 +78,14 @@ Token vending is live, so any reviewer can call the APIs without a shared secret
 # 1. Request a short-lived token (no credentials required)
 curl -s -X POST "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token" \
   -H "Content-Type: application/json" -H "X-Request-Id: $(uuidgen)" \
-  -d '{"email":"you@example.com","purpose":"Evaluating API design"}'
+  -d '{"email":"<your email address>","purpose":"Evaluating API design"}'
 
 # 2. Call any path on the returned instance_url with the returned token
 curl -si "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
   -H "Authorization: Bearer <access_token>" -H "X-API-Version: v1" -H "X-Request-Id: $(uuidgen)"
 
 # Or run every GET path in both specifications and print status and key headers per path
-EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scripts/api-smoke.sh
+EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design" ./scripts/api-smoke.sh
 ```
 
 **Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in a scratch org copy of the site, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. [unverified] Whether an authenticated PAPI response to a request without an id then carries one id or two (the platform's and the UUID Apex generates) is not yet established, so check it in your own first call. Send your own UUID to get a single, predictable id back.
@@ -101,13 +96,12 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 
 **Available Now:**
 
-- [Architecture decisions documented with rationale](docs/adr/): 32 ADRs covering performance, security, AI, FinOps
-- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 6 workflows (deploy, PR validation, the live smoke test, heartbeat and worker, plus a Lighthouse audit run on demand)
+- [Architecture decisions documented with rationale](docs/adr/): 33 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) says whether it is built, superseded, or a design only
+- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 6 workflows (deploy, PR validation, the live smoke test, the heartbeat, the cache warmer worker deploy, plus a Lighthouse audit run on demand)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml): Twin API pattern with SAPI + PAPI specifications
-- [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---2027-2028): a $0.00 forever design on the AWS Always-Free tier, for Phase 8. No AWS code is built yet
 - [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, October 2026) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix): Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
-- [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine): one dispatch from the Gemini API to a deterministic Local Template, grounded on portfolio records (Agentforce switch off, not implemented)
+- [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine): one dispatch from the Gemini API to a deterministic Local Template, grounded on portfolio records
 
 **Live on the site:**
 
@@ -119,90 +113,55 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 - **Operational settings in custom metadata**: API rate tiers, page sizes, form limits, cache windows and display counts live in `Portfolio_Setting__mdt` records with safe ranges, and the code keeps its own defaults as fallbacks ([ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md))
 - **Contact page and analytics**: a native contact form on `/contact` with spam guards, and GA4 events for how visitors use the site, with no personal data in any event
 - **Mobile performance validation**: on a phone the skills page shows the matrix and requests no graph engine. Mobile LCP medians are 7.5 to 9.6 s on the six main routes, the best the LWR shell allows against a 2.5 s target
-
----
-
-## Interactive Demonstrations
-
-> [!NOTE]
-> A closer look at the items in the "Live on the site" section above. Each one can be tried on the live site.
-
-**Resilience Engineering**
-
-- Turn on "Simulate an outage" on the changelog or the roadmap to see the cached data served with a "Simulated" badge (status `SIMULATED`), and no callout made
-- A real GitHub or Jira outage opens that source's circuit breaker for 30 minutes, and the page shows `DEGRADED` with the last good data and its age
-- Validates enterprise high-availability patterns under controlled failure conditions
-
-**API-First Architecture**
-
-- Use the built-in API Tester component to call native Salesforce REST endpoints (or request an evaluator token and use `curl`)
-- Compare live responses against the OpenAPI specification in real-time
-- Verify mandatory distributed tracing headers (`X-Request-Id`) and proper error response formats
-
-**Production Observability**
-
-- Monitor real-time Salesforce governor limits (Heap, CPU, SOQL queries) in the Glass Box footer
-- Track AI provider health and automatic failover status from Gemini to the Local Template
-- Demonstrates constraint-aware development practices and platform limit management
-
-**Mobile-First Performance**
-
-- View the site on a phone: the skills page shows the matrix and the Pillar A data model shows its object list, and neither requests the graph engine
-- Validates performance budgeting (a 2.5 s LCP target, measured) and WCAG 2.1 AA accessibility compliance
-- Proves responsive design with graceful degradation strategies
-
----
-
-## Phase 8: Multi-Cloud Extension (Design Complete, Planned 2027-2028)
-
-**AWS Lambda Polyglot BFF (Door 2 Architecture)**
-
-- **Fewer round trips** than parallel REST calls, through server-side orchestration (a design goal, not measured)
-- **$0.00 forever guarantee**: Strict governance using AWS Always-Free tier (Lambda Function URLs, no API Gateway)
-- **Serverless resume engine**: Node.js Lambda for perfect PDF fidelity, replacing client-side jsPDF implementation
-- **Enterprise API gateway**: Full rate limiting, API key management, and distributed tracing outside Salesforce governor limits
+- **The architecture docs on the site**: `/docs` renders the SAS and the 25 full ADRs, read from the same daily cache that View source uses, never from GitHub on page load. The page builds every element itself, so no HTML from a document is ever parsed. The footer, the Pillars menu and a "Read the design" link on each pillar page lead there
+- **Queries in custom metadata**: each read of portfolio content, in the APIs and on the site, is a `Query_Definition__mdt` record, checked against the query in its class, so an edit can narrow a read and never widen it ([ADR-033](docs/adr/033-queries-in-custom-metadata.md))
+- **API Lab filters to pick from**: each name and Id filter is a picklist of values read from the org on page load, and on phones the lab opens with the endpoint and Execute showing and the rest in sections a visitor opens
+- **Cover letters of 250 to 350 words**: one prompt builder for both cover letter paths, its instruction in an `AI_Prompt__mdt` record, the length asked for in words and never cut, and a generation config on every Gemini request
+- **Layout**: a motion toggle beside the theme button, the footer metrics in four labelled groups, page intros on the five pillar pages, and the Delivery checklist's times in UTC and in the visitor's own time
+- **Home page**: a line in the owner's voice under the name when one is set, a "What people say" section that stays hidden until three testimonials are approved, and the timeline tabs in the order Work, Certifications, Education
 
 ---
 
 ## Architectural Decision Records
 
 <details>
-<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 32 documented decisions)</summary>
+<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 33 documented decisions)</summary>
 
-| ID                                                                                       | Subject                                  | Strategic Driver                |
-| :--------------------------------------------------------------------------------------- | :--------------------------------------- | :------------------------------ |
-| [ADR-001](docs/adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura          | Performance (LCP target 2.5 s)  |
-| [ADR-002](docs/adr/002-custom-objects-vs-standard-objects.md)                            | Custom Objects vs. Standard Objects      | Security / Guest Access         |
-| [ADR-003](docs/adr/003-apex-rest-vs-external-service.md)                                 | Apex REST vs. External Service           | Budget / FinOps                 |
-| [ADR-004](docs/adr/004-static-resource-code-rendering.md)                                | Static Resource Code Rendering           | Rate Limiting                   |
-| [ADR-005](docs/adr/005-gamified-testimonial-ui.md)                                       | Gamified Testimonial UI                  | User Engagement                 |
-| [ADR-006](docs/adr/006-jwt-bearer-flow-for-ci-cd.md)                                     | JWT Bearer Flow for CI/CD                | DevOps Automation               |
-| [ADR-007](docs/adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching           | Resilience                      |
-| [ADR-008](docs/adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Accelerator         | ALM Maturity                    |
-| [ADR-009](docs/adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model               | Persona-Based Filtering         |
-| [ADR-010](docs/adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Graph engine (now D3)                    | UI/UX Animation                 |
-| [ADR-011](docs/adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Direct CRM vs. Data 360 (Deferred)       | AI Architecture                 |
-| [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md)                         | Guest User Restriction Rules             | Zero Trust Security             |
-| [ADR-013](docs/adr/013-structured-logging-framework-nebula-logger.md)                    | Nebula Logger Implementation             | Observability                   |
-| [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading               | Performance                     |
-| [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI       | High Availability               |
-| [ADR-016](docs/adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as AI Proxy            | Multi-Cloud Scaling             |
-| [ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | API Security (superseded by ADR-027)     | Security Governance             |
-| [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | AWS Lambda URLs vs. API Gateway          | FinOps / Cost Control           |
-| [ADR-019](docs/adr/019-executable-governance-platform-events-for-documentation-logic.md) | Platform Events for Documentation        | Executable Governance           |
-| [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile: matrix first, graph on open      | Performance                     |
-| [ADR-021](docs/adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL vs. Apex REST             | Frontend Orchestration          |
-| [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Simulation Toggle             | Trust / Resilience              |
-| [ADR-023](docs/adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF)       | Tooling / MVP Speed             |
-| [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern                         | Contract Parity                 |
-| [ADR-025](docs/adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling                  | Capacity Planning               |
-| [ADR-026](docs/adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning              | Versioning Strategy             |
-| [ADR-027](docs/adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication       | Zero Trust / Security           |
-| [ADR-028](docs/adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending       | Developer Experience            |
-| [ADR-029](docs/adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema visualizer without Platform Cache | Data Architecture               |
-| [ADR-030](docs/adr/030-decision-matrix-as-custom-metadata.md)                            | Decision matrix as Custom Metadata       | Solution Design                 |
-| [ADR-031](docs/adr/031-native-contact-form.md)                                           | Native contact form                      | Lead Capture / Abuse Protection |
-| [ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md)                       | Operational settings in custom metadata  | Operability                     |
+| ID                                                                                       | Subject                                  | Strategic Driver                | Status                            |
+| :--------------------------------------------------------------------------------------- | :--------------------------------------- | :------------------------------ | :-------------------------------- |
+| [ADR-001](docs/adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura          | Performance (LCP target 2.5 s)  | Built                             |
+| [ADR-002](docs/adr/002-custom-objects-vs-standard-objects.md)                            | Custom Objects vs. Standard Objects      | Security / Guest Access         | Built                             |
+| [ADR-003](docs/adr/003-apex-rest-vs-external-service.md)                                 | Apex REST vs. External Service           | Budget                          | Built                             |
+| [ADR-004](docs/adr/004-static-resource-code-rendering.md)                                | Static Resource Code Rendering           | Rate Limiting                   | Built, from a GitHub cache        |
+| [ADR-005](docs/adr/005-gamified-testimonial-ui.md)                                       | Gamified Testimonial UI                  | User Engagement                 | Built                             |
+| [ADR-006](docs/adr/006-jwt-bearer-flow-for-ci-cd.md)                                     | JWT Bearer Flow for CI/CD                | DevOps Automation               | Built                             |
+| [ADR-007](docs/adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching           | Resilience                      | Built                             |
+| [ADR-008](docs/adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Accelerator         | ALM Maturity                    | Built                             |
+| [ADR-009](docs/adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model               | Persona-Based Filtering         | Built                             |
+| [ADR-010](docs/adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Graph engine (now d3-force)              | UI/UX Animation                 | Superseded by ADR-020             |
+| [ADR-011](docs/adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Direct CRM vs. Data 360                  | AI Architecture                 | Design only, not built            |
+| [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md)                         | Guest User Restriction Rules             | Zero Trust Security             | Built                             |
+| [ADR-013](docs/adr/013-structured-logging-framework-nebula-logger.md)                    | Nebula Logger Implementation             | Observability                   | Built, Nebula an optional install |
+| [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading               | Performance                     | Built                             |
+| [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI       | High Availability               | Built                             |
+| [ADR-016](docs/adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as AI Proxy            | Edge Proxy                      | Design only, not built            |
+| [ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | API Security                             | Security Governance             | Superseded by ADR-027             |
+| [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | AWS Lambda URLs vs. API Gateway          | Cost Control                    | Design only, not built            |
+| [ADR-019](docs/adr/019-executable-governance-platform-events-for-documentation-logic.md) | Platform Events for Documentation        | Executable Governance           | Built                             |
+| [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile: matrix first, graph on open      | Performance                     | Built                             |
+| [ADR-021](docs/adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL vs. Apex REST             | Frontend Orchestration          | Built, in three components        |
+| [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Simulation Toggle             | Trust / Resilience              | Built                             |
+| [ADR-023](docs/adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF)       | Tooling / MVP Speed             | Built                             |
+| [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern                         | Contract First                  | Built                             |
+| [ADR-025](docs/adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling                  | Capacity Planning               | Built                             |
+| [ADR-026](docs/adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning              | Versioning Strategy             | Built                             |
+| [ADR-027](docs/adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication       | Zero Trust / Security           | Built                             |
+| [ADR-028](docs/adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending       | Developer Experience            | Built                             |
+| [ADR-029](docs/adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema visualizer without Platform Cache | Data Architecture               | Built                             |
+| [ADR-030](docs/adr/030-decision-matrix-as-custom-metadata.md)                            | Decision matrix as Custom Metadata       | Solution Design                 | Built                             |
+| [ADR-031](docs/adr/031-native-contact-form.md)                                           | Native contact form                      | Lead Capture / Abuse Protection | Built                             |
+| [ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md)                       | Operational settings in custom metadata  | Operability                     | Built                             |
+| [ADR-033](docs/adr/033-queries-in-custom-metadata.md)                                    | Queries in custom metadata               | Operability                     | Built                             |
 
 </details>
 
@@ -213,21 +172,18 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 
 | Term          | Meaning                                                                                                                   | Status                          |
 | :------------ | :------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |
-| **LWR**       | Lightning Web Runtime: Modern Salesforce frontend framework                                                               | Live at MVP                     |
-| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (32 records). |
-| **Dual-Door** | Native Salesforce + External API gateway strategy                                                                         | Door 1: MVP / Door 2: Phase 8   |
-| **FinOps**    | Financial Operations: Cloud cost governance and optimization                                                              | Design complete for Phase 8     |
-| **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live at MVP                     |
+| **LWR**       | Lightning Web Runtime: Modern Salesforce frontend framework                                                               | Live                            |
+| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (33 records). |
+| **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live                            |
 | **RAG**       | Retrieval-Augmented Generation, an AI grounding technique                                                                 | Apex grounding on cover letters |
-| **BFF**       | Backend For Frontend: Tailored API layer for UI optimization                                                              | Design complete for Phase 8     |
-| **SAPI**      | System API: Direct data access layer (API-led connectivity)                                                               | Live at MVP                     |
-| **PAPI**      | Process API: Orchestration layer (API-led connectivity)                                                                   | Live at MVP                     |
+| **SAPI**      | System API: Direct data access layer (API-led connectivity)                                                               | Live                            |
+| **PAPI**      | Process API: Orchestration layer (API-led connectivity)                                                                   | Live                            |
 
 </details>
 
 ---
 
-## North-Star Architecture
+## Architecture
 
 ```mermaid
 graph LR
@@ -235,22 +191,19 @@ graph LR
     %% ========= BRAND STYLES =========
     classDef user fill:#424242,stroke:#000000,stroke-width:2px,color:#ffffff,font-weight:bold;
     classDef sfdc fill:#00A1E0,stroke:#005FB2,stroke-width:2px,color:#ffffff,font-weight:bold;
-    classDef aws fill:#FF9900,stroke:#CC7A00,stroke-width:2px,color:#ffffff,font-weight:bold;
     classDef jira fill:#0052CC,stroke:#003A8F,stroke-width:2px,color:#ffffff,font-weight:bold;
     classDef github fill:#24292E,stroke:#000000,stroke-width:2px,color:#ffffff,font-weight:bold;
     classDef data fill:#8E24AA,stroke:#4A148C,stroke-width:2px,color:#ffffff,font-weight:bold;
-    classDef future fill:#FFF3E0,stroke:#FB8C00,stroke-width:2px,stroke-dasharray:5 5;
 
     %% ========= NODES =========
     User((User))
     LWR[Experience Cloud<br/>LWR]
     GQL[Salesforce<br/>GraphQL]
-    Apex[Apex Runtime]
+    Apex[Apex Runtime<br/>with the Local Template]
     DB[(Custom Objects)]
-    AI[Gemini AI<br/>Agentforce switch off]
+    AI[Gemini API]
     Jira[Jira Cloud API]
     GitHub[GitHub API]
-    Lambda[AWS Lambda<br/>Phase 8]
 
     %% ========= FLOWS =========
     User --> LWR
@@ -261,23 +214,18 @@ graph LR
     Apex --> Jira
     Apex --> GitHub
 
-    %% ========= FUTURE =========
-    LWR -.-> Lambda
-    Lambda -.-> Apex
-
     %% ========= APPLY STYLES =========
     class User user;
     class LWR,GQL,Apex,AI sfdc;
     class DB data;
     class Jira jira;
     class GitHub github;
-    class Lambda aws;
 
     %% ========= CRITICAL PATH =========
     linkStyle 0,1,2 stroke:#2ECC71,stroke-width:3px;
 ```
 
-> **Diagram Description (for accessibility):** The diagram shows a user connecting to an Experience Cloud LWR site, which routes data requests through either a native Salesforce GraphQL API (Door 1, live in Q1 2027) or an AWS Lambda Polyglot Backend For Frontend (Door 2, design complete, planned 2027-2028). The Apex Runtime handles integrations with Jira, GitHub, and the Gemini AI API (the Agentforce switch is off and Agentforce is not implemented), all backed by custom Salesforce objects.
+> **Diagram Description (for accessibility):** The diagram shows a user reaching the Experience Cloud LWR site, live since October 2026. The site reads some records through the native Salesforce GraphQL API and the rest through the Apex runtime. Apex sends cover letter prompts to the Gemini API and falls back to its own Local Template when Gemini fails. Scheduled Apex jobs read GitHub and Jira into caches, and everything is backed by custom Salesforce objects.
 
 ---
 
@@ -286,25 +234,23 @@ graph LR
 > [!TIP]
 > **View these documents in the [Governance Hub](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) for the best reading experience.**
 
-| Document                                      | Link                                                                     |
-| :-------------------------------------------- | :----------------------------------------------------------------------- |
-| 01 – Executive Overview                       | [Read in Repo →](docs/guides/01-Executive-Overview.md)                   |
-| 02 – Program Charter & Roadmap                | [Read in Repo →](docs/guides/02-Program-Charter.md)                      |
-| 03 – Systems Architecture Specification (SAS) | [Read in Repo →](docs/guides/03-SAS.md)                                  |
-| 04 – Technical Implementation Guide           | [Read in Repo →](docs/guides/04-Technical-Guide.md)                      |
-| 05 – Maintenance & Operations Guide           | [Read in Repo →](docs/guides/05-Maintenance-Guide.md)                    |
-| 06 – Guardrails & Executable Governance       | [Read in Repo →](docs/guides/06-Guardrails-and-Executable-Governance.md) |
+| Document                                    | Link                                                                   |
+| :------------------------------------------ | :--------------------------------------------------------------------- |
+| 01 Executive Overview                       | [Read in Repo](docs/guides/01-Executive-Overview.md)                   |
+| 02 Program Charter and Roadmap              | [Read in Repo](docs/guides/02-Program-Charter.md)                      |
+| 03 Systems Architecture Specification (SAS) | [Read in Repo](docs/guides/03-SAS.md)                                  |
+| 04 Technical Implementation Guide           | [Read in Repo](docs/guides/04-Technical-Guide.md)                      |
+| 05 Maintenance and Operations Guide         | [Read in Repo](docs/guides/05-Maintenance-Guide.md)                    |
+| 06 Guardrails and Executable Governance     | [Read in Repo](docs/guides/06-Guardrails-and-Executable-Governance.md) |
 
-> **For Non-Salesforce Readers:** Document 06 includes plain-English explanations of Salesforce governor limits, AWS cost optimization patterns, and constraint-based design principles. No prior platform knowledge required.
+> **For Non-Salesforce Readers:** Document 06 includes plain-English explanations of Salesforce governor limits and constraint-based design principles. No prior platform knowledge required.
 
 ---
 
 ## API & Integration Contracts (Contract-First Design)
 
 > [!NOTE]
-> This project utilizes a **Twin API Pattern** ([ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)). System and Process APIs are designated to strict OpenAPI 3.0 specifications to ensure technical parity between Salesforce and enterprise middleware.
->
-> **Strategy:** In the MVP, orchestration is handled by Salesforce Apex (Door 1). Phase 8 would enable Door 2, delegating to **AWS Lambda**. Door 2 is designed and not built.
+> This project uses a **Twin API Pattern** ([ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)): a System API and a Process API, each described by an OpenAPI 3.0 file. A change is made in the YAML first, then in Apex, and the Apex REST classes are the only runtime.
 >
 > **Security:** All APIs require OAuth 2.0 Client Credentials via an External Client App, consumed on-platform through a Named Credential ([ADR-027](docs/adr/027-platform-native-api-authentication.md)). External evaluators obtain short-lived tokens from a vending endpoint ([ADR-028](docs/adr/028-evaluator-access-via-token-vending.md)).
 
@@ -333,4 +279,4 @@ graph LR
 
 **Contact:** [LinkedIn](https://linkedin.com/in/ryanbumstead) • [ryan@ryanbumstead.com](mailto:ryan@ryanbumstead.com)
 
-_Delivered with enterprise rigor. Designed for real scale._
+_Delivered with enterprise rigor._

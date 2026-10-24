@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>Cover Letter</label>
+    <protected>false</protected>
+    <values>
+        <field>Instruction__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Write a cover letter from Ryan Bumstead for the job below, in his own voice, in the first person, in one professional tone.
+Shape:
+1. Greet the hiring team at the company by name. Then one short paragraph on why this role at this company, drawn from the role and the job description. Do not open with "I am writing to apply".
+2. Two or three body paragraphs. Each one names one requirement from the job and ties it to one specific fact from the facts below, such as a project, a highlight or a number the facts state. Say which project or role the fact comes from.
+3. A short close of one or two sentences that asks for a conversation. Then sign off with the name Ryan Bumstead.
+Rules:
+- Use only the facts below. Do not invent employers, projects, clients, dates, certifications or numbers. When the job asks for something the facts do not show, leave it out rather than claim it.
+- When there is no job description, work from the role title and the company name, and choose the facts that fit the role best.
+- When a persona is given, lead with the facts that show that kind of work.
+- No clichés, such as "passionate", "team player", "hit the ground running", "perfect fit" or "great asset".
+- Do not write an email address, a phone number, a street address or a placeholder in square brackets.
+- Plain text only, with no markdown, headings or bullet points.
+- Return only the letter.</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >The cover letter instruction. ContentGenerationController.coverLetterPrompt puts it first, then adds the word range from the settings, the job, the persona and the facts. A blank or missing record gives the same text from the code.</value>
+    </values>
+</CustomMetadata>

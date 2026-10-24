@@ -4,7 +4,9 @@
  *                      badge and the show-your-work panel are filled only from the response,
  *                      never from a literal, so the page cannot claim a provider on its own. No
  *                      timer drives the progress line. Sends ai_generation_completed on a
- *                      result and ai_complete_failure on an error.
+ *                      result and ai_complete_failure on an error. The whole letter is shown
+ *                      with its word count, in a box that wraps long words and keeps a
+ *                      readable line length on wide screens.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -59,6 +61,12 @@ export function modelUnreachable(result) {
   );
 }
 
+/** Words in a letter, counted on whitespace. 0 for no text. */
+export function countWords(text) {
+  const trimmed = (text || "").trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
 /** Sorts an error message into a message_kind without sending the message itself. */
 export function messageKind(message) {
   const text = (message || "").toLowerCase();
@@ -109,6 +117,11 @@ export default class CoverLetterGenerator extends LightningElement {
     return this.result.model
       ? `${this.result.provider} (${this.result.model})`
       : this.result.provider;
+  }
+
+  get wordCountText() {
+    const words = countWords(this.result?.content);
+    return words === 1 ? "1 word" : `${words} words`;
   }
 
   get isLocalTemplate() {

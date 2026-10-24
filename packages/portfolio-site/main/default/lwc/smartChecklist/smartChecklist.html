@@ -33,7 +33,11 @@
                   onclick={handleRunClick}
                   >{item.run.shortSha}</a
                 >
-                <span class="time">{item.run.time}</span>
+                <template lwc:if={item.hasRunTime}>
+                  <time class="time" datetime={item.run.iso}
+                    >{item.run.time}</time
+                  >
+                </template>
               </p>
             </template>
             <template lwc:if={item.hasRunText}>
@@ -41,11 +45,29 @@
                 <span class="sha" title={item.run.sha}
                   >{item.run.shortSha}</span
                 >
-                <span class="time">{item.run.time}</span>
+                <template lwc:if={item.hasRunTime}>
+                  <time class="time" datetime={item.run.iso}
+                    >{item.run.time}</time
+                  >
+                </template>
               </p>
             </template>
-            <template lwc:if={item.cacheText}>
-              <p class="evidence time">{item.cacheText}</p>
+            <template lwc:if={item.hasCache}>
+              <template for:each={item.cacheRows} for:item="cache">
+                <p
+                  key={cache.key}
+                  class="evidence cache"
+                  data-cache={cache.key}
+                >
+                  <span class="time">{cache.lead}</span>
+                  <template lwc:if={cache.known}>
+                    <time class="time" datetime={cache.iso}>{cache.text}</time>
+                  </template>
+                  <template lwc:else>
+                    <span class="time">none</span>
+                  </template>
+                </p>
+              </template>
             </template>
           </div>
         </li>

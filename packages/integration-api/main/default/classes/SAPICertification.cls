@@ -7,9 +7,8 @@
  * @Test Class        : [SAPICertificationTest]
  **/
 @RestResource(urlMapping='/sapi/v1/certifications/*')
-global with sharing class SAPICertification {
-  private static final String SELECT_FIELDS = 'SELECT Id, Name, Contact__c, Contact__r.Name, Issuer__c, Issuer__r.Name, Earned_Date__c FROM Certification__c';
-  private static final String ORDER_BY = ' ORDER BY Earned_Date__c DESC NULLS LAST, Name ASC';
+global with sharing class SAPICertification implements QueryDefinitions.Provider {
+  private static final String LIST_QUERY = 'SAPICertification_List';
 
   /**
    * @description GET method. Retrieves Certification__c records with pagination and contactName, issuerName and certificationName filters.
@@ -35,25 +34,22 @@ global with sharing class SAPICertification {
       String issuerName = ctx.stringParam('issuerName');
       String certificationName = ctx.stringParam('certificationName');
 
-      String whereClause = ' WHERE Id != null';
-      if (String.isNotBlank(contactName)) {
-        whereClause += ' AND Contact__r.Name = :contactName';
-      }
-      if (String.isNotBlank(issuerName)) {
-        whereClause += ' AND Issuer__r.Name = :issuerName';
-      }
-      if (String.isNotBlank(certificationName)) {
-        whereClause += ' AND Name = :certificationName';
-      }
-
-      List<Certification__c> records = Database.query(
-        SELECT_FIELDS +
-          whereClause +
-          ORDER_BY +
-          ' LIMIT :limitParam OFFSET :offsetParam'
+      Map<String, Object> binds = listBinds(
+        contactName,
+        issuerName,
+        certificationName
       );
-      Integer totalCount = Database.countQuery(
-        'SELECT COUNT() FROM Certification__c' + whereClause
+      List<Certification__c> records = (List<Certification__c>) QueryDefinitions.runPage(
+        LIST_QUERY,
+        binds,
+        listDefault(),
+        limitParam,
+        offsetParam
+      );
+      Integer totalCount = QueryDefinitions.count(
+        LIST_QUERY,
+        binds,
+        listDefault()
       );
 
       ctx.paginate(totalCount, records.size());
@@ -62,6 +58,53 @@ global with sharing class SAPICertification {
     } catch (Exception e) {
       ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
+  }
+
+  /**
+   * @description The list read as code: every field the response returns, the optional
+   *              filters and the order. Query_Definition.SAPICertification_List ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault listDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Certification__c',
+        'Id, Name, Contact__c, Contact__r.Name, Issuer__c, Issuer__r.Name, ' +
+        'Earned_Date__c'
+      )
+      .filter(
+        '(IsDeleted = :hasContactName OR Contact__r.Name = :contactName) AND ' +
+          '(IsDeleted = :hasIssuerName OR Issuer__r.Name = :issuerName) AND ' +
+          '(IsDeleted = :hasCertificationName OR Name = :certificationName)'
+      )
+      .orderBy('Earned_Date__c DESC NULLS LAST, Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(listBinds(null, null, null));
+  }
+
+  private static Map<String, Object> listBinds(
+    String contactName,
+    String issuerName,
+    String certificationName
+  ) {
+    return new Map<String, Object>{
+      'hasContactName' => String.isNotBlank(contactName),
+      'contactName' => contactName,
+      'hasIssuerName' => String.isNotBlank(issuerName),
+      'issuerName' => issuerName,
+      'hasCertificationName' => String.isNotBlank(certificationName),
+      'certificationName' => certificationName
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      LIST_QUERY => listDefault()
+    };
   }
 
   @TestVisible

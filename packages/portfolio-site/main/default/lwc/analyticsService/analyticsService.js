@@ -45,7 +45,10 @@ export const EVENTS = Object.freeze({
   START_PATH_FOLLOWED: "start_path_followed", // path: resume, pillars or api
   GRAPH_ZOOM_USED: "graph_zoom_used", // control: in, out, reset, wheel or keyboard
   BACK_TO_TOP_USED: "back_to_top_used", // none
-  TIMELINE_EXPANDED: "timeline_expanded" // tab, expanded
+  TIMELINE_EXPANDED: "timeline_expanded", // tab, expanded
+  MOTION_TOGGLED: "motion_toggled", // motion: reduce or full
+  DOCS_OPENED: "docs_opened", // doc_key
+  API_LAB_SECTION_TOGGLED: "api_lab_section_toggled" // section, expanded
 });
 
 /** The document event the site's head script listens for and passes to gtag. */

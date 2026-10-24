@@ -1021,7 +1021,7 @@
         {
           "name": "category",
           "type": "string",
-          "description": "Filter skills by Category (e.g., 'Development', 'Architecture')"
+          "description": "Filter skills by Category, one of the Skill Category picklist values, for example 'Backend', 'Frontend' or 'Integration'."
         },
         {
           "name": "limit",

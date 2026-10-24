@@ -25,11 +25,14 @@
                   "children": [
                     {
                       "attributes": {
-                        "imageInfos": "",
-                        "richTextValue": "<h1>Business Architecture</h1><p>An education provider had several departments working with the same employer partners, and none of them could see what the others had agreed. The provider's Salesforce org already existed, with custom objects linking training, funding, support services and employment outcomes. As a contractor from July 2021 I extended it with case management for the provider's students, tested it with the provider's team, wrote its reports, procedures and training documents, and trained its admins and users. In late 2021 and early 2022 I rolled it out to career coaches in short staff meeting sessions, moved two years of spreadsheet history into it and built the reports a funding program needed each month, quarter and year. The Employer Hub is a working demo of the next step on that org, for career coaches, business recruiters and career and technical education staff. It gives each partner relationship one home, routes every request to the right department automatically and reports on the results. The provider later asked about reusing the same pattern for a second workforce funding stream. This page shows the process maps, the live data model behind the hub and a walkthrough of how a partner inquiry moves through it.</p>"
+                        "designLabel": "Read the design",
+                        "designUrl": "/docs?doc=sas#5-1-pillar-a-business-architecture-employer-hub",
+                        "eyebrow": "Pillar A",
+                        "heading": "Business Architecture",
+                        "lead": "An education provider had several departments working with the same employer partners, and none of them could see what the others had agreed. The provider's Salesforce org already existed, with custom objects linking training, funding, support services and employment outcomes. As a contractor from July 2021 I extended it with case management for the provider's students, tested it with the provider's team, wrote its reports, procedures and training documents, and trained its admins and users. In late 2021 and early 2022 I rolled it out to career coaches in short staff meeting sessions, moved two years of spreadsheet history into it and built the reports a funding program needed each month, quarter and year. The Employer Hub is a working demo of the next step on that org, for career coaches, business recruiters and career and technical education staff. It gives each partner relationship one home, routes every request to the right department automatically and reports on the results. The provider later asked about reusing the same pattern for a second workforce funding stream. This page shows the process maps, the live data model behind the hub and a walkthrough of how a partner inquiry moves through it."
                       },
-                      "definition": "community_builder:richTextEditor",
-                      "id": "e250f3b0-c8c8-4ac1-a615-5ef76bc17d0e",
+                      "definition": "c:pageIntro",
+                      "id": "24ec04dc-2325-4404-ae46-af574ef69199",
                       "type": "component"
                     },
                     {
