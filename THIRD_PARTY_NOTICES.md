@@ -9,6 +9,7 @@ keeps its own licence. The project's own code is under the licence in [LICENSE](
 | D3 force layout modules   | 3.0.0 and 3.0.1  | ISC         | `packages/portfolio-site/main/default/staticresources/D3_Library.js`                                  |
 | jsPDF                     | 3.0.4            | MIT         | `packages/portfolio-site/main/default/staticresources/jsPDF_Library.js`                               |
 | PrismJS                   | 1.30.0           | MIT         | `packages/portfolio-site/main/default/staticresources/Prism_JS/prism.js` and `prism.css`              |
+| marked                    | 18.1.0           | MIT         | `packages/portfolio-site/main/default/staticresources/Marked_Library.js`                              |
 | Inter (font)              | fontsource 5.3.0 | SIL OFL 1.1 | `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/inter-latin-*-normal.woff2`     |
 | Fira Code (font)          | fontsource 5.3.0 | SIL OFL 1.1 | `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/fira-code-latin-*-normal.woff2` |
 
@@ -47,6 +48,14 @@ keeps its own licence. The project's own code is under the licence in [LICENSE](
 - Licence: MIT. Source: https://github.com/PrismJS/prism (download build with the `prism` theme
   and the markup, css, clike and javascript languages).
 - Licence text: https://github.com/PrismJS/prism/blob/v1.30.0/LICENSE
+
+## marked 18.1.0
+
+- Copyright (c) 2018+, MarkedJS (https://github.com/markedjs/)
+- Copyright (c) 2011-2018, Christopher Jeffrey (https://github.com/chjj/)
+- Licence: MIT. Source: https://github.com/markedjs/marked, package `marked@18.1.0`, the official UMD build
+  `lib/marked.umd.js` copied unchanged. Only its lexer is used.
+- Licence text: in the comment at the top of `Marked_Library.js`.
 
 ## Inter
 
