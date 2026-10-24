@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <available>true</available>
+    <description
+  >The approval request for a new testimonial from the portfolio site. Used by the Testimonial Approval process, which sends it to the testimonial's owner. It shows the quote and who wrote it, and says how to approve or reject by replying.</description>
+    <encodingKey>UTF-8</encodingKey>
+    <name>Portfolio Testimonial Approval Request</name>
+    <style>none</style>
+    <subject
+  >Testimonial to approve from {!Testimonial__c.Author_Name__c}</subject>
+    <type>text</type>
+    <uiType>Aloha</uiType>
+</EmailTemplate>
