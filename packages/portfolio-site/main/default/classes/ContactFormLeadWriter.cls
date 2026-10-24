@@ -8,11 +8,17 @@
  *                      the way in. A batch that still fails after three retries is kept as
  *                      Contact_Form_Failure__c rows and the Portfolio_Admin users get a custom
  *                      notification, so no message is lost and the visitor never sees an error.
+ *                      Once the Leads are saved, each Lead's owner gets one email with the
+ *                      visitor's name, company, email, full message and a link to the Lead, from
+ *                      the Portfolio_Contact_New_Lead template. The assignment rule's own
+ *                      notification is not sent from this context, so this is the only email.
+ *                      It goes to a user Id, never to an address: the Lead's owner when that is
+ *                      an active internal user, otherwise the Portfolio_Admin users.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/23/2026
- * @Test Class        : [ContactFormControllerTest]
+ * @Test Class        : [ContactFormControllerTest, ContactFormLeadWriterTest]
  **/
 public with sharing class ContactFormLeadWriter {
   @TestVisible
@@ -21,8 +27,15 @@ public with sharing class ContactFormLeadWriter {
   private static final Integer MAX_RETRIES = 3;
   @TestVisible
   private static Boolean forceFailure = false;
+  @TestVisible
+  private static Boolean forceEmailFailure = false;
+  @TestVisible
+  private static final String NEW_LEAD_TEMPLATE = 'Portfolio_Contact_New_Lead';
+  @TestVisible
+  private static List<Messaging.SingleEmailMessage> lastOwnerEmails = new List<Messaging.SingleEmailMessage>();
   private static final String NOTIFICATION_TYPE = 'Portfolio_Contact_Reminder';
   private static final String ADMIN_PERMISSION_SET = 'Portfolio_Admin';
+  private static final String STANDARD_USER_TYPE = 'Standard';
 
   /**
    * @description Inserts one Lead per event. The whole batch is saved or none of it, so a
@@ -78,7 +91,106 @@ public with sharing class ContactFormLeadWriter {
         throw new EventBus.RetryableException(e.getMessage());
       }
       keepFailures(submissions, e.getMessage());
+      return;
     }
+    List<Lead> saved = new List<Lead>(withReply);
+    saved.addAll(withoutReply);
+    emailOwners(saved);
+  }
+
+  /**
+   * @description Sends each saved Lead's owner one email built from the
+   *              Portfolio_Contact_New_Lead template. Sent to user Ids with
+   *              setTargetObjectId, which the Apex limits page says does not count toward the
+   *              daily single email limit. A failure here is ignored: the Lead is saved and the
+   *              in app arrival notice still goes, so there is nothing to undo or retry.
+   * @param leads The Leads just inserted.
+   */
+  @TestVisible
+  private static void emailOwners(List<Lead> leads) {
+    lastOwnerEmails = new List<Messaging.SingleEmailMessage>();
+    try {
+      if (forceEmailFailure) {
+        throw new EmailException('Forced email failure for tests.');
+      }
+      List<EmailTemplate> templates = [
+        SELECT Id
+        FROM EmailTemplate
+        WHERE DeveloperName = :NEW_LEAD_TEMPLATE
+        WITH SYSTEM_MODE
+        LIMIT 1
+      ];
+      if (templates.isEmpty() || leads.isEmpty()) {
+        return;
+      }
+      Map<Id, Set<Id>> recipientsByLead = recipientsByLead(leads);
+      for (Id leadId : recipientsByLead.keySet()) {
+        Messaging.SingleEmailMessage rendered = Messaging.renderStoredEmailTemplate(
+          templates[0].Id,
+          leadId,
+          null
+        );
+        for (Id userId : recipientsByLead.get(leadId)) {
+          Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+          message.setTargetObjectId(userId);
+          message.setSaveAsActivity(false);
+          message.setSubject(rendered.getSubject());
+          message.setPlainTextBody(rendered.getPlainTextBody());
+          lastOwnerEmails.add(message);
+        }
+      }
+      if (!lastOwnerEmails.isEmpty()) {
+        Messaging.sendEmail(lastOwnerEmails, false);
+      }
+    } catch (Exception e) {
+      // The Lead is saved and the in app arrival notice still reaches the owner.
+      lastOwnerEmails = new List<Messaging.SingleEmailMessage>();
+    }
+  }
+
+  // The owner set by the assignment rule when it is an active internal user. Otherwise, for
+  // example while the rule leaves the Lead with the Automated Process user, the
+  // Portfolio_Admin users.
+  private static Map<Id, Set<Id>> recipientsByLead(List<Lead> leads) {
+    Map<Id, Lead> owners = new Map<Id, Lead>(
+      [
+        SELECT Id, OwnerId
+        FROM Lead
+        WHERE Id IN :new Map<Id, Lead>(leads).keySet()
+        WITH SYSTEM_MODE
+      ]
+    );
+    Set<Id> ownerIds = new Set<Id>();
+    for (Lead lead : owners.values()) {
+      ownerIds.add(lead.OwnerId);
+    }
+    Set<Id> activeOwners = new Map<Id, User>(
+        [
+          SELECT Id
+          FROM User
+          WHERE
+            Id IN :ownerIds
+            AND IsActive = TRUE
+            AND UserType = :STANDARD_USER_TYPE
+          WITH SYSTEM_MODE
+        ]
+      )
+      .keySet();
+    Map<Id, Set<Id>> recipients = new Map<Id, Set<Id>>();
+    Set<Id> admins;
+    for (Lead lead : owners.values()) {
+      if (activeOwners.contains(lead.OwnerId)) {
+        recipients.put(lead.Id, new Set<Id>{ lead.OwnerId });
+        continue;
+      }
+      if (admins == null) {
+        admins = adminRecipients();
+      }
+      if (!admins.isEmpty()) {
+        recipients.put(lead.Id, admins);
+      }
+    }
+    return recipients;
   }
 
   private static void keepFailures(
@@ -111,16 +223,8 @@ public with sharing class ContactFormLeadWriter {
       LIMIT 1
     ];
     Set<String> recipients = new Set<String>();
-    for (PermissionSetAssignment assignment : [
-      SELECT AssigneeId
-      FROM PermissionSetAssignment
-      WHERE
-        PermissionSet.Name = :ADMIN_PERMISSION_SET
-        AND Assignee.IsActive = TRUE
-      WITH SYSTEM_MODE
-      LIMIT 50
-    ]) {
-      recipients.add(assignment.AssigneeId);
+    for (Id adminId : adminRecipients()) {
+      recipients.add(adminId);
     }
     if (types.isEmpty() || recipients.isEmpty()) {
       return;
@@ -136,14 +240,31 @@ public with sharing class ContactFormLeadWriter {
     notification.send(recipients);
   }
 
+  private static Set<Id> adminRecipients() {
+    Set<Id> admins = new Set<Id>();
+    for (PermissionSetAssignment assignment : [
+      SELECT AssigneeId
+      FROM PermissionSetAssignment
+      WHERE
+        PermissionSet.Name = :ADMIN_PERMISSION_SET
+        AND Assignee.IsActive = TRUE
+      WITH SYSTEM_MODE
+      LIMIT 50
+    ]) {
+      admins.add(assignment.AssigneeId);
+    }
+    return admins;
+  }
+
   @TestVisible
   private static Database.DMLOptions dmlOptions(Boolean sendAutoResponse) {
     Database.DMLOptions options = new Database.DMLOptions();
     options.optAllOrNone = true;
     options.assignmentRuleHeader.useDefaultRule = true;
     options.emailHeader.triggerAutoResponseEmail = sendAutoResponse;
-    // Without this the assignment rule assigns the Lead but its notification email to the new
-    // owner is not sent.
+    // Asks for the assignment rule's notification as Web-to-Lead would. In this context the
+    // org's email log shows none is sent even with a template on the rule entry, so
+    // emailOwners sends the one email the owner gets.
     options.emailHeader.triggerUserEmail = true;
     options.duplicateRuleHeader.allowSave = true;
     return options;
