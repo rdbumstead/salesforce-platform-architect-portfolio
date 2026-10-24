@@ -7,7 +7,10 @@
  *                      A file longer than one row is split into parts inside a top level
  *                      heading or between visible characters, the parts join back to the file, parts
  *                      a shorter file no longer needs are deleted, and a file longer than
- *                      every part together is cut and flagged.
+ *                      every part together is cut and flagged. A forced run reads the paths
+ *                      it is given, or every path of one key, even when they are fresh, and
+ *                      keeps the same parts, stale row delete, breaker and file cap. A path
+ *                      no record configures is never read, and the scheduled run is unchanged.
  *                      Seed rows come from @TestSetup, a separate transaction, so no test
  *                      writes before its callouts.
  * @author            : Ryan Bumstead
@@ -481,6 +484,229 @@ private class SourceCacheRefreshJobTest {
     Test.stopTest();
 
     Assert.areEqual(1, mock.calls, 'One file per run under a setting of one');
+  }
+
+  @IsTest
+  static void shouldReadAFreshPathWhenForced() {
+    configure(new List<String>{ FRESH_PATH, STALE_PATH, NEW_PATH });
+    ContentsMock mock = new ContentsMock(200);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    String outcome = SourceCacheRefreshJob.refreshPaths(
+      new Set<String>{ FRESH_PATH }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      SourceCacheRefreshJob.OUTCOME_REFRESHED,
+      outcome,
+      'Outcome'
+    );
+    Assert.areEqual(1, mock.calls, 'Only the forced path');
+    Map<String, Source_Cache__c> rows = rowsByPath();
+    Assert.areEqual(
+      'text of ' + FRESH_PATH,
+      rows.get(FRESH_PATH).Content__c,
+      'Read although it was checked two hours ago'
+    );
+    Assert.areEqual(
+      OLD_CONTENT,
+      rows.get(STALE_PATH).Content__c,
+      'A due path that was not asked for is left to the scheduled run'
+    );
+  }
+
+  @IsTest
+  static void shouldEnqueueEveryPathOfTheKeyWhenForcedByKey() {
+    configure(new List<String>{ FRESH_PATH, STALE_PATH, NEW_PATH });
+    Test.setMock(HttpCalloutMock.class, new ContentsMock(200));
+
+    Test.startTest();
+    Id jobId = SourceCacheRefreshJob.forceRefresh('apiTester');
+    Test.stopTest();
+
+    Assert.isNotNull(jobId, 'A job was queued');
+    Map<String, Source_Cache__c> rows = rowsByPath();
+    for (String path : new List<String>{ FRESH_PATH, STALE_PATH, NEW_PATH }) {
+      Assert.areEqual(
+        'text of ' + path,
+        rows.get(path).Content__c,
+        'Every path of the key read: ' + path
+      );
+    }
+  }
+
+  @IsTest
+  static void shouldEnqueueNothingWhenTheKeyHasNoPath() {
+    configure(new List<String>{ FRESH_PATH });
+
+    Test.startTest();
+    Id byKey = SourceCacheRefreshJob.forceRefresh(SourceController.DOCS_KEY);
+    Id byNoPaths = SourceCacheRefreshJob.forceRefresh(new Set<String>{ ' ' });
+    Id byNull = SourceCacheRefreshJob.forceRefresh((Set<String>) null);
+    Test.stopTest();
+
+    Assert.isNull(byKey, 'No docs path configured');
+    Assert.isNull(byNoPaths, 'A blank path is no path');
+    Assert.isNull(byNull, 'Null is no path');
+  }
+
+  @IsTest
+  static void shouldNotReadAPathThatIsNotConfiguredWhenForced() {
+    configure(new List<String>{ FRESH_PATH });
+    ContentsMock mock = new ContentsMock(200);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    String outcome = SourceCacheRefreshJob.refreshPaths(
+      new Set<String>{ 'docs/guides/unlisted.md' }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(SourceCacheRefreshJob.OUTCOME_NOT_DUE, outcome, 'Outcome');
+    Assert.areEqual(0, mock.calls, 'Never read');
+    Assert.isFalse(
+      rowsByPath().containsKey(ORPHAN_PATH),
+      'Rows no longer configured are still deleted'
+    );
+  }
+
+  @IsTest
+  static void shouldSplitAForcedFreshFileIntoParts() {
+    configure(new List<String>{ FRESH_PATH });
+    Test.setMock(HttpCalloutMock.class, new LongFileMock());
+
+    Test.startTest();
+    SourceCacheRefreshJob.refreshPaths(new Set<String>{ ' ' + FRESH_PATH });
+    Test.stopTest();
+
+    Map<String, Source_Cache__c> rows = rowsByPath();
+    Assert.areEqual(
+      SourceCacheRefreshJob.CONTENT_MAX_LENGTH - 1,
+      rows.get(FRESH_PATH).Content__c.length(),
+      'Part 1 at the field length, from a trimmed path'
+    );
+    Assert.areEqual(
+      6,
+      rows.get(FRESH_PATH + '#part-2').Content__c.length(),
+      'The rest in part 2'
+    );
+  }
+
+  @IsTest
+  static void shouldNeedNoPermissionSetWhenForcedByAnAdmin() {
+    User plain = new User(
+      Alias = 'plain',
+      Email = 'plain@example.com',
+      EmailEncodingKey = 'UTF-8',
+      LastName = 'Plain',
+      LanguageLocaleKey = 'en_US',
+      LocaleSidKey = 'en_US',
+      ProfileId = [
+        SELECT Id
+        FROM Profile
+        WHERE Name = 'System Administrator'
+        LIMIT 1
+      ]
+      .Id,
+      TimeZoneSidKey = 'America/Los_Angeles',
+      Username = 'plain.' + Crypto.getRandomInteger() + '@example.com.src'
+    );
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      insert plain;
+    }
+    configure(new List<String>{ FRESH_PATH });
+    Test.setMock(HttpCalloutMock.class, new ContentsMock(200));
+
+    Test.startTest();
+    System.runAs(plain) {
+      SourceCacheRefreshJob.forceRefresh(new Set<String>{ FRESH_PATH });
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      'text of ' + FRESH_PATH,
+      rowsByPath().get(FRESH_PATH).Content__c,
+      'An admin with no permission set assigned runs it'
+    );
+  }
+
+  @IsTest
+  static void shouldDeleteAPartTheForcedFileNoLongerNeeds() {
+    configure(new List<String>{ FRESH_PATH, STALE_PATH });
+    Test.setMock(HttpCalloutMock.class, new ContentsMock(200));
+
+    Test.startTest();
+    SourceCacheRefreshJob.refreshPaths(new Set<String>{ STALE_PATH });
+    Test.stopTest();
+
+    Map<String, Source_Cache__c> rows = rowsByPath();
+    Assert.isFalse(rows.containsKey(STALE_PART_PATH), 'Old part deleted');
+    Assert.areEqual(
+      OLD_CONTENT,
+      rows.get(FRESH_PATH).Content__c,
+      'A path not asked for keeps its content'
+    );
+  }
+
+  @IsTest
+  static void shouldSkipAForcedRunWhenCircuitIsOpen() {
+    configure(new List<String>{ FRESH_PATH });
+    ContentsMock mock = new ContentsMock(200);
+    Test.setMock(HttpCalloutMock.class, mock);
+    for (Integer i = 0; i < CircuitBreaker.FAILURE_THRESHOLD; i++) {
+      CircuitBreaker.recordFailure(CircuitBreaker.KEY_GITHUB);
+    }
+
+    String outcome = SourceCacheRefreshJob.refreshPaths(
+      new Set<String>{ FRESH_PATH }
+    );
+
+    Assert.areEqual(
+      SourceCacheRefreshJob.OUTCOME_OPEN_CIRCUIT,
+      outcome,
+      'Outcome'
+    );
+    Assert.areEqual(0, mock.calls, 'No callout while open');
+  }
+
+  @IsTest
+  static void shouldCapAForcedRunAtTheMaxFilesSetting() {
+    PortfolioSettings.overrideNumber('Source_Max_Files_Per_Run', 1);
+    configure(new List<String>{ FRESH_PATH, STALE_PATH });
+    ContentsMock mock = new ContentsMock(200);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    SourceCacheRefreshJob.refreshPaths(
+      new Set<String>{ FRESH_PATH, STALE_PATH }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(1, mock.calls, 'One file per run under a setting of one');
+  }
+
+  @IsTest
+  static void shouldReadOnlyDuePathsWhenTheScheduledJobRuns() {
+    configure(new List<String>{ FRESH_PATH, NEW_PATH });
+    Test.setMock(HttpCalloutMock.class, new ContentsMock(200));
+
+    Test.startTest();
+    System.enqueueJob(new SourceCacheRefreshJob());
+    Test.stopTest();
+
+    Map<String, Source_Cache__c> rows = rowsByPath();
+    Assert.areEqual(
+      OLD_CONTENT,
+      rows.get(FRESH_PATH).Content__c,
+      'A fresh path is not forced by the scheduled job'
+    );
+    Assert.areEqual(
+      'text of ' + NEW_PATH,
+      rows.get(NEW_PATH).Content__c,
+      'The due path read'
+    );
   }
 
   @IsTest
