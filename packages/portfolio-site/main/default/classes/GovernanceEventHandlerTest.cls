@@ -246,6 +246,49 @@ private class GovernanceEventHandlerTest {
   }
 
   @isTest
+  static void shouldStoreSmokeFailureWhenSmokeEventDelivered() {
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{ event('Smoke', 'failure', '301') }
+    );
+    Test.stopTest();
+
+    List<Pipeline_Run__c> stored = runs();
+    Assert.areEqual(1, stored.size(), 'One row for the smoke event');
+    Assert.areEqual('smoke:301', stored[0].Run_Key__c, 'Smoke run key');
+    Assert.areEqual(
+      GovernanceEventHandler.WORKFLOW_SMOKE,
+      stored[0].Workflow__c,
+      'Smoke workflow'
+    );
+    Assert.areEqual(
+      GovernanceEventHandler.STATUS_FAILURE,
+      stored[0].Status__c,
+      'Failure status'
+    );
+    Assert.isNull(stored[0].Tests_Run__c, 'A smoke row carries no test count');
+  }
+
+  @isTest
+  static void shouldKeepDeployAndSmokeRowsApartWhenTheyShareARunId() {
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{
+        event('deploy', 'Success', '302'),
+        event('smoke', 'Failure', '302')
+      }
+    );
+    Test.stopTest();
+
+    List<Pipeline_Run__c> stored = runs();
+    Assert.areEqual(2, stored.size(), 'One row per workflow for the same run');
+    Assert.areEqual('deploy:302', stored[0].Run_Key__c, 'Deploy row');
+    Assert.areEqual('Success', stored[0].Status__c, 'Deploy stays a success');
+    Assert.areEqual('smoke:302', stored[1].Run_Key__c, 'Smoke row');
+    Assert.areEqual('Failure', stored[1].Status__c, 'Smoke failure kept');
+  }
+
+  @isTest
   static void shouldSkipEventWhenStatusUnknown() {
     Test.startTest();
     publishAndDeliver(

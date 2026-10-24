@@ -4,6 +4,8 @@
  *                      which is "<workflow>:<run id>", so a replayed event never adds a row and an
  *                      identical replay writes nothing. Only the newest 60 rows per workflow are
  *                      kept. Events with an unknown workflow or status, or no run id, are skipped.
+ *                      The known workflows are deploy, heartbeat and smoke (the live site check
+ *                      that runs after a production deploy).
  *                      Test counts and org coverage are stored only when they make sense together
  *                      (whole numbers, passed no more than run, coverage from 0 to 100), so the
  *                      Pillar E card never shows a broken number.
@@ -16,6 +18,7 @@
 public with sharing class GovernanceEventHandler {
   public static final String WORKFLOW_DEPLOY = 'deploy';
   public static final String WORKFLOW_HEARTBEAT = 'heartbeat';
+  public static final String WORKFLOW_SMOKE = 'smoke';
   public static final String STATUS_SUCCESS = 'Success';
   public static final String STATUS_FAILURE = 'Failure';
   public static final Integer KEEP_PER_WORKFLOW = 60;
@@ -24,7 +27,8 @@ public with sharing class GovernanceEventHandler {
 
   private static final Set<String> WORKFLOWS = new Set<String>{
     WORKFLOW_DEPLOY,
-    WORKFLOW_HEARTBEAT
+    WORKFLOW_HEARTBEAT,
+    WORKFLOW_SMOKE
   };
   private static final Map<String, String> STATUSES = new Map<String, String>{
     'success' => STATUS_SUCCESS,

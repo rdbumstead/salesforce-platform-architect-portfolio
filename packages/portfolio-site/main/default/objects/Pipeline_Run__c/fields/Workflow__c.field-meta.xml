@@ -2,10 +2,10 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Workflow__c</fullName>
     <description
-  >Which GitHub Actions workflow finished, deploy or heartbeat. The checklist keys its items on this value.</description>
+  >Which GitHub Actions workflow finished, deploy, heartbeat or smoke. The checklist keys its items on this value.</description>
     <externalId>false</externalId>
     <inlineHelpText
-  >deploy for the production deploy workflow, heartbeat for the daily org heartbeat.</inlineHelpText>
+  >deploy for the production deploy workflow, heartbeat for the daily org heartbeat, smoke for the live site check after a deploy.</inlineHelpText>
     <label>Workflow</label>
     <length>40</length>
     <required>false</required>
