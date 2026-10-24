@@ -26,7 +26,7 @@
                     {
                       "attributes": {
                         "designLabel": "Read the design",
-                        "designUrl": "/docs?doc=sas",
+                        "designUrl": "/docs?doc=sas#5-3-pillar-c-work-experience-verification-api-twin-api-pattern",
                         "eyebrow": "Pillar C",
                         "heading": "API Lab",
                         "lead": "Work Experience Verification API. Send a request to the portfolio REST API and read what comes back."
