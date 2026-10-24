@@ -1,0 +1,62 @@
+<template>
+  <section class="numbers" aria-labelledby="numbers-heading">
+    <p class="eyebrow">Counted from records</p>
+    <h2 class="heading" id="numbers-heading">By the numbers</h2>
+
+    <template lwc:if={isLoading}>
+      <p class="note" role="status">Loading the counts.</p>
+    </template>
+    <template lwc:elseif={hasError}>
+      <p class="note" role="status">The counts could not be loaded.</p>
+    </template>
+    <template lwc:elseif={hasStats}>
+      <ul class="stats">
+        <li class="stat" data-stat="deploys">
+          <p class="value">{deployRuns}</p>
+          <p class="label">Production deploys recorded</p>
+          <p class="detail">Newest with tests: {latestTests}</p>
+        </li>
+        <li class="stat" data-stat="tokens">
+          <p class="value">{tokensIssued}</p>
+          <p class="label">API Lab evaluator tokens issued</p>
+        </li>
+      </ul>
+
+      <div class="table-scroll">
+        <table class="vibe-table">
+          <caption>
+            Testimonials by vibe
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Vibe</th>
+              <th scope="col" class="num">Approved</th>
+              <th scope="col" class="num">Waiting for approval</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={vibeRows} for:item="row">
+              <tr key={row.key} data-vibe={row.vibe}>
+                <th scope="row">{row.vibe}</th>
+                <td class="num">{row.approved}</td>
+                <td class="num">{row.waiting}</td>
+              </tr>
+            </template>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row">Total</th>
+              <td class="num" data-total="approved">{approvedTotal}</td>
+              <td class="num" data-total="waiting">{waitingTotal}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <p class="note">
+        Each number is counted from Salesforce records. No record, name or
+        message is sent to this page.
+      </p>
+    </template>
+  </section>
+</template>

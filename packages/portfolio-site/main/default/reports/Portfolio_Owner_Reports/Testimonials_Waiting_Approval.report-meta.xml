@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>Testimonials Waiting Approval</name>
+    <description
+  >Testimonials not yet approved, grouped by vibe, newest first.</description>
+    <reportType>CustomEntity$Testimonial__c</reportType>
+    <format>Summary</format>
+    <scope>organization</scope>
+    <showDetails>true</showDetails>
+    <showGrandTotal>true</showGrandTotal>
+    <showSubTotals>true</showSubTotals>
+    <columns>
+        <field>CUST_NAME</field>
+    </columns>
+    <columns>
+        <field>Testimonial__c.Author_Name__c</field>
+    </columns>
+    <columns>
+        <field>Testimonial__c.Relationship_Type__c</field>
+    </columns>
+    <columns>
+        <field>CUST_CREATED_DATE</field>
+    </columns>
+    <filter>
+        <criteriaItems>
+            <column>Testimonial__c.Approved__c</column>
+            <isUnlocked>true</isUnlocked>
+            <operator>equals</operator>
+            <value>0</value>
+        </criteriaItems>
+    </filter>
+    <groupingsDown>
+        <dateGranularity>None</dateGranularity>
+        <field>Testimonial__c.Vibe_Mode__c</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <sortColumn>CUST_CREATED_DATE</sortColumn>
+    <sortOrder>Desc</sortOrder>
+    <timeFrameFilter>
+        <dateColumn>CUST_CREATED_DATE</dateColumn>
+        <interval>INTERVAL_CUSTOM</interval>
+    </timeFrameFilter>
+</Report>

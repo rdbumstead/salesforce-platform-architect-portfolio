@@ -49,6 +49,11 @@
                       "definition": "c:smartChecklist",
                       "id": "0a35156b-3623-49ad-9c01-59a218b57573",
                       "type": "component"
+                    },
+                    {
+                      "definition": "c:byTheNumbers",
+                      "id": "65e2f0d7-5e1b-4010-adc2-de5b0d7120c6",
+                      "type": "component"
                     }
                   ],
                   "id": "71aa6982-74f6-4640-aea8-d46c489b11a9",

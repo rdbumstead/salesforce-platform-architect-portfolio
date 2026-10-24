@@ -1,0 +1,125 @@
+:host {
+  display: block;
+}
+
+.numbers {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-lg);
+  padding: var(--pf-space-5);
+  color: var(--pf-body);
+  font-family: var(--pf-font-sans);
+}
+
+.eyebrow {
+  margin: 0 0 var(--pf-space-1);
+  font-family: var(--pf-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pf-muted);
+}
+
+.heading {
+  margin: 0 0 var(--pf-space-4);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.stats {
+  list-style: none;
+  margin: 0 0 var(--pf-space-4);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--pf-space-3);
+}
+
+.stat {
+  min-width: 0;
+  padding: var(--pf-space-3);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+}
+
+.value {
+  margin: 0;
+  font-family: var(--pf-font-mono);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--pf-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  margin: var(--pf-space-1) 0 0;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.detail {
+  margin: var(--pf-space-1) 0 0;
+  font-size: 0.875rem;
+  color: var(--pf-muted);
+  overflow-wrap: anywhere;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.vibe-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--pf-text);
+}
+
+.vibe-table caption {
+  text-align: left;
+  font-weight: 600;
+  color: var(--pf-text);
+  padding-bottom: var(--pf-space-2);
+}
+
+.vibe-table th,
+.vibe-table td {
+  border-bottom: 1px solid var(--pf-border);
+  padding: var(--pf-space-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.vibe-table thead th {
+  background-color: var(--pf-subtle);
+  color: var(--pf-text);
+}
+
+.vibe-table tfoot th,
+.vibe-table tfoot td {
+  font-weight: 600;
+  border-bottom: none;
+}
+
+.vibe-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin: var(--pf-space-4) 0 0;
+  font-size: 0.875rem;
+  color: var(--pf-muted);
+}
+
+@media (max-width: 479.98px) {
+  .numbers {
+    padding: var(--pf-space-4);
+  }
+
+  .vibe-table th,
+  .vibe-table td {
+    padding: var(--pf-space-2) var(--pf-space-1);
+  }
+}
