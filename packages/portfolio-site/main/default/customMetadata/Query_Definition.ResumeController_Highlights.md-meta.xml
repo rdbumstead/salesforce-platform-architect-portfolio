@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>ResumeController Highlights</label>
+    <protected>false</protected>
+    <values>
+        <field>Object__c</field>
+        <value xsi:type="xsd:string">Experience_Highlight__c</value>
+    </values>
+    <values>
+        <field>Fields__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Experience__c, Description__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Developer_Sort_Order__c, Architect_Sort_Order__c, Lock_Sort_Across_Personas__c</value>
+    </values>
+    <values>
+        <field>Filter__c</field>
+        <value xsi:type="xsd:string">Experience__c IN :experienceIds</value>
+    </values>
+    <values>
+        <field>Order_By__c</field>
+        <value xsi:type="xsd:string">Sort_Order__c ASC</value>
+    </values>
+    <values>
+        <field>Row_Limit__c</field>
+        <value xsi:type="xsd:double">50000</value>
+    </values>
+    <values>
+        <field>Access_Mode__c</field>
+        <value xsi:type="xsd:string">SYSTEM_MODE</value>
+    </values>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Resume highlights of the roles read before.</value>
+    </values>
+</CustomMetadata>
