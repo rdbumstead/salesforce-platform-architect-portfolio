@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 > [!IMPORTANT]
-> **Project Status:** Live. Architecture complete (6 enterprise docs, 32 ADRs) • MVP launched.
+> **Project Status:** Live. Architecture complete (6 enterprise docs, 33 ADRs) • MVP launched.
 >
 > **Launched:** October 2026.
 
@@ -40,7 +40,7 @@ Principal-level Salesforce Platform Architecture including:
 **By The Numbers:**
 
 - **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
-- **32 Architectural Decisions (ADRs)**: Documented rationale for performance, security, and AI.
+- **33 Architectural Decisions (ADRs)**: Documented rationale for performance, security, and AI.
 - **16 Core Competencies**: Mapped to verifiable artifacts and validation methods.
 - **6 CI/CD Workflows**: Delta deploys, PR gates (including a check only validation against production), a read only live smoke test after each deploy, heartbeat and worker automation, plus a Lighthouse audit run on demand.
 
@@ -101,7 +101,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 
 **Available Now:**
 
-- [Architecture decisions documented with rationale](docs/adr/): 32 ADRs covering performance, security, AI, FinOps
+- [Architecture decisions documented with rationale](docs/adr/): 33 ADRs covering performance, security, AI, FinOps
 - [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 6 workflows (deploy, PR validation, the live smoke test, heartbeat and worker, plus a Lighthouse audit run on demand)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml): Twin API pattern with SAPI + PAPI specifications
 - [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---2027-2028): a $0.00 forever design on the AWS Always-Free tier, for Phase 8. No AWS code is built yet
@@ -167,7 +167,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 ## Architectural Decision Records
 
 <details>
-<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 32 documented decisions)</summary>
+<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 33 documented decisions)</summary>
 
 | ID                                                                                       | Subject                                  | Strategic Driver                |
 | :--------------------------------------------------------------------------------------- | :--------------------------------------- | :------------------------------ |
@@ -203,6 +203,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 | [ADR-030](docs/adr/030-decision-matrix-as-custom-metadata.md)                            | Decision matrix as Custom Metadata       | Solution Design                 |
 | [ADR-031](docs/adr/031-native-contact-form.md)                                           | Native contact form                      | Lead Capture / Abuse Protection |
 | [ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md)                       | Operational settings in custom metadata  | Operability                     |
+| [ADR-033](docs/adr/033-queries-in-custom-metadata.md)                                    | Queries in custom metadata               | Operability                     |
 
 </details>
 
@@ -214,7 +215,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 | Term          | Meaning                                                                                                                   | Status                          |
 | :------------ | :------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |
 | **LWR**       | Lightning Web Runtime: Modern Salesforce frontend framework                                                               | Live at MVP                     |
-| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (32 records). |
+| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (33 records). |
 | **Dual-Door** | Native Salesforce + External API gateway strategy                                                                         | Door 1: MVP / Door 2: Phase 8   |
 | **FinOps**    | Financial Operations: Cloud cost governance and optimization                                                              | Design complete for Phase 8     |
 | **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live at MVP                     |
