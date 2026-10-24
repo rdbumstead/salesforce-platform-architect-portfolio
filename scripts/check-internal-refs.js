@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 
-// Internal reference gate. Fails when a comment, a metadata description or a help text under
-// packages/ names a build process code instead of explaining the code on its own terms: a
+// Internal reference gate. Fails when a comment, a metadata description, a help text or a
+// public document names a build process code instead of explaining itself on its own terms: a
 // round number, a log or trap number, a plan code such as F7 or P2, a .claude path, or the
 // words "owner answer", "kickoff", "workstream", "stream (" and "@Orchestrator". The repo is
 // public and the site serves some of these files, so those codes leak process and mean
@@ -10,6 +10,15 @@
 //
 //   node scripts/check-internal-refs.js              scans every tracked file under packages/
 //   node scripts/check-internal-refs.js <path> ...   scans only these files or directories
+//
+// The pull request check scans packages, docs, README.md and STATUS.md:
+//
+//   node scripts/check-internal-refs.js packages docs README.md STATUS.md
+//
+// Generated files (GENERATED below) are never scanned, because they are rebuilt from a source
+// the gate scans in its own right. A real false positive in a scanned file goes in
+// scripts/internal-refs-allowlist.json as { path, line, reason }, where line is the whole
+// source line and reason says why it is not an internal reference.
 //
 // Options: --root <dir> resolves paths against <dir> instead of the repo root, and
 // --allowlist <file> reads a different allowlist. Both exist for the tests.
@@ -83,9 +92,23 @@ const VENDORED = [
   }
 ];
 
+// Generated files, skipped like the vendored bundles. A path that ends in "/" covers the whole
+// folder. Paths are relative to the repo root.
+const GENERATED = [
+  {
+    path: "docs/api/oas/",
+    source:
+      "scripts/generate-api-docs.js, from the specs in packages/integration-api/specs",
+    reason:
+      "the generated pages carry SVG path data such as M10, which reads as a plan code"
+  }
+];
+
 // The banned references. Each has a name so a hit says which rule it broke. The plan code
 // rule is case sensitive on purpose, because lower case letters with digits are ordinary
 // identifiers. The word rules ignore case so a sentence that starts with one is still caught.
+// "D3.js" is the library's own name, not a plan code, so the plan code rule skips it. A bare
+// "D3" is still caught.
 const RULES = [
   { name: "round", pattern: /\bRound [0-9]/gi },
   { name: "log number", pattern: /\blogs? [0-9]{2,3}\b/gi },
@@ -96,7 +119,10 @@ const RULES = [
   { name: "workstream", pattern: /workstream/gi },
   { name: "stream", pattern: /\bstream \(/gi },
   { name: "@Orchestrator", pattern: /@Orchestrator/gi },
-  { name: "plan code", pattern: /\b[ABDEFGKLMNPRSX][0-9]{1,2}\b/g }
+  {
+    name: "plan code",
+    pattern: /\b(?!D3\.js\b)[ABDEFGKLMNPRSX][0-9]{1,2}\b/g
+  }
 ];
 
 // ---------------------------------------------------------------------------------------
@@ -434,9 +460,17 @@ function isVendored(relPath) {
   return VENDORED.some((v) => v.path === relPath);
 }
 
+function isGenerated(relPath) {
+  return GENERATED.some((g) =>
+    g.path.endsWith("/") ? relPath.startsWith(g.path) : relPath === g.path
+  );
+}
+
 function isScanned(relPath) {
   return (
-    EXTENSIONS.has(path.extname(relPath).toLowerCase()) && !isVendored(relPath)
+    EXTENSIONS.has(path.extname(relPath).toLowerCase()) &&
+    !isVendored(relPath) &&
+    !isGenerated(relPath)
   );
 }
 
@@ -608,4 +642,12 @@ if (require.main === module) {
   }
 }
 
-module.exports = { scanText, proseOf, isScanned, VENDORED, RULES, run };
+module.exports = {
+  scanText,
+  proseOf,
+  isScanned,
+  VENDORED,
+  GENERATED,
+  RULES,
+  run
+};
