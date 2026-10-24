@@ -8,7 +8,7 @@
     <disableReputationRecordConversations
   >false</disableReputationRecordConversations>
     <emailSenderAddress>bumsteadryan@gmail.com</emailSenderAddress>
-    <emailSenderName>Portfolio</emailSenderName>
+    <emailSenderName>Ryan Bumstead</emailSenderName>
     <embeddedLoginEnabled>false</embeddedLoginEnabled>
     <enableApexCDNCaching>true</enableApexCDNCaching>
     <enableCustomVFErrorPageOverrides>false</enableCustomVFErrorPageOverrides>
