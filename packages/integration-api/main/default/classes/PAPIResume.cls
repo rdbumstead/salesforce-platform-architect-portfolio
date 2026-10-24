@@ -7,7 +7,13 @@
  * @Test Class        : [PAPIResumeTest]
  **/
 @RestResource(urlMapping='/papi/v1/resume/*')
-global with sharing class PAPIResume {
+global with sharing class PAPIResume implements QueryDefinitions.Provider {
+  private static final String OWNER_QUERY = 'PAPIResume_Owner';
+  private static final String EXPERIENCE_QUERY = 'PAPIResume_Experience';
+  private static final String HIGHLIGHTS_QUERY = 'PAPIResume_Highlights';
+  private static final String SKILLS_QUERY = 'PAPIResume_Skills';
+  private static final String CERTIFICATIONS_QUERY = 'PAPIResume_Certifications';
+  private static final String EDUCATION_QUERY = 'PAPIResume_Education';
   private static final Set<String> VALID_PERSONAS = new Set<String>{
     'Admin',
     'Developer',
@@ -134,12 +140,11 @@ global with sharing class PAPIResume {
     agg.source('contacts');
     try {
       PAPITransformer.guardSection('contacts');
-      List<Contact> contacts = [
-        SELECT Id, Name, Title, LinkedIn_URL__c, Portfolio_URL__c
-        FROM Contact
-        WHERE Is_Portfolio_Owner__c = TRUE
-        LIMIT 1
-      ];
+      List<Contact> contacts = (List<Contact>) QueryDefinitions.run(
+        OWNER_QUERY,
+        new Map<String, Object>(),
+        ownerDefault()
+      );
       if (contacts.isEmpty()) {
         agg.fail('contacts');
         return null;
@@ -184,26 +189,17 @@ global with sharing class PAPIResume {
     agg.source('experience');
     agg.source('experience-highlights');
     List<Experience__c> experiences;
+    Map<Id, List<Experience_Highlight__c>> highlightsByExperience;
     try {
       PAPITransformer.guardSection('experience');
-      // Fetch all highlights; filter in memory when a persona is given.
-      experiences = [
-        SELECT
-          Id,
-          Employer__r.Name,
-          Name,
-          Start_Date__c,
-          End_Date__c,
-          Is_Current_Role__c,
-          (
-            SELECT Description__c, Persona_Tag__c
-            FROM Experience_Highlights__r
-            ORDER BY Sort_Order__c ASC
-          )
-        FROM Experience__c
-        ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
-        LIMIT 10
-      ];
+      experiences = (List<Experience__c>) QueryDefinitions.run(
+        EXPERIENCE_QUERY,
+        new Map<String, Object>(),
+        experienceDefault()
+      );
+      // Every highlight is read. A persona filters them in memory. A failure here fails the
+      // section, as it did when the highlights were part of the experience read.
+      highlightsByExperience = highlightsOf(experiences);
     } catch (Exception e) {
       agg.fail('experience');
       return '';
@@ -222,7 +218,12 @@ global with sharing class PAPIResume {
         '\n';
 
       Integer highlightCount = 0;
-      for (Experience_Highlight__c h : exp.Experience_Highlights__r) {
+      List<Experience_Highlight__c> highlights = highlightsByExperience.containsKey(
+          exp.Id
+        )
+        ? highlightsByExperience.get(exp.Id)
+        : new List<Experience_Highlight__c>();
+      for (Experience_Highlight__c h : highlights) {
         if (highlightCount >= 5) {
           break; // Limit to 5 highlights per experience
         }
@@ -237,6 +238,34 @@ global with sharing class PAPIResume {
       text += '\n';
     }
     return text;
+  }
+
+  // Each experience's highlights in Sort_Order__c order, read in one query.
+  private static Map<Id, List<Experience_Highlight__c>> highlightsOf(
+    List<Experience__c> experiences
+  ) {
+    Map<Id, List<Experience_Highlight__c>> result = new Map<Id, List<Experience_Highlight__c>>();
+    if (experiences.isEmpty()) {
+      return result;
+    }
+    for (
+      Experience_Highlight__c highlight : (List<Experience_Highlight__c>) QueryDefinitions.run(
+        HIGHLIGHTS_QUERY,
+        new Map<String, Object>{
+          'experienceIds' => new Map<Id, Experience__c>(experiences).keySet()
+        },
+        highlightsDefault()
+      )
+    ) {
+      if (!result.containsKey(highlight.Experience__c)) {
+        result.put(
+          highlight.Experience__c,
+          new List<Experience_Highlight__c>()
+        );
+      }
+      result.get(highlight.Experience__c).add(highlight);
+    }
+    return result;
   }
 
   /**
@@ -259,21 +288,11 @@ global with sharing class PAPIResume {
       if (printedRoleIds.isEmpty()) {
         return '';
       }
-      links = [
-        SELECT
-          Skill__c,
-          Skill__r.Name,
-          Skill__r.Category__c,
-          Skill__r.Persona_Tag__c
-        FROM Experience_Skill__c
-        WHERE Experience__c IN :printedRoleIds
-        ORDER BY
-          Skill__r.Category_Order__c ASC NULLS LAST,
-          Skill__r.Category__c ASC NULLS LAST,
-          Skill__r.Proficiency__c DESC NULLS LAST,
-          Skill__r.Name ASC
-        LIMIT 500
-      ];
+      links = (List<Experience_Skill__c>) QueryDefinitions.run(
+        SKILLS_QUERY,
+        roleBinds(printedRoleIds),
+        skillsDefault()
+      );
     } catch (Exception e) {
       agg.fail('skills');
       return '';
@@ -327,12 +346,11 @@ global with sharing class PAPIResume {
     List<Certification__c> certs;
     try {
       PAPITransformer.guardSection('certifications');
-      certs = [
-        SELECT Name, Issuer__r.Name, Earned_Date__c
-        FROM Certification__c
-        ORDER BY Earned_Date__c DESC
-        LIMIT 10
-      ];
+      certs = (List<Certification__c>) QueryDefinitions.run(
+        CERTIFICATIONS_QUERY,
+        new Map<String, Object>(),
+        certificationsDefault()
+      );
     } catch (Exception e) {
       agg.fail('certifications');
       return '';
@@ -360,17 +378,11 @@ global with sharing class PAPIResume {
     List<Education__c> education;
     try {
       PAPITransformer.guardSection('education');
-      education = [
-        SELECT
-          Issuer__c,
-          Issuer__r.Name,
-          Name,
-          Field_of_Study__c,
-          Graduation_Date__c
-        FROM Education__c
-        ORDER BY Graduation_Date__c DESC
-        LIMIT 5
-      ];
+      education = (List<Education__c>) QueryDefinitions.run(
+        EDUCATION_QUERY,
+        new Map<String, Object>(),
+        educationDefault()
+      );
     } catch (Exception e) {
       agg.fail('education');
       return '';
@@ -395,6 +407,124 @@ global with sharing class PAPIResume {
       text += '\n';
     }
     return text;
+  }
+
+  // --- Reads as code. Each Query_Definition.PAPIResume_* record ships equal to its default.
+
+  /**
+   * @description The owner Contact without email, phone or address.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault ownerDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Contact',
+        'Id, Name, Title, LinkedIn_URL__c, Portfolio_URL__c'
+      )
+      .filter('Is_Portfolio_Owner__c = TRUE')
+      .rowLimit(1)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The ten roles the resume prints, current first, then the most recent.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault experienceDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience__c',
+        'Id, Employer__r.Name, Name, Start_Date__c, End_Date__c, Is_Current_Role__c'
+      )
+      .orderBy('Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST')
+      .rowLimit(10)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The highlights of the roles read, in Sort_Order__c order, with their tags.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault highlightsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience_Highlight__c',
+        'Experience__c, Description__c, Persona_Tag__c'
+      )
+      .filter('Experience__c IN :experienceIds')
+      .orderBy('Sort_Order__c ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(new Map<String, Object>{ 'experienceIds' => new Set<Id>() });
+  }
+
+  /**
+   * @description The skills linked to the printed roles, in the order the resume groups them.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault skillsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience_Skill__c',
+        'Skill__c, Skill__r.Name, Skill__r.Category__c, Skill__r.Persona_Tag__c'
+      )
+      .filter('Experience__c IN :printedRoleIds')
+      .orderBy(
+        'Skill__r.Category_Order__c ASC NULLS LAST, ' +
+          'Skill__r.Category__c ASC NULLS LAST, ' +
+          'Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC'
+      )
+      .rowLimit(500)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(roleBinds(new Set<Id>()));
+  }
+
+  /**
+   * @description The ten newest certifications.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault certificationsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Certification__c',
+        'Name, Issuer__r.Name, Earned_Date__c'
+      )
+      .orderBy('Earned_Date__c DESC')
+      .rowLimit(10)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The five newest education rows.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault educationDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Education__c',
+        'Issuer__c, Issuer__r.Name, Name, Field_of_Study__c, Graduation_Date__c'
+      )
+      .orderBy('Graduation_Date__c DESC')
+      .rowLimit(5)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  private static Map<String, Object> roleBinds(Set<Id> printedRoleIds) {
+    return new Map<String, Object>{ 'printedRoleIds' => printedRoleIds };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      OWNER_QUERY => ownerDefault(),
+      EXPERIENCE_QUERY => experienceDefault(),
+      HIGHLIGHTS_QUERY => highlightsDefault(),
+      SKILLS_QUERY => skillsDefault(),
+      CERTIFICATIONS_QUERY => certificationsDefault(),
+      EDUCATION_QUERY => educationDefault()
+    };
   }
 
   @TestVisible
