@@ -38,7 +38,11 @@ const SMOKE_JSON = process.env.SMOKE_JSON || "";
 // before any testimonial is approved, an asset gallery with no assets) is named with
 // mayBeEmpty, and counts once it is on the page.
 const ROUTES = [
-  { path: "/", components: ["c-hero-banner", "c-experience-timeline"] },
+  {
+    path: "/",
+    components: ["c-hero-banner", "c-experience-timeline", "c-contact-call"]
+  },
+  { path: "/contact", components: ["c-contact-form"] },
   { path: "/resume", components: ["c-resume-builder"] },
   { path: "/skills", components: ["c-skill-network"] },
   { path: "/api-lab", components: ["c-api-tester"] },

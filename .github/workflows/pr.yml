@@ -8,7 +8,15 @@ on:
       - "packages/**"
       - "sfdx-project.json"
       - "package.json"
+      - "scripts/**"
       - ".github/workflows/pr.yml"
+
+# One validation run per PR at a time. A new push cancels the run still going, so quick
+# pushes never hold every scratch org slot at once. A label event runs no tests, so it has
+# its own group and never cancels a real run.
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}-${{ github.event.action == 'labeled' && 'label' || 'run' }}
+  cancel-in-progress: true
 
 jobs:
   quality-check:
