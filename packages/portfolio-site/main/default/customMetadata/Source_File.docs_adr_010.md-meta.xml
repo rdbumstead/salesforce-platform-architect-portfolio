@@ -20,7 +20,7 @@
         <field>Label__c</field>
         <value
       xsi:type="xsd:string"
-    >Visualization Engine (Vis.js vs. AntV G6)</value>
+    >Visualization Engine (Vis.js vs. the AntV Graph Library)</value>
     </values>
     <values>
         <field>Sort_Order__c</field>
