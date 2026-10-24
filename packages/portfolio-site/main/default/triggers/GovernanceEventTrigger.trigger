@@ -1,6 +1,6 @@
 /**
  * @description       : Subscriber for Governance_Event__e. Routes every delivered batch to
- *                      GovernanceEventHandler, which stores the runs (Round 4 plan L11).
+ *                      GovernanceEventHandler, which stores the runs.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

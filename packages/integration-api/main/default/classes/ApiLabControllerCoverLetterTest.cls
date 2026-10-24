@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for ApiLabController.generateCoverLetter, the site's cover
- *                      letter path in process (Round 4 decision 2 a, contract L9). The real
+ *                      letter path in process. The real
  *                      GeminiService runs against an HTTP mock that answers Gemini and records
  *                      every endpoint, so a call to the org's own Portfolio_API would show.
  * @author            : Ryan Bumstead
@@ -186,7 +186,7 @@ private class ApiLabControllerCoverLetterTest {
     Assert.areEqual(
       0,
       mock.callsTo('callout:Portfolio_API'),
-      'No request goes to the org\'s own API (trap 30)'
+      'No request goes to the org\'s own API'
     );
     Assert.areEqual(1, mock.endpoints.size(), 'No other callout at all');
     Assert.isTrue(
@@ -372,7 +372,7 @@ private class ApiLabControllerCoverLetterTest {
 
   @IsTest
   static void allowlistAndReturnedHeadersAreUnchanged() {
-    // The allowlist is the API_Lab_Catalog resource the specs generate (audit G1).
+    // The allowlist is the API_Lab_Catalog resource the specs generate.
     Set<String> allowed = ApiLabController.allowedPaths();
     Assert.areEqual(21, allowed.size(), 'GET only');
     Assert.isFalse(
@@ -380,5 +380,41 @@ private class ApiLabControllerCoverLetterTest {
       'The AI path is not in the GET allowlist'
     );
     Assert.areEqual(6, ApiLabController.RETURNED_HEADERS.size(), 'Headers');
+  }
+
+  /**
+   * @description Refuses every request and keeps the limit it was asked to apply.
+   */
+  private class RecordingLimiter implements ApiRateLimiter {
+    public Integer lastLimit;
+
+    public ApiRequestContext.RateDecision check(
+      String key,
+      Integer limitPerMinute
+    ) {
+      return checkKey(key, limitPerMinute);
+    }
+
+    public ApiRequestContext.RateDecision checkKey(
+      String key,
+      Integer limitPerMinute
+    ) {
+      lastLimit = limitPerMinute;
+      return new ApiRequestContext.RateDecision(false, limitPerMinute, 0, 30);
+    }
+  }
+
+  @IsTest
+  static void coverLetterLimitComesFromTheAiRateSetting() {
+    RecordingLimiter limiter = new RecordingLimiter();
+    ApiRequestContext.limiterOverride = limiter;
+    PortfolioSettings.overrideNumber('Api_Ai_Rate_Per_Minute', 3);
+    mockGemini(200);
+
+    Test.startTest();
+    refusalMessage('Acme', 'Architect');
+    Test.stopTest();
+
+    Assert.areEqual(3, limiter.lastLimit, 'The AI tier setting is applied');
   }
 }

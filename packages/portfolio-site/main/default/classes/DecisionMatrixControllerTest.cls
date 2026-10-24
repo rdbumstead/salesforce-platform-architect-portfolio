@@ -23,12 +23,12 @@ private class DecisionMatrixControllerTest {
     Assert.areEqual(
       SHIPPED_OPTIONS,
       matrix.options.size(),
-      'Three options ship (D2 b)'
+      'Three options ship'
     );
     Assert.areEqual(
       SHIPPED_CRITERIA,
       matrix.criteria.size(),
-      'Ten criteria ship (pillars-design 3.3)'
+      'Ten criteria ship'
     );
     Set<String> expectedPairs = new Set<String>();
     for (DecisionMatrixController.Option o : matrix.options) {

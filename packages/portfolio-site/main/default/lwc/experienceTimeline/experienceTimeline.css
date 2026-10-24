@@ -1,4 +1,4 @@
-/* Home page timeline, on the L1 tokens only, matching heroBanner's section style. */
+/* Home page timeline, on the --pf- site tokens only, matching heroBanner's section style. */
 .timeline {
   max-width: 1024px;
   margin: 0 auto;
@@ -118,6 +118,62 @@
   font-family: var(--pf-font-mono);
   font-size: 13px;
   color: var(--pf-muted);
+}
+
+/* View all and Show fewer: a real button, sized for touch. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: var(--pf-space-3);
+  padding: 0 18px;
+  border: 1px solid var(--pf-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--pf-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  color: var(--pf-accent);
+  border-color: var(--pf-accent);
+}
+
+.toggle:focus-visible,
+.verify-link:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+.verify {
+  margin: var(--pf-space-3) 0 0;
+}
+
+/* :link and :visited too, so the platform's link rule does not take the colour. */
+.verify-link,
+.verify-link:link,
+.verify-link:visited {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--pf-accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.assistive-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 @media (max-width: 767.98px) {

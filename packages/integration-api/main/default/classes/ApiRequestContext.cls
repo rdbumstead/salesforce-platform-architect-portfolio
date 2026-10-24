@@ -29,6 +29,8 @@ public with sharing class ApiRequestContext {
   }
 
   public static final String SUPPORTED_VERSION = 'v1';
+  // The page sizes and the three tier limits are code defaults. The values in force come
+  // from Portfolio_Setting__mdt through the accessors below.
   public static final Integer DEFAULT_LIMIT = 50;
   public static final Integer MAX_LIMIT = 200;
   public static final Integer DEFAULT_OFFSET = 0;
@@ -41,7 +43,7 @@ public with sharing class ApiRequestContext {
   private static final Pattern UUID_PATTERN = Pattern.compile(
     '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
   );
-  // The id the platform injects on My Domain when the caller sends none (round-2-post-deploy D3).
+  // The id the platform injects on My Domain when the caller sends none.
   private static final Pattern PLATFORM_ID_PATTERN = Pattern.compile(
     '^[0-9a-fA-F]{32}$'
   );
@@ -59,7 +61,7 @@ public with sharing class ApiRequestContext {
   private final RestResponse res;
   private String correlationId;
   private Boolean rejected = false;
-  private Integer pageLimit = DEFAULT_LIMIT;
+  private Integer pageLimit = defaultPageSize();
   private final Long startedAt = System.currentTimeMillis();
   private Boolean logged = false;
 
@@ -131,16 +133,22 @@ public with sharing class ApiRequestContext {
   }
 
   /**
-   * @description Reads the limit query parameter (1 to 200, default 50). Rejects with 400 when invalid.
+   * @description Reads the limit query parameter (1 to maxPageSize(), default
+   *              defaultPageSize(), today 200 and 50). Rejects with 400 when invalid.
    * @return Integer The limit, or null when the request was rejected.
    */
   public Integer limitParam() {
     if (rejected) {
       return null;
     }
-    Integer value = parseInteger('limit', DEFAULT_LIMIT);
-    if (value == null || value < 1 || value > MAX_LIMIT) {
-      error(400, 'BAD_REQUEST', 'Limit must be an integer between 1 and 200.');
+    Integer maxSize = maxPageSize();
+    Integer value = parseInteger('limit', defaultPageSize());
+    if (value == null || value < 1 || value > maxSize) {
+      error(
+        400,
+        'BAD_REQUEST',
+        'Limit must be an integer between 1 and ' + maxSize + '.'
+      );
       return null;
     }
     pageLimit = value;
@@ -309,7 +317,7 @@ public with sharing class ApiRequestContext {
     header('Content-Type', 'application/json');
 
     String suppliedId = headerValue(HEADER_REQUEST_ID);
-    // On PAPI the platform's own 32-hex id means the caller sent none (decision D3).
+    // On PAPI the platform's own 32-hex id means the caller sent none.
     Boolean platformId =
       family == ApiFamily.PAPI &&
       String.isNotBlank(suppliedId) &&
@@ -318,8 +326,8 @@ public with sharing class ApiRequestContext {
     Boolean idValid =
       !idMissing && UUID_PATTERN.matcher(suppliedId.trim()).matches();
     correlationId = idValid ? suppliedId.trim() : UUID.randomUUID().toString();
-    // The platform echoes whatever X-Request-Id the request carries on every response (Round 2
-    // pre-flight 1), the id it injected included. So Apex sets the header only when it
+    // The platform echoes whatever X-Request-Id the request carries on every response,
+    // the id it injected included. So Apex sets the header only when it
     // generated the id and the request carried none, or the response gets two (id;id).
     if (!idValid && !platformId) {
       header(HEADER_REQUEST_ID, correlationId);
@@ -417,6 +425,65 @@ public with sharing class ApiRequestContext {
     return limiterOverride != null ? limiterOverride : new RateWindowLimiter();
   }
 
+  /**
+   * @description Largest limit a caller may ask for: the Api_Max_Page_Size setting, else
+   *              MAX_LIMIT.
+   * @return Integer The largest page size.
+   */
+  public static Integer maxPageSize() {
+    return PortfolioSettings.getInteger('Api_Max_Page_Size', MAX_LIMIT);
+  }
+
+  /**
+   * @description Page size when the caller sends no limit: the Api_Default_Page_Size
+   *              setting, else DEFAULT_LIMIT. Never more than maxPageSize(), so a caller
+   *              who sends no limit is never refused.
+   * @return Integer The default page size.
+   */
+  public static Integer defaultPageSize() {
+    Integer value = PortfolioSettings.getInteger(
+      'Api_Default_Page_Size',
+      DEFAULT_LIMIT
+    );
+    return Math.min(value, maxPageSize());
+  }
+
+  /**
+   * @description Requests per minute for one SAPI caller: the Api_Sapi_Rate_Per_Minute
+   *              setting, else SAPI_LIMIT_PER_MINUTE.
+   * @return Integer The SAPI tier limit.
+   */
+  public static Integer sapiLimitPerMinute() {
+    return PortfolioSettings.getInteger(
+      'Api_Sapi_Rate_Per_Minute',
+      SAPI_LIMIT_PER_MINUTE
+    );
+  }
+
+  /**
+   * @description Requests per minute for one PAPI caller: the Api_Papi_Rate_Per_Minute
+   *              setting, else PAPI_LIMIT_PER_MINUTE.
+   * @return Integer The PAPI tier limit.
+   */
+  public static Integer papiLimitPerMinute() {
+    return PortfolioSettings.getInteger(
+      'Api_Papi_Rate_Per_Minute',
+      PAPI_LIMIT_PER_MINUTE
+    );
+  }
+
+  /**
+   * @description AI generation requests per minute for one caller: the
+   *              Api_Ai_Rate_Per_Minute setting, else PAPI_AI_LIMIT_PER_MINUTE.
+   * @return Integer The AI tier limit.
+   */
+  public static Integer aiLimitPerMinute() {
+    return PortfolioSettings.getInteger(
+      'Api_Ai_Rate_Per_Minute',
+      PAPI_AI_LIMIT_PER_MINUTE
+    );
+  }
+
   private static ApiFamily familyOf(String uri) {
     String path = String.isBlank(uri) ? '' : uri.toLowerCase();
     if (path.contains('/sapi/')) {
@@ -441,8 +508,8 @@ public with sharing class ApiRequestContext {
 
   private static Integer tierLimitOf(ApiFamily family, String uri) {
     if (family == ApiFamily.SAPI) {
-      return SAPI_LIMIT_PER_MINUTE;
+      return sapiLimitPerMinute();
     }
-    return isAiPath(uri) ? PAPI_AI_LIMIT_PER_MINUTE : PAPI_LIMIT_PER_MINUTE;
+    return isAiPath(uri) ? aiLimitPerMinute() : papiLimitPerMinute();
   }
 }

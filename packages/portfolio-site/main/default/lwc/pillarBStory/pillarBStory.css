@@ -1,5 +1,5 @@
 /*
- * Round 4 plan L1: colours, fonts, radii and spacing come only from the --pf- design tokens,
+ * Colours, fonts, radii and spacing come only from the --pf- design tokens,
  * so the story follows the light and dark themes. Every element that sets a background also
  * sets its text colour. The architecture image carries its own light panel, so it reads in
  * both themes. Section numbers use the mono font like the other pillar labels.
@@ -56,7 +56,7 @@
 }
 
 /* The scroll region takes keyboard focus so it can be scrolled without a mouse (axe
-   scrollable-region-focusable, log 299). */
+   scrollable-region-focusable). */
 .table-scroll:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;

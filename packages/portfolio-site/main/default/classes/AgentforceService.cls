@@ -3,8 +3,7 @@
  *                      isAvailable() is the switch in AI_Provider_Config__mdt (record
  *                      Agentforce, Enabled__c, shipped false) and generateContent() throws, so
  *                      no response can ever carry text from this class. The dispatch records
- *                      the throw as a failed attempt and moves on to Gemini (pillar-d-design
- *                      3.2, decisions PD-D1 d and PD-D2 b).
+ *                      the throw as a failed attempt and moves on to Gemini.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -53,7 +52,7 @@ public with sharing class AgentforceService implements IAIGenerationService {
   /**
    * @description True only when the Agentforce record exists with Enabled__c true and the
    *              running user is not a site guest. No document allows a guest to be the
-   *              running user for generative AI (pillar-d-design 4.1).
+   *              running user for generative AI.
    * @return Boolean Whether the dispatch may consult Agentforce.
    */
   public Boolean isAvailable() {

@@ -71,7 +71,7 @@ global with sharing class PAPIResume {
     String resumeText =
       contactSection(owner) +
       experienceSection(agg, persona, printedRoleIds) +
-      skillsSection(agg, printedRoleIds) +
+      skillsSection(agg, printedRoleIds, persona) +
       certificationsSection(agg) +
       educationSection(agg) +
       linksSection(owner);
@@ -129,7 +129,7 @@ global with sharing class PAPIResume {
   }
 
   // The owner Contact without email, phone or address: the resume never prints them
-  // (owner decision, log 155). Null when there is none.
+  // (owner decision). Null when there is none.
   private static Contact ownerContact(PAPITransformer.Aggregation agg) {
     agg.source('contacts');
     try {
@@ -242,11 +242,14 @@ global with sharing class PAPIResume {
   /**
    * @description The skills linked through Experience_Skill__c to the roles the resume
    *              prints, each once, grouped by category in Category_Order__c order and by
-   *              proficiency within a category (owner feedback 4c, log 155).
+   *              proficiency within a category. With a persona, a skill prints when its
+   *              Persona_Tag__c includes the persona or it has no tag at all, the same rule
+   *              the site's resume uses, so a skill nobody has tagged yet never disappears.
    */
   private static String skillsSection(
     PAPITransformer.Aggregation agg,
-    Set<Id> printedRoleIds
+    Set<Id> printedRoleIds,
+    String persona
   ) {
     agg.source('skills');
     agg.source('experience-skills');
@@ -257,7 +260,11 @@ global with sharing class PAPIResume {
         return '';
       }
       links = [
-        SELECT Skill__c, Skill__r.Name, Skill__r.Category__c
+        SELECT
+          Skill__c,
+          Skill__r.Name,
+          Skill__r.Category__c,
+          Skill__r.Persona_Tag__c
         FROM Experience_Skill__c
         WHERE Experience__c IN :printedRoleIds
         ORDER BY
@@ -276,7 +283,11 @@ global with sharing class PAPIResume {
     List<String> categories = new List<String>();
     Map<String, List<String>> skillsByCategory = new Map<String, List<String>>();
     for (Experience_Skill__c link : links) {
-      if (link.Skill__c == null || !seen.add(link.Skill__c)) {
+      if (
+        link.Skill__c == null ||
+        !showsSkillFor(link.Skill__r.Persona_Tag__c, persona) ||
+        !seen.add(link.Skill__c)
+      ) {
         continue;
       }
       String cat = link.Skill__r.Category__c != null
@@ -297,6 +308,18 @@ global with sharing class PAPIResume {
       text += cat + ': ' + String.join(skillsByCategory.get(cat), ', ') + '\n';
     }
     return text + '\n';
+  }
+
+  /**
+   * @description True when a skill belongs on the resume for the persona: no persona
+   *              chosen, no tag on the skill, or a tag that matches the persona exactly.
+   */
+  @TestVisible
+  private static Boolean showsSkillFor(String tags, String persona) {
+    if (String.isBlank(persona) || String.isBlank(tags)) {
+      return true;
+    }
+    return new Set<String>(tags.split(';')).contains(persona);
   }
 
   private static String certificationsSection(PAPITransformer.Aggregation agg) {

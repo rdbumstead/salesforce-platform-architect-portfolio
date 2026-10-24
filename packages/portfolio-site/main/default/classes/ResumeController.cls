@@ -1,9 +1,12 @@
 /**
- * @description       : Serves the resume page (Round 3 plan K1). Returns the owner header,
+ * @description       : Serves the resume page. Returns the owner header,
  *                      roles with persona highlights, skill groups, certifications and education
- *                      in one fixed shape, plus the certification verification link (Round 6
- *                      plan N5). getTimeline serves the home page Work and Education timeline
- *                      (Round 6 plan N6). Never returns an email, a phone number, an address or
+ *                      in one fixed shape, plus the certification verification link.
+ *                      getTimeline serves the home page timeline: work, education and the
+ *                      current certifications, with how many entries each tab shows at first.
+ *                      Skills follow the persona: a chosen persona gets the skills tagged for
+ *                      it plus every untagged skill, and no persona gets them all.
+ *                      Never returns an email, a phone number, an address or
  *                      any Owner_* value.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -23,10 +26,17 @@ public with sharing class ResumeController {
   @TestVisible
   private static Portfolio_Config__mdt configOverride;
 
+  // How many entries each timeline tab shows before "View all", when the Timeline_Tab_Limit
+  // setting is missing or out of its range.
+  @TestVisible
+  private static final Integer DEFAULT_TIMELINE_TAB_LIMIT = 5;
+
   /**
-   * @description Builds the resume for a persona.
-   * @param persona Blank for every highlight, or one of Admin, Developer, Architect.
-   * @return ResumeData The resume in the K1 shape.
+   * @description Builds the resume for a persona. Highlights and skills both follow it: a
+   *              chosen persona keeps the highlights tagged for it, and the skills tagged for it
+   *              plus every untagged skill, so a new skill nobody has tagged yet never disappears.
+   * @param persona Blank for every highlight and skill, or one of Admin, Developer, Architect.
+   * @return ResumeData The resume in its fixed shape.
    * @throws AuraHandledException When the persona is not blank and not a valid value.
    * @example
    * ResumeController.ResumeData resume = ResumeController.getResume('Architect');
@@ -43,7 +53,10 @@ public with sharing class ResumeController {
     resume.persona = normalizedPersona;
     resume.header = toHeader(selector.selectOwner());
     resume.roles = toRoles(selector.selectRoles(), normalizedPersona);
-    resume.skillGroups = toSkillGroups(selector.selectSkills());
+    resume.skillGroups = toSkillGroups(
+      selector.selectSkills(),
+      normalizedPersona
+    );
     resume.certifications = toCertifications(selector.selectCertifications());
     resume.education = toEducation(selector.selectEducation());
     resume.credentialVerificationUrl = credentialVerificationUrl();
@@ -51,10 +64,13 @@ public with sharing class ResumeController {
   }
 
   /**
-   * @description Builds the home page Work and Education timeline (Round 6 plan N6). Roles come
-   *              current first, then newest start date, the same order as the resume. Schools come
-   *              newest completion first. Both lists are empty, never null, when there are no rows.
-   * @return Timeline The work and education lists.
+   * @description Builds the home page timeline. Roles come current first, then newest start
+   *              date, the same order as the resume. Schools come newest completion first.
+   *              Certifications are the current ones only (retired ones stay on the resume),
+   *              newest first. Every list is empty, never null, when there are no rows.
+   *              tabLimit is how many entries each tab shows before "View all", and
+   *              verificationUrl is the one certification verification link or null.
+   * @return Timeline The three lists, the verification link and the tab limit.
    * @example
    * ResumeController.Timeline timeline = ResumeController.getTimeline();
    */
@@ -64,7 +80,37 @@ public with sharing class ResumeController {
     Timeline timeline = new Timeline();
     timeline.work = toTimelineRoles(selector.selectTimelineRoles());
     timeline.education = toTimelineSchools(selector.selectEducation());
+    timeline.certifications = toTimelineCertifications(
+      selector.selectCertifications()
+    );
+    timeline.verificationUrl = credentialVerificationUrl();
+    timeline.tabLimit = timelineTabLimit();
     return timeline;
+  }
+
+  private static Integer timelineTabLimit() {
+    return PortfolioSettings.getInteger(
+      'Timeline_Tab_Limit',
+      DEFAULT_TIMELINE_TAB_LIMIT
+    );
+  }
+
+  private static List<TimelineCertification> toTimelineCertifications(
+    List<Certification__c> certifications
+  ) {
+    List<TimelineCertification> entries = new List<TimelineCertification>();
+    for (Certification__c certification : certifications) {
+      if (certification.Is_Retired__c == true) {
+        continue;
+      }
+      TimelineCertification entry = new TimelineCertification();
+      entry.id = certification.Id;
+      entry.name = certification.Name;
+      entry.issuer = certification.Issuer__r?.Name;
+      entry.earnedDate = certification.Earned_Date__c;
+      entries.add(entry);
+    }
+    return entries;
   }
 
   private static List<TimelineRole> toTimelineRoles(
@@ -101,7 +147,7 @@ public with sharing class ResumeController {
   }
 
   /**
-   * The one certification verification link (reading R8), or null when the org has no config
+   * The one certification verification link, or null when the org has no config
    * record or the value is blank. Returned exactly as stored, so a plus sign stays a plus sign.
    * The record is chosen by the rule FooterController uses: first by DeveloperName.
    * getAll() reads custom metadata without SOQL.
@@ -127,7 +173,7 @@ public with sharing class ResumeController {
   /**
    * @description Returns only the owner header, for the home page hero. One query on the owner
    *              Contact, so the hero bio never waits on the roles, skills and credentials that
-   *              getResume reads. Same fields and same selector as getResume's header (K1).
+   *              getResume reads. Same fields and same selector as getResume's header.
    * @return Header The owner header, or null when no Contact is the portfolio owner.
    * @example
    * ResumeController.Header header = ResumeController.getHeader();
@@ -200,10 +246,16 @@ public with sharing class ResumeController {
     return new Set<String>(tags.split(';')).contains(persona);
   }
 
-  private static List<SkillGroup> toSkillGroups(List<Skill__c> skills) {
+  private static List<SkillGroup> toSkillGroups(
+    List<Skill__c> skills,
+    String persona
+  ) {
     List<SkillGroup> groups = new List<SkillGroup>();
     Map<String, SkillGroup> groupsByCategory = new Map<String, SkillGroup>();
     for (Skill__c skill : skills) {
+      if (!showsSkillFor(skill.Persona_Tag__c, persona)) {
+        continue;
+      }
       SkillGroup skillGroup = groupsByCategory.get(skill.Category__c);
       if (skillGroup == null) {
         skillGroup = new SkillGroup();
@@ -219,6 +271,14 @@ public with sharing class ResumeController {
       );
     }
     return groups;
+  }
+
+  /**
+   * True when a skill belongs on the resume for the persona: no persona chosen, or the skill
+   * carries no tag, or its tags include the persona.
+   */
+  private static Boolean showsSkillFor(String tags, String persona) {
+    return persona == null || String.isBlank(tags) || hasTag(tags, persona);
   }
 
   private static List<Credential> toCertifications(
@@ -257,8 +317,8 @@ public with sharing class ResumeController {
   }
 
   /**
-   * @description Reads every resume record in system mode and without sharing. Guarded by
-   *              Round 3 plan G1: certifications and education are master-detail to Contact and
+   * @description Reads every resume record in system mode and without sharing, because
+   *              certifications and education are master-detail to Contact and
    *              roles look up to Account, and the site guest has no Contact or Account access.
    *              The guest reaches this data only through the fixed, contact-detail-free shape
    *              the outer class builds. Selects no Email, Phone, address or Owner_* field.
@@ -315,7 +375,7 @@ public with sharing class ResumeController {
 
     private List<Skill__c> selectSkills() {
       return [
-        SELECT Name, Display_Name__c, Category__c
+        SELECT Name, Display_Name__c, Category__c, Persona_Tag__c
         FROM Skill__c
         WITH SYSTEM_MODE
         ORDER BY Category_Order__c ASC, Proficiency__c DESC NULLS LAST, Name ASC
@@ -324,7 +384,7 @@ public with sharing class ResumeController {
 
     private List<Certification__c> selectCertifications() {
       return [
-        SELECT Name, Issuer__r.Name, Earned_Date__c, Is_Retired__c
+        SELECT Id, Name, Issuer__r.Name, Earned_Date__c, Is_Retired__c
         FROM Certification__c
         WITH SYSTEM_MODE
         ORDER BY Earned_Date__c DESC NULLS LAST, Name ASC
@@ -492,13 +552,20 @@ public with sharing class ResumeController {
   }
 
   /**
-   * @description The home page timeline: roles and schools, newest first.
+   * @description The home page timeline: roles, schools and current certifications, newest
+   *              first, with the verification link and how many entries a tab shows at first.
    */
   public class Timeline {
     @AuraEnabled
     public List<TimelineRole> work;
     @AuraEnabled
     public List<TimelineSchool> education;
+    @AuraEnabled
+    public List<TimelineCertification> certifications;
+    @AuraEnabled
+    public String verificationUrl;
+    @AuraEnabled
+    public Integer tabLimit;
   }
 
   /**
@@ -533,5 +600,19 @@ public with sharing class ResumeController {
     public String fieldOfStudy;
     @AuraEnabled
     public Date completedDate;
+  }
+
+  /**
+   * @description One current certification on the timeline.
+   */
+  public class TimelineCertification {
+    @AuraEnabled
+    public String id;
+    @AuraEnabled
+    public String name;
+    @AuraEnabled
+    public String issuer;
+    @AuraEnabled
+    public Date earnedDate;
   }
 }

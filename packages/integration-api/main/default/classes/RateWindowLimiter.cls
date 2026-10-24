@@ -46,7 +46,8 @@ public without sharing class RateWindowLimiter implements ApiRateLimiter {
   /**
    * @description Records one request for the tier against the current caller and decides
    *              whether it may proceed. The caller is the session (SHA-256 of the session id),
-   *              or the user when the session id is null (plan P2).
+   *              or the user when the session id is null. Every vended token runs as the
+   *              same integration user, so a key by user would put every caller in one bucket.
    * @param tierKey Rate tier key (sapi, papi, papi-ai).
    * @param limitPerMinute Requests allowed per minute for the tier.
    * @return ApiRequestContext.RateDecision The decision and the values for the rate-limit headers.

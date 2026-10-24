@@ -1,13 +1,16 @@
 /**
- * @description       : The site's graph engine (Round 5 plan M1). loadGraphEngine loads the D3_Library
- *                      static resource (d3-force and its helpers, plus d3-selection, d3-drag and d3-zoom
- *                      since Round 7 audit E1) once per page and hands every caller the same window.d3.
+ * @description       : The site's graph engine. loadGraphEngine loads the D3_Library
+ *                      static resource (d3-force and its helpers, plus d3-selection, d3-drag and d3-zoom)
+ *                      once per page and hands every caller the same window.d3.
  *                      layoutGraph runs a d3-force simulation to the end in one synchronous call and
  *                      returns positions, so consumers draw SVG from their own templates and nothing
- *                      animates (reading R5). attachPanZoom and attachNodeDrag wire d3-zoom and d3-drag to
+ *                      animates. attachPanZoom and attachNodeDrag wire d3-zoom and d3-drag to
  *                      that SVG and report back through callbacks, so the template stays the only thing
- *                      that draws. Consumers: skillNetwork and schemaVisualizer. Callers never load the
- *                      engine on a phone or before a graph opens.
+ *                      that draws. attachPanZoom can also leave the plain wheel to the page, pan past
+ *                      the drawn box at the resting scale and pan by a fixed step for arrow keys.
+ *                      Consumers: skillNetwork for the force layout and pan, zoom and drag,
+ *                      schemaVisualizer for the force layout. Callers never load the engine on a
+ *                      phone or before a graph opens.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -235,21 +238,45 @@ export function layoutGraph(d3, nodes, edges, options = {}) {
 /** Zoom limits and the factor one zoom in or zoom out step applies. */
 export const ZOOM = Object.freeze({ min: 1, max: 4, step: 1.5 });
 
+/** The gesture name onGestureEnd reports for the event that started it. */
+const GESTURES = Object.freeze({
+  wheel: "wheel",
+  mousedown: "mouse",
+  touchstart: "touch"
+});
+
 function defaultZoomFilter(event) {
   return (!event.ctrlKey || event.type === "wheel") && !event.button;
 }
 
+// A wheel event's zoom amount as d3-zoom works it out (log2 of the scale change), capped so one
+// notch of a mouse wheel never zooms more than one button step. A trackpad pinch sends many small
+// wheel events with ctrlKey set, which stay under the cap.
+function cappedWheelDelta(step) {
+  const cap = Math.log2(step);
+  return (event) => {
+    const unit = event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002;
+    const delta = -event.deltaY * unit * (event.ctrlKey ? 10 : 1);
+    return Math.max(-cap, Math.min(cap, delta));
+  };
+}
+
 /**
  * Wires d3-zoom to an SVG element for wheel, pinch and drag panning, and returns controls for
- * buttons. The transform is never written to the DOM here: onZoom receives it and the caller
- * draws it from its own template.
+ * buttons and keys. The transform is never written to the DOM here: onZoom receives it and the
+ * caller draws it from its own template.
  * @param {object} d3 the namespace from loadGraphEngine
  * @param {SVGElement} svg the element that receives the pointer events
  * @param {object} options onZoom (called with each d3 ZoomTransform, required), extent (the
- *   visible box as [[x0, y0], [x1, y1]] in the SVG's own units, also the pan limit), min, max
- *   and step (default ZOOM)
- * @returns {object|undefined} { zoomIn, zoomOut, reset, scale, detach }, or undefined when the
- *   loaded library has no d3-zoom (an older cached copy), so callers simply hide their controls
+ *   visible box as [[x0, y0], [x1, y1]] in the SVG's own units, also the pan limit unless
+ *   translateExtent is given), translateExtent (the pan limit, a box larger than extent lets the
+ *   view pan at the resting scale), ctrlWheel (true: a plain wheel scrolls the page and only a
+ *   wheel with Ctrl held, which is also how a trackpad pinch arrives, zooms, one step at most per
+ *   event), onGestureEnd (called with "wheel", "mouse" or "touch" when a pointer gesture ends),
+ *   min, max and step (default ZOOM)
+ * @returns {object|undefined} { zoomIn, zoomOut, reset, panBy, scale, detach }, or undefined
+ *   when the loaded library has no d3-zoom (an older cached copy), so callers simply hide their
+ *   controls. panBy(dx, dy) moves the view by that many SVG units on screen at any scale.
  */
 export function attachPanZoom(d3, svg, options = {}) {
   if (
@@ -264,6 +291,7 @@ export function attachPanZoom(d3, svg, options = {}) {
   const min = numberOr(options.min, ZOOM.min);
   const max = numberOr(options.max, ZOOM.max);
   const step = numberOr(options.step, ZOOM.step);
+  const ctrlWheel = options.ctrlWheel === true;
   const selection = d3.select(svg);
   const behaviour = d3
     .zoom()
@@ -274,11 +302,35 @@ export function attachPanZoom(d3, svg, options = {}) {
       if (event.type === "touchstart") {
         return event.touches.length > 1 || d3.zoomTransform(svg).k > min;
       }
+      if (ctrlWheel && event.type === "wheel") {
+        // Turned down here, the wheel event is never cancelled, so the page scrolls.
+        return event.ctrlKey === true;
+      }
       return defaultZoomFilter(event);
     })
     .on("zoom", (event) => options.onZoom(event.transform));
+  if (ctrlWheel) {
+    behaviour.wheelDelta(cappedWheelDelta(step));
+  }
   if (options.extent) {
-    behaviour.extent(options.extent).translateExtent(options.extent);
+    behaviour
+      .extent(options.extent)
+      .translateExtent(options.translateExtent || options.extent);
+  }
+  if (typeof options.onGestureEnd === "function") {
+    // A button or key move has no source event, so only pointer gestures are reported.
+    let gesture;
+    behaviour
+      .on("start", (event) => {
+        const type = event.sourceEvent && event.sourceEvent.type;
+        gesture = type ? GESTURES[type] : undefined;
+      })
+      .on("end", () => {
+        if (gesture) {
+          options.onGestureEnd(gesture);
+        }
+        gesture = undefined;
+      });
   }
   // A double click selects a node twice, so it never zooms.
   selection.call(behaviour).on("dblclick.zoom", null);
@@ -286,6 +338,11 @@ export function attachPanZoom(d3, svg, options = {}) {
     zoomIn: () => selection.call(behaviour.scaleBy, step),
     zoomOut: () => selection.call(behaviour.scaleBy, 1 / step),
     reset: () => selection.call(behaviour.transform, d3.zoomIdentity),
+    // translateBy moves by its arguments times the scale, so divide to move a fixed distance.
+    panBy: (dx, dy) => {
+      const k = d3.zoomTransform(svg).k || 1;
+      selection.call(behaviour.translateBy, dx / k, dy / k);
+    },
     scale: () => d3.zoomTransform(svg).k,
     detach: () => selection.on(".zoom", null)
   };

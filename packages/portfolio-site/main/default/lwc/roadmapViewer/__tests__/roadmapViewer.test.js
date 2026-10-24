@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for roadmapViewer LWC. DeliveryController.getRoadmap is a
- *                      mocked wire adapter fed with the plan K3 RoadmapFeed shape.
+ *                      mocked wire adapter fed with the RoadmapFeed shape the controller returns.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -271,7 +271,7 @@ describe("c-roadmap-viewer", () => {
     expect(keysIn(element, "indeterminate")).toEqual(["SPAP-6", "SPAP-5"]);
   });
 
-  describe("the column cap (Round 7 F7, every column)", () => {
+  describe("the column cap, every column", () => {
     // Twelve done items, SPAP-101 the newest, each one hour older than the last.
     // SPAP-112 (the oldest) and SPAP-104 are epics.
     function doneItems(count) {
@@ -465,6 +465,30 @@ describe("c-roadmap-viewer", () => {
       );
       expect(new Set(ids).size).toBe(3);
     });
+
+    it("caps each column at the columnLimit the feed serves", async () => {
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH", { items: doneItems(12), columnLimit: 3 }));
+      await flushPromises();
+
+      expect(doneKeys(element)).toHaveLength(3);
+      expect(q(element, '[data-id="show-all"]').textContent.trim()).toBe(
+        "Show all 12 shipped"
+      );
+    });
+
+    it.each([0, -2, 2.5, "5", null])(
+      "falls back to COLUMN_LIMIT when the feed serves %p",
+      async (served) => {
+        const element = createComponent();
+        getRoadmap.emit(
+          feed("FRESH", { items: doneItems(12), columnLimit: served })
+        );
+        await flushPromises();
+
+        expect(doneKeys(element)).toHaveLength(COLUMN_LIMIT);
+      }
+    );
   });
 
   it("SIMULATED shows a Simulated badge with the board", async () => {
@@ -600,7 +624,7 @@ describe("c-roadmap-viewer", () => {
     expect(ageLabel(0)).toBe("Last updated 0 min ago");
     expect(ageLabel(undefined)).toBe("");
   });
-  it("places the View source control for its key next to the heading (contract P2)", () => {
+  it("places the View source control for its key next to the heading", () => {
     const element = createComponent();
     const control = q(element, ".roadmap-header c-view-source");
     expect(control).not.toBeNull();

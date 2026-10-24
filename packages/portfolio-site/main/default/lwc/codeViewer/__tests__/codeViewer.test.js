@@ -147,7 +147,7 @@ describe("c-code-viewer", () => {
     );
   });
 
-  it("uses a brand copy button (contract K9)", async () => {
+  it("uses a brand copy button", async () => {
     const element = createComponent({ code: SOURCE });
     await flushPromises();
 

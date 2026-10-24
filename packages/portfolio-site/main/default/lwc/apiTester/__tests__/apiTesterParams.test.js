@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the API Lab v2 controls (audit B3, reading R16): spec
+ * @description       : Unit tests for the API Lab v2 controls: spec
  *                      parameters as pills, picklists, bounded numbers and hinted text inputs,
  *                      removable pills and the query string, the Advanced field, Next page on
  *                      X-Has-More, the highlighted body and the schema check. The catalog is the

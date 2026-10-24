@@ -1,16 +1,18 @@
 /**
- * @description       : Skills page (Round 5 plan M2). A matrix by default: one row per category, one chip per
+ * @description       : Skills page. A matrix by default: one row per category, one chip per
  *                      skill with its proficiency and the years it was used, worked out from the dates of the
  *                      roles linked through Experience_Skill__c. Selecting a chip lists the roles and projects
  *                      that used it. On desktop and tablet a "Matrix | Graph" switch opens a graph view that
- *                      loads the D3 engine (c/graphEngine) on first open only, clusters skills by category with
+ *                      loads the d3-force graph engine (c/graphEngine) on first open only, clusters skills by category with
  *                      the roles and projects on a ring, and draws edges only for the hovered or selected node.
  *                      Phones and narrow viewports get the matrix only and never request the engine.
  *                      Nothing animates: positions are computed once and drawn as SVG from this template, so
- *                      prefers-reduced-motion needs no special case. Round 7 (audit E1) adds pan and zoom
+ *                      prefers-reduced-motion needs no special case. The graph also has pan and zoom
  *                      (d3-zoom) and node drag (d3-drag) from the same engine, plus Zoom in, Zoom out and
- *                      Reset view buttons for keyboard users. Both report positions back here, so the
- *                      template still draws everything. Round 7 (audit E4) adds a persona filter on the
+ *                      Reset view buttons for keyboard users. A background drag or the arrow keys on the
+ *                      focused graph pan it at any zoom level, a little past the graph's edge at most.
+ *                      A plain wheel scrolls the page, Ctrl with the wheel or a pinch zooms. Both report
+ *                      positions back here, so the template still draws everything. A persona filter sits on the
  *                      matrix with the resume's personas, read from Skill__c.Persona_Tag__c by a query of
  *                      its own. It shows only once at least one skill is tagged.
  * @author            : Ryan Bumstead
@@ -19,8 +21,8 @@
  * @Created           : 12/26/2025
  **/
 import { LightningElement, wire } from "lwc";
-// The Round 3 plan (K5) pins lightning/uiGraphQLApi. The lint rule prefers
-// lightning/graphql, a move left to the orchestrator.
+// The site pins lightning/uiGraphQLApi. The lint rule prefers lightning/graphql, and that
+// move is a separate change made for every GraphQL component at once.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { gql, graphql } from "lightning/uiGraphQLApi";
 import FORM_FACTOR from "@salesforce/client/formFactor";
@@ -32,8 +34,9 @@ import {
 } from "c/graphEngine";
 import { EVENTS, trackEvent } from "c/analyticsService";
 
-// Reads only fields the guest can read: K4, the required Category_Order__c, and the two
-// Experience__c dates Portfolio_Guest grants from Round 5 (trap 44).
+// Reads only fields the guest can read: the skill fields Portfolio_Guest grants, the required
+// Category_Order__c, and the two Experience__c dates. GraphQL returns a field to the guest
+// only when the guest has field level security on it.
 const SKILL_NETWORK_QUERY = gql`
   query SkillNetworkGraph {
     uiapi {
@@ -110,7 +113,7 @@ const SKILL_NETWORK_QUERY = gql`
   }
 `;
 
-// The persona tags in a query of their own (audit E4). If the guest cannot read the field yet,
+// The persona tags in a query of their own. If the guest cannot read the field yet,
 // only this query fails: the filter stays hidden and the skills still load.
 const SKILL_PERSONAS_QUERY = gql`
   query SkillPersonaTags {
@@ -150,7 +153,7 @@ const PERSONA_OPTIONS = [
 const PERSONA_ALL = "";
 
 // Graph geometry. The view box leaves room either side of the layout box for the labels.
-// The spacing was tuned on production shaped data (Round 6 plan N3, layoutSpacing.test.js).
+// The spacing was tuned on production shaped data (layoutSpacing.test.js measures it).
 const GRAPH_WIDTH = 960;
 const GRAPH_HEIGHT = 840;
 const LABEL_ROOM = 150;
@@ -161,12 +164,27 @@ const LABEL_MAX = 24;
 // the label's place, so skills settle round the label instead of under it (13px mono, 0.6em
 // a character, a circle 0.6 of the label's half width).
 const CATEGORY_RADIUS_PER_CHAR = 2.34;
-// The drawn box in view box units: the layout box plus the label room either side. It is also
-// the pan limit, so the graph can never be dragged out of sight.
+// The drawn box in view box units: the layout box plus the label room either side.
 const VIEW_EXTENT = [
   [-LABEL_ROOM, 0],
   [GRAPH_WIDTH + LABEL_ROOM, GRAPH_HEIGHT]
 ];
+// The pan limit: the drawn box plus this margin on every side, so the view pans at 100% too,
+// and no further than the margin past the graph's edge, so the graph can never be lost.
+const PAN_MARGIN = 120;
+const PAN_EXTENT = [
+  [VIEW_EXTENT[0][0] - PAN_MARGIN, VIEW_EXTENT[0][1] - PAN_MARGIN],
+  [VIEW_EXTENT[1][0] + PAN_MARGIN, VIEW_EXTENT[1][1] + PAN_MARGIN]
+];
+// One arrow key press pans this far on screen, in view box units, at any zoom level.
+const PAN_STEP = 40;
+// Each arrow key moves the view that way, so the graph moves the other way.
+const PAN_KEYS = Object.freeze({
+  ArrowLeft: [PAN_STEP, 0],
+  ArrowRight: [-PAN_STEP, 0],
+  ArrowUp: [0, PAN_STEP],
+  ArrowDown: [0, -PAN_STEP]
+});
 const IDENTITY_TRANSFORM = "translate(0,0) scale(1)";
 
 function fieldValue(record, field) {
@@ -345,7 +363,7 @@ export default class SkillNetwork extends LightningElement {
   isSmall = false;
   view = VIEW_MATRIX;
   selectedSkillId;
-  // Persona filter (audit E4): tags by skill id, and the chosen persona ("" for All).
+  // Persona filter: tags by skill id, and the chosen persona ("" for All).
   personaTags = new Map();
   persona = PERSONA_ALL;
 
@@ -357,7 +375,7 @@ export default class SkillNetwork extends LightningElement {
   selectedNodeId;
   disconnected = false;
 
-  // Pan, zoom and drag state (audit E1). moved holds the dragged positions by node id, on top of
+  // Pan, zoom and drag state. moved holds the dragged positions by node id, on top of
   // the computed layout. engine, panZoom and the bound markers are plain references, not drawn.
   zoomTransform = IDENTITY_TRANSFORM;
   zoomScale = 1;
@@ -367,6 +385,7 @@ export default class SkillNetwork extends LightningElement {
   panZoom;
   boundSvg;
   boundNodeCount = 0;
+  keyboardPanTracked = false;
 
   connectedCallback() {
     this.disconnected = false;
@@ -477,7 +496,7 @@ export default class SkillNetwork extends LightningElement {
     return this.isGraph ? "view-button is-on" : "view-button";
   }
 
-  // ---------- persona filter (audit E4) ----------
+  // ---------- persona filter ----------
 
   get showPersonaFilter() {
     return this.hasSkills && this.personaTags.size > 0;
@@ -896,7 +915,7 @@ export default class SkillNetwork extends LightningElement {
     }
   }
 
-  // ---------- pan, zoom and drag (audit E1) ----------
+  // ---------- pan, zoom and drag ----------
 
   // Wires d3-zoom to the SVG once per SVG element and d3-drag to the nodes once per node set.
   // Guarded, so the re-render each zoom or drag step causes binds nothing new.
@@ -913,7 +932,15 @@ export default class SkillNetwork extends LightningElement {
       this.boundSvg = svg;
       this.panZoom = attachPanZoom(this.engine, svg, {
         extent: VIEW_EXTENT,
-        onZoom: (transform) => this.applyZoom(transform)
+        translateExtent: PAN_EXTENT,
+        // A plain wheel scrolls the page. Ctrl with the wheel, or a pinch, zooms.
+        ctrlWheel: true,
+        onZoom: (transform) => this.applyZoom(transform),
+        onGestureEnd: (gesture) => {
+          if (gesture === "wheel") {
+            this.trackZoom("wheel");
+          }
+        }
       });
       const canZoom = Boolean(this.panZoom);
       if (this.canZoom !== canZoom) {
@@ -975,19 +1002,31 @@ export default class SkillNetwork extends LightningElement {
     };
   }
 
+  // The graph takes focus for arrow key panning only when pan and zoom are wired.
+  get graphTabIndex() {
+    return this.canZoom ? "0" : "-1";
+  }
+
   get zoomLabel() {
     return `Zoom ${Math.round(this.zoomScale * 100)}%`;
+  }
+
+  // control is one of in, out, reset, wheel or keyboard. No node name or id is sent.
+  trackZoom(control) {
+    trackEvent(EVENTS.GRAPH_ZOOM_USED, { control });
   }
 
   handleZoomIn() {
     if (this.panZoom) {
       this.panZoom.zoomIn();
+      this.trackZoom("in");
     }
   }
 
   handleZoomOut() {
     if (this.panZoom) {
       this.panZoom.zoomOut();
+      this.trackZoom("out");
     }
   }
 
@@ -996,9 +1035,29 @@ export default class SkillNetwork extends LightningElement {
     this.moved = {};
     if (this.panZoom) {
       this.panZoom.reset();
+      this.trackZoom("reset");
     } else {
       this.resetZoomState();
     }
+  }
+
+  // Arrow keys on the focused graph pan it. The key's own page scroll is cancelled only when the
+  // graph handles it. The event is sent once each time the graph has focus, not once per press.
+  handleGraphKeydown(event) {
+    const move = PAN_KEYS[event.key];
+    if (!move || !this.panZoom || event.altKey || event.ctrlKey) {
+      return;
+    }
+    event.preventDefault();
+    this.panZoom.panBy(move[0], move[1]);
+    if (!this.keyboardPanTracked) {
+      this.keyboardPanTracked = true;
+      this.trackZoom("keyboard");
+    }
+  }
+
+  handleGraphBlur() {
+    this.keyboardPanTracked = false;
   }
 
   get graphSelectionText() {

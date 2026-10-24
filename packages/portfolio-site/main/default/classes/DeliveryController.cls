@@ -1,11 +1,11 @@
 /**
- * @description       : Serves the Delivery page from the integration caches (Round 3 plan K3,
- *                      pillar-e-design section 4.2). getRecentCommits() reads the newest
+ * @description       : Serves the Delivery page from the integration caches.
+ *                      getRecentCommits() reads the newest
  *                      Github_Cache__c row and getRoadmap() the newest Jira_Cache__c row. Each
  *                      payload is {"schemaVersion":1,"items":[...]} built from the DTOs below,
- *                      which the Round 4 refresh jobs serialize. A missing or unreadable row
- *                      returns EMPTY, never an exception. No callout happens here. Round 4
- *                      plan L10: simulate=true returns the cached data as SIMULATED (the
+ *                      which the refresh jobs serialize. A missing or unreadable row
+ *                      returns EMPTY, never an exception. No callout happens here.
+ *                      simulate=true returns the cached data as SIMULATED (the
  *                      Resilience Simulation toggle, ADR-022), and while a source's circuit
  *                      breaker is open its feed reports DEGRADED. EMPTY wins over both,
  *                      because there is nothing to show.
@@ -18,6 +18,9 @@
 public with sharing class DeliveryController {
   public static final Integer SCHEMA_VERSION = 1;
   public static final Integer FRESH_MINUTES = 30;
+  // Code default for the roadmap's cards per column. The Roadmap_Column_Limit setting
+  // gives the value in force, and roadmapViewer keeps the same default of its own.
+  public static final Integer ROADMAP_COLUMN_LIMIT = 8;
   public static final String STATUS_FRESH = 'FRESH';
   public static final String STATUS_STALE = 'STALE';
   public static final String STATUS_EMPTY = 'EMPTY';
@@ -66,12 +69,17 @@ public with sharing class DeliveryController {
    * @description The roadmap from the newest Jira cache row.
    * @param simulate True for the resilience toggle: the cached data comes back as SIMULATED.
    *                 Null or false is the normal read.
-   * @return RoadmapFeed The items, the row time, its age in minutes and the status.
+   * @return RoadmapFeed The items, the row time, its age in minutes, the status and the
+   *                     number of cards each column shows before its Show all button.
    */
   @AuraEnabled(cacheable=true)
   public static RoadmapFeed getRoadmap(Boolean simulate) {
     RoadmapFeed feed = new RoadmapFeed();
     feed.items = new List<RoadmapItem>();
+    feed.columnLimit = PortfolioSettings.getInteger(
+      'Roadmap_Column_Limit',
+      ROADMAP_COLUMN_LIMIT
+    );
     Snapshot row = new CacheSelector().newestJiraRow();
     RoadmapPayload payload = row == null
       ? null
@@ -155,7 +163,7 @@ public with sharing class DeliveryController {
 
   /**
    * @description Reads the two cache objects in system mode and without sharing. The site
-   *              guest has no grant on either cache object on purpose (pillar-e-design T5),
+   *              guest has no grant on either cache object on purpose,
    *              and the rows hold only public commit and roadmap data, which the outer class
    *              returns in the fixed DTO shape.
    */
@@ -239,7 +247,7 @@ public with sharing class DeliveryController {
   /**
    * @description One Jira issue. statusCategory is new, indeterminate or done. epicKey and
    *              epicName come from the parent issue. Both are null when there is no parent,
-   *              and epicName is null on rows cached before Round 6.
+   *              and epicName is null on rows cached before the epic fields existed.
    */
   public class RoadmapItem {
     @AuraEnabled
@@ -286,5 +294,7 @@ public with sharing class DeliveryController {
     public Integer ageMinutes;
     @AuraEnabled
     public String status;
+    @AuraEnabled
+    public Integer columnLimit;
   }
 }

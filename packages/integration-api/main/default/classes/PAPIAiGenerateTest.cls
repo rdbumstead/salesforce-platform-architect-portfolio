@@ -404,4 +404,56 @@ private class PAPIAiGenerateTest {
 
     Assert.areEqual(500, res.statusCode, 'Unexpected failures are a 500');
   }
+
+  @IsTest
+  static void lengthSettingsChangeTheAcceptedRange() {
+    PortfolioSettings.overrideNumber('Ai_Min_Length', 200);
+    PortfolioSettings.overrideNumber('Ai_Max_Length', 300);
+    Map<String, Object> body = coverLetter();
+    body.put('maxLength', 150);
+
+    RestResponse res = post(body);
+
+    assertBadRequest(res, 'between 200 and 300');
+  }
+
+  @IsTest
+  static void lengthInsideTheSetRangeIsAccepted() {
+    PortfolioSettings.overrideNumber('Ai_Min_Length', 200);
+    PortfolioSettings.overrideNumber('Ai_Max_Length', 300);
+    Map<String, Object> body = coverLetter();
+    body.put('maxLength', 250);
+
+    String prompt = PAPIAiGenerate.parse(Blob.valueOf(JSON.serialize(body)))
+      .prompt();
+
+    Assert.isTrue(prompt.contains('250 characters'), prompt);
+  }
+
+  @IsTest
+  static void defaultLengthSettingAppliesWhenMaxLengthIsOmitted() {
+    PortfolioSettings.overrideNumber('Ai_Default_Length', 250);
+    Map<String, Object> body = coverLetter();
+    body.remove('maxLength');
+
+    String prompt = PAPIAiGenerate.parse(Blob.valueOf(JSON.serialize(body)))
+      .prompt();
+
+    Assert.isTrue(prompt.contains('250 characters'), prompt);
+  }
+
+  @IsTest
+  static void defaultLengthIsHeldInsideTheRange() {
+    PortfolioSettings.overrideNumber('Ai_Default_Length', 5000);
+    Map<String, Object> body = coverLetter();
+    body.remove('maxLength');
+
+    String prompt = PAPIAiGenerate.parse(Blob.valueOf(JSON.serialize(body)))
+      .prompt();
+
+    Assert.isTrue(
+      prompt.contains(PAPIAiGenerate.MAX_LENGTH + ' characters'),
+      prompt
+    );
+  }
 }

@@ -1,6 +1,5 @@
 /**
- * @description       : Serves the Delivery page governance checklist (Round 4 plan L11,
- *                      pillar-e-design section 3.2, decision E4 items 1, 3 and 4).
+ * @description       : Serves the Delivery page governance checklist.
  *                      getPipelineStatus() returns the latest Pipeline_Run__c per workflow, the
  *                      newest CreatedDate of each integration cache, and three checklist items
  *                      worked out from that evidence. An item passes only on evidence: no run
@@ -19,6 +18,8 @@ public with sharing class GovernanceController {
   public static final String STATE_FAIL = 'FAIL';
   public static final String STATE_STALE = 'STALE';
   public static final String STATE_NO_SIGNAL = 'NO_SIGNAL';
+  // Code defaults. The Heartbeat_Stale_Hours and Governance_Cache_Minutes settings give
+  // the values in force.
   public static final Integer HEARTBEAT_HOURS = 26;
   public static final Integer CACHE_MINUTES = 30;
 
@@ -61,7 +62,7 @@ public with sharing class GovernanceController {
     return result;
   }
 
-  // E4 item 1. A deploy has no age limit: the last production deploy stays the evidence.
+  // The deploy item. A deploy has no age limit: the last production deploy stays the evidence.
   private static ChecklistItem deployItem(RunInfo run) {
     ChecklistItem item = new ChecklistItem(
       ITEM_DEPLOY,
@@ -72,11 +73,16 @@ public with sharing class GovernanceController {
     return item;
   }
 
-  // E4 item 3. A heartbeat older than 26 hours is stale, never a tick.
+  // The heartbeat item. A heartbeat older than the stale hours (26 by default) is stale,
+  // never a tick.
   private static ChecklistItem heartbeatItem(RunInfo run, Datetime now) {
+    Integer staleHours = PortfolioSettings.getInteger(
+      'Heartbeat_Stale_Hours',
+      HEARTBEAT_HOURS
+    );
     ChecklistItem item = new ChecklistItem(
       ITEM_HEARTBEAT,
-      'Org heartbeat in the last ' + HEARTBEAT_HOURS + ' hours'
+      'Org heartbeat in the last ' + staleHours + ' hours'
     );
     item.run = run;
     if (run == null) {
@@ -84,28 +90,33 @@ public with sharing class GovernanceController {
     } else if (runState(run) == STATE_FAIL) {
       item.state = STATE_FAIL;
     } else {
-      item.state = isWithin(run.completedAt, now, HEARTBEAT_HOURS * 60)
+      item.state = isWithin(run.completedAt, now, staleHours * 60)
         ? STATE_PASS
         : STATE_STALE;
     }
     return item;
   }
 
-  // E4 item 4, computed in the org. Both caches must be under 30 minutes old.
+  // The cache item, computed in the org. Both caches must be under the cache minutes
+  // (30 by default) old.
   private static ChecklistItem cacheItem(
     Datetime githubAt,
     Datetime jiraAt,
     Datetime now
   ) {
+    Integer cacheMinutes = PortfolioSettings.getInteger(
+      'Governance_Cache_Minutes',
+      CACHE_MINUTES
+    );
     ChecklistItem item = new ChecklistItem(
       ITEM_CACHES,
-      'Integration caches under ' + CACHE_MINUTES + ' minutes old'
+      'Integration caches under ' + cacheMinutes + ' minutes old'
     );
     if (githubAt == null && jiraAt == null) {
       item.state = STATE_NO_SIGNAL;
     } else if (
-      isWithin(githubAt, now, CACHE_MINUTES) &&
-      isWithin(jiraAt, now, CACHE_MINUTES)
+      isWithin(githubAt, now, cacheMinutes) &&
+      isWithin(jiraAt, now, cacheMinutes)
     ) {
       item.state = STATE_PASS;
     } else {
@@ -132,8 +143,8 @@ public with sharing class GovernanceController {
 
   /**
    * @description Reads Pipeline_Run__c and the two cache objects in system mode and without
-   *              sharing. The site guest has no grant on any of them on purpose
-   *              (pillar-e-design section 3.2 and T5), so no guest sharing rule is needed. The
+   *              sharing. The site guest has no grant on any of them on purpose,
+   *              so no guest sharing rule is needed. The
    *              outer class returns only public pipeline metadata and two timestamps.
    */
   private without sharing class EvidenceSelector {

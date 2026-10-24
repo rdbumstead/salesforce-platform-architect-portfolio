@@ -1,0 +1,90 @@
+name: Live Smoke Test
+
+# Read only check of the live site: every route answers 200, each route's key components
+# render, and no unexpected console error shows, in Chromium and WebKit at a desktop and a
+# phone size. Deploy to Production calls it after a deploy that changed production, and it
+# can be run by hand, for example after the site is published. A failure writes a smoke
+# Failure row through the governance event and undoes nothing.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      SITE_BASE: https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio
+      PLAYWRIGHT_VERSION: "1.64.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Installed outside the project, so the job needs none of the repo's dev dependencies.
+      - name: Install Playwright
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium webkit
+
+      - name: Run Live Smoke Test
+        run: |
+          set +e
+          NODE_PATH="$RUNNER_TEMP/pw/node_modules" SMOKE_JSON=smoke.json node scripts/live-smoke.js > smoke.out
+          CODE=$?
+          set -e
+
+          SUMMARY=$(head -n 1 smoke.out)
+          echo "$SUMMARY"
+          {
+            echo "## Live Smoke Test"
+            echo ""
+            echo "**Result**: $SUMMARY"
+            echo ""
+            echo "Site: $SITE_BASE"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -s smoke.json ]; then
+            jq -r '.rows[]? | select(.pass | not)
+              | "- \(.browser) \(.route // "") \(.viewport // ""): status \(.status // "none")"
+                + (if .error then ", \(.error)" else "" end)
+                + ((.components // {}) | to_entries | map(select(.value != "visible" and .value != "empty")) | map(", \(.key) \(.value)") | join(""))
+                + ((.errors // []) | map(", console: \(.)") | join(""))' smoke.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          exit $CODE
+
+      - name: Upload Smoke Result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-smoke
+          path: smoke.json
+          if-no-files-found: ignore
+
+      - name: Sign In For The Failure Event
+        if: failure()
+        continue-on-error: true
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          node_version: "22"
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ secrets.SFDX_USERNAME }}
+          alias: "portfolio"
+
+      # Called from Deploy to Production, github.run_id is that deploy's run, so the row's key
+      # is smoke:<the deploy's run id>, beside the deploy's own row.
+      - name: Publish Smoke Failure Event
+        if: failure()
+        continue-on-error: true
+        run: |
+          sf data create record \
+            --sobject Governance_Event__e \
+            --values "Workflow__c=smoke Status__c=Failure Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --target-org portfolio

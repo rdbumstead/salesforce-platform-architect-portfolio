@@ -1,6 +1,6 @@
 /**
- * @description       : Tests for JiraCacheRefreshJob and JiraService (pillar-e-design 4.4,
- *                      owner decision E6 a, Round 4 WS2 gate). @TestSetup, a separate
+ * @description       : Tests for JiraCacheRefreshJob and JiraService.
+ *                      @TestSetup, a separate
  *                      transaction, leaves one good roadmap row and a jira breaker with two
  *                      failures, so the next failure is the third and no test writes before its
  *                      callout.
@@ -109,7 +109,7 @@ private class JiraCacheRefreshJobTest {
     Assert.areEqual(
       'project = SPAP AND labels = "portfolio-roadmap" ORDER BY updated DESC',
       body.get('jql'),
-      'E6 (a) JQL'
+      'The roadmap JQL'
     );
     Assert.areEqual(50, body.get('maxResults'), 'maxResults');
     Assert.areEqual(

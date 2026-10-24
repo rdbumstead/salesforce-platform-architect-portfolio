@@ -1,7 +1,7 @@
 /*
- * Colours come only from the site tokens (contract L1), which hold the light and dark values.
+ * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching token
- * pair. The response box uses the code pair. Buttons are at least 44 px high (trap 35).
+ * pair. The response box uses the code pair. Buttons are at least 44 px high.
  */
 .console-container {
   background-color: var(--pf-surface);
@@ -146,7 +146,7 @@
   margin-bottom: var(--pf-space-2);
 }
 
-/* Query parameter controls (audit B3, reading R16). Pills and buttons are 44 px high. */
+/* Query parameter controls. Pills and buttons are 44 px high. */
 .param-section h3 {
   margin-bottom: var(--pf-space-2);
 }

@@ -1,5 +1,5 @@
 /**
- * @description       : Live ERD (Round 5 plan M3 and M1, pillars-design §2.4). Reads SchemaService for one
+ * @description       : Live ERD. Reads SchemaService for one
  *                      scope, lays the objects out with the site graph engine and draws them as SVG from
  *                      this template. The engine loads only on desktop and tablet, and only once the
  *                      component is on screen. Phones and narrow viewports get the object list as the
@@ -33,7 +33,7 @@ const NODE_HEIGHT = 48;
 // apart. So the layout runs in a space squeezed sideways by LAYOUT_STRETCH and is stretched
 // back afterwards: each round node becomes an oval that fits a box with room to spare. The
 // radius keeps every box inside the view, the padding sets the space between boxes. Tuned on
-// both production scopes (Round 6 plan N3, layoutSpacing.test.js).
+// both production scopes (layoutSpacing.test.js measures it).
 const LAYOUT_STRETCH = 2.2;
 const LAYOUT_RADIUS = 40;
 const LAYOUT_PADDING = 16;

@@ -1,5 +1,5 @@
 /*
- * Round 4 plan L1: colours, fonts, radii and spacing come only from the --pf- design
+ * Colours, fonts, radii and spacing come only from the --pf- design
  * tokens, so the board follows the light and dark themes. Every element that sets a
  * background also sets its text colour. Issue keys and the age label use the mono font.
  */
@@ -226,7 +226,7 @@
   margin: var(--pf-space-1) 0 0;
 }
 
-/* The Done column's "Show all" control. A real button, at least 44 px high (trap 35). */
+/* The Done column's "Show all" control. A real button, at least 44 px high. */
 .show-all {
   min-height: 44px;
   margin-top: var(--pf-space-2);

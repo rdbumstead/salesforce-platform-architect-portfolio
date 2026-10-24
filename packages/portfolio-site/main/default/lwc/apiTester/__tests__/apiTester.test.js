@@ -67,7 +67,7 @@ const INVOKE_RESULT = {
 
 const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
 
-// The real generated catalog, so the tests follow the specs (audit G1).
+// The real generated catalog, so the tests follow the specs.
 const CATALOG_TEXT = readFileSync(
   join(
     process.cwd(),
@@ -119,7 +119,7 @@ describe("c-api-tester", () => {
     expect(options.map((option) => option.value)).toEqual(CATALOG_PATHS);
     expect(options[0].label).toBe("GET /sapi/v1/health");
     expect(CATALOG_PATHS).toHaveLength(21);
-    // SAPIResume was removed in Round 2. No SAPI path may end in /resume.
+    // SAPIResume was removed, so no SAPI path may end in /resume.
     expect(
       CATALOG_PATHS.filter(
         (path) => path.startsWith("/sapi/") && path.endsWith("/resume")
@@ -141,7 +141,7 @@ describe("c-api-tester", () => {
     expect(query(element, "button.execute-button").disabled).toBe(true);
   });
 
-  it("places View source with the apiTester key under the card heading (contract P2)", async () => {
+  it("places View source with the apiTester key under the card heading", async () => {
     const element = createComponent();
     await flushPromises();
 

@@ -1,5 +1,5 @@
 /**
- * @description       : Refreshes the GitHub commit cache (pillar-e-design 4.4, SAS A.4 name).
+ * @description       : Refreshes the GitHub commit cache (SAS A.4 name).
  *                      Reads the repository path from Portfolio_Config__mdt, calls GitHub
  *                      through GitHubService, and inserts one Github_Cache__c row holding the
  *                      schemaVersion 1 payload built from DeliveryController's DTOs. A failed
@@ -30,7 +30,7 @@ public with sharing class GitHubCacheRefreshJob implements Queueable, Database.A
 
   /**
    * @description One refresh: config, breaker check, callout, then the writes. Every write
-   *              happens after the callout (contract C2).
+   *              happens after the callout.
    * @return String One of the OUTCOME_ constants.
    */
   public static String refresh() {

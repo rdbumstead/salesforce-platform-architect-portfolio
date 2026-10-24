@@ -826,15 +826,15 @@ Generates an ATS-optimized plain text resume.
 
 **Transformation Logic**:
 - Formats dates as "MMM YYYY - MMM YYYY" or "MMM YYYY - Present"
-- Groups skills by category
-- Limits to top 5 proficiency skills per category
-- Strips HTML from accomplishments using regex
-- Applies 80-character line wrapping
+- Lists the skills linked to the printed roles, each once, grouped by category in category order and strongest first within a category
+- Prints up to 10 roles, current first
+- Prints at most 5 highlights per role, in sort order, as stored
 
 **Persona Filtering**:
 - `Admin`: System Admin highlights only
 - `Developer`: Development highlights only
 - `Architect`: Architecture/Design highlights only
+- Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.
 
 **SAPI Mapping**:
 - PAPI persona values are passed directly to SAPI `/experience-highlights?persona={value}`
@@ -852,11 +852,11 @@ Generates an ATS-optimized plain text resume.
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
 |X-API-Version|header|string|false|API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
-|persona|query|string|false|Target audience for the resume. Omit for all highlights.|
+|persona|query|string|false|Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.|
 
 #### Detailed descriptions
 
-**persona**: Target audience for the resume. Omit for all highlights.
+**persona**: Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.
 
 **Note**: This value is passed directly to SAPI's persona filter.
 

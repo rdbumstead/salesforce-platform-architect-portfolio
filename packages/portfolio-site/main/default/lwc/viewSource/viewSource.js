@@ -1,12 +1,14 @@
 /**
- * @description       : The "View source" control (Round 7 contract P2, audit B1). Placed once near
+ * @description       : The "View source" control. Placed once near
  *                      a showcase component's heading with a fixed source key. It reads the
  *                      component's files from SourceController.getSourceFiles, which serves a
  *                      cache only, and renders nothing when the key is unknown or the cache is
  *                      empty. Pressed, it opens a native modal dialog in the top layer, with
  *                      the page behind it inert, one tab per file, the file in c-code-viewer
  *                      and its GitHub link. Focus moves into the dialog, Tab stays
- *                      inside it, and Escape or Close returns focus to the button.
+ *                      inside it, and Escape or Close returns focus to the button. Opening sends
+ *                      view_source_opened with the source key, and choosing another file sends
+ *                      view_source_file_selected with the key and the file's label.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -14,6 +16,7 @@
  **/
 import { LightningElement, api, wire } from "lwc";
 import getSourceFiles from "@salesforce/apex/SourceController.getSourceFiles";
+import { trackEvent, EVENTS } from "c/analyticsService";
 
 /** Dialog headings for the six fixed keys. Any other key shows the key itself. */
 export const COMPONENT_LABELS = Object.freeze({
@@ -97,6 +100,7 @@ export default class ViewSource extends LightningElement {
     this.selectedIndex = 0;
     this.isOpen = true;
     this.focusOnRender = ".dialog-heading";
+    trackEvent(EVENTS.VIEW_SOURCE_OPENED, { source_key: this.sourceKey });
   }
 
   handleClose() {
@@ -157,9 +161,16 @@ export default class ViewSource extends LightningElement {
     if (!count) {
       return;
     }
+    const previous = this.selectedIndex;
     this.selectedIndex = (index + count) % count;
     if (moveFocus) {
       this.focusOnRender = `.tab[data-index="${this.selectedIndex}"]`;
+    }
+    if (this.selectedIndex !== previous) {
+      trackEvent(EVENTS.VIEW_SOURCE_FILE_SELECTED, {
+        source_key: this.sourceKey,
+        file_label: this.selectedLabel
+      });
     }
   }
 

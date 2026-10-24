@@ -1,6 +1,6 @@
 /**
- * @description       : Unit tests for ContentGenerationController: the one dispatch
- *                      (pillar-d-design 3.9 tests 1 to 7), generateCoverLetter and
+ * @description       : Unit tests for ContentGenerationController: the one dispatch,
+ *                      generateCoverLetter and
  *                      providerStatus. Providers are test doubles or HTTP callout mocks, and
  *                      the Agentforce switch is set in memory, so no test depends on org
  *                      records except the guest test, which needs the deployed site guest.
@@ -107,7 +107,7 @@ private class ContentGenerationControllerTest {
     return null;
   }
 
-  // --- 3.9 test 1: off means off ---
+  // --- Off means off ---
 
   @IsTest
   static void switchedOffAgentforceIsNeverCalledAndGeminiServes() {
@@ -147,7 +147,7 @@ private class ContentGenerationControllerTest {
     Assert.isNotNull(result.latencyMs, 'Latency measured');
   }
 
-  // --- 3.9 test 2: the mock can never be served ---
+  // --- The mock can never be served ---
 
   @IsTest
   static void switchedOnUnbuiltAgentforceFailsAndGeminiServes() {
@@ -178,7 +178,7 @@ private class ContentGenerationControllerTest {
     Assert.isTrue(result.fallbackOccurred, 'An earlier provider failed');
   }
 
-  // --- 3.9 test 3: a real provider would be used ---
+  // --- A real provider would be used ---
 
   @IsTest
   static void agentforceDoubleThatReturnsTextIsReportedAsAgentforce() {
@@ -208,7 +208,7 @@ private class ContentGenerationControllerTest {
     Assert.isFalse(result.fallbackOccurred, 'First provider served');
   }
 
-  // --- 3.9 test 4: a guest never runs generative AI ---
+  // --- A guest never runs generative AI ---
 
   @IsTest
   static void guestIsNeverOfferedAgentforceEvenWhenSwitchedOn() {
@@ -239,7 +239,7 @@ private class ContentGenerationControllerTest {
     Assert.areEqual('Gemini', result.provider, 'Gemini serves the guest');
   }
 
-  // --- 3.9 test 5: Round 2 behaviour kept ---
+  // --- Gemini error text is treated as a failure ---
 
   @IsTest
   static void geminiErrorTextFallsToLocalForCoverLetters() {
@@ -299,7 +299,7 @@ private class ContentGenerationControllerTest {
     Assert.areEqual(0, local.generateCalls, 'Local is not offered');
   }
 
-  // --- 3.9 test 6: the timeout is honoured ---
+  // --- The timeout is honoured ---
 
   @IsTest
   static void geminiCalloutTimeoutFallsToLocal() {
@@ -339,7 +339,7 @@ private class ContentGenerationControllerTest {
     Assert.areEqual('Gemini', result.provider, 'Gemini served');
   }
 
-  // --- 3.9 test 7: no dead end without an error ---
+  // --- No dead end without an error ---
 
   @IsTest
   static void allProvidersFailingThrowsWithEveryReason() {
@@ -586,7 +586,7 @@ private class ContentGenerationControllerTest {
     Assert.isNull(section, 'Nothing to ground on');
   }
 
-  // --- Round 4 plan L6 and L7, pillar-d-design 7.2 WS2: breakers and detail ---
+  // --- Circuit breakers and attempt detail ---
 
   private class GeminiStatusMock implements HttpCalloutMock {
     private final Integer status;

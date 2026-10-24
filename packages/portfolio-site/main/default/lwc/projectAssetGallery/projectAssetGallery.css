@@ -1,7 +1,7 @@
 /*
- * Round 4 plan L1: colours, fonts, radii and spacing come only from the --pf- design
+ * Colours, fonts, radii and spacing come only from the --pf- design
  * tokens, so the gallery follows the light and dark themes. Links are at least 24 px
- * targets (trap 35).
+ * targets.
  */
 :host {
   display: block;

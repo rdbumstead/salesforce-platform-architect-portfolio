@@ -1,6 +1,6 @@
 {
   "type": "sfdc_cms__view",
-  "title": "Nonprofit Solutions",
+  "title": "Solution Architecture",
   "contentBody": {
     "component": {
       "children": [
@@ -26,7 +26,7 @@
                     {
                       "attributes": {
                         "imageInfos": "",
-                        "richTextValue": "<h1>Nonprofit Solutions</h1><p>Pillar B: a pre-sales solution design for a regional adult literacy nonprofit, with a decision matrix and a cost comparison.</p>"
+                        "richTextValue": "<h1>Solution Architecture</h1><p>Pillar B: a pre-sales solution design for a regional adult literacy nonprofit, with a decision matrix and a cost comparison.</p>"
                       },
                       "definition": "community_builder:richTextEditor",
                       "id": "6a44653c-40ea-4e8d-9289-6ca1a9369971",
@@ -74,7 +74,7 @@
               "attributes": {
                 "customHeadTags": "",
                 "description": "Pillar B. Solution architecture for a nonprofit literacy program: solution design, decision matrix, cost comparison.",
-                "pageTitle": "Nonprofit Solutions | Ryan Bumstead",
+                "pageTitle": "Solution Architecture | Ryan Bumstead",
                 "recordId": "{!recordId}"
               },
               "definition": "community_builder:seoAssistant",

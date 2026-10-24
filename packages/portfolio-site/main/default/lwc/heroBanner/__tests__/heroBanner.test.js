@@ -1,9 +1,9 @@
 /**
  * @description       : Unit tests for heroBanner LWC: the static hero, the bio and profile links
  *                      from the ResumeController header wire, the live pillar cards with the
- *                      "coming" line, and the tour (Round 4 plan WS4b, logs 155 and 164).
- *                      c/pillarData is a fixed stand in (Round 5 plan, log 192). The card
- *                      headline numbers and images from ProjectCardController (Round 6 N7).
+ *                      "coming" line, and the tour.
+ *                      c/pillarData is a fixed stand in. The card
+ *                      headline numbers and images from ProjectCardController.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -14,10 +14,10 @@ import HeroBanner from "c/heroBanner";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import getPillarCards from "@salesforce/apex/ProjectCardController.getPillarCards";
 import { reset, setComingLetters } from "c/pillarData";
+import { trackEvent } from "c/analyticsService";
 
 // A fixed five pillar list, all live unless a test marks some as coming with
-// setComingLetters, so these tests pass before and after the pillarData flags change
-// (Round 5 plan, log 192).
+// setComingLetters, so these tests pass before and after the pillarData flags change.
 jest.mock(
   "c/pillarData",
   () => {
@@ -32,7 +32,7 @@ jest.mock(
       [
         "nonprofit-solutions",
         "B",
-        "Nonprofit Solutions",
+        "Solution Architecture",
         "Solution Architecture",
         ["Solution design", "Decision matrix"]
       ],
@@ -104,6 +104,19 @@ jest.mock(
       }
     };
   },
+  { virtual: true }
+);
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    __esModule: true,
+    trackEvent: jest.fn(),
+    EVENTS: {
+      CASE_STUDY_OPENED: "case_study_opened",
+      START_PATH_FOLLOWED: "start_path_followed"
+    }
+  }),
   { virtual: true }
 );
 
@@ -284,7 +297,7 @@ describe("c-hero-banner", () => {
   });
 
   describe("pillars", () => {
-    it("shows a card for every live pillar, in order, with K7 links", () => {
+    it("shows a card for every live pillar, in order, with their route links", () => {
       const element = render();
       const cards = element.shadowRoot.querySelectorAll(".pillar-card");
       expect(Array.from(cards).map((card) => card.dataset.key)).toEqual([
@@ -383,7 +396,7 @@ describe("c-hero-banner", () => {
         ],
         [
           "02",
-          "Nonprofit Solutions",
+          "Solution Architecture",
           "/portfolio/nonprofit-solutions",
           "1 minute"
         ],
@@ -570,7 +583,7 @@ describe("c-hero-banner", () => {
     });
   });
 
-  describe("start here paths (E2)", () => {
+  describe("start here paths", () => {
     it("offers three paths in order with their audiences and links", () => {
       const element = render();
       const root = element.shadowRoot;
@@ -645,7 +658,7 @@ describe("c-hero-banner", () => {
     });
   });
 
-  describe("F8 to F10 layout", () => {
+  describe("hero buttons, rule and photo layout", () => {
     it("draws no rule before the section labels", () => {
       const element = render();
       expect(element.shadowRoot.querySelector(".section-rule")).toBeNull();
@@ -670,7 +683,7 @@ describe("c-hero-banner", () => {
     });
   });
 
-  describe("case study disclosure (E3)", () => {
+  describe("case study disclosure", () => {
     const CASE_E = {
       pillar: "E",
       challenge: "  The challenge.  ",
@@ -792,6 +805,67 @@ describe("c-hero-banner", () => {
           .querySelector(".case-toggle")
           .getAttribute("aria-expanded")
       ).toBe("false");
+    });
+
+    it("sends case_study_opened with the pillar letter on open, not on close", async () => {
+      const element = render();
+      getPillarCards.emit([CASE_E]);
+      await flush();
+      const button = delivery(element).querySelector(".case-toggle");
+      button.click();
+      await flush();
+      expect(trackEvent).toHaveBeenCalledTimes(1);
+      expect(trackEvent).toHaveBeenCalledWith("case_study_opened", {
+        pillar: "E"
+      });
+      button.click();
+      await flush();
+      expect(trackEvent).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("start path analytics", () => {
+    it("sends start_path_followed with resume, pillars or api", async () => {
+      const element = render();
+      const root = element.shadowRoot;
+      root.querySelector('[data-id="pillars-heading"]').scrollIntoView =
+        jest.fn();
+      ["resume", "pillars", "api-lab"].forEach((key) => {
+        const link = root.querySelector(`[data-key="${key}"] .start-link`);
+        // Stop the plain links from navigating the test page.
+        link.addEventListener("click", (event) => event.preventDefault());
+        link.click();
+      });
+      await flush();
+      expect(trackEvent.mock.calls).toEqual([
+        ["start_path_followed", { path: "resume" }],
+        ["start_path_followed", { path: "pillars" }],
+        ["start_path_followed", { path: "api" }]
+      ]);
+    });
+  });
+
+  describe("Pillar B name", () => {
+    it("reads Solution Architecture in the badge, the link and the tour stop", () => {
+      const element = render();
+      const root = element.shadowRoot;
+      const card = root.querySelector(
+        '.pillar-card[data-key="nonprofit-solutions"]'
+      );
+      expect(text(card.querySelector(".pillar-eyebrow"))).toBe(
+        "Pillar B · Solution Architecture"
+      );
+      expect(text(card.querySelector(".pillar-link"))).toBe(
+        "Open Solution Architecture →"
+      );
+      expect(card.querySelector(".pillar-link").getAttribute("href")).toBe(
+        "/portfolio/nonprofit-solutions"
+      );
+      const stop = root.querySelector(
+        '.tour-step[data-key="nonprofit-solutions"] .tour-link'
+      );
+      expect(text(stop)).toBe("Solution Architecture");
+      expect(root.textContent).not.toContain("Nonprofit Solutions");
     });
   });
 });

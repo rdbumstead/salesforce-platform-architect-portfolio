@@ -1,6 +1,6 @@
 /**
- * @description       : Shared abuse guard for the public contact and testimonial forms (Round 7
- *                      plan contract P3, ADR-031). It drops a submission silently when the
+ * @description       : Shared abuse guard for the public contact and testimonial forms
+ *                      (ADR-031). It drops a submission silently when the
  *                      honeypot is filled, when the form was sent faster than a person can type,
  *                      or when the email, its domain or the text matches an active
  *                      Submission_Block__c row. A silent drop shows the visitor the normal thanks
@@ -29,6 +29,8 @@ public without sharing class SubmissionGuard {
   public static final String REASON_BLOCKED = 'blocked';
   public static final String REASON_RATE = 'rate-limited';
 
+  // Code defaults. The Contact_Min_Elapsed_Ms, Contact_Daily_Cap and
+  // Testimonial_Rate_Per_Minute settings give the values in force.
   @TestVisible
   private static final Integer MIN_ELAPSED_MS = 3000;
   @TestVisible
@@ -74,7 +76,11 @@ public without sharing class SubmissionGuard {
     if (String.isNotBlank(req.honeypot)) {
       return drop(decision, REASON_HONEYPOT);
     }
-    if (req.elapsedMs == null || req.elapsedMs < MIN_ELAPSED_MS) {
+    Integer minElapsedMs = PortfolioSettings.getInteger(
+      'Contact_Min_Elapsed_Ms',
+      MIN_ELAPSED_MS
+    );
+    if (req.elapsedMs == null || req.elapsedMs < minElapsedMs) {
       return drop(decision, REASON_TOO_FAST);
     }
     List<Submission_Block__c> hits = matchingBlocks(req);
@@ -199,11 +205,18 @@ public without sharing class SubmissionGuard {
         FROM Lead
         WHERE LeadSource = :LEAD_SOURCE AND CreatedDate >= :since
       ];
-      return today >= CONTACT_DAILY_CAP;
+      return today >=
+        PortfolioSettings.getInteger('Contact_Daily_Cap', CONTACT_DAILY_CAP);
     }
     if (formKey == FORM_TESTIMONIAL) {
       ApiRequestContext.RateDecision rate = ApiRequestContext.rateLimiter()
-        .checkKey(TESTIMONIAL_RATE_KEY, TESTIMONIAL_RATE_PER_MINUTE);
+        .checkKey(
+          TESTIMONIAL_RATE_KEY,
+          PortfolioSettings.getInteger(
+            'Testimonial_Rate_Per_Minute',
+            TESTIMONIAL_RATE_PER_MINUTE
+          )
+        );
       return !rate.allowed;
     }
     return false;

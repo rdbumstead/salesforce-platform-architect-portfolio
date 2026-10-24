@@ -1,7 +1,7 @@
 /**
  * @description       : Implementation of the Portfolio Service. getConfig() returns the single
  *                      Portfolio_Config__mdt record, whatever its DeveloperName, so the org's
- *                      Ryan_Bumstead record is found (Round 3 plan, pillar-e-design T4).
+ *                      Ryan_Bumstead record is found.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

@@ -98,7 +98,7 @@ global with sharing class SAPIProject {
 
   /**
    * @description Transforms Project__c records to the Project schema in salesforce-sapi.yaml.
-   *              Every schema key is present, null when the field is empty (decision D4).
+   *              Every schema key is present, null when the field is empty.
    */
   @TestVisible
   private static List<Map<String, Object>> transformProjects(

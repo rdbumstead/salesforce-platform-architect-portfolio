@@ -1,6 +1,6 @@
 /**
  * @description       : Tests for SubmissionBlockAction, the work behind the Block sender quick
- *                      action on Lead (Round 7 plan contract P3). The action saves in user mode,
+ *                      action on Lead. The action saves in user mode,
  *                      so every test runs as a user it makes itself, with Portfolio_Admin assigned
  *                      inside the test. Nothing depends on what the org has assigned.
  * @author            : Ryan Bumstead

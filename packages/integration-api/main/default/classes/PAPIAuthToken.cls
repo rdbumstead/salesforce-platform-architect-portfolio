@@ -32,7 +32,7 @@ global with sharing class PAPIAuthToken {
     }
 
     // The token callout runs inside requestToken, before ok()/error() write the
-    // rate-limit count (contract C2).
+    // rate-limit count, so no DML comes before the callout.
     TokenExchangeService.Result result = TokenExchangeService.requestToken(
       attempt
     );

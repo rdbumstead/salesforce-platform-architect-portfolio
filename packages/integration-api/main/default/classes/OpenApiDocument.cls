@@ -1,5 +1,5 @@
 /**
- * @description       : Serves the machine readable API specs (audit B4, SAS 777) at
+ * @description       : Serves the machine readable API specs at
  *                      /services/apexrest/openapi.json. ?spec=papi (the default) returns the
  *                      Experience API, ?spec=sapi the System API. The body is the PAPI_OpenAPI or
  *                      SAPI_OpenAPI static resource, which scripts/sync-specs.js generates from

@@ -1,7 +1,7 @@
 /**
- * @description       : Tests for ProjectCardController (Round 6 plan N7, Round 7 plan P5).
+ * @description       : Tests for ProjectCardController.
  *                      Builds its own Project__c and Pipeline_Run__c rows, because TestFactory
- *                      is not edited this round.
+ *                      is shared and stays unchanged.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

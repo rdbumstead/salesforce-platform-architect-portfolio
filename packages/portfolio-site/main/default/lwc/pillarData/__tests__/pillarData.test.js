@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the pillarData service module (Round 4 plan, contract L3).
+ * @description       : Unit tests for the pillarData service module.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -18,7 +18,7 @@ jest.mock(
   { virtual: true }
 );
 
-// Route URLs from the Round 3 plan, K7. Short SAS names as in the mockup and heroBanner.
+// Route URLs as each route's urlPrefix in the site bundle. Short SAS names as in the mockup and heroBanner.
 const EXPECTED = [
   [
     "A",
@@ -29,7 +29,7 @@ const EXPECTED = [
   ],
   [
     "B",
-    "Nonprofit Solutions",
+    "Solution Architecture",
     "Solution Architecture",
     "/portfolio/nonprofit-solutions",
     false
@@ -46,7 +46,7 @@ const EXPECTED = [
 ];
 
 describe("c/pillarData", () => {
-  it("lists the five pillars A to E in order with K7 hrefs", () => {
+  it("lists the five pillars A to E in order with their route hrefs", () => {
     expect(PILLARS).toHaveLength(5);
     PILLARS.forEach((pillar, index) => {
       const [letter, pageLabel, sasName, href, inProgress] = EXPECTED[index];
@@ -96,7 +96,7 @@ describe("c/pillarData", () => {
     expect(pillarByLetter(3)).toBeUndefined();
   });
 
-  it("has all five pillars live and none coming (Round 5 plan, M9)", () => {
+  it("has all five pillars live and none coming", () => {
     expect(LIVE_PILLARS.map((pillar) => pillar.letter)).toEqual([
       "A",
       "B",
@@ -119,7 +119,7 @@ describe("c/pillarData", () => {
     );
   });
 
-  it("keeps the pillar A and B tour lines and summaries from the Round 5 plan", () => {
+  it("keeps the pillar A and B tour lines and summaries", () => {
     expect(pillarByLetter("A").tour).toBe(
       "See how a business process maps to its data model, drawn live from the org."
     );

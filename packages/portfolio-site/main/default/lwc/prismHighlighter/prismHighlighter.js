@@ -1,5 +1,5 @@
 /**
- * @description       : The site's one Prism module (Round 7 contract P1). loadPrism loads the
+ * @description       : The site's one Prism module. loadPrism loads the
  *                      Prism_JS static resource (prism.js and prism.css) once per page and hands
  *                      every caller the same Prism object, or undefined when the resource fails.
  *                      highlight turns code into HTML built only from escaped text: Prism tokens

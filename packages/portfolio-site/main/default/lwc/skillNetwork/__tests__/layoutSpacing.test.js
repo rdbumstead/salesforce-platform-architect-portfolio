@@ -1,5 +1,5 @@
 /**
- * @description       : Spacing measure for the skills graph (Round 6 plan N3). Mounts the real component on
+ * @description       : Spacing measure for the skills graph. Mounts the real component on
  *                      a fixture shaped like production (59 skills in 12 categories, 11 roles, 5 projects,
  *                      58 role links and 17 project links, read only from production with record Ids
  *                      replaced and role and project names replaced by placeholders of the same length),
@@ -14,7 +14,7 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import SkillNetwork from "c/skillNetwork";
-// Same module as the component, which the Round 3 plan pins.
+// Same module as the component, which the site pins.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { graphql } from "lightning/uiGraphQLApi";
 import { loadGraphEngine, layoutGraph } from "c/graphEngine";
@@ -321,7 +321,7 @@ describe("c-skill-network graph spacing on production shaped data", () => {
     jest.clearAllMocks();
   });
 
-  // Before Round 6 (960 by 680, charge -25, padding 2, category ring 0.25, no label nodes):
+  // Before the spacing was tuned (960 by 680, charge -25, padding 2, category ring 0.25, no label nodes):
   // cluster gap 34.9, 28 labels on other nodes, 67 label overlaps over all hovers, 13 at worst.
   it("measures the layout the page draws", async () => {
     const result = await measure();

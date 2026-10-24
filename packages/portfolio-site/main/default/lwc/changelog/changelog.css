@@ -1,5 +1,5 @@
 /*
- * Round 4 plan L1: colours, fonts, radii and spacing come only from the --pf- design
+ * Colours, fonts, radii and spacing come only from the --pf- design
  * tokens, so the feed follows the light and dark themes. Every element that sets a
  * background also sets its text colour. The sha and the age label are metrics, so they
  * use the mono font.

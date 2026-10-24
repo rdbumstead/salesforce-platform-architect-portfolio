@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the testimonialSubmit sentence builder (Round 7 B9).
+ * @description       : Unit tests for the testimonialSubmit sentence builder.
  *                      getFragments is a mocked wire adapter fed with fragments read from the
  *                      Testimonial_Fragment__mdt records in source, and submitTestimonial is a
  *                      mocked imperative call. The drift tests read the controller source so the
@@ -16,6 +16,7 @@ import TestimonialSubmit, {
   MAX_NAME_LENGTH,
   MAX_NOTE_LENGTH,
   RELATIONSHIPS,
+  RATE_LIMITED_TEXT,
   errorMessage,
   composeSentence
 } from "c/testimonialSubmit";
@@ -429,5 +430,102 @@ describe("c-testimonial-submit", () => {
     for (const f of FRAGMENTS) {
       expect(f.text).not.toMatch(/\b(they|them|their|he|him|his)\b/i);
     }
+  });
+
+  it("mirrors the rate limit message in TestimonialController", () => {
+    const source = readFileSync(
+      join(DEFAULT_DIR, "classes", "TestimonialController.cls"),
+      "utf8"
+    );
+    expect(source).toContain(`RATE_LIMITED_MESSAGE = '${RATE_LIMITED_TEXT}';`);
+  });
+
+  describe("analytics", () => {
+    beforeEach(() => {
+      window.gtag = jest.fn();
+    });
+
+    afterEach(() => {
+      delete window.gtag;
+    });
+
+    function sentParams() {
+      return window.gtag.mock.calls
+        .filter((call) => call[1] === "testimonial_submitted")
+        .map((call) => call[2]);
+    }
+
+    it("sends the vibe and accepted, and nothing the visitor typed or chose", async () => {
+      submitTestimonial.mockResolvedValue(undefined);
+      const element = await ready();
+      await fillValid(element);
+      await setField(element, "note", "A private note");
+      await submit(element);
+      await flushPromises();
+
+      expect(sentParams()).toEqual([
+        { vibe: "Professional", outcome: "accepted" }
+      ]);
+      const everything = JSON.stringify(window.gtag.mock.calls);
+      for (const typed of [
+        "Ada",
+        "CTO",
+        "Peer",
+        "Professional_Strength_01",
+        "Professional_Outcome_01",
+        "private note"
+      ]) {
+        expect(everything).not.toContain(typed);
+      }
+    });
+
+    it("sends the Casual vibe when the switch is on", async () => {
+      submitTestimonial.mockResolvedValue(undefined);
+      const element = await ready();
+      q(element, '[data-id="vibe-toggle"]').click();
+      await flushPromises();
+      await setField(element, "authorName", "Ada");
+      await setField(element, "relationship", "Peer");
+      const strength = FRAGMENTS.find(
+        (f) => f.vibe === "Casual" && f.slot === "Strength"
+      );
+      const outcome = FRAGMENTS.find(
+        (f) => f.vibe === "Casual" && f.slot === "Outcome"
+      );
+      await setField(element, "strength", strength.id);
+      await setField(element, "outcome", outcome.id);
+      await submit(element);
+      await flushPromises();
+      expect(sentParams()).toEqual([{ vibe: "Casual", outcome: "accepted" }]);
+    });
+
+    it("sends rate_limited for the rate limit and invalid for other refusals", async () => {
+      submitTestimonial.mockRejectedValueOnce({
+        body: { message: RATE_LIMITED_TEXT }
+      });
+      const element = await ready();
+      await fillValid(element);
+      await submit(element);
+      await flushPromises();
+
+      submitTestimonial.mockRejectedValueOnce({
+        body: { message: "Choose a strength from the list." }
+      });
+      await submit(element);
+      await flushPromises();
+
+      expect(sentParams()).toEqual([
+        { vibe: "Professional", outcome: "rate_limited" },
+        { vibe: "Professional", outcome: "invalid" }
+      ]);
+    });
+
+    it("sends nothing while the form is not valid", async () => {
+      const element = await ready();
+      await submit(element);
+      await flushPromises();
+      expect(submitTestimonial).not.toHaveBeenCalled();
+      expect(sentParams()).toEqual([]);
+    });
   });
 });

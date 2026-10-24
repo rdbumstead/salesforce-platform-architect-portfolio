@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for DeliveryController (Round 3 plan K3). Guest tests run as the
+ * @description       : Tests for DeliveryController. Guest tests run as the
  *                      real Portfolio1 site guest user.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -271,7 +271,7 @@ private class DeliveryControllerTest {
     Assert.areEqual('SPAP-903', roadmap.items[0].key, 'Key');
   }
 
-  // --- Round 4 plan L10: the toggle and the breaker ---
+  // --- The simulation toggle and the breaker ---
 
   private static void openBreaker(String key) {
     for (Integer i = 0; i < CircuitBreaker.FAILURE_THRESHOLD; i++) {
@@ -464,5 +464,33 @@ private class DeliveryControllerTest {
   @isTest
   static void parseTimestampReturnsNullForText() {
     Assert.isNull(DeliveryController.parseTimestamp('yesterday'), 'Not a time');
+  }
+
+  @isTest
+  static void roadmapServesTheShippedColumnLimit() {
+    insertJiraRow(roadmapPayload('SPAP-902'), 5);
+    DeliveryController.nowOverride = NOW;
+
+    Test.startTest();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
+    Test.stopTest();
+
+    Assert.areEqual(
+      DeliveryController.ROADMAP_COLUMN_LIMIT,
+      feed.columnLimit,
+      'The shipped record matches the code default'
+    );
+  }
+
+  @isTest
+  static void roadmapServesTheColumnLimitSetting() {
+    PortfolioSettings.overrideNumber('Roadmap_Column_Limit', 4);
+
+    Test.startTest();
+    DeliveryController.RoadmapFeed feed = DeliveryController.getRoadmap(null);
+    Test.stopTest();
+
+    Assert.areEqual(4, feed.columnLimit, 'Served even with an empty feed');
+    Assert.areEqual(DeliveryController.STATUS_EMPTY, feed.status, 'Status');
   }
 }

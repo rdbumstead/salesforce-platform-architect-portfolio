@@ -133,7 +133,7 @@ Phase 8 – 2027-2028 (Design Complete)
 | :---------- | :--------------------------------------------- | :---------------------------------------------------------------------- |
 | **Phase 8** | **Design Complete • Implementation 2027-2028** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
 
-- AWS Lambda Polyglot Gateway (Function URL) — "Door 2"
+- AWS Lambda Polyglot Gateway (Function URL), "Door 2"
 - Enterprise API governance layer
 - Resume Engine offload
 
@@ -323,6 +323,7 @@ The following matrix records the object permissions in the two permission sets i
 | **`Github_Cache__c`, `Jira_Cache__c`** | CRED / Full    | **No object permission.** `DeliveryController.CacheSelector` reads the newest row in system mode                                                                                                                                                                                                                                                                          | Read-Only              |
 | **`Contact`, `Account`**               | CRED / Full    | **No object permission.** `ResumeController.ResumeSelector` reads the owner's Contact (name, title, objective and profile links, never email, phone or address) and employer names in system mode                                                                                                                                                                         | Read-Only              |
 | **`Portfolio_Config__mdt`**            | CRED / Full    | No custom metadata grant. Apex reads it and returns selected fields only (`FooterController.getLinks` returns the GitHub and LinkedIn URLs)                                                                                                                                                                                                                               | Read in Apex           |
+| **`Portfolio_Setting__mdt`**           | CRED / Full    | No custom metadata grant. `PortfolioSettings` reads the records with `getAll()` and returns one value at a time to its callers                                                                                                                                                                                                                                            |
 | **`API_Access_Request__c`**            | CRED / Full    | **No Access.** `TokenExchangeService.AuditStore` writes one row per token request in system mode                                                                                                                                                                                                                                                                          | No Access              |
 
 > [!NOTE]
@@ -454,9 +455,9 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 - **Tooling:** Atlassian Jira + GitHub Actions (CI/CD).
 - **Technical Detail:** For the refresh jobs, the caches and the governance event, refer to the **[Technical Guide: Jira Integration](./04-Technical-Guide.md#12-jira-integration-roadmap)** and **[Executable Governance](./04-Technical-Guide.md#25-c-smart-checklist-executable-governance)**.
 - **Mechanism:** the CI/CD pipeline publishes the `Governance_Event__e` platform event, an Apex trigger persists it as a `Pipeline_Run__c` record, and the `c-smart-checklist` component reads the result through cacheable Apex ([ADR-019 Round 4 amendment](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-21-round-4)).
-- **Workflow:** after a production deploy (`deploy.yml`) and after the daily heartbeat (`keep-alive.yml`), the workflow's existing JWT user publishes one event with the run's status, id, URL, commit and time. The trigger upserts `Pipeline_Run__c` by `Run_Key__c`, so a replayed event changes nothing. The component reads `GovernanceController.getPipelineStatus()` when the page is viewed and again when the tab becomes visible. There is no timer and no polling. Each item shows its evidence (the commit linking to the run, and the time), and an item with no data shows "No signal yet".
+- **Workflow:** after a production deploy (`deploy.yml`) and after the daily heartbeat (`keep-alive.yml`), the workflow's existing JWT user publishes one event with the run's status, id, URL, commit and time. The trigger upserts `Pipeline_Run__c` by `Run_Key__c`, so a replayed event changes nothing. The component reads `GovernanceController.getPipelineStatus()` when the page is viewed and again when the tab becomes visible. There is no timer and no polling. Each item shows its evidence (the commit linking to the run, and the time), and an item with no data shows "No signal yet". A third workflow, the Live Smoke Test that runs after every deploy that changed production, publishes only on a failure, as workflow `smoke`. The checklist does not read those rows ([ADR-019 amendment](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-23)).
 - **Page text:** since Round 7 the Delivery page's introduction describes this in the present tense: after every production deploy and every daily heartbeat the pipeline publishes the result, passed or failed, and the checklist says so when a run failed or is out of date (`sfdc_cms__view/Delivery/content.json`).
-- **What it claims:** the production deploy is green, the heartbeat ran in the last 26 hours, and the integration caches are under 30 minutes old.
+- **What it claims:** the production deploy is green, the org heartbeat ran today (within 26 hours, the `Heartbeat_Stale_Hours` setting), and the integration caches are under 30 minutes old (`Governance_Cache_Minutes`).
 - **Why no browser subscription:** `lightning-emp-api` is unsupported in LWR sites, and each subscribed browser would count against the org's 20 concurrent streaming clients. The event-driven part is server-side: publish, an asynchronous subscriber and idempotent handling of a replayed event.
 - **Roadmap and changelog:** `c-roadmap-viewer` and `c-changelog` read cached Jira and GitHub data through `DeliveryController` (cacheable Apex). Scheduled Queueable jobs refresh the caches every 15 minutes, so a visitor never triggers a callout ([ADR-007 Round 4 amendment](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-round-4)). The roadmap shows only `SPAP` issues labelled `portfolio-roadmap`. The site's CDN caching of guest Apex stays off (owner decision E9), so every visit reads the org.
 - **Architectural Signal:** event-driven architecture with a server-side subscriber, and external system integration through Named Credentials.
@@ -484,7 +485,9 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-hero-banner`:** The hero, three "start here" paths (recruiters to the resume, architects to the pillars, developers to the API Lab), the pillar cards with computed numbers and an optional case study, and the 5 minute tour ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
 - **`c-testimonial-submit`:** The accessible "Mad Libs" sentence builder, gated by vibe ([ADR-005 amendment](../adr/005-gamified-testimonial-ui.md)).
 - **`c-testimonial-wall`:** Approved testimonials on `/testimonials` with a "Professional / All" filter. It renders nothing when there are none.
-- **`c-contact-form`:** The contact form on the home page, saved as a Lead ([ADR-031](../adr/031-native-contact-form.md)).
+- **`c-experience-timeline`:** The home page timeline with Work, Education and Certifications tabs, each showing its first entries up to the `Timeline_Tab_Limit` setting and then a View all button ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
+- **`c-contact-form`:** The contact form on the `/contact` page, saved as a Lead ([ADR-031](../adr/031-native-contact-form.md)).
+- **`c-contact-call`:** The home page's one line "Get in touch" prompt with a link to `/contact`. It sends an old `/#contact` address on to `/contact`.
 - **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invoke`, which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3).
 - **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
 - **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with D3 that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
@@ -492,7 +495,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-view-source`:** The View source button and dialog on the showcase components. It reads cached GitHub source through `SourceController.getSourceFiles` and never calls GitHub ([Technical Guide §2.14](./04-Technical-Guide.md#214-view-source-c-view-source)).
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
 - **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category, each capped at 8 cards with its own "Show all N" button. It makes no callout.
-- **`c-footer`:** Contains the GitHub Actions deploy badge, the Glass Box telemetry (section 9) and a Contact link to the home page's `#contact` section.
+- **`c-footer`:** Contains the GitHub Actions deploy badge, the Glass Box telemetry (section 9) and a Contact link to the `/contact` page.
 - **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
 - **`c-schema-visualizer`:** The live ERD on the Pillar A page, drawn with the shared D3 engine (section 5.1).
 - **`c-project-asset-gallery`:** The image, document, video and link gallery for any pillar's project, from `Project_Asset__c`.
@@ -602,7 +605,7 @@ The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box T
 
 ### Appendix A: Engineering Implementation Notes
 
-- **A.1 CI/CD Pipeline Configuration:** Authentication via Connected App with "Use Digital Signatures." Stores keys in GitHub Secrets. Use pr.yml for quality gates and deploy.yml for production push.
+- **A.1 CI/CD Pipeline Configuration:** Authentication via Connected App with "Use Digital Signatures." Stores keys in GitHub Secrets. Use pr.yml for quality gates and deploy.yml for production push. `pr.yml` also runs the internal reference gate (`scripts/check-internal-refs.js`) in `quality-check`, gives the scratch site guest `Portfolio_Guest` before the tests, and validates the PR's delta check only against production with the local tests. `deploy.yml` runs the read only Live Smoke Test (`smoke.yml`, `scripts/live-smoke.js`) after a deploy that changed production, and has a hand run destructive mode for a manifest committed under `manifest/destructive/` ([Maintenance Guide §3.2](./05-Maintenance-Guide.md#32-pipeline-triggers)).
 - **A.2 CORS & Security:** Whitelist custom domain, enable LWS. The site runs on **Relaxed CSP** (owner decision, 2026-10-21), because the GA4 tag needs a third-party script host and inline script. Relaxed CSP lets inline scripts and `eval()` run on the site, so only reviewed head markup may add scripts. Third-party hosts are trusted in source: `GitHub_Badge` for the deploy badge and the GA4 image and connect hosts as CSP trusted sites, and `https://www.googletagmanager.com` for scripts in the site bundle's `sfdc_cms__trustedSites/trustedSites/content.json` (Experience Builder "Trusted Sites for Scripts"), which deploys with the site. Log retention policy: Zero-Persistence.
 - **A.3 Code Reusability:** One shared Prism module, `c/prismHighlighter`, which loads `Prism_JS` once per page. Logging goes through one seam, `PortfolioLog`, which writes to Nebula Logger when the owner has installed it and to debug logs otherwise ([ADR-013 Round 4 amendment](../adr/013-structured-logging-framework-nebula-logger.md#amendment-2026-10-21-round-4)).
 - **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches commits to the `Github_Cache__c` custom object, and the source files that View source shows to `Source_Cache__c` (one row per path, each read at most once a day by `SourceCacheRefreshJob`). Refreshed every 15 minutes by `GitHubCacheRefreshJob` (Queueable, enqueued by `IntegrationCacheRefreshScheduler`).
@@ -613,8 +616,8 @@ The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box T
 - **A.9 Advanced Visualization Strategy:**
   - **Mobile Guardrail:** on `FORM_FACTOR` `Small` or a viewport under 768 px the skills page shows its matrix and the ERD its accessible list, and neither requests the graph engine.
   - **Lazy Loading:** `c/graphEngine.loadGraphEngine` loads the `D3_Library` static resource through `loadScript` the first time a graph view opens, once per page. A failed load is not cached.
-  - **Library Version:** d3-force 3.0.0 with d3-dispatch, d3-quadtree and d3-timer 3.0.1, and since Round 7 d3-selection, d3-color, d3-interpolate, d3-ease, d3-transition, d3-drag and d3-zoom for pan, zoom and node drag, 81,502 bytes in all (G6 was removed in Round 5).
-  - **Pan, zoom and drag:** the skills graph pans, zooms from 1x to 4x and lets a node be dragged, with Zoom in, Zoom out and Reset view buttons and a polite zoom announcement (Technical Guide §2.1).
+  - **Library Version:** d3-force 3.0.0 with d3-dispatch, d3-quadtree and d3-timer 3.0.1, and then d3-selection, d3-color, d3-interpolate, d3-ease, d3-transition, d3-drag and d3-zoom for pan, zoom and node drag, 81,482 bytes in source (G6 was removed earlier).
+  - **Pan, zoom and drag:** the skills graph pans at any zoom by a background drag or the arrow keys on the focused graph, up to 120 units past its edge, zooms from 1x to 4x with Ctrl and the wheel or a pinch while a plain wheel scrolls the page, and lets a node be dragged, with Zoom in, Zoom out and Reset view buttons and a polite zoom announcement (Technical Guide §2.1).
 
 ### Appendix B: API Specification (OpenAPI/Swagger)
 
@@ -764,7 +767,8 @@ The `/resume/generate?persona=architect` endpoint applies server-side filtering 
 1. Reads up to 10 roles, current first, each with its highlights in `Sort_Order__c` order (`PAPIResume`)
 2. Keeps a highlight when its multi-select `Persona_Tag__c` contains the persona. The values are Admin, Developer and Architect. There is no General value, and a blank persona keeps every highlight
 3. Prints at most 5 highlights per role
-4. Formats as ATS-compliant plain text with proper spacing and bullet points
+4. Prints the skills linked to the printed roles, each once, by category. With a persona, a skill prints when its `Persona_Tag__c` includes the persona or it has no tag, so an untagged skill prints under every persona. The site's resume uses the same rule ([ADR-009 amendment](../adr/009-granular-resume-data-model.md#amendment-2026-10-23))
+5. Formats as ATS-compliant plain text with proper spacing and bullet points
 
 The per-persona sort fields (`Admin_Sort_Order__c`, `Developer_Sort_Order__c`, `Architect_Sort_Order__c`) exist on `Experience_Highlight__c` and are read by the site's resume (`ResumeController`), not by this endpoint.
 
@@ -786,7 +790,7 @@ The `/testimonials/feed` endpoint applies business logic (`PAPITestimonialFeed.q
 
 #### B.3 API Documentation Access
 
-- **Interactive Documentation:** the Redoc 2.5.4 bundle (`Redoc_Script` static resource) renders both specifications on a full-width page at `/api-lab/reference`, with a SAPI and PAPI switch, linked from the API Lab. The menu and deep links (`#tag/...`, `#operation/...`, `?spec=`) land on their section below the header, and focus moves there. Redoc does not render in WebKit (Safari), so after 15 seconds the page says so and links the hosted documentation.
+- **Interactive Documentation:** the Redoc 2.5.4 bundle (`Redoc_Script` static resource) renders both specifications on a full-width page at `/api-lab/reference`, with a SAPI and PAPI switch, linked from the API Lab. Deep links (`#tag/...`, `#operation/...`, `?spec=`) land on their section below the header. On desktop the menu sticks below the header and the switch and scrolls on its own. A tag row opens and closes and keeps focus, and an operation row moves focus to its section (Technical Guide §2.15). Redoc does not render in WebKit (Safari), so after 15 seconds the page says so and links the hosted documentation.
 - **Machine-Readable Spec:** `GET https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/openapi.json` returns the Process API's OpenAPI 3 document, and `?spec=sapi` the System API's (`OpenApiDocument`). It needs no token, answers with `Cache-Control: public, max-age=3600`, and returns 400 for an unknown spec. The Apex mapping is `/openapi`, because Salesforce reads a `.json` suffix as the response format. The body is the `PAPI_OpenAPI` or `SAPI_OpenAPI` static resource, generated from the same YAML the API reference shows
 - **Developer Console:** Custom `c-api-tester` LWC component provides live endpoint testing. It calls an Apex proxy (`ApiLabController`) that invokes the APIs through the `Portfolio_API` Named Credential, so no secret reaches the browser. Responses are syntax highlighted and checked against the path's OpenAPI response schema (documented keys present, missing, and not in the spec). Query parameters are controls built from the spec, and the path list comes from the specs' GET operations ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
 - **Evaluator Access:** `POST /papi/v1/auth/token` returns a short-lived Bearer token for external testing ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
@@ -892,9 +896,9 @@ The following policies were configured in API Manager to demonstrate enterprise 
    - Rejection Response: 401 Unauthorized for missing or invalid credentials
 
 2. **SLA-Based Rate Limiting**
-   - Free Tier: 100 req/hr (Automatic Approval) — Best for portfolio demos and testing.
-   - Standard Tier: 1,000 req/hr (Manual Review) — Intended for production integrations.
-   - Premium Tier: 10,000 req/hr (Contract Required) — Reserved for high-volume enterprise consumers.
+   - Free Tier: 100 req/hr (Automatic Approval). Best for portfolio demos and testing.
+   - Standard Tier: 1,000 req/hr (Manual Review). Intended for production integrations.
+   - Premium Tier: 10,000 req/hr (Contract Required). Reserved for high-volume enterprise consumers.
 
 3. **CORS Policy**
    - Allowed Origins: https://ryanbumstead.com, http://localhost:\* (dev only)
@@ -1051,6 +1055,19 @@ No custom index is defined in source or requested from Salesforce Support. The p
 - **Status values:** the `Status__c` picklist values use an en dash, for example `Live – In Production` and `Live – Demo / Reference`, so a query must use that character exactly.
 - **Testimonials:** reads filter on `Approved__c = true`, and `Context__c` is never filtered.
 - **When to revisit:** if a table grew to thousands of rows, a custom index on `Project__c.Pillar__c` would be the first request.
+
+#### D.13 Object: `Portfolio_Setting__mdt` (Custom Metadata)
+
+One operational value per record, read by `PortfolioSettings` with the code default as the fallback ([ADR-032](../adr/032-operational-settings-in-custom-metadata.md), [Technical Guide §1.6](./04-Technical-Guide.md#16-operational-settings-portfolio_setting__mdt)).
+
+| Field Label      | API Name          | Type          | Length | Required | Description                                             |
+| :--------------- | :---------------- | :------------ | :----- | :------- | :------------------------------------------------------ |
+| **Label**        | `MasterLabel`     | Text          | 40     | Yes      | The setting's plain name.                               |
+| **Number Value** | `Number_Value__c` | Number (18,4) | -      | No       | The value of a number setting.                          |
+| **Text Value**   | `Text_Value__c`   | Text          | 255    | No       | The value of a text setting.                            |
+| **Min Value**    | `Min_Value__c`    | Number (18,4) | -      | No       | Lowest safe number. Below it the code default applies.  |
+| **Max Value**    | `Max_Value__c`    | Number (18,4) | -      | No       | Highest safe number. Above it the code default applies. |
+| **Description**  | `Description__c`  | Text Area     | 255    | No       | What the setting controls and its safe range.           |
 
 ### Appendix E: Environment Strategy
 

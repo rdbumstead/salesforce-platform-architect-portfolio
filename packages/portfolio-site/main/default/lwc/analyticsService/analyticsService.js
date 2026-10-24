@@ -1,8 +1,13 @@
 /**
- * @description       : The one GA4 event list and the one way to send an event (Round 4 plan L4,
- *                      pillars-design T8). trackEvent does nothing when window.gtag is absent
- *                      (no tag on the page, a blocker, Jest) and never throws, so analytics can
- *                      never break a component. Round 5 appends to EVENTS and edits nothing else.
+ * @description       : The one GA4 event list and the one way to send an event.
+ *                      A component cannot see the page's window.gtag: on the site it reads as
+ *                      undefined inside the component sandbox. So trackEvent dispatches a
+ *                      cancelable portfolio-analytics event on the document with the name and
+ *                      params, and the site's head script, which can see gtag, sends it and
+ *                      cancels the event to say so. When no listener takes it (no head script,
+ *                      Jest), trackEvent calls window.gtag directly if one is there. It does
+ *                      nothing when neither is present and never throws, so analytics can never
+ *                      break a component. New events are appended to EVENTS.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -30,8 +35,38 @@ export const EVENTS = Object.freeze({
   GALLERY_ASSET_OPENED: "gallery_asset_opened", // type, pillar
   MATRIX_WEIGHT_CHANGED: "matrix_weight_changed", // criterion
   MATRIX_RESET: "matrix_reset", // none
-  TIMELINE_TAB_CHANGED: "timeline_tab_changed" // tab
+  TIMELINE_TAB_CHANGED: "timeline_tab_changed", // tab
+  VIEW_SOURCE_OPENED: "view_source_opened", // source_key
+  VIEW_SOURCE_FILE_SELECTED: "view_source_file_selected", // source_key, file_label
+  CONTACT_FORM_SUBMITTED: "contact_form_submitted", // outcome: accepted, rate_limited or invalid
+  TESTIMONIAL_SUBMITTED: "testimonial_submitted", // vibe, outcome
+  TESTIMONIALS_FILTERED: "testimonials_filtered", // filter
+  CASE_STUDY_OPENED: "case_study_opened", // pillar
+  START_PATH_FOLLOWED: "start_path_followed", // path: resume, pillars or api
+  GRAPH_ZOOM_USED: "graph_zoom_used", // control: in, out, reset, wheel or keyboard
+  BACK_TO_TOP_USED: "back_to_top_used", // none
+  TIMELINE_EXPANDED: "timeline_expanded" // tab, expanded
 });
+
+/** The document event the site's head script listens for and passes to gtag. */
+export const BRIDGE_EVENT = "portfolio-analytics";
+
+/**
+ * Hands the event to the head script's listener.
+ * @param {string} name The event name.
+ * @param {object} payload The event parameters, already copied.
+ * @returns {boolean} True when a listener sent it and cancelled the event.
+ */
+function sendThroughBridge(name, payload) {
+  if (typeof document === "undefined" || typeof CustomEvent !== "function") {
+    return false;
+  }
+  const event = new CustomEvent(BRIDGE_EVENT, {
+    cancelable: true,
+    detail: { name, params: payload }
+  });
+  return document.dispatchEvent(event) === false;
+}
 
 /**
  * Sends one GA4 event when the tag is on the page.
@@ -44,14 +79,17 @@ export function trackEvent(name, params) {
     if (typeof name !== "string" || name.length === 0) {
       return false;
     }
-    const gtag = typeof window === "undefined" ? undefined : window.gtag;
-    if (typeof gtag !== "function") {
-      return false;
-    }
     const payload =
       params && typeof params === "object" && !Array.isArray(params)
         ? { ...params }
         : {};
+    if (sendThroughBridge(name, payload)) {
+      return true;
+    }
+    const gtag = typeof window === "undefined" ? undefined : window.gtag;
+    if (typeof gtag !== "function") {
+      return false;
+    }
     gtag("event", name, payload);
     return true;
   } catch {

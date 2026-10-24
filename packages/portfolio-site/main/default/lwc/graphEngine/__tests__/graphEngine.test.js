@@ -1,10 +1,10 @@
 /**
- * @description       : Unit tests for the graphEngine service module (Round 5 plan M1). Covers the
+ * @description       : Unit tests for the graphEngine service module. Covers the
  *                      one load per page, a failed load that is not cached, the D3_Library resource
  *                      itself (read from disk and run in a vm context with a fake window), and
  *                      layoutGraph on the real d3-force build: inside the box, anchors pull groups
- *                      apart, the same input gives the same output, inputs are not changed. Round 7
- *                      (audit E1): the seven added builds, and attachPanZoom and attachNodeDrag on
+ *                      apart, the same input gives the same output, inputs are not changed. Also
+ *                      the seven builds added for pan, zoom and drag, and attachPanZoom and attachNodeDrag on
  *                      the real d3-zoom and d3-drag builds.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -33,8 +33,8 @@ const RESOURCE_PATH = path.join(
   "D3_Library.js"
 );
 
-// The official UMD builds: the first four as logged by WS1, the last seven added in Round 7
-// (audit E1). Bytes and SHA-256 of each dist/<name>.min.js file from its npm tarball.
+// The official UMD builds: the first four for the force layout, the last seven added for pan,
+// zoom and drag. Bytes and SHA-256 of each dist/<name>.min.js file from its npm tarball.
 const MODULES = [
   {
     banner: "// https://d3js.org/d3-dispatch/ v3.0.1",
@@ -366,7 +366,7 @@ describe("c/graphEngine layoutGraph", () => {
   });
 });
 
-describe("c/graphEngine attachPanZoom and attachNodeDrag (audit E1)", () => {
+describe("c/graphEngine attachPanZoom and attachNodeDrag", () => {
   const SVG_NS = "http://www.w3.org/2000/svg";
   const EXTENT = [
     [0, 0],
@@ -510,5 +510,151 @@ describe("c/graphEngine attachPanZoom and attachNodeDrag (audit E1)", () => {
     window.dispatchEvent(mouse("mouseup", 20, 20));
 
     expect(onDrag).not.toHaveBeenCalled();
+  });
+
+  function wheel(deltaY, ctrlKey) {
+    return new WheelEvent("wheel", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: 400,
+      clientY: 300,
+      deltaY,
+      deltaMode: 0,
+      ctrlKey
+    });
+  }
+
+  const PAN_EXTENT = [
+    [-100, -100],
+    [900, 700]
+  ];
+
+  it("leaves a plain wheel to the page and zooms on Ctrl with the wheel when asked", () => {
+    const svg = svgWithNodes([]);
+    const onZoom = jest.fn();
+    const controls = engine.attachPanZoom(d3, svg, {
+      onZoom,
+      extent: EXTENT,
+      ctrlWheel: true
+    });
+
+    const plain = wheel(-100, false);
+    svg.dispatchEvent(plain);
+    expect(plain.defaultPrevented).toBe(false);
+    expect(onZoom).not.toHaveBeenCalled();
+    expect(controls.scale()).toBe(1);
+
+    const withCtrl = wheel(-100, true);
+    svg.dispatchEvent(withCtrl);
+    expect(withCtrl.defaultPrevented).toBe(true);
+    // One notch with Ctrl is capped at one button step, not d3's ten times.
+    expect(controls.scale()).toBeCloseTo(engine.ZOOM.step);
+  });
+
+  it("still zooms on a plain wheel by default", () => {
+    const svg = svgWithNodes([]);
+    const controls = engine.attachPanZoom(d3, svg, {
+      onZoom() {},
+      extent: EXTENT
+    });
+
+    svg.dispatchEvent(wheel(-100, false));
+    expect(controls.scale()).toBeGreaterThan(1);
+  });
+
+  it("pans at the resting scale inside a pan limit larger than the view, and stops at it", () => {
+    const svg = svgWithNodes([]);
+    const onZoom = jest.fn();
+    const controls = engine.attachPanZoom(d3, svg, {
+      onZoom,
+      extent: EXTENT,
+      translateExtent: PAN_EXTENT
+    });
+
+    controls.panBy(-40, 30);
+    let last = onZoom.mock.calls[onZoom.mock.calls.length - 1][0];
+    expect([last.k, last.x, last.y]).toEqual([1, -40, 30]);
+
+    controls.panBy(-500, 500);
+    last = onZoom.mock.calls[onZoom.mock.calls.length - 1][0];
+    // The margin is 100 on each side, so the view moves no further than that.
+    expect([last.x, last.y]).toEqual([-100, 100]);
+  });
+
+  it("keeps the old pan limit when no larger one is given", () => {
+    const svg = svgWithNodes([]);
+    const onZoom = jest.fn();
+    const controls = engine.attachPanZoom(d3, svg, {
+      onZoom,
+      extent: EXTENT
+    });
+
+    controls.panBy(-40, 30);
+    const last = onZoom.mock.calls[onZoom.mock.calls.length - 1][0];
+    expect([last.x, last.y]).toEqual([0, 0]);
+  });
+
+  it("pans the same distance on screen at any scale", () => {
+    const svg = svgWithNodes([]);
+    const onZoom = jest.fn();
+    const controls = engine.attachPanZoom(d3, svg, {
+      onZoom,
+      extent: EXTENT,
+      translateExtent: PAN_EXTENT
+    });
+    controls.zoomIn();
+    const before = onZoom.mock.calls[onZoom.mock.calls.length - 1][0];
+
+    controls.panBy(-40, 0);
+    const after = onZoom.mock.calls[onZoom.mock.calls.length - 1][0];
+    expect(after.k).toBeCloseTo(before.k);
+    expect(after.x - before.x).toBeCloseTo(-40);
+    expect(after.y).toBeCloseTo(before.y);
+  });
+
+  it("pans by a background drag at the resting scale and reports the mouse gesture", () => {
+    const svg = svgWithNodes([]);
+    const onZoom = jest.fn();
+    const onGestureEnd = jest.fn();
+    engine.attachPanZoom(d3, svg, {
+      onZoom,
+      onGestureEnd,
+      extent: EXTENT,
+      translateExtent: PAN_EXTENT
+    });
+
+    svg.dispatchEvent(mouse("mousedown", 100, 100));
+    window.dispatchEvent(mouse("mousemove", 130, 120));
+    window.dispatchEvent(mouse("mouseup", 130, 120));
+
+    const last = onZoom.mock.calls[onZoom.mock.calls.length - 1][0];
+    expect([last.k, last.x, last.y]).toEqual([1, 30, 20]);
+    expect(onGestureEnd).toHaveBeenCalledWith("mouse");
+  });
+
+  it("reports a Ctrl wheel gesture once it ends, and nothing for a button", async () => {
+    const svg = svgWithNodes([]);
+    const onGestureEnd = jest.fn();
+    const controls = engine.attachPanZoom(d3, svg, {
+      onZoom() {},
+      onGestureEnd,
+      extent: EXTENT,
+      ctrlWheel: true
+    });
+
+    controls.zoomIn();
+    expect(onGestureEnd).not.toHaveBeenCalled();
+
+    svg.dispatchEvent(wheel(-10, true));
+    svg.dispatchEvent(wheel(-10, true));
+    expect(onGestureEnd).not.toHaveBeenCalled();
+    // d3-zoom ends a wheel gesture 150 ms after the last event, on the real timers this copy
+    // of the library captured when it loaded.
+    await new Promise((resolve) => {
+      setTimeout(resolve, 250);
+    });
+    expect(onGestureEnd).toHaveBeenCalledTimes(1);
+    expect(onGestureEnd).toHaveBeenCalledWith("wheel");
   });
 });

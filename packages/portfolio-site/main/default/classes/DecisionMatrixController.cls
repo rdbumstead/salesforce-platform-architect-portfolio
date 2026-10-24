@@ -1,5 +1,5 @@
 /**
- * @description       : Serves the Pillar B decision matrix (Round 5 contract M7) from three
+ * @description       : Serves the Pillar B decision matrix from three
  *                      Custom Metadata Types in the nonprofit-literacy package: the options, the
  *                      criteria with the owner's starting weights, and one score per option and
  *                      criterion pair. Read by c/decisionMatrix, which computes the weighted

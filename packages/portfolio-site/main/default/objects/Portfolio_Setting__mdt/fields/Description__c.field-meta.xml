@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Description__c</fullName>
+    <description
+  >What the setting controls and its safe range, in plain words.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >What the setting controls and its safe range, in plain words.</inlineHelpText>
+    <label>Description</label>
+    <required>false</required>
+    <type>TextArea</type>
+</CustomField>

@@ -43,7 +43,7 @@
       },
       "token": {
         "requestsPerMinute": 15,
-        "description": "POST /auth/token, per email and source IP (TokenExchangeService.TOKEN_REQUESTS_PER_MINUTE)"
+        "description": "POST /auth/token, per email and source IP (the Token_Requests_Per_Minute setting, default 15)"
       }
     }
   },
@@ -1337,7 +1337,7 @@
           "Transformation"
         ],
         "summary": "Generate Plain Text Resume",
-        "description": "Generates an ATS-optimized plain text resume. \n\n**SAPI Calls**:\n- `GET /contacts`\n- `GET /experience`\n- `GET /experience-highlights?persona={persona}` - Filters bullets by target audience\n- `GET /skills`\n- `GET /certifications`\n- `GET /education`\n\n**Transformation Logic**:\n- Formats dates as \"MMM YYYY - MMM YYYY\" or \"MMM YYYY - Present\"\n- Groups skills by category\n- Limits to top 5 proficiency skills per category\n- Strips HTML from accomplishments using regex\n- Applies 80-character line wrapping\n\n**Persona Filtering**:\n- `Admin`: System Admin highlights only\n- `Developer`: Development highlights only\n- `Architect`: Architecture/Design highlights only\n\n**SAPI Mapping**:\n- PAPI persona values are passed directly to SAPI `/experience-highlights?persona={value}`\n- If persona is omitted, all highlights are returned (no filtering)\n\n**Response format**:\n- When the first media type in the `Accept` header is `text/plain`, a 200 answer is the generated text alone, with `Content-Type: text/plain; charset=UTF-8`. Parameters after a semicolon are ignored and the header name matches in any case.\n- With no `Accept` header, `*/*`, `application/json` or any other first type, the answer is the JSON object below.\n- Every other response header, the rate count and the cache directive are the same in both forms. Errors are always JSON, whatever `Accept` says.\n- Example: `curl -H \"Authorization: Bearer $TOKEN\" -H \"Accept: text/plain\" \"$INSTANCE_URL/services/apexrest/papi/v1/resume/generate?persona=Architect\"`\n",
+        "description": "Generates an ATS-optimized plain text resume. \n\n**SAPI Calls**:\n- `GET /contacts`\n- `GET /experience`\n- `GET /experience-highlights?persona={persona}` - Filters bullets by target audience\n- `GET /skills`\n- `GET /certifications`\n- `GET /education`\n\n**Transformation Logic**:\n- Formats dates as \"MMM YYYY - MMM YYYY\" or \"MMM YYYY - Present\"\n- Lists the skills linked to the printed roles, each once, grouped by category in category order and strongest first within a category\n- Prints up to 10 roles, current first\n- Prints at most 5 highlights per role, in sort order, as stored\n\n**Persona Filtering**:\n- `Admin`: System Admin highlights only\n- `Developer`: Development highlights only\n- `Architect`: Architecture/Design highlights only\n- Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.\n\n**SAPI Mapping**:\n- PAPI persona values are passed directly to SAPI `/experience-highlights?persona={value}`\n- If persona is omitted, all highlights are returned (no filtering)\n\n**Response format**:\n- When the first media type in the `Accept` header is `text/plain`, a 200 answer is the generated text alone, with `Content-Type: text/plain; charset=UTF-8`. Parameters after a semicolon are ignored and the header name matches in any case.\n- With no `Accept` header, `*/*`, `application/json` or any other first type, the answer is the JSON object below.\n- Every other response header, the rate count and the cache directive are the same in both forms. Errors are always JSON, whatever `Accept` says.\n- Example: `curl -H \"Authorization: Bearer $TOKEN\" -H \"Accept: text/plain\" \"$INSTANCE_URL/services/apexrest/papi/v1/resume/generate?persona=Architect\"`\n",
         "operationId": "generateResume",
         "parameters": [
           {
@@ -1350,7 +1350,7 @@
             "name": "persona",
             "in": "query",
             "required": false,
-            "description": "Target audience for the resume. Omit for all highlights.\n\n**Note**: This value is passed directly to SAPI's persona filter.\n",
+            "description": "Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.\n\n**Note**: This value is passed directly to SAPI's persona filter.\n",
             "schema": {
               "type": "string",
               "enum": [

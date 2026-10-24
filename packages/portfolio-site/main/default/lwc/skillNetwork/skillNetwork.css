@@ -1,5 +1,5 @@
 /*
- * Skills page styles. Every colour is a site token (Round 4 plan, contract L1), so both themes
+ * Skills page styles. Every colour is a --pf- site token, so both themes
  * follow the toggle. The graph is SVG, and its fills and strokes come from these classes, so no
  * colour lives in the JavaScript. Nothing animates, so prefers-reduced-motion needs no rule.
  */
@@ -24,7 +24,7 @@
   font-weight: 700;
 }
 
-/* Matrix | Graph switch. Primary controls, 44 px high (trap 35). */
+/* Matrix | Graph switch. Primary controls, 44 px high. */
 .view-switch {
   display: inline-flex;
   margin-bottom: var(--pf-space-4);
@@ -60,7 +60,7 @@
   outline-offset: 2px;
 }
 
-/* Persona filter (audit E4). Pills 44 px high, the chosen one filled like the view switch. */
+/* Persona filter. Pills 44 px high, the chosen one filled like the view switch. */
 .persona-filter {
   display: flex;
   flex-wrap: wrap;
@@ -139,7 +139,7 @@
   list-style: none;
 }
 
-/* Chips are at least 32 px high, above the 24 px floor (trap 35). */
+/* Chips are at least 32 px high, above the 24 px floor. */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -257,7 +257,7 @@
   color: var(--pf-text);
 }
 
-/* Zoom in, Zoom out and Reset view (audit E1). Real buttons, 44 px high like the view switch. */
+/* Zoom in, Zoom out and Reset view. Real buttons, 44 px high like the view switch. */
 .graph-controls {
   display: flex;
   flex-wrap: wrap;
@@ -294,6 +294,7 @@
 }
 
 .graph-wrapper {
+  position: relative;
   width: 100%;
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);
@@ -301,10 +302,40 @@
   color: var(--pf-text);
 }
 
+.graph-wrapper:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+/* The arrow key hint shows over the graph's top left corner while the graph has keyboard focus. */
+.pan-hint {
+  display: none;
+  position: absolute;
+  top: var(--pf-space-2);
+  left: var(--pf-space-2);
+  margin: 0;
+  padding: var(--pf-space-1) var(--pf-space-2);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  font-size: 0.8125rem;
+  pointer-events: none;
+}
+
+.graph-wrapper:focus-visible .pan-hint {
+  display: block;
+}
+
 .graph-svg {
   display: block;
   width: 100%;
   height: auto;
+  cursor: grab;
+}
+
+.graph-svg:active {
+  cursor: grabbing;
 }
 
 .category-label {
@@ -370,7 +401,7 @@
   }
 }
 
-/* View source (contract P2), at the top right of the card body. */
+/* View source, at the top right of the card body. */
 .card-tools {
   display: flex;
   justify-content: flex-end;

@@ -1,9 +1,9 @@
 /**
- * @description       : Unit tests for the Glass Box footer (Round 4 plan L8). getLinks is a
+ * @description       : Unit tests for the Glass Box footer. getLinks is a
  *                      mocked wire adapter, getSystemSnapshot a mocked imperative call, and
  *                      requestIdleCallback is captured so a test decides when the page is idle.
  *                      lightning/uiGraphQLApi passes the universal mock through and replaces only
- *                      graphql and gql (trap 25). The probe is the real c/graphqlProbe, which the
+ *                      graphql and gql. The probe is the real c/graphqlProbe, which the
  *                      footer imports on demand after idle.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -66,7 +66,10 @@ jest.mock(
 jest.mock(
   "c/analyticsService",
   () => ({
-    EVENTS: { FINOPS_QUOTA_VISIBILITY: "finops_quota_visibility" },
+    EVENTS: {
+      FINOPS_QUOTA_VISIBILITY: "finops_quota_visibility",
+      BACK_TO_TOP_USED: "back_to_top_used"
+    },
     trackEvent: jest.fn()
   }),
   { virtual: true }
@@ -369,6 +372,14 @@ describe("c-footer", () => {
     });
   });
 
+  it("sends back_to_top_used with no parameters from Back to top", () => {
+    window.scrollTo = jest.fn();
+    const element = createComponent();
+    q(element, '[data-id="back-to-top"]').click();
+    expect(trackEvent).toHaveBeenCalledWith("back_to_top_used");
+    expect(trackEvent.mock.calls.at(-1)).toHaveLength(1);
+  });
+
   it("cancels the deferred load when removed before idle", () => {
     const element = createComponent();
     document.body.removeChild(element);
@@ -424,6 +435,34 @@ describe("c-footer", () => {
     await runIdle();
     expect(q(element, '[data-id="graphql-probe"]')).not.toBeNull();
     expect(graphql.getLastConfig().query).toContain("Skill__c(first: 1)");
+  });
+
+  it("says cached, with no time, when the probe answered from the cache", async () => {
+    const element = createComponent();
+    await runIdle();
+    const probe = q(element, '[data-id="graphql-probe"]');
+    probe.dispatchEvent(
+      new CustomEvent("probe", { detail: { ms: 0, cached: true } })
+    );
+    await flushPromises();
+
+    expect(q(element, '[data-id="graphql"]').textContent).toBe(
+      "GraphQL: cached, no request made"
+    );
+  });
+
+  it("shows the live time when the probe says a request went out", async () => {
+    const element = createComponent();
+    await runIdle();
+    const probe = q(element, '[data-id="graphql-probe"]');
+    probe.dispatchEvent(
+      new CustomEvent("probe", { detail: { ms: 61, cached: false } })
+    );
+    await flushPromises();
+
+    expect(q(element, '[data-id="graphql"]').textContent).toBe(
+      "GraphQL: live, 61 ms"
+    );
   });
 
   it("shows GraphQL unavailable when the probe errors", async () => {
@@ -514,11 +553,11 @@ describe("c-footer", () => {
     });
   });
 
-  it("links Contact to the contact form on the home page", () => {
+  it("links Contact to the /contact page", () => {
     const element = createComponent();
     const link = q(element, '[data-id="contact"]');
     expect(link.textContent).toBe("Contact");
-    expect(link.getAttribute("href")).toBe("/portfolio/#contact");
+    expect(link.getAttribute("href")).toBe("/portfolio/contact");
     expect(link.getAttribute("target")).toBeNull();
   });
 

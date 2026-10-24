@@ -1,5 +1,5 @@
 /*
- * Built on the site tokens (Round 4 plan, contract L1), so the builder and the preview follow
+ * Built on the --pf- site tokens, so the builder and the preview follow
  * the light and dark theme. Every element that sets a background also sets its text colour.
  */
 .builder-body,
@@ -80,7 +80,7 @@
   text-transform: uppercase;
 }
 
-/* View source sits under the card heading, on the right (Round 7 plan P2). */
+/* View source sits under the card heading, on the right. */
 .card-tools {
   display: flex;
   justify-content: flex-end;

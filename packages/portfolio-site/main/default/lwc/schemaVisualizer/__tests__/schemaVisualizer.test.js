@@ -1,7 +1,7 @@
 /**
  * @description       : Unit tests for schemaVisualizer on the Large form factor (the Jest default).
  *                      SchemaService.getSchemaGraph is a mocked wire adapter, c/graphEngine and
- *                      c/analyticsService are virtual mocks (Round 5 plan M1 and M6).
+ *                      c/analyticsService are virtual mocks.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -103,7 +103,7 @@ describe("c-schema-visualizer", () => {
     jest.clearAllMocks();
   });
 
-  it("places View source with the schemaVisualizer key beside the heading (contract P2)", async () => {
+  it("places View source with the schemaVisualizer key beside the heading", async () => {
     const element = mount();
     await flushPromises();
 

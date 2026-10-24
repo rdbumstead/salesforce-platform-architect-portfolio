@@ -1,5 +1,5 @@
 /**
- * @description       : Saves portfolio contact form messages as Leads (Round 7 E5, ADR-031).
+ * @description       : Saves portfolio contact form messages as Leads (ADR-031).
  *                      Called by ContactFormSubmissionTrigger, which runs as the Automated Process
  *                      user, so the Lead auto-response rule can send. Each Lead is inserted in
  *                      system mode with Database.DMLOptions: the default assignment rule, the

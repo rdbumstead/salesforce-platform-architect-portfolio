@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for GitHubCacheRefreshJob (pillar-e-design 4.4, Round 4 WS2 gate):
+ * @description       : Tests for GitHubCacheRefreshJob:
  *                      a good refresh inserts one payload that deserializes into
  *                      DeliveryController's DTOs, a failed refresh inserts nothing and the
  *                      newest good row keeps serving, an open circuit skips the call, no config

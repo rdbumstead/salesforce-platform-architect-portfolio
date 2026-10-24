@@ -1,17 +1,17 @@
 /**
  * @description       : Content generation. dispatch() is the one provider chain: Agentforce,
- *                      then Gemini, then the local template (pillar-d-design 3.2). Agentforce
+ *                      then Gemini, then the local template. Agentforce
  *                      is consulted only when AgentforceService.isAvailable() says its switch is
  *                      on, and while that class throws it can never serve, so no result names
  *                      Agentforce unless a real Agentforce call produced the content (3.1).
  *                      Every attempt is recorded with its outcome and elapsed time.
  *                      PAPIAiGenerate (POST /papi/v1/ai/generate) and generateCoverLetter both
  *                      call it. The site page reaches it in process through
- *                      ApiLabController.generateCoverLetter (plan L9). providerStatus() is the read-only provider view for the
- *                      footer. Round 4 (plan L7, pillar-d-design 7.2): the agentforce and
- *                      gemini circuit breakers. An open circuit records the attempt as
+ *                      ApiLabController.generateCoverLetter. providerStatus() is the read-only provider view for the
+ *                      footer. The agentforce and gemini providers each have a circuit
+ *                      breaker. An open circuit records the attempt as
  *                      skipped_open_circuit and moves on. Breaker results are written once
- *                      every provider has been tried, after the last callout (contract C2).
+ *                      every provider has been tried, after the last callout.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -274,7 +274,7 @@ public with sharing class ContentGenerationController {
   /**
    * @description Generates a cover letter through dispatch(), grounded on portfolio records.
    *              The site page does not call this method. It reaches the same dispatch
-   *              in process through ApiLabController.generateCoverLetter (plan L9).
+   *              in process through ApiLabController.generateCoverLetter.
    * @param companyName Name of the target company.
    * @param jobTitle Title of the job.
    * @param jobDescription Description of the job, may be blank.
@@ -326,7 +326,7 @@ public with sharing class ContentGenerationController {
   }
 
   /**
-   * @description The grounding block for a cover letter prompt (PD-D4 a). A grounding
+   * @description The grounding block for a cover letter prompt. A grounding
    *              failure never blocks the letter: the prompt then goes without facts.
    * @param jobTitle Job title the letter is for.
    * @param jobDescription Job description, may be blank.
@@ -350,7 +350,7 @@ public with sharing class ContentGenerationController {
   }
 
   /**
-   * @description Read-only provider view for the Glass Box footer (Round 4). Reads the
+   * @description Read-only provider view for the Glass Box footer. Reads the
    *              switch only. It never says Agentforce is on while the class is not built.
    *              circuitOpenUntil comes from the agentforce and gemini breakers.
    * @return List<ProviderStatus> Agentforce, Gemini and Local in dispatch order.

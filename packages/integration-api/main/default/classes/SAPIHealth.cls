@@ -2,7 +2,7 @@
  * @description       : SAPI health check (/sapi/v1/health). Reports runtime availability, the
  *                      current transaction's governor-limit snapshot and the org time. The
  *                      payload builder is public so PAPIHealth can read SAPI health in-process
- *                      without calling this handler (contract C3).
+ *                      without calling this handler.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

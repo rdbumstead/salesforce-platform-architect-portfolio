@@ -1,17 +1,21 @@
 /**
- * @description       : Interactive API reference for the API Lab page (plan K10). Shows the
+ * @description       : Interactive API reference for the API Lab page. Shows the
  *                      SAPI or PAPI OpenAPI spec from the SAPI_Spec and PAPI_Spec static
  *                      resources in Redoc. Redoc_Script loads only when the visitor opens the
  *                      reference. Any load or render failure shows a message and the hosted
  *                      reference link instead, and so does a render that has not finished 15 s
  *                      after the visitor opened it (Redoc never finishes under the site runtime
- *                      in WebKit, trap 32). Sends api_reference_opened on open (contract L4).
+ *                      in WebKit). Sends api_reference_opened on open.
  *                      On its own page (route Api_Reference, api-lab/reference) the builder
  *                      sets fullWidth and openOnLoad: the reference then fills the page width
  *                      with no height cap and opens without a click, the SAPI and PAPI switch
  *                      staying at the top. There the component carries the page's only h1 and
  *                      the Pillar C intro, so the view needs no header of its own, and the
- *                      open button shows only when the reference is not on screen.
+ *                      open button shows only when the reference is not on screen. At desktop
+ *                      widths Redoc's menu sticks below the header and the switch, so it stays
+ *                      beside the reader. A tag row opens and closes with Redoc's own expand by
+ *                      click, Enter or Space and scrolls its intro into view. An operation row
+ *                      scrolls its section into view and moves focus there.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -28,7 +32,7 @@ import basePath from "@salesforce/community/basePath";
 export const HOSTED_REFERENCE_URL =
   "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi";
 
-/** How long the visitor waits for Redoc before the page gives up (trap 32). */
+/** How long the visitor waits for Redoc before the page gives up. */
 export const RENDER_TIMEOUT_MS = 15000;
 export const TIMEOUT_MESSAGE =
   "The interactive reference could not load in this browser.";
@@ -46,7 +50,7 @@ const MONO_FONTS = 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace';
 
 /**
  * Link and primary colour inside the Redoc panel. The panel is white in both site themes,
- * so it takes the light accent (L1 --pf-accent light, --pf-btn in both themes), 5.17:1
+ * so it takes the light accent (the light --pf-accent, --pf-btn in both themes), 5.17:1
  * on white, never the dark theme accent, which is 2.54:1 there.
  */
 export const REDOC_LINK_COLOR = "#2563EB";
@@ -65,29 +69,64 @@ export const REDOC_TAB_COLORS = {
 
 /**
  * Text of Redoc's constraint chips such as "[ 1 .. 200 ]". Redoc draws them in the primary
- * colour at 90% opacity on a 5% primary tint, 4.3:1 at 13 px (axe color-contrast, log 299).
+ * colour at 90% opacity on a 5% primary tint, 4.3:1 at 13 px (axe color-contrast).
  * This darker blue at full opacity is 6.6:1 on that tint.
  */
 export const REDOC_CONSTRAINT_COLOR = "#1D4ED8";
 
 /**
+ * Label of the active menu row. Redoc draws it in the primary colour on its sidebar grey
+ * darkened for the active row, #ededed for a tag (4.41:1) and #e1e1e1 for a group (3.95:1).
+ * This darker blue is 5.72:1 and 5.12:1 there. A tag is active whenever it is open, so the
+ * open row needs it.
+ */
+export const REDOC_ACTIVE_MENU_COLOR = "#1D4ED8";
+
+/**
  * The bottom edge of the sticky or fixed element at the top of the viewport, the site
  * header, so a section scrolled into view lands below it. 0 when nothing is pinned there.
  * The element is found through every open shadow root, because the header sits inside
- * the theme layout component.
+ * the theme layout component. Where the site's runtime does not let this component open the
+ * layout's shadow root, the header's bottom is found by scanning instead (scannedBottom).
+ * @param {Element} [host] this component's host element, so the scan can check the element
+ *   at the top is a layout the component sits inside
  */
-export function headerOffset() {
+export function headerOffset(host) {
   try {
-    return pinnedBottom();
+    return pinnedBottom(host);
   } catch {
     // A runtime with no elementFromPoint (a test DOM) has no header to allow for.
     return 0;
   }
 }
 
-function pinnedBottom() {
+/** The tallest header the scan allows for. A taller band is not taken for a header. */
+const HEADER_SCAN_LIMIT = 200;
+
+/**
+ * The header's bottom when it sits inside a layout component whose shadow root cannot be
+ * read: the first point down the viewport's centre line where the element the document
+ * reports is no longer that layout. Used only when the element at the top is a custom
+ * element with no readable shadow root that holds this component, so a page with no header,
+ * or this component's own content at the top, gives 0.
+ */
+function scannedBottom(x, top, host) {
+  const holdsComponent = host ? top !== host && top.contains(host) : true;
+  if (!top.tagName.includes("-") || top.shadowRoot || !holdsComponent) {
+    return 0;
+  }
+  for (let y = 3; y <= HEADER_SCAN_LIMIT; y++) {
+    if (document.elementFromPoint(x, y) !== top) {
+      return y;
+    }
+  }
+  return 0;
+}
+
+function pinnedBottom(host) {
   const x = Math.round(window.innerWidth / 2);
-  let element = document.elementFromPoint(x, 2);
+  const top = document.elementFromPoint(x, 2);
+  let element = top;
   while (element && element.shadowRoot) {
     const inner = element.shadowRoot.elementFromPoint
       ? element.shadowRoot.elementFromPoint(x, 2)
@@ -107,7 +146,7 @@ function pinnedBottom() {
     }
     node = node.parentNode || node.host;
   }
-  return 0;
+  return top ? scannedBottom(x, top, host) : 0;
 }
 
 /**
@@ -139,6 +178,9 @@ export const REDOC_OPTIONS = {
         info: { tabTextColor: REDOC_TAB_COLORS.info }
       }
     },
+    sidebar: {
+      activeTextColor: REDOC_ACTIVE_MENU_COLOR
+    },
     typography: {
       fontFamily: SYSTEM_FONTS,
       headings: { fontFamily: SYSTEM_FONTS },
@@ -147,7 +189,7 @@ export const REDOC_OPTIONS = {
         color: REDOC_LINK_COLOR,
         visited: REDOC_LINK_COLOR,
         hover: REDOC_LINK_COLOR,
-        // A link inside text needs more than colour (axe link-in-text-block, log 299).
+        // A link inside text needs more than colour (axe link-in-text-block).
         textDecoration: "underline",
         hoverTextDecoration: "underline"
       }
@@ -166,18 +208,35 @@ const SECTION_HASH = /^(tag|operation|section|schema)\//;
 
 /**
  * Rules added after Redoc's own: a link inside Redoc's text, such as the licence link, is
- * underlined, because colour alone does not mark it (axe link-in-text-block, log 299).
+ * underlined, because colour alone does not mark it (axe link-in-text-block).
  * The :link and :visited forms outrank the site platform's own link rule, specificity
  * 0,2,2, which otherwise takes the underline away.
+ * On its own page at desktop widths, Redoc's sticky menu sits just below the site header and
+ * the pinned spec switch (--reference-menu-top, measured after each render) and scrolls on its
+ * own, never taller than the viewport below that line. Redoc writes its own top and height
+ * inline from scrollYOffset, so these win with !important. Below 50rem Redoc folds the menu
+ * behind its own menu button, which these rules leave alone.
  */
-export const REDOC_STYLE_OVERRIDES =
-  ".redoc-target a[href]:link, .redoc-target a[href]:visited { text-decoration: underline; }";
+export const REDOC_STYLE_OVERRIDES = [
+  ".redoc-target a[href]:link, .redoc-target a[href]:visited { text-decoration: underline; }",
+  "@media (min-width: 50rem) { .redoc-panel_full .menu-content {",
+  " top: var(--reference-menu-top, 0px) !important;",
+  " height: calc(100vh - var(--reference-menu-top, 0px)) !important; } }"
+].join("\n");
 
 /** Space left between the header and a section scrolled into view. */
 const SECTION_GAP = 8;
 
-/** Redoc scrolls on its own after a menu click; the component settles the result after it. */
+/** Redoc scrolls on its own after a menu click. The component settles the result after it. */
 const CLICK_SETTLE_MS = 150;
+
+/**
+ * A tag's intro lands this many pixels higher than an operation's. Redoc's scroll tracking
+ * keeps a section active only once its top is at or above the header line, and lands its own
+ * scrolls 1 px past it, so a tag that lands exactly on the line can lose to the item before it,
+ * which closes the tag.
+ */
+const TAG_NUDGE = 1;
 
 /** The attribute Redoc 2.5.4 marks each section with and looks sections up by. */
 const SECTION_ATTRIBUTE = "data-section-id";
@@ -189,7 +248,7 @@ let sectionLookupInstalled = false;
 /**
  * Redoc looks its sections up with document.querySelector('[data-section-id="..."]'),
  * which cannot see inside this component's shadow root, so its scroll tracking marked the
- * last item active and rewrote the URL hash to it (audit F5). This lets that one kind of
+ * last item active and rewrote the URL hash to it. This lets that one kind of
  * lookup fall back to the rendered reference when the document finds nothing. Every
  * other query is untouched. If the runtime does not allow it, the component's own
  * scrolling still works.
@@ -217,6 +276,44 @@ export function installSectionLookup() {
   } catch {
     sectionLookupInstalled = false;
   }
+}
+
+/** How many React fibers disposePreviousRedoc looks through before it gives up. */
+const FIBER_SEARCH_LIMIT = 400;
+
+/**
+ * Redoc 2.5.4's init renders a new React root into the element on every call and never
+ * unmounts the one before (its destroy makes yet another root and unmounts that). So after a
+ * spec switch the previous spec's store keeps its window scroll listener. Its scroll tracking
+ * cannot find its own sections any more, runs to its last menu item and writes that item's id
+ * into the URL hash. This finds that store through the element's React root and disposes it,
+ * which removes the listener. It does nothing when no earlier render is found.
+ * @returns {boolean} whether a store was disposed
+ */
+export function disposePreviousRedoc(element) {
+  try {
+    const key = Object.keys(element).find((name) =>
+      name.startsWith("__reactContainer$")
+    );
+    const stack = key && element[key] ? [element[key]] : [];
+    for (let seen = 0; stack.length && seen < FIBER_SEARCH_LIMIT; seen++) {
+      const fiber = stack.pop();
+      const store = fiber.memoizedProps && fiber.memoizedProps.store;
+      if (store && store.menu && typeof store.dispose === "function") {
+        store.dispose();
+        return true;
+      }
+      if (fiber.sibling) {
+        stack.push(fiber.sibling);
+      }
+      if (fiber.child) {
+        stack.push(fiber.child);
+      }
+    }
+  } catch {
+    // An unexpected shape is left alone. Only the hash after a spec switch is affected.
+  }
+  return false;
 }
 
 /** An id as the inside of a double quoted CSS attribute value. */
@@ -396,16 +493,19 @@ export default class ApiReference extends LightningElement {
    * Scrolls a Redoc section to just below the site header (and the pinned spec switch on
    * its own page), and moves focus to it. Redoc cannot do this itself here: it finds
    * sections with document.querySelector, which cannot see inside this component's
-   * shadow root, so its menu changed the URL and nothing moved (audit F5).
+   * shadow root, so its menu changed the URL and nothing moved.
+   * @param {string} id the Redoc section id
+   * @param {boolean} moveFocus whether focus moves to the section
+   * @param {number} [nudge] extra pixels to land the section higher, 0 by default
    * @returns {boolean} whether the section was found
    */
-  goToSection(id, moveFocus) {
+  goToSection(id, moveFocus, nudge = 0) {
     const section = this.findSection(id);
     if (!section) {
       return false;
     }
     const panel = this.template.querySelector(".redoc-panel");
-    const gap = SECTION_GAP;
+    const gap = SECTION_GAP - nudge;
     if (!this.fullWidth && panel && panel.scrollHeight > panel.clientHeight) {
       // Boxed layout: the panel scrolls, not the page.
       panel.scrollTop +=
@@ -413,7 +513,7 @@ export default class ApiReference extends LightningElement {
         panel.getBoundingClientRect().top -
         gap;
     } else {
-      const offset = this.sectionOffset();
+      const offset = this.sectionOffset() - nudge;
       window.scrollTo({
         top: Math.max(
           0,
@@ -436,20 +536,57 @@ export default class ApiReference extends LightningElement {
     const toggle = this.fullWidth
       ? this.template.querySelector(".spec-toggle")
       : null;
-    return headerOffset() + (toggle ? toggle.offsetHeight : 0) + SECTION_GAP;
+    return (
+      headerOffset(this.template.host) +
+      (toggle ? toggle.offsetHeight : 0) +
+      SECTION_GAP
+    );
   }
 
   /** A click on a Redoc menu item or an in page link: let Redoc update, then scroll. */
   handleRedocClick(event) {
+    this.settleAfterRedoc(event);
+  }
+
+  /**
+   * Enter or Space on a focused menu row. Redoc opens or follows the row itself. Space would
+   * also scroll the page, so it is cancelled here and the row is settled like a click.
+   */
+  handleRedocKeydown(event) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    const target = event.target;
+    if (!target || !target.dataset || !target.dataset.itemId) {
+      return;
+    }
+    if (event.key === " ") {
+      event.preventDefault();
+    }
+    this.settleAfterRedoc(event);
+  }
+
+  /**
+   * Finds the menu row or in page link an event came from and, once Redoc has handled it,
+   * scrolls its section below the header.
+   * A tag row (one with operations under it) opens and closes with Redoc's own expand. Once
+   * open, its intro is scrolled into view and focus stays on the row, so the operations under
+   * it are the next Tab stops. Once closed, nothing scrolls: a scroll would let Redoc's scroll
+   * tracking mark the tag active again and reopen it. An operation row or a link moves focus
+   * to its section.
+   */
+  settleAfterRedoc(event) {
     const path =
       typeof event.composedPath === "function" ? event.composedPath() : [];
     let id;
+    let row;
     for (const node of path) {
       if (!node || node.nodeType !== 1) {
         continue;
       }
       if (node.dataset && node.dataset.itemId) {
         id = node.dataset.itemId;
+        row = node;
         break;
       }
       const href = node.getAttribute && node.getAttribute("href");
@@ -458,16 +595,35 @@ export default class ApiReference extends LightningElement {
         break;
       }
     }
-    if (id && SECTION_HASH.test(id)) {
-      setTimeout(() => this.goToSection(id, true), CLICK_SETTLE_MS);
+    if (!id || !SECTION_HASH.test(id)) {
+      return;
     }
+    const isTagRow = Boolean(row && row.querySelector(":scope > ul"));
+    setTimeout(() => {
+      if (!isTagRow) {
+        this.goToSection(id, true);
+      } else if (row.getAttribute("aria-expanded") !== "false") {
+        this.goToSection(id, false, TAG_NUDGE);
+      }
+    }, CLICK_SETTLE_MS);
   }
 
-  /** After a render: pin the switch under the header and honour a deep link. */
+  /**
+   * After a render: pin the switch under the header, pin Redoc's menu under the switch and
+   * honour a deep link.
+   */
   afterRender() {
     const card = this.template.querySelector("article");
     if (card) {
-      card.style.setProperty("--reference-sticky-top", `${headerOffset()}px`);
+      const header = headerOffset(this.template.host);
+      const toggle = this.fullWidth
+        ? this.template.querySelector(".spec-toggle")
+        : null;
+      card.style.setProperty("--reference-sticky-top", `${header}px`);
+      card.style.setProperty(
+        "--reference-menu-top",
+        `${header + (toggle ? toggle.offsetHeight : 0)}px`
+      );
     }
     const hash = this.pendingHash;
     if (!hash) {
@@ -567,6 +723,7 @@ export default class ApiReference extends LightningElement {
       // Style tags present before Redoc first renders are the site's own.
       this.styleBaseline = new Set(document.head.querySelectorAll("style"));
     }
+    disposePreviousRedoc(target);
     await new Promise((resolve, reject) => {
       try {
         redoc.init(

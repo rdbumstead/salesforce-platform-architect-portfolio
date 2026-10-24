@@ -4,8 +4,8 @@
  *                      Credential and returns status, latency, tracing and paging headers and
  *                      the body. requestEvaluatorToken() vends a token through the same
  *                      TokenExchangeService path as POST /papi/v1/auth/token.
- *                      generateCoverLetter() is the site's cover letter path (Round 4 decision 2
- *                      a): it runs ContentGenerationController.dispatch in process as the site
+ *                      generateCoverLetter() is the site's cover letter path. It runs
+ *                      ContentGenerationController.dispatch in process as the site
  *                      guest, under the AI tier limit on the papi-ai key prefix. It makes no
  *                      call into this org's own API, because a request that arrives as a callout
  *                      from the same org cannot call out to Gemini ("Callout loop not allowed").
@@ -22,7 +22,7 @@ public with sharing class ApiLabController {
   /**
    * The static resource that lists the Lab's paths. scripts/sync-specs.js builds it from the
    * GET operations of salesforce-sapi.yaml and portfolio-papi.yaml, less the paths it
-   * excludes on purpose (audit G1), so a new spec path needs no change here.
+   * excludes on purpose, so a new spec path needs no change here.
    */
   public static final String CATALOG_RESOURCE = 'API_Lab_Catalog';
 
@@ -265,7 +265,7 @@ public with sharing class ApiLabController {
 
   /**
    * @description Writes a cover letter in process as the caller (the site guest on the page).
-   *              Order (contracts C2 and C4): validate, check the AI tier limit (a read, no
+   *              Order, so no DML comes before a callout: validate, check the AI tier limit (a read, no
    *              DML), dispatch (Agentforce only when it may serve, never for a guest, then
    *              Gemini, then the local template), then write the rate count. A refused or
    *              failed request throws, and the thrown error rolls back its count.
@@ -301,7 +301,7 @@ public with sharing class ApiLabController {
     String requestId = UUID.randomUUID().toString();
     Long started = System.currentTimeMillis();
     ApiRequestContext.RateDecision decision = ApiRequestContext.rateLimiter()
-      .checkKey(AI_RATE_KEY, ApiRequestContext.PAPI_AI_LIMIT_PER_MINUTE);
+      .checkKey(AI_RATE_KEY, ApiRequestContext.aiLimitPerMinute());
     if (!decision.allowed) {
       logCoverLetter(429, requestId, started);
       throw auraError(
@@ -325,7 +325,7 @@ public with sharing class ApiLabController {
         'No AI provider is available right now. Try again later.'
       );
     }
-    // The count is written after the provider callouts, never before (contract C2).
+    // The count is written after the provider callouts, so no DML comes before a callout.
     ApiRequestContext.commitRateCounts();
 
     CoverLetterResult result = toCoverLetterResult(generated);
@@ -358,7 +358,7 @@ public with sharing class ApiLabController {
       )
     );
     // An Aura call has no REST response, so ok()/error() never write the email+IP count.
-    // Write it here, after the token callout and the audit row (contracts C2 and C4).
+    // Write it here, after the token callout and the audit row.
     ApiRequestContext.commitRateCounts();
     TokenResult tokenResult = new TokenResult();
     tokenResult.correlationId = correlationId;
@@ -377,7 +377,7 @@ public with sharing class ApiLabController {
    *              documented source is the current session's SourceIp attribute
    *              (Auth.SessionManagement.getCurrentSession). When that is unavailable the
    *              key falls back to TokenExchangeService.IP_UNAVAILABLE, which makes the
-   *              Aura limit effectively per email. Open decision; see the WS3 report.
+   *              Aura limit effectively per email.
    * @return String The source IP or IP_UNAVAILABLE.
    */
   @TestVisible
@@ -485,7 +485,7 @@ public with sharing class ApiLabController {
   }
 
   // detail is read by name from the serialized attempt, so this class compiles whether
-  // or not the dispatch reports it yet (contract L7).
+  // or not the dispatch reports it yet.
   private static AttemptView toAttemptView(
     ContentGenerationController.Attempt attempt
   ) {

@@ -1,5 +1,5 @@
 [![View Source](https://img.shields.io/badge/GitHub-View_Source-181717?logo=github&logoColor=white)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio)
-[![CI/CD — main](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml)
+[![CI/CD main](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml)
 [![PR Validation](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml)
 [![Cloudflare Worker](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy-worker.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy-worker.yml)
 [![Daily Org Heartbeat](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/keep-alive.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/keep-alive.yml)
@@ -48,15 +48,16 @@ _Target Audience: Architects, Developers_
 - [ADR-007: GitHub API Server-Side Caching](adr/007-github-api-server-side-caching.md)
 - [ADR-008: Jira Integration vs. Agile Accelerator](adr/008-jira-integration-vs-agile-accelerator.md)
 - [ADR-012: Guest User Security (Restriction Rules)](adr/012-guest-user-security-restriction-rules.md)
-- [ADR-017: System API Security & Dual-Sided Auth](adr/017-system-api-security-and-dual-sided-auth-pattern.md) — _superseded by ADR-027_
+- [ADR-017: System API Security & Dual-Sided Auth](adr/017-system-api-security-and-dual-sided-auth-pattern.md), _superseded by ADR-027_
 - [ADR-024: Twin API Pattern](adr/024-twin-api-pattern-contract-first-parity.md)
 - [ADR-025: PAPI Fan-Out & Throttling](adr/025-papi-fan-out-throttling-capacity-planning.md)
 - [ADR-026: Header-Based API Versioning](adr/026-header-based-api-versioning-strategy.md)
-- [ADR-027: Platform-Native API Authentication (ECA + Named Credential)](adr/027-platform-native-api-authentication.md) — supersedes ADR-017
+- [ADR-027: Platform-Native API Authentication (ECA + Named Credential)](adr/027-platform-native-api-authentication.md), supersedes ADR-017
 - [ADR-028: Evaluator Access via Token Vending](adr/028-evaluator-access-via-token-vending.md)
 - [ADR-029: Schema Visualizer Scope, Discovery and Caching](adr/029-schema-visualizer-scope-discovery-and-caching.md)
 - [ADR-030: Decision Matrix as Custom Metadata](adr/030-decision-matrix-as-custom-metadata.md)
 - [ADR-031: Native Contact Form](adr/031-native-contact-form.md)
+- [ADR-032: Operational Settings in Custom Metadata](adr/032-operational-settings-in-custom-metadata.md)
 
 **AI, Data & FinOps**
 

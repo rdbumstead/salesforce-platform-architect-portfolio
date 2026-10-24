@@ -1,9 +1,9 @@
 /**
  * @description       : PAPI health check (/papi/v1/health). Reports per-dependency states:
- *                      SAPI (in-process, contract C3), the Portfolio_API credential (one GET
+ *                      SAPI (in-process), the Portfolio_API credential (one GET
  *                      through callout:Portfolio_API to /sapi/v1/health, the only check that
  *                      exercises the credential), and presence of the Jira, GitHub and Gemini
- *                      Named Credentials (no callouts). Performs no DML (contract C2).
+ *                      Named Credentials (no callouts). Performs no DML.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -21,6 +21,8 @@ global with sharing class PAPIHealth {
 
   @TestVisible
   private static final String CREDENTIAL_ENDPOINT = 'callout:Portfolio_API/services/apexrest/sapi/v1/health';
+  // Code default. The Health_Credential_Timeout_Ms setting gives the value in force.
+  @TestVisible
   private static final Integer CREDENTIAL_TIMEOUT_MS = 10000;
 
   // Dependency key in the payload => Named Credential DeveloperName.
@@ -78,11 +80,21 @@ global with sharing class PAPIHealth {
    *              any other status or a callout failure is DOWN (Maintenance Guide 1.2,
    *              "dependencies.credential: UP").
    */
+  // Milliseconds the credential callout waits: the Health_Credential_Timeout_Ms setting,
+  // else CREDENTIAL_TIMEOUT_MS.
+  @TestVisible
+  private static Integer credentialTimeoutMs() {
+    return PortfolioSettings.getInteger(
+      'Health_Credential_Timeout_Ms',
+      CREDENTIAL_TIMEOUT_MS
+    );
+  }
+
   private static String checkCredential(Map<String, Object> details) {
     HttpRequest req = new HttpRequest();
     req.setEndpoint(CREDENTIAL_ENDPOINT);
     req.setMethod('GET');
-    req.setTimeout(CREDENTIAL_TIMEOUT_MS);
+    req.setTimeout(credentialTimeoutMs());
     req.setHeader('X-Request-Id', UUID.randomUUID().toString());
     req.setHeader('X-API-Version', ApiRequestContext.SUPPORTED_VERSION);
     req.setHeader('Accept', 'application/json');

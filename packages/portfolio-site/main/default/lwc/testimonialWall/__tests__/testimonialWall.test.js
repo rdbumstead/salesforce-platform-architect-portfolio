@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for the testimonialWall LWC (Round 7 B2).
+ * @description       : Unit tests for the testimonialWall LWC.
  *                      getApprovedTestimonials is a mocked wire adapter.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -162,5 +162,43 @@ describe("c-testimonial-wall", () => {
     await flushPromises();
     const group = q(element, '[role="group"]');
     expect(group.getAttribute("aria-label")).toBe("Show testimonials");
+  });
+
+  describe("analytics", () => {
+    beforeEach(() => {
+      window.gtag = jest.fn();
+    });
+
+    afterEach(() => {
+      delete window.gtag;
+    });
+
+    it("sends testimonials_filtered with the new filter on each switch", async () => {
+      const element = createComponent();
+      getApprovedTestimonials.emit(ITEMS);
+      await flushPromises();
+
+      q(element, '[data-id="filter-professional"]').click();
+      await flushPromises();
+      q(element, '[data-id="filter-all"]').click();
+      await flushPromises();
+
+      expect(window.gtag.mock.calls).toEqual([
+        ["event", "testimonials_filtered", { filter: "professional" }],
+        ["event", "testimonials_filtered", { filter: "all" }]
+      ]);
+    });
+
+    it("sends nothing for the filter already shown", async () => {
+      const element = createComponent();
+      getApprovedTestimonials.emit(ITEMS);
+      await flushPromises();
+      q(element, '[data-id="filter-all"]').click();
+      await flushPromises();
+      expect(window.gtag).not.toHaveBeenCalled();
+      expect(
+        q(element, '[data-id="filter-all"]').getAttribute("aria-pressed")
+      ).toBe("true");
+    });
   });
 });

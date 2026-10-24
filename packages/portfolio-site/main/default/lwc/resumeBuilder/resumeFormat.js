@@ -1,6 +1,6 @@
 /**
  * @description       : Pure helpers for resumeBuilder. They turn the ResumeController.getResume
- *                      payload (plan K1) into a preview view model and into one ordered list of
+ *                      payload into a preview view model and into one ordered list of
  *                      typed lines. The ATS text export and the PDF export both read that list,
  *                      so the two exports always carry the same content.
  * @author            : Ryan Bumstead
@@ -77,7 +77,7 @@ function credentialLine(credential) {
 const HTTP_URL = /^https?:\/\//i;
 
 /**
- * The verification link (Round 6 plan N5, trap 54). The href is the stored value exactly, never
+ * The verification link. The href is the stored value exactly, never
  * trimmed, encoded or rebuilt, so a plus sign in the query string stays a plus sign. Only an
  * http or https value becomes a link.
  */

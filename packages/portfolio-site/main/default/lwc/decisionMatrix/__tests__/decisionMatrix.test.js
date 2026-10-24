@@ -128,7 +128,7 @@ describe("c-decision-matrix", () => {
     jest.clearAllMocks();
   });
 
-  it("places View source with the decisionMatrix key at the top (contract P2)", async () => {
+  it("places View source with the decisionMatrix key at the top", async () => {
     const element = await createComponent();
 
     const control = q(element, ".card-tools c-view-source");

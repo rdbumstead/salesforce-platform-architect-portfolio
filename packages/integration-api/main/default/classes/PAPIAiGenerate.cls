@@ -2,12 +2,12 @@
  * @description       : PAPI AI generation endpoint (POST /papi/v1/ai/generate). Validates the
  *                      request against the spec enums and bounds, then calls
  *                      ContentGenerationController.dispatch: Agentforce only when its switch is
- *                      on, then Gemini, then the local template for cover letters (P5 as
- *                      reworded in the Round 3 plan). A cover letter prompt carries portfolio
- *                      facts from PortfolioGroundingService (PD-D4 a). The response names the
+ *                      on, then Gemini, then the local template for cover letters. A
+ *                      cover letter prompt carries portfolio facts from
+ *                      PortfolioGroundingService. The response names the
  *                      provider that served it and adds latencyMs, attempts and promptShown.
  *                      Performs no DML, so the provider callout is never preceded by
- *                      uncommitted work (contract C2). The "ai" rate-limit tier applies by
+ *                      uncommitted work. The "ai" rate-limit tier applies by
  *                      path in ApiRequestContext.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -30,6 +30,8 @@ global with sharing class PAPIAiGenerate {
     'Casual'
   };
   public static final String DEFAULT_TONE = 'Professional';
+  // Code defaults for maxLength. The values in force come from the Ai_Min_Length,
+  // Ai_Max_Length and Ai_Default_Length settings.
   public static final Integer MIN_LENGTH = 100;
   public static final Integer MAX_LENGTH = 1000;
   public static final Integer DEFAULT_LENGTH = 500;
@@ -198,20 +200,33 @@ global with sharing class PAPIAiGenerate {
   }
 
   private static Integer readMaxLength(Map<String, Object> root) {
+    Integer minLength = PortfolioSettings.getInteger(
+      'Ai_Min_Length',
+      MIN_LENGTH
+    );
+    Integer maxLength = PortfolioSettings.getInteger(
+      'Ai_Max_Length',
+      MAX_LENGTH
+    );
     Object value = root.get('maxLength');
     if (value == null) {
-      return DEFAULT_LENGTH;
+      // The default stays inside the accepted range even if the settings disagree.
+      Integer defaultLength = PortfolioSettings.getInteger(
+        'Ai_Default_Length',
+        DEFAULT_LENGTH
+      );
+      return Math.max(minLength, Math.min(defaultLength, maxLength));
     }
     if (
       !(value instanceof Integer) ||
-      (Integer) value < MIN_LENGTH ||
-      (Integer) value > MAX_LENGTH
+      (Integer) value < minLength ||
+      (Integer) value > maxLength
     ) {
       throw new InvalidRequestException(
         'maxLength must be an integer between ' +
-          MIN_LENGTH +
+          minLength +
           ' and ' +
-          MAX_LENGTH +
+          maxLength +
           '.'
       );
     }

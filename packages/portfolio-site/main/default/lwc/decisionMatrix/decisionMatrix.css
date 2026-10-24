@@ -1,8 +1,8 @@
 /*
- * Round 4 plan L1: colours, fonts, radii and spacing come only from the --pf- design tokens,
+ * Colours, fonts, radii and spacing come only from the --pf- design tokens,
  * so the matrix follows the light and dark themes. Every element that sets a background also
  * sets its text colour. Scores and totals are metrics, so they use the mono font. Controls are
- * at least 24 px and the reset button is 44 px high (trap 35).
+ * at least 24 px and the reset button is 44 px high.
  */
 :host {
   display: block;
@@ -176,7 +176,7 @@
   white-space: nowrap;
 }
 
-/* View source (contract P2), at the top right of the matrix. */
+/* View source, at the top right of the matrix. */
 .card-tools {
   display: flex;
   justify-content: flex-end;

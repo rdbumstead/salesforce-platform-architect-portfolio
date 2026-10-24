@@ -1,5 +1,5 @@
 /**
- * @description       : Tests for GovernanceController (Round 4 plan L11). Checklist items
+ * @description       : Tests for GovernanceController. Checklist items
  *                      tick only on evidence. The guest test runs as the real Portfolio1 site
  *                      guest user with Portfolio_Guest.
  * @author            : Ryan Bumstead
@@ -66,7 +66,7 @@ private class GovernanceControllerTest {
     Test.startTest();
     GovernanceController.PipelineStatus status = GovernanceController.getPipelineStatus();
     Test.stopTest();
-    Assert.areEqual(3, status.items.size(), 'Three E4 items');
+    Assert.areEqual(3, status.items.size(), 'Three checklist items');
     return itemsByKey(status);
   }
 
@@ -257,6 +257,46 @@ private class GovernanceControllerTest {
       GovernanceController.STATE_PASS,
       items.get(GovernanceController.ITEM_CACHES).state,
       'Guest sees cache age'
+    );
+  }
+
+  @isTest
+  static void shouldMarkHeartbeatStaleAtTheStaleHoursSetting() {
+    PortfolioSettings.overrideNumber('Heartbeat_Stale_Hours', 12);
+    insert run('heartbeat', 'Success', 'hb', NOW.addHours(-13));
+
+    GovernanceController.ChecklistItem heartbeat = load()
+      .get(GovernanceController.ITEM_HEARTBEAT);
+
+    Assert.areEqual(
+      GovernanceController.STATE_STALE,
+      heartbeat.state,
+      'Stale after 12 hours'
+    );
+    Assert.areEqual(
+      'Org heartbeat in the last 12 hours',
+      heartbeat.label,
+      'The label names the hours in force'
+    );
+  }
+
+  @isTest
+  static void shouldPassCachesUnderTheCacheMinutesSetting() {
+    PortfolioSettings.overrideNumber('Governance_Cache_Minutes', 60);
+    insertCaches(5, 45);
+
+    GovernanceController.ChecklistItem caches = load()
+      .get(GovernanceController.ITEM_CACHES);
+
+    Assert.areEqual(
+      GovernanceController.STATE_PASS,
+      caches.state,
+      '45 minutes passes under 60'
+    );
+    Assert.areEqual(
+      'Integration caches under 60 minutes old',
+      caches.label,
+      'The label names the minutes in force'
     );
   }
 }

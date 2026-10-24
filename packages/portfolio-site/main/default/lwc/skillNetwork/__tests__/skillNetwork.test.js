@@ -1,9 +1,9 @@
 /**
  * @description       : Unit tests for skillNetwork LWC on the Large form factor (the Jest default). Covers the
  *                      matrix, the years rule, chip selection, the view switch, the lazy graph and its engine
- *                      load, the accessible list, the analytics calls and the no hex rule (Round 5 plan M2).
- *                      Round 7 (audit E1): the zoom controls, the zoom transform, node drag and reset view.
- *                      Round 7 (audit E4): the persona filter on the matrix.
+ *                      load, the accessible list, the analytics calls and the no hex rule.
+ *                      Also the zoom controls, the zoom transform, node drag and reset view, and the
+ *                      persona filter on the matrix.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -11,7 +11,7 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import SkillNetwork from "c/skillNetwork";
-// Same module as the component, which the Round 3 plan pins.
+// Same module as the component, which the site pins.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { graphql } from "lightning/uiGraphQLApi";
 import {
@@ -80,7 +80,8 @@ jest.mock(
     EVENTS: {
       SKILLS_VIEW_CHANGED: "skills_view_changed",
       SKILL_SELECTED: "skill_selected",
-      SKILLS_PERSONA_FILTERED: "skills_persona_filtered"
+      SKILLS_PERSONA_FILTERED: "skills_persona_filtered",
+      GRAPH_ZOOM_USED: "graph_zoom_used"
     }
   }),
   { virtual: true }
@@ -157,7 +158,7 @@ describe("c-skill-network (Large form factor)", () => {
     delete window.matchMedia;
   });
 
-  it("places View source with the skillNetwork key at the top of the card (contract P2)", () => {
+  it("places View source with the skillNetwork key at the top of the card", () => {
     const element = mount();
 
     const control = element.shadowRoot.querySelector(
@@ -409,12 +410,13 @@ describe("c-skill-network (Large form factor)", () => {
     expect(loadGraphEngine).not.toHaveBeenCalled();
   });
 
-  // Pan, zoom and drag (audit E1). The engine's own tests drive the real d3-zoom and d3-drag.
+  // Pan, zoom and drag. The engine's own tests drive the real d3-zoom and d3-drag.
   function fakeControls() {
     return {
       zoomIn: jest.fn(),
       zoomOut: jest.fn(),
       reset: jest.fn(),
+      panBy: jest.fn(),
       scale: jest.fn(() => 1),
       detach: jest.fn()
     };
@@ -549,6 +551,113 @@ describe("c-skill-network (Large form factor)", () => {
     expect(controls.reset).toHaveBeenCalledTimes(1);
   });
 
+  it("pans a little past the drawn box at any zoom and leaves the plain wheel to the page", async () => {
+    attachPanZoom.mockReturnValue(fakeControls());
+    const element = await mountWithData();
+    await openGraph(element);
+
+    const options = attachPanZoom.mock.calls[0][2];
+    expect(options.translateExtent).toEqual([
+      [-270, -120],
+      [1230, 960]
+    ]);
+    expect(options.ctrlWheel).toBe(true);
+    expect(
+      element.shadowRoot.querySelector(".graph-hint").textContent
+    ).toContain("Ctrl and the mouse wheel");
+  });
+
+  it("sends graph_zoom_used for each button and for a wheel gesture, nothing for a drag", async () => {
+    attachPanZoom.mockReturnValue(fakeControls());
+    const element = await mountWithData();
+    await openGraph(element);
+    trackEvent.mockClear();
+
+    element.shadowRoot.querySelector('[data-action="zoom-in"]').click();
+    element.shadowRoot.querySelector('[data-action="zoom-out"]').click();
+    element.shadowRoot.querySelector('[data-action="reset"]').click();
+    const { onGestureEnd } = attachPanZoom.mock.calls[0][2];
+    onGestureEnd("wheel");
+    onGestureEnd("mouse");
+    onGestureEnd("touch");
+
+    expect(trackEvent.mock.calls).toEqual([
+      ["graph_zoom_used", { control: "in" }],
+      ["graph_zoom_used", { control: "out" }],
+      ["graph_zoom_used", { control: "reset" }],
+      ["graph_zoom_used", { control: "wheel" }]
+    ]);
+  });
+
+  it("pans with the arrow keys on the focused graph and shows how", async () => {
+    const controls = fakeControls();
+    attachPanZoom.mockReturnValue(controls);
+    const element = await mountWithData();
+    await openGraph(element);
+    trackEvent.mockClear();
+
+    const wrapper = element.shadowRoot.querySelector(".graph-wrapper");
+    expect(wrapper.getAttribute("tabindex")).toBe("0");
+    expect(wrapper.getAttribute("role")).toBe("group");
+    expect(wrapper.getAttribute("aria-label")).toBe("Skill graph");
+    const hint = element.shadowRoot.querySelector(".pan-hint");
+    expect(hint.textContent.trim()).toBe(
+      "Arrow keys pan the graph. Reset view centres it again."
+    );
+    expect(wrapper.getAttribute("aria-describedby")).toBe(
+      hint.getAttribute("id")
+    );
+
+    const press = (key, extra = {}) => {
+      const event = new KeyboardEvent("keydown", {
+        key,
+        bubbles: true,
+        cancelable: true,
+        ...extra
+      });
+      wrapper.dispatchEvent(event);
+      return event;
+    };
+    expect(press("ArrowRight").defaultPrevented).toBe(true);
+    press("ArrowLeft");
+    press("ArrowUp");
+    press("ArrowDown");
+    expect(controls.panBy.mock.calls).toEqual([
+      [-40, 0],
+      [40, 0],
+      [0, 40],
+      [0, -40]
+    ]);
+
+    // Other keys, and arrows with a modifier, are left to the page.
+    expect(press("Enter").defaultPrevented).toBe(false);
+    expect(press("ArrowDown", { ctrlKey: true }).defaultPrevented).toBe(false);
+    expect(controls.panBy).toHaveBeenCalledTimes(4);
+
+    // One event per focus, however many presses.
+    expect(trackEvent.mock.calls).toEqual([
+      ["graph_zoom_used", { control: "keyboard" }]
+    ]);
+    wrapper.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    press("ArrowRight");
+    expect(trackEvent).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the graph out of the tab order when the library has no d3-zoom", async () => {
+    const element = await mountWithData();
+    await openGraph(element);
+
+    const wrapper = element.shadowRoot.querySelector(".graph-wrapper");
+    expect(wrapper.getAttribute("tabindex")).toBe("-1");
+    const event = new KeyboardEvent("keydown", {
+      key: "ArrowRight",
+      bubbles: true,
+      cancelable: true
+    });
+    wrapper.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
   it("detaches zoom when the matrix opens and starts the next graph unzoomed", async () => {
     const first = fakeControls();
     const second = fakeControls();
@@ -571,7 +680,7 @@ describe("c-skill-network (Large form factor)", () => {
     ).toBe("translate(0,0) scale(1)");
   });
 
-  // Persona filter (audit E4). The test wire adapter hands every graphql wire the same payload,
+  // Persona filter. The test wire adapter hands every graphql wire the same payload,
   // so a payload with tags reaches both the skills query and the persona query.
   function taggedPayload() {
     const data = buildPayload();

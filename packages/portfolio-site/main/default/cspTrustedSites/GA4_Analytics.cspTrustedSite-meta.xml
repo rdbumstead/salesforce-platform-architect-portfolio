@@ -2,7 +2,7 @@
 <CspTrustedSite xmlns="http://soap.sforce.com/2006/04/metadata">
     <context>Communities</context>
     <description
-  >GA4 collection hosts, img-src and connect-src per Google's GA4 CSP guide (Round 4 plan L5).</description>
+  >GA4 collection hosts, img-src and connect-src per Google's GA4 CSP guide.</description>
     <endpointUrl>https://*.google-analytics.com</endpointUrl>
     <isActive>true</isActive>
     <isApplicableToConnectSrc>true</isApplicableToConnectSrc>

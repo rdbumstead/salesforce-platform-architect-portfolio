@@ -21,7 +21,7 @@ public with sharing class GeminiService implements IAIGenerationService {
 
   /**
    * Callout timeout when the Gemini config record sets none: 60 s (owner decision
-   * 2026-10-21, replacing PD-D11's 20 s). Gemma 4 always reasons before it answers, and the
+   * 2026-10-21, replacing an earlier 20 s). Gemma 4 always reasons before it answers, and the
    * owner measured 28.7 s for a trivial prompt.
    */
   public static final Integer DEFAULT_TIMEOUT_MS = 60000;
@@ -82,7 +82,7 @@ public with sharing class GeminiService implements IAIGenerationService {
 
   /**
    * @description What went wrong in the last call of this transaction, for the dispatch's
-   *              Attempt.detail (Round 4 plan L7): "HTTP 503", "HTTP 200 with no answer
+   *              Attempt.detail: "HTTP 503", "HTTP 200 with no answer
    *              text", or the exception type and a short message. The API key travels in
    *              a header merged by the Named Credential and never reaches Apex, and any URL
    *              or key=value pair in a message is replaced before it is kept.
@@ -155,7 +155,7 @@ public with sharing class GeminiService implements IAIGenerationService {
 
   /**
    * @description Callout timeout: Timeout_Ms__c of the Gemini config record, else 60 s. A
-   *              thinking model often needs more than the 10 s platform default (PD-D11).
+   *              thinking model often needs more than the 10 s platform default.
    * @return Integer Timeout in milliseconds, between 1 and 120000.
    */
   @TestVisible

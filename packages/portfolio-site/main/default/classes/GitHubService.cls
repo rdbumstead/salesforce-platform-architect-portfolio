@@ -1,8 +1,8 @@
 /**
  * @description       : Reads the GitHub API through the GitHub_API Named Credential. Recent
  *                      commits map to DeliveryController.CommitItem, the payload DTO of the
- *                      Delivery page (pillar-e-design 4.2 and 4.4). A file on main comes back
- *                      as FileContent for the View source cache (Round 7 contract P2). Only
+ *                      Delivery page. A file on main comes back
+ *                      as FileContent for the View source cache. Only
  *                      GitHubCacheRefreshJob and SourceCacheRefreshJob call it, as the
  *                      scheduling admin. Guests never reach it: pages read the caches. A
  *                      failure throws GitHubServiceException so the caller keeps its newest good

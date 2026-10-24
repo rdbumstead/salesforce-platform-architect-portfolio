@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for JiraCacheCleanupBatch: rows past 30 minutes go, the
- *                      newest row always stays (pillar-e-design 4.4, G10).
+ *                      newest row always stays.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

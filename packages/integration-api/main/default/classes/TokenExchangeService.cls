@@ -4,7 +4,7 @@
  *                      issuance cap, exchanges client credentials for a token through the
  *                      Portfolio_API_Token Named Credential, and writes exactly one
  *                      API_Access_Request__c audit row per attempt. No DML runs before the
- *                      token callout (contract C2); the audit row is written after it.
+ *                      token callout. The audit row is written after it.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -13,10 +13,12 @@
  **/
 public with sharing class TokenExchangeService {
   /**
-   * @description Requests allowed per minute per email+IP key (decision 2026-10-20).
-   *              Deliberately a literal, independent of the PAPI tier limit.
+   * @description Code default for requests allowed per minute per email and IP key. It is
+   *              its own setting, independent of the PAPI tier limit. requestsPerMinute()
+   *              gives the value in force.
    */
   public static final Integer TOKEN_REQUESTS_PER_MINUTE = 15;
+  // Code default for the daily cap. dailyCap() gives the value in force.
   public static final Integer DEFAULT_DAILY_CAP = 50;
   public static final Integer EMAIL_MAX_LENGTH = 254;
   public static final Integer PURPOSE_MAX_LENGTH = 280;
@@ -140,7 +142,7 @@ public with sharing class TokenExchangeService {
      * @description The /auth/token 200 body: access_token, token_type, instance_url and
      *              docs. There is no expires_in: every vended token is the same session of
      *              the integration user, which ends after 30 minutes without use, so no
-     *              lifetime per token can be stated honestly (owner decision, log 155).
+     *              lifetime per token can be stated honestly (owner decision).
      * @return Map<String, Object> The response body.
      */
     public Map<String, Object> toTokenBody() {
@@ -302,8 +304,9 @@ public with sharing class TokenExchangeService {
   }
 
   /**
-   * @description The daily issuance cap from Portfolio_Config__mdt.Token_Daily_Cap__c,
-   *              DEFAULT_DAILY_CAP when the record or the value is missing.
+   * @description The daily issuance cap. Portfolio_Config__mdt.Token_Daily_Cap__c wins when
+   *              it is set. Otherwise the Token_Daily_Cap_Default setting, else
+   *              DEFAULT_DAILY_CAP.
    * @return Integer The cap.
    */
   public static Integer dailyCap() {
@@ -311,7 +314,25 @@ public with sharing class TokenExchangeService {
       ? configOverride
       : Portfolio_Config__mdt.getInstance(CONFIG_RECORD);
     Decimal cap = config?.Token_Daily_Cap__c;
-    return cap == null ? DEFAULT_DAILY_CAP : cap.intValue();
+    if (cap != null) {
+      return cap.intValue();
+    }
+    return PortfolioSettings.getInteger(
+      'Token_Daily_Cap_Default',
+      DEFAULT_DAILY_CAP
+    );
+  }
+
+  /**
+   * @description Token requests one email and IP may make in a minute: the
+   *              Token_Requests_Per_Minute setting, else TOKEN_REQUESTS_PER_MINUTE.
+   * @return Integer The per minute limit.
+   */
+  public static Integer requestsPerMinute() {
+    return PortfolioSettings.getInteger(
+      'Token_Requests_Per_Minute',
+      TOKEN_REQUESTS_PER_MINUTE
+    );
   }
 
   /**
@@ -373,10 +394,7 @@ public with sharing class TokenExchangeService {
 
   private static Result checkRateLimit(Attempt attempt) {
     ApiRequestContext.RateDecision decision = ApiRequestContext.rateLimiter()
-      .checkKey(
-        rateKey(attempt.email, attempt.sourceIp),
-        TOKEN_REQUESTS_PER_MINUTE
-      );
+      .checkKey(rateKey(attempt.email, attempt.sourceIp), requestsPerMinute());
     if (decision.allowed) {
       return null;
     }

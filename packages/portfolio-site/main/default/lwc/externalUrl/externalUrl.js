@@ -5,7 +5,7 @@
  *                      breaks. A bare domain gains https://, http and https URLs stay as they
  *                      are, and any other scheme (javascript:, data:, mailto:) is refused.
  *                      toSiteAssetUrl resolves a stored image URL the way the project gallery
- *                      does (Round 5 plan M5): http and https as they are, and
+ *                      does: http and https as they are, and
  *                      resource:<Name>/<path> as the site's static resource path.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead

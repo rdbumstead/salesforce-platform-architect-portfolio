@@ -1,5 +1,5 @@
 /**
- * @description       : Refreshes the Jira roadmap cache (pillar-e-design 4.4). Reads the project
+ * @description       : Refreshes the Jira roadmap cache. Reads the project
  *                      key from Portfolio_Config__mdt (SPAP when the field is blank), runs the
  *                      roadmap search through JiraService, and inserts one Jira_Cache__c row
  *                      holding the schemaVersion 1 payload built from DeliveryController's
@@ -26,7 +26,7 @@ public with sharing class JiraCacheRefreshJob implements Queueable, Database.All
 
   /**
    * @description One refresh: config, breaker check, callout, then the writes. Every write
-   *              happens after the callout (contract C2).
+   *              happens after the callout.
    * @return String One of the GitHubCacheRefreshJob.OUTCOME_ constants.
    */
   public static String refresh() {

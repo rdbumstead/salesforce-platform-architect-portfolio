@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Headline_Metric_Label__c</fullName>
     <description
-  >The words that explain the headline number on this pillar's home page card. Shown only when Headline Metric is also set (Round 6 plan N7).</description>
+  >The words that explain the headline number on this pillar's home page card. Shown only when Headline Metric is also set.</description>
     <externalId>false</externalId>
     <inlineHelpText
   >One plain sentence fragment that says what the number counts, 120 characters at most.</inlineHelpText>

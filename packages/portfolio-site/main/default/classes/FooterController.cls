@@ -1,12 +1,12 @@
 /**
- * @description       : Serves the Glass Box footer (Round 4 plan L8, pillar-d-design 3.8 and 5.4).
+ * @description       : Serves the Glass Box footer.
  *                      getLinks() returns only the GitHub and LinkedIn profile URLs from the
  *                      Portfolio_Config__mdt record. The owner email and phone on that record
- *                      never leave this class (trap 34). getSystemSnapshot() is called by the
+ *                      never leave this class. getSystemSnapshot() is called by the
  *                      footer after first paint (ADR-014) and returns this transaction's CPU,
  *                      heap and SOQL use against their limits (SAS 9, Guardrails guide), the
  *                      provider rows from ContentGenerationController.providerStatus() as they
- *                      are, and today's AI tier request count (PD-D9 b). Round 7 B7 adds the
+ *                      are, and today's AI tier request count. It also returns the
  *                      org's own quotas from OrgLimits (daily API requests and daily async
  *                      Apex runs) and the GitHub and Jira circuit breaker state.
  * @author            : Ryan Bumstead
@@ -22,7 +22,7 @@ public with sharing class FooterController {
 
   /**
    * The OrgLimits names the footer shows, in this order, with their footer labels. Each one is
-   * readable by the site guest. DataStorageMB is not (FooterControllerTest, Round 7 log).
+   * readable by the site guest. DataStorageMB is not, as FooterControllerTest shows.
    */
   @TestVisible
   private static final List<String> QUOTA_NAMES = new List<String>{
@@ -221,7 +221,7 @@ public with sharing class FooterController {
   }
 
   /**
-   * PortfolioService.getConfig() does not select the profile URL fields (Round 4 log 140), so
+   * PortfolioService.getConfig() does not select the profile URL fields, so
    * the record is read here with the same rule: the first record by DeveloperName.
    * getAll() reads custom metadata without SOQL.
    */

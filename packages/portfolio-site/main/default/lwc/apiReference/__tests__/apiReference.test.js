@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for apiReference LWC. The resource loader is mocked (trap 25)
+ * @description       : Unit tests for apiReference LWC. The resource loader is mocked
  *                      and Redoc is a stub on window, so the tests prove the loading contract,
  *                      the spec toggle and the fallback, not Redoc's own rendering.
  * @author            : Ryan Bumstead
@@ -115,7 +115,7 @@ describe("c-api-reference", () => {
 
   it("stops waiting after 15 s and offers the hosted reference", async () => {
     jest.useFakeTimers();
-    window.Redoc.init = jest.fn(); // never calls back, as under WebKit (trap 32)
+    window.Redoc.init = jest.fn(); // never calls back, as under WebKit
     const element = createComponent();
     await Promise.resolve();
 
@@ -342,7 +342,7 @@ describe("c-api-reference", () => {
     });
   });
 
-  it("keeps every generated spec copy in step with scripts/sync-specs.js (audit G2)", () => {
+  it("keeps every generated spec copy in step with scripts/sync-specs.js", () => {
     // The one source is packages/integration-api/specs. A failure here means a spec changed
     // without node scripts/sync-specs.js being run.
     const sync = require(join(process.cwd(), "scripts/sync-specs.js"));

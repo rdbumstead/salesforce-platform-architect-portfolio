@@ -45,3 +45,7 @@ The form is public. An auto-response on a public form can be used to send mail t
 - The auto-response did not change the `SingleEmail`, `MassEmail` or `DailyWorkflowEmails` figures that `sf org list limits` reports in the scratch org. Which daily allowance it does count against is not established here.
 - The auto-response rule entry has no Reply-To field in Setup, so replies go to the sending address. In production that is the verified organization wide address.
 - Cloudflare Turnstile stays the next step if abuse appears. It is out of scope because it brings back a third party script.
+
+## Amendment (2026-10-23): the form has its own page
+
+The form moved from the home page to its own route, `/contact` (page title "Contact | Ryan Bumstead"), with the heading "Get in touch" and a short intro. The home page keeps a one line "Get in touch" prompt, `c-contact-call`, with a link styled as a button to `/contact`. The header gains a Contact item, and the footer's Contact link points at `/contact`. An old `/#contact` address sends the visitor on to `/contact`, replacing the history entry. The form's own behaviour, its guard, the platform event and the Lead rules are unchanged. Each answered submit sends `contact_form_submitted` with only its outcome (Technical Guide §2.16).

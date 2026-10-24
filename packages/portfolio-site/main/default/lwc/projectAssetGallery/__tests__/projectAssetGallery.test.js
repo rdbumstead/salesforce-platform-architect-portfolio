@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for projectAssetGallery (Round 5 plan M5, Round 6 empty rule). The GraphQL wire adapter,
+ * @description       : Unit tests for projectAssetGallery, including the rule that it renders nothing when empty. The GraphQL wire adapter,
  *                      the site base path and c/analyticsService are mocked.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -8,7 +8,7 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import ProjectAssetGallery, { resolveAssetUrl } from "c/projectAssetGallery";
-// Same module as the component, which the Round 3 plan pins.
+// Same module as the component, which the site pins.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { graphql } from "lightning/uiGraphQLApi";
 import { trackEvent } from "c/analyticsService";

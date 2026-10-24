@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Headline_Metric__c</fullName>
     <description
-  >The one headline number shown as the lead line of this pillar's card on the home page, for example 23 API paths. Shown only when Headline Metric Label is also set. Only numbers the owner can back up (Round 6 plan N7).</description>
+  >The one headline number shown as the lead line of this pillar's card on the home page, for example 23 API paths. Shown only when Headline Metric Label is also set. Only numbers the owner can back up.</description>
     <externalId>false</externalId>
     <inlineHelpText
   >Short number with its unit, 24 characters at most. Leave blank to show no number on the card.</inlineHelpText>

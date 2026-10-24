@@ -1,21 +1,22 @@
 /**
  * @description       : Roadmap board for the Delivery page. Reads the newest Jira cache row
- *                      through DeliveryController.getRoadmap (plan K3, pillar-e-design section
- *                      4.3). Columns are keyed on Jira's statusCategory, never on status names,
+ *                      through DeliveryController.getRoadmap.
+ *                      Columns are keyed on Jira's statusCategory, never on status names,
  *                      so a renamed workflow status cannot empty a column. The "Simulate an
- *                      outage" switch (Round 4 plan L10, ADR-022) re-reads the feed with
+ *                      outage" switch (ADR-022) re-reads the feed with
  *                      simulate=true, which returns the same cached board marked SIMULATED.
  *                      DEGRADED means the Jira circuit breaker is open. roadmap_viewed is sent
  *                      once when the board is first shown on the page, and turning the switch
- *                      on sends resilience_test_triggered (plan L4). Round 6 plan N8: epic
+ *                      on sends resilience_test_triggered. Epic
  *                      cards come first in each column, a story names its epic as
  *                      "Part of {name} | {key}" (the key alone when the name is missing), and an
  *                      empty feed says so instead of reading as an outage. The outage line is
- *                      kept for a real wire error. Round 7 F7 (owner, 2026-10-23): every column
- *                      shows at most COLUMN_LIMIT cards with its own "Show all N" button and
- *                      state. Done keeps its newest COLUMN_LIMIT by updatedAt and its "Show all
- *                      N shipped" label. To Do and In Progress keep the feed order and cut there.
- *                      The c-view-source control (contract P2) sits in the header.
+ *                      kept for a real wire error. Every column
+ *                      shows at most the feed's columnLimit cards (COLUMN_LIMIT when the feed
+ *                      has none) with its own "Show all N" button and state. Done keeps its
+ *                      newest cards by updatedAt and its "Show all N shipped" label. To Do and
+ *                      In Progress keep the feed order and cut there.
+ *                      The c-view-source control sits in the header.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -43,6 +44,7 @@ export const STATUS_NOTES = {
     "Jira is not answering right now. This is the last roadmap we saved."
 };
 
+// Cards per column when the feed carries no columnLimit of its own.
 export const COLUMN_LIMIT = 8;
 export const EMPTY_TEXT =
   "Nothing on the roadmap yet. It fills in from Jira after the next sync.";
@@ -84,14 +86,20 @@ function updatedTime(item) {
   return Number.isNaN(time) ? 0 : time;
 }
 
-// The newest COLUMN_LIMIT items by updatedAt, and the rest. Ties keep the feed order.
-function splitNewest(items) {
+// A whole number of 1 or more from the feed, else COLUMN_LIMIT.
+export function columnLimitOf(feed) {
+  const value = feed ? feed.columnLimit : undefined;
+  return Number.isInteger(value) && value >= 1 ? value : COLUMN_LIMIT;
+}
+
+// The newest limit items by updatedAt, and the rest. Ties keep the feed order.
+function splitNewest(items, limit) {
   const newest = items
     .map((item, index) => ({ item, index }))
     .sort(
       (a, b) => updatedTime(b.item) - updatedTime(a.item) || a.index - b.index
     )
-    .slice(0, COLUMN_LIMIT)
+    .slice(0, limit)
     .map((entry) => entry.item);
   const shown = new Set(newest);
   return {
@@ -100,11 +108,11 @@ function splitNewest(items) {
   };
 }
 
-// The first COLUMN_LIMIT items in feed order, and the rest.
-function splitFirst(items) {
+// The first limit items in feed order, and the rest.
+function splitFirst(items, limit) {
   return {
-    visible: items.slice(0, COLUMN_LIMIT),
-    hidden: items.slice(COLUMN_LIMIT)
+    visible: items.slice(0, limit),
+    hidden: items.slice(limit)
   };
 }
 
@@ -174,16 +182,17 @@ export default class RoadmapViewer extends LightningElement {
   }
 
   get columns() {
+    const limit = columnLimitOf(this.feed);
     return COLUMNS.map((column) => {
       const items = this.items.filter(
         (item) => item.statusCategory === column.category
       );
       const isDone = column.category === "done";
-      const isCapped = items.length > COLUMN_LIMIT;
+      const isCapped = items.length > limit;
       const isExpanded = Boolean(this.expanded[column.category]);
       let split = { visible: items, hidden: [] };
       if (isCapped) {
-        split = isDone ? splitNewest(items) : splitFirst(items);
+        split = isDone ? splitNewest(items, limit) : splitFirst(items, limit);
       }
       const hiddenCards =
         isCapped && isExpanded ? epicsFirst(split.hidden.map(toCard)) : [];

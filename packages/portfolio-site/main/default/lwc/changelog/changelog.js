@@ -1,12 +1,11 @@
 /**
  * @description       : Recent commits for the Delivery page. Reads the newest GitHub cache row
- *                      through DeliveryController.getRecentCommits (plan K3, pillar-e-design
- *                      section 4.3) and shows its age. Guests never trigger a callout from here.
- *                      The "Simulate an outage" switch (Round 4 plan L10, ADR-022) re-reads the
+ *                      through DeliveryController.getRecentCommits and shows its age. Guests never trigger a callout from here.
+ *                      The "Simulate an outage" switch (ADR-022) re-reads the
  *                      feed with simulate=true, which returns the same cached commits marked
  *                      SIMULATED. DEGRADED means the GitHub circuit breaker is open. A commit
  *                      link click sends changelog_commit_clicked with its sha, and turning
- *                      the switch on sends resilience_test_triggered (plan L4).
+ *                      the switch on sends resilience_test_triggered.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

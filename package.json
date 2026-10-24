@@ -27,6 +27,7 @@
     "delta:validate": "node scripts/validate.js",
     "docs:api": "node scripts/generate-api-docs.js",
     "docs:counts": "node scripts/check-doc-counts.js",
+    "refs:check": "node scripts/check-internal-refs.js",
     "specs:sync": "node scripts/sync-specs.js",
     "specs:check": "node scripts/sync-specs.js --check",
     "docs:verify": "npm run docs:api && git diff --exit-code docs/api/oas/ && echo \"SUCCESS: API Documentation is synchronized.\""

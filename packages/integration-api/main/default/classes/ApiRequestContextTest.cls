@@ -173,7 +173,7 @@ private class ApiRequestContextTest {
     );
   }
 
-  // ---------- D3: the platform's own 32-hex id on PAPI
+  // ---------- The platform's own 32-hex id on PAPI
 
   private static final String PLATFORM_ID = '89b386134a6c191e614fc9ae695e52bf';
 
@@ -803,5 +803,105 @@ private class ApiRequestContextTest {
       active.checkKey('papi-token:abc', 15).allowed,
       'Explicit keys go through the same limiter'
     );
+  }
+
+  @IsTest
+  static void pageSizeSettingsChangeTheDefaultAndTheMax() {
+    PortfolioSettings.overrideNumber('Api_Default_Page_Size', 20);
+    PortfolioSettings.overrideNumber('Api_Max_Page_Size', 100);
+
+    Test.startTest();
+    Integer defaultValue = contextWithParams(null).limitParam();
+    Integer atMax = contextWithParams(
+        new Map<String, String>{ 'limit' => '100' }
+      )
+      .limitParam();
+    ApiRequestContext overMax = contextWithParams(
+      new Map<String, String>{ 'limit' => '101' }
+    );
+    Integer overMaxValue = overMax.limitParam();
+    Test.stopTest();
+
+    Assert.areEqual(
+      20,
+      defaultValue,
+      'The default page size comes from the setting'
+    );
+    Assert.areEqual(100, atMax, 'The max page size comes from the setting');
+    Assert.isNull(overMaxValue, 'A limit over the set max is refused');
+    Assert.areEqual(
+      'Limit must be an integer between 1 and 100.',
+      RestTestUtil.getBodyAsMap().get('message'),
+      'The message names the max in force'
+    );
+  }
+
+  @IsTest
+  static void defaultPageSizeNeverExceedsTheMax() {
+    PortfolioSettings.overrideNumber('Api_Default_Page_Size', 150);
+    PortfolioSettings.overrideNumber('Api_Max_Page_Size', 100);
+
+    Test.startTest();
+    ApiRequestContext ctx = contextWithParams(null);
+    Integer value = ctx.limitParam();
+    Test.stopTest();
+
+    Assert.areEqual(100, value, 'The default is held to the max');
+    Assert.isFalse(
+      ctx.isRejected(),
+      'A caller who sends no limit is never refused'
+    );
+  }
+
+  @IsTest
+  static void tierSettingsChangeTheRateLimitHeaders() {
+    PortfolioSettings.overrideNumber('Api_Sapi_Rate_Per_Minute', 300);
+    PortfolioSettings.overrideNumber('Api_Papi_Rate_Per_Minute', 30);
+    PortfolioSettings.overrideNumber('Api_Ai_Rate_Per_Minute', 4);
+    Map<String, String> expected = new Map<String, String>{
+      SAPI_URI => '300',
+      PAPI_URI => '30',
+      PAPI_AI_URI => '4'
+    };
+
+    Test.startTest();
+    for (String uri : expected.keySet()) {
+      RestTestUtil.initGet(uri);
+      ApiRequestContext.begin();
+      Assert.areEqual(
+        expected.get(uri),
+        responseHeader('X-RateLimit-Limit'),
+        'Limit for ' + uri
+      );
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      4,
+      ApiRequestContext.aiLimitPerMinute(),
+      'AI tier accessor'
+    );
+  }
+
+  @IsTest
+  static void papiRateOfTwoRefusesTheThirdCallInAMinute() {
+    PortfolioSettings.overrideNumber('Api_Papi_Rate_Per_Minute', 2);
+    RateWindowLimiter.nowOverride = Datetime.now();
+    List<Boolean> rejected = new List<Boolean>();
+
+    Test.startTest();
+    for (Integer i = 0; i < 3; i++) {
+      RestTestUtil.initGet(PAPI_URI);
+      rejected.add(ApiRequestContext.begin().isRejected());
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      new List<Boolean>{ false, false, true },
+      rejected,
+      'The first two pass and the third is refused'
+    );
+    assertErrorShape(429, 'RATE_LIMIT_EXCEEDED', true);
+    Assert.areEqual('2', responseHeader('X-RateLimit-Limit'), 'The set limit');
   }
 }
