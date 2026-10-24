@@ -380,4 +380,63 @@ describe("c-view-source", () => {
     expect($(element, ".dialog-body")).toBeNull();
     expect($(element, ".view-source-button")).toBeNull();
   });
+
+  describe("analytics", () => {
+    beforeEach(() => {
+      window.gtag = jest.fn();
+    });
+
+    afterEach(() => {
+      delete window.gtag;
+    });
+
+    it("sends view_source_opened with the source key when opened", async () => {
+      const element = create("skillNetwork");
+      getSourceFiles.emit(FILES);
+      await flush();
+      await openDialog(element);
+
+      expect(window.gtag).toHaveBeenCalledTimes(1);
+      expect(window.gtag).toHaveBeenCalledWith("event", "view_source_opened", {
+        source_key: "skillNetwork"
+      });
+    });
+
+    it("sends view_source_file_selected with the key and label on a click", async () => {
+      const element = create();
+      getSourceFiles.emit(FILES);
+      await flush();
+      await openDialog(element);
+      window.gtag.mockClear();
+
+      $$(element, "[role='tab']")[1].click();
+      await flush();
+
+      expect(window.gtag).toHaveBeenCalledWith(
+        "event",
+        "view_source_file_selected",
+        { source_key: "apiTester", file_label: "ApiLabController.cls" }
+      );
+    });
+
+    it("sends a file selection from the keyboard, and none for the tab already shown", async () => {
+      const element = create();
+      getSourceFiles.emit(FILES);
+      await flush();
+      await openDialog(element);
+      window.gtag.mockClear();
+
+      $$(element, "[role='tab']")[0].click();
+      await flush();
+      expect(window.gtag).not.toHaveBeenCalled();
+
+      keydown($$(element, "[role='tab']")[0], "ArrowRight");
+      await flush();
+      expect(window.gtag).toHaveBeenCalledTimes(1);
+      expect(window.gtag.mock.calls[0][2]).toEqual({
+        source_key: "apiTester",
+        file_label: "ApiLabController.cls"
+      });
+    });
+  });
 });

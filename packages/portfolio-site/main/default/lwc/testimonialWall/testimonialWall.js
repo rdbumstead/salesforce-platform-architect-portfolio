@@ -5,7 +5,8 @@
  *                      rule, worked out on the server: the Professional vibe from a Manager,
  *                      Client or Peer. Renders nothing at all when there are no approved
  *                      testimonials or the read fails, so the page can ship before real quotes
- *                      exist.
+ *                      exist. Switching the filter sends testimonials_filtered with the new
+ *                      filter, all or professional.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -13,6 +14,7 @@
  **/
 import { LightningElement, wire } from "lwc";
 import getApprovedTestimonials from "@salesforce/apex/TestimonialController.getApprovedTestimonials";
+import { trackEvent, EVENTS } from "c/analyticsService";
 
 export const FILTER_ALL = "all";
 export const FILTER_PROFESSIONAL = "professional";
@@ -83,6 +85,11 @@ export default class TestimonialWall extends LightningElement {
   }
 
   handleFilter(event) {
-    this.filter = event.currentTarget.dataset.filter;
+    const next = event.currentTarget.dataset.filter;
+    if (next === this.filter) {
+      return;
+    }
+    this.filter = next;
+    trackEvent(EVENTS.TESTIMONIALS_FILTERED, { filter: next });
   }
 }
