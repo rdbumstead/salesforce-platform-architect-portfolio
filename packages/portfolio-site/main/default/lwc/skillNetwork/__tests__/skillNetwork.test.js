@@ -567,7 +567,7 @@ describe("c-skill-network (Large form factor)", () => {
     ).toContain("Ctrl and the mouse wheel");
   });
 
-  it("sends graph_zoom_used for each button and for a wheel gesture, nothing for a drag", async () => {
+  it("sends graph_zoom_used for each button, a wheel gesture and a pinch, nothing for a drag", async () => {
     attachPanZoom.mockReturnValue(fakeControls());
     const element = await mountWithData();
     await openGraph(element);
@@ -580,12 +580,14 @@ describe("c-skill-network (Large form factor)", () => {
     onGestureEnd("wheel");
     onGestureEnd("mouse");
     onGestureEnd("touch");
+    onGestureEnd("pinch");
 
     expect(trackEvent.mock.calls).toEqual([
       ["graph_zoom_used", { control: "in" }],
       ["graph_zoom_used", { control: "out" }],
       ["graph_zoom_used", { control: "reset" }],
-      ["graph_zoom_used", { control: "wheel" }]
+      ["graph_zoom_used", { control: "wheel" }],
+      ["graph_zoom_used", { control: "pinch" }]
     ]);
   });
 

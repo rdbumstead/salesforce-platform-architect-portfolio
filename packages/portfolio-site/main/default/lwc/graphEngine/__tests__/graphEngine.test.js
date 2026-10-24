@@ -633,6 +633,84 @@ describe("c/graphEngine attachPanZoom and attachNodeDrag", () => {
     expect(onGestureEnd).toHaveBeenCalledWith("mouse");
   });
 
+  // A touch event as d3-zoom reads it: touches still down, and the ones that changed.
+  function touch(type, down, changed) {
+    const event = new Event(type, { bubbles: true, cancelable: true });
+    const list = (points) =>
+      points.map(([identifier, x, y]) => ({
+        identifier,
+        clientX: x,
+        clientY: y,
+        pageX: x,
+        pageY: y
+      }));
+    Object.defineProperty(event, "touches", { value: list(down) });
+    Object.defineProperty(event, "changedTouches", { value: list(changed) });
+    event.view = window;
+    return event;
+  }
+
+  it("reports a two finger touch gesture as one pinch when it ends", () => {
+    const svg = svgWithNodes([]);
+    // d3-zoom listens for touches only where the browser has them, which jsdom does not say.
+    svg.ontouchstart = null;
+    const onZoom = jest.fn();
+    const onGestureEnd = jest.fn();
+    engine.attachPanZoom(d3, svg, {
+      onZoom,
+      onGestureEnd,
+      extent: EXTENT,
+      translateExtent: PAN_EXTENT,
+      ctrlWheel: true
+    });
+
+    const a = [1, 100, 100];
+    const b = [2, 200, 100];
+    svg.dispatchEvent(touch("touchstart", [a, b], [a, b]));
+    const a2 = [1, 80, 100];
+    const b2 = [2, 260, 100];
+    svg.dispatchEvent(touch("touchmove", [a2, b2], [a2, b2]));
+    svg.dispatchEvent(touch("touchend", [b2], [a2]));
+    svg.dispatchEvent(touch("touchend", [], [b2]));
+
+    const last = onZoom.mock.calls[onZoom.mock.calls.length - 1][0];
+    expect(last.k).toBeGreaterThan(1);
+    expect(onGestureEnd).toHaveBeenCalledTimes(1);
+    expect(onGestureEnd).toHaveBeenCalledWith("pinch");
+  });
+
+  it("calls a one finger pan that a second finger joins a pinch, and a plain one a touch", () => {
+    const svg = svgWithNodes([]);
+    // d3-zoom listens for touches only where the browser has them, which jsdom does not say.
+    svg.ontouchstart = null;
+    const onGestureEnd = jest.fn();
+    const controls = engine.attachPanZoom(d3, svg, {
+      onZoom() {},
+      onGestureEnd,
+      extent: EXTENT,
+      translateExtent: PAN_EXTENT,
+      ctrlWheel: true
+    });
+    // One finger moves the graph only once it is zoomed in.
+    controls.zoomIn();
+
+    const a = [1, 100, 100];
+    const a2 = [1, 120, 110];
+    svg.dispatchEvent(touch("touchstart", [a], [a]));
+    svg.dispatchEvent(touch("touchmove", [a2], [a2]));
+    svg.dispatchEvent(touch("touchend", [], [a2]));
+    expect(onGestureEnd.mock.calls).toEqual([["touch"]]);
+
+    const b = [2, 220, 110];
+    const b2 = [2, 260, 110];
+    svg.dispatchEvent(touch("touchstart", [a], [a]));
+    svg.dispatchEvent(touch("touchstart", [a, b], [b]));
+    svg.dispatchEvent(touch("touchmove", [a, b2], [b2]));
+    svg.dispatchEvent(touch("touchend", [b2], [a]));
+    svg.dispatchEvent(touch("touchend", [], [b2]));
+    expect(onGestureEnd.mock.calls).toEqual([["touch"], ["pinch"]]);
+  });
+
   it("reports a Ctrl wheel gesture once it ends, and nothing for a button", async () => {
     const svg = svgWithNodes([]);
     const onGestureEnd = jest.fn();

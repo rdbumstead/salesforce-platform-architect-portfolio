@@ -936,9 +936,10 @@ export default class SkillNetwork extends LightningElement {
         // A plain wheel scrolls the page. Ctrl with the wheel, or a pinch, zooms.
         ctrlWheel: true,
         onZoom: (transform) => this.applyZoom(transform),
+        // A wheel and a touch pinch are each sent once per gesture. A drag pan is not sent.
         onGestureEnd: (gesture) => {
-          if (gesture === "wheel") {
-            this.trackZoom("wheel");
+          if (gesture === "wheel" || gesture === "pinch") {
+            this.trackZoom(gesture);
           }
         }
       });
@@ -1011,7 +1012,7 @@ export default class SkillNetwork extends LightningElement {
     return `Zoom ${Math.round(this.zoomScale * 100)}%`;
   }
 
-  // control is one of in, out, reset, wheel or keyboard. No node name or id is sent.
+  // control is one of in, out, reset, wheel, pinch or keyboard. No node name or id is sent.
   trackZoom(control) {
     trackEvent(EVENTS.GRAPH_ZOOM_USED, { control });
   }
