@@ -4,6 +4,12 @@
  *                      parent as a "probe" event with { ms } or { failed: true }. It lives in its
  *                      own module so the GraphQL adapter stack loads only when the footer asks
  *                      for it after the page is idle, never with the layout before first paint.
+ *                      The data service can answer from records another component already read,
+ *                      with no request at all. So the probe watches the browser's resource timing
+ *                      from its creation, and an answer that arrives with no GraphQL request
+ *                      since then is reported with cached: true. When a request did go out the
+ *                      event says cached: false. Where resource timing is missing the event
+ *                      carries no cached flag at all.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -31,10 +37,33 @@ const GRAPHQL_PROBE = gql`
   }
 `;
 
+// The data service posts every GraphQL read to .../services/data/vNN.N/graphql.
+export const GRAPHQL_REQUEST_PATH = /\/services\/data\/v[\d.]+\/graphql(\?|$)/;
+
 function nowMs() {
   return typeof performance !== "undefined" && performance.now
     ? performance.now()
     : Date.now();
+}
+
+/**
+ * Starts watching resource timing entries, or returns null where the browser cannot.
+ * @param {Function} onEntries Receives each batch of entries.
+ * @returns {PerformanceObserver|null} The observer.
+ */
+function watchRequests(onEntries) {
+  try {
+    if (typeof PerformanceObserver !== "function") {
+      return null;
+    }
+    const observer = new PerformanceObserver((list) =>
+      onEntries(list.getEntries())
+    );
+    observer.observe({ type: "resource" });
+    return observer;
+  } catch {
+    return null;
+  }
 }
 
 export default class GraphqlProbe extends LightningElement {
@@ -42,6 +71,10 @@ export default class GraphqlProbe extends LightningElement {
   // connectedCallback runs, and a cached answer can arrive in that gap, so a timer started in
   // connectedCallback read as undefined and the footer showed "NaN ms".
   _startedAt = nowMs();
+  _entries = [];
+  _observer = watchRequests((entries) => {
+    this._entries.push(...entries);
+  });
   _reported = false;
 
   @wire(graphql, { query: GRAPHQL_PROBE })
@@ -52,12 +85,62 @@ export default class GraphqlProbe extends LightningElement {
     if (errors && errors.length) {
       this.report({ failed: true });
     } else if (data) {
-      this.report({ ms: Math.round(nowMs() - this._startedAt) });
+      const detail = { ms: Math.round(nowMs() - this._startedAt) };
+      const sent = this.sentRequest();
+      if (sent !== undefined) {
+        detail.cached = !sent;
+      }
+      this.report(detail);
+    }
+  }
+
+  disconnectedCallback() {
+    this.stopWatching();
+  }
+
+  /**
+   * Whether a GraphQL request started after this probe was created.
+   * @returns {boolean|undefined} undefined when resource timing is not available.
+   */
+  sentRequest() {
+    if (!this._observer) {
+      return undefined;
+    }
+    try {
+      const pending =
+        typeof this._observer.takeRecords === "function"
+          ? this._observer.takeRecords()
+          : [];
+      const buffered =
+        typeof performance.getEntriesByType === "function"
+          ? performance.getEntriesByType("resource")
+          : [];
+      return [...this._entries, ...pending, ...buffered].some(
+        (entry) =>
+          entry &&
+          typeof entry.name === "string" &&
+          GRAPHQL_REQUEST_PATH.test(entry.name) &&
+          entry.startTime >= this._startedAt
+      );
+    } catch {
+      return undefined;
+    }
+  }
+
+  stopWatching() {
+    if (this._observer) {
+      try {
+        this._observer.disconnect();
+      } catch {
+        // Nothing to release.
+      }
+      this._observer = null;
     }
   }
 
   report(detail) {
     this._reported = true;
+    this.stopWatching();
     this.dispatchEvent(new CustomEvent("probe", { detail }));
   }
 }

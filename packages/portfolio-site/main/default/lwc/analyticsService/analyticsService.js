@@ -31,7 +31,17 @@ export const EVENTS = Object.freeze({
   GALLERY_ASSET_OPENED: "gallery_asset_opened", // type, pillar
   MATRIX_WEIGHT_CHANGED: "matrix_weight_changed", // criterion
   MATRIX_RESET: "matrix_reset", // none
-  TIMELINE_TAB_CHANGED: "timeline_tab_changed" // tab
+  TIMELINE_TAB_CHANGED: "timeline_tab_changed", // tab
+  VIEW_SOURCE_OPENED: "view_source_opened", // source_key
+  VIEW_SOURCE_FILE_SELECTED: "view_source_file_selected", // source_key, file_label
+  CONTACT_FORM_SUBMITTED: "contact_form_submitted", // outcome: accepted, rate_limited or invalid
+  TESTIMONIAL_SUBMITTED: "testimonial_submitted", // vibe, outcome
+  TESTIMONIALS_FILTERED: "testimonials_filtered", // filter
+  CASE_STUDY_OPENED: "case_study_opened", // pillar
+  START_PATH_FOLLOWED: "start_path_followed", // path: resume, pillars or api
+  GRAPH_ZOOM_USED: "graph_zoom_used", // control: in, out, reset, wheel or keyboard
+  BACK_TO_TOP_USED: "back_to_top_used", // none
+  TIMELINE_EXPANDED: "timeline_expanded" // tab, expanded
 });
 
 /**

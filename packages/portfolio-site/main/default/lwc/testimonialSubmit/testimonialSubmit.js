@@ -7,7 +7,9 @@
  *                      fragment set, and a Recruiter or a Fan or visitor sees only the outcomes
  *                      anyone could say. Fragments come from Testimonial_Fragment__mdt through
  *                      TestimonialController.getFragments. The server checks every choice again
- *                      and stores each review unapproved.
+ *                      and stores each review unapproved. Each submit the server answers sends
+ *                      testimonial_submitted with the vibe and the outcome (accepted,
+ *                      rate_limited or invalid) and nothing the visitor typed or chose.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -16,6 +18,7 @@
 import { LightningElement, wire } from "lwc";
 import getFragments from "@salesforce/apex/TestimonialController.getFragments";
 import submitTestimonial from "@salesforce/apex/TestimonialController.submitTestimonial";
+import { trackEvent, EVENTS } from "c/analyticsService";
 
 // Limits mirror TestimonialController (MAX_AUTHOR_NAME_LENGTH, MAX_NOTE_LENGTH and the
 // Author_Title__c field length). The server stays the authority.
@@ -34,6 +37,9 @@ const FALLBACK_ERROR = "Your testimonial could not be saved. Try again later.";
 const LOAD_ERROR =
   "The sentence builder could not load. Try again later, or reach Ryan on LinkedIn.";
 const PREVIEW_PROMPT = "Pick all three blanks to see your sentence.";
+// TestimonialController's message when one address sends too many reviews in a minute. The
+// analytics outcome is the only thing that reads it.
+export const RATE_LIMITED_TEXT = "Too many submissions. Try again in a minute.";
 
 const RELATIONSHIP_LABELS = {
   Manager: "Manager",
@@ -264,6 +270,7 @@ export default class TestimonialSubmit extends LightningElement {
     this.isSubmitting = true;
     this.successMessage = "";
     this.serverError = "";
+    const vibe = this.form.vibeMode;
     const title = this.form.authorTitle.trim();
     const note = this.form.note.trim();
     try {
@@ -285,8 +292,14 @@ export default class TestimonialSubmit extends LightningElement {
         noteField.value = "";
       }
       this.successMessage = SUCCESS_MESSAGE;
+      trackEvent(EVENTS.TESTIMONIAL_SUBMITTED, { vibe, outcome: "accepted" });
     } catch (error) {
       this.serverError = errorMessage(error);
+      trackEvent(EVENTS.TESTIMONIAL_SUBMITTED, {
+        vibe,
+        outcome:
+          this.serverError === RATE_LIMITED_TEXT ? "rate_limited" : "invalid"
+      });
     } finally {
       this.isSubmitting = false;
     }

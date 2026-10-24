@@ -268,6 +268,12 @@
   color: var(--pf-text);
 }
 
+/* The link to the page on screen. */
+.nav-link[aria-current="page"] {
+  color: var(--pf-text);
+  font-weight: 600;
+}
+
 .pillars {
   position: relative;
 }

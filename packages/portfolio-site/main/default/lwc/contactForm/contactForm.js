@@ -1,11 +1,14 @@
 /**
- * @description       : Contact form for the home page (ADR-031). It
+ * @description       : Contact form for the /contact page (ADR-031). It
  *                      sends the message to ContactFormController, which saves a Lead so the
  *                      org's Lead rules run. The page shows "Thanks, check your inbox" inline,
  *                      with no redirect. A honeypot field and the time since the form appeared
  *                      go with each message for SubmissionGuard. When the address ends in
  *                      #contact, on load or later, the form scrolls into view and its heading
  *                      takes focus, so a footer link needs to know nothing about the page.
+ *                      Each submit the server answers sends contact_form_submitted with only
+ *                      its outcome: accepted, rate_limited or invalid. Nothing the visitor
+ *                      typed goes with it.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -13,6 +16,7 @@
  **/
 import { LightningElement, api } from "lwc";
 import submitContact from "@salesforce/apex/ContactFormController.submitContact";
+import { trackEvent, EVENTS } from "c/analyticsService";
 
 // Limits mirror ContactFormController. The server stays the authority.
 export const MAX_FIRST_NAME = 40;
@@ -39,11 +43,25 @@ function emptyForm() {
   };
 }
 
+// ContactFormController's message when the daily cap is reached. The analytics outcome is
+// the only thing that reads it.
+export const RATE_LIMITED_TEXT =
+  "The form has had a lot of messages today. Try again tomorrow, or reach Ryan on LinkedIn.";
+
 export function errorMessage(error) {
   if (error && error.body && typeof error.body.message === "string") {
     return error.body.message;
   }
   return FALLBACK_ERROR;
+}
+
+/**
+ * The analytics outcome of a refused submit. No part of the message itself is sent.
+ * @param {string} message The message the server returned.
+ * @returns {string} rate_limited for the daily cap, invalid for every other refusal.
+ */
+export function refusedOutcome(message) {
+  return message === RATE_LIMITED_TEXT ? "rate_limited" : "invalid";
 }
 
 export default class ContactForm extends LightningElement {
@@ -170,8 +188,12 @@ export default class ContactForm extends LightningElement {
       this.isSent = true;
       // The form and its submit button leave the page, so focus moves to the thanks.
       this.focusSuccess = true;
+      trackEvent(EVENTS.CONTACT_FORM_SUBMITTED, { outcome: "accepted" });
     } catch (error) {
       this.serverError = errorMessage(error);
+      trackEvent(EVENTS.CONTACT_FORM_SUBMITTED, {
+        outcome: refusedOutcome(this.serverError)
+      });
     } finally {
       this.isSubmitting = false;
     }

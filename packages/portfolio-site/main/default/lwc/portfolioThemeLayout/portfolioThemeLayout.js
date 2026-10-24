@@ -1,40 +1,44 @@
 /**
  * @description       : Site theme layout. Renders the slim sticky header for every portfolio page
- *                      (name, Home, Resume, Skills, Testimonials, a Pillars menu and the theme toggle), the
- *                      page content in the unnamed slot, and the footer region.
+ *                      (name, Home, Resume, Skills, Testimonials, Contact, a Pillars menu and the
+ *                      theme toggle), the page content in the unnamed slot, and the footer region.
+ *                      Home is left out of the links on the home page itself, in the desktop
+ *                      header and the phone menu alike, and the name stays a home link
+ *                      everywhere. The link to the page on screen carries aria-current="page".
  *                      Owns the theme: the stylesheet follows the system
  *                      setting, and the toggle writes data-theme and the portfolio-theme storage key.
  *                      A floating "Back to top" button appears once the visitor has
- *                      scrolled well down and rises above the footer when the footer is in view.
- *                      It sits right after the main content in the tab order, scrolls to the top
- *                      (instantly when reduced motion is asked for) and moves focus to the top of
- *                      the main content.
+ *                      scrolled one screen height and rises above the footer when the footer is
+ *                      in view. It sits right after the main content in the tab order, scrolls to
+ *                      the top (instantly when reduced motion is asked for), moves focus to the
+ *                      top of the main content and sends back_to_top_used.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/26/2025
  **/
-import { LightningElement } from "lwc";
+import { LightningElement, wire } from "lwc";
+import { CurrentPageReference } from "lightning/navigation";
 import basePath from "@salesforce/community/basePath";
 import { PILLARS } from "c/pillarData";
 import { trackEvent, EVENTS } from "c/analyticsService";
 
 // Route URLs match the urlPrefix of each route in the Portfolio1 site bundle.
-// Home comes first and shares its href with the brand link.
+// Home comes first and shares its href with the brand link. It is left out on the home page.
 const PAGES = [
   { key: "home", label: "Home", url: "" },
   { key: "resume", label: "Resume", url: "resume" },
   { key: "skills", label: "Skills", url: "skills" },
-  { key: "testimonials", label: "Testimonials", url: "testimonials" }
+  { key: "testimonials", label: "Testimonials", url: "testimonials" },
+  { key: "contact", label: "Contact", url: "contact" }
 ];
 
 const THEME_STORAGE_KEY = "portfolio-theme";
 const THEMES = ["light", "dark"];
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
-// The button appears after this many pixels, or one and a half screens, whichever is more.
-export const BACK_TO_TOP_MIN_PX = 600;
-export const BACK_TO_TOP_SCREENS = 1.5;
+// The button appears once the visitor has scrolled one screen height.
+export const BACK_TO_TOP_SCREENS = 1;
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -44,6 +48,39 @@ export const BACK_TO_TOP_SCREENS = 1.5;
 function toHref(url) {
   const base = basePath || "";
   return url ? `${base}/${url}` : `${base}/`;
+}
+
+/**
+ * The current route URL in the same form as PAGES urls: the path after the base path with no
+ * leading or trailing slash, so the home page is "".
+ * @returns {string} route URL
+ */
+export function currentRouteUrl() {
+  let path = "";
+  try {
+    path = window.location.pathname || "";
+  } catch {
+    path = "";
+  }
+  const base = basePath || "";
+  if (base && (path === base || path.startsWith(`${base}/`))) {
+    path = path.slice(base.length);
+  }
+  return path.replace(/^\/+|\/+$/g, "");
+}
+
+/**
+ * The route URL an href points at, in the same form as currentRouteUrl.
+ * @param {string} href site relative href
+ * @returns {string} route URL
+ */
+function routeOfHref(href) {
+  const base = basePath || "";
+  let path = href || "";
+  if (base && (path === base || path.startsWith(`${base}/`))) {
+    path = path.slice(base.length);
+  }
+  return path.replace(/^\/+|\/+$/g, "");
 }
 
 /**
@@ -106,6 +143,19 @@ export default class PortfolioThemeLayout extends LightningElement {
   backToTopLift = 0;
   _scrollFrame = null;
 
+  // The layout stays on screen while the site changes routes in place, so the current route
+  // is read again each time the page reference changes.
+  routeUrl = currentRouteUrl();
+
+  @wire(CurrentPageReference)
+  wiredPageReference() {
+    this.routeUrl = currentRouteUrl();
+  }
+
+  _onPopState = () => {
+    this.routeUrl = currentRouteUrl();
+  };
+
   _onScroll = () => {
     if (this._scrollFrame !== null) {
       return;
@@ -160,6 +210,16 @@ export default class PortfolioThemeLayout extends LightningElement {
     document.addEventListener("keydown", this._onDocumentKeydown);
     window.addEventListener("scroll", this._onScroll, { passive: true });
     window.addEventListener("resize", this._onScroll, { passive: true });
+    window.addEventListener("popstate", this._onPopState);
+    this.routeUrl = currentRouteUrl();
+  }
+
+  renderedCallback() {
+    // The router can update the address after it has told the page about the new route.
+    const now = currentRouteUrl();
+    if (now !== this.routeUrl) {
+      this.routeUrl = now;
+    }
   }
 
   disconnectedCallback() {
@@ -170,19 +230,18 @@ export default class PortfolioThemeLayout extends LightningElement {
     document.removeEventListener("keydown", this._onDocumentKeydown);
     window.removeEventListener("scroll", this._onScroll);
     window.removeEventListener("resize", this._onScroll);
+    window.removeEventListener("popstate", this._onPopState);
   }
 
   /**
-   * Shows the floating button once the page is scrolled well down, and lifts it above the
-   * footer while the footer is on screen, so it never covers the footer.
+   * Shows the floating button once the page is scrolled one screen height, and lifts it above
+   * the footer while the footer is on screen, so it never covers the footer.
    */
   updateBackToTop() {
     const viewport = window.innerHeight || 0;
-    const threshold = Math.max(
-      BACK_TO_TOP_MIN_PX,
-      viewport * BACK_TO_TOP_SCREENS
-    );
-    const scrolled = (window.scrollY || window.pageYOffset || 0) > threshold;
+    const threshold = viewport * BACK_TO_TOP_SCREENS;
+    const scrolled =
+      viewport > 0 && (window.scrollY || window.pageYOffset || 0) >= threshold;
     const footer = this.template.querySelector(".region-footer");
     const footerTop = footer ? footer.getBoundingClientRect().top : viewport;
     this.backToTopLift = Math.max(0, Math.ceil(viewport - footerTop));
@@ -220,6 +279,7 @@ export default class PortfolioThemeLayout extends LightningElement {
       main.focus({ preventScroll: true });
     }
     this.showBackToTop = false;
+    trackEvent(EVENTS.BACK_TO_TOP_USED);
   }
 
   /**
@@ -252,8 +312,22 @@ export default class PortfolioThemeLayout extends LightningElement {
     return toHref("");
   }
 
+  get isHomePage() {
+    return this.routeUrl === "";
+  }
+
+  /** "page" for the link to the route on screen, null for every other link. */
+  currentFor(href) {
+    return routeOfHref(href) === this.routeUrl ? "page" : null;
+  }
+
   get pages() {
-    return PAGES.map((page) => ({ ...page, href: toHref(page.url) }));
+    return PAGES.filter(
+      (page) => !(page.key === "home" && this.isHomePage)
+    ).map((page) => {
+      const href = toHref(page.url);
+      return { ...page, href, current: this.currentFor(href) };
+    });
   }
 
   get pillars() {
@@ -263,8 +337,12 @@ export default class PortfolioThemeLayout extends LightningElement {
       pageLabel: pillar.pageLabel,
       sasName: pillar.sasName,
       href: pillar.href,
+      current: this.currentFor(pillar.href),
       inProgress: pillar.inProgress,
-      subLinks: pillar.subLinks,
+      subLinks: pillar.subLinks.map((link) => ({
+        ...link,
+        current: this.currentFor(link.href)
+      })),
       hasSubLinks: pillar.subLinks.length > 0,
       subLabel: `${pillar.pageLabel} pages`
     }));

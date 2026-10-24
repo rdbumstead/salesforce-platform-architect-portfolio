@@ -163,4 +163,42 @@ describe("c-testimonial-wall", () => {
     const group = q(element, '[role="group"]');
     expect(group.getAttribute("aria-label")).toBe("Show testimonials");
   });
+
+  describe("analytics", () => {
+    beforeEach(() => {
+      window.gtag = jest.fn();
+    });
+
+    afterEach(() => {
+      delete window.gtag;
+    });
+
+    it("sends testimonials_filtered with the new filter on each switch", async () => {
+      const element = createComponent();
+      getApprovedTestimonials.emit(ITEMS);
+      await flushPromises();
+
+      q(element, '[data-id="filter-professional"]').click();
+      await flushPromises();
+      q(element, '[data-id="filter-all"]').click();
+      await flushPromises();
+
+      expect(window.gtag.mock.calls).toEqual([
+        ["event", "testimonials_filtered", { filter: "professional" }],
+        ["event", "testimonials_filtered", { filter: "all" }]
+      ]);
+    });
+
+    it("sends nothing for the filter already shown", async () => {
+      const element = createComponent();
+      getApprovedTestimonials.emit(ITEMS);
+      await flushPromises();
+      q(element, '[data-id="filter-all"]').click();
+      await flushPromises();
+      expect(window.gtag).not.toHaveBeenCalled();
+      expect(
+        q(element, '[data-id="filter-all"]').getAttribute("aria-pressed")
+      ).toBe("true");
+    });
+  });
 });

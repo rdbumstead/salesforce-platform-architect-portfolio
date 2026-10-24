@@ -9,11 +9,27 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import PortfolioThemeLayout, {
-  BACK_TO_TOP_MIN_PX,
-  BACK_TO_TOP_SCREENS
+  BACK_TO_TOP_SCREENS,
+  currentRouteUrl
 } from "c/portfolioThemeLayout";
 import { PILLARS, reset, setComingLetters } from "c/pillarData";
 import { trackEvent } from "c/analyticsService";
+import { CurrentPageReference } from "lightning/navigation";
+
+// The page reference wire stands in for the site router's route changes.
+jest.mock(
+  "lightning/navigation",
+  () => {
+    const {
+      createTestWireAdapter
+    } = require("@salesforce/wire-service-jest-util");
+    return {
+      __esModule: true,
+      CurrentPageReference: createTestWireAdapter(jest.fn())
+    };
+  },
+  { virtual: true }
+);
 
 // A fixed five pillar list, all live unless a test marks some as coming with
 // setComingLetters, so these tests pass before and after the pillarData flags change.
@@ -31,7 +47,7 @@ jest.mock(
       [
         "nonprofit-solutions",
         "B",
-        "Nonprofit Solutions",
+        "Solution Architecture",
         "Solution Architecture",
         ["Solution design", "Decision matrix"]
       ],
@@ -118,12 +134,15 @@ jest.mock(
   () => ({
     __esModule: true,
     trackEvent: jest.fn(),
-    EVENTS: { THEME_CHANGED: "theme_changed" }
+    EVENTS: {
+      THEME_CHANGED: "theme_changed",
+      BACK_TO_TOP_USED: "back_to_top_used"
+    }
   }),
   { virtual: true }
 );
 
-// Every route URL the header links, the API reference page included.
+// Every route URL the header links off the home page, the API reference page included.
 // Home is the brand link and the first nav link.
 const EXPECTED_HREFS = [
   "/portfolio/",
@@ -131,6 +150,7 @@ const EXPECTED_HREFS = [
   "/portfolio/resume",
   "/portfolio/skills",
   "/portfolio/testimonials",
+  "/portfolio/contact",
   "/portfolio/business-architecture",
   "/portfolio/nonprofit-solutions",
   "/portfolio/api-lab",
@@ -227,8 +247,20 @@ function pressEscape(element) {
     );
 }
 
+function goTo(path) {
+  window.history.pushState({}, "", path);
+}
+
+function navLabels(element) {
+  return Array.from(
+    element.shadowRoot.querySelectorAll(".nav-list > .nav-item")
+  ).map((item) => item.querySelector(".nav-link").textContent.trim());
+}
+
 describe("c-portfolio-theme-layout", () => {
   beforeEach(() => {
+    // Most tests run on an inner page, where the header lists Home.
+    goTo("/portfolio/resume");
     mockSystemTheme(false);
     window.localStorage.clear();
     document.documentElement.removeAttribute("data-theme");
@@ -264,7 +296,7 @@ describe("c-portfolio-theme-layout", () => {
       expect(hrefs).toEqual(EXPECTED_HREFS);
     });
 
-    it("lists Home first, with the brand href, then Resume, Skills and Testimonials", () => {
+    it("lists Home first, with the brand href, then Resume, Skills, Testimonials and Contact", () => {
       const element = render();
       const brand = element.shadowRoot.querySelector(".site-brand");
       const items = Array.from(
@@ -275,9 +307,118 @@ describe("c-portfolio-theme-layout", () => {
       expect(first.dataset.key).toBe("home");
       expect(first.getAttribute("href")).toBe(brand.getAttribute("href"));
       expect(brand.textContent).toBe("Ryan Bumstead");
+      expect(navLabels(element)).toEqual([
+        "Home",
+        "Resume",
+        "Skills",
+        "Testimonials",
+        "Contact",
+        "Pillars"
+      ]);
+    });
+
+    it("leaves Home out on the home page and keeps the name as a home link", () => {
+      goTo("/portfolio/");
+      const element = render();
+      expect(navLabels(element)).toEqual([
+        "Resume",
+        "Skills",
+        "Testimonials",
+        "Contact",
+        "Pillars"
+      ]);
       expect(
-        items.map((item) => item.querySelector(".nav-link").textContent.trim())
-      ).toEqual(["Home", "Resume", "Skills", "Testimonials", "Pillars"]);
+        element.shadowRoot.querySelector('.nav-link[data-key="home"]')
+      ).toBeNull();
+      const brand = element.shadowRoot.querySelector(".site-brand");
+      expect(brand.getAttribute("href")).toBe("/portfolio/");
+    });
+
+    it("reads the home page with or without the trailing slash", () => {
+      goTo("/portfolio");
+      expect(currentRouteUrl()).toBe("");
+      goTo("/portfolio/");
+      expect(currentRouteUrl()).toBe("");
+      goTo("/portfolio/api-lab/reference/");
+      expect(currentRouteUrl()).toBe("api-lab/reference");
+    });
+
+    it("leaves Home out of the phone menu on the home page too", async () => {
+      goTo("/portfolio/");
+      const element = render();
+      element.shadowRoot.querySelector(".menu-toggle").click();
+      await flush();
+      const nav = element.shadowRoot.querySelector("nav");
+      expect(nav.classList.contains("site-nav_open")).toBe(true);
+      expect(nav.querySelector(".nav-link").dataset.key).toBe("resume");
+    });
+
+    it("brings Home back and moves aria-current when the route changes in place", async () => {
+      goTo("/portfolio/");
+      const element = render();
+      expect(navLabels(element)[0]).toBe("Resume");
+
+      goTo("/portfolio/contact");
+      // The test adapter's emit stands in for the router announcing the new route.
+      // eslint-disable-next-line @lwc/lwc/no-unexpected-wire-adapter-usages
+      CurrentPageReference.emit({
+        type: "comm__namedPage",
+        attributes: { name: "Contact__c" }
+      });
+      await flush();
+      expect(navLabels(element)[0]).toBe("Home");
+      const current = element.shadowRoot.querySelectorAll(
+        '[aria-current="page"]'
+      );
+      expect(current).toHaveLength(1);
+      expect(current[0].dataset.key).toBe("contact");
+
+      goTo("/portfolio/");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      await flush();
+      expect(navLabels(element)[0]).toBe("Resume");
+      expect(
+        element.shadowRoot.querySelectorAll('[aria-current="page"]')
+      ).toHaveLength(0);
+    });
+
+    it("marks only the link to the page on screen with aria-current", () => {
+      const element = render();
+      const current = element.shadowRoot.querySelectorAll(
+        '[aria-current="page"]'
+      );
+      expect(current).toHaveLength(1);
+      expect(current[0].dataset.key).toBe("resume");
+      expect(current[0].getAttribute("href")).toBe("/portfolio/resume");
+    });
+
+    it("marks the API reference link, not API Lab, on the API reference page", () => {
+      goTo("/portfolio/api-lab/reference");
+      const element = render();
+      const current = element.shadowRoot.querySelectorAll(
+        '[aria-current="page"]'
+      );
+      expect(current).toHaveLength(1);
+      expect(current[0].classList.contains("pillar-sub-link")).toBe(true);
+    });
+
+    it("puts Contact last before the Pillars menu, linking /contact", () => {
+      const element = render();
+      const items = Array.from(
+        element.shadowRoot.querySelectorAll(".nav-list > .nav-item")
+      );
+      const contact = items[items.length - 2].querySelector("a");
+      expect(contact.textContent).toBe("Contact");
+      expect(contact.getAttribute("href")).toBe("/portfolio/contact");
+      expect(items[items.length - 1].classList.contains("pillars")).toBe(true);
+    });
+
+    it("stops listening for history changes when removed", () => {
+      const remove = jest.spyOn(window, "removeEventListener");
+      const element = render();
+      document.body.removeChild(element);
+      expect(remove).toHaveBeenCalledWith("popstate", expect.any(Function));
+      remove.mockRestore();
     });
 
     it("lists pillars A to E from pillarData with their SAS names", () => {
@@ -692,7 +833,7 @@ describe("c-portfolio-theme-layout", () => {
       ).toBe("true");
     });
   });
-  describe("floating Back to top (Round 7 F6)", () => {
+  describe("floating Back to top", () => {
     let frames;
     let footerTop;
 
@@ -733,18 +874,45 @@ describe("c-portfolio-theme-layout", () => {
       window.scrollY = 0;
     });
 
-    it("stays hidden near the top and appears once well down the page", async () => {
+    it("appears after one screen height", () => {
+      expect(BACK_TO_TOP_SCREENS).toBe(1);
+    });
+
+    it("stays hidden short of one screen and appears at one screen height", async () => {
       const element = renderWithFooter();
       expect(button(element)).toBeNull();
 
-      await scrollTo(BACK_TO_TOP_MIN_PX);
+      await scrollTo(799, 800);
       expect(button(element)).toBeNull();
 
-      await scrollTo(800 * BACK_TO_TOP_SCREENS + 1);
+      await scrollTo(800, 800);
       const control = button(element);
       expect(control.tagName).toBe("BUTTON");
       expect(control.getAttribute("type")).toBe("button");
       expect(control.textContent.trim()).toBe("Back to top");
+    });
+
+    it("follows the screen height on a phone", async () => {
+      const element = renderWithFooter();
+      await scrollTo(843, 844);
+      expect(button(element)).toBeNull();
+      await scrollTo(844, 844);
+      expect(button(element)).not.toBeNull();
+    });
+
+    it("stays hidden when the viewport has no height", async () => {
+      const element = renderWithFooter();
+      await scrollTo(3000, 0);
+      expect(button(element)).toBeNull();
+    });
+
+    it("sends back_to_top_used with no parameters when pressed", async () => {
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      button(element).click();
+      await flush();
+      expect(trackEvent).toHaveBeenCalledWith("back_to_top_used");
+      expect(trackEvent.mock.calls.at(-1)).toHaveLength(1);
     });
 
     it("rises above the footer while the footer is on screen", async () => {

@@ -58,7 +58,7 @@
     <sendWelcomeEmail>true</sendWelcomeEmail>
     <site>Portfolio</site>
     <siteArchiveStatus>NotArchived</siteArchiveStatus>
-    <status>UnderConstruction</status>
+    <status>Live</status>
     <tabs>
         <defaultTab>home</defaultTab>
         <standardTab>Chatter</standardTab>

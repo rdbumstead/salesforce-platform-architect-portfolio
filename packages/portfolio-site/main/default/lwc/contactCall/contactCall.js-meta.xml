@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>62.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Contact Call</masterLabel>
+    <description
+  >One line Get in touch prompt with a link to the contact page</description>
+    <targets>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightningCommunity__Default">
+            <property
+        name="heading"
+        type="String"
+        label="Heading"
+        default="Get in touch"
+      />
+            <property
+        name="text"
+        type="String"
+        label="Text"
+        default="Questions about a project, a role or this site?"
+      />
+            <property
+        name="linkLabel"
+        type="String"
+        label="Link label"
+        default="Contact Ryan"
+      />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

@@ -16,7 +16,9 @@ import ContactForm, {
   MAX_EMAIL,
   MAX_COMPANY,
   MAX_MESSAGE,
-  errorMessage
+  RATE_LIMITED_TEXT,
+  errorMessage,
+  refusedOutcome
 } from "c/contactForm";
 import submitContact from "@salesforce/apex/ContactFormController.submitContact";
 
@@ -243,5 +245,83 @@ describe("c-contact-form", () => {
     expect(source).toMatch(new RegExp(`MAX_EMAIL = ${MAX_EMAIL};`));
     expect(source).toMatch(new RegExp(`MAX_COMPANY = ${MAX_COMPANY};`));
     expect(source).toMatch(new RegExp(`MAX_MESSAGE = ${MAX_MESSAGE};`));
+  });
+
+  it("mirrors the daily cap message in ContactFormController", () => {
+    const source = readFileSync(
+      join(__dirname, "..", "..", "..", "classes", "ContactFormController.cls"),
+      "utf8"
+    );
+    expect(source).toContain(`RATE_LIMITED_MESSAGE = '${RATE_LIMITED_TEXT}';`);
+  });
+
+  describe("analytics", () => {
+    beforeEach(() => {
+      window.gtag = jest.fn();
+    });
+
+    afterEach(() => {
+      delete window.gtag;
+    });
+
+    function sentParams() {
+      return window.gtag.mock.calls
+        .filter((call) => call[1] === "contact_form_submitted")
+        .map((call) => call[2]);
+    }
+
+    it("sends accepted, and nothing the visitor typed, on a saved message", async () => {
+      submitContact.mockResolvedValue({ received: true });
+      const element = createComponent();
+      await flushPromises();
+      await fillValid(element);
+      await setField(element, "company", "Analytical Engines");
+      await submit(element);
+      await flushPromises();
+
+      expect(sentParams()).toEqual([{ outcome: "accepted" }]);
+      const everything = JSON.stringify(window.gtag.mock.calls);
+      for (const typed of [
+        "Ada",
+        "Lovelace",
+        "ada@example.com",
+        "Hello",
+        "Analytical"
+      ]) {
+        expect(everything).not.toContain(typed);
+      }
+    });
+
+    it("sends rate_limited when the daily cap is reached", async () => {
+      submitContact.mockRejectedValue({ body: { message: RATE_LIMITED_TEXT } });
+      const element = createComponent();
+      await flushPromises();
+      await fillValid(element);
+      await submit(element);
+      await flushPromises();
+      expect(sentParams()).toEqual([{ outcome: "rate_limited" }]);
+    });
+
+    it("sends invalid for any other refusal, without the message", async () => {
+      submitContact.mockRejectedValue({
+        body: { message: "Enter a valid email address, like name@example.com." }
+      });
+      const element = createComponent();
+      await flushPromises();
+      await fillValid(element);
+      await submit(element);
+      await flushPromises();
+      expect(sentParams()).toEqual([{ outcome: "invalid" }]);
+      expect(refusedOutcome("anything else")).toBe("invalid");
+    });
+
+    it("sends nothing while the form is not valid", async () => {
+      const element = createComponent();
+      await flushPromises();
+      await submit(element);
+      await flushPromises();
+      expect(submitContact).not.toHaveBeenCalled();
+      expect(sentParams()).toEqual([]);
+    });
   });
 });

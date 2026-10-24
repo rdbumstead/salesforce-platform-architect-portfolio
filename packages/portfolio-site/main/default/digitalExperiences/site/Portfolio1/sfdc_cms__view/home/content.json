@@ -36,9 +36,10 @@
                     {
                       "attributes": {
                         "heading": "Get in touch",
-                        "intro": "Questions about a project, a role or this site? Send a note and Ryan will reply."
+                        "linkLabel": "Contact Ryan",
+                        "text": "Questions about a project, a role or this site?"
                       },
-                      "definition": "c:contactForm",
+                      "definition": "c:contactCall",
                       "id": "1c5521dd-ac63-427c-8a4c-4e4e58450ea6",
                       "type": "component"
                     }
