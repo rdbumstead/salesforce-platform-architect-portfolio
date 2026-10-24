@@ -805,6 +805,109 @@ describe("c-skill-network (Large form factor)", () => {
     ).toContain("No skill is tagged for this persona yet.");
   });
 
+  function drawnNodeIds(element) {
+    return [...element.shadowRoot.querySelectorAll(".graph-node")].map(
+      (node) => node.dataset.id
+    );
+  }
+
+  it("shows the persona filter on the graph and draws only the persona's skills", async () => {
+    const element = await mountTagged();
+    await openGraph(element);
+    expect(element.shadowRoot.querySelector(".persona-filter")).not.toBeNull();
+    expect(drawnNodeIds(element)).toHaveLength(EXPECTED.nodes);
+    expect(count(element, ".category-label")).toBe(EXPECTED.categories);
+    trackEvent.mockClear();
+
+    personaButton(element, "Platform Architect").click();
+    await flushPromises();
+
+    const ids = drawnNodeIds(element);
+    // Apex and Data Cloud, plus every role and project.
+    expect(ids.filter((id) => id.startsWith("a01S")).sort()).toEqual([
+      "a01S1",
+      "a01S4"
+    ]);
+    expect(ids).toHaveLength(EXPECTED.nodes - 3);
+    expect(
+      [...element.shadowRoot.querySelectorAll(".category-label")].map((node) =>
+        node.textContent.trim()
+      )
+    ).toEqual(expect.arrayContaining(["Backend", "Data"]));
+    expect(count(element, ".category-label")).toBe(2);
+    expect(
+      element.shadowRoot.querySelector(".persona-summary").textContent
+    ).toBe("Showing 2 of 5 skills for Platform Architect.");
+    expect(trackEvent).toHaveBeenCalledWith("skills_persona_filtered", {
+      persona: "Architect"
+    });
+    expect(layoutGraph).toHaveBeenCalledTimes(1);
+
+    // The Architect role links Apex and LWC. LWC is hidden, so only Apex shows.
+    graphNode(element, "a05R2").dispatchEvent(new CustomEvent("click"));
+    await flushPromises();
+    expect(count(element, ".graph-edge")).toBe(1);
+    expect(
+      element.shadowRoot.querySelector(".graph-selection").textContent
+    ).toContain("Architect: Apex.");
+
+    // The text list follows the same rule.
+    expect(count(element, ".network-node")).toBe(EXPECTED.nodes - 3);
+
+    personaButton(element, "All").click();
+    await flushPromises();
+    expect(drawnNodeIds(element)).toHaveLength(EXPECTED.nodes);
+    expect(count(element, ".category-label")).toBe(EXPECTED.categories);
+  });
+
+  it("clears a graph node the persona hides and binds drag to the nodes it draws", async () => {
+    const element = await mountTagged();
+    await openGraph(element);
+    graphNode(element, "a01S3").dispatchEvent(new CustomEvent("click"));
+    await flushPromises();
+    expect(
+      element.shadowRoot.querySelector(".graph-selection").textContent
+    ).toContain("Flow:");
+    attachNodeDrag.mockClear();
+
+    personaButton(element, "Salesforce Developer").click();
+    await flushPromises();
+    expect(graphNode(element, "a01S3")).toBeNull();
+    expect(
+      element.shadowRoot.querySelector(".graph-selection").textContent
+    ).toBe("");
+    expect(attachNodeDrag).toHaveBeenCalledTimes(1);
+    expect(
+      [...attachNodeDrag.mock.calls[0][1]].map((node) => node.dataset.id)
+    ).toEqual(drawnNodeIds(element));
+  });
+
+  it("says on the graph when a persona has no skill", async () => {
+    const data = taggedPayload();
+    data.uiapi.query.Skill__c.edges.forEach((edge) => {
+      if (edge.node.Persona_Tag__c.value) {
+        edge.node.Persona_Tag__c.value = edge.node.Persona_Tag__c.value
+          .split(";")
+          .filter((tag) => tag !== "Admin")
+          .join(";");
+      }
+    });
+    const element = mount();
+    graphql.emit({ data, errors: undefined });
+    await flushPromises();
+    await openGraph(element);
+
+    personaButton(element, "System Admin").click();
+    await flushPromises();
+    expect(drawnNodeIds(element).filter((id) => id.startsWith("a01S"))).toEqual(
+      []
+    );
+    expect(count(element, ".category-label")).toBe(0);
+    expect(
+      element.shadowRoot.querySelector(".persona-empty").textContent
+    ).toContain("No skill is tagged for this persona yet.");
+  });
+
   it("uses the resume builder's persona labels and values in the same order", () => {
     const read = (folder, file) =>
       fs.readFileSync(path.join(__dirname, "..", "..", folder, file), "utf8");

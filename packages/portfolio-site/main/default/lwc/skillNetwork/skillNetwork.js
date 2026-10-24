@@ -12,9 +12,12 @@
  *                      Reset view buttons for keyboard users. A background drag or the arrow keys on the
  *                      focused graph pan it at any zoom level, a little past the graph's edge at most.
  *                      A plain wheel scrolls the page, Ctrl with the wheel or a pinch zooms. Both report
- *                      positions back here, so the template still draws everything. A persona filter sits on the
- *                      matrix with the resume's personas, read from Skill__c.Persona_Tag__c by a query of
- *                      its own. It shows only once at least one skill is tagged.
+ *                      positions back here, so the template still draws everything. A persona filter sits above
+ *                      both views with the resume's personas, read from Skill__c.Persona_Tag__c by a query
+ *                      of its own. It shows only once at least one skill is tagged. The rule is the same in
+ *                      both views: a skill without the chosen tag is left out, and so is a category left
+ *                      with no skill. The graph keeps every role and project and its computed positions,
+ *                      so a node never moves when the persona changes.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -384,7 +387,7 @@ export default class SkillNetwork extends LightningElement {
   engine;
   panZoom;
   boundSvg;
-  boundNodeCount = 0;
+  boundNodeKey = "";
   keyboardPanTracked = false;
 
   connectedCallback() {
@@ -555,6 +558,13 @@ export default class SkillNetwork extends LightningElement {
     if (selected && !this.matchesPersona(selected)) {
       this.selectedSkillId = undefined;
     }
+    // A graph node the persona hides can be neither selected nor hovered.
+    if (this.selectedNodeId && !this.isNodeShown(this.selectedNodeId)) {
+      this.selectedNodeId = undefined;
+    }
+    if (this.hoverId && !this.isNodeShown(this.hoverId)) {
+      this.hoverId = undefined;
+    }
     trackEvent(EVENTS.SKILLS_PERSONA_FILTERED, { persona: value || "All" });
   }
 
@@ -574,6 +584,23 @@ export default class SkillNetwork extends LightningElement {
 
   get matrixIsEmpty() {
     return this.personaFilterActive && this.matrixRows.length === 0;
+  }
+
+  // The graph under the same rule: true when the persona leaves no skill to draw.
+  get graphIsEmpty() {
+    return (
+      this.personaFilterActive &&
+      Boolean(this.model) &&
+      ![...this.model.skills.values()].some((skill) =>
+        this.matchesPersona(skill)
+      )
+    );
+  }
+
+  // Roles and projects always show. A skill shows when it matches the persona.
+  isNodeShown(id) {
+    const skill = this.model && this.model.skills.get(id);
+    return skill ? this.matchesPersona(skill) : true;
   }
 
   get categoryRows() {
@@ -845,6 +872,9 @@ export default class SkillNetwork extends LightningElement {
     const linked = new Set();
     const edges = [];
     this.layout.edges.forEach((edge) => {
+      if (!this.isNodeShown(edge.source) || !this.isNodeShown(edge.target)) {
+        return;
+      }
       if (active && (edge.source === active || edge.target === active)) {
         linked.add(edge.source);
         linked.add(edge.target);
@@ -860,7 +890,15 @@ export default class SkillNetwork extends LightningElement {
       }
     });
     const cx = GRAPH_WIDTH / 2;
-    const nodes = this.layout.nodes.map((placed) => {
+    const shownCategories = new Set();
+    const shown = this.layout.nodes.filter((placed) => {
+      const visible = this.isNodeShown(placed.id);
+      if (visible && placed.kind === "skill") {
+        shownCategories.add(this.model.skills.get(placed.id).category);
+      }
+      return visible;
+    });
+    const nodes = shown.map((placed) => {
       const node = this.moved[placed.id]
         ? { ...placed, ...this.moved[placed.id] }
         : placed;
@@ -895,7 +933,11 @@ export default class SkillNetwork extends LightningElement {
       transform: this.zoomTransform,
       edges,
       nodes,
-      categories: this.layout.categories
+      categories: this.personaFilterActive
+        ? this.layout.categories.filter((category) =>
+            shownCategories.has(category.name)
+          )
+        : this.layout.categories
     };
   }
 
@@ -948,9 +990,11 @@ export default class SkillNetwork extends LightningElement {
         this.canZoom = canZoom;
       }
     }
+    // Keyed by the drawn ids, so a persona change that swaps nodes binds the new ones.
     const nodes = this.template.querySelectorAll(".graph-node");
-    if (nodes.length && nodes.length !== this.boundNodeCount) {
-      this.boundNodeCount = nodes.length;
+    const nodeKey = [...nodes].map((node) => node.dataset.id).join(",");
+    if (nodes.length && nodeKey !== this.boundNodeKey) {
+      this.boundNodeKey = nodeKey;
       attachNodeDrag(this.engine, nodes, {
         position: (id) => this.positionOf(id),
         onDrag: (id, x, y) => this.moveNode(id, x, y)
@@ -964,7 +1008,7 @@ export default class SkillNetwork extends LightningElement {
     }
     this.panZoom = undefined;
     this.boundSvg = undefined;
-    this.boundNodeCount = 0;
+    this.boundNodeKey = "";
   }
 
   resetZoomState() {
@@ -1085,7 +1129,9 @@ export default class SkillNetwork extends LightningElement {
       lines = [...this.model.skills.values()]
         .filter(
           (candidate) =>
-            candidate.roleIds.includes(id) || candidate.projectIds.includes(id)
+            this.matchesPersona(candidate) &&
+            (candidate.roleIds.includes(id) ||
+              candidate.projectIds.includes(id))
         )
         .map((candidate) => candidate.name)
         .sort();
@@ -1103,10 +1149,10 @@ export default class SkillNetwork extends LightningElement {
     if (!this.model) {
       return [];
     }
-    const nodes = this.graphNodes();
+    const nodes = this.graphNodes().filter((node) => this.isNodeShown(node.id));
     const labels = new Map(nodes.map((node) => [node.id, node.name]));
     const connections = new Map(nodes.map((node) => [node.id, []]));
-    this.model.links.forEach((link) => {
+    this.shownLinks.forEach((link) => {
       connections.get(link.source).push(labels.get(link.target));
       connections.get(link.target).push(labels.get(link.source));
     });
@@ -1120,9 +1166,19 @@ export default class SkillNetwork extends LightningElement {
     });
   }
 
+  // The links whose two ends both show under the persona filter.
+  get shownLinks() {
+    if (!this.model) {
+      return [];
+    }
+    return this.model.links.filter(
+      (link) => this.isNodeShown(link.source) && this.isNodeShown(link.target)
+    );
+  }
+
   get summary() {
     const nodeCount = this.accessibleNodes.length;
-    const linkCount = this.model ? this.model.links.length : 0;
+    const linkCount = this.shownLinks.length;
     const nodeWord = nodeCount === 1 ? "item" : "items";
     const linkWord = linkCount === 1 ? "connection" : "connections";
     return `${nodeCount} ${nodeWord} and ${linkCount} ${linkWord}.`;
