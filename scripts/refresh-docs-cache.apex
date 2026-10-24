@@ -5,6 +5,8 @@
 // Nothing is queued when no docs record is configured, and the run then fails on purpose.
 Id jobId = SourceCacheRefreshJob.forceRefresh(SourceController.DOCS_KEY);
 if (jobId == null) {
-  throw new IllegalArgumentException('No docs path is configured, nothing was queued.');
+  throw new IllegalArgumentException(
+    'No docs path is configured, nothing was queued.'
+  );
 }
 System.debug(LoggingLevel.ERROR, 'REFRESH_JOB_ID=' + jobId);
