@@ -7,7 +7,12 @@ const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
-const { scanText, isScanned, VENDORED } = require("./check-internal-refs.js");
+const {
+  scanText,
+  isScanned,
+  VENDORED,
+  GENERATED
+} = require("./check-internal-refs.js");
 
 const SCRIPT = path.join(__dirname, "check-internal-refs.js");
 
@@ -294,4 +299,48 @@ test("the shipped allowlist is valid and every entry gives a reason", () => {
   for (const entry of entries) {
     assert.ok(entry.path && entry.line && entry.reason);
   }
+});
+
+test("generated API pages are skipped and every other doc is scanned", () => {
+  assert.strictEqual(isScanned("docs/api/oas/salesforce-sapi.md"), false);
+  assert.strictEqual(isScanned("docs/api/oas/portfolio-papi.md"), false);
+  assert.strictEqual(isScanned("docs/api/postman/collection.json"), true);
+  assert.strictEqual(isScanned("docs/guides/03-SAS.md"), true);
+  assert.strictEqual(isScanned("docs/adr/001-x.md"), true);
+  assert.strictEqual(isScanned("README.md"), true);
+  assert.strictEqual(isScanned("STATUS.md"), true);
+  assert.strictEqual(
+    isScanned("packages/integration-api/specs/salesforce-sapi.yaml"),
+    true
+  );
+  for (const entry of GENERATED) {
+    assert.ok(entry.source, `${entry.path} names its source`);
+    assert.ok(entry.reason, `${entry.path} says why it is skipped`);
+  }
+});
+
+test("the docs, README and STATUS pass when clean, generated pages aside", () => {
+  const result = runScript(
+    {
+      "docs/api/oas/salesforce-sapi.md": '<path d="M10 10 L20 20"/>\n',
+      "docs/guides/01-Guide.md": "# Guide\n\nDrawn with D3.js, see ADR-020.\n",
+      "README.md": "# Portfolio\n",
+      "STATUS.md": "# Status\n"
+    },
+    ["docs"]
+  );
+  assert.strictEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /No internal references in 3 scanned file/);
+});
+
+test("a hit in a doc, README or STATUS fails with its path and line", () => {
+  const result = runScript({
+    "docs/guides/01-Guide.md": "# Guide\n\nBuilt in Round 7 (audit F12).\n",
+    "README.md": "# Portfolio\n\nSee the kickoff notes.\n",
+    "STATUS.md": "# Status\n\n| Pillar | Done (log 312) |\n"
+  });
+  assert.strictEqual(result.status, 1, result.stdout + result.stderr);
+  assert.match(result.stdout, /^docs\/guides\/01-Guide\.md:3: Round 7, F12$/m);
+  assert.match(result.stdout, /^README\.md:3: kickoff$/m);
+  assert.match(result.stdout, /^STATUS\.md:3: log 312$/m);
 });

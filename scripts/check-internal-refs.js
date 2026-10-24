@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 
-// Internal reference gate. Fails when a comment, a metadata description or a help text under
-// packages/ names a build process code instead of explaining the code on its own terms: a
+// Internal reference gate. Fails when a comment, a metadata description, a help text or a
+// public document names a build process code instead of explaining itself on its own terms: a
 // round number, a log or trap number, a plan code such as F7 or P2, a .claude path, or the
 // words "owner answer", "kickoff", "workstream", "stream (" and "@Orchestrator". The repo is
 // public and the site serves some of these files, so those codes leak process and mean
@@ -10,6 +10,15 @@
 //
 //   node scripts/check-internal-refs.js              scans every tracked file under packages/
 //   node scripts/check-internal-refs.js <path> ...   scans only these files or directories
+//
+// The pull request check scans packages, docs, README.md and STATUS.md:
+//
+//   node scripts/check-internal-refs.js packages docs README.md STATUS.md
+//
+// Generated files (GENERATED below) are never scanned, because they are rebuilt from a source
+// the gate scans in its own right. A real false positive in a scanned file goes in
+// scripts/internal-refs-allowlist.json as { path, line, reason }, where line is the whole
+// source line and reason says why it is not an internal reference.
 //
 // Options: --root <dir> resolves paths against <dir> instead of the repo root, and
 // --allowlist <file> reads a different allowlist. Both exist for the tests.
@@ -80,6 +89,18 @@ const VENDORED = [
   {
     path: "packages/portfolio-site/main/default/staticresources/SiteSamples/SiteStyles.css",
     library: "Salesforce Sites sample stylesheet"
+  }
+];
+
+// Generated files, skipped like the vendored bundles. A path that ends in "/" covers the whole
+// folder. Paths are relative to the repo root.
+const GENERATED = [
+  {
+    path: "docs/api/oas/",
+    source:
+      "scripts/generate-api-docs.js, from the specs in packages/integration-api/specs",
+    reason:
+      "the generated pages carry SVG path data such as M10, which reads as a plan code"
   }
 ];
 
@@ -439,9 +460,17 @@ function isVendored(relPath) {
   return VENDORED.some((v) => v.path === relPath);
 }
 
+function isGenerated(relPath) {
+  return GENERATED.some((g) =>
+    g.path.endsWith("/") ? relPath.startsWith(g.path) : relPath === g.path
+  );
+}
+
 function isScanned(relPath) {
   return (
-    EXTENSIONS.has(path.extname(relPath).toLowerCase()) && !isVendored(relPath)
+    EXTENSIONS.has(path.extname(relPath).toLowerCase()) &&
+    !isVendored(relPath) &&
+    !isGenerated(relPath)
   );
 }
 
@@ -613,4 +642,12 @@ if (require.main === module) {
   }
 }
 
-module.exports = { scanText, proseOf, isScanned, VENDORED, RULES, run };
+module.exports = {
+  scanText,
+  proseOf,
+  isScanned,
+  VENDORED,
+  GENERATED,
+  RULES,
+  run
+};
