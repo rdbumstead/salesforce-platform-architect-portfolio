@@ -73,7 +73,7 @@ x-rate-limit:
       description: "Expensive Generative AI calls (/ai/*)"
     token:
       requestsPerMinute: 15
-      description: "POST /auth/token, per email and source IP (TokenExchangeService.TOKEN_REQUESTS_PER_MINUTE)"
+      description: "POST /auth/token, per email and source IP (the Token_Requests_Per_Minute setting, default 15)"
 
 security:
   - OAuth2ClientCredentials:
@@ -1079,8 +1079,8 @@ paths:
         **Transformation Logic**:
         - Formats dates as "MMM YYYY - MMM YYYY" or "MMM YYYY - Present"
         - Lists the skills linked to the printed roles, each once, grouped by category in category order and strongest first within a category
-        - Strips HTML from accomplishments using regex
-        - Applies 80-character line wrapping
+        - Prints up to 10 roles, current first
+        - Prints at most 5 highlights per role, in sort order, as stored
 
         **Persona Filtering**:
         - `Admin`: System Admin highlights only
