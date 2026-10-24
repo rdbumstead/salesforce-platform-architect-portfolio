@@ -115,7 +115,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 | **Accessibility** | 85 (Avg Theme) | **100** |
 
 - LCP measured with a Lighthouse mobile audit, three runs per route, medians. The target is 2.5 s. Most of the mobile LCP is render delay in the LWR framework's own script, which keeps it above the target, so the gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes (Technical Guide §2.11).
-- Every Apex test passes and org wide coverage is 90% or more. `pr.yml` runs every local test in a scratch org and `scripts/coverage-gate.js --min 90` fails the pull request otherwise.
+- Every Apex test passes and org wide coverage is 90% or more. `pr.yml` runs every local test in a scratch org and `scripts/coverage-gate.js --min 90` fails the pull request otherwise. It also validates the pull request check only against production with the local tests, so a test that fails only in production fails the pull request too.
 - CI/CD pipeline passing (Green build badge on Repo).
 - No Critical or High violations from Salesforce Code Analyzer (`npm run scan`, `--severity-threshold 2`, run on every pull request).
 - The network log shows no `D3_Library` request until a graph view is opened.

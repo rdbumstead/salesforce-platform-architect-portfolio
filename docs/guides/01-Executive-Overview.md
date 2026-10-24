@@ -55,7 +55,7 @@ sequenceDiagram
     participant R as Recruiter
     participant H as Hero Banner
     participant A as A. Business Architecture
-    participant B as B. Nonprofit Solutions
+    participant B as B. Solution Architecture
     participant C as C. API Lab
     participant D as D. AI Lab
     participant E as E. Delivery
