@@ -14,7 +14,12 @@ on:
         required: true
         default: "delta"
         type: choice
-        options: [delta, full]
+        options: [delta, full, destructive]
+      destructive_manifest_dir:
+        description: "Destructive mode only: folder under manifest/destructive holding package.xml and destructiveChanges.xml"
+        required: false
+        default: "manifest/destructive/placeholderTerminal"
+        type: string
       destructive_timing:
         description: "Destructive Changes Timing"
         required: true
@@ -64,8 +69,32 @@ jobs:
       # publishes no Success event and runs no tests.
       - name: Execute Deployment
         id: execute
+        env:
+          DESTRUCTIVE_DIR: ${{ inputs.destructive_manifest_dir }}
         run: |
           echo "deployed=false" >> "$GITHUB_OUTPUT"
+
+          # 0. Destructive mode, by hand only: removes from production the components a
+          # committed manifest names, for a component deleted in source that no delta will
+          # ever carry. A check only run goes first, so a refused delete changes nothing.
+          if [ "${{ inputs.deployment_mode }}" == "destructive" ]; then
+            if ! [[ "$DESTRUCTIVE_DIR" =~ ^manifest/destructive/[A-Za-z0-9_-]+$ ]] \
+              || [ ! -s "$DESTRUCTIVE_DIR/package.xml" ] \
+              || [ ! -s "$DESTRUCTIVE_DIR/destructiveChanges.xml" ]; then
+              echo "::error::destructive_manifest_dir must be a folder under manifest/destructive holding package.xml and destructiveChanges.xml."
+              exit 1
+            fi
+            if grep -q "<types>" "$DESTRUCTIVE_DIR/package.xml"; then
+              echo "::error::$DESTRUCTIVE_DIR/package.xml must be empty. Destructive mode deletes and deploys nothing else."
+              exit 1
+            fi
+            echo "Components to delete:"
+            grep -E "<members>|<name>" "$DESTRUCTIVE_DIR/destructiveChanges.xml"
+            sf project deploy start --target-org portfolio --manifest "$DESTRUCTIVE_DIR/package.xml" --post-destructive-changes "$DESTRUCTIVE_DIR/destructiveChanges.xml" --dry-run --wait 30
+            sf project deploy start --target-org portfolio --manifest "$DESTRUCTIVE_DIR/package.xml" --post-destructive-changes "$DESTRUCTIVE_DIR/destructiveChanges.xml" --wait 30
+            echo "deployed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           # 1. Handle Full Deployment
           if [ "${{ inputs.deployment_mode }}" == "full" ]; then
@@ -87,6 +116,10 @@ jobs:
 
           if [ -s changed/destructiveChanges/destructiveChanges.xml ] && grep -q "<types>" changed/destructiveChanges/destructiveChanges.xml; then
              echo "Detected Destructive Changes"
+
+             # The destructive flags need a manifest. A delta that only deletes has an empty
+             # package.xml, which still has to be passed.
+             [[ "$DEPLOY_CMD" == *"--manifest"* ]] || DEPLOY_CMD="$DEPLOY_CMD --manifest changed/package/package.xml"
 
              TIMING="${{ inputs.destructive_timing }}"
              [ -z "$TIMING" ] && TIMING="post"
@@ -160,15 +193,30 @@ jobs:
             --values "Workflow__c=deploy Status__c=Failure Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --target-org portfolio
 
+  # Checks the live site read only after a deploy that changed production. A failure fails
+  # this run and writes a smoke Failure row, and undoes nothing. The same check can be run by
+  # hand from the Live Smoke Test workflow, for example after the site is published.
+  smoke:
+    needs: [deploy]
+    if: needs.deploy.result == 'success' && needs.deploy.outputs.deployed == 'true'
+    uses: ./.github/workflows/smoke.yml
+    secrets: inherit
+
   deploy-status:
     if: always()
-    needs: [deploy]
+    needs: [deploy, smoke]
     runs-on: ubuntu-latest
     steps:
       - name: Generate Deployment Summary
         run: |
           echo "## Deployment Status" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
+          case "${{ needs.smoke.result }}" in
+            success) echo "**Live smoke test**: Passed" >> $GITHUB_STEP_SUMMARY ;;
+            failure) echo "**Live smoke test**: Failed, see the smoke job. Nothing was undone." >> $GITHUB_STEP_SUMMARY ;;
+            *) echo "**Live smoke test**: Not run" >> $GITHUB_STEP_SUMMARY ;;
+          esac
 
           if [ "${{ needs.deploy.result }}" = "success" ] && [ "${{ needs.deploy.outputs.deployed }}" = "true" ]; then
              echo "**Result**: Deployment Successful" >> $GITHUB_STEP_SUMMARY
