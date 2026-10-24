@@ -47,7 +47,7 @@ jest.mock(
       [
         "nonprofit-solutions",
         "B",
-        "Nonprofit Solutions",
+        "Solution Architecture",
         "Solution Architecture",
         ["Solution design", "Decision matrix"]
       ],
