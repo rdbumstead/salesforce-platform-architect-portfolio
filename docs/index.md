@@ -58,6 +58,7 @@ _Target Audience: Architects, Developers_
 - [ADR-030: Decision Matrix as Custom Metadata](adr/030-decision-matrix-as-custom-metadata.md)
 - [ADR-031: Native Contact Form](adr/031-native-contact-form.md)
 - [ADR-032: Operational Settings in Custom Metadata](adr/032-operational-settings-in-custom-metadata.md)
+- [ADR-033: Queries in Custom Metadata](adr/033-queries-in-custom-metadata.md)
 
 **AI, Data & FinOps**
 

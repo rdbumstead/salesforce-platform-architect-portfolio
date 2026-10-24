@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-10-23, Round 7). The owner chose a native form on 2026-10-22, and the platform event step was added on 2026-10-23 (Round 7 reading R19) after a scratch org proof.
+Accepted (2026-10-23). The owner chose a native form on 2026-10-22, and the platform event step was added on 2026-10-23 after a scratch org proof.
 
 ## Context
 
@@ -17,7 +17,7 @@ The form is public. An auto-response on a public form can be used to send mail t
 3. **Abuse protection before anything is published.** `SubmissionGuard`, shared with the testimonial form, drops a filled honeypot, a submit faster than a person can type and any sender on the `Submission_Block__c` blocklist (an email, a domain or a keyword in the text) silently: the visitor sees the normal thanks, and nothing is stored or sent. Over 20 contact form Leads in 24 hours the visitor is told to try tomorrow or use LinkedIn. The auto-response is asked for only on the first message from an address in 24 hours. The "Block sender" quick action on Lead adds a sender to the blocklist from the desktop or the mobile app and marks the Lead as spam.
 4. **The reminder fallback.** `LeadReminderService` stamps two reply reminder times on the Lead, one and two business days after it arrives, counted on the org's default Business Hours. The `Lead_Contact_Form_Reminders` flow sends a custom notification to the owner's desktop and the Salesforce mobile app on arrival, then at each reminder time while the Lead is still "Open - Not Contacted", not spam and not converted.
 5. **Nothing is lost.** A Lead insert that fails is retried by the event bus three times. After that the message is kept as a `Contact_Form_Failure__c` row with the reason, and the `Portfolio_Admin` users get a custom notification.
-6. **What stays out of source.** The Lead assignment rule and the Lead auto-response rule hold the owner's user and sending address, so they are created in each org by `.claude\playwright\round-7\e5-email-rules.js` with the owner signed in (owner answer 3). Both email templates are in source with no address in them.
+6. **What stays out of source.** The Lead assignment rule and the Lead auto-response rule hold the owner's user and sending address, so they are set up in each org with the owner signed in, by a browser script kept out of the repository. Both email templates are in source with no address in them.
 
 ## Rationale
 

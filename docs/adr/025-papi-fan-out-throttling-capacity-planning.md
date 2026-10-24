@@ -39,3 +39,7 @@ Sources: `RateWindowLimiter.check`, `RateWindowLimiter.checkKey` and `RateWindow
 ## Note (2026-10-23)
 
 The tier limits above (120, 15 and 10 a minute) and the API page sizes are now read from `Portfolio_Setting__mdt` records, with these numbers as the code defaults ([ADR-032](032-operational-settings-in-custom-metadata.md)). The decision is unchanged. A record outside its range is ignored, so a typo cannot set a tier to 0.
+
+## Note (2026-10-24)
+
+The SAPI list reads now come from `Query_Definition__mdt` records ([ADR-033](033-queries-in-custom-metadata.md)). The rate check is unchanged and still runs before any data query: the records load only when a read runs, so a rejected request loads none. The counter's own read stays in code, because a row read `FOR UPDATE` must not be editable as data. `/sapi/v1/projects` and `/sapi/v1/experience-highlights` spend one more SOQL query per request, to read their long filters in full.

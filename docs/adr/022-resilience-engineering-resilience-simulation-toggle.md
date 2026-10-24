@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Amended 2026-10-21 for Round 4 (see below).
+Accepted. Amended 2026-10-21 (see below).
 
 ## Context
 
@@ -20,7 +20,7 @@ Allows evaluators to manually force integrations into failure states to observe 
 
 Requires state management (Session Cache) to track simulation status and mock 500 errors in service classes.
 
-## Amendment (2026-10-21, Round 4)
+## Amendment (2026-10-21): the breaker state and the toggle
 
 The decision stands. The state and the toggle are built differently from the implications above.
 

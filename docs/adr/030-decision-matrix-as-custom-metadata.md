@@ -2,13 +2,13 @@
 
 ## Status
 
-Accepted (2026-10-22, Round 5). Note added 2026-10-22 (Round 6) on whose weights these are.
+Accepted (2026-10-22). Note added 2026-10-22 on whose weights these are.
 
 ## Context
 
-The Nonprofit Solutions page (Pillar B) tells a pre-sales story about a regional adult literacy nonprofit choosing a platform. Its centre is a decision matrix the visitor can reweight. The owner chose a three-way matrix (owner decision D2 b, 2026-10-22): NPSP with the Program Management Module, Education Cloud, and Nonprofit Cloud. The client's own decision was two-way, NPSP and PMM against Education Cloud, and it chose NPSP and PMM. That decision is the dated baseline, and Nonprofit Cloud is the option a reviewer would ask about today. The scores and weights are the owner's to set, and they are placeholders until he delivers them.
+The Nonprofit Solutions page (Pillar B) tells a pre-sales story about a regional adult literacy nonprofit choosing a platform. Its centre is a decision matrix the visitor can reweight. The owner chose a three-way matrix (owner decision, 2026-10-22): NPSP with the Program Management Module, Education Cloud, and Nonprofit Cloud. The client's own decision was two-way, NPSP and PMM against Education Cloud, and it chose NPSP and PMM. That decision is the dated baseline, and Nonprofit Cloud is the option a reviewer would ask about today. The scores and weights are the owner's to set. He reviewed every score and weight on 2026-10-22, and every placeholder flag is cleared.
 
-> **Note, 2026-10-22 (Round 6).** This record first called the starting weights the client's. No client weighting exists in any source. The starting weights are the owner's, set from what the client said mattered most, and the reset button now reads "Reset to the starting weights".
+> **Note, 2026-10-22.** This record first called the starting weights the client's. No client weighting exists in any source. The starting weights are the owner's, set from what the client said mattered most, and the reset button now reads "Reset to the starting weights".
 
 The matrix must be source controlled, deploy to production and to CI's scratch orgs with no managed package, use no data storage, and never ship with an empty cell.
 
@@ -27,7 +27,7 @@ The matrix must be source controlled, deploy to production and to CI's scratch o
 
 - Custom Metadata deploys with the code through CI, needs no data load and uses no data storage.
 - Metadata relationships make each score name a real option and criterion, so a renamed row cannot leave an orphan.
-- The site guest reads the three types through the controller with no custom metadata grant. Run as the real site guest (`DecisionMatrixControllerTest.shouldServeTheSameMatrixToTheSiteGuest`), it gets the same 3 options, 10 criteria and 30 scores as an administrator, cell for cell (Round 5 plan reading R3, established 2026-10-22).
+- The site guest reads the three types through the controller with no custom metadata grant. Run as the real site guest (`DecisionMatrixControllerTest.shouldServeTheSameMatrixToTheSiteGuest`), it gets the same 3 options, 10 criteria and 30 scores as an administrator, cell for cell (established 2026-10-22).
 - The placeholder flag keeps the owner's judgement visible. The banner disappears on its own once the last flag is cleared.
 
 ## Alternatives considered
@@ -40,6 +40,6 @@ The matrix must be source controlled, deploy to production and to CI's scratch o
 
 ## Implications
 
-- The Apex class and both components (`c/decisionMatrix`, `c/pillarBStory`) live in `portfolio-site`, because Jest only runs there (Round 5 plan reading R1). The package holds the types, their 43 records and the `NL_Assets` static resource.
-- Changing a score or weight is a metadata deploy. The owner reviews the scores and weights, clears each `Is_Placeholder__c` and commits the records. Done 2026-10-22 (Round 6): every score reviewed, every flag cleared, starting weights 2 to 10.
-- The cost and effort table on the page is built from public licence facts only, with a source per row (owner decision D9 a). No client rates or totals appear anywhere.
+- The Apex class and both components (`c/decisionMatrix`, `c/pillarBStory`) live in `portfolio-site`, because Jest only runs there. The package holds the types, their 43 records and the `NL_Assets` static resource.
+- Changing a score or weight is a metadata deploy. The owner reviews the scores and weights, clears each `Is_Placeholder__c` and commits the records. Done 2026-10-22: every score reviewed, every flag cleared, starting weights 2 to 10.
+- The cost and effort table on the page is built from public licence facts only, with a source per row (owner decision). No client rates or totals appear anywhere.
