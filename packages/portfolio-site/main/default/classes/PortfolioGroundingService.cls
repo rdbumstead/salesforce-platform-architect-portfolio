@@ -22,7 +22,10 @@
  * @Created           : 10/21/2026
  * @Test Class        : [PortfolioGroundingServiceTest]
  **/
-public with sharing class PortfolioGroundingService {
+public with sharing class PortfolioGroundingService implements QueryDefinitions.Provider {
+  private static final String PROJECTS_QUERY = 'PortfolioGroundingService_Projects';
+  private static final String SKILL_LINKS_QUERY = 'PortfolioGroundingService_SkillLinks';
+  private static final String HIGHLIGHTS_QUERY = 'PortfolioGroundingService_Highlights';
   /** Upper bound on the returned JSON, about 2,000 tokens. */
   public static final Integer MAX_CHARS = 8000;
   public static final Integer MAX_PROJECTS = 5;
@@ -448,40 +451,104 @@ public with sharing class PortfolioGroundingService {
    */
   private without sharing class Selector {
     List<Project__c> featuredProjects() {
-      return [
-        SELECT Id, Name, Challenge__c, Solution__c, Business_Value__c
-        FROM Project__c
-        WHERE Is_Featured__c = TRUE AND Status__c IN :LIVE_STATUSES
-        ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
-        LIMIT :CANDIDATE_PROJECTS
-      ];
+      return (List<Project__c>) QueryDefinitions.run(
+        PROJECTS_QUERY,
+        projectBinds(),
+        projectsDefault()
+      );
     }
 
     List<Project_Skill__c> skillLinks(Set<Id> projectIds) {
-      return [
-        SELECT Project__c, Skill__r.Name, Skill__r.Display_Name__c
-        FROM Project_Skill__c
-        WHERE Project__c IN :projectIds
-        ORDER BY Skill__r.Name ASC
-        LIMIT :MAX_SKILL_LINKS
-      ];
+      return (List<Project_Skill__c>) QueryDefinitions.run(
+        SKILL_LINKS_QUERY,
+        skillLinkBinds(projectIds),
+        skillLinksDefault()
+      );
     }
 
     List<Experience_Highlight__c> highlights() {
-      return [
-        SELECT
-          Description__c,
-          Persona_Tag__c,
-          Experience__r.Name,
-          Experience__r.Employer__r.Name
-        FROM Experience_Highlight__c
-        ORDER BY
-          Experience__r.Is_Current_Role__c DESC,
-          Experience__r.End_Date__c DESC NULLS FIRST,
-          Sort_Order__c ASC
-        LIMIT :CANDIDATE_HIGHLIGHTS
-      ];
+      return (List<Experience_Highlight__c>) QueryDefinitions.run(
+        HIGHLIGHTS_QUERY,
+        new Map<String, Object>(),
+        highlightsDefault()
+      );
     }
+  }
+
+  /**
+   * @description The featured project read as code: featured projects in a live status,
+   *              in system mode. Query_Definition.PortfolioGroundingService_Projects ships
+   *              equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault projectsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Project__c',
+        'Id, Name, Challenge__c, Solution__c, Business_Value__c'
+      )
+      .filter('Is_Featured__c = TRUE AND Status__c IN :liveStatuses')
+      .orderBy('Sort_Order__c ASC NULLS LAST, Name ASC')
+      .rowLimit(CANDIDATE_PROJECTS)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(projectBinds());
+  }
+
+  private static Map<String, Object> projectBinds() {
+    return new Map<String, Object>{ 'liveStatuses' => LIVE_STATUSES };
+  }
+
+  /**
+   * @description The skill link read as code: the skills of the given projects, in system
+   *              mode. Query_Definition.PortfolioGroundingService_SkillLinks ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault skillLinksDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Project_Skill__c',
+        'Project__c, Skill__r.Name, Skill__r.Display_Name__c'
+      )
+      .filter('Project__c IN :projectIds')
+      .orderBy('Skill__r.Name ASC')
+      .rowLimit(MAX_SKILL_LINKS)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(skillLinkBinds(new Set<Id>()));
+  }
+
+  private static Map<String, Object> skillLinkBinds(Set<Id> projectIds) {
+    return new Map<String, Object>{ 'projectIds' => projectIds };
+  }
+
+  /**
+   * @description The highlight read as code: current roles first, then the newest end
+   *              date, in system mode. Query_Definition.PortfolioGroundingService_Highlights
+   *              ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault highlightsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience_Highlight__c',
+        'Description__c, Persona_Tag__c, Experience__r.Name, Experience__r.Employer__r.Name'
+      )
+      .orderBy(
+        'Experience__r.Is_Current_Role__c DESC, Experience__r.End_Date__c DESC NULLS FIRST, Sort_Order__c ASC'
+      )
+      .rowLimit(CANDIDATE_HIGHLIGHTS)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      PROJECTS_QUERY => projectsDefault(),
+      SKILL_LINKS_QUERY => skillLinksDefault(),
+      HIGHLIGHTS_QUERY => highlightsDefault()
+    };
   }
 
   /**

@@ -14,7 +14,9 @@
  * @Created           : 10/23/2026
  * @Test Class        : [SourceControllerTest]
  **/
-public with sharing class SourceController {
+public with sharing class SourceController implements QueryDefinitions.Provider {
+  private static final String ROWS_QUERY = 'SourceController_FetchedRows';
+  private static final String PATHS_QUERY = 'SourceController_FetchedPaths';
   public static final String LANGUAGE_NONE = 'none';
   /** The Source_Key__c of every document the docs page shows. */
   public static final String DOCS_KEY = 'docs';
@@ -356,23 +358,67 @@ public with sharing class SourceController {
    */
   private without sharing class CacheSelector {
     List<Source_Cache__c> fetchedRows(Set<String> paths) {
-      return [
-        SELECT Path__c, Content__c, Html_Url__c, Fetched_At__c, Truncated__c
-        FROM Source_Cache__c
-        WHERE Path__c IN :paths AND Fetched_At__c != NULL
-        WITH SYSTEM_MODE
-        LIMIT 200
-      ];
+      return (List<Source_Cache__c>) QueryDefinitions.run(
+        ROWS_QUERY,
+        pathBinds(paths),
+        rowsDefault()
+      );
     }
 
     List<Source_Cache__c> fetchedPaths(Set<String> paths) {
-      return [
-        SELECT Path__c
-        FROM Source_Cache__c
-        WHERE Path__c IN :paths AND Fetched_At__c != NULL
-        WITH SYSTEM_MODE
-        LIMIT 200
-      ];
+      return (List<Source_Cache__c>) QueryDefinitions.run(
+        PATHS_QUERY,
+        pathBinds(paths),
+        pathsDefault()
+      );
     }
+  }
+
+  /**
+   * @description The cached rows read as code: the fetched rows of the given paths with
+   *              the fields the dialog and the docs page show, in system mode.
+   *              Query_Definition.SourceController_FetchedRows ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault rowsDefault() {
+    return fetchedDefault(
+      'Path__c, Content__c, Html_Url__c, Fetched_At__c, Truncated__c'
+    );
+  }
+
+  /**
+   * @description The fetched paths read as code, in system mode.
+   *              Query_Definition.SourceController_FetchedPaths ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault pathsDefault() {
+    return fetchedDefault('Path__c');
+  }
+
+  private static QueryDefinitions.QueryDefault fetchedDefault(
+    String fieldList
+  ) {
+    return new QueryDefinitions.QueryDefault('Source_Cache__c', fieldList)
+      .filter('Path__c IN :paths AND Fetched_At__c != NULL')
+      .rowLimit(200)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(pathBinds(new Set<String>()));
+  }
+
+  private static Map<String, Object> pathBinds(Set<String> paths) {
+    return new Map<String, Object>{ 'paths' => paths };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      ROWS_QUERY => rowsDefault(),
+      PATHS_QUERY => pathsDefault()
+    };
   }
 }

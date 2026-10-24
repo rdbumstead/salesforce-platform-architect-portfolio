@@ -20,7 +20,9 @@
  * @Created           : 10/22/2026
  * @Test Class        : [ProjectCardControllerTest]
  **/
-public with sharing class ProjectCardController {
+public with sharing class ProjectCardController implements QueryDefinitions.Provider {
+  private static final String CARDS_QUERY = 'ProjectCardController_Cards';
+  private static final String TEST_RUN_QUERY = 'ProjectCardController_LatestTestRun';
   public static final String SOURCE_EMPLOYER_HUB_OBJECTS = 'Employer Hub objects';
   public static final String SOURCE_API_PATHS = 'API paths';
   public static final String SOURCE_AI_PROVIDERS = 'AI providers';
@@ -322,29 +324,11 @@ public with sharing class ProjectCardController {
    */
   private without sharing class ProjectCardSelector {
     private List<Project__c> selectProjects() {
-      return [
-        SELECT
-          Pillar__c,
-          Headline_Metric__c,
-          Headline_Metric_Label__c,
-          Headline_Metric_Source__c,
-          Hero_Image_URL__c,
-          Hero_Image_Alt__c,
-          Challenge__c,
-          Solution__c,
-          Business_Value__c,
-          Live_URL__c,
-          Repository_URL__c
-        FROM Project__c
-        WHERE Pillar__c IN :PILLAR_LETTERS
-        WITH SYSTEM_MODE
-        ORDER BY
-          Pillar__c ASC,
-          Is_Featured__c DESC,
-          Sort_Order__c ASC NULLS LAST,
-          Name ASC
-        LIMIT 500
-      ];
+      return (List<Project__c>) QueryDefinitions.run(
+        CARDS_QUERY,
+        cardBinds(),
+        cardsDefault()
+      );
     }
 
     private List<StaticResource> selectSpecs(List<String> names) {
@@ -358,14 +342,69 @@ public with sharing class ProjectCardController {
     }
 
     private List<Pipeline_Run__c> selectLatestTestRun(String status) {
-      return [
-        SELECT Tests_Passed__c, Org_Coverage__c
-        FROM Pipeline_Run__c
-        WHERE Status__c = :status AND Tests_Run__c != NULL
-        WITH SYSTEM_MODE
-        ORDER BY Completed_At__c DESC NULLS LAST, CreatedDate DESC
-        LIMIT 1
-      ];
+      return (List<Pipeline_Run__c>) QueryDefinitions.run(
+        TEST_RUN_QUERY,
+        testRunBinds(status),
+        testRunDefault()
+      );
     }
+  }
+
+  /**
+   * @description The card read as code: every field a card shows, for the five pillar
+   *              letters, in priority order, in system mode.
+   *              Query_Definition.ProjectCardController_Cards ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault cardsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Project__c',
+        'Pillar__c, Headline_Metric__c, Headline_Metric_Label__c, Headline_Metric_Source__c, Hero_Image_URL__c, Hero_Image_Alt__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c, Repository_URL__c'
+      )
+      .filter('Pillar__c IN :pillarLetters')
+      .orderBy(
+        'Pillar__c ASC, Is_Featured__c DESC, Sort_Order__c ASC NULLS LAST, Name ASC'
+      )
+      .rowLimit(500)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(cardBinds());
+  }
+
+  private static Map<String, Object> cardBinds() {
+    return new Map<String, Object>{ 'pillarLetters' => PILLAR_LETTERS };
+  }
+
+  /**
+   * @description The newest successful run with a test count, as code, in system mode.
+   *              Query_Definition.ProjectCardController_LatestTestRun ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault testRunDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Pipeline_Run__c',
+        'Tests_Passed__c, Org_Coverage__c'
+      )
+      .filter('Status__c = :status AND Tests_Run__c != NULL')
+      .orderBy('Completed_At__c DESC NULLS LAST, CreatedDate DESC')
+      .rowLimit(1)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(testRunBinds(PIPELINE_SUCCESS));
+  }
+
+  private static Map<String, Object> testRunBinds(String status) {
+    return new Map<String, Object>{ 'status' => status };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      CARDS_QUERY => cardsDefault(),
+      TEST_RUN_QUERY => testRunDefault()
+    };
   }
 }

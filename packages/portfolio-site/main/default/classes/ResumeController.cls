@@ -15,7 +15,14 @@
  * @Created           : 10/21/2026
  * @Test Class        : [ResumeControllerTest]
  **/
-public with sharing class ResumeController {
+public with sharing class ResumeController implements QueryDefinitions.Provider {
+  private static final String OWNER_QUERY = 'ResumeController_Owner';
+  private static final String ROLES_QUERY = 'ResumeController_Roles';
+  private static final String HIGHLIGHTS_QUERY = 'ResumeController_Highlights';
+  private static final String SKILLS_QUERY = 'ResumeController_Skills';
+  private static final String CERTIFICATIONS_QUERY = 'ResumeController_Certifications';
+  private static final String TIMELINE_ROLES_QUERY = 'ResumeController_TimelineRoles';
+  private static final String EDUCATION_QUERY = 'ResumeController_Education';
   @TestVisible
   private static final String INVALID_PERSONA_MESSAGE = 'Invalid persona. Valid values: Admin, Developer, Architect';
   private static final List<String> PERSONAS = new List<String>{
@@ -53,7 +60,12 @@ public with sharing class ResumeController {
     ResumeData resume = new ResumeData();
     resume.persona = normalizedPersona;
     resume.header = toHeader(selector.selectOwner());
-    resume.roles = toRoles(selector.selectRoles(), normalizedPersona);
+    List<Experience__c> experiences = selector.selectRoles();
+    resume.roles = toRoles(
+      experiences,
+      highlightsByRole(selector.selectHighlights(experiences)),
+      normalizedPersona
+    );
     resume.skillGroups = toSkillGroups(
       selector.selectSkills(),
       normalizedPersona
@@ -208,8 +220,26 @@ public with sharing class ResumeController {
     return header;
   }
 
+  /**
+   * Groups highlight rows by their role, keeping the read's order within each role.
+   */
+  private static Map<Id, List<Experience_Highlight__c>> highlightsByRole(
+    List<Experience_Highlight__c> rows
+  ) {
+    Map<Id, List<Experience_Highlight__c>> byRole = new Map<Id, List<Experience_Highlight__c>>();
+    for (Experience_Highlight__c row : rows) {
+      if (!byRole.containsKey(row.Experience__c)) {
+        byRole.put(row.Experience__c, new List<Experience_Highlight__c>());
+      }
+      byRole.get(row.Experience__c).add(row);
+    }
+    return byRole;
+  }
+
+  @TestVisible
   private static List<Role> toRoles(
     List<Experience__c> experiences,
+    Map<Id, List<Experience_Highlight__c>> highlightsByRole,
     String persona
   ) {
     List<Role> roles = new List<Role>();
@@ -223,7 +253,8 @@ public with sharing class ResumeController {
       role.isCurrent = experience.Is_Current_Role__c;
       role.isRemote = experience.Is_Remote__c;
       role.highlights = toHighlights(
-        experience.Experience_Highlights__r,
+        highlightsByRole.get(experience.Id) ??
+          new List<Experience_Highlight__c>(),
         persona
       );
       roles.add(role);
@@ -335,100 +366,205 @@ public with sharing class ResumeController {
    */
   private without sharing class ResumeSelector {
     private Contact selectOwner() {
-      List<Contact> owners = [
-        SELECT
-          Name,
-          Title,
-          Career_Objective__c,
-          Hero_Line__c,
-          LinkedIn_URL__c,
-          GitHub_URL__c,
-          Trailhead_URL__c,
-          Portfolio_URL__c
-        FROM Contact
-        WHERE Is_Portfolio_Owner__c = TRUE
-        WITH SYSTEM_MODE
-        ORDER BY CreatedDate ASC
-        LIMIT 1
-      ];
+      List<Contact> owners = (List<Contact>) QueryDefinitions.run(
+        OWNER_QUERY,
+        new Map<String, Object>(),
+        ownerDefault()
+      );
       return owners.isEmpty() ? null : owners[0];
     }
 
     private List<Experience__c> selectRoles() {
-      return [
-        SELECT
-          Id,
-          Name,
-          Employer__r.Name,
-          Start_Date__c,
-          End_Date__c,
-          Is_Current_Role__c,
-          Is_Remote__c,
-          (
-            SELECT
-              Description__c,
-              Persona_Tag__c,
-              Sort_Order__c,
-              Admin_Sort_Order__c,
-              Developer_Sort_Order__c,
-              Architect_Sort_Order__c,
-              Lock_Sort_Across_Personas__c
-            FROM Experience_Highlights__r
-          )
-        FROM Experience__c
-        WITH SYSTEM_MODE
-        ORDER BY
-          Is_Current_Role__c DESC,
-          Start_Date__c DESC NULLS LAST,
-          Sort_Order__c ASC
-      ];
+      return (List<Experience__c>) QueryDefinitions.run(
+        ROLES_QUERY,
+        new Map<String, Object>(),
+        rolesDefault()
+      );
+    }
+
+    private List<Experience_Highlight__c> selectHighlights(
+      List<Experience__c> experiences
+    ) {
+      if (experiences.isEmpty()) {
+        return new List<Experience_Highlight__c>();
+      }
+      return (List<Experience_Highlight__c>) QueryDefinitions.run(
+        HIGHLIGHTS_QUERY,
+        highlightBinds(new Map<Id, Experience__c>(experiences).keySet()),
+        highlightsDefault()
+      );
     }
 
     private List<Skill__c> selectSkills() {
-      return [
-        SELECT Name, Display_Name__c, Category__c, Persona_Tag__c
-        FROM Skill__c
-        WITH SYSTEM_MODE
-        ORDER BY Category_Order__c ASC, Proficiency__c DESC NULLS LAST, Name ASC
-      ];
+      return (List<Skill__c>) QueryDefinitions.run(
+        SKILLS_QUERY,
+        new Map<String, Object>(),
+        skillsDefault()
+      );
     }
 
     private List<Certification__c> selectCertifications() {
-      return [
-        SELECT Id, Name, Issuer__r.Name, Earned_Date__c, Is_Retired__c
-        FROM Certification__c
-        WITH SYSTEM_MODE
-        ORDER BY Earned_Date__c DESC NULLS LAST, Name ASC
-      ];
+      return (List<Certification__c>) QueryDefinitions.run(
+        CERTIFICATIONS_QUERY,
+        new Map<String, Object>(),
+        certificationsDefault()
+      );
     }
 
     private List<Experience__c> selectTimelineRoles() {
-      return [
-        SELECT
-          Id,
-          Name,
-          Employer__r.Name,
-          Start_Date__c,
-          End_Date__c,
-          Is_Current_Role__c
-        FROM Experience__c
-        WITH SYSTEM_MODE
-        ORDER BY
-          Is_Current_Role__c DESC,
-          Start_Date__c DESC NULLS LAST,
-          Sort_Order__c ASC,
-          Name ASC
-      ];
+      return (List<Experience__c>) QueryDefinitions.run(
+        TIMELINE_ROLES_QUERY,
+        new Map<String, Object>(),
+        timelineRolesDefault()
+      );
     }
 
     private List<Education__c> selectEducation() {
-      return [
-        SELECT Id, Name, Issuer__r.Name, Graduation_Date__c, Field_of_Study__c
-        FROM Education__c
-        WITH SYSTEM_MODE
-        ORDER BY Graduation_Date__c DESC NULLS LAST, Name ASC
-      ];
+      return (List<Education__c>) QueryDefinitions.run(
+        EDUCATION_QUERY,
+        new Map<String, Object>(),
+        educationDefault()
+      );
     }
+  }
+
+  /**
+   * @description The owner read as code: the oldest portfolio owner Contact with the header
+   *              fields, in system mode. No Email, Phone, address or Owner_* field, so a
+   *              record can never ask for one. Query_Definition.ResumeController_Owner ships
+   *              equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault ownerDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Contact',
+        'Name, Title, Career_Objective__c, Hero_Line__c, LinkedIn_URL__c, GitHub_URL__c, Trailhead_URL__c, Portfolio_URL__c'
+      )
+      .filter('Is_Portfolio_Owner__c = TRUE')
+      .orderBy('CreatedDate ASC')
+      .rowLimit(1)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The resume's role read as code, current first, in system mode. The
+   *              highlights are their own read. Query_Definition.ResumeController_Roles ships
+   *              equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault rolesDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience__c',
+        'Id, Name, Employer__r.Name, Start_Date__c, End_Date__c, Is_Current_Role__c, Is_Remote__c'
+      )
+      .orderBy(
+        'Is_Current_Role__c DESC, Start_Date__c DESC NULLS LAST, Sort_Order__c ASC'
+      )
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The highlight read as code: every highlight of the given roles with the
+   *              fields the persona order needs, in system mode.
+   *              Query_Definition.ResumeController_Highlights ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault highlightsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience_Highlight__c',
+        'Experience__c, Description__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Developer_Sort_Order__c, Architect_Sort_Order__c, Lock_Sort_Across_Personas__c'
+      )
+      .filter('Experience__c IN :experienceIds')
+      .orderBy('Sort_Order__c ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(highlightBinds(new Set<Id>()));
+  }
+
+  private static Map<String, Object> highlightBinds(Set<Id> experienceIds) {
+    return new Map<String, Object>{ 'experienceIds' => experienceIds };
+  }
+
+  /**
+   * @description The resume's skill read as code, in system mode.
+   *              Query_Definition.ResumeController_Skills ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault skillsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Skill__c',
+        'Name, Display_Name__c, Category__c, Persona_Tag__c'
+      )
+      .orderBy(
+        'Category_Order__c ASC, Proficiency__c DESC NULLS LAST, Name ASC'
+      )
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The certification read as code, newest first, in system mode.
+   *              Query_Definition.ResumeController_Certifications ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault certificationsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Certification__c',
+        'Id, Name, Issuer__r.Name, Earned_Date__c, Is_Retired__c'
+      )
+      .orderBy('Earned_Date__c DESC NULLS LAST, Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The timeline's role read as code, current first, in system mode.
+   *              Query_Definition.ResumeController_TimelineRoles ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault timelineRolesDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience__c',
+        'Id, Name, Employer__r.Name, Start_Date__c, End_Date__c, Is_Current_Role__c'
+      )
+      .orderBy(
+        'Is_Current_Role__c DESC, Start_Date__c DESC NULLS LAST, Sort_Order__c ASC, Name ASC'
+      )
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The education read as code, newest first, in system mode.
+   *              Query_Definition.ResumeController_Education ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault educationDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Education__c',
+        'Id, Name, Issuer__r.Name, Graduation_Date__c, Field_of_Study__c'
+      )
+      .orderBy('Graduation_Date__c DESC NULLS LAST, Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      OWNER_QUERY => ownerDefault(),
+      ROLES_QUERY => rolesDefault(),
+      HIGHLIGHTS_QUERY => highlightsDefault(),
+      SKILLS_QUERY => skillsDefault(),
+      CERTIFICATIONS_QUERY => certificationsDefault(),
+      TIMELINE_ROLES_QUERY => timelineRolesDefault(),
+      EDUCATION_QUERY => educationDefault()
+    };
   }
 
   /**

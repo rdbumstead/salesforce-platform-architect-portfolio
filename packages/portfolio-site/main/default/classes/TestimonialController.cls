@@ -18,7 +18,37 @@
  * @Created           : 10/21/2026
  * @Test Class        : [TestimonialControllerTest]
  **/
-public with sharing class TestimonialController {
+public with sharing class TestimonialController implements QueryDefinitions.Provider {
+  private static final String APPROVED_QUERY = 'TestimonialController_Approved';
+
+  /**
+   * @description The wall's read as code: approved rows only, in user mode, curated order
+   *              first, then newest. Query_Definition.TestimonialController_Approved ships
+   *              equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault approvedDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Testimonial__c',
+        'Id, Author_Name__c, Author_Title__c, Relationship_Type__c, Vibe_Mode__c, Context__c, Note__c'
+      )
+      .filter('Approved__c = TRUE')
+      .orderBy('Sort_Order__c ASC NULLS LAST, CreatedDate DESC')
+      .rowLimit(200)
+      .mode(QueryDefinitions.Mode.USER_MODE);
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      APPROVED_QUERY => approvedDefault()
+    };
+  }
+
   @TestVisible
   private static final Integer RATE_LIMIT_PER_MINUTE = SubmissionGuard.TESTIMONIAL_RATE_PER_MINUTE;
   @TestVisible
@@ -155,21 +185,12 @@ public with sharing class TestimonialController {
   @AuraEnabled(cacheable=true)
   public static List<WallItem> getApprovedTestimonials() {
     List<WallItem> items = new List<WallItem>();
-    for (Testimonial__c row : [
-      SELECT
-        Id,
-        Author_Name__c,
-        Author_Title__c,
-        Relationship_Type__c,
-        Vibe_Mode__c,
-        Context__c,
-        Note__c
-      FROM Testimonial__c
-      WHERE Approved__c = TRUE
-      WITH USER_MODE
-      ORDER BY Sort_Order__c ASC NULLS LAST, CreatedDate DESC
-      LIMIT 200
-    ]) {
+    List<Testimonial__c> rows = (List<Testimonial__c>) QueryDefinitions.run(
+      APPROVED_QUERY,
+      new Map<String, Object>(),
+      approvedDefault()
+    );
+    for (Testimonial__c row : rows) {
       WallItem item = new WallItem();
       item.key = EncodingUtil.convertToHex(
           Crypto.generateDigest('SHA-256', Blob.valueOf(row.Id))
