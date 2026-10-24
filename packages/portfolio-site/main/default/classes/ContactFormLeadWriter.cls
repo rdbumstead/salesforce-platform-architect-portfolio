@@ -33,6 +33,8 @@ public with sharing class ContactFormLeadWriter {
   private static final String NEW_LEAD_TEMPLATE = 'Portfolio_Contact_New_Lead';
   @TestVisible
   private static List<Messaging.SingleEmailMessage> lastOwnerEmails = new List<Messaging.SingleEmailMessage>();
+  @TestVisible
+  private static List<Messaging.SendEmailResult> lastSendResults = new List<Messaging.SendEmailResult>();
   private static final String NOTIFICATION_TYPE = 'Portfolio_Contact_Reminder';
   private static final String ADMIN_PERMISSION_SET = 'Portfolio_Admin';
   private static final String STANDARD_USER_TYPE = 'Standard';
@@ -140,7 +142,7 @@ public with sharing class ContactFormLeadWriter {
         }
       }
       if (!lastOwnerEmails.isEmpty()) {
-        Messaging.sendEmail(lastOwnerEmails, false);
+        lastSendResults = Messaging.sendEmail(lastOwnerEmails, false);
       }
     } catch (Exception e) {
       // The Lead is saved and the in app arrival notice still reaches the owner.

@@ -92,6 +92,15 @@ private class ContactFormLeadWriterTest {
     List<Messaging.SingleEmailMessage> emails = ContactFormLeadWriter.lastOwnerEmails;
     Assert.areEqual(1, emails.size(), 'One email');
     Assert.areEqual(1, sends, 'One send call');
+    Assert.areEqual(
+      1,
+      ContactFormLeadWriter.lastSendResults.size(),
+      'One result'
+    );
+    Assert.isTrue(
+      ContactFormLeadWriter.lastSendResults[0].isSuccess(),
+      'Accepted for sending'
+    );
     Messaging.SingleEmailMessage email = emails[0];
     Assert.areEqual(owner.Id, email.getTargetObjectId(), 'To the owner');
     Assert.isNull(email.getToAddresses(), 'No address, only the user Id');
