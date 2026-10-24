@@ -78,20 +78,47 @@ export const REDOC_CONSTRAINT_COLOR = "#1D4ED8";
  * The bottom edge of the sticky or fixed element at the top of the viewport, the site
  * header, so a section scrolled into view lands below it. 0 when nothing is pinned there.
  * The element is found through every open shadow root, because the header sits inside
- * the theme layout component.
+ * the theme layout component. Where the site's runtime does not let this component open the
+ * layout's shadow root, the header's bottom is found by scanning instead (scannedBottom).
+ * @param {Element} [host] this component's host element, so the scan can check the element
+ *   at the top is a layout the component sits inside
  */
-export function headerOffset() {
+export function headerOffset(host) {
   try {
-    return pinnedBottom();
+    return pinnedBottom(host);
   } catch {
     // A runtime with no elementFromPoint (a test DOM) has no header to allow for.
     return 0;
   }
 }
 
-function pinnedBottom() {
+/** The tallest header the scan allows for. A taller band is not taken for a header. */
+const HEADER_SCAN_LIMIT = 200;
+
+/**
+ * The header's bottom when it sits inside a layout component whose shadow root cannot be
+ * read: the first point down the viewport's centre line where the element the document
+ * reports is no longer that layout. Used only when the element at the top is a custom
+ * element with no readable shadow root that holds this component, so a page with no header,
+ * or this component's own content at the top, gives 0.
+ */
+function scannedBottom(x, top, host) {
+  const holdsComponent = host ? top !== host && top.contains(host) : true;
+  if (!top.tagName.includes("-") || top.shadowRoot || !holdsComponent) {
+    return 0;
+  }
+  for (let y = 3; y <= HEADER_SCAN_LIMIT; y++) {
+    if (document.elementFromPoint(x, y) !== top) {
+      return y;
+    }
+  }
+  return 0;
+}
+
+function pinnedBottom(host) {
   const x = Math.round(window.innerWidth / 2);
-  let element = document.elementFromPoint(x, 2);
+  const top = document.elementFromPoint(x, 2);
+  let element = top;
   while (element && element.shadowRoot) {
     const inner = element.shadowRoot.elementFromPoint
       ? element.shadowRoot.elementFromPoint(x, 2)
@@ -111,7 +138,7 @@ function pinnedBottom() {
     }
     node = node.parentNode || node.host;
   }
-  return 0;
+  return top ? scannedBottom(x, top, host) : 0;
 }
 
 /**
@@ -460,7 +487,11 @@ export default class ApiReference extends LightningElement {
     const toggle = this.fullWidth
       ? this.template.querySelector(".spec-toggle")
       : null;
-    return headerOffset() + (toggle ? toggle.offsetHeight : 0) + SECTION_GAP;
+    return (
+      headerOffset(this.template.host) +
+      (toggle ? toggle.offsetHeight : 0) +
+      SECTION_GAP
+    );
   }
 
   /** A click on a Redoc menu item or an in page link: let Redoc update, then scroll. */
@@ -535,7 +566,7 @@ export default class ApiReference extends LightningElement {
   afterRender() {
     const card = this.template.querySelector("article");
     if (card) {
-      const header = headerOffset();
+      const header = headerOffset(this.template.host);
       const toggle = this.fullWidth
         ? this.template.querySelector(".spec-toggle")
         : null;

@@ -3,15 +3,19 @@
  *                      renders tag rows with their operations nested under them, each with
  *                      Redoc's aria-expanded, so the tests prove an open tag scrolls its intro
  *                      into view with focus left on the row, a closed tag scrolls nothing,
- *                      Enter and Space settle a row like a click, and the menu is pinned below
- *                      the header and the spec switch on the full width page.
+ *                      Enter and Space settle a row like a click, the menu is pinned below
+ *                      the header and the spec switch on the full width page, and the header is
+ *                      measured through a layout whose shadow root cannot be read.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/23/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import ApiReference, { REDOC_STYLE_OVERRIDES } from "c/apiReference";
+import ApiReference, {
+  REDOC_STYLE_OVERRIDES,
+  headerOffset
+} from "c/apiReference";
 import { loadScript } from "lightning/platformResourceLoader";
 
 const fs = require("fs");
@@ -276,5 +280,50 @@ describe("c-api-reference menu rows", () => {
     );
     const rule = css.match(/\.reference-card_full \{([^}]*)\}/);
     expect(rule[1]).toContain("overflow: visible;");
+  });
+
+  describe("header measured through a layout it cannot open", () => {
+    let layout;
+    let host;
+
+    beforeEach(() => {
+      // A layout component whose shadow root this code cannot read (shadowRoot is null),
+      // holding this component, with a 61 px header at the top of the viewport.
+      layout = document.createElement("c-layout");
+      host = document.createElement("c-api-reference");
+      layout.appendChild(host);
+      document.body.appendChild(layout);
+      document.elementFromPoint = jest.fn((x, y) => (y < 61 ? layout : host));
+    });
+
+    afterEach(() => {
+      delete document.elementFromPoint;
+    });
+
+    it("finds the header's bottom where the layout stops", () => {
+      expect(headerOffset(host)).toBe(61);
+    });
+
+    it("takes no header when the element at the top is this component", () => {
+      document.elementFromPoint = jest.fn((x, y) => (y < 61 ? host : layout));
+      expect(headerOffset(host)).toBe(0);
+    });
+
+    it("takes no header from a plain element or a layout that does not hold it", () => {
+      const plain = document.createElement("div");
+      document.body.appendChild(plain);
+      document.elementFromPoint = jest.fn((x, y) => (y < 61 ? plain : host));
+      expect(headerOffset(host)).toBe(0);
+
+      const other = document.createElement("c-other");
+      document.body.appendChild(other);
+      document.elementFromPoint = jest.fn((x, y) => (y < 61 ? other : host));
+      expect(headerOffset(host)).toBe(0);
+    });
+
+    it("takes no header when one element fills the whole scanned band", () => {
+      document.elementFromPoint = jest.fn(() => layout);
+      expect(headerOffset(host)).toBe(0);
+    });
   });
 });
