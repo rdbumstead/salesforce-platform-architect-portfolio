@@ -25,11 +25,14 @@
                   "children": [
                     {
                       "attributes": {
-                        "imageInfos": "",
-                        "richTextValue": "<h1>Solution Architecture</h1><p>Pillar B: a pre-sales solution design for a regional adult literacy nonprofit, with a decision matrix and a cost comparison.</p>"
+                        "designLabel": "Read the design",
+                        "designUrl": "/docs?doc=sas",
+                        "eyebrow": "Pillar B",
+                        "heading": "Solution Architecture",
+                        "lead": "A pre-sales solution design for a regional adult literacy nonprofit, with a decision matrix and a cost comparison."
                       },
-                      "definition": "community_builder:richTextEditor",
-                      "id": "6a44653c-40ea-4e8d-9289-6ca1a9369971",
+                      "definition": "c:pageIntro",
+                      "id": "df3a3f51-58a8-4371-b0a1-c057baa18195",
                       "type": "component"
                     },
                     {
