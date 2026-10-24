@@ -504,6 +504,88 @@ describe("c-hero-banner", () => {
     });
   });
 
+  describe("motion preference", () => {
+    const originalMatchMedia = window.matchMedia;
+
+    function systemReduces(matches) {
+      window.matchMedia = jest.fn(() => ({
+        matches,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }));
+    }
+
+    afterEach(() => {
+      window.localStorage.clear();
+      window.matchMedia = originalMatchMedia;
+    });
+
+    function tourScroll(element) {
+      const root = element.shadowRoot;
+      const heading = root.querySelector('[data-id="tour-heading"]');
+      heading.scrollIntoView = jest.fn();
+      root.querySelector('[data-id="tour-button"]').click();
+      return heading.scrollIntoView.mock.calls[0][0];
+    }
+
+    it("scrolls smoothly and keeps the card transition with no choice and no system setting", () => {
+      systemReduces(false);
+      const element = render();
+      expect(tourScroll(element)).toEqual({
+        behavior: "smooth",
+        block: "start"
+      });
+      expect(
+        element.shadowRoot
+          .querySelector(".home")
+          .classList.contains("motion-reduced")
+      ).toBe(false);
+    });
+
+    it("follows the system setting when the visitor has made no choice", () => {
+      systemReduces(true);
+      const element = render();
+      expect(tourScroll(element).behavior).toBe("auto");
+      expect(
+        element.shadowRoot
+          .querySelector(".home")
+          .classList.contains("motion-reduced")
+      ).toBe(true);
+    });
+
+    it("lets the visitor's stored choice win over the system setting", () => {
+      systemReduces(true);
+      window.localStorage.setItem("portfolio-motion", "full");
+      const element = render();
+      expect(tourScroll(element).behavior).toBe("smooth");
+    });
+
+    it("follows a change made while the page is open, and stops listening when removed", async () => {
+      systemReduces(false);
+      const element = render();
+      document.dispatchEvent(
+        new CustomEvent("portfolio-motion", {
+          detail: { motion: "reduce", reduced: true }
+        })
+      );
+      await flush();
+      expect(
+        element.shadowRoot
+          .querySelector(".home")
+          .classList.contains("motion-reduced")
+      ).toBe(true);
+      expect(tourScroll(element).behavior).toBe("auto");
+
+      const removeSpy = jest.spyOn(document, "removeEventListener");
+      document.body.removeChild(element);
+      expect(removeSpy).toHaveBeenCalledWith(
+        "portfolio-motion",
+        expect.any(Function)
+      );
+      removeSpy.mockRestore();
+    });
+  });
+
   describe("pillar card extras", () => {
     function card(element, key) {
       return element.shadowRoot.querySelector(
