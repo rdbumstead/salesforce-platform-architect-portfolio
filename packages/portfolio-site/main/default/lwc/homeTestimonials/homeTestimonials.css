@@ -1,0 +1,142 @@
+/*
+ * Home page testimonials, on the --pf- site tokens only, in heroBanner's section style and the
+ * wall's card tones. Every element that sets a background also sets its text colour. The two
+ * tones differ in typeface, the accent edge and the tone tag, never in colour alone.
+ */
+:host {
+  display: block;
+}
+
+.home-testimonials {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 var(--pf-space-4);
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  font-size: 16px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.section {
+  padding: 64px 0 24px;
+}
+
+.section-label {
+  margin: 0 0 10px;
+  font-family: var(--pf-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--pf-muted);
+}
+
+.section-heading {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pf-text);
+}
+
+.section-intro {
+  margin: var(--pf-space-2) 0 var(--pf-space-6);
+  color: var(--pf-muted);
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--pf-space-4);
+}
+
+@media (min-width: 768px) {
+  .cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.card {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-lg);
+  padding: var(--pf-space-4);
+}
+
+.card-professional {
+  border-left: 4px solid var(--pf-btn);
+}
+
+.card-casual {
+  border-left: 4px dashed var(--pf-accent);
+}
+
+.quote {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sentence {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.sentence p {
+  margin: 0 0 var(--pf-space-2);
+  color: var(--pf-text);
+}
+
+.card-professional .sentence p {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+}
+
+.card-casual .sentence p {
+  font-weight: 700;
+}
+
+.byline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+  margin-top: var(--pf-space-2);
+  color: var(--pf-muted);
+}
+
+.author {
+  color: var(--pf-text);
+  font-weight: 700;
+}
+
+.tone {
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-radius: var(--pf-radius-sm);
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+.wall-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-top: var(--pf-space-4);
+  color: var(--pf-text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.wall-link:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}

@@ -1,0 +1,34 @@
+<template>
+  <template lwc:if={hasItems}>
+    <div class="home-testimonials">
+      <section class="section" aria-labelledby="home-testimonials-heading">
+        <p class="section-label">04 / WHAT PEOPLE SAY</p>
+        <h2 id="home-testimonials-heading" class="section-heading">
+          What people say.
+        </h2>
+        <p class="section-intro">From people I have worked with.</p>
+        <ul class="cards" data-id="quotes">
+          <template for:each={quotes} for:item="quote">
+            <li key={quote.key} class={quote.cardClass} data-id="quote">
+              <figure class="quote">
+                <blockquote class="sentence">
+                  <p>{quote.sentence}</p>
+                </blockquote>
+                <figcaption class="byline">
+                  <span class="author">{quote.authorName}</span>
+                  <template lwc:if={quote.byline}>
+                    <span class="detail">{quote.byline}</span>
+                  </template>
+                  <span class="tone">{quote.toneLabel}</span>
+                </figcaption>
+              </figure>
+            </li>
+          </template>
+        </ul>
+        <a class="wall-link" href={wallHref} data-id="wall-link"
+          >Read every testimonial <span aria-hidden="true">→</span></a
+        >
+      </section>
+    </div>
+  </template>
+</template>
