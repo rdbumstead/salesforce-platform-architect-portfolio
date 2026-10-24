@@ -616,7 +616,7 @@ The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box T
 - **A.9 Advanced Visualization Strategy:**
   - **Mobile Guardrail:** on `FORM_FACTOR` `Small` or a viewport under 768 px the skills page shows its matrix and the ERD its accessible list, and neither requests the graph engine.
   - **Lazy Loading:** `c/graphEngine.loadGraphEngine` loads the `D3_Library` static resource through `loadScript` the first time a graph view opens, once per page. A failed load is not cached.
-  - **Library Version:** d3-force 3.0.0 with d3-dispatch, d3-quadtree and d3-timer 3.0.1, and since Round 7 d3-selection, d3-color, d3-interpolate, d3-ease, d3-transition, d3-drag and d3-zoom for pan, zoom and node drag, 81,502 bytes in all (G6 was removed in Round 5).
+  - **Library Version:** d3-force 3.0.0 with d3-dispatch, d3-quadtree and d3-timer 3.0.1, and then d3-selection, d3-color, d3-interpolate, d3-ease, d3-transition, d3-drag and d3-zoom for pan, zoom and node drag, 81,482 bytes in source (G6 was removed earlier).
   - **Pan, zoom and drag:** the skills graph pans at any zoom by a background drag or the arrow keys on the focused graph, up to 120 units past its edge, zooms from 1x to 4x with Ctrl and the wheel or a pinch while a plain wheel scrolls the page, and lets a node be dragged, with Zoom in, Zoom out and Reset view buttons and a polite zoom announcement (Technical Guide §2.1).
 
 ### Appendix B: API Specification (OpenAPI/Swagger)
