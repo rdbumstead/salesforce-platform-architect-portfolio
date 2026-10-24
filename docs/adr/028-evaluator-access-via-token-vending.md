@@ -84,3 +84,7 @@ The API Lab's `ApiLabController.requestEvaluatorToken` runs the same service, th
 **No `expires_in`** (owner decision, 2026-10-21). The token endpoint reports no expiry for a client credentials grant, and the token is the integration user's shared session, which ends after 30 minutes without use (the integration profile's idle timeout). A fixed number would describe neither, so the response leaves the field out and the specs and docs say how the session ends instead.
 
 **Disposable addresses.** The owner dropped "reject disposable addresses" from item 1 of the decision on 2026-10-21. No list of disposable domains is kept, and the audit row plus the daily cap are the controls.
+
+## Note (2026-10-23)
+
+The token request rate (15 a minute per email and source IP) and the default daily cap (50) are now read from the `Token_Requests_Per_Minute` and `Token_Daily_Cap_Default` records of `Portfolio_Setting__mdt`, with those numbers as the code defaults ([ADR-032](032-operational-settings-in-custom-metadata.md)). `Portfolio_Config__mdt.Token_Daily_Cap__c` still wins when set, so a cap of 0 still pauses vending.

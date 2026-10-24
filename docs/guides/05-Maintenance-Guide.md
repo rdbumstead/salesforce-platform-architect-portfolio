@@ -13,6 +13,7 @@
   - [3.2 Pipeline Triggers](#32-pipeline-triggers)
   - [3.3 Pipeline Strategy: Delta Deployment](#33-pipeline-strategy-delta-deployment)
   - [3.4 Org Persistence](#34-org-persistence)
+  - [3.5 Changing an Operational Setting](#35-changing-an-operational-setting)
 - [4. Disaster Recovery](#4-disaster-recovery)
   - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
   - [4.2 Scenario: Security Misconfiguration (Guest User)](#42-scenario-security-misconfiguration-guest-user)
@@ -140,6 +141,7 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 - **`npm run sf:coverage -- --target-org <alias>`**: runs every local Apex test in the named org and fails on a failed test or org wide coverage under 90% (`scripts/coverage-gate.js`).
 - **`npm run specs:sync`** and **`npm run specs:check`**: regenerate every copy of the API specs from `packages/integration-api/specs`, or fail when a copy differs (`scripts/sync-specs.js`). Edit the YAML there, never a copy.
 - **`npm run docs:counts`**: fails when the ADR count in README or STATUS, or an ADR link in the indexes, disagrees with `docs/adr` (`scripts/check-doc-counts.js`).
+- **`npm run refs:check`**: fails when a comment, metadata description or help text under `packages/` names a build process code. It reads only prose and skips vendored bundles. Exceptions go in `scripts/internal-refs-allowlist.json` with a reason ([Technical Guide §3.1](./04-Technical-Guide.md#31-key-verification-items)).
 - **`npm run pre-launch-check -- --target-org <alias>`**: the release checks in one command ([Technical Guide §3](./04-Technical-Guide.md#3-quality-assurance-checklist)).
 
 ### 3.2 Pipeline Triggers
@@ -147,7 +149,13 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 - **PR Validation (pr.yml):** Runs on pull requests to `main` that modify `packages/**`, `sfdx-project.json`, `package.json` or `pr.yml` itself.
   - _Quality Gate:_ every Apex test passes and org wide coverage is 90% or more (`scripts/coverage-gate.js --min 90`).
   - _Security Gate:_ no Critical or High violation from Salesforce Code Analyzer (`npm run scan`), plus `npm run scan:secrets`, the Jest tests and `npm run docs:verify`.
-- **Production Deploy (deploy.yml):** Runs on a push to `main` that modifies `packages/**` (both `portfolio-site` and `integration-api`), `sfdx-project.json` or `package.json`, or by hand in delta or full mode. After a real deploy it runs every local test in production and publishes a `Governance_Event__e` with the run, the commit and, when the test run returned a summary, the tests run, the tests passed and org wide coverage. A failed deploy publishes a Failure event. A push with no metadata change deploys nothing and publishes nothing.
+  - _Internal references:_ the `quality-check` job runs the gate's own tests and then `scripts/check-internal-refs.js` over `packages/`, and fails the PR on any hit.
+  - _Site guest access:_ after the full deploy to the scratch org and before the tests, the job assigns `Portfolio_Guest` to the scratch site's guest user, as production's guest already holds it. Guest test classes then never race each other to assign it.
+  - _Production check only:_ in scratch mode, after the scratch tests, the job builds the PR's delta against `origin/<base>` and validates it against production as a dry run with `RunLocalTests`. A component or a test that fails only in production stops the PR before the merge. It deploys nothing, and a PR with no metadata change skips it. In fallback mode the fallback step already runs this check.
+- **Production Deploy (deploy.yml):** Runs on a push to `main` that modifies `packages/**` (both `portfolio-site` and `integration-api`), `sfdx-project.json` or `package.json`, or by hand in delta, full or destructive mode. After a real deploy it runs every local test in production and publishes a `Governance_Event__e` with the run, the commit and, when the test run returned a summary, the tests run, the tests passed and org wide coverage. A failed deploy publishes a Failure event. A push with no metadata change deploys nothing and publishes nothing.
+  - _Live smoke test:_ after a deploy that changed production, the `smoke` job runs the Live Smoke Test workflow below. The run summary says Passed, Failed or Not run.
+  - _Destructive mode (by hand only):_ removes from production the components named in a committed manifest folder under `manifest/destructive/` (`destructive_manifest_dir`, holding an empty `package.xml` and a `destructiveChanges.xml`). It refuses any other folder and a `package.xml` that names types, lists what it will delete, runs a check only deploy first and then the real one. It exists for a component deleted in source that no delta will ever carry.
+- **Live Smoke Test (smoke.yml):** called by Deploy to Production, and runnable by hand from the Actions tab, for example after the site is published. It runs `scripts/live-smoke.js` against the live site. Every route must answer 200 and show its key components, with no console error outside a short known list in the script, in Chromium and WebKit at 1400 by 900 and 390 by 844. It is read only: it loads pages, submits no form, clicks nothing and blocks Google Analytics so it never counts as a visitor. A failed row is loaded once more in a fresh context before it counts. On a failure it fails the run, uploads `smoke.json`, and publishes a `Governance_Event__e` with workflow `smoke` and status Failure, which lands as a `Pipeline_Run__c` row keyed `smoke:<run id>`. It undoes nothing. A pass writes no row.
 
 ### 3.3 Pipeline Strategy: Delta Deployment
 
@@ -155,13 +163,22 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 
 - **Validation (pr.yml):** creates a one day scratch org and deploys the whole of `packages` to it, then runs every local test through the coverage gate. Only when the scratch org cannot be created does it fall back to a delta: the diff between the PR branch and `origin/<base>`, deployed to production as a dry run with `RunLocalTests`, which changes nothing.
 - **Production (deploy.yml):** calculates the diff from `github.event.before`, the commit `main` pointed at before the push, to `HEAD`, so a push of several commits deploys all of them. `HEAD~1` is used only when the event has no earlier commit. It deploys strictly the changed metadata to the Production environment.
-- **Destructive Changes:** The pipeline is configured to respect `destructiveChanges.xml`. If metadata is deleted from the repo, sfdx-git-delta will generate the destructive manifest, and the pipeline will automatically delete those components from the Org during deployment.
+- **Destructive Changes:** The pipeline is configured to respect `destructiveChanges.xml`. If metadata is deleted from the repo, sfdx-git-delta will generate the destructive manifest, and the pipeline will automatically delete those components from the Org during deployment. A delta that only deletes still passes its empty `package.xml`, because the destructive flags need a manifest. A deletion that no delta carries, such as a component removed in a commit whose deploy has already run, goes through the hand run destructive mode in §3.2 with a manifest committed under `manifest/destructive/`.
 - **Cross-Platform Compatibility:** The `package.json` scripts leverage `shx` and `rimraf` to ensure all shell commands (mkdir, rm) execute consistently on both Windows (Local Development) and Ubuntu Linux (GitHub Actions Runners).
 
 ### 3.4 Org Persistence
 
 - **Heartbeat (keep-alive.yml):** Runs daily at 08:00 UTC to execute a SOQL query against the org.
 - _Purpose:_ Prevents the Developer Edition from being marked inactive and deleted by Salesforce.
+
+### 3.5 Changing an Operational Setting
+
+Page sizes, rate tiers, the token rate and cap default, circuit breaker limits, form guard limits, source refresh limits, governance freshness windows, AI length bounds, the health check timeout and the roadmap and timeline display counts are `Portfolio_Setting__mdt` records ([Technical Guide §1.6](./04-Technical-Guide.md#16-operational-settings-portfolio_setting__mdt), [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)).
+
+1. To change a limit, edit the record's **Number Value** in Setup > Custom Metadata Types > Portfolio Setting > Manage Records. It takes effect on the next request, with no deploy.
+2. Keep it inside the record's **Min Value** to **Max Value**. A value outside that range is ignored and the code default applies, and so does a cleared value or a deleted record. Its **Description** says what it controls and what is safe. A fraction is dropped (2.75 reads as 2).
+3. Commit the same value to the record's file under `packages/portfolio-site/main/default/customMetadata/`. A full mode deploy writes every record in source, and a delta that touches the file writes it too, so a value changed only in Setup can be put back to the shipped one.
+4. `Token_Daily_Cap_Default` applies only while `Portfolio_Config__mdt.Token_Daily_Cap__c` is blank. To pause or lower token vending, set the config cap (§4.4).
 
 ## 4. Disaster Recovery
 
@@ -171,7 +188,7 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 
 1. Revert main branch to previous commit SHA.
 2. Trigger fresh deployment.
-3. Verify site health via Smoke Test suite / Manual Verification.
+3. Verify site health: the deploy's `smoke` job runs the Live Smoke Test on its own (§3.2). After a publish, or to check again, run Live Smoke Test by hand from the Actions tab and read its summary.
 
 ### 4.2 Scenario: Security Misconfiguration (Guest User)
 
@@ -189,7 +206,7 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 - **Symptom:** spike in `API_Access_Request__c` records, `429`/`503` responses from `/papi/v1/auth/token`, or Developer Edition API request usage trending toward the 15,000/day limit (Setup → System Overview).
 - **Immediate mitigation:**
   1. Deactivate the **Portfolio API** External Client App (see §1.2). All issued tokens die.
-  2. Lower `Token_Daily_Cap__c` on the `Ryan_Bumstead` `Portfolio_Config__mdt` record (default 50 when blank) or set it to 0 to pause vending: `TokenExchangeService.dailyCap` reads it and a cap of 0 answers every token request with 503.
+  2. Lower `Token_Daily_Cap__c` on the `Ryan_Bumstead` `Portfolio_Config__mdt` record (when blank, the `Token_Daily_Cap_Default` setting applies, 50 as shipped) or set it to 0 to pause vending: `TokenExchangeService.dailyCap` reads it and a cap of 0 answers every token request with 503.
 - **Reading the audit trail:** `API_Access_Request__c` rows (one per token attempt) and the daily cap count are readable by users holding `Portfolio_Admin`, which grants read and View All on `API_Access_Request__c` and `API_Rate_Window__c` and read on their fields. Without it the fields are not readable, so reports and SOQL fail.
 - **Recovery:** rotate the secret (§1.2), review the audit rows (`Email__c`, `Source_IP__c`, `Outcome__c`, `Channel__c`) for the offending email/IP, reactivate the app, restore the cap.
 - **Per-caller limits already in place:** 15 token requests per minute per email and source IP, and the PAPI tier limits (`RateWindowLimiter`, [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)).

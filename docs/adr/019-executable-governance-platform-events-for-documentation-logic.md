@@ -31,3 +31,7 @@ The decision stands: executable governance through a platform event. The names, 
 - **What the checklist claims (E4).** Three items, each from evidence, never from code: the production deploy is green (from `deploy.yml`), the org heartbeat ran in the last 26 hours (from `keep-alive.yml`), and the integration caches are under 30 minutes old (computed in the org). An item with no data shows "No signal yet", never a tick. Test coverage on production is not claimed.
 - **When (E3 a).** It ships in Round 4, before launch, not post-launch.
 - The workflow publish steps are owner edits to `.github/workflows/**`, made after the event exists in production.
+
+## Amendment (2026-10-23)
+
+A third workflow publishes the event. After a production deploy that changed something, the Live Smoke Test (`smoke.yml`, run by `scripts/live-smoke.js`) checks the live site read only, and on a failure publishes `Governance_Event__e` with `Workflow__c` set to `smoke` and status Failure. `GovernanceEventHandler` accepts `smoke` beside `deploy` and `heartbeat`, so the row lands as `smoke:<run id>`. A pass writes no row. The Delivery checklist and the Pillar E card read only deploy and heartbeat rows, so neither changes.

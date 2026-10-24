@@ -115,12 +115,12 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 | **Accessibility** | 85 (Avg Theme) | **100** |
 
 - LCP measured with a Lighthouse mobile audit, three runs per route, medians. The target is 2.5 s. Most of the mobile LCP is render delay in the LWR framework's own script, which keeps it above the target, so the gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes (Technical Guide §2.11).
-- Every Apex test passes and org wide coverage is 90% or more. `pr.yml` runs every local test in a scratch org and `scripts/coverage-gate.js --min 90` fails the pull request otherwise.
+- Every Apex test passes and org wide coverage is 90% or more. `pr.yml` runs every local test in a scratch org and `scripts/coverage-gate.js --min 90` fails the pull request otherwise. It also validates the pull request check only against production with the local tests, so a test that fails only in production fails the pull request too.
 - CI/CD pipeline passing (Green build badge on Repo).
 - No Critical or High violations from Salesforce Code Analyzer (`npm run scan`, `--severity-threshold 2`, run on every pull request).
 - The network log shows no `D3_Library` request until a graph view is opened.
 - Lighthouse Accessibility score remains 100 with the "Matrix | Graph" view switch present.
-- Skills graph: D3 force layout with pan, zoom and node drag (eleven D3 modules, an 81,502 byte static resource since Round 7, against the 1.57 MB G6 library), loaded only when a visitor opens the graph view on desktop or tablet. Phones show the skills matrix and request no graph engine, and the Pillar A ERD shows its object list.
+- Skills graph: D3 force layout with pan, zoom and node drag (eleven D3 modules, an 81,482 byte static resource, against the 1.57 MB G6 library), loaded only when a visitor opens the graph view on desktop or tablet. Phones show the skills matrix and request no graph engine, and the Pillar A ERD shows its object list. A drag or the arrow keys pan the graph at any zoom, and a plain wheel scrolls the page.
 
 **Engagement:**
 
@@ -129,7 +129,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - **ai_fallback_usage:** % of generations served by the Local Template (the fallback share).
 - **ai_complete_failure_rate:** % of requests that end with no content at all, a 503 or an error message (Target < 1%).
 - **finops_quota_visibility:** visitors who hover over or focus the footer's "AI requests today" line.
-- All three AI rates come from one GA4 event, `ai_generation_completed`, with the parameters `provider`, `model`, `fallback`, `latency_ms` and `outcome`. GA4 computes the rates, so no counter is stored in Salesforce (owner decision PD-D8, 2026-10-21).
+- All three AI rates are to come from one GA4 event, `ai_generation_completed`, with the parameters `provider`, `model`, `fallback`, `latency_ms` and `outcome`. GA4 computes the rates, so no counter is stored in Salesforce (owner decision, 2026-10-21). Component events go to GA4 through the site's head script ([Technical Guide §2.8](./04-Technical-Guide.md#28-analytics-instrumentation-ga4)). Delivery is proven on a scratch copy of the site and is checked on production after the deploy. Before that change no component event reached GA4, so no earlier rate or conversion figure exists.
 
 **Conversion:**
 

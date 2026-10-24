@@ -57,6 +57,7 @@ _Target Audience: Architects, Developers_
 - [ADR-029: Schema Visualizer Scope, Discovery and Caching](adr/029-schema-visualizer-scope-discovery-and-caching.md)
 - [ADR-030: Decision Matrix as Custom Metadata](adr/030-decision-matrix-as-custom-metadata.md)
 - [ADR-031: Native Contact Form](adr/031-native-contact-form.md)
+- [ADR-032: Operational Settings in Custom Metadata](adr/032-operational-settings-in-custom-metadata.md)
 
 **AI, Data & FinOps**
 

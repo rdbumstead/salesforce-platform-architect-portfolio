@@ -140,7 +140,7 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### Scratch Org Validation
 
 **What is a Scratch Org?** A temporary, isolated Salesforce environment created from source control. Think "Docker container for Salesforce."  
-**Our process:** Every pull request that touches `packages/**` creates a one day scratch org, deploys the whole of `packages` to it, runs every local test through the coverage gate above, then deletes the org. When the scratch org cannot be created, the job falls back to a delta dry run against production with `RunLocalTests` (`pr.yml`, "Deploy & Test (Fallback Mode - DELTA)").  
+**Our process:** Every pull request that touches `packages/**` creates a one day scratch org, deploys the whole of `packages` to it, runs every local test through the coverage gate above, then validates the PR's delta check only against production with `RunLocalTests` ("Validate Delta Against Production (Check Only)"), so a component or test that fails only in production stops the PR before the merge, and deletes the org. When the scratch org cannot be created, the job falls back to that delta dry run against production on its own (`pr.yml`, "Deploy & Test (Fallback Mode - DELTA)").  
 **Why it matters:** Catches "works on my machine" issues. If the code can't deploy to a fresh org, it won't deploy to production.
 
 ## 5. Request Lifecycle & Governance Gates
