@@ -553,11 +553,16 @@ describe("c-hero-banner", () => {
       ).toBe(true);
     });
 
-    it("lets the visitor's stored choice win over the system setting", () => {
+    it("follows the system setting and ignores a stored motion value", () => {
       systemReduces(true);
       window.localStorage.setItem("portfolio-motion", "full");
       const element = render();
-      expect(tourScroll(element).behavior).toBe("smooth");
+      expect(tourScroll(element).behavior).toBe("auto");
+      expect(
+        element.shadowRoot
+          .querySelector(".home")
+          .classList.contains("motion-reduced")
+      ).toBe(true);
     });
 
     it("follows a change made while the page is open, and stops listening when removed", async () => {

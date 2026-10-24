@@ -1,23 +1,22 @@
 /**
  * @description       : Unit tests for the motionPreference module. Covers the system setting as
- *                      the default, a stored choice winning over it, storing a choice with its
- *                      attribute and document event, the change listener for both sources, and
- *                      the silent paths when storage or matchMedia are missing or throw.
+ *                      the only source, a value stored by an earlier version being ignored and
+ *                      removed, the change listener for the system setting and the document
+ *                      event, and the silent paths when storage or matchMedia are missing or throw.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/24/2026
  **/
 import {
-  MOTION_ATTRIBUTE,
   MOTION_EVENT,
+  MOTION_FULL,
+  MOTION_REDUCE,
   MOTION_STORAGE_KEY,
-  applyStoredMotion,
-  getStoredMotion,
+  forgetStoredMotion,
   isReduced,
   onMotionChange,
   scrollBehavior,
-  setMotion,
   systemPrefersReduced
 } from "c/motionPreference";
 
@@ -45,6 +44,12 @@ function changeSystem(reduced) {
   systemListeners.forEach((listener) => listener({ matches: reduced }));
 }
 
+function sendMotionEvent(reduced) {
+  document.dispatchEvent(
+    new CustomEvent(MOTION_EVENT, { detail: { reduced } })
+  );
+}
+
 describe("c/motionPreference", () => {
   const originalMatchMedia = window.matchMedia;
 
@@ -52,7 +57,6 @@ describe("c/motionPreference", () => {
     systemReduced = false;
     mockMatchMedia();
     window.localStorage.clear();
-    document.documentElement.removeAttribute(MOTION_ATTRIBUTE);
   });
 
   afterEach(() => {
@@ -60,17 +64,30 @@ describe("c/motionPreference", () => {
     jest.restoreAllMocks();
   });
 
-  it("uses the portfolio-motion key and event name", () => {
+  it("keeps the portfolio-motion key and event name and the two states", () => {
     expect(MOTION_STORAGE_KEY).toBe("portfolio-motion");
     expect(MOTION_EVENT).toBe("portfolio-motion");
+    expect(MOTION_REDUCE).toBe("reduce");
+    expect(MOTION_FULL).toBe("full");
   });
 
-  describe("with no stored choice", () => {
+  describe("isReduced", () => {
     it("follows the system setting", () => {
       expect(isReduced()).toBe(false);
       systemReduced = true;
       expect(systemPrefersReduced()).toBe(true);
       expect(isReduced()).toBe(true);
+    });
+
+    it("ignores a stored full when the system asks for reduced motion", () => {
+      window.localStorage.setItem(MOTION_STORAGE_KEY, "full");
+      systemReduced = true;
+      expect(isReduced()).toBe(true);
+    });
+
+    it("ignores a stored reduce when the system asks for full motion", () => {
+      window.localStorage.setItem(MOTION_STORAGE_KEY, "reduce");
+      expect(isReduced()).toBe(false);
     });
 
     it("reads as full motion where matchMedia is missing", () => {
@@ -85,131 +102,67 @@ describe("c/motionPreference", () => {
       });
       expect(isReduced()).toBe(false);
     });
-
-    it("ignores a stored value that is not reduce or full", () => {
-      window.localStorage.setItem(MOTION_STORAGE_KEY, "sideways");
-      systemReduced = true;
-      expect(getStoredMotion()).toBeNull();
-      expect(isReduced()).toBe(true);
-    });
   });
 
-  describe("with a stored choice", () => {
-    it("lets reduce win over a system set to full motion", () => {
+  describe("forgetStoredMotion", () => {
+    it("removes a stored value once and reports it", () => {
       window.localStorage.setItem(MOTION_STORAGE_KEY, "reduce");
-      expect(isReduced()).toBe(true);
-    });
-
-    it("lets full win over a system set to reduce", () => {
-      window.localStorage.setItem(MOTION_STORAGE_KEY, "full");
-      systemReduced = true;
-      expect(isReduced()).toBe(false);
-    });
-
-    it("writes the stored choice on the html element when asked", () => {
-      window.localStorage.setItem(MOTION_STORAGE_KEY, "reduce");
-      expect(applyStoredMotion()).toBe("reduce");
-      expect(document.documentElement.getAttribute(MOTION_ATTRIBUTE)).toBe(
-        "reduce"
-      );
-    });
-
-    it("writes nothing on the html element when no choice is stored", () => {
-      expect(applyStoredMotion()).toBeNull();
-      expect(document.documentElement.hasAttribute(MOTION_ATTRIBUTE)).toBe(
-        false
-      );
-    });
-  });
-
-  describe("setMotion", () => {
-    it("stores the choice, writes the attribute and sends the event", () => {
-      const listener = jest.fn();
-      document.addEventListener(MOTION_EVENT, listener);
-      expect(setMotion("reduce")).toBe(true);
-      document.removeEventListener(MOTION_EVENT, listener);
-
-      expect(window.localStorage.getItem(MOTION_STORAGE_KEY)).toBe("reduce");
-      expect(document.documentElement.getAttribute(MOTION_ATTRIBUTE)).toBe(
-        "reduce"
-      );
-      expect(listener).toHaveBeenCalledTimes(1);
-      expect(listener.mock.calls[0][0].detail).toEqual({
-        motion: "reduce",
-        reduced: true
-      });
-      expect(isReduced()).toBe(true);
-    });
-
-    it("sends reduced false for full", () => {
-      const listener = jest.fn();
-      document.addEventListener(MOTION_EVENT, listener);
-      setMotion("full");
-      document.removeEventListener(MOTION_EVENT, listener);
-      expect(listener.mock.calls[0][0].detail).toEqual({
-        motion: "full",
-        reduced: false
-      });
-    });
-
-    it("refuses any other value and changes nothing", () => {
-      const listener = jest.fn();
-      document.addEventListener(MOTION_EVENT, listener);
-      expect(setMotion("fast")).toBe(false);
-      expect(setMotion(undefined)).toBe(false);
-      document.removeEventListener(MOTION_EVENT, listener);
-      expect(listener).not.toHaveBeenCalled();
+      expect(forgetStoredMotion()).toBe(true);
       expect(window.localStorage.getItem(MOTION_STORAGE_KEY)).toBeNull();
+      expect(forgetStoredMotion()).toBe(false);
     });
 
-    it("still sends the event when storage throws", () => {
-      jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-        throw new Error("quota");
-      });
-      const listener = jest.fn();
-      document.addEventListener(MOTION_EVENT, listener);
-      expect(setMotion("reduce")).toBe(true);
-      document.removeEventListener(MOTION_EVENT, listener);
-      expect(listener).toHaveBeenCalledTimes(1);
+    it("leaves every other key alone", () => {
+      window.localStorage.setItem("portfolio-theme", "dark");
+      window.localStorage.setItem(MOTION_STORAGE_KEY, "full");
+      forgetStoredMotion();
+      expect(window.localStorage.getItem("portfolio-theme")).toBe("dark");
     });
 
-    it("reads no choice when storage throws on read", () => {
+    it("answers false when storage throws", () => {
       jest.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
         throw new Error("blocked");
       });
-      systemReduced = true;
-      expect(getStoredMotion()).toBeNull();
-      expect(isReduced()).toBe(true);
+      expect(forgetStoredMotion()).toBe(false);
     });
   });
 
   describe("onMotionChange", () => {
-    it("calls back on a stored change and stops after unsubscribe", () => {
+    it("calls back on a system change and stops after unsubscribe", () => {
       const callback = jest.fn();
       const stop = onMotionChange(callback);
-      setMotion("reduce");
-      setMotion("full");
+      changeSystem(true);
+      changeSystem(false);
       stop();
-      setMotion("reduce");
       expect(callback.mock.calls).toEqual([[true], [false]]);
+      expect(systemListeners).toHaveLength(0);
     });
 
-    it("calls back on a system change while no choice is stored", () => {
+    it("follows a system change even with a value stored by an earlier version", () => {
+      window.localStorage.setItem(MOTION_STORAGE_KEY, "full");
       const callback = jest.fn();
       const stop = onMotionChange(callback);
       changeSystem(true);
       stop();
       expect(callback).toHaveBeenCalledWith(true);
-      expect(systemListeners).toHaveLength(0);
     });
 
-    it("ignores a system change once the visitor has chosen", () => {
-      window.localStorage.setItem(MOTION_STORAGE_KEY, "full");
+    it("calls back on a portfolio-motion event and stops after unsubscribe", () => {
       const callback = jest.fn();
       const stop = onMotionChange(callback);
-      changeSystem(true);
+      sendMotionEvent(true);
       stop();
-      expect(callback).not.toHaveBeenCalled();
+      sendMotionEvent(false);
+      expect(callback.mock.calls).toEqual([[true]]);
+    });
+
+    it("reads the system setting for an event without a reduced value", () => {
+      systemReduced = true;
+      const callback = jest.fn();
+      const stop = onMotionChange(callback);
+      document.dispatchEvent(new CustomEvent(MOTION_EVENT));
+      stop();
+      expect(callback).toHaveBeenCalledWith(true);
     });
 
     it("returns a no-op for a callback that is not a function", () => {
@@ -219,9 +172,10 @@ describe("c/motionPreference", () => {
     });
   });
 
-  it("gives the scroll behaviour for the current preference", () => {
-    expect(scrollBehavior()).toBe("smooth");
+  it("gives the scroll behaviour for the system setting", () => {
     window.localStorage.setItem(MOTION_STORAGE_KEY, "reduce");
+    expect(scrollBehavior()).toBe("smooth");
+    systemReduced = true;
     expect(scrollBehavior()).toBe("auto");
   });
 });

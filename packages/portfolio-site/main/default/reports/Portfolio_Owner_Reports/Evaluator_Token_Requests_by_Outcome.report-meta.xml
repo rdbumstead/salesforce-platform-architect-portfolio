@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>Evaluator Token Requests by Outcome</name>
+    <description
+  >Every evaluator token request, grouped by outcome: issued, rate limited, cap reached and the failures.</description>
+    <reportType>CustomEntity$API_Access_Request__c</reportType>
+    <format>Summary</format>
+    <scope>organization</scope>
+    <showDetails>true</showDetails>
+    <showGrandTotal>true</showGrandTotal>
+    <showSubTotals>true</showSubTotals>
+    <columns>
+        <field>CUST_NAME</field>
+    </columns>
+    <columns>
+        <field>API_Access_Request__c.Channel__c</field>
+    </columns>
+    <columns>
+        <field>CUST_CREATED_DATE</field>
+    </columns>
+    <groupingsDown>
+        <dateGranularity>None</dateGranularity>
+        <field>API_Access_Request__c.Outcome__c</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <timeFrameFilter>
+        <dateColumn>CUST_CREATED_DATE</dateColumn>
+        <interval>INTERVAL_CUSTOM</interval>
+    </timeFrameFilter>
+</Report>

@@ -41,12 +41,13 @@ jobs:
           npm run test:unit
           npm run docs:verify
 
-      # Fails the PR when a comment, description or help text under packages/ names an
-      # internal planning reference. The gate's own tests run first.
+      # Fails the PR when a comment, description or help text under packages/, or a line of
+      # the docs, README.md or STATUS.md, names an internal planning reference. The script
+      # skips the generated API pages in docs/api/oas. The gate's own tests run first.
       - name: Check Internal References
         run: |
           node --test scripts/check-internal-refs.test.js
-          node scripts/check-internal-refs.js
+          node scripts/check-internal-refs.js packages docs README.md STATUS.md
 
       - name: Run Salesforce Code Analyzer
         run: |

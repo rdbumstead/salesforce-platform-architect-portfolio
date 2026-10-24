@@ -385,6 +385,17 @@ describe("docsViewer helpers", () => {
     expect(docKeyFrom(null, "")).toBe("");
     expect(badgeFor("adr-027")).toBe("ADR-027");
   });
+
+  it("gives the guides short badges and keeps the rest upper cased", () => {
+    expect(badgeFor("executive-overview")).toBe("OVERVIEW");
+    expect(badgeFor("program-charter")).toBe("CHARTER");
+    expect(badgeFor("guardrails")).toBe("GUARDRAILS");
+    expect(badgeFor("sas")).toBe("SAS");
+    expect(badgeFor("adr-033")).toBe("ADR-033");
+    expect(badgeFor("some-new-doc")).toBe("SOME-NEW-DOC");
+    expect(badgeFor("constructor")).toBe("CONSTRUCTOR");
+    expect(badgeFor(undefined)).toBe("");
+  });
 });
 
 describe("docsRenderer", () => {

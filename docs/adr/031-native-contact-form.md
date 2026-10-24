@@ -49,3 +49,11 @@ The form is public. An auto-response on a public form can be used to send mail t
 ## Amendment (2026-10-23): the form has its own page
 
 The form moved from the home page to its own route, `/contact` (page title "Contact | Ryan Bumstead"), with the heading "Get in touch" and a short intro. The home page keeps a one line "Get in touch" prompt, `c-contact-call`, with a link styled as a button to `/contact`. The header gains a Contact item, and the footer's Contact link points at `/contact`. An old `/#contact` address sends the visitor on to `/contact`, replacing the history entry. The form's own behaviour, its guard, the platform event and the Lead rules are unchanged. Each answered submit sends `contact_form_submitted` with only its outcome (Technical Guide §2.16).
+
+## Amendment (2026-10-24): one email to the owner per new Lead
+
+Each new Lead's owner gets one email from `ContactFormLeadWriter` after the insert, rendered from the `Portfolio_Contact_New_Lead` template: the visitor's name, company, email and full message, and a link to the Lead. It goes to the Lead owner's user Id when the owner is an active internal user, or to the `Portfolio_Admin` users while the Lead has no such owner, for example while it stays with the Automated Process user. No address is written in source. The assignment rule's own notification is not sent from the Automated Process context, so the rule entry needs no template and the owner never gets two emails for one message.
+
+- The email is sent to a user Id with `setTargetObjectId`, which the Apex governor limits documentation says does not count toward the daily single email limit.
+- A failed send is ignored. The Lead is saved and the in app arrival notice still goes, so there is nothing to undo or retry.
+- A Lead rule entry for "Portfolio Website" leads, assigned to the owner with no template, is optional. With it the owner owns the Lead, so the in app reminders reach the owner as well.

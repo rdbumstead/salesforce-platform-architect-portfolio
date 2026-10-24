@@ -2,13 +2,18 @@ name: Live Smoke Test
 
 # Read only check of the live site: every route answers 200, each route's key components
 # render, and no unexpected console error shows, in Chromium and WebKit at a desktop and a
-# phone size. Deploy to Production calls it after a deploy that changed production, and it
-# can be run by hand, for example after the site is published. A failure writes a smoke
-# Failure row through the governance event and undoes nothing.
+# phone size. Deploy to Production calls it after a deploy that changed production, it runs
+# once a day on its own so a break between deploys is caught (an expired credential, a
+# failing cache job, a platform change), and it can be run by hand, for example after the
+# site is published. GitHub emails the repository owner when a scheduled run fails. A failure
+# writes a smoke Failure row through the governance event and undoes nothing.
 
 on:
   workflow_call:
   workflow_dispatch:
+  # 09:30 UTC, after the 08:00 Daily Org Heartbeat.
+  schedule:
+    - cron: "30 9 * * *"
 
 permissions:
   contents: read
@@ -78,6 +83,7 @@ jobs:
           username: ${{ secrets.SFDX_USERNAME }}
           alias: "portfolio"
 
+      # On the daily schedule the row's key is smoke:<this run's id>.
       # Called from Deploy to Production, github.run_id is that deploy's run, so the row's key
       # is smoke:<the deploy's run id>, beside the deploy's own row.
       - name: Publish Smoke Failure Event

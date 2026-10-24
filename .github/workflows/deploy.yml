@@ -7,6 +7,9 @@ on:
       - "packages/**"
       - "sfdx-project.json"
       - "package.json"
+      # A docs only push runs the workflow for the docs-cache job. The deploy job finds no
+      # metadata in its delta and skips the deploy.
+      - "docs/**"
   workflow_dispatch:
     inputs:
       deployment_mode:
@@ -201,6 +204,85 @@ jobs:
     if: needs.deploy.result == 'success' && needs.deploy.outputs.deployed == 'true'
     uses: ./.github/workflows/smoke.yml
     secrets: inherit
+
+  # Refreshes the docs cache in production after a push to main that changes docs/**, so the
+  # docs page matches the repository within minutes. It needs the deploy job, so on a push
+  # that changes both packages/** and docs/** a new Source_File record is in production
+  # before the forced run reads it. The page still reads only the cache.
+  docs-cache:
+    needs: [deploy]
+    if: github.event_name == 'push' && needs.deploy.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for docs changes
+        id: docs
+        run: |
+          FROM_SHA="${{ github.event.before }}"
+          if [ -z "$FROM_SHA" ] || [ "$FROM_SHA" = "0000000000000000000000000000000000000000" ]; then
+             FROM_SHA="HEAD~1"
+          fi
+          if git diff --quiet "$FROM_SHA" "${{ github.sha }}" -- docs/; then
+             echo "No docs changes, nothing to refresh."
+             echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+             git diff --name-only "$FROM_SHA" "${{ github.sha }}" -- docs/
+             echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Salesforce & Tools
+        if: steps.docs.outputs.changed == 'true'
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          node_version: "22"
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ secrets.SFDX_USERNAME }}
+          alias: "portfolio"
+
+      # The GitHub contents API answers with Cache-Control max-age=60, so a read in the
+      # first minute after the push can return the old file. The wait covers that.
+      - name: Refresh the docs cache
+        if: steps.docs.outputs.changed == 'true'
+        run: |
+          sleep 60
+          STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          sf apex run --target-org portfolio --file scripts/refresh-docs-cache.apex --json > refresh.json || true
+          if [ "$(jq -r '.result.success' refresh.json)" != "true" ]; then
+             echo "::error::The refresh script failed."
+             jq -r '.result.exceptionMessage // .message // empty' refresh.json
+             exit 1
+          fi
+          JOB_ID=$(jq -r '.result.logs' refresh.json | grep -oE 'USER_DEBUG\|\[[0-9]+\]\|ERROR\|REFRESH_JOB_ID=[A-Za-z0-9]{15,18}' | sed 's/.*=//' | head -1)
+          if [ -z "$JOB_ID" ]; then
+             echo "::error::The refresh script printed no job Id."
+             exit 1
+          fi
+          echo "Queued job $JOB_ID"
+
+          STATUS=""
+          for i in $(seq 1 30); do
+             sleep 10
+             STATUS=$(sf data query --target-org portfolio --query "SELECT Status FROM AsyncApexJob WHERE Id = '$JOB_ID'" --json | jq -r '.result.records[0].Status // empty')
+             case "$STATUS" in Completed|Failed|Aborted) break ;; esac
+          done
+          echo "Job status: ${STATUS:-unknown}"
+          if [ "$STATUS" != "Completed" ]; then
+             echo "::error::The refresh job did not complete."
+             exit 1
+          fi
+
+          EXPECTED=$(sf data query --target-org portfolio --query "SELECT Id FROM Source_File__mdt WHERE Source_Key__c = 'docs'" --json | jq -r '.result.totalSize')
+          FRESH=$(sf data query --target-org portfolio --query "SELECT COUNT() FROM Source_Cache__c WHERE Path__c LIKE 'docs/%' AND (NOT Path__c LIKE '%#part-%') AND Last_Status__c = '200' AND Checked_At__c >= $STARTED" --json | jq -r '.result.totalSize')
+          echo "Docs read with status 200 since $STARTED: $FRESH of $EXPECTED"
+          if [ "$FRESH" != "$EXPECTED" ]; then
+             echo "::error::Not every doc was refreshed. The circuit breaker may be open or GitHub may have failed. The cache keeps its last good content."
+             exit 1
+          fi
 
   deploy-status:
     if: always()

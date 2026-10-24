@@ -51,7 +51,7 @@
             {
               "attributes": {
                 "customHeadTags": "",
-                "description": "The Systems Architecture Specification and the architecture decision records behind Ryan Bumstead's Salesforce portfolio.",
+                "description": "The executive overview, the Systems Architecture Specification, the program charter, the guardrails and the architecture decision records behind Ryan Bumstead's Salesforce portfolio.",
                 "pageTitle": "Architecture docs | Ryan Bumstead",
                 "recordId": "{!recordId}"
               },

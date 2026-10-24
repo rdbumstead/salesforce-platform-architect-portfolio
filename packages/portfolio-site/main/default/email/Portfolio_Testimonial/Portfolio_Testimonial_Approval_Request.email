@@ -1,0 +1,16 @@
+A new testimonial was left on the portfolio site and is waiting for your approval. It stays off the site until you approve it.
+
+From: {!Testimonial__c.Author_Name__c}
+Title: {!Testimonial__c.Author_Title__c}
+Relationship: {!Testimonial__c.Relationship_Type__c}
+Vibe: {!Testimonial__c.Vibe_Mode__c}
+
+Quote:
+{!Testimonial__c.Context__c}
+
+Note:
+{!Testimonial__c.Note__c}
+
+To approve or reject it, reply to this email with one word on the first line: APPROVE, APPROVED or YES to publish it, REJECT, REJECTED or NO to keep it off the site. You can add a comment on the second line. Or open the request: {!ApprovalRequest.Internal_URL}
+
+Open the testimonial: {!Testimonial__c.Link}

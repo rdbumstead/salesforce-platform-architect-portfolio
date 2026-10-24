@@ -68,9 +68,20 @@ export function docKeyFrom(pageRef, search) {
   return DOC_KEY_PATTERN.test(key) ? key : "";
 }
 
-/** The badge for a list row: "ADR-027" for adr-027, "SAS" for sas. */
+/** Short badges for the guides, whose keys are too long to read as one. */
+const SHORT_BADGES = new Map([
+  ["executive-overview", "OVERVIEW"],
+  ["program-charter", "CHARTER"],
+  ["guardrails", "GUARDRAILS"]
+]);
+
+/**
+ * The badge for a list row: "ADR-027" for adr-027, "SAS" for sas, "OVERVIEW" for
+ * executive-overview. Any other key is shown upper cased.
+ */
 export function badgeFor(key) {
-  return String(key || "").toUpperCase();
+  const value = String(key || "");
+  return SHORT_BADGES.get(value) || value.toUpperCase();
 }
 
 function docsPath() {

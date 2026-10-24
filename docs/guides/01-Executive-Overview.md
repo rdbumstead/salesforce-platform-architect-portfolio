@@ -17,34 +17,34 @@ Version: 1.0
 
 Owner: Ryan Bumstead
 
-Date: MVP – Q1 2027
+Launch target: Q1 2027
 
 ## 1. Strategic Summary (Read This First)
 
-**The Problem:** Enterprise Salesforce implementations often fail due to three silent killers: uncontrolled costs (FinOps), slow performance (LCP > 4s), and fragile security (Guest User leaks).
+**The Problem:** Enterprise Salesforce implementations often go wrong in three quiet ways: costs nobody watches (FinOps), slow pages, and guest users who can see more than they should.
 
-**The Solution:** This portfolio demonstrates a **Zero-Cost, High-Scale Architecture**. It proves you can build an enterprise-grade, secure, and observable system entirely within the constraints of the Salesforce Free Tier.
+**The Solution:** This portfolio is a **zero budget architecture** built to enterprise habits. It runs on a free Salesforce Developer Edition org, calls the Gemini API through a Named Credential for cover letters, keeps every guest grant in one permission set in source, and shows its own limits on every page.
 
 **Why It Matters:**
 
 > [!TIP]
-> **For Non-Salesforce Readers:** It proves we can respect budget constraints without sacrificing capability.
+> **For Non-Salesforce Readers:** It shows that a fixed budget can be respected without giving up capability.
 
-- **For Architects:** It demonstrates "Glass Box Telemetry", showing exactly how the system behaves under load.
+- **For Architects:** It demonstrates "Glass Box Telemetry". The footer reports each visit's own CPU, heap and SOQL use against their limits, the org's daily API and async Apex quotas, and the state of the AI, GitHub and Jira circuit breakers.
 - **For Recruiters:** It is a living proof of work, with its mobile load time measured and published rather than claimed.
 
 If you only inspect one thing, look at the **[Systems Architecture Specification (SAS)](./03-SAS.md)** to see the "North Star" diagram.
 
 ## 2. Strategic Intent
 
-This Executive Overview defines the strategic intent and delivery plan for the Salesforce Platform Architect Portfolio. It serves as the authoritative entry point for project scope, business value, and timeline.
+This Executive Overview sums up why the Salesforce Platform Architect Portfolio exists, what it is worth to the people who read it, and how to judge it. It is the entry point to the other guides. The scope and the plan live in the [Program Charter](./02-Program-Charter.md).
 
 ## 3. Business Value: Why Build This Complexity?
 
 The primary problem this portfolio solves is that Recruiters and Hiring Managers struggle to verify an architect's hands-on skills through static PDFs.
 
 - **The Need:** A verified, interactive demonstration of complex capabilities like API design, LWC, and AI.
-- **The Value:** This system intentionally mirrors a real enterprise architecture so evaluators can see architecture quality, integration patterns, DevOps discipline, and multi-cloud strategy, all within a controlled, demonstrable environment. It proves that "Enterprise Grade" is a mindset, not just a license tier.
+- **The Value:** This system intentionally mirrors a real enterprise architecture so evaluators can see architecture quality, integration patterns and DevOps discipline, all within a controlled, demonstrable environment. It shows that "Enterprise Grade" is a way of working, not a license tier.
 
 ### 3.1 The "5-Minute Tour" User Journey
 
@@ -77,16 +77,16 @@ sequenceDiagram
 
 To clarify Salesforce-specific terms used throughout this portfolio:
 
-| Term                  | Definition                                                                                                                                                                                             |
-| :-------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **LWR**               | **Lightning Web Runtime**. A high-performance, standards-based framework for building fast Salesforce sites.                                                                                           |
-| **SAPI**              | **System API**. The interface that directly touches the database/backend (Salesforce Core).                                                                                                            |
-| **PAPI**              | **Process API**. The layer that combines several portfolio objects into one response for a client, such as the full profile or the resume as text. It runs its own queries and does not call the SAPI. |
-| **FORM_FACTOR**       | A Salesforce constant that automatically detects the user's device type (Large, Medium, Small).                                                                                                        |
-| **Developer Edition** | The free, zero-cost Salesforce environment used to host this portfolio.                                                                                                                                |
+| Term                  | Definition                                                                                                                                                                                                        |
+| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LWR**               | **Lightning Web Runtime**. A high-performance, standards-based framework for building fast Salesforce sites.                                                                                                      |
+| **SAPI**              | **System API**. The interface that directly touches the database/backend (Salesforce Core).                                                                                                                       |
+| **PAPI**              | **Process API**. The layer that combines several portfolio objects into one response for a client, such as the full profile or the resume as text. It runs its own queries. Only its health check calls the SAPI. |
+| **FORM_FACTOR**       | A Salesforce constant that automatically detects the user's device type (Large, Medium, Small).                                                                                                                   |
+| **Developer Edition** | The free, zero-cost Salesforce environment used to host this portfolio.                                                                                                                                           |
 
 ## 5. Success Criteria (Definition of Done)
 
-This project adheres to strict functional and technical acceptance criteria, including Performance (a 2.5 s mobile LCP target, gated at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes) and Code Quality (Apex Coverage > 90%).
+This project holds itself to functional and technical acceptance criteria. Two of them: performance, where the target is a 2.5 s mobile LCP and the gate is the best the LWR shell allows (mobile LCP medians of 7.5 to 9.6 s across the six main routes, measured with Lighthouse 11 mobile on a scratch copy of the site), and code quality, where org wide Apex coverage must be 90% or more on every pull request.
 
 For the authoritative definition of all success metrics, quality gates, and "Definition of Done", please refer to the **[Program Charter: Success Criteria](./02-Program-Charter.md#22-success-criteria-definition-of-done)**.

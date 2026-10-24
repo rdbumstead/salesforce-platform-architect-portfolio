@@ -30,3 +30,7 @@ The decision stands: guests read a server-side cache and never trigger a callout
 - **Cleanup keeps the newest row** per cache object and deletes only older rows past the age limit, so an outage never empties the page.
 - **The roadmap** shows only `SPAP` issues labelled `portfolio-roadmap` (owner decision, 2026-10-21), so nothing private reaches the public page.
 - **The authenticated GitHub limit** is 5,000 requests an hour, so the 60 an hour unauthenticated limit in the context no longer binds. Four refreshes an hour are far inside it.
+
+## Amendment (2026-10-24): the docs refresh after a push
+
+The documents on `/docs` no longer wait up to a day for the scheduled read. `SourceCacheRefreshJob.forceRefresh` reads the given paths, or every path of one source key, whatever their age, with the same upsert on `Path__c`, parts, stale row delete, circuit breaker and file cap as the scheduled run. When a push to `main` changes `docs/**`, the Deploy to Production workflow's `docs-cache` job runs after the deploy job, waits 60 seconds because the GitHub contents API caches for 60, runs `scripts/refresh-docs-cache.apex` in production as the workflow's signed in admin, and fails unless every docs record reads 200 since it started. The page still reads only the cache, never GitHub.

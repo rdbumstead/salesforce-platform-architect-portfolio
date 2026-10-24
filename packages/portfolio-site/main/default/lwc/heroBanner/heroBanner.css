@@ -589,7 +589,7 @@
   outline-offset: 2px;
 }
 
-/* Set from c/motionPreference, so a visitor's own choice wins over the system setting. */
+/* Set from c/motionPreference, which follows the system "reduce motion" setting. */
 .motion-reduced .card {
   transition: none;
 }

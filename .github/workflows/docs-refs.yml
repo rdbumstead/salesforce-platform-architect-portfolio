@@ -1,0 +1,35 @@
+name: Docs Internal References
+
+# Runs the internal reference gate on a PR that changes the docs, README.md or STATUS.md.
+# Validate PR (Scratch Org) runs the same gate, but only for changes under packages/ and
+# scripts/, so this workflow covers a docs only PR without taking a scratch org slot.
+# The script needs only Node and git, so nothing is installed.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "README.md"
+      - "STATUS.md"
+      - "scripts/check-internal-refs.js"
+      - "scripts/check-internal-refs.test.js"
+      - "scripts/internal-refs-allowlist.json"
+
+permissions:
+  contents: read
+
+jobs:
+  internal-refs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check Internal References
+        run: |
+          node --test scripts/check-internal-refs.test.js
+          node scripts/check-internal-refs.js packages docs README.md STATUS.md

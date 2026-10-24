@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ApprovalProcess xmlns="http://soap.sforce.com/2006/04/metadata">
+    <active>true</active>
+    <allowRecall>false</allowRecall>
+    <allowedSubmitters>
+        <type>owner</type>
+    </allowedSubmitters>
+    <approvalPageFields>
+        <field>Name</field>
+        <field>Author_Name__c</field>
+        <field>Author_Title__c</field>
+        <field>Relationship_Type__c</field>
+        <field>Vibe_Mode__c</field>
+        <field>Context__c</field>
+        <field>Note__c</field>
+        <field>Owner</field>
+    </approvalPageFields>
+    <approvalStep>
+        <allowDelegate>false</allowDelegate>
+        <assignedApprover>
+            <approver>
+                <name>Owner</name>
+                <type>relatedUserField</type>
+            </approver>
+            <whenMultipleApprovers>FirstResponse</whenMultipleApprovers>
+        </assignedApprover>
+        <label>Owner Review</label>
+        <name>Owner_Review</name>
+    </approvalStep>
+    <description
+  >Each testimonial left on the portfolio site is submitted here on its owner's behalf. The owner gets the approval request email and approves or rejects it, by replying when email approval response is on. Approval sets Approved, so the testimonial shows on the site. Rejection leaves it unapproved. No user is named here: the submitter and the approver are the record's owner.</description>
+    <emailTemplate
+  >Portfolio_Testimonial/Portfolio_Testimonial_Approval_Request</emailTemplate>
+    <enableMobileDeviceAccess>false</enableMobileDeviceAccess>
+    <entryCriteria>
+        <criteriaItems>
+            <field>Testimonial__c.Approved__c</field>
+            <operation>equals</operation>
+            <value>False</value>
+        </criteriaItems>
+    </entryCriteria>
+    <finalApprovalActions>
+        <action>
+            <name>Testimonial_Set_Approved</name>
+            <type>FieldUpdate</type>
+        </action>
+    </finalApprovalActions>
+    <finalApprovalRecordLock>false</finalApprovalRecordLock>
+    <finalRejectionRecordLock>false</finalRejectionRecordLock>
+    <label>Testimonial Approval</label>
+    <recordEditability>AdminOnly</recordEditability>
+    <showApprovalHistory>true</showApprovalHistory>
+</ApprovalProcess>

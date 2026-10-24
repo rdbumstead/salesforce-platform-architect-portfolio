@@ -39,7 +39,7 @@ Salesforce platform architecture, including:
 - **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
 - **33 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
 - **15 Core Competencies**: mapped to verifiable artifacts and validation methods.
-- **6 CI/CD Workflows**: delta deploys, PR gates (including a check only validation against production), a read only live smoke test after each deploy, the daily heartbeat, the cache warmer worker deploy, and a Lighthouse audit run on demand.
+- **7 CI/CD Workflows**: delta deploys that also refresh the docs cache after a push that changes the docs, PR gates (including a check only validation against production), an internal reference check for pull requests that change only the docs, a read only live smoke test after each deploy and once a day, the daily heartbeat, the cache warmer worker deploy, and a Lighthouse audit run on demand.
 
 **Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [Architecture Diagram](#architecture) • [Full Docs](#full-architecture-documentation)
 
@@ -97,7 +97,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 **Available Now:**
 
 - [Architecture decisions documented with rationale](docs/adr/): 33 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) says whether it is built, superseded, or a design only
-- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 6 workflows (deploy, PR validation, the live smoke test, the heartbeat, the cache warmer worker deploy, plus a Lighthouse audit run on demand)
+- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 7 workflows (deploy, PR validation, the docs internal reference check, the live smoke test, the heartbeat, the cache warmer worker deploy, plus a Lighthouse audit run on demand)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml): Twin API pattern with SAPI + PAPI specifications
 - [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, October 2026) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix): Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
@@ -113,11 +113,14 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 - **Operational settings in custom metadata**: API rate tiers, page sizes, form limits, cache windows and display counts live in `Portfolio_Setting__mdt` records with safe ranges, and the code keeps its own defaults as fallbacks ([ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md))
 - **Contact page and analytics**: a native contact form on `/contact` with spam guards, and GA4 events for how visitors use the site, with no personal data in any event
 - **Mobile performance validation**: on a phone the skills page shows the matrix and requests no graph engine. Mobile LCP medians are 7.5 to 9.6 s on the six main routes, the best the LWR shell allows against a 2.5 s target
-- **The architecture docs on the site**: `/docs` renders the SAS and the 25 full ADRs, read from the same daily cache that View source uses, never from GitHub on page load. The page builds every element itself, so no HTML from a document is ever parsed. The footer, the Pillars menu and a "Read the design" link on each pillar page lead there
+- **The architecture docs on the site**: `/docs` renders 29 documents, the Executive Overview, the SAS, the Program Charter, Guardrails and Executable Governance, then the 25 full ADRs, read from the same cache that View source uses, never from GitHub on page load. The cache refreshes once a day, and a push that changes the docs refreshes them in production after the deploy. The page builds every element itself, so no HTML from a document is ever parsed. The footer, the Pillars menu and a "Read the design" link on each pillar page lead there
 - **Queries in custom metadata**: each read of portfolio content, in the APIs and on the site, is a `Query_Definition__mdt` record, checked against the query in its class, so an edit can narrow a read and never widen it ([ADR-033](docs/adr/033-queries-in-custom-metadata.md))
 - **API Lab filters to pick from**: each name and Id filter is a picklist of values read from the org on page load, and on phones the lab opens with the endpoint and Execute showing and the rest in sections a visitor opens
 - **Cover letters of 250 to 350 words**: one prompt builder for both cover letter paths, its instruction in an `AI_Prompt__mdt` record, the length asked for in words and never cut, and a generation config on every Gemini request
-- **Layout**: a motion toggle beside the theme button, the footer metrics in four labelled groups, page intros on the five pillar pages, and the Delivery checklist's times in UTC and in the visitor's own time
+- **Layout**: motion that follows the visitor's system "reduce motion" setting, with no button of its own, the footer metrics in four labelled groups, page intros on the five pillar pages, and the Delivery checklist's times in UTC and in the visitor's own time
+- **By the numbers**: the Delivery page ends with counts read from records, the production deploys recorded with the newest Apex test result and coverage, the evaluator tokens issued, and the testimonials approved and waiting by vibe. Only counts reach the page, and the owner's private reports and dashboard sit in the org
+- **Owner emails and testimonial approval**: each contact form Lead sends its owner one email with the visitor's message and a link to the Lead, and each new testimonial goes to the owner as an approval request that can be answered by reply. Approval puts it on the site. Both emails go to a user, never to an address in source
+- **Link previews**: the head markup carries a description, Open Graph and Twitter card tags on every route, with a 1200 by 630 share image, so a shared link can show a title, a summary and a picture
 - **Home page**: a line in the owner's voice under the name when one is set, a "What people say" section that stays hidden until three testimonials are approved, and the timeline tabs in the order Work, Certifications, Education
 
 ---
