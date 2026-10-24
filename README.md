@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 > [!IMPORTANT]
-> **Project Status:** Live since October 2026. 6 enterprise docs and 33 ADRs. This README describes what runs in production today, plus what is being built now, marked as in progress until it ships.
+> **Project Status:** Live since October 2026. 6 enterprise docs and 33 ADRs. This README describes what runs in production.
 
 **Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 
@@ -41,7 +41,7 @@ Salesforce platform architecture, including:
 - **15 Core Competencies**: mapped to verifiable artifacts and validation methods.
 - **6 CI/CD Workflows**: delta deploys, PR gates (including a check only validation against production), a read only live smoke test after each deploy, the daily heartbeat, the cache warmer worker deploy, and a Lighthouse audit run on demand.
 
-**Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [Being Built Now](#being-built-now) • [Architecture Diagram](#architecture) • [Full Docs](#full-architecture-documentation)
+**Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [Architecture Diagram](#architecture) • [Full Docs](#full-architecture-documentation)
 
 ---
 
@@ -65,7 +65,7 @@ Salesforce platform architecture, including:
 | **Business Architecture**       | Pillar A, an employer hub for an education provider                                                             | [Pillar A](docs/guides/03-SAS.md#51-pillar-a-business-architecture-employer-hub) • [ADR-029](docs/adr/029-schema-visualizer-scope-discovery-and-caching.md)                                              | Open `/business-architecture`: the process map and dashboard gallery (redrawn from the original demo, with no names and sample values), the live data model with its Employer Hub and portfolio toggle, and the walkthrough                                                                                                                                                                                                                                             |
 | **Solution Architecture**       | Pillar B, a platform choice for a regional adult literacy nonprofit                                             | [Pillar B](docs/guides/03-SAS.md#52-pillar-b-solution-architecture-nonprofit-literacy-platform) • [ADR-030](docs/adr/030-decision-matrix-as-custom-metadata.md)                                          | Open `/nonprofit-solutions` (titled Solution Architecture): move the weights in the three-way decision matrix and watch the ranking and the sensitivity line                                                                                                                                                                                                                                                                                                            |
 | **Data Visualization**          | Skills matrix with years from linked roles, and a d3-force graph on demand                                      | [Technical Guide 2.1](docs/guides/04-Technical-Guide.md#21-c-skill-network-visualization) • [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)                                   | Open `/skills`: the matrix first, then Graph on a desktop, and check in the network log that `D3_Library` loads only then                                                                                                                                                                                                                                                                                                                                               |
-| **Evaluator Experience**        | Headline numbers, card screenshots, a Work, Education and Certifications timeline and verifiable certifications | [Technical Guide 2.12](docs/guides/04-Technical-Guide.md#212-home-page-cards-and-timeline) • [Technical Guide 2.2](docs/guides/04-Technical-Guide.md#22-c-resume-builder-resume-generation)              | Open `/`: three start here paths, card numbers computed from live sources (the ERD's objects, the spec paths, the AI providers, the latest CI test run), a case study behind each card that has one, and Work, Education and Certifications timeline tabs that move with the arrow keys, each showing five entries and a View all button for the rest. Open `/resume`: pick a persona and the skills follow it, and retired certifications sit below the Trailhead link |
+| **Evaluator Experience**        | Headline numbers, card screenshots, a Work, Certifications and Education timeline and verifiable certifications | [Technical Guide 2.12](docs/guides/04-Technical-Guide.md#212-home-page-cards-and-timeline) • [Technical Guide 2.2](docs/guides/04-Technical-Guide.md#22-c-resume-builder-resume-generation)              | Open `/`: three start here paths, card numbers computed from live sources (the ERD's objects, the spec paths, the AI providers, the latest CI test run), a case study behind each card that has one, and Work, Certifications and Education timeline tabs that move with the arrow keys, each showing five entries and a View all button for the rest. Open `/resume`: pick a persona and the skills follow it, and retired certifications sit below the Trailhead link |
 | **Technical Documentation**     | Enterprise-grade architecture suite                                                                             | [6 Architecture Guides](#full-architecture-documentation) • [SAS](docs/guides/03-SAS.md)                                                                                                                 | Review documentation structure and C4 model diagrams                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 </details>
@@ -113,20 +113,12 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 - **Operational settings in custom metadata**: API rate tiers, page sizes, form limits, cache windows and display counts live in `Portfolio_Setting__mdt` records with safe ranges, and the code keeps its own defaults as fallbacks ([ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md))
 - **Contact page and analytics**: a native contact form on `/contact` with spam guards, and GA4 events for how visitors use the site, with no personal data in any event
 - **Mobile performance validation**: on a phone the skills page shows the matrix and requests no graph engine. Mobile LCP medians are 7.5 to 9.6 s on the six main routes, the best the LWR shell allows against a 2.5 s target
-
----
-
-## Being Built Now
-
-> [!NOTE]
-> **In progress, October 2026.** Each item below is built and tested on an integration copy of the site and is not live yet. It moves into the lists above once it ships to production.
-
-- **The architecture docs on the site**: a `/docs` page that renders the SAS and the 24 full ADRs, read from the same daily cache that View source uses, never from GitHub on page load. The page builds every element itself, so no HTML from a document is ever parsed. Links reach it from the footer, the Pillars menu and a "Read the design" link on each pillar page
-- **Queries in custom metadata**: each SAPI list read is a `Query_Definition__mdt` record, checked against the query in the class, so an edit can narrow a read and never widen it ([ADR-033](docs/adr/033-queries-in-custom-metadata.md)). The site's and the API's other content reads are being moved onto it
+- **The architecture docs on the site**: `/docs` renders the SAS and the 24 full ADRs, read from the same daily cache that View source uses, never from GitHub on page load. The page builds every element itself, so no HTML from a document is ever parsed. The footer, the Pillars menu and a "Read the design" link on each pillar page lead there
+- **Queries in custom metadata**: each SAPI list read is a `Query_Definition__mdt` record, checked against the query in its class, so an edit can narrow a read and never widen it ([ADR-033](docs/adr/033-queries-in-custom-metadata.md))
 - **API Lab filters to pick from**: each name and Id filter is a picklist of values read from the org on page load, and on phones the lab opens with the endpoint and Execute showing and the rest in sections a visitor opens
 - **Cover letters of 250 to 350 words**: one prompt builder for both cover letter paths, its instruction in an `AI_Prompt__mdt` record, the length asked for in words and never cut, and a generation config on every Gemini request
 - **Layout**: a motion toggle beside the theme button, the footer metrics in four labelled groups, page intros on the five pillar pages, and the Delivery checklist's times in UTC and in the visitor's own time
-- **Home page**: room for one line in the owner's voice under the name, shown once he writes it, a "What people say" section that stays hidden until three testimonials are approved, and the timeline tabs in the order Work, Certifications, Education
+- **Home page**: a line in the owner's voice under the name when one is set, a "What people say" section that stays hidden until three testimonials are approved, and the timeline tabs in the order Work, Certifications, Education
 
 ---
 
@@ -169,7 +161,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 | [ADR-030](docs/adr/030-decision-matrix-as-custom-metadata.md)                            | Decision matrix as Custom Metadata       | Solution Design                 | Built                             |
 | [ADR-031](docs/adr/031-native-contact-form.md)                                           | Native contact form                      | Lead Capture / Abuse Protection | Built                             |
 | [ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md)                       | Operational settings in custom metadata  | Operability                     | Built                             |
-| [ADR-033](docs/adr/033-queries-in-custom-metadata.md)                                    | Queries in custom metadata               | Operability                     | In progress                       |
+| [ADR-033](docs/adr/033-queries-in-custom-metadata.md)                                    | Queries in custom metadata               | Operability                     | Built                             |
 
 </details>
 
