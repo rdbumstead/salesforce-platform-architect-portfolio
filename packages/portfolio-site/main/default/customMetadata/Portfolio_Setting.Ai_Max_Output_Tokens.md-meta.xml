@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>AI max output tokens</label>
+    <protected>false</protected>
+    <values>
+        <field>Number_Value__c</field>
+        <value xsi:type="xsd:double">8192</value>
+    </values>
+    <values>
+        <field>Text_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Min_Value__c</field>
+        <value xsi:type="xsd:double">1024</value>
+    </values>
+    <values>
+        <field>Max_Value__c</field>
+        <value xsi:type="xsd:double">32768</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >maxOutputTokens sent to Gemini. The model's reasoning counts against it too, so it must leave room for that and the letter. A limit hit while reasoning returns no letter and the template serves. Safe from 1024 to 32768.</value>
+    </values>
+</CustomMetadata>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Instruction__c</fullName>
+    <description
+  >The instruction text placed at the top of the prompt. The code adds the length, the job and the grounding facts after it.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >The instruction text placed at the top of the prompt. The code adds the length, the job and the grounding facts after it.</inlineHelpText>
+    <label>Instruction</label>
+    <length>8000</length>
+    <type>LongTextArea</type>
+    <visibleLines>20</visibleLines>
+</CustomField>
