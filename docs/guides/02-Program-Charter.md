@@ -214,7 +214,7 @@ The delivery is organized into four parallel tracks:
 | **Phase 8** | **Designed, not built** | Designed to show how the site would scale out, deferred until after launch. |
 | **MVP**     | **Live**                | Focus on measured mobile LCP and the Zero Cost constraint.                  |
 
-_The design is in the SAS. Every item below is a plan, and nothing of it is built._
+_The design is in the SAS. Apart from the GraphQL check, which confirms what runs today, every item below is a plan and none of it is built._
 
 - **Native GraphQL Verification:**
   - Confirm `c-skill-network` and Project Gallery use `lightning/uiGraphQLApi`. `c-roadmap-viewer` reads Apex over the cache by design (owner decision, 2026-10-21)
