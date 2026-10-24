@@ -66,6 +66,10 @@ const VENDORED = [
     library: "jsPDF 3.0.4"
   },
   {
+    path: "packages/portfolio-site/main/default/staticresources/Marked_Library.js",
+    library: "marked 18.1.0"
+  },
+  {
     path: "packages/portfolio-site/main/default/staticresources/Prism_JS/prism.js",
     library: "PrismJS 1.30.0"
   },
