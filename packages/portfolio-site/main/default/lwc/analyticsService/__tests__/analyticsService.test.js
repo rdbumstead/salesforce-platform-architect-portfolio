@@ -56,6 +56,13 @@ const SITE_NAMES = [
   "timeline_expanded"
 ];
 
+// Appended for the motion toggle, the docs page and the API Lab sections, under the same rule.
+const MOTION_DOCS_LAB_NAMES = [
+  "motion_toggled",
+  "docs_opened",
+  "api_lab_section_toggled"
+];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
@@ -63,12 +70,26 @@ describe("c/analyticsService", () => {
 
   it("lists exactly the event names the site sends", () => {
     expect(Object.values(EVENTS).sort()).toEqual(
-      [...L4_NAMES, ...M6_NAMES, ...N6_NAMES, ...R7_NAMES, ...SITE_NAMES].sort()
+      [
+        ...L4_NAMES,
+        ...M6_NAMES,
+        ...N6_NAMES,
+        ...R7_NAMES,
+        ...SITE_NAMES,
+        ...MOTION_DOCS_LAB_NAMES
+      ].sort()
     );
   });
 
   it("keeps the newest names last, in the order they were appended", () => {
-    expect(Object.values(EVENTS).slice(-SITE_NAMES.length)).toEqual(SITE_NAMES);
+    const newest = [...SITE_NAMES, ...MOTION_DOCS_LAB_NAMES];
+    expect(Object.values(EVENTS).slice(-newest.length)).toEqual(newest);
+  });
+
+  it("names the motion, docs and API Lab section events under their keys", () => {
+    expect(EVENTS.MOTION_TOGGLED).toBe("motion_toggled");
+    expect(EVENTS.DOCS_OPENED).toBe("docs_opened");
+    expect(EVENTS.API_LAB_SECTION_TOGGLED).toBe("api_lab_section_toggled");
   });
 
   it("cannot be changed at runtime", () => {
