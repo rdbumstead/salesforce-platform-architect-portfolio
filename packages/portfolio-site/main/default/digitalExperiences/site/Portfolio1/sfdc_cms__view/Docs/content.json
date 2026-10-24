@@ -1,0 +1,78 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "Docs",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"0fecc9f4-2ef7-4c13-94f8-b6bd737f6b30\",\"columns\":[{\"UUID\":\"56da1605-8b4a-4d17-b714-05aae47228f7\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "attributes": {},
+                      "definition": "c:docsViewer",
+                      "id": "ee7a2038-1a2c-49ed-a938-316cc913b625",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "56da1605-8b4a-4d17-b714-05aae47228f7",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "0fecc9f4-2ef7-4c13-94f8-b6bd737f6b30",
+              "type": "component"
+            }
+          ],
+          "id": "20a66062-a601-4486-8e1d-56cdcc415919",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "The Systems Architecture Specification and the architecture decision records behind Ryan Bumstead's Salesforce portfolio.",
+                "pageTitle": "Architecture docs | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "24503227-f8f6-429d-ab30-de5f9742e332",
+              "type": "component"
+            }
+          ],
+          "id": "f85b9d3c-002a-42e9-991a-3e4d0f2baca6",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "ab6e4593-68b0-4bb8-9849-cd1d7df71573",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-docs"
+  },
+  "urlName": "docs"
+}
