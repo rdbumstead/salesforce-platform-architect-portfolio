@@ -86,6 +86,8 @@ const VENDORED = [
 // The banned references. Each has a name so a hit says which rule it broke. The plan code
 // rule is case sensitive on purpose, because lower case letters with digits are ordinary
 // identifiers. The word rules ignore case so a sentence that starts with one is still caught.
+// "D3.js" is the library's own name, not a plan code, so the plan code rule skips it. A bare
+// "D3" is still caught.
 const RULES = [
   { name: "round", pattern: /\bRound [0-9]/gi },
   { name: "log number", pattern: /\blogs? [0-9]{2,3}\b/gi },
@@ -96,7 +98,10 @@ const RULES = [
   { name: "workstream", pattern: /workstream/gi },
   { name: "stream", pattern: /\bstream \(/gi },
   { name: "@Orchestrator", pattern: /@Orchestrator/gi },
-  { name: "plan code", pattern: /\b[ABDEFGKLMNPRSX][0-9]{1,2}\b/g }
+  {
+    name: "plan code",
+    pattern: /\b(?!D3\.js\b)[ABDEFGKLMNPRSX][0-9]{1,2}\b/g
+  }
 ];
 
 // ---------------------------------------------------------------------------------------

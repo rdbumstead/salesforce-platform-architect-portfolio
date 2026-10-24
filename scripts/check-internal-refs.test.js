@@ -155,6 +155,18 @@ test("a hex colour passes", () => {
   assert.deepStrictEqual(matches("a/x.js", 'const accent = "#B12";'), []);
 });
 
+test("the library name D3.js passes and a bare D3 still fails", () => {
+  assert.deepStrictEqual(
+    matches("a/README.md", "The graph is drawn with D3.js, not G6."),
+    ["G6"]
+  );
+  assert.deepStrictEqual(
+    matches("a/x.js", "// D3.js draws it, see decision D3\n"),
+    ["D3"]
+  );
+  assert.deepStrictEqual(matches("a/README.md", "Uses D3.json data."), ["D3"]);
+});
+
 test("an h1 tag passes", () => {
   assert.deepStrictEqual(
     matches("a/x.html", "<template><h1>Title</h1><h2>Sub</h2></template>"),
