@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for heroBanner LWC: the static hero, the bio and profile links
+ * @description       : Unit tests for heroBanner LWC: the static hero, the hero line, the bio and profile links
  *                      from the ResumeController header wire, the live pillar cards with the
  *                      "coming" line, and the tour.
  *                      c/pillarData is a fixed stand in. The card
@@ -236,6 +236,65 @@ describe("c-hero-banner", () => {
       expect(text(element.shadowRoot.querySelector("h1"))).toBe(
         "Ryan Bumstead"
       );
+    });
+
+    it("shows the hero line trimmed, directly under the name and before the bio", async () => {
+      const element = render();
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+      getHeader.emit({
+        ...HEADER,
+        heroLine: "  I build platforms people can check for themselves.  "
+      });
+      await flush();
+      const line = element.shadowRoot.querySelector('[data-id="hero-line"]');
+      expect(line.tagName).toBe("P");
+      expect(text(line)).toBe(
+        "I build platforms people can check for themselves."
+      );
+      const name = element.shadowRoot.querySelector("h1");
+      expect(name.nextElementSibling).toBe(line);
+      expect(line.nextElementSibling.className).toBe("hero-bio");
+    });
+
+    it("shows no hero line and no placeholder when it is blank, missing, or the wire fails", async () => {
+      const element = render();
+      getHeader.emit({ ...HEADER, heroLine: "   " });
+      await flush();
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+
+      getHeader.emit(HEADER);
+      await flush();
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+
+      getHeader.emit({ ...HEADER, heroLine: 42 });
+      await flush();
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+
+      getHeader.error();
+      await flush();
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
+      expect(element.shadowRoot.querySelector(".hero-photo")).not.toBeNull();
+    });
+
+    it("paints the photo before the header wire returns", () => {
+      const element = render();
+      const photo = element.shadowRoot.querySelector(".hero-photo");
+      expect(photo).not.toBeNull();
+      expect(photo.getAttribute("width")).toBe("232");
+      expect(photo.getAttribute("height")).toBe("232");
+      expect(
+        element.shadowRoot.querySelector('[data-id="hero-line"]')
+      ).toBeNull();
     });
 
     it("links straight to the resume from the hero", () => {

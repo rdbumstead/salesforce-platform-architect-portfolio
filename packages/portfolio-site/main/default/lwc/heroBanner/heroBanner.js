@@ -6,6 +6,8 @@
  *                      Name, title, location and photo are static so they paint without waiting on
  *                      Apex. The bio and profile links come from ResumeController.getHeader, which
  *                      reads only the owner Contact, so the bio does not wait on the full resume.
+ *                      The owner's one line (heroLine) shows under the name when it is set and
+ *                      not at all when it is blank or the read fails.
  *                      Each card can gain a headline number and a screenshot from
  *                      ProjectCardController.getPillarCards, merged in by
  *                      letter. The number shows only with its label, the image only with its
@@ -172,6 +174,10 @@ export default class HeroBanner extends LightningElement {
   wiredHeader({ data }) {
     // An error or an empty header renders nothing extra: never a placeholder sentence.
     this.header = data || undefined;
+  }
+
+  get heroLine() {
+    return textOrNull(this.header && this.header.heroLine);
   }
 
   get bio() {
