@@ -27,7 +27,7 @@ This document outlines the governance framework and constraint-based design prin
 This portfolio is built on a "Zero-Dollar Budget" requirement. That is not a limitation. It is an architectural challenge. We demonstrate **Constraint-Based Design** by building a resilient, observable system that runs within the strict limits of a Salesforce Developer Edition (free tier). The AWS Always-Free design in section 3 is for a later phase and is not built: the repository holds no AWS code.
 
 > [!TIP]
-> **Why Constraint-Based Design Matters**: Many architects treat free tiers as temporary scaffolding. This portfolio proves you can build production-grade systems within zero-budget constraints — a skill that translates directly to cost optimization in enterprise environments where every dollar of cloud spend requires justification.
+> **Why Constraint-Based Design Matters**: Many architects treat free tiers as temporary scaffolding. This portfolio proves you can build production-grade systems within zero-budget constraints, a skill that translates directly to cost optimization in enterprise environments where every dollar of cloud spend requires justification.
 
 ## 2. The Salesforce "Governor" Rosetta Stone
 
@@ -43,7 +43,7 @@ We treat these limits as a blueprint for building high-performance systems.
 | **Guest User Security**              | Anonymous visitors have restricted permissions by default. They can't see sensitive data without explicit grants.                                | **Zero Trust** (deny by default)         | `Portfolio_Guest` grants read on six portfolio objects, create and read on `Testimonial__c`, and no permission on Account, Contact or any other standard object apart from read on `UserExternalCredential`. The few records a page needs beyond that, such as the owner's Contact for the resume header, are read by Apex in system mode through `without sharing` selectors that select a fixed list of public fields and never an email, phone or address (`ResumeController.ResumeSelector`, `PortfolioGroundingService.Selector`). The guest reaches that data only through the shape the controller returns. |
 | **Real-time Telemetry**              | Salesforce provides APIs to check how close you are to hitting limits.                                                                           | **Glass Box Telemetry** (show your work) | Governor limits (SOQL count, heap usage, CPU time) displayed in site footer so visitors can see the system is healthy.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
-**Key Insight:** These aren't arbitrary restrictions — they force the same discipline required in any high-scale system (database query optimization, memory management, async processing).
+**Key Insight:** These aren't arbitrary restrictions. They force the same discipline required in any high-scale system (database query optimization, memory management, async processing).
 
 ## 3. AWS FinOps & Serverless Guardrails (Phase 8)
 
@@ -57,7 +57,7 @@ We treat these limits as a blueprint for building high-performance systems.
 > [!NOTE]
 > **Architectural Reference:** For the detailed system diagrams and component specifications of the Phase 8 architecture, please refer to the **[Systems Architecture Specification (SAS)](./03-SAS.md#11-architectural-north-star)**.
 
-**What is FinOps?** Financial Operations (FinOps) is the practice of making cloud costs visible and controllable. AWS charges for everything — compute time, network traffic, log storage — so architectural decisions directly impact the monthly bill.
+**What is FinOps?** Financial Operations (FinOps) is the practice of making cloud costs visible and controllable. AWS charges for everything (compute time, network traffic, log storage), so architectural decisions directly impact the monthly bill.
 
 To maintain a "$0.00 Forever" guarantee, the architecture avoids common "cost traps":
 
@@ -122,7 +122,7 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 
 ### LCP Target (2.5 seconds)
 
-**What is LCP?** Largest Contentful Paint — the time until the main content appears on screen. Google uses this for search ranking.  
+**What is LCP?** Largest Contentful Paint: the time until the main content appears on screen. Google uses this for search ranking.  
 **Our target:** 2.5 seconds (Google's "good" threshold). On mobile, render delay in the LWR framework's own script keeps LCP above it, so the gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)).  
 **How we enforce:** Lighthouse runs on demand (`performance.yml`, started by hand with a target URL, which runs `npm run test:lighthouse`) and as a launch gate. It does not run on every commit, and no build fails on it automatically.  
 **Why it matters:** Slow sites lose users. Amazon found every 100ms delay costs 1% of revenue.
@@ -216,7 +216,7 @@ Every architectural decision follows a strict three-gate approval process before
 
 ## 7. Business Impact of Executable Governance
 
-These guardrails aren't just technical controls — they translate directly to business outcomes:
+These guardrails aren't just technical controls. They translate directly to business outcomes:
 
 ### Zero Runtime Costs
 
@@ -253,4 +253,4 @@ These guardrails aren't just technical controls — they translate directly to b
 
 ---
 
-**Key Takeaway:** Governance isn't about saying "no" — it's about architecting systems that succeed within real-world constraints while maintaining enterprise-grade quality, security, and observability. The free-tier constraints in this portfolio mirror the budget, security, and performance constraints of enterprise systems at scale.
+**Key Takeaway:** Governance isn't about saying "no". It's about architecting systems that succeed within real-world constraints while maintaining enterprise-grade quality, security, and observability. The free-tier constraints in this portfolio mirror the budget, security, and performance constraints of enterprise systems at scale.

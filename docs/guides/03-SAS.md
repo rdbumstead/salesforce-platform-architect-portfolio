@@ -133,7 +133,7 @@ Phase 8 – 2027-2028 (Design Complete)
 | :---------- | :--------------------------------------------- | :---------------------------------------------------------------------- |
 | **Phase 8** | **Design Complete • Implementation 2027-2028** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
 
-- AWS Lambda Polyglot Gateway (Function URL) — "Door 2"
+- AWS Lambda Polyglot Gateway (Function URL), "Door 2"
 - Enterprise API governance layer
 - Resume Engine offload
 
@@ -896,9 +896,9 @@ The following policies were configured in API Manager to demonstrate enterprise 
    - Rejection Response: 401 Unauthorized for missing or invalid credentials
 
 2. **SLA-Based Rate Limiting**
-   - Free Tier: 100 req/hr (Automatic Approval) — Best for portfolio demos and testing.
-   - Standard Tier: 1,000 req/hr (Manual Review) — Intended for production integrations.
-   - Premium Tier: 10,000 req/hr (Contract Required) — Reserved for high-volume enterprise consumers.
+   - Free Tier: 100 req/hr (Automatic Approval). Best for portfolio demos and testing.
+   - Standard Tier: 1,000 req/hr (Manual Review). Intended for production integrations.
+   - Premium Tier: 10,000 req/hr (Contract Required). Reserved for high-volume enterprise consumers.
 
 3. **CORS Policy**
    - Allowed Origins: https://ryanbumstead.com, http://localhost:\* (dev only)

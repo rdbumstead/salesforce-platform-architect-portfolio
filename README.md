@@ -1,7 +1,7 @@
-# Ryan Bumstead — Salesforce Platform Architect Portfolio
+# Ryan Bumstead: Salesforce Platform Architect Portfolio
 
 [![Governance Hub](https://img.shields.io/badge/Documentation-Governance_Hub-0176D3?logo=readthedocs&logoColor=white)](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/)
-[![CI/CD — main](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml)
+[![CI/CD main](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml)
 [![PR Validation](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/pr.yml)
 [![Daily Org Heartbeat](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/keep-alive.yml/badge.svg)](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/keep-alive.yml)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Ryan_Bumstead-0077B5?logo=linkedin&logoColor=white)](https://linkedin.com/in/ryanbumstead)
@@ -30,10 +30,10 @@
 Principal-level Salesforce Platform Architecture including:
 
 - **Multi-Cloud Design**: the LWR site and Apex APIs run today, and an AWS Lambda BFF with a $0.00-forever cost model is designed for Phase 8 and not built.
-- **DevOps Maturity** — Delta deployments, automated quality gates, and JWT-based CI/CD.
-- **Contract-First APIs** — OpenAPI 3.0 specs proving Salesforce/MuleSoft parity.
+- **DevOps Maturity**: Delta deployments, automated quality gates, and JWT-based CI/CD.
+- **Contract-First APIs**: OpenAPI 3.0 specs proving Salesforce/MuleSoft parity.
 - **Applied AI Governance**: one provider dispatch behind `POST /papi/v1/ai/generate` (Gemma 4 31B through the Gemini API, then a deterministic Local Template), with cover letters grounded on portfolio records. The site's cover letter page runs the same dispatch in process, under its own AI rate limit of 10 a minute, and shows which provider wrote each letter. Agentforce is a switch that ships off and is not implemented.
-- **Observability** — Real-time Glass Box telemetry and constraint-aware monitoring.
+- **Observability**: Real-time Glass Box telemetry and constraint-aware monitoring.
 
 ### Portfolio Overview
 
@@ -103,10 +103,10 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 
 - [Architecture decisions documented with rationale](docs/adr/): 32 ADRs covering performance, security, AI, FinOps
 - [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 6 workflows (deploy, PR validation, the live smoke test, heartbeat and worker, plus a Lighthouse audit run on demand)
-- [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml) — Twin API pattern with SAPI + PAPI specifications
+- [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml): Twin API pattern with SAPI + PAPI specifications
 - [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---2027-2028): a $0.00 forever design on the AWS Always-Free tier, for Phase 8. No AWS code is built yet
 - [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, October 2026) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
-- [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix) — Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
+- [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix): Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
 - [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine): one dispatch from the Gemini API to a deterministic Local Template, grounded on portfolio records (Agentforce switch off, not implemented)
 
 **Live on the site:**
@@ -158,9 +158,9 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 **AWS Lambda Polyglot BFF (Door 2 Architecture)**
 
 - **Fewer round trips** than parallel REST calls, through server-side orchestration (a design goal, not measured)
-- **$0.00 forever guarantee** — Strict governance using AWS Always-Free tier (Lambda Function URLs, no API Gateway)
-- **Serverless resume engine** — Node.js Lambda for perfect PDF fidelity, replacing client-side jsPDF implementation
-- **Enterprise API gateway** — Full rate limiting, API key management, and distributed tracing outside Salesforce governor limits
+- **$0.00 forever guarantee**: Strict governance using AWS Always-Free tier (Lambda Function URLs, no API Gateway)
+- **Serverless resume engine**: Node.js Lambda for perfect PDF fidelity, replacing client-side jsPDF implementation
+- **Enterprise API gateway**: Full rate limiting, API key management, and distributed tracing outside Salesforce governor limits
 
 ---
 
@@ -213,15 +213,15 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 
 | Term          | Meaning                                                                                                                   | Status                          |
 | :------------ | :------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |
-| **LWR**       | Lightning Web Runtime — Modern Salesforce frontend framework                                                              | Live at MVP                     |
+| **LWR**       | Lightning Web Runtime: Modern Salesforce frontend framework                                                               | Live at MVP                     |
 | **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (32 records). |
 | **Dual-Door** | Native Salesforce + External API gateway strategy                                                                         | Door 1: MVP / Door 2: Phase 8   |
-| **FinOps**    | Financial Operations — Cloud cost governance and optimization                                                             | Design complete for Phase 8     |
+| **FinOps**    | Financial Operations: Cloud cost governance and optimization                                                              | Design complete for Phase 8     |
 | **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live at MVP                     |
 | **RAG**       | Retrieval-Augmented Generation, an AI grounding technique                                                                 | Apex grounding on cover letters |
-| **BFF**       | Backend For Frontend — Tailored API layer for UI optimization                                                             | Design complete for Phase 8     |
-| **SAPI**      | System API — Direct data access layer (API-led connectivity)                                                              | Live at MVP                     |
-| **PAPI**      | Process API — Orchestration layer (API-led connectivity)                                                                  | Live at MVP                     |
+| **BFF**       | Backend For Frontend: Tailored API layer for UI optimization                                                              | Design complete for Phase 8     |
+| **SAPI**      | System API: Direct data access layer (API-led connectivity)                                                               | Live at MVP                     |
+| **PAPI**      | Process API: Orchestration layer (API-led connectivity)                                                                   | Live at MVP                     |
 
 </details>
 

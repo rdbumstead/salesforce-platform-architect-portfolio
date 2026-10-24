@@ -30,7 +30,7 @@ Date: MVP – Q1 2027
 > [!TIP]
 > **For Non-Salesforce Readers:** It proves we can respect budget constraints without sacrificing capability.
 
-- **For Architects:** It demonstrates "Glass Box Telemetry" — showing exactly how the system behaves under load.
+- **For Architects:** It demonstrates "Glass Box Telemetry", showing exactly how the system behaves under load.
 - **For Recruiters:** It is a living proof of work, with its mobile load time measured and published rather than claimed.
 
 If you only inspect one thing, look at the **[Systems Architecture Specification (SAS)](./03-SAS.md)** to see the "North Star" diagram.
@@ -44,7 +44,7 @@ This Executive Overview defines the strategic intent and delivery plan for the S
 The primary problem this portfolio solves is that Recruiters and Hiring Managers struggle to verify an architect's hands-on skills through static PDFs.
 
 - **The Need:** A verified, interactive demonstration of complex capabilities like API design, LWC, and AI.
-- **The Value:** This system intentionally mirrors a real enterprise architecture so evaluators can see architecture quality, integration patterns, DevOps discipline, and multi-cloud strategy — all within a controlled, demonstrable environment. It proves that "Enterprise Grade" is a mindset, not just a license tier.
+- **The Value:** This system intentionally mirrors a real enterprise architecture so evaluators can see architecture quality, integration patterns, DevOps discipline, and multi-cloud strategy, all within a controlled, demonstrable environment. It proves that "Enterprise Grade" is a mindset, not just a license tier.
 
 ### 3.1 The "5-Minute Tour" User Journey
 
