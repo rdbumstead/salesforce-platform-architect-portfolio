@@ -149,7 +149,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void getOptions_ReturnsEveryParameterAndNoOther() {
+  static void returnsEveryParameterAndNoOther() {
     Test.startTest();
     Map<String, List<ApiLabOptionsController.Option>> options = ApiLabOptionsController.getOptions();
     Test.stopTest();
@@ -167,7 +167,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void getOptions_PairsEachIdWithItsRecordName() {
+  static void pairsEachIdWithItsRecordName() {
     Map<Id, Project__c> projects = new Map<Id, Project__c>(
       [SELECT Id, Name FROM Project__c]
     );
@@ -214,7 +214,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void getOptions_OffersProjectNamesTheProjectListReturns() {
+  static void offersProjectNamesTheProjectListReturns() {
     Test.startTest();
     List<String> names = labels(
       ApiLabOptionsController.getOptions()
@@ -230,7 +230,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void getOptions_JoinsSharedNameFiltersAndMakesThemDistinct() {
+  static void joinsSharedNameFiltersAndMakesThemDistinct() {
     Contact holder = [
       SELECT Name
       FROM Contact
@@ -295,7 +295,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void getOptions_GivesTheActivePicklistValues() {
+  static void givesTheActivePicklistValues() {
     Test.startTest();
     Map<String, List<ApiLabOptionsController.Option>> options = ApiLabOptionsController.getOptions();
     Test.stopTest();
@@ -333,7 +333,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void getOptions_CapsAndSortsEachList() {
+  static void capsAndSortsEachList() {
     Test.startTest();
     List<ApiLabOptionsController.Option> accounts = ApiLabOptionsController.getOptions()
       .get(ApiLabOptionsController.ACCOUNT_NAME);
@@ -352,7 +352,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void sortAndCap_SortsByLabelIgnoringCase() {
+  static void sortsByLabelIgnoringCase() {
     List<ApiLabOptionsController.Option> options = new List<ApiLabOptionsController.Option>{
       new ApiLabOptionsController.Option('beta', 'b'),
       new ApiLabOptionsController.Option('Alpha', 'a2'),
@@ -371,7 +371,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void reads_QueryOnlyIdsNamesAndLookups() {
+  static void readsQueryOnlyIdsNamesAndLookups() {
     for (String readName : ApiLabOptionsController.READS.keySet()) {
       ApiLabOptionsController.OptionRead read = ApiLabOptionsController.READS.get(
         readName
@@ -426,7 +426,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void readAll_ReturnsNoFieldOutsideTheFixedLists() {
+  static void readsReturnNoFieldOutsideTheFixedLists() {
     Test.startTest();
     Map<String, List<SObject>> rowsByRead = new ApiLabOptionsController.OptionReader()
       .readAll();
@@ -449,7 +449,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void getOptions_NeverReturnsTheOwnersEmailOrPhone() {
+  static void neverReturnsTheOwnersEmailOrPhone() {
     Test.startTest();
     String serialized = JSON.serialize(ApiLabOptionsController.getOptions());
     Test.stopTest();
@@ -460,7 +460,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void getOptions_WhenTheReadFails_ThrowsAFriendlyError() {
+  static void throwsAFriendlyErrorWhenTheReadFails() {
     ApiLabOptionsController.throwOnRead = true;
 
     Test.startTest();
@@ -478,7 +478,7 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void getOptions_AsTheSiteGuest_ReadsEveryList() {
+  static void readsEveryListAsTheSiteGuest() {
     User guest = SiteGuestTestSupport.preparedGuest();
     Map<String, List<ApiLabOptionsController.Option>> options;
 
