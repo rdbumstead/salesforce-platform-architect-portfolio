@@ -313,6 +313,12 @@ private class ResumeControllerTest {
     'fieldOfStudy',
     'completedDate'
   };
+  private static final Set<String> CERTIFICATION_KEYS = new Set<String>{
+    'id',
+    'name',
+    'issuer',
+    'earnedDate'
+  };
 
   @isTest
   static void getResumeRetiredCertificationIsFlagged() {
@@ -510,10 +516,23 @@ private class ResumeControllerTest {
       serialized
     );
     Assert.areEqual(
-      new Set<String>{ 'work', 'education' },
+      new Set<String>{
+        'work',
+        'education',
+        'certifications',
+        'verificationUrl',
+        'tabLimit'
+      },
       payload.keySet(),
-      'Only the two lists'
+      'Only the three lists, the verification link and the tab limit'
     );
+    for (Object entry : (List<Object>) payload.get('certifications')) {
+      Assert.areEqual(
+        CERTIFICATION_KEYS,
+        ((Map<String, Object>) entry).keySet(),
+        'Certification carries only its id, name, issuer and earned date'
+      );
+    }
     for (Object role : (List<Object>) payload.get('work')) {
       Assert.areEqual(
         ROLE_KEYS,
@@ -543,5 +562,231 @@ private class ResumeControllerTest {
     Assert.isNotNull(timeline.education, 'Education list is never null');
     Assert.areEqual(0, timeline.work.size(), 'No roles');
     Assert.areEqual(0, timeline.education.size(), 'No schools');
+  }
+
+  @isTest
+  static void getTimelineEmptyCertificationsIsAnEmptyList() {
+    delete [SELECT Id FROM Certification__c];
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.isNotNull(
+      timeline.certifications,
+      'Certification list is never null'
+    );
+    Assert.areEqual(0, timeline.certifications.size(), 'No certifications');
+  }
+
+  @isTest
+  static void getTimelineAsGuestListsCurrentCertificationsNewestFirst() {
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    Account issuer = [SELECT Id FROM Account WHERE Name = 'Test Issuer'];
+    insert new Certification__c(
+      Name = 'Cert Retired',
+      Contact__c = owner.Id,
+      Issuer__c = issuer.Id,
+      Earned_Date__c = Date.newInstance(2025, 1, 1),
+      Is_Retired__c = true
+    );
+    User guest = SiteGuestTestSupport.preparedGuest();
+    ResumeController.Timeline timeline;
+
+    Test.startTest();
+    System.runAs(guest) {
+      timeline = ResumeController.getTimeline();
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      2,
+      timeline.certifications.size(),
+      'Only current certifications, the retired one stays on the resume'
+    );
+    Assert.areEqual(
+      'Cert New',
+      timeline.certifications[0].name,
+      'Newest first'
+    );
+    Assert.areEqual(
+      'Test Issuer',
+      timeline.certifications[0].issuer,
+      'Issuer name'
+    );
+    Assert.areEqual(
+      Date.newInstance(2024, 6, 1),
+      timeline.certifications[0].earnedDate,
+      'Earned date'
+    );
+    Assert.isNotNull(timeline.certifications[0].id, 'Each entry has an id');
+    Assert.areEqual('Cert Old', timeline.certifications[1].name, 'Older next');
+  }
+
+  @isTest
+  static void getTimelineVerificationUrlReturnedExactlyWithPlusSigns() {
+    ResumeController.configOverride = new Portfolio_Config__mdt(
+      DeveloperName = 'Test_Config',
+      Credential_Verification_URL__c = VERIFY_URL
+    );
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(
+      VERIFY_URL,
+      timeline.verificationUrl,
+      'Stored value comes back unchanged, plus signs included'
+    );
+  }
+
+  @isTest
+  static void getTimelineVerificationUrlNullWhenBlank() {
+    ResumeController.configOverride = new Portfolio_Config__mdt(
+      DeveloperName = 'Test_Config',
+      Credential_Verification_URL__c = ''
+    );
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.isNull(timeline.verificationUrl, 'A blank value means no link');
+  }
+
+  @isTest
+  static void getTimelineTabLimitIsTheDefaultWhenTheSettingIsMissing() {
+    PortfolioSettings.overrides.put('Timeline_Tab_Limit', null);
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(
+      ResumeController.DEFAULT_TIMELINE_TAB_LIMIT,
+      timeline.tabLimit,
+      'Five entries per tab when no setting is there'
+    );
+  }
+
+  @isTest
+  static void getTimelineTabLimitReadsTheSetting() {
+    PortfolioSettings.overrideNumber('Timeline_Tab_Limit', 3);
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(3, timeline.tabLimit, 'The configured value');
+  }
+
+  @isTest
+  static void getTimelineTabLimitIgnoresAValueOutsideItsRange() {
+    PortfolioSettings.overrides.put(
+      'Timeline_Tab_Limit',
+      new Portfolio_Setting__mdt(
+        DeveloperName = 'Timeline_Tab_Limit',
+        Number_Value__c = 0,
+        Min_Value__c = 1,
+        Max_Value__c = 50
+      )
+    );
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(
+      ResumeController.DEFAULT_TIMELINE_TAB_LIMIT,
+      timeline.tabLimit,
+      'A value below its minimum falls back to five'
+    );
+  }
+
+  private static void tagSkills(String apexTags, String soqlTags) {
+    Map<String, Skill__c> skillsByName = new Map<String, Skill__c>();
+    for (Skill__c skill : [
+      SELECT Id, Name
+      FROM Skill__c
+      WHERE Name IN ('Apex', 'SOQL')
+    ]) {
+      skillsByName.put(skill.Name, skill);
+    }
+    skillsByName.get('Apex').Persona_Tag__c = apexTags;
+    skillsByName.get('SOQL').Persona_Tag__c = soqlTags;
+    update skillsByName.values();
+  }
+
+  @isTest
+  static void getResumePersonaKeepsTaggedAndUntaggedSkills() {
+    tagSkills('Developer;Architect', 'Admin');
+
+    Test.startTest();
+    ResumeController.ResumeData developer = ResumeController.getResume(
+      'Developer'
+    );
+    ResumeController.ResumeData admin = ResumeController.getResume('Admin');
+    Test.stopTest();
+
+    Assert.areEqual(2, developer.skillGroups.size(), 'Two groups');
+    Assert.areEqual(
+      new List<String>{ 'Apex' },
+      developer.skillGroups[0].skills,
+      'The skill tagged Developer, not the one tagged Admin'
+    );
+    Assert.areEqual(
+      new List<String>{ 'LWC' },
+      developer.skillGroups[1].skills,
+      'The untagged skill shows under every persona'
+    );
+    Assert.areEqual(
+      new List<String>{ 'SOQL Queries' },
+      admin.skillGroups[0].skills,
+      'The skill tagged Admin only'
+    );
+    Assert.areEqual(
+      new List<String>{ 'LWC' },
+      admin.skillGroups[1].skills,
+      'The untagged skill again'
+    );
+  }
+
+  @isTest
+  static void getResumePersonaDropsAGroupWithNoSkillLeft() {
+    tagSkills('Developer', 'Admin');
+
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume(
+      'Architect'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(1, resume.skillGroups.size(), 'Backend has nothing left');
+    Assert.areEqual(
+      'Frontend',
+      resume.skillGroups[0].category,
+      'Only the untagged skill group'
+    );
+  }
+
+  @isTest
+  static void getResumeNoPersonaKeepsEveryTaggedSkill() {
+    tagSkills('Developer', 'Admin');
+
+    Test.startTest();
+    ResumeController.ResumeData resume = ResumeController.getResume('  ');
+    Test.stopTest();
+
+    Assert.areEqual(
+      new List<String>{ 'Apex', 'SOQL Queries' },
+      resume.skillGroups[0].skills,
+      'No persona means every skill, whatever its tags'
+    );
+    Assert.areEqual(
+      new List<String>{ 'LWC' },
+      resume.skillGroups[1].skills,
+      'And the untagged one'
+    );
   }
 }

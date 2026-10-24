@@ -1078,8 +1078,7 @@ paths:
 
         **Transformation Logic**:
         - Formats dates as "MMM YYYY - MMM YYYY" or "MMM YYYY - Present"
-        - Groups skills by category
-        - Limits to top 5 proficiency skills per category
+        - Lists the skills linked to the printed roles, each once, grouped by category in category order and strongest first within a category
         - Strips HTML from accomplishments using regex
         - Applies 80-character line wrapping
 
@@ -1087,6 +1086,7 @@ paths:
         - `Admin`: System Admin highlights only
         - `Developer`: Development highlights only
         - `Architect`: Architecture/Design highlights only
+        - Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.
 
         **SAPI Mapping**:
         - PAPI persona values are passed directly to SAPI `/experience-highlights?persona={value}`
@@ -1105,7 +1105,7 @@ paths:
           in: query
           required: false
           description: |
-            Target audience for the resume. Omit for all highlights.
+            Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.
 
             **Note**: This value is passed directly to SAPI's persona filter.
           schema:

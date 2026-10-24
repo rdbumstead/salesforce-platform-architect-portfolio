@@ -32,7 +32,7 @@ const VIEWS_DIR = path.join(
 
 // Names a pillar carried before, which no source may bring back.
 const FORMER_NAMES = {
-  B: ["Pre-Sales Consultancy", "Pre-sales consultancy"],
+  B: ["Pre-Sales Consultancy", "Pre-sales consultancy", "Nonprofit Solutions"],
   C: ["Integration & API-Led"],
   D: ["AI & Agentforce"],
   E: ["DevOps & Automation"]

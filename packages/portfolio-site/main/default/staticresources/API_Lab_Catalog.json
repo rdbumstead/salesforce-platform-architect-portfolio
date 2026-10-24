@@ -1995,7 +1995,7 @@
         {
           "name": "persona",
           "type": "string",
-          "description": "Target audience for the resume. Omit for all highlights.",
+          "description": "Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.",
           "enum": [
             "Admin",
             "Developer",

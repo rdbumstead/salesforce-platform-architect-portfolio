@@ -29,7 +29,7 @@ const EXPECTED = [
   ],
   [
     "B",
-    "Nonprofit Solutions",
+    "Solution Architecture",
     "Solution Architecture",
     "/portfolio/nonprofit-solutions",
     false
