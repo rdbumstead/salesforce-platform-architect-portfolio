@@ -6,6 +6,7 @@
  *                      current certifications, with how many entries each tab shows at first.
  *                      Skills follow the persona: a chosen persona gets the skills tagged for
  *                      it plus every untagged skill, and no persona gets them all.
+ *                      getHeader also returns heroLine, the owner's one line for the home hero.
  *                      Never returns an email, a phone number, an address or
  *                      any Owner_* value.
  * @author            : Ryan Bumstead
@@ -173,14 +174,23 @@ public with sharing class ResumeController {
   /**
    * @description Returns only the owner header, for the home page hero. One query on the owner
    *              Contact, so the hero bio never waits on the roles, skills and credentials that
-   *              getResume reads. Same fields and same selector as getResume's header.
+   *              getResume reads. Same fields and same selector as getResume's header, plus
+   *              heroLine: Hero_Line__c trimmed, or null when it is blank. getResume leaves
+   *              heroLine null, because the resume does not show it.
    * @return Header The owner header, or null when no Contact is the portfolio owner.
    * @example
    * ResumeController.Header header = ResumeController.getHeader();
    */
   @AuraEnabled(cacheable=true)
   public static Header getHeader() {
-    return toHeader(new ResumeSelector().selectOwner());
+    Contact owner = new ResumeSelector().selectOwner();
+    Header header = toHeader(owner);
+    if (header != null) {
+      header.heroLine = String.isBlank(owner.Hero_Line__c)
+        ? null
+        : owner.Hero_Line__c.trim();
+    }
+    return header;
   }
 
   private static Header toHeader(Contact owner) {
@@ -330,6 +340,7 @@ public with sharing class ResumeController {
           Name,
           Title,
           Career_Objective__c,
+          Hero_Line__c,
           LinkedIn_URL__c,
           GitHub_URL__c,
           Trailhead_URL__c,
@@ -484,7 +495,8 @@ public with sharing class ResumeController {
   }
 
   /**
-   * @description The owner header. Holds public profile links only.
+   * @description The owner header. Holds public profile links only. heroLine is set by
+   *              getHeader alone.
    */
   public class Header {
     @AuraEnabled
@@ -501,6 +513,8 @@ public with sharing class ResumeController {
     public String trailheadUrl;
     @AuraEnabled
     public String portfolioUrl;
+    @AuraEnabled
+    public String heroLine;
   }
 
   /**

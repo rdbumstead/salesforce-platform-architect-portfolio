@@ -235,7 +235,7 @@ private class ResumeControllerTest {
     Assert.areEqual(
       JSON.serialize(resume.header),
       JSON.serialize(header),
-      'getHeader returns exactly the header getResume returns'
+      'With no hero line set, getHeader returns exactly the header getResume returns'
     );
     Assert.areEqual('Test Owner', header.name, 'Header name');
     Assert.areEqual('Solution Architect', header.title, 'Header title');
@@ -266,6 +266,48 @@ private class ResumeControllerTest {
       'No address may reach a guest'
     );
     Assert.isFalse(serialized.contains('@'), 'No email-like value at all');
+  }
+
+  @isTest
+  static void getHeaderAsGuestReturnsTheTrimmedHeroLine() {
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    owner.Hero_Line__c = '  I build Salesforce platforms people can check for themselves.  ';
+    update owner;
+    User guest = SiteGuestTestSupport.preparedGuest();
+    ResumeController.Header header;
+    ResumeController.ResumeData resume;
+
+    Test.startTest();
+    System.runAs(guest) {
+      header = ResumeController.getHeader();
+      resume = ResumeController.getResume(null);
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      'I build Salesforce platforms people can check for themselves.',
+      header.heroLine,
+      'The hero line comes back trimmed'
+    );
+    Assert.isNull(
+      resume.header.heroLine,
+      'The resume header does not carry the hero line'
+    );
+    Assert.areEqual('Test Owner', header.name, 'The rest of the header stays');
+  }
+
+  @isTest
+  static void getHeaderBlankHeroLineReturnsNull() {
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    owner.Hero_Line__c = '   ';
+    update owner;
+
+    Test.startTest();
+    ResumeController.Header header = ResumeController.getHeader();
+    Test.stopTest();
+
+    Assert.isNotNull(header, 'The header is still returned');
+    Assert.isNull(header.heroLine, 'A blank hero line comes back null');
   }
 
   @isTest
