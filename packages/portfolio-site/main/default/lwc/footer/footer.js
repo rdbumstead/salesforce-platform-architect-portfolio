@@ -15,7 +15,8 @@
  *                      put it in the layout's preloads. The snapshot's
  *                      org quotas (OrgLimits) and the GitHub and Jira breakers show next to
  *                      the AI providers, the GraphQL line shows only a finite time, and a
- *                      Contact link goes to the /contact page.
+ *                      Contact link goes to the /contact page. Back to top sends
+ *                      back_to_top_used, as the layout's floating button does.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -276,5 +277,6 @@ export default class Footer extends LightningElement {
 
   handleBackToTop() {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    trackEvent(EVENTS.BACK_TO_TOP_USED);
   }
 }
