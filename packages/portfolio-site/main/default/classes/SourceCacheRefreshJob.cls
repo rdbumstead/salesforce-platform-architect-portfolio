@@ -16,7 +16,12 @@
  *                      IntegrationCacheRefreshScheduler enqueues it on
  *                      its existing schedule only when isDue() is true, so no new schedule and
  *                      no new Setup step is needed. It runs as the admin who scheduled that job.
- * @author            : Ryan Bumstead
+ *                      forceRefresh enqueues a forced run instead: the given paths, or every
+ *                      path of one Source_Key__c, read whatever their age, with the same
+ *                      upsert, parts, stale row delete, circuit breaker and callouts before
+ *                      writes. scripts/refresh-docs-cache.apex calls it after a push changes
+ *                      the docs, so the docs page matches the repository within minutes.
+ * @author           : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/23/2026
@@ -46,12 +51,82 @@ public with sharing class SourceCacheRefreshJob implements Queueable, Database.A
   private static final Integer HIGH_SURROGATE_FIRST = 55296;
   private static final Integer HIGH_SURROGATE_LAST = 56319;
 
+  /** The paths a forced run reads, or null for the scheduled run of due paths. */
+  private final Set<String> forcedPaths;
+
   /**
-   * @description Queueable entry point. Runs refresh().
+   * @description The scheduled run: reads the paths that are due.
+   */
+  public SourceCacheRefreshJob() {
+    this(null);
+  }
+
+  private SourceCacheRefreshJob(Set<String> forcedPaths) {
+    this.forcedPaths = forcedPaths;
+  }
+
+  /**
+   * @description Queueable entry point. Runs refresh(), or refreshPaths() for a forced run.
    * @param context Queueable context.
    */
   public void execute(QueueableContext context) {
-    refresh();
+    if (forcedPaths == null) {
+      refresh();
+    } else {
+      refreshPaths(forcedPaths);
+    }
+  }
+
+  /**
+   * @description Enqueues a forced run of every configured path of one Source_Key__c.
+   * @param sourceKey For example docs.
+   * @return Id The queued job, or null when the key has no configured path.
+   * @example
+   * Id jobId = SourceCacheRefreshJob.forceRefresh(SourceController.DOCS_KEY);
+   */
+  public static Id forceRefresh(String sourceKey) {
+    Set<String> paths = new Set<String>();
+    for (Source_File__mdt file : SourceController.configuredFiles()) {
+      if (file.Source_Key__c == sourceKey) {
+        paths.add(file.Path__c.trim());
+      }
+    }
+    return forceRefresh(paths);
+  }
+
+  /**
+   * @description Enqueues a forced run of the given paths. A path no Source_File__mdt
+   *              record configures is never read.
+   * @param paths Repository paths, for example docs/guides/03-SAS.md.
+   * @return Id The queued job, or null when no path is given.
+   * @example
+   * Id jobId = SourceCacheRefreshJob.forceRefresh(new Set<String>{ 'docs/guides/03-SAS.md' });
+   */
+  public static Id forceRefresh(Set<String> paths) {
+    Set<String> wanted = trimmed(paths);
+    if (wanted.isEmpty()) {
+      return null;
+    }
+    return System.enqueueJob(new SourceCacheRefreshJob(wanted));
+  }
+
+  /**
+   * @description One forced refresh: the given configured paths whatever their age, then
+   *              the same config, breaker, callouts and writes as refresh().
+   * @param paths Repository paths. Paths that are not configured are left out.
+   * @return String One of the OUTCOME_ constants. OUTCOME_NOT_DUE when no given path is
+   *                configured.
+   */
+  public static String refreshPaths(Set<String> paths) {
+    Set<String> configured = configuredPaths();
+    List<String> wanted = new List<String>();
+    for (String path : trimmed(paths)) {
+      if (configured.contains(path)) {
+        wanted.add(path);
+      }
+    }
+    wanted.sort();
+    return run(configured, capped(wanted));
   }
 
   /**
@@ -69,7 +144,14 @@ public with sharing class SourceCacheRefreshJob implements Queueable, Database.A
    */
   public static String refresh() {
     Set<String> configured = configuredPaths();
-    List<String> due = duePaths(configured);
+    return run(configured, duePaths(configured));
+  }
+
+  /**
+   * @description Reads the given paths and writes what it read. Shared by the scheduled
+   *              and the forced run, so both keep the same order and the same guards.
+   */
+  private static String run(Set<String> configured, List<String> due) {
     if (due.isEmpty()) {
       deleteStale(configured, new Map<String, Integer>());
       return OUTCOME_NOT_DUE;
@@ -252,10 +334,6 @@ public with sharing class SourceCacheRefreshJob implements Queueable, Database.A
       .addHours(
         -PortfolioSettings.getInteger('Source_Refresh_Hours', REFRESH_HOURS)
       );
-    Integer maxFiles = PortfolioSettings.getInteger(
-      'Source_Max_Files_Per_Run',
-      MAX_FILES_PER_RUN
-    );
     Map<String, Datetime> checkedByPath = new Map<String, Datetime>();
     for (Source_Cache__c row : [
       SELECT Path__c, Checked_At__c
@@ -272,11 +350,34 @@ public with sharing class SourceCacheRefreshJob implements Queueable, Database.A
       if (checked == null || checked < staleBefore) {
         due.add(path);
       }
-      if (due.size() == maxFiles) {
+    }
+    return capped(due);
+  }
+
+  /** The first Source_Max_Files_Per_Run paths, so one run stays under the callout limit. */
+  private static List<String> capped(List<String> paths) {
+    Integer maxFiles = PortfolioSettings.getInteger(
+      'Source_Max_Files_Per_Run',
+      MAX_FILES_PER_RUN
+    );
+    List<String> result = new List<String>();
+    for (String path : paths) {
+      if (result.size() == maxFiles) {
         break;
       }
+      result.add(path);
     }
-    return due;
+    return result;
+  }
+
+  private static Set<String> trimmed(Set<String> paths) {
+    Set<String> result = new Set<String>();
+    for (String path : paths ?? new Set<String>()) {
+      if (String.isNotBlank(path)) {
+        result.add(path.trim());
+      }
+    }
+    return result;
   }
 
   /**
