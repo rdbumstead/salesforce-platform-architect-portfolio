@@ -367,7 +367,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 - **Objective:** Demonstrate Enterprise Integration Patterns and Developer Experience (DX).
 - **Design:** OpenAPI Specification (OAS 3.0) hosted on GitHub.
 - **Implementation:** Native Apex REST Class (`SAPIExperience`).
-- **Query definitions:** each SAPI list read is a `Query_Definition__mdt` record checked against the query in its class, so an edit to a record can narrow a read and never widen it ([ADR-033](../adr/033-queries-in-custom-metadata.md)).
+- **Query definitions:** each content read of the SAPI, the Process API, the API Lab and the site is a `Query_Definition__mdt` record checked against the query in its class, so an edit to a record can narrow a read and never widen it ([ADR-033](../adr/033-queries-in-custom-metadata.md)).
 - **API Lab:** each name and Id filter is a picklist of values read from the org on page load, with the free text Advanced field kept. On phones the Lab opens with the endpoint and Execute showing, and the filters, Advanced, the response details and the token form are closed sections ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
 - **Technical Detail:** For the complete breakdown of the caching strategy, caching patterns, and API tooling, refer to the **[Technical Guide: Integration Service Implementation](./04-Technical-Guide.md#1-integration-service-implementation)**.
 
@@ -496,7 +496,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invoke`, which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3).
 - **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
 - **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with d3-force that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-matrix-first-the-graph-on-open-d3-force-as-the-engine)).
-- **`c-docs-viewer`:** The SAS and the 24 full ADRs at `/docs`, from the daily source cache, rendered without parsing any HTML ([Technical Guide §2.17](./04-Technical-Guide.md#217-docs-page-c-docs-viewer)).
+- **`c-docs-viewer`:** The SAS and the 25 full ADRs at `/docs`, from the daily source cache, rendered without parsing any HTML ([Technical Guide §2.17](./04-Technical-Guide.md#217-docs-page-c-docs-viewer)).
 - **`c-page-intro`:** The opening of each of the five pillar pages: the pillar, the page's one heading, a lead paragraph and a "Read the design" link to its section of this document ([Technical Guide §2.18](./04-Technical-Guide.md#218-page-intro-c-page-intro)).
 - **`c-code-viewer`:** Shows one source file highlighted by `c/prismHighlighter`. It fetches nothing itself.
 - **`c-view-source`:** The View source button and dialog on the showcase components. It reads cached GitHub source through `SourceController.getSourceFiles` and never calls GitHub ([Technical Guide §2.14](./04-Technical-Guide.md#214-view-source-c-view-source)).

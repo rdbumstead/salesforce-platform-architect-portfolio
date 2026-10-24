@@ -184,11 +184,11 @@ Page sizes, rate tiers, the token rate and cap default, circuit breaker limits, 
 
 ### 3.6 Changing a Query Definition
 
-The SAPI list reads are `Query_Definition__mdt` records, one per read, each checked against the query its class holds in code ([Technical Guide §1.7](./04-Technical-Guide.md#17-query-definitions-query_definition__mdt), [ADR-033](../adr/033-queries-in-custom-metadata.md)).
+The portfolio's content reads (the SAPI lists, the Process API, the API Lab options and seven site classes) are `Query_Definition__mdt` records, one per read, each checked against the query its class holds in code ([Technical Guide §1.7](./04-Technical-Guide.md#17-query-definitions-query_definition__mdt), [ADR-033](../adr/033-queries-in-custom-metadata.md)).
 
 1. A record can only narrow its read. Its filter is added to the class's filter, the smaller row limit applies, and a field outside the class's allowlist, a missing required field, an unknown bind, a weaker access mode or a filter that does not parse makes the class run its own query instead. So a record that seems to change nothing has probably failed a check.
 2. Edit the record in Setup > Custom Metadata Types > Query Definition > Manage Records, or in its file under `packages/portfolio-site/main/default/customMetadata/`. Write an optional filter as `(IsDeleted = :hasX OR Field = :x)`, using only the binds the class already supplies.
-3. Run `SAPIQueryDefinitionsTest`. `everyDeployedRecordPassesValidation` lists every record that fails a check, with the reasons. `everySapiRecordShipsEqualToItsDefault` fails for any record that differs from its class, so a deliberate change to a shipped record needs the class's default changed to match, which is a code change.
+3. Run `SAPIQueryDefinitionsTest`, `ApiQueryDefinitionsTest` and `SiteQueryDefinitionsTest`. Their validation tests list every record that fails a check, with the reasons. Their ships equal tests fail for any record that differs from its class, so a deliberate change to a shipped record needs the class's default changed to match, which is a code change.
 4. Commit the change. A full mode deploy writes every record in source, so a change made only in Setup can be put back.
 
 ### 3.7 Site Content the Owner Edits
