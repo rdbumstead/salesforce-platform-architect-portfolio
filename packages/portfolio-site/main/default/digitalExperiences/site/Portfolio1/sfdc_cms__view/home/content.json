@@ -34,6 +34,11 @@
                       "type": "component"
                     },
                     {
+                      "definition": "c:homeTestimonials",
+                      "id": "e3d1d5a3-63f7-419b-badd-722a29bac865",
+                      "type": "component"
+                    },
+                    {
                       "attributes": {
                         "heading": "Get in touch",
                         "linkLabel": "Contact Ryan",

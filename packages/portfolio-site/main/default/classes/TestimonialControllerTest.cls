@@ -583,6 +583,114 @@ private class TestimonialControllerTest {
     Assert.areEqual(16, wall[0].key.length(), 'A short key, not the record Id');
   }
 
+  // Approved rows for the home page tests, in curated order: a casual peer, a fan, then the
+  // professional ones, so a professional row is never first by sort order alone.
+  private static void insertApproved(Integer count) {
+    List<Testimonial__c> rows = new List<Testimonial__c>();
+    for (Integer i = 0; i < count; i++) {
+      Boolean professional = i >= 2;
+      rows.add(
+        new Testimonial__c(
+          Author_Name__c = 'Home ' + i,
+          Approved__c = true,
+          Vibe_Mode__c = i == 0 ? 'Casual' : 'Professional',
+          Relationship_Type__c = professional
+            ? 'Client'
+            : (i == 0 ? 'Peer' : 'Fan'),
+          Context__c = 'Quote ' + i,
+          Sort_Order__c = i + 1
+        )
+      );
+    }
+    rows.add(
+      new Testimonial__c(
+        Author_Name__c = 'Waiting',
+        Approved__c = false,
+        Vibe_Mode__c = 'Professional',
+        Relationship_Type__c = 'Manager'
+      )
+    );
+    insert rows;
+  }
+
+  private static List<TestimonialController.WallItem> homeAsReader() {
+    List<TestimonialController.WallItem> home;
+    User reader = adminReader();
+    Test.startTest();
+    System.runAs(reader) {
+      home = TestimonialController.getHomeTestimonials();
+    }
+    Test.stopTest();
+    return home;
+  }
+
+  @isTest
+  static void theHomePageShowsNothingBelowTheMinimum() {
+    PortfolioSettings.overrides.put('Home_Testimonials_Min', null);
+    insertApproved(2);
+
+    List<TestimonialController.WallItem> home = homeAsReader();
+
+    Assert.areEqual(
+      0,
+      home.size(),
+      'Two approved is below the default of three, and the waiting row never counts'
+    );
+  }
+
+  @isTest
+  static void theHomePageShowsThreeOnceTheMinimumIsMet() {
+    PortfolioSettings.overrides.put('Home_Testimonials_Min', null);
+    insertApproved(3);
+
+    List<TestimonialController.WallItem> home = homeAsReader();
+
+    Assert.areEqual(3, home.size(), 'Three approved turns the section on');
+    Assert.areEqual(
+      'Home 2',
+      home[0].authorName,
+      'The professional quote comes first'
+    );
+    Assert.isTrue(home[0].professional, 'Marked professional');
+    Assert.areEqual('Home 0', home[1].authorName, 'Then the wall order');
+    Assert.areEqual('Home 1', home[2].authorName, 'Then the wall order');
+  }
+
+  @isTest
+  static void theHomePageShowsAtMostThreeProfessionalFirst() {
+    PortfolioSettings.overrides.put('Home_Testimonials_Min', null);
+    insertApproved(6);
+
+    List<TestimonialController.WallItem> home = homeAsReader();
+
+    Assert.areEqual(3, home.size(), 'Never more than three');
+    for (TestimonialController.WallItem item : home) {
+      Assert.isTrue(item.professional, 'Professional quotes fill the three');
+    }
+    Assert.areEqual('Home 2', home[0].authorName, 'In the wall order');
+    Assert.areEqual('Home 4', home[2].authorName, 'In the wall order');
+  }
+
+  @isTest
+  static void theHomePageMinimumFollowsTheSetting() {
+    PortfolioSettings.overrideNumber('Home_Testimonials_Min', 5);
+    insertApproved(4);
+
+    List<TestimonialController.WallItem> home = homeAsReader();
+
+    Assert.areEqual(0, home.size(), 'Four is below a minimum of five');
+  }
+
+  @isTest
+  static void theHomePageMinimumOfOneShowsASingleQuote() {
+    PortfolioSettings.overrideNumber('Home_Testimonials_Min', 1);
+    insertApproved(1);
+
+    List<TestimonialController.WallItem> home = homeAsReader();
+
+    Assert.areEqual(1, home.size(), 'One approved meets a minimum of one');
+  }
+
   @isTest
   static void theProfessionalRuleMatchesThePapiFeed() {
     String body = [

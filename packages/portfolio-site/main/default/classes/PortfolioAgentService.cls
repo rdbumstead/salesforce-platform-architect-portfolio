@@ -1,5 +1,6 @@
 /**
- * @description       : Implementation of the Portfolio Agent Service.
+ * @description       : Implementation of the Portfolio Agent Service. The Contact read
+ *                      selects no Email or Phone, so neither can reach the agent's context.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -54,8 +55,6 @@ public with sharing class PortfolioAgentService {
         Id,
         Name,
         Title,
-        Email,
-        Phone,
         (
           SELECT
             Name,

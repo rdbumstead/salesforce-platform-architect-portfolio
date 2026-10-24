@@ -6,7 +6,8 @@ private class PortfolioAgentServiceTest {
     Contact c = new Contact(
       LastName = 'Bumstead',
       Title = 'Architect',
-      Email = 'test@example.com'
+      Email = 'test@example.com',
+      Phone = '555-0100'
     );
     insert c;
 
@@ -158,6 +159,14 @@ private class PortfolioAgentServiceTest {
     Assert.isFalse(
       contactInfo.containsKey('Phone'),
       'The owner phone must not be in the agent payload'
+    );
+    Assert.isFalse(
+      jsonString.contains('test@example.com'),
+      'The stored email value appears nowhere in the payload'
+    );
+    Assert.isFalse(
+      jsonString.contains('555-0100'),
+      'The stored phone value appears nowhere in the payload'
     );
     Assert.isTrue(
       contactInfo.containsKey('LinkedIn'),

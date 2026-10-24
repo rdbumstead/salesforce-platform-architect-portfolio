@@ -9,7 +9,9 @@
  *                      have fields of their own. SubmissionGuard drops spam silently and applies
  *                      the rate limit. Approved__c is never set here. The wall reads approved
  *                      rows only, and the Block_Unapproved_Testimonials restriction rule hides
- *                      every other row from the guest as well.
+ *                      every other row from the guest as well. getHomeTestimonials serves the
+ *                      home page from the same read: nothing while fewer than
+ *                      Home_Testimonials_Min rows are approved, else up to three.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -33,6 +35,13 @@ public with sharing class TestimonialController {
   private static Boolean forceSaveFailure = false;
   @TestVisible
   private static List<Testimonial_Fragment__mdt> fragmentsOverride;
+  // How many approved testimonials the home page needs before it shows any, when the
+  // Home_Testimonials_Min setting is missing or out of its range.
+  @TestVisible
+  private static final Integer DEFAULT_HOME_MINIMUM = 3;
+  // The most quotes the home page shows.
+  @TestVisible
+  private static final Integer HOME_MAX_SHOWN = 3;
 
   private static final Set<String> RELATIONSHIPS = new Set<String>{
     'Manager',
@@ -179,6 +188,42 @@ public with sharing class TestimonialController {
       items.add(item);
     }
     return items;
+  }
+
+  /**
+   * @description The home page's testimonials, from the wall's own read. Returns an empty
+   *              list while fewer than Home_Testimonials_Min testimonials are approved, so the
+   *              section stays hidden until there are enough real quotes. Once there are, it
+   *              returns up to three: the professional ones first, then the rest, each group
+   *              in the wall's order.
+   * @return List<WallItem> Nothing, or up to three approved testimonials.
+   * @example
+   * List<TestimonialController.WallItem> quotes = TestimonialController.getHomeTestimonials();
+   */
+  @AuraEnabled(cacheable=true)
+  public static List<WallItem> getHomeTestimonials() {
+    List<WallItem> approved = getApprovedTestimonials();
+    Integer minimum = PortfolioSettings.getInteger(
+      'Home_Testimonials_Min',
+      DEFAULT_HOME_MINIMUM
+    );
+    List<WallItem> shown = new List<WallItem>();
+    if (approved.size() < minimum) {
+      return shown;
+    }
+    List<WallItem> others = new List<WallItem>();
+    for (WallItem item : approved) {
+      if (item.professional == true) {
+        shown.add(item);
+      } else {
+        others.add(item);
+      }
+    }
+    shown.addAll(others);
+    while (shown.size() > HOME_MAX_SHOWN) {
+      shown.remove(shown.size() - 1);
+    }
+    return shown;
   }
 
   /**

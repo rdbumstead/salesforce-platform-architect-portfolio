@@ -326,14 +326,20 @@ describe("c-experience-timeline certifications tab", () => {
     jest.clearAllMocks();
   });
 
-  it("adds a Certifications tab last, with name, issuer and earned month", async () => {
+  it("puts Certifications between Work and Education, with name, issuer and earned month", async () => {
     const element = await render({
       ...TIMELINE,
       certifications: CERTIFICATIONS
     });
     expect(
       queryAll(element, '[role="tab"]').map((node) => node.textContent.trim())
-    ).toEqual(["Work", "Education", "Certifications"]);
+    ).toEqual(["Work", "Certifications", "Education"]);
+    expect(tab(element, "work").getAttribute("aria-selected")).toBe("true");
+    expect(
+      queryAll(element, '[role="tabpanel"]').map((node) =>
+        node.getAttribute("data-panel")
+      )
+    ).toEqual(["work", "certifications", "education"]);
     const certificationTab = tab(element, "certifications");
     expect(certificationTab.getAttribute("aria-selected")).toBe("false");
     expect(certificationTab.getAttribute("aria-controls")).toBe(
@@ -366,12 +372,12 @@ describe("c-experience-timeline certifications tab", () => {
     });
   });
 
-  it("reaches the Certifications tab with End and wraps with ArrowRight", async () => {
+  it("follows the new order with the arrow, Home and End keys", async () => {
     const element = await render({
       ...TIMELINE,
       certifications: CERTIFICATIONS
     });
-    keydown(tab(element, "work"), "End");
+    keydown(tab(element, "work"), "ArrowRight");
     await flushPromises();
     expect(tab(element, "certifications").getAttribute("aria-selected")).toBe(
       "true"
@@ -381,7 +387,41 @@ describe("c-experience-timeline certifications tab", () => {
     );
     keydown(tab(element, "certifications"), "ArrowRight");
     await flushPromises();
+    expect(tab(element, "education").getAttribute("aria-selected")).toBe(
+      "true"
+    );
+    keydown(tab(element, "education"), "ArrowRight");
+    await flushPromises();
     expect(tab(element, "work").getAttribute("aria-selected")).toBe("true");
+    keydown(tab(element, "work"), "End");
+    await flushPromises();
+    expect(tab(element, "education").getAttribute("aria-selected")).toBe(
+      "true"
+    );
+    expect(element.shadowRoot.activeElement).toBe(tab(element, "education"));
+    keydown(tab(element, "education"), "ArrowLeft");
+    await flushPromises();
+    expect(tab(element, "certifications").getAttribute("aria-selected")).toBe(
+      "true"
+    );
+    keydown(tab(element, "certifications"), "Home");
+    await flushPromises();
+    expect(tab(element, "work").getAttribute("aria-selected")).toBe("true");
+    expect(element.shadowRoot.activeElement).toBe(tab(element, "work"));
+  });
+
+  it("selects Certifications first, not Education, when there are no roles", async () => {
+    const element = await render({
+      ...TIMELINE,
+      work: [],
+      certifications: CERTIFICATIONS
+    });
+    expect(
+      queryAll(element, '[role="tab"]').map((node) => node.textContent.trim())
+    ).toEqual(["Certifications", "Education"]);
+    expect(tab(element, "certifications").getAttribute("aria-selected")).toBe(
+      "true"
+    );
   });
 
   it("selects Certifications when it is the only list", async () => {
