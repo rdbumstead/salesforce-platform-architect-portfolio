@@ -23,7 +23,7 @@ Launch target: Q1 2027
 
 **The Problem:** Enterprise Salesforce implementations often go wrong in three quiet ways: costs nobody watches (FinOps), slow pages, and guest users who can see more than they should.
 
-**The Solution:** This portfolio is a **zero budget architecture** built to enterprise habits. It runs on a free Salesforce Developer Edition org, uses the free tier of the Gemini API for cover letters, keeps every guest grant in one permission set in source, and shows its own limits on every page.
+**The Solution:** This portfolio is a **zero budget architecture** built to enterprise habits. It runs on a free Salesforce Developer Edition org, calls the Gemini API through a Named Credential for cover letters, keeps every guest grant in one permission set in source, and shows its own limits on every page.
 
 **Why It Matters:**
 
