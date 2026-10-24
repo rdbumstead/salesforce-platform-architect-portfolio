@@ -7,6 +7,7 @@
  * @Created           : 01/13/2025
  * @Test Class        : [PortfolioAgentServiceTest]
  **/
+// Reads stay static SOQL, not query definitions: the child lists are serialized as they come back.
 public with sharing class PortfolioAgentService {
   public class PortfolioContextRequest {
     @InvocableVariable(label='Contact ID' required=true)
