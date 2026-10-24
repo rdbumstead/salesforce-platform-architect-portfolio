@@ -121,6 +121,9 @@ describe("c-home-testimonials", () => {
     const heading = root.querySelector("h2");
     expect(section.getAttribute("aria-labelledby")).toBe(heading.id);
     expect(text(heading)).toBe("What people say.");
+    expect(text(root.querySelector(".section-intro"))).toBe(
+      "A few quotes from the testimonial wall."
+    );
     const cards = root.querySelectorAll('[data-id="quote"]');
     expect(cards).toHaveLength(3);
     expect(text(cards[0].querySelector("blockquote"))).toBe(
