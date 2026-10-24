@@ -123,7 +123,7 @@ graph LR
 Live MVP (Door 1)
 
 - `@AuraEnabled` Apex controllers, the main path for site components (resume, home cards and timeline, footer, Delivery page, ERD, decision matrix, API Lab and cover letter)
-- Native Salesforce GraphQL through the `lightning/uiGraphQLApi` wire adapter, used by three components only: `c-skill-network`, `c-project-asset-gallery` and the footer's `c-graphql-probe` ([ADR-021 amendment](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-23-round-7-scope))
+- Native Salesforce GraphQL through the `lightning/uiGraphQLApi` wire adapter, used by three components only: `c-skill-network`, `c-project-asset-gallery` and the footer's `c-graphql-probe` ([ADR-021 amendment](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-23-scope))
 - Apex REST services (the SAPI and PAPI), for outside callers and the API Lab
 - Direct integrations (GitHub, Jira via Named Credentials)
 
@@ -181,12 +181,12 @@ graph TD
 
 Why specific technologies were chosen over alternatives.
 
-| Requirement             | Finalist Options      | Selected            | Rejection Reason                                                                                                                                                                                                                                                                                                                          |
-| :---------------------- | :-------------------- | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Frontend Framework**  | Aura vs. LWR          | **LWR**             | Aura's 3-5s LCP violates UX requirements for public sites.                                                                                                                                                                                                                                                                                |
-| **Graph Visualization** | Vis.js vs. G6 vs. D3  | **D3** (`d3-force`) | G6 is 1.57 MB and its force layout tangled the 59 skills production held in October 2026. Four D3 modules are about 18.5 KB and draw both the skills graph and the ERD ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)). |
-| **API Documentation**   | Swagger UI vs. Redoc  | **Redoc**           | Redoc's single-file static HTML works without Node.js server.                                                                                                                                                                                                                                                                             |
-| **CI/CD Auth**          | Username/Pass vs. JWT | **JWT**             | Username/Password is fragile and requires rotation. JWT is headless.                                                                                                                                                                                                                                                                      |
+| Requirement             | Finalist Options                               | Selected     | Rejection Reason                                                                                                                                                                                                                                                                                                                                      |
+| :---------------------- | :--------------------------------------------- | :----------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Frontend Framework**  | Aura vs. LWR                                   | **LWR**      | Aura's 3-5s LCP violates UX requirements for public sites.                                                                                                                                                                                                                                                                                            |
+| **Graph Visualization** | Vis.js vs. the AntV graph library vs. d3-force | **d3-force** | The AntV library is 1.57 MB and its force layout tangled the 59 skills production held in October 2026. Four d3 modules are about 18.5 KB and draw both the skills graph and the ERD ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-matrix-first-the-graph-on-open-d3-force-as-the-engine)). |
+| **API Documentation**   | Swagger UI vs. Redoc                           | **Redoc**    | Redoc's single-file static HTML works without Node.js server.                                                                                                                                                                                                                                                                                         |
+| **CI/CD Auth**          | Username/Pass vs. JWT                          | **JWT**      | Username/Password is fragile and requires rotation. JWT is headless.                                                                                                                                                                                                                                                                                  |
 
 ### 1.4 Visual Architecture Standard (C4 Model)
 
@@ -211,7 +211,7 @@ Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Disciplin
 
 - **Availability:** Organization persistence maintained via external CI/CD "Keep-Alive" heartbeat (GitHub Actions).
 - **Maintainability:** Codebase governed by automated quality gates (Prettier/PMD) ensuring architectural standards.
-- **Performance:** LCP target 2.5 s, pursued through Static Resource caching and a minimal DOM footprint. The gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)).
+- **Performance:** LCP target 2.5 s, pursued through Static Resource caching and a minimal DOM footprint. The gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, measured 2026-10-22) on the six main routes ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)).
   - **Latency:** measured with the Lighthouse mobile profile, which simulates a slow 4G network.
   - **AI Generation Timeout:** 60 seconds for the Gemini callout, read from the `Gemini` record of `AI_Provider_Config__mdt` (`Timeout_Ms__c`, owner decision 2026-10-21). Gemma 4 reasons before it answers, so a cover letter can take up to about a minute. The earlier 2 second hard stop was dropped because a reasoning model almost never answers inside it.
   - **Total CPU Budget:** < 5000ms per request (Allocating 50% of the 10,000ms Synchronous Limit to ensure headroom for platform overhead).
@@ -223,7 +223,7 @@ Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Disciplin
 
 The architecture is designed to operate within the specific limits of the Salesforce Developer Edition.
 
-- **Storage Limits:** 5MB Data Storage / 20MB File Storage limit requires strict data hygiene. Images ship as static resources, and cleanup batches keep the cache and rate window objects small. Off-platform storage on AWS S3 is a Phase 8 design and is not built.
+- **Storage Limits:** 5MB Data Storage / 20MB File Storage limit requires strict data hygiene. Images ship as static resources, and cleanup batches keep the cache and rate window objects small. Off-platform storage in AWS is a design only and is not built.
 - **API Limits:** 15,000 API requests/24hr requires caching strategies for high-traffic external integrations.
 - **Guest User:** the guest gets no object permission on standard objects, so the portfolio data lives in a custom schema, and the few standard records a page needs are read by Apex in system mode (section 4.6).
 - **No Shield:** Lack of Event Monitoring requires custom telemetry implementation for analytics.
@@ -236,7 +236,7 @@ The architecture is designed to operate within the specific limits of the Salesf
 - **Injection Attacks:** Mitigated by strict SOQL bind variable usage.
 - **Data Exposure:** Mitigated by one guest permission set (`Portfolio_Guest`) with read on six portfolio objects and create and read on `Testimonial__c`, sharing rules for the guest on `Project__c`, `Experience__c`, `Skill__c` and `Testimonial__c`, and a restriction rule that hides unapproved testimonials. The guest has no Lead access: the contact form's Lead is saved by a platform event trigger as the Automated Process user ([ADR-031](../adr/031-native-contact-form.md)). No visitor IP is used, because Apex cannot read one in a guest request. Records the guest cannot read are reached only through `without sharing` Apex selectors with fixed field lists (section 4.6).
 - **API Abuse:** Mitigated by read-only endpoints and hardcoded query limits in the SAPI layer.
-- **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): on the site page and on `POST /papi/v1/ai/generate`, a cover letter falls back from the Gemini API to a deterministic Local Template. Agentforce is not implemented and its switch ships off ([ADR-015 Round 4 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-4)).
+- **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): on the site page and on `POST /papi/v1/ai/generate`, a cover letter falls back from the Gemini API to a deterministic Local Template. Agentforce is not implemented and its switch ships off ([ADR-015 amendment on the in process dispatch](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-the-site-cover-letter-dispatches-in-process)).
 
 ## 4. Data Architecture & Schema
 
@@ -340,27 +340,27 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.1 Pillar A: Business Architecture (Employer Hub)
 
 > [!NOTE]
-> **Live since Round 5.** The process flows and dashboards on the page are redrawn from the original demo deck with no names, and the dashboards carry sample values. The client is described as "an education provider" and never named (owner decision D4 b, reworded in Round 6 so the page cannot be tied to the owner's employer, Round 6 plan reading R11).
+> **Live on the site.** The process flows and dashboards on the page are redrawn from the original demo deck with no names, and the dashboards carry sample values. The client is described as "an education provider" and never named (owner decision, reworded later so the page cannot be tied to the owner's employer).
 
 - **Objective:** Demonstrate Business Analysis and Process Mapping.
 - **Page:** `/business-architecture`. An introduction to the problem (departments of an education provider shared employer partners with no shared view) and the Employer Hub, a working demo built to extend the education provider's existing Salesforce org, that centralizes, routes and reports on the relationship, then the process map and dashboard gallery, then the live data model, then an eight step walkthrough of a partner inquiry.
 - **Artifacts:** Sanitized Process Flow Diagrams and Executive Dashboard mockups, rendered by `c-project-asset-gallery` from the `Project_Asset__c` rows of the Pillar A project. The images ship in the `EH_Assets` static resource and are addressed as `resource:EH_Assets/<file>` (Technical Guide section 2.10).
 - **Component:** `c-schema-visualizer`, fed by `SchemaService.getSchemaGraph(scope)`.
 - **Data Source:** Apex `Schema.getGlobalDescribe()` ensures the diagram never drifts from the actual deployment. A two-button toggle switches between the Employer Hub schema (the default on this page) and the portfolio's own schema. The internal objects `API_Rate_Window__c`, `API_Access_Request__c`, `Github_Cache__c` and `Jira_Cache__c` are hidden by `Schema_Visualizer_Object__mdt` records. There is no Platform Cache: the only cache is the browser's, through `cacheable=true` ([ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)).
-- **Reuse Signal:** the diagram draws with the same D3 engine as the skills page (`c/graphEngine` and the `D3_Library` static resource), loaded only on desktop and tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
+- **Reuse Signal:** the diagram draws with the same d3-force engine as the skills page (`c/graphEngine` and the `D3_Library` static resource), loaded only on desktop and tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-matrix-first-the-graph-on-open-d3-force-as-the-engine)).
 
 ### 5.2 Pillar B: Solution Architecture (Nonprofit Literacy Platform)
 
 > [!NOTE]
-> **Live since Round 5.** The owner reviewed every score and set the starting weights in Round 6, so no placeholder banner shows. The client is described as "a regional adult literacy nonprofit" and never named (owner decision D4 b). Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production (owner decision D1 a).
+> **Live on the site.** The owner reviewed every score and set the starting weights on 2026-10-22, so no placeholder banner shows. The client is described as "a regional adult literacy nonprofit" and never named. Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production.
 
 - **Objective:** Demonstrate ROI analysis and Solution Design.
 - **Page:** `/nonprofit-solutions`. `c-pillar-b-story` tells the pre-sales story in six sections (the client, discovery, the decision matrix, ROI and cost, solution design, the outcome), then `c-decision-matrix`, then `c-project-asset-gallery` for the Pillar B media, which renders nothing while Pillar B has no published assets.
-- **Comparative Decision Matrix:** three-way, NPSP with the Program Management Module, Education Cloud, and Nonprofit Cloud (owner decision D2 b). The client's own two-way decision (NPSP and PMM against Education Cloud, which chose NPSP and PMM) is the dated baseline. The starting weights are the owner's, set from what the client said mattered most. Options, criteria and scores are Custom Metadata in the `nonprofit-literacy` package, read once by `DecisionMatrixController.getMatrix()`. The visitor moves labelled weight sliders, and the browser recomputes the ranking and a sensitivity line naming the single weight change that would swap the top two. "Reset to the starting weights" restores them ([ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)).
-- **ROI analysis:** a cost and effort table built from public licence facts only, with a source per row. Effort is a relative band, and no client rates or totals appear (owner decision D9 a).
+- **Comparative Decision Matrix:** three-way, NPSP with the Program Management Module, Education Cloud, and Nonprofit Cloud. The client's own two-way decision (NPSP and PMM against Education Cloud, which chose NPSP and PMM) is the dated baseline. The starting weights are the owner's, set from what the client said mattered most. Options, criteria and scores are Custom Metadata in the `nonprofit-literacy` package, read once by `DecisionMatrixController.getMatrix()`. The visitor moves labelled weight sliders, and the browser recomputes the ranking and a sensitivity line naming the single weight change that would swap the top two. "Reset to the starting weights" restores them ([ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)).
+- **ROI analysis:** a cost and effort table built from public licence facts only, with a source per row. Effort is a relative band, and no client rates or totals appear.
 - **Solution design:** the minimalist object model redrawn from public object names (`NL_Assets` static resource), one line per architecture decision, and what was deliberately not built.
-- **No video prototype.** None was recorded (owner, decision D8, 2026-10-22), so the page has no video section and no video row is loaded.
-- **Framing of the comparison:** pre-sales. The comparison was made before the nonprofit chose a platform and before any build began, and the page says so at the start of the discovery section (owner, decision D3, 2026-10-22).
+- **No video prototype.** None was recorded (owner decision, 2026-10-22), so the page has no video section and no video row is loaded.
+- **Framing of the comparison:** pre-sales. The comparison was made before the nonprofit chose a platform and before any build began, and the page says so at the start of the discovery section (owner decision, 2026-10-22).
 
 ### 5.3 Pillar C: Work Experience Verification API (Twin API Pattern)
 
@@ -372,7 +372,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.4 Pillar D: AI & Innovation (Agentforce)
 
 > [!NOTE]
-> **Agentforce is not implemented, and its switch ships off** (decision 2026-10-02, [ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)). `ContentGenerationController.dispatch` consults Agentforce only when the `Agentforce` record of `AI_Provider_Config__mdt` is switched on, and never for a site guest. Grounding is built in Apex and reads the CRM directly (`PortfolioGroundingService.build`, section 5.4.1). Data 360 grounding is deferred ([ADR-011 amendment, 2026-10-22](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md#amendment-2026-10-22-deferred)), and nothing in the site or the API reads Data 360.
+> **Agentforce is not implemented, and its switch ships off** (decision 2026-10-02, [ADR-015 amendment on one dispatch](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-one-dispatch-and-the-provider-switch)). `ContentGenerationController.dispatch` consults Agentforce only when the `Agentforce` record of `AI_Provider_Config__mdt` is switched on, and never for a site guest. Grounding is built in Apex and reads the CRM directly (`PortfolioGroundingService.build`, section 5.4.1). Data 360 grounding is deferred ([ADR-011 amendment, 2026-10-22](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md#amendment-2026-10-22-deferred)), and nothing in the site or the API reads Data 360.
 
 - **Objective:** Demonstrate grounded generation with a visible fallback chain. The original objective, hybrid search (vector and keyword) over Data 360, is deferred with ADR-011.
 - **Mechanism as built:** `PortfolioGroundingService.build` ranks featured `Project__c` rows and `Experience_Highlight__c` text by keywords from the job title and description and passes them to the prompt as JSON (section 5.4.1).
@@ -383,11 +383,11 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 #### 5.4.1 Feature Spotlight: Generative Cover Letter Engine
 
 > [!IMPORTANT]
-> **As built, the cover letter page is written by Gemma 4 31B through the Gemini API, or by the local template when Gemini fails.** Agentforce is not implemented and its switch ships off, so no letter is attributed to it ([ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)).
+> **As built, the cover letter page is written by Gemma 4 31B through the Gemini API, or by the local template when Gemini fails.** Agentforce is not implemented and its switch ships off, so no letter is attributed to it ([ADR-015 amendment on one dispatch](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-one-dispatch-and-the-provider-switch)).
 
 - **The Concept:** Instead of a static "About Me," recruiters enter a company name, a job title and, optionally, the job description. The system writes a cover letter explaining why this candidate fits that role.
 - **The Architecture as built:**
-  - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`, which checks the AI tier limit on the key `papi-ai:site-cover-letter` (10 requests per minute, one bucket shared by every site visitor), runs `ContentGenerationController.dispatch` in process as the site guest, and writes the count afterwards. The guest holds the `Gemini_Auth-Gemini_Principal` principal for this and no other AI grant. The page used to call `/papi/v1/ai/generate` through the `Portfolio_API` Named Credential, but a request that arrives as a callout from the same org may not call out again, so Gemini could never answer it ([ADR-015 Round 4 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-4)). `/papi/v1/ai/generate` stays for outside callers.
+  - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`, which checks the AI tier limit on the key `papi-ai:site-cover-letter` (10 requests per minute, one bucket shared by every site visitor), runs `ContentGenerationController.dispatch` in process as the site guest, and writes the count afterwards. The guest holds the `Gemini_Auth-Gemini_Principal` principal for this and no other AI grant. The page used to call `/papi/v1/ai/generate` through the `Portfolio_API` Named Credential, but a request that arrives as a callout from the same org may not call out again, so Gemini could never answer it ([ADR-015 amendment on the in process dispatch](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-the-site-cover-letter-dispatches-in-process)). `/papi/v1/ai/generate` stays for outside callers.
   - **Retrieval Layer:** `PortfolioGroundingService` reads featured `Project__c` records (name, challenge, solution, business value, skills) and `Experience_Highlight__c` text with its role and employer, ranks them by keywords from the job title and description, and adds them to the prompt as JSON. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and stays under 8,000 characters. Its reads go through a `without sharing` selector with a fixed field list, because the site guest sees only rows shared to it. This is direct CRM retrieval in Apex. No Data 360 index exists (section 5.4).
   - **Generation Layer:** `ContentGenerationController.dispatch`, described below.
   - **Show your work:** the page's badge shows the provider and model from the response. A panel the visitor opens shows whether a fallback happened, the round trip and generation time, every attempt and the prompt that was sent.
@@ -405,7 +405,7 @@ Every attempt is recorded with its outcome (`served`, `skipped_off`, `skipped_op
 <details>
 <summary>Click to view Sequence Diagram</summary>
 
-> _What This Diagram Shows: a cover letter from the site page as built in Round 4. Agentforce is never consulted for a guest._
+> _What This Diagram Shows: a cover letter from the site page as built. Agentforce is never consulted for a guest._
 
 ```mermaid
 sequenceDiagram
@@ -454,12 +454,12 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 - **Objective:** Demonstrate ALM, CI/CD Maturity, and External System Integration.
 - **Tooling:** Atlassian Jira + GitHub Actions (CI/CD).
 - **Technical Detail:** For the refresh jobs, the caches and the governance event, refer to the **[Technical Guide: Jira Integration](./04-Technical-Guide.md#12-jira-integration-roadmap)** and **[Executable Governance](./04-Technical-Guide.md#25-c-smart-checklist-executable-governance)**.
-- **Mechanism:** the CI/CD pipeline publishes the `Governance_Event__e` platform event, an Apex trigger persists it as a `Pipeline_Run__c` record, and the `c-smart-checklist` component reads the result through cacheable Apex ([ADR-019 Round 4 amendment](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-21-round-4)).
+- **Mechanism:** the CI/CD pipeline publishes the `Governance_Event__e` platform event, an Apex trigger persists it as a `Pipeline_Run__c` record, and the `c-smart-checklist` component reads the result through cacheable Apex ([ADR-019 amendment of 2026-10-21](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-21-the-event-the-subscriber-and-the-page)).
 - **Workflow:** after a production deploy (`deploy.yml`) and after the daily heartbeat (`keep-alive.yml`), the workflow's existing JWT user publishes one event with the run's status, id, URL, commit and time. The trigger upserts `Pipeline_Run__c` by `Run_Key__c`, so a replayed event changes nothing. The component reads `GovernanceController.getPipelineStatus()` when the page is viewed and again when the tab becomes visible. There is no timer and no polling. Each item shows its evidence (the commit linking to the run, and the time), and an item with no data shows "No signal yet". A third workflow, the Live Smoke Test that runs after every deploy that changed production, publishes only on a failure, as workflow `smoke`. The checklist does not read those rows ([ADR-019 amendment](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-23)).
-- **Page text:** since Round 7 the Delivery page's introduction describes this in the present tense: after every production deploy and every daily heartbeat the pipeline publishes the result, passed or failed, and the checklist says so when a run failed or is out of date (`sfdc_cms__view/Delivery/content.json`).
+- **Page text:** the Delivery page's introduction describes this in the present tense: after every production deploy and every daily heartbeat the pipeline publishes the result, passed or failed, and the checklist says so when a run failed or is out of date (`sfdc_cms__view/Delivery/content.json`).
 - **What it claims:** the production deploy is green, the org heartbeat ran today (within 26 hours, the `Heartbeat_Stale_Hours` setting), and the integration caches are under 30 minutes old (`Governance_Cache_Minutes`).
 - **Why no browser subscription:** `lightning-emp-api` is unsupported in LWR sites, and each subscribed browser would count against the org's 20 concurrent streaming clients. The event-driven part is server-side: publish, an asynchronous subscriber and idempotent handling of a replayed event.
-- **Roadmap and changelog:** `c-roadmap-viewer` and `c-changelog` read cached Jira and GitHub data through `DeliveryController` (cacheable Apex). Scheduled Queueable jobs refresh the caches every 15 minutes, so a visitor never triggers a callout ([ADR-007 Round 4 amendment](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-round-4)). The roadmap shows only `SPAP` issues labelled `portfolio-roadmap`. The site's CDN caching of guest Apex stays off (owner decision E9), so every visit reads the org.
+- **Roadmap and changelog:** `c-roadmap-viewer` and `c-changelog` read cached Jira and GitHub data through `DeliveryController` (cacheable Apex). Scheduled Queueable jobs refresh the caches every 15 minutes, so a visitor never triggers a callout ([ADR-007 amendment of 2026-10-21](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-the-cache-objects-and-the-scheduled-refresh)). The roadmap shows only `SPAP` issues labelled `portfolio-roadmap`. The site's CDN caching of guest Apex stays off (owner decision), so every visit reads the org.
 - **Architectural Signal:** event-driven architecture with a server-side subscriber, and external system integration through Named Credentials.
 
 #### 5.5.1 The Governance Model
@@ -490,14 +490,14 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-contact-call`:** The home page's one line "Get in touch" prompt with a link to `/contact`. It sends an old `/#contact` address on to `/contact`.
 - **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invoke`, which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3).
 - **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
-- **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with D3 that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
+- **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with d3-force that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-matrix-first-the-graph-on-open-d3-force-as-the-engine)).
 - **`c-code-viewer`:** Shows one source file highlighted by `c/prismHighlighter`. It fetches nothing itself.
 - **`c-view-source`:** The View source button and dialog on the showcase components. It reads cached GitHub source through `SourceController.getSourceFiles` and never calls GitHub ([Technical Guide §2.14](./04-Technical-Guide.md#214-view-source-c-view-source)).
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
 - **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category, each capped at 8 cards with its own "Show all N" button. It makes no callout.
 - **`c-footer`:** Contains the GitHub Actions deploy badge, the Glass Box telemetry (section 9) and a Contact link to the `/contact` page.
 - **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
-- **`c-schema-visualizer`:** The live ERD on the Pillar A page, drawn with the shared D3 engine (section 5.1).
+- **`c-schema-visualizer`:** The live ERD on the Pillar A page, drawn with the shared d3-force engine (section 5.1).
 - **`c-project-asset-gallery`:** The image, document, video and link gallery for any pillar's project, from `Project_Asset__c`.
 - **`c-decision-matrix`** and **`c-pillar-b-story`:** The Pillar B story and the reweightable matrix (section 5.2).
 
@@ -522,7 +522,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-007](../adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching                                  | Accepted                 |
 | [ADR-008](../adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Agile Accelerator                          | Accepted                 |
 | [ADR-009](../adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model                                      | Accepted                 |
-| [ADR-010](../adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Visualization Engine (Vis.js vs. AntV G6)                       | Superseded by D3         |
+| [ADR-010](../adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Visualization Engine (Vis.js vs. the AntV Graph Library)        | Superseded by d3-force   |
 | [ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Context Grounding Strategy (Direct CRM vs. Data 360)            | Deferred (2026-10-22)    |
 | [ADR-012](../adr/012-guest-user-security-restriction-rules.md)                         | Guest User Security (Restriction Rules)                         | Accepted                 |
 | [ADR-013](../adr/013-structured-logging-framework-nebula-logger.md)                    | Structured Logging Framework (Nebula Logger)                    | Accepted                 |
@@ -562,7 +562,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 ### 8.2 Agentforce Unavailable
 
 > [!NOTE]
-> Agentforce is not implemented, and its switch ships off (decision 2026-10-02, [ADR-015 Round 3 amendment](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-round-3)). If the switch is turned on, `AgentforceService.generateContent` throws, `ContentGenerationController.dispatch` records a failed attempt and Gemini serves, so the visitor still gets a letter. The scenario below is the target design for a real Agentforce agent, kept for when one is built.
+> Agentforce is not implemented, and its switch ships off (decision 2026-10-02, [ADR-015 amendment on one dispatch](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-one-dispatch-and-the-provider-switch)). If the switch is turned on, `AgentforceService.generateContent` throws, `ContentGenerationController.dispatch` records a failed attempt and Gemini serves, so the visitor still gets a letter. The scenario below is the target design for a real Agentforce agent, kept for when one is built.
 
 - **Symptom:** Agentforce Service Agent fails to load or returns generic errors (common in some **Developer Edition** regions).
 - **Detection:** `<agentforce-service-agent>` LWC fails to render during manual testing.
@@ -575,11 +575,11 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 
 - **Symptom:** GitHub Commits or Portfolio API returns status 429.
 - **Mitigation (GitHub):** guests never call GitHub. The changelog serves the newest `Github_Cache__c` row (a custom object) with its age, and a failed refresh inserts nothing, so the last good list stays until the next refresh succeeds.
-- **Mitigation (Portfolio API):** the 429 comes from `RateWindowLimiter` (SAPI 120, PAPI 15, `/ai/*` 10 requests per minute per caller key). The caller waits for `Retry-After`, which is the seconds left in the current minute ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)). Every vended evaluator token is the same session, so all evaluators share one key per tier, and one busy evaluator can use up the minute for everyone ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4)).
+- **Mitigation (Portfolio API):** the 429 comes from `RateWindowLimiter` (SAPI 120, PAPI 15, `/ai/*` 10 requests per minute per caller key). The caller waits for `Retry-After`, which is the seconds left in the current minute ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)). Every vended evaluator token is the same session, so all evaluators share one key per tier, and one busy evaluator can use up the minute for everyone ([ADR-028 amendment on the shared token pool](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-a-shared-token-pool-no-expiry-no-disposable-list)).
 
 ### 8.4 Resilience Simulation Operations
 
-Ensuring the system fails gracefully during outage events ([ADR-022 Round 4 amendment](../adr/022-resilience-engineering-resilience-simulation-toggle.md#amendment-2026-10-21-round-4)).
+Ensuring the system fails gracefully during outage events ([ADR-022 amendment of 2026-10-21](../adr/022-resilience-engineering-resilience-simulation-toggle.md#amendment-2026-10-21-the-breaker-state-and-the-toggle)).
 
 | Failure Scenario                 | Detection Method                                                                                 | User Experience                                                                                                                                                                      | Auto-Recovery                                                                                                     |
 | :------------------------------- | :----------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------- |
@@ -597,7 +597,7 @@ The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box T
 - **Org quotas:** daily API requests and daily async Apex executions against their limits, from `OrgLimits`. A quota the org does not report is left out, never guessed.
 - **Integration breakers:** the GitHub and Jira circuit breakers, closed or open until a time, beside the AI providers.
 - **AI provider health:** each provider's switch and state from `ContentGenerationController.providerStatus()`, including when an open circuit closes again.
-- **AI requests today:** the sum of today's AI tier counts in `API_Rate_Window__c` (the site cover letter and `/papi/v1/ai/generate` both count). It counts requests, not Gemini calls, so it is never labelled as a Gemini quota (owner decision PD-D9, 2026-10-21). Hovering over or focusing it sends the GA4 event `finops_quota_visibility`.
+- **AI requests today:** the sum of today's AI tier counts in `API_Rate_Window__c` (the site cover letter and `/papi/v1/ai/generate` both count). It counts requests, not Gemini calls, so it is never labelled as a Gemini quota (owner decision, 2026-10-21). Hovering over or focusing it sends the GA4 event `finops_quota_visibility`.
 - **Deploy status:** the GitHub Actions badge for `deploy.yml` on `main`, with a text link when the image cannot load.
 - **Logs:** Apex writes one line per API request through a logging seam that uses Nebula Logger when it is installed and debug logs when it is not (section A.3).
 
@@ -607,7 +607,7 @@ The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box T
 
 - **A.1 CI/CD Pipeline Configuration:** Authentication via Connected App with "Use Digital Signatures." Stores keys in GitHub Secrets. Use pr.yml for quality gates and deploy.yml for production push. `pr.yml` also runs the internal reference gate (`scripts/check-internal-refs.js`) in `quality-check`, gives the scratch site guest `Portfolio_Guest` before the tests, and validates the PR's delta check only against production with the local tests. `deploy.yml` runs the read only Live Smoke Test (`smoke.yml`, `scripts/live-smoke.js`) after a deploy that changed production, and has a hand run destructive mode for a manifest committed under `manifest/destructive/` ([Maintenance Guide §3.2](./05-Maintenance-Guide.md#32-pipeline-triggers)).
 - **A.2 CORS & Security:** Whitelist custom domain, enable LWS. The site runs on **Relaxed CSP** (owner decision, 2026-10-21), because the GA4 tag needs a third-party script host and inline script. Relaxed CSP lets inline scripts and `eval()` run on the site, so only reviewed head markup may add scripts. Third-party hosts are trusted in source: `GitHub_Badge` for the deploy badge and the GA4 image and connect hosts as CSP trusted sites, and `https://www.googletagmanager.com` for scripts in the site bundle's `sfdc_cms__trustedSites/trustedSites/content.json` (Experience Builder "Trusted Sites for Scripts"), which deploys with the site. Log retention policy: Zero-Persistence.
-- **A.3 Code Reusability:** One shared Prism module, `c/prismHighlighter`, which loads `Prism_JS` once per page. Logging goes through one seam, `PortfolioLog`, which writes to Nebula Logger when the owner has installed it and to debug logs otherwise ([ADR-013 Round 4 amendment](../adr/013-structured-logging-framework-nebula-logger.md#amendment-2026-10-21-round-4)).
+- **A.3 Code Reusability:** One shared Prism module, `c/prismHighlighter`, which loads `Prism_JS` once per page. Logging goes through one seam, `PortfolioLog`, which writes to Nebula Logger when the owner has installed it and to debug logs otherwise ([ADR-013 amendment of 2026-10-21](../adr/013-structured-logging-framework-nebula-logger.md#amendment-2026-10-21-an-optional-install-behind-a-seam)).
 - **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches commits to the `Github_Cache__c` custom object, and the source files that View source shows to `Source_Cache__c` (one row per path, each read at most once a day by `SourceCacheRefreshJob`). Refreshed every 15 minutes by `GitHubCacheRefreshJob` (Queueable, enqueued by `IntegrationCacheRefreshScheduler`).
 - **A.5 Hero Banner Navigation:** (Refer to UI specs).
 - **A.6 Agentforce Configuration:** not built. Agentforce is a switch in the dispatch that ships off (section 5.4). The "Show your work" panel (section 5.4) replaces the Mirror Mode system instruction, so no instruction asks a model to reveal its prompt.
@@ -616,7 +616,7 @@ The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box T
 - **A.9 Advanced Visualization Strategy:**
   - **Mobile Guardrail:** on `FORM_FACTOR` `Small` or a viewport under 768 px the skills page shows its matrix and the ERD its accessible list, and neither requests the graph engine.
   - **Lazy Loading:** `c/graphEngine.loadGraphEngine` loads the `D3_Library` static resource through `loadScript` the first time a graph view opens, once per page. A failed load is not cached.
-  - **Library Version:** d3-force 3.0.0 with d3-dispatch, d3-quadtree and d3-timer 3.0.1, and then d3-selection, d3-color, d3-interpolate, d3-ease, d3-transition, d3-drag and d3-zoom for pan, zoom and node drag, 81,482 bytes in source (G6 was removed earlier).
+  - **Library Version:** d3-force 3.0.0 with d3-dispatch, d3-quadtree and d3-timer 3.0.1, and then d3-selection, d3-color, d3-interpolate, d3-ease, d3-transition, d3-drag and d3-zoom for pan, zoom and node drag, 81,482 bytes in source (the AntV graph library was removed earlier).
   - **Pan, zoom and drag:** the skills graph pans at any zoom by a background drag or the arrow keys on the focused graph, up to 120 units past its edge, zooms from 1x to 4x with Ctrl and the wheel or a pinch while a plain wheel scrolls the page, and lets a node be dragged, with Zoom in, Zoom out and Reset view buttons and a polite zoom announcement (Technical Guide §2.1).
 
 ### Appendix B: API Specification (OpenAPI/Swagger)
@@ -639,7 +639,7 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 - **Distributed Tracing:** Mandatory `X-Request-Id` header (UUID format) in all requests for correlation across log aggregation systems
 - **Contract-First Design:** OpenAPI 3.0 specification defines the interface before implementation
 - **Explicit Caching:** `Cache-Control` headers distinguish between cacheable configuration (`max-age=300`) and dynamic data (`no-store`)
-- **Rate Limiting:** `RateWindowLimiter` allows 120 requests per minute per caller key, with no burst allowance. Every evaluator token is the same session, so all evaluators share that one limit ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4))
+- **Rate Limiting:** `RateWindowLimiter` allows 120 requests per minute per caller key, with no burst allowance. Every evaluator token is the same session, so all evaluators share that one limit ([ADR-028 amendment on the shared token pool](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-a-shared-token-pool-no-expiry-no-disposable-list))
 - **Versioning:** `X-API-Version` is optional. A request without it is served as `v1`, any value other than `v1` gets 400 `Unsupported X-API-Version`, and every response Apex writes carries `X-API-Version: v1` (`ApiRequestContext.applyRequestRules`, `SUPPORTED_VERSION`)
 
 **Core Endpoints:**
@@ -843,7 +843,7 @@ sequenceDiagram
 1. **Least privilege:** a client-credentials token is valid for any REST API as the integration user, so the integration user's permission set is the real boundary: read-only on portfolio objects, execute on SAPI/PAPI classes, nothing else.
 2. **Expiry:** every evaluator token is the integration user's one shared session, which ends after 30 minutes without use (the profile's idle timeout). The token response carries no `expires_in`, because the token endpoint reports no expiry.
 3. **Kill switch:** deactivating the External Client App revokes every outstanding token.
-4. **Quota protection:** rate limiting by `RateWindowLimiter` ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)), shared by every evaluator because every vended token is the same session ([ADR-028 Round 4 amendment](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-round-4)), 15 token requests per minute per email and source IP, and a daily cap on issued tokens (`Token_Daily_Cap__c`, default 50) guard the Developer Edition API request limit (15,000/day).
+4. **Quota protection:** rate limiting by `RateWindowLimiter` ([ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-21)), shared by every evaluator because every vended token is the same session ([ADR-028 amendment on the shared token pool](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-a-shared-token-pool-no-expiry-no-disposable-list)), 15 token requests per minute per email and source IP, and a daily cap on issued tokens (`Token_Daily_Cap__c`, default 50) guard the Developer Edition API request limit (15,000/day).
 5. **Audit:** every token request writes an `API_Access_Request__c` record.
 
 **Evaluator flow:**
@@ -854,7 +854,7 @@ The token request goes to the Experience Cloud site domain, where Apex REST is s
 # 1. Request a token (no credentials required)
 curl -s -X POST "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token" \
   -H "Content-Type: application/json" -H "X-Request-Id: $(uuidgen)" \
-  -d '{"email":"you@example.com","purpose":"Evaluating API design"}'
+  -d '{"email":"<your email address>","purpose":"Evaluating API design"}'
 
 # 2. Call any endpoint on the returned instance_url with the returned token
 curl -s "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
@@ -863,10 +863,10 @@ curl -s "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
 
 ```bash
 # Or run every GET path and print status and key headers per path
-EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scripts/api-smoke.sh
+EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design" ./scripts/api-smoke.sh
 ```
 
-**Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in the Round 2 integration scratch org, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. On My Domain the platform also injects that id into the request when the caller sends none. The first live smoke found PAPI then answered 400 with two ids. Since Round 4, PAPI treats a 32-character hex id as missing, generates a UUID as its correlation id, and adds no header of its own (`ApiRequestContext.applyRequestRules`, owner decision D3). The response should then carry one id, the platform's, while an error body's `correlationId` carries the UUID. [unverified] until the next live smoke confirms it. SAPI still requires a UUID. Send your own UUID to get a single, predictable id back.
+**Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in an integration scratch org, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. On My Domain the platform also injects that id into the request when the caller sends none. The first live smoke found PAPI then answered 400 with two ids. Since 2026-10-21, PAPI treats a 32-character hex id as missing, generates a UUID as its correlation id, and adds no header of its own (`ApiRequestContext.applyRequestRules`, owner decision). The response should then carry one id, the platform's, while an error body's `correlationId` carries the UUID. [unverified] until the next live smoke confirms it. SAPI still requires a UUID. Send your own UUID to get a single, predictable id back.
 
 ### Appendix C: MuleSoft Code, Governance, & Proxy Configuration (Reference)
 
@@ -1080,7 +1080,7 @@ One operational value per record, read by `PortfolioSettings` with the code defa
 ### Appendix G: Accessibility Strategy (A11y)
 
 - **G.1 The "Shadow Structure" Pattern:** every graph has a list beside it that holds the same content. On the skills page the graph's SVG is `aria-hidden` and a visually hidden list names every node and its connections, so its length equals the node count. On the Pillar A page the object list mirrors every node and edge, and on phones it is the visible view. The skills matrix itself is native buttons (`aria-pressed`) in rows by category.
-- **G.2 Motion Sensitivity:** nothing animates. The D3 layout runs to completion before anything is drawn, so `prefers-reduced-motion` needs no special case and no pause control.
+- **G.2 Motion Sensitivity:** nothing animates. The d3-force layout runs to completion before anything is drawn, so `prefers-reduced-motion` needs no special case and no pause control.
 - **G.3 Keyboard Navigation:** the "Matrix | Graph" switch is two 44 px buttons in a labelled group. Skill chips, the ERD's object list, the scope toggle and the gallery links are reachable by keyboard. Skip links function normally.
 - **G.4 Decision matrix:** a table with a caption, `scope` on every header, and a labelled range slider per criterion ("Weight for" and the criterion, 0 to 10). The ranking and the sensitivity line are text, not colour.
 - **G.5 Compliance Checklist:** (WCAG 2.1 AA compliant).
@@ -1097,7 +1097,7 @@ Apex → Named Credential → External APIs (Jira/GitHub).
 
 A monorepo of five package directories, declared in `sfdx-project.json` and deployed as source (`sf project deploy start --source-dir packages`, or a delta manifest). They are not built as unlocked packages: the project has no `packageAliases`, and the declared dependencies form a cycle, because `portfolio-site` declares `integration-api` while `integration-api` calls `ContentGenerationController` in `portfolio-site` (`PAPIAiGenerate`, `ApiLabController`). Packaging them would first need that cycle broken.
 
-- `/packages/portfolio-site`: Configurations, declarative, and programmatic resources focused on adding features to the Salesforce Architect Portfolio. Every pillar component and class lives here too (`SchemaService`, `DecisionMatrixController`, `c-schema-visualizer`, `c-project-asset-gallery`, `c-decision-matrix`, `c-pillar-b-story`), because Jest runs only on this package (Round 5 plan reading R1).
+- `/packages/portfolio-site`: Configurations, declarative, and programmatic resources focused on adding features to the Salesforce Architect Portfolio. Every pillar component and class lives here too (`SchemaService`, `DecisionMatrixController`, `c-schema-visualizer`, `c-project-asset-gallery`, `c-decision-matrix`, `c-pillar-b-story`), because Jest runs only on this package.
 - `/packages/integration-api`: the OpenAPI specifications (`specs/`), the Apex REST classes for the SAPI and PAPI, and the integration user's profile.
 - `/packages/shared-modules`: a placeholder for modules shared across packages. Today it holds only `main/default/lwc/jsconfig.json`, and no component lives there.
 - `/packages/demos/employer-hub`: the inert Employer Hub data model of a demonstration built for an education provider: `EH_Partner_Engagement__c`, `EH_Job_Posting__c` (master-detail to Partner Engagement), `EH_Sponsorship__c` and `EH_Letter_of_Support__c`, with lookups to Account, Contact, Case, Opportunity and Contract, and the Account picklist `EH_Academic_Focus_Area__c`. No automation, tabs, layouts or records. Also the `EH_Demo_Read` permission set (read on the four objects, optional for administrators) and the `EH_Assets` static resource (two process flows and two dashboards, redrawn from the original demo with no names and sample values).
@@ -1133,4 +1133,4 @@ A monorepo of five package directories, declared in `sfdx-project.json` and depl
 | **Governance**        | Platform-managed                                                                                                                                                                 | Full enterprise policies (keys, rate limits, analytics) |
 | **Payload Reduction** | Platform-optimized                                                                                                                                                               | Not measured, since nothing is built                    |
 | **Cost**              | $0                                                                                                                                                                               | $0.00 forever (no API Gateway, no VPC)                  |
-| **Current Status**    | Live on the three components above ([ADR-021 amendment](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-23-round-7-scope))                             | Designed, not built. Activation in Phase 8              |
+| **Current Status**    | Live on the three components above ([ADR-021 amendment](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-23-scope))                                     | Designed, not built. Activation in Phase 8              |
