@@ -7,9 +7,8 @@
  * @Test Class        : [SAPIProjectSkillTest]
  **/
 @RestResource(urlMapping='/sapi/v1/project-skills/*')
-global with sharing class SAPIProjectSkill {
-  private static final String SELECT_FIELDS = 'SELECT Id, Project__c, Project__r.Name, Skill__c, Skill__r.Name, Skill__r.Category__c, Skill__r.Proficiency__c FROM Project_Skill__c';
-  private static final String ORDER_BY = ' ORDER BY Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC';
+global with sharing class SAPIProjectSkill implements QueryDefinitions.Provider {
+  private static final String LIST_QUERY = 'SAPIProjectSkill_List';
 
   /**
    * @description GET method. Retrieves Project_Skill__c junctions with pagination and a projectId filter.
@@ -40,20 +39,18 @@ global with sharing class SAPIProjectSkill {
         return;
       }
 
-      String whereClause = ' WHERE Id != null';
-      if (String.isNotBlank(projectId)) {
-        projectId = projectId.trim();
-        whereClause += ' AND Project__c = :projectId';
-      }
-
-      List<Project_Skill__c> records = Database.query(
-        SELECT_FIELDS +
-          whereClause +
-          ORDER_BY +
-          ' LIMIT :limitParam OFFSET :offsetParam'
+      Map<String, Object> binds = listBinds(projectId?.trim());
+      List<Project_Skill__c> records = (List<Project_Skill__c>) QueryDefinitions.runPage(
+        LIST_QUERY,
+        binds,
+        listDefault(),
+        limitParam,
+        offsetParam
       );
-      Integer totalCount = Database.countQuery(
-        'SELECT COUNT() FROM Project_Skill__c' + whereClause
+      Integer totalCount = QueryDefinitions.count(
+        LIST_QUERY,
+        binds,
+        listDefault()
       );
 
       ctx.paginate(totalCount, records.size());
@@ -62,6 +59,41 @@ global with sharing class SAPIProjectSkill {
     } catch (Exception e) {
       ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
+  }
+
+  /**
+   * @description The list read as code: every field the response returns, the optional
+   *              filters and the order. Query_Definition.SAPIProjectSkill_List ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault listDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Project_Skill__c',
+        'Id, Project__c, Project__r.Name, Skill__c, Skill__r.Name, ' +
+        'Skill__r.Category__c, Skill__r.Proficiency__c'
+      )
+      .filter('(IsDeleted = :hasProjectId OR Project__c = :projectId)')
+      .orderBy('Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(listBinds(null));
+  }
+
+  private static Map<String, Object> listBinds(String projectId) {
+    return new Map<String, Object>{
+      'hasProjectId' => String.isNotBlank(projectId),
+      'projectId' => projectId
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      LIST_QUERY => listDefault()
+    };
   }
 
   @TestVisible

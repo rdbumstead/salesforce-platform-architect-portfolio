@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Order_By__c</fullName>
+    <description
+  >Optional ORDER BY body without the words ORDER BY.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >Optional ORDER BY body, such as Name ASC, without the words ORDER BY.</inlineHelpText>
+    <label>Order By</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+</CustomField>

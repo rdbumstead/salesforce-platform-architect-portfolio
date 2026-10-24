@@ -7,9 +7,8 @@
  * @Test Class        : [SAPIContactTest]
  **/
 @RestResource(urlMapping='/sapi/v1/contacts/*')
-global with sharing class SAPIContact {
-  private static final String SELECT_FIELDS = 'SELECT Id, Name, Title, Trailhead_URL__c, Career_Objective__c, LinkedIn_URL__c, Portfolio_URL__c FROM Contact';
-  private static final String ORDER_BY = ' ORDER BY Name ASC';
+global with sharing class SAPIContact implements QueryDefinitions.Provider {
+  private static final String LIST_QUERY = 'SAPIContact_List';
 
   /**
    * @description GET method. Retrieves the portfolio owner's Contact details with pagination and a contactName filter.
@@ -33,19 +32,18 @@ global with sharing class SAPIContact {
       }
       String contactName = ctx.stringParam('contactName');
 
-      String whereClause = ' WHERE Is_Portfolio_Owner__c = true';
-      if (String.isNotBlank(contactName)) {
-        whereClause += ' AND Name = :contactName';
-      }
-
-      List<Contact> records = Database.query(
-        SELECT_FIELDS +
-          whereClause +
-          ORDER_BY +
-          ' LIMIT :limitParam OFFSET :offsetParam'
+      Map<String, Object> binds = listBinds(contactName);
+      List<Contact> records = (List<Contact>) QueryDefinitions.runPage(
+        LIST_QUERY,
+        binds,
+        listDefault(),
+        limitParam,
+        offsetParam
       );
-      Integer totalCount = Database.countQuery(
-        'SELECT COUNT() FROM Contact' + whereClause
+      Integer totalCount = QueryDefinitions.count(
+        LIST_QUERY,
+        binds,
+        listDefault()
       );
 
       ctx.paginate(totalCount, records.size());
@@ -54,6 +52,44 @@ global with sharing class SAPIContact {
     } catch (Exception e) {
       ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
+  }
+
+  /**
+   * @description The list read as code: every field the response returns, the optional
+   *              filters and the order. Query_Definition.SAPIContact_List ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault listDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Contact',
+        'Id, Name, Title, Trailhead_URL__c, Career_Objective__c, ' +
+        'LinkedIn_URL__c, Portfolio_URL__c'
+      )
+      .filter(
+        'Is_Portfolio_Owner__c = true AND ' +
+        '(IsDeleted = :hasContactName OR Name = :contactName)'
+      )
+      .orderBy('Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(listBinds(null));
+  }
+
+  private static Map<String, Object> listBinds(String contactName) {
+    return new Map<String, Object>{
+      'hasContactName' => String.isNotBlank(contactName),
+      'contactName' => contactName
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      LIST_QUERY => listDefault()
+    };
   }
 
   @TestVisible

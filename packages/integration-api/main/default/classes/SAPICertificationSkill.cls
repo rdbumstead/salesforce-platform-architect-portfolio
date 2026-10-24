@@ -7,9 +7,8 @@
  * @Test Class        : [SAPICertificationSkillTest]
  **/
 @RestResource(urlMapping='/sapi/v1/certification-skills/*')
-global with sharing class SAPICertificationSkill {
-  private static final String SELECT_FIELDS = 'SELECT Id, Certification__c, Certification__r.Name, Skill__c, Skill__r.Name, Skill__r.Category__c, Skill__r.Proficiency__c FROM Certification_Skill__c';
-  private static final String ORDER_BY = ' ORDER BY Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC';
+global with sharing class SAPICertificationSkill implements QueryDefinitions.Provider {
+  private static final String LIST_QUERY = 'SAPICertificationSkill_List';
 
   /**
    * @description GET method. Retrieves Certification_Skill__c junctions with pagination and a certificationId filter.
@@ -44,20 +43,18 @@ global with sharing class SAPICertificationSkill {
         return;
       }
 
-      String whereClause = ' WHERE Id != null';
-      if (String.isNotBlank(certificationId)) {
-        certificationId = certificationId.trim();
-        whereClause += ' AND Certification__c = :certificationId';
-      }
-
-      List<Certification_Skill__c> records = Database.query(
-        SELECT_FIELDS +
-          whereClause +
-          ORDER_BY +
-          ' LIMIT :limitParam OFFSET :offsetParam'
+      Map<String, Object> binds = listBinds(certificationId?.trim());
+      List<Certification_Skill__c> records = (List<Certification_Skill__c>) QueryDefinitions.runPage(
+        LIST_QUERY,
+        binds,
+        listDefault(),
+        limitParam,
+        offsetParam
       );
-      Integer totalCount = Database.countQuery(
-        'SELECT COUNT() FROM Certification_Skill__c' + whereClause
+      Integer totalCount = QueryDefinitions.count(
+        LIST_QUERY,
+        binds,
+        listDefault()
       );
 
       ctx.paginate(totalCount, records.size());
@@ -66,6 +63,44 @@ global with sharing class SAPICertificationSkill {
     } catch (Exception e) {
       ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
+  }
+
+  /**
+   * @description The list read as code: every field the response returns, the optional
+   *              filters and the order. Query_Definition.SAPICertificationSkill_List ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault listDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Certification_Skill__c',
+        'Id, Certification__c, Certification__r.Name, Skill__c, Skill__r.Name, ' +
+        'Skill__r.Category__c, Skill__r.Proficiency__c'
+      )
+      .filter(
+        '(IsDeleted = :hasCertificationId OR ' +
+        'Certification__c = :certificationId)'
+      )
+      .orderBy('Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(listBinds(null));
+  }
+
+  private static Map<String, Object> listBinds(String certificationId) {
+    return new Map<String, Object>{
+      'hasCertificationId' => String.isNotBlank(certificationId),
+      'certificationId' => certificationId
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      LIST_QUERY => listDefault()
+    };
   }
 
   @TestVisible

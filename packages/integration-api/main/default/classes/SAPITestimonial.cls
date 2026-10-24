@@ -7,7 +7,9 @@
  * @Test Class        : [SAPITestimonialTest]
  **/
 @RestResource(urlMapping='/sapi/v1/testimonials/*')
-global with sharing class SAPITestimonial {
+global with sharing class SAPITestimonial implements QueryDefinitions.Provider {
+  private static final String LIST_QUERY = 'SAPITestimonial_List';
+
   /**
    * @description GET method to retrieve approved Testimonial records.
    *              Implements pagination and proper error handling per spec.
@@ -32,25 +34,21 @@ global with sharing class SAPITestimonial {
       String vibeMode = ctx.stringParam('vibeMode');
       String relationshipType = ctx.stringParam('relationshipType');
 
-      // Build dynamic query
-      String baseQuery =
-        'SELECT Id, Name, Author_Name__c, Author_Title__c, ' +
-        'Relationship_Type__c, Vibe_Mode__c, Context__c ' +
-        'FROM Testimonial__c WHERE Approved__c = true';
+      List<Testimonial__c> testimonials = (List<Testimonial__c>) QueryDefinitions.runPage(
+        LIST_QUERY,
+        listBinds(vibeMode, relationshipType),
+        listDefault(),
+        limitParam,
+        offsetParam
+      );
+      // The total counts every approved testimonial, whatever the filters.
+      Integer totalCount = QueryDefinitions.count(
+        LIST_QUERY,
+        listBinds(null, null),
+        listDefault()
+      );
 
-      if (String.isNotBlank(vibeMode)) {
-        baseQuery += ' AND Vibe_Mode__c = :vibeMode';
-      }
-      if (String.isNotBlank(relationshipType)) {
-        baseQuery += ' AND Relationship_Type__c = :relationshipType';
-      }
-
-      baseQuery += ' ORDER BY CreatedDate DESC';
-      baseQuery += ' LIMIT :limitParam OFFSET :offsetParam';
-
-      List<Testimonial__c> testimonials = Database.query(baseQuery);
-
-      ctx.paginate(countTestimonials(), testimonials.size());
+      ctx.paginate(totalCount, testimonials.size());
       ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
       ctx.ok(transformTestimonials(testimonials));
     } catch (Exception e) {
@@ -80,12 +78,49 @@ global with sharing class SAPITestimonial {
     return result;
   }
 
-  private static Integer countTestimonials() {
-    return [
-      SELECT COUNT()
-      FROM Testimonial__c
-      WHERE Approved__c = TRUE
-    ];
+  /**
+   * @description The list read as code: every field the response returns, the optional
+   *              filters and the order. Query_Definition.SAPITestimonial_List ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault listDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Testimonial__c',
+        'Id, Name, Author_Name__c, Author_Title__c, Relationship_Type__c, ' +
+        'Vibe_Mode__c, Context__c'
+      )
+      .filter(
+        'Approved__c = true AND ' +
+          '(IsDeleted = :hasVibeMode OR Vibe_Mode__c = :vibeMode) AND ' +
+          '(IsDeleted = :hasRelationshipType OR ' +
+          'Relationship_Type__c = :relationshipType)'
+      )
+      .orderBy('CreatedDate DESC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(listBinds(null, null));
+  }
+
+  private static Map<String, Object> listBinds(
+    String vibeMode,
+    String relationshipType
+  ) {
+    return new Map<String, Object>{
+      'hasVibeMode' => String.isNotBlank(vibeMode),
+      'vibeMode' => vibeMode,
+      'hasRelationshipType' => String.isNotBlank(relationshipType),
+      'relationshipType' => relationshipType
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      LIST_QUERY => listDefault()
+    };
   }
 
   @TestVisible

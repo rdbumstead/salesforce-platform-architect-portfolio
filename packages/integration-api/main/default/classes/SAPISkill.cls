@@ -7,7 +7,9 @@
  * @Test Class        : [SAPISkillTest]
  **/
 @RestResource(urlMapping='/sapi/v1/skills/*')
-global with sharing class SAPISkill {
+global with sharing class SAPISkill implements QueryDefinitions.Provider {
+  private static final String LIST_QUERY = 'SAPISkill_List';
+
   /**
    * @description GET method to retrieve Skill records with pagination and filtering.
    */
@@ -30,22 +32,21 @@ global with sharing class SAPISkill {
       }
       String category = ctx.stringParam('category');
 
-      // Build dynamic query
-      String baseQuery =
-        'SELECT Id, Name, Display_Name__c, Category__c, Proficiency__c, Icon_Name__c, ' +
-        'SVG_Path_Data__c, Color_Hex__c, Category_Order__c ' +
-        'FROM Skill__c WHERE Id != null';
+      List<Skill__c> skills = (List<Skill__c>) QueryDefinitions.runPage(
+        LIST_QUERY,
+        listBinds(category),
+        listDefault(),
+        limitParam,
+        offsetParam
+      );
+      // The total counts every skill, whatever the category filter.
+      Integer totalCount = QueryDefinitions.count(
+        LIST_QUERY,
+        listBinds(null),
+        listDefault()
+      );
 
-      if (String.isNotBlank(category)) {
-        baseQuery += ' AND Category__c = :category';
-      }
-
-      baseQuery += ' ORDER BY Proficiency__c DESC, Name ASC';
-      baseQuery += ' LIMIT :limitParam OFFSET :offsetParam';
-
-      List<Skill__c> skills = Database.query(baseQuery);
-
-      ctx.paginate(countSkills(), skills.size());
+      ctx.paginate(totalCount, skills.size());
       ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
       ctx.ok(transformSkills(skills));
     } catch (Exception e) {
@@ -79,8 +80,38 @@ global with sharing class SAPISkill {
     return result;
   }
 
-  private static Integer countSkills() {
-    return [SELECT COUNT() FROM Skill__c];
+  /**
+   * @description The list read as code: every field the Skill schema returns, the optional
+   *              category filter and the order. Query_Definition.SAPISkill_List ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault listDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Skill__c',
+        'Id, Name, Display_Name__c, Category__c, Proficiency__c, Icon_Name__c, SVG_Path_Data__c, Color_Hex__c, Category_Order__c'
+      )
+      .filter('(IsDeleted = :hasCategory OR Category__c = :category)')
+      .orderBy('Proficiency__c DESC, Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(listBinds(null));
+  }
+
+  private static Map<String, Object> listBinds(String category) {
+    return new Map<String, Object>{
+      'hasCategory' => String.isNotBlank(category),
+      'category' => category
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      LIST_QUERY => listDefault()
+    };
   }
 
   @TestVisible

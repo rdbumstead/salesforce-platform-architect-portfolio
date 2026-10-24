@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>SAPIExperience List</label>
+    <protected>false</protected>
+    <values>
+        <field>Object__c</field>
+        <value xsi:type="xsd:string">Experience__c</value>
+    </values>
+    <values>
+        <field>Fields__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Id, Name, Employer__c, Employer__r.Name, Start_Date__c, End_Date__c, Is_Current_Role__c, Is_Remote__c, Sort_Order__c, Contact__c, Contact__r.Name, Accomplishments__c</value>
+    </values>
+    <values>
+        <field>Filter__c</field>
+        <value
+      xsi:type="xsd:string"
+    >(IsDeleted = :hasCurrentlyEmployed OR Is_Current_Role__c = :currentlyEmployed) AND (IsDeleted = :hasEmployerName OR Employer__r.Name LIKE :employerName) AND (IsDeleted = :hasContactName OR Contact__r.Name = :contactName)</value>
+    </values>
+    <values>
+        <field>Order_By__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Is_Current_Role__c DESC, Sort_Order__c ASC, End_Date__c DESC NULLS FIRST, Start_Date__c DESC</value>
+    </values>
+    <values>
+        <field>Row_Limit__c</field>
+        <value xsi:type="xsd:double">50000</value>
+    </values>
+    <values>
+        <field>Access_Mode__c</field>
+        <value xsi:type="xsd:string">SYSTEM_MODE</value>
+    </values>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >GET /sapi/v1/experience, filtered by currentlyEmployed, employerName and contactName.</value>
+    </values>
+</CustomMetadata>

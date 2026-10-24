@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >One content read per record, named Class_Purpose. QueryDefinitions runs the record in place of the calling class's own query when it passes every check: same object, fields inside the class's allowlist, known binds, an access mode no weaker than the code's, and a filter that only narrows. Otherwise the code's query runs.</description>
+    <label>Query Definition</label>
+    <pluralLabel>Query Definitions</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>

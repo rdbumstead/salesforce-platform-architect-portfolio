@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Active__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description
+  >When false the record is ignored and the code's own query runs.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >When false the record is ignored and the code's own query runs.</inlineHelpText>
+    <label>Active</label>
+    <type>Checkbox</type>
+</CustomField>
