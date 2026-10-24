@@ -152,6 +152,24 @@ describe("c-smart-checklist", () => {
     expect(element.shadowRoot.querySelector("a.run-link")).toBeNull();
   });
 
+  it("labels the three items, the heartbeat as Org heartbeat today", async () => {
+    const element = createComponent();
+    getPipelineStatus.emit(
+      pipelineStatus([
+        item("deploy", "NO_SIGNAL"),
+        item("heartbeat", "NO_SIGNAL"),
+        item("caches", "NO_SIGNAL")
+      ])
+    );
+    await flushPromises();
+
+    const label = (key) =>
+      row(element, key).querySelector(".label").textContent.trim();
+    expect(label("deploy")).toBe("Production deploy green");
+    expect(label("heartbeat")).toBe("Org heartbeat today");
+    expect(label("caches")).toBe("Integration caches under 30 minutes old");
+  });
+
   it("shows No signal yet for every item while the wire returns an error", async () => {
     const element = createComponent();
     getPipelineStatus.error();

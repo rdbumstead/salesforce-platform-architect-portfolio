@@ -26,7 +26,8 @@ const STATES = {
 
 const ITEM_LABELS = {
   deploy: "Production deploy green",
-  heartbeat: "Org heartbeat in the last 26 hours",
+  // The server still marks a heartbeat older than 26 hours as out of date.
+  heartbeat: "Org heartbeat today",
   caches: "Integration caches under 30 minutes old"
 };
 

@@ -327,4 +327,56 @@ private class SourceCacheRefreshJobTest {
       'Filled by the queued job'
     );
   }
+
+  @IsTest
+  static void shouldTreatARowAsDueAtTheRefreshHoursSetting() {
+    PortfolioSettings.overrideNumber('Source_Refresh_Hours', 1);
+    configure(new List<String>{ FRESH_PATH });
+    ContentsMock mock = new ContentsMock(200);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    String outcome = SourceCacheRefreshJob.refresh();
+    Test.stopTest();
+
+    Assert.areEqual(
+      SourceCacheRefreshJob.OUTCOME_REFRESHED,
+      outcome,
+      'Refreshed'
+    );
+    Assert.areEqual(
+      1,
+      mock.calls,
+      'A two hour old row is due under a one hour setting'
+    );
+  }
+
+  @IsTest
+  static void shouldReadNoMoreFilesThanTheMaxFilesSetting() {
+    PortfolioSettings.overrideNumber('Source_Max_Files_Per_Run', 1);
+    configure(new List<String>{ STALE_PATH, NEW_PATH, 'classes/Other.cls' });
+    ContentsMock mock = new ContentsMock(200);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    SourceCacheRefreshJob.refresh();
+    Test.stopTest();
+
+    Assert.areEqual(1, mock.calls, 'One file per run under a setting of one');
+  }
+
+  @IsTest
+  static void shouldTruncateAtTheContentLengthSetting() {
+    PortfolioSettings.overrideNumber('Source_Content_Max_Length', 2048);
+    configure(new List<String>{ NEW_PATH });
+    Test.setMock(HttpCalloutMock.class, new LongFileMock());
+
+    Test.startTest();
+    SourceCacheRefreshJob.refresh();
+    Test.stopTest();
+
+    Source_Cache__c row = rowsByPath().get(NEW_PATH);
+    Assert.isTrue(row.Truncated__c, 'Flagged');
+    Assert.areEqual(2048, row.Content__c.length(), 'Cut to the set length');
+  }
 }

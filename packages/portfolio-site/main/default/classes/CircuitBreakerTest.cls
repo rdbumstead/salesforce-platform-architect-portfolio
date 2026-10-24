@@ -248,4 +248,34 @@ private class CircuitBreakerTest {
       'The guest wrote the row'
     );
   }
+
+  @IsTest
+  static void shouldOpenAtTheThresholdSetting() {
+    PortfolioSettings.overrideNumber('Circuit_Failure_Threshold', 5);
+    CircuitBreaker.nowOverride = START;
+
+    failTimes(KEY, 4);
+    Boolean openAfterFour = CircuitBreaker.isOpen(KEY);
+    failTimes(KEY, 1);
+
+    Assert.isFalse(
+      openAfterFour,
+      'Four failures stay under a threshold of five'
+    );
+    Assert.isTrue(CircuitBreaker.isOpen(KEY), 'The fifth failure opens it');
+  }
+
+  @IsTest
+  static void shouldStayOpenForTheOpenMinutesSetting() {
+    PortfolioSettings.overrideNumber('Circuit_Open_Minutes', 5);
+    CircuitBreaker.nowOverride = START;
+
+    failTimes(KEY, 3);
+
+    Assert.areEqual(
+      START.addMinutes(5),
+      CircuitBreaker.openUntil(KEY),
+      'Open for the set minutes'
+    );
+  }
 }

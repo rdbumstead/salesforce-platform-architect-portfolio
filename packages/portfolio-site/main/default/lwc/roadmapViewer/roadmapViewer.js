@@ -12,9 +12,10 @@
  *                      "Part of {name} | {key}" (the key alone when the name is missing), and an
  *                      empty feed says so instead of reading as an outage. The outage line is
  *                      kept for a real wire error. Every column
- *                      shows at most COLUMN_LIMIT cards with its own "Show all N" button and
- *                      state. Done keeps its newest COLUMN_LIMIT by updatedAt and its "Show all
- *                      N shipped" label. To Do and In Progress keep the feed order and cut there.
+ *                      shows at most the feed's columnLimit cards (COLUMN_LIMIT when the feed
+ *                      has none) with its own "Show all N" button and state. Done keeps its
+ *                      newest cards by updatedAt and its "Show all N shipped" label. To Do and
+ *                      In Progress keep the feed order and cut there.
  *                      The c-view-source control sits in the header.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -43,6 +44,7 @@ export const STATUS_NOTES = {
     "Jira is not answering right now. This is the last roadmap we saved."
 };
 
+// Cards per column when the feed carries no columnLimit of its own.
 export const COLUMN_LIMIT = 8;
 export const EMPTY_TEXT =
   "Nothing on the roadmap yet. It fills in from Jira after the next sync.";
@@ -84,14 +86,20 @@ function updatedTime(item) {
   return Number.isNaN(time) ? 0 : time;
 }
 
-// The newest COLUMN_LIMIT items by updatedAt, and the rest. Ties keep the feed order.
-function splitNewest(items) {
+// A whole number of 1 or more from the feed, else COLUMN_LIMIT.
+export function columnLimitOf(feed) {
+  const value = feed ? feed.columnLimit : undefined;
+  return Number.isInteger(value) && value >= 1 ? value : COLUMN_LIMIT;
+}
+
+// The newest limit items by updatedAt, and the rest. Ties keep the feed order.
+function splitNewest(items, limit) {
   const newest = items
     .map((item, index) => ({ item, index }))
     .sort(
       (a, b) => updatedTime(b.item) - updatedTime(a.item) || a.index - b.index
     )
-    .slice(0, COLUMN_LIMIT)
+    .slice(0, limit)
     .map((entry) => entry.item);
   const shown = new Set(newest);
   return {
@@ -100,11 +108,11 @@ function splitNewest(items) {
   };
 }
 
-// The first COLUMN_LIMIT items in feed order, and the rest.
-function splitFirst(items) {
+// The first limit items in feed order, and the rest.
+function splitFirst(items, limit) {
   return {
-    visible: items.slice(0, COLUMN_LIMIT),
-    hidden: items.slice(COLUMN_LIMIT)
+    visible: items.slice(0, limit),
+    hidden: items.slice(limit)
   };
 }
 
@@ -174,16 +182,17 @@ export default class RoadmapViewer extends LightningElement {
   }
 
   get columns() {
+    const limit = columnLimitOf(this.feed);
     return COLUMNS.map((column) => {
       const items = this.items.filter(
         (item) => item.statusCategory === column.category
       );
       const isDone = column.category === "done";
-      const isCapped = items.length > COLUMN_LIMIT;
+      const isCapped = items.length > limit;
       const isExpanded = Boolean(this.expanded[column.category]);
       let split = { visible: items, hidden: [] };
       if (isCapped) {
-        split = isDone ? splitNewest(items) : splitFirst(items);
+        split = isDone ? splitNewest(items, limit) : splitFirst(items, limit);
       }
       const hiddenCards =
         isCapped && isExpanded ? epicsFirst(split.hidden.map(toCard)) : [];
