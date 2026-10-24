@@ -7,7 +7,9 @@
  *                      stored in Context__c, so it stays exactly as the reviewer approved it even
  *                      when a fragment's wording changes later. The fragment names and the note
  *                      have fields of their own. SubmissionGuard drops spam silently and applies
- *                      the rate limit. Approved__c is never set here. The wall reads approved
+ *                      the rate limit. Approved__c is never set here. A saved testimonial is
+ *                      handed on through Testimonial_Submission__e to be submitted for the
+ *                      owner's approval, which is what sets Approved__c. The wall reads approved
  *                      rows only, and the Block_Unapproved_Testimonials restriction rule hides
  *                      every other row from the guest as well. getHomeTestimonials serves the
  *                      home page from the same read: nothing while fewer than
@@ -63,6 +65,10 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
   private static final String SAVE_FAILED_MESSAGE = 'Your testimonial could not be saved. Try again later.';
   @TestVisible
   private static Boolean forceSaveFailure = false;
+  @TestVisible
+  private static Boolean forcePublishFailure = false;
+  @TestVisible
+  private static Boolean publishFailed = false;
   @TestVisible
   private static List<Testimonial_Fragment__mdt> fragmentsOverride;
   // How many approved testimonials the home page needs before it shows any, when the
@@ -349,7 +355,33 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
       throw auraError(SAVE_FAILED_MESSAGE);
     }
     ApiRequestContext.commitRateCounts();
+    requestApproval(testimonial.Id);
     return testimonial.Id;
+  }
+
+  /**
+   * @description Hands a saved testimonial on to be submitted for approval. The site guest
+   *              cannot submit a record for approval, so this publishes one
+   *              Testimonial_Submission__e, delivered after the save commits, and a trigger
+   *              running as the Automated Process user submits it. A failed publish is only
+   *              noted: the testimonial is already saved and unapproved, and the visitor is
+   *              thanked as usual.
+   * @param testimonialId The saved testimonial.
+   */
+  @TestVisible
+  private static void requestApproval(Id testimonialId) {
+    try {
+      if (forcePublishFailure) {
+        throw new DmlException('Forced publish failure for tests.');
+      }
+      Database.SaveResult published = EventBus.publish(
+        new Testimonial_Submission__e(Testimonial_Id__c = testimonialId)
+      );
+      publishFailed = !published.isSuccess();
+    } catch (Exception e) {
+      // Saved and unapproved is the safe state. The owner can submit it from the record.
+      publishFailed = true;
+    }
   }
 
   /**

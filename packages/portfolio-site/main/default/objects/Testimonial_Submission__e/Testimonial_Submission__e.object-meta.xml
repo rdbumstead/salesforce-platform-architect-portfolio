@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The Testimonial Submission event carries the Id of a testimonial a site visitor has just saved to a trigger that submits it to the Testimonial Approval process. The trigger runs as the Automated Process user, because the site guest cannot submit a record for approval. It is published after the testimonial commits, so a failed save sends nothing.</description>
+    <eventType>HighVolume</eventType>
+    <label>Testimonial Submission</label>
+    <pluralLabel>Testimonial Submissions</pluralLabel>
+    <publishBehavior>PublishAfterCommit</publishBehavior>
+</CustomObject>
