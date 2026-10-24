@@ -26,6 +26,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >Characters of a source file kept in the cache. Longer files are cut and marked truncated. Safe from 1024 to 131072.</value>
+    >Characters kept in one cache row. A longer file is stored across up to 8 rows and joined on read, and cut and marked truncated past that. Safe from 1024 to 131072.</value>
     </values>
 </CustomMetadata>
