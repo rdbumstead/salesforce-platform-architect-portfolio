@@ -253,6 +253,43 @@ describe("c-cover-letter-generator", () => {
     );
   });
 
+  it("shows a long letter whole, with its word count", async () => {
+    const longLetter = Array.from(
+      { length: 350 },
+      (unused, index) => `word${index}`
+    ).join(" ");
+    generateCoverLetter.mockResolvedValue({
+      ...GEMINI_RESULT,
+      content: longLetter
+    });
+    const element = createComponent();
+    await fillAndGenerate(element);
+
+    expect(query(element, '[data-id="letter"]').textContent).toBe(longLetter);
+    expect(query(element, '[data-id="word-count"]').textContent).toBe(
+      "350 words"
+    );
+  });
+
+  it("counts words on whitespace", async () => {
+    const { countWords } = await import("c/coverLetterGenerator");
+    expect(countWords("Dear team,\n\nI build.\tThanks")).toBe(5);
+    expect(countWords("  ")).toBe(0);
+    expect(countWords(null)).toBe(0);
+  });
+
+  it("keeps the letter box unclipped, wrapping and at a readable width", () => {
+    const css = readFileSync(
+      join(__dirname, "..", "coverLetterGenerator.css"),
+      "utf8"
+    );
+    const letterRule = css.match(/\.letter \{[^}]*\}/)[0];
+    expect(letterRule).toContain("white-space: pre-wrap");
+    expect(letterRule).toContain("overflow-wrap: anywhere");
+    expect(letterRule).toContain("max-width: 72ch");
+    expect(letterRule).not.toMatch(/max-height|overflow:/);
+  });
+
   it("shows Local when the mock says Local, never a provider it did not return", async () => {
     generateCoverLetter.mockResolvedValue(LOCAL_RESULT);
     const element = createComponent();
