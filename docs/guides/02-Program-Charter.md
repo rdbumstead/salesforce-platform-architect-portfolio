@@ -129,7 +129,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - **ai_fallback_usage:** % of generations served by the Local Template (the fallback share).
 - **ai_complete_failure_rate:** % of requests that end with no content at all, a 503 or an error message (Target < 1%).
 - **finops_quota_visibility:** visitors who hover over or focus the footer's "AI requests today" line.
-- All three AI rates come from one GA4 event, `ai_generation_completed`, with the parameters `provider`, `model`, `fallback`, `latency_ms` and `outcome`. GA4 computes the rates, so no counter is stored in Salesforce (owner decision PD-D8, 2026-10-21).
+- All three AI rates are to come from one GA4 event, `ai_generation_completed`, with the parameters `provider`, `model`, `fallback`, `latency_ms` and `outcome`. GA4 computes the rates, so no counter is stored in Salesforce (owner decision, 2026-10-21). Component events do not reach GA4 yet ([Technical Guide §2.8](./04-Technical-Guide.md#28-analytics-instrumentation-ga4)), so none of these rates and none of the conversion events below can be read today.
 
 **Conversion:**
 

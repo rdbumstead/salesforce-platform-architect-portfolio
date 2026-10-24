@@ -486,7 +486,8 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-testimonial-submit`:** The accessible "Mad Libs" sentence builder, gated by vibe ([ADR-005 amendment](../adr/005-gamified-testimonial-ui.md)).
 - **`c-testimonial-wall`:** Approved testimonials on `/testimonials` with a "Professional / All" filter. It renders nothing when there are none.
 - **`c-experience-timeline`:** The home page timeline with Work, Education and Certifications tabs, each showing its first entries up to the `Timeline_Tab_Limit` setting and then a View all button ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
-- **`c-contact-form`:** The contact form on the home page, saved as a Lead ([ADR-031](../adr/031-native-contact-form.md)).
+- **`c-contact-form`:** The contact form on the `/contact` page, saved as a Lead ([ADR-031](../adr/031-native-contact-form.md)).
+- **`c-contact-call`:** The home page's one line "Get in touch" prompt with a link to `/contact`. It sends an old `/#contact` address on to `/contact`.
 - **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invoke`, which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3).
 - **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
 - **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with D3 that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-round-5-matrix-first-the-graph-on-open-d3-as-the-engine)).
@@ -494,7 +495,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-view-source`:** The View source button and dialog on the showcase components. It reads cached GitHub source through `SourceController.getSourceFiles` and never calls GitHub ([Technical Guide §2.14](./04-Technical-Guide.md#214-view-source-c-view-source)).
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
 - **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category, each capped at 8 cards with its own "Show all N" button. It makes no callout.
-- **`c-footer`:** Contains the GitHub Actions deploy badge, the Glass Box telemetry (section 9) and a Contact link to the home page's `#contact` section.
+- **`c-footer`:** Contains the GitHub Actions deploy badge, the Glass Box telemetry (section 9) and a Contact link to the `/contact` page.
 - **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
 - **`c-schema-visualizer`:** The live ERD on the Pillar A page, drawn with the shared D3 engine (section 5.1).
 - **`c-project-asset-gallery`:** The image, document, video and link gallery for any pillar's project, from `Project_Asset__c`.
