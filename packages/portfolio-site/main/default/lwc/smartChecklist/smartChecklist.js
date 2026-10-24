@@ -5,6 +5,10 @@
  *                      with refreshApex when the tab becomes visible. There is no timer and no
  *                      streaming subscription. The pipeline publishes a platform event, a
  *                      trigger stores it, and this component reads the stored result.
+ *                      Each time shows in UTC first, then the visitor's own time and zone, for
+ *                      example "2026-10-24 12:06 UTC (8:06 AM EDT, your time)", inside a time
+ *                      element whose datetime is the ISO value. A missing or unreadable value
+ *                      shows no time.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -48,6 +52,54 @@ export function formatTime(value) {
   return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`;
 }
 
+/**
+ * The visitor's own time and short zone name for an Apex Datetime, such as "8:06 AM EDT",
+ * from Intl.DateTimeFormat in the browser's zone. Returns "" for a missing or unreadable value
+ * or where Intl cannot format it.
+ * @param {string} value ISO 8601 date time
+ * @returns {string} the local time and zone
+ */
+export function localTime(value) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  try {
+    return (
+      new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short"
+      })
+        .format(date)
+        // Some engines put a narrow no-break space before AM or PM.
+        .replace(/\u202f/g, " ")
+    );
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * The text and the machine readable value for one time.
+ * @param {string} value ISO 8601 date time from Apex
+ * @returns {{text: string, iso: string}|null} null for a missing or unreadable value
+ */
+export function timeView(value) {
+  const utc = formatTime(value);
+  if (!utc) {
+    return null;
+  }
+  const local = localTime(value);
+  return {
+    text: local ? `${utc} (${local}, your time)` : utc,
+    iso: new Date(value).toISOString()
+  };
+}
+
 export function shortSha(sha) {
   return sha ? sha.slice(0, SHORT_SHA_LENGTH) : "";
 }
@@ -57,23 +109,44 @@ function runEvidence(run) {
     return null;
   }
   const short = shortSha(run.commitSha);
+  const time = timeView(run.completedAt);
   return {
     workflow: run.workflow,
     sha: run.commitSha || "",
     shortSha: short || "run",
     url: run.runUrl || null,
-    time: formatTime(run.completedAt),
+    time: time ? time.text : "",
+    iso: time ? time.iso : "",
     linkLabel: `Open the ${run.workflow} run for commit ${short || "unknown"} on GitHub`
   };
 }
 
+/**
+ * One line per cache, or an empty list when neither cache has a time.
+ * @param {object} status the pipeline status
+ * @returns {object[]} rows of { key, lead, text, iso, known }, text and iso empty for "none"
+ */
 function cacheEvidence(status) {
-  const github = formatTime(status.githubCacheAt);
-  const jira = formatTime(status.jiraCacheAt);
-  if (!github && !jira) {
-    return "";
+  const rows = [
+    {
+      key: "github",
+      label: "GitHub cache",
+      view: timeView(status.githubCacheAt)
+    },
+    { key: "jira", label: "Jira cache", view: timeView(status.jiraCacheAt) }
+  ];
+  if (!rows.some((row) => row.view)) {
+    return [];
   }
-  return `GitHub cache ${github || "none"}. Jira cache ${jira || "none"}.`;
+  return rows.map((row) => ({
+    key: row.key,
+    // The template drops whitespace between elements, so the space after the label rides
+    // in the text itself and the line reads "GitHub cache 2026-..." to a screen reader too.
+    lead: `${row.label} `,
+    text: row.view ? row.view.text : "",
+    iso: row.view ? row.view.iso : "",
+    known: Boolean(row.view)
+  }));
 }
 
 export default class SmartChecklist extends LightningElement {
@@ -129,9 +202,9 @@ export default class SmartChecklist extends LightningElement {
 
   toView(key, item) {
     const run = runEvidence(item && item.run);
-    const cacheText =
-      key === "caches" && this.status ? cacheEvidence(this.status) : "";
-    const hasEvidence = !!run || !!cacheText;
+    const cacheRows =
+      key === "caches" && this.status ? cacheEvidence(this.status) : [];
+    const hasEvidence = !!run || cacheRows.length > 0;
     // A tick needs the server's PASS and evidence to show. Anything else is never a tick.
     let state = item && STATES[item.state] ? item.state : "NO_SIGNAL";
     if (state === "PASS" && !hasEvidence) {
@@ -147,7 +220,9 @@ export default class SmartChecklist extends LightningElement {
       run,
       hasRunLink: !!(run && run.url),
       hasRunText: !!(run && !run.url),
-      cacheText
+      hasRunTime: !!(run && run.iso),
+      cacheRows,
+      hasCache: cacheRows.length > 0
     };
   }
 

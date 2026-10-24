@@ -7,11 +7,18 @@
  *                      everywhere. The link to the page on screen carries aria-current="page".
  *                      Owns the theme: the stylesheet follows the system
  *                      setting, and the toggle writes data-theme and the portfolio-theme storage key.
+ *                      Beside it, the motion toggle (aria-pressed when motion is reduced) stores
+ *                      the visitor's choice through c/motionPreference, defaults to the system
+ *                      setting, mirrors the choice on the host as data-motion and sends
+ *                      motion_toggled. The Pillars menu ends with a Docs link to /docs.
  *                      A floating "Back to top" button appears once the visitor has
  *                      scrolled one screen height and rises above the footer when the footer is
  *                      in view. It sits right after the main content in the tab order, scrolls to
- *                      the top (instantly when reduced motion is asked for), moves focus to the
- *                      top of the main content and sends back_to_top_used.
+ *                      the top (instantly when motion is reduced), moves focus to the
+ *                      top of the main content and sends back_to_top_used. While the API
+ *                      reference has rendered Redoc on the page, a portfolio-reference document
+ *                      event marks the button, and below Redoc's own 50rem breakpoint, where
+ *                      Redoc shows its floating menu button in the same corner, it is hidden.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -22,6 +29,15 @@ import { CurrentPageReference } from "lightning/navigation";
 import basePath from "@salesforce/community/basePath";
 import { PILLARS } from "c/pillarData";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import {
+  applyStoredMotion,
+  isReduced,
+  onMotionChange,
+  scrollBehavior,
+  setMotion,
+  MOTION_FULL,
+  MOTION_REDUCE
+} from "c/motionPreference";
 
 // Route URLs match the urlPrefix of each route in the Portfolio1 site bundle.
 // Home comes first and shares its href with the brand link. It is left out on the home page.
@@ -36,7 +52,10 @@ const PAGES = [
 const THEME_STORAGE_KEY = "portfolio-theme";
 const THEMES = ["light", "dark"];
 const DARK_QUERY = "(prefers-color-scheme: dark)";
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+// The route of the architecture docs page, linked from the Pillars menu.
+export const DOCS_URL = "docs";
+// The document event c-api-reference sends with { mounted } when Redoc renders or goes away.
+export const REFERENCE_EVENT = "portfolio-reference";
 // The button appears once the visitor has scrolled one screen height.
 export const BACK_TO_TOP_SCREENS = 1;
 
@@ -138,6 +157,12 @@ export default class PortfolioThemeLayout extends LightningElement {
   // True while a click that passed through the Pillars wrapper bubbles up to the document.
   _clickInPillars = false;
 
+  // True while motion is reduced, by the visitor's choice or the system setting.
+  motionReduced = false;
+  _stopMotion = null;
+  // True while the API reference has Redoc rendered on the page.
+  referenceMounted = false;
+
   showBackToTop = false;
   // How far the footer reaches into the viewport, so the button can sit above it.
   backToTopLift = 0;
@@ -174,6 +199,12 @@ export default class PortfolioThemeLayout extends LightningElement {
     this.systemDark = event.matches;
   };
 
+  _onReference = (event) => {
+    this.referenceMounted = Boolean(
+      event && event.detail && event.detail.mounted
+    );
+  };
+
   // On the published site the document listener sees a composed path that stops at this
   // host, so it cannot tell a click in the menu from a click on the page in the slot.
   // The wrapper marks its own clicks in handlePillarsClick, which runs first, and this
@@ -206,6 +237,10 @@ export default class PortfolioThemeLayout extends LightningElement {
     if (this.chosenTheme) {
       this.applyTheme(this.chosenTheme);
     }
+    applyStoredMotion();
+    this.applyMotion(isReduced());
+    this._stopMotion = onMotionChange((reduced) => this.applyMotion(reduced));
+    document.addEventListener(REFERENCE_EVENT, this._onReference);
     document.addEventListener("click", this._onDocumentClick);
     document.addEventListener("keydown", this._onDocumentKeydown);
     window.addEventListener("scroll", this._onScroll, { passive: true });
@@ -226,6 +261,11 @@ export default class PortfolioThemeLayout extends LightningElement {
     if (this._query && typeof this._query.removeEventListener === "function") {
       this._query.removeEventListener("change", this._onSystemChange);
     }
+    if (this._stopMotion) {
+      this._stopMotion();
+      this._stopMotion = null;
+    }
+    document.removeEventListener(REFERENCE_EVENT, this._onReference);
     document.removeEventListener("click", this._onDocumentClick);
     document.removeEventListener("keydown", this._onDocumentKeydown);
     window.removeEventListener("scroll", this._onScroll);
@@ -258,6 +298,12 @@ export default class PortfolioThemeLayout extends LightningElement {
     this.updateBackToTop();
   }
 
+  get backToTopClass() {
+    return this.referenceMounted
+      ? "back-to-top back-to-top_beside-reference"
+      : "back-to-top";
+  }
+
   get backToTopStyle() {
     return this.backToTopLift > 0
       ? `bottom: calc(${this.backToTopLift}px + var(--pf-space-4));`
@@ -265,15 +311,7 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   handleBackToTop() {
-    let reduce = false;
-    try {
-      reduce =
-        typeof window.matchMedia === "function" &&
-        window.matchMedia(REDUCED_MOTION_QUERY).matches;
-    } catch {
-      reduce = false;
-    }
-    window.scrollTo({ top: 0, left: 0, behavior: reduce ? "auto" : "smooth" });
+    window.scrollTo({ top: 0, left: 0, behavior: scrollBehavior() });
     const main = this.template.querySelector(".region-content");
     if (main) {
       main.focus({ preventScroll: true });
@@ -296,6 +334,26 @@ export default class PortfolioThemeLayout extends LightningElement {
     this.template.host.setAttribute("data-theme", theme);
   }
 
+  /**
+   * Mirrors the motion state on this host as data-motion, which the layout's own CSS reads.
+   * @param {boolean} reduced true when motion is reduced
+   */
+  applyMotion(reduced) {
+    this.motionReduced = reduced;
+    this.template.host.setAttribute(
+      "data-motion",
+      reduced ? MOTION_REDUCE : MOTION_FULL
+    );
+  }
+
+  get motionPressed() {
+    return this.motionReduced ? "true" : "false";
+  }
+
+  get motionTitle() {
+    return this.motionReduced ? "Turn motion back on" : "Reduce motion";
+  }
+
   get isDark() {
     return this.chosenTheme ? this.chosenTheme === "dark" : this.systemDark;
   }
@@ -310,6 +368,14 @@ export default class PortfolioThemeLayout extends LightningElement {
 
   get homeHref() {
     return toHref("");
+  }
+
+  get docsHref() {
+    return toHref(DOCS_URL);
+  }
+
+  get docsCurrent() {
+    return this.currentFor(this.docsHref);
   }
 
   get isHomePage() {
@@ -374,6 +440,15 @@ export default class PortfolioThemeLayout extends LightningElement {
     this.applyTheme(next);
     storeTheme(next);
     trackEvent(EVENTS.THEME_CHANGED, { theme: next });
+  }
+
+  handleMotionToggle() {
+    const next = this.motionReduced ? MOTION_FULL : MOTION_REDUCE;
+    // setMotion sends the portfolio-motion event, which applyMotion hears through
+    // onMotionChange. Applying here too keeps the button right where storage fails.
+    setMotion(next);
+    this.applyMotion(next === MOTION_REDUCE);
+    trackEvent(EVENTS.MOTION_TOGGLED, { motion: next });
   }
 
   handleMenuToggle() {

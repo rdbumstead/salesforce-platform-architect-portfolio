@@ -195,6 +195,17 @@
   outline-offset: 3px;
 }
 
+/*
+ * While the API reference has Redoc on the page, Redoc puts its own floating menu button in
+ * the same corner at widths up to its 50rem breakpoint. The two would overlap there, so this
+ * button steps aside. The footer's Back to top and Redoc's menu stay.
+ */
+@media screen and (max-width: 50rem) {
+  .back-to-top_beside-reference {
+    display: none;
+  }
+}
+
 /* Slim sticky header */
 .site-header {
   position: sticky;
@@ -302,7 +313,8 @@
   display: none;
 }
 
-.pillar-link {
+.pillar-link,
+.docs-link {
   display: flex;
   align-items: center;
   gap: var(--pf-space-3);
@@ -313,7 +325,8 @@
   text-decoration: none;
 }
 
-.pillar-link:hover {
+.pillar-link:hover,
+.docs-link:hover {
   background: var(--pf-chip);
 }
 
@@ -381,6 +394,13 @@
   color: var(--pf-text);
 }
 
+/* Docs closes the Pillars menu, set apart from the pillars by a rule. */
+.pillar-docs {
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid var(--pf-border);
+}
+
 .site-actions {
   display: flex;
   align-items: center;
@@ -416,9 +436,16 @@
   display: none;
 }
 
+/* The pressed motion toggle keeps a visible state beyond its icon. */
+.motion-toggle[aria-pressed="true"] {
+  background: var(--pf-chip);
+  color: var(--pf-text);
+}
+
 .site-brand:focus-visible,
 .nav-link:focus-visible,
 .pillar-link:focus-visible,
+.docs-link:focus-visible,
 .pillar-sub-link:focus-visible,
 .icon-button:focus-visible {
   outline: 2px solid var(--pf-focus);
@@ -501,8 +528,7 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .pillars-toggle .chevron {
-    transition: transform 0.15s;
-  }
+/* The layout writes data-motion from the visitor's choice or the system setting. */
+:host([data-motion="full"]) .pillars-toggle .chevron {
+  transition: transform 0.15s;
 }

@@ -1,6 +1,7 @@
 /**
- * @description       : Unit tests for portfolioThemeLayout LWC: header navigation, Pillars menu,
- *                      phone menu and the theme toggle.
+ * @description       : Unit tests for portfolioThemeLayout LWC: header navigation, Pillars menu
+ *                      and its Docs link, phone menu, the theme and motion toggles and the
+ *                      floating Back to top. c/motionPreference is the real module.
  *                      c/pillarData is a fixed stand in.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -10,6 +11,8 @@
 import { createElement } from "@lwc/engine-dom";
 import PortfolioThemeLayout, {
   BACK_TO_TOP_SCREENS,
+  DOCS_URL,
+  REFERENCE_EVENT,
   currentRouteUrl
 } from "c/portfolioThemeLayout";
 import { PILLARS, reset, setComingLetters } from "c/pillarData";
@@ -136,7 +139,8 @@ jest.mock(
     trackEvent: jest.fn(),
     EVENTS: {
       THEME_CHANGED: "theme_changed",
-      BACK_TO_TOP_USED: "back_to_top_used"
+      BACK_TO_TOP_USED: "back_to_top_used",
+      MOTION_TOGGLED: "motion_toggled"
     }
   }),
   { virtual: true }
@@ -156,7 +160,8 @@ const EXPECTED_HREFS = [
   "/portfolio/api-lab",
   "/portfolio/api-lab/reference",
   "/portfolio/ai-lab",
-  "/portfolio/delivery"
+  "/portfolio/delivery",
+  "/portfolio/docs"
 ];
 
 const STORAGE_KEY = "portfolio-theme";
@@ -264,6 +269,7 @@ describe("c-portfolio-theme-layout", () => {
     mockSystemTheme(false);
     window.localStorage.clear();
     document.documentElement.removeAttribute("data-theme");
+    document.documentElement.removeAttribute("data-motion");
   });
 
   afterEach(() => {
@@ -833,6 +839,189 @@ describe("c-portfolio-theme-layout", () => {
       ).toBe("true");
     });
   });
+  describe("Docs in the Pillars menu", () => {
+    function docsLink(element) {
+      return element.shadowRoot.querySelector(
+        '.pillar-menu a[data-key="docs"]'
+      );
+    }
+
+    it("ends the Pillars menu with Docs, linking /docs", () => {
+      const element = render();
+      expect(DOCS_URL).toBe("docs");
+      const link = docsLink(element);
+      expect(link).not.toBeNull();
+      expect(link.querySelector(".pillar-label").textContent).toBe("Docs");
+      expect(link.getAttribute("href")).toBe("/portfolio/docs");
+      const items = element.shadowRoot.querySelectorAll(".pillar-menu > li");
+      expect(items[items.length - 1].contains(link)).toBe(true);
+      expect(link.getAttribute("aria-current")).toBeNull();
+    });
+
+    it("marks Docs as the current page on /docs, with a document chosen", () => {
+      goTo("/portfolio/docs?doc=sas");
+      const element = render();
+      const current = element.shadowRoot.querySelectorAll(
+        '[aria-current="page"]'
+      );
+      expect(current).toHaveLength(1);
+      expect(current[0].dataset.key).toBe("docs");
+    });
+
+    it("closes the menus when Docs is followed", async () => {
+      const element = render();
+      element.shadowRoot.querySelector(".menu-toggle").click();
+      await flush();
+      element.shadowRoot.querySelector(".pillars-toggle").click();
+      await flush();
+      docsLink(element).click();
+      await flush();
+      expect(element.shadowRoot.querySelector(".pillar-menu").hidden).toBe(
+        true
+      );
+      expect(
+        element.shadowRoot
+          .querySelector(".menu-toggle")
+          .getAttribute("aria-expanded")
+      ).toBe("false");
+    });
+
+    it("adds no header link of its own", () => {
+      const element = render();
+      expect(navLabels(element)).not.toContain("Docs");
+    });
+  });
+
+  describe("motion toggle", () => {
+    const MOTION_KEY = "portfolio-motion";
+
+    function mockSystemMotion(reduced) {
+      const listeners = [];
+      window.matchMedia = jest.fn().mockImplementation((query) => ({
+        matches: reduced && query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        addEventListener: (type, fn) => listeners.push(fn),
+        removeEventListener: jest.fn()
+      }));
+      return listeners;
+    }
+
+    function toggle(element) {
+      return element.shadowRoot.querySelector(".motion-toggle");
+    }
+
+    it("sits right after the theme button as a real button", () => {
+      const element = render();
+      const control = toggle(element);
+      expect(control.tagName).toBe("BUTTON");
+      expect(control.getAttribute("type")).toBe("button");
+      expect(control.getAttribute("aria-label")).toBe("Reduce motion");
+      expect(
+        element.shadowRoot.querySelector(".theme-toggle").nextElementSibling
+      ).toBe(control);
+    });
+
+    it("follows a full motion system setting until the visitor chooses", () => {
+      mockSystemMotion(false);
+      const element = render();
+      expect(toggle(element).getAttribute("aria-pressed")).toBe("false");
+      expect(toggle(element).getAttribute("title")).toBe("Reduce motion");
+      expect(element.getAttribute("data-motion")).toBe("full");
+      expect(window.localStorage.getItem(MOTION_KEY)).toBeNull();
+      expect(document.documentElement.hasAttribute("data-motion")).toBe(false);
+    });
+
+    it("follows a reduced motion system setting", () => {
+      mockSystemMotion(true);
+      const element = render();
+      expect(toggle(element).getAttribute("aria-pressed")).toBe("true");
+      expect(toggle(element).getAttribute("title")).toBe("Turn motion back on");
+      expect(element.getAttribute("data-motion")).toBe("reduce");
+    });
+
+    it("stores the choice, marks the page and sends motion_toggled on each press", async () => {
+      mockSystemMotion(false);
+      const element = render();
+
+      toggle(element).click();
+      await flush();
+      expect(toggle(element).getAttribute("aria-pressed")).toBe("true");
+      expect(window.localStorage.getItem(MOTION_KEY)).toBe("reduce");
+      expect(element.getAttribute("data-motion")).toBe("reduce");
+      expect(document.documentElement.getAttribute("data-motion")).toBe(
+        "reduce"
+      );
+      expect(trackEvent).toHaveBeenLastCalledWith("motion_toggled", {
+        motion: "reduce"
+      });
+
+      toggle(element).click();
+      await flush();
+      expect(toggle(element).getAttribute("aria-pressed")).toBe("false");
+      expect(window.localStorage.getItem(MOTION_KEY)).toBe("full");
+      expect(element.getAttribute("data-motion")).toBe("full");
+      expect(trackEvent).toHaveBeenLastCalledWith("motion_toggled", {
+        motion: "full"
+      });
+      expect(trackEvent).toHaveBeenCalledTimes(2);
+    });
+
+    it("applies a saved choice on load over the system setting", () => {
+      mockSystemMotion(true);
+      window.localStorage.setItem(MOTION_KEY, "full");
+      const element = render();
+      expect(toggle(element).getAttribute("aria-pressed")).toBe("false");
+      expect(document.documentElement.getAttribute("data-motion")).toBe("full");
+    });
+
+    it("follows the system setting when it changes and nothing is stored", async () => {
+      const listeners = mockSystemMotion(false);
+      const element = render();
+      window.matchMedia.mockImplementation((query) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }));
+      listeners.forEach((fn) => fn({ matches: true }));
+      await flush();
+      expect(toggle(element).getAttribute("aria-pressed")).toBe("true");
+    });
+
+    it("keeps working when localStorage throws on every call", async () => {
+      mockSystemMotion(false);
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        value: {
+          getItem: () => {
+            throw new Error("SecurityError");
+          },
+          setItem: () => {
+            throw new Error("QuotaExceededError");
+          }
+        }
+      });
+      const element = render();
+      toggle(element).click();
+      await flush();
+      expect(toggle(element).getAttribute("aria-pressed")).toBe("true");
+      expect(element.getAttribute("data-motion")).toBe("reduce");
+    });
+
+    it("stops listening for motion changes when removed", async () => {
+      mockSystemMotion(false);
+      const element = render();
+      document.body.removeChild(element);
+      document.dispatchEvent(
+        new CustomEvent("portfolio-motion", {
+          detail: { motion: "reduce", reduced: true }
+        })
+      );
+      await flush();
+      expect(element.getAttribute("data-motion")).toBe("full");
+    });
+  });
+
   describe("floating Back to top", () => {
     let frames;
     let footerTop;
@@ -989,6 +1178,82 @@ describe("c-portfolio-theme-layout", () => {
         left: 0,
         behavior: "auto"
       });
+    });
+
+    it("jumps without animation when the visitor chose reduced motion", async () => {
+      window.localStorage.setItem("portfolio-motion", "reduce");
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      button(element).click();
+      expect(window.scrollTo).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: "auto"
+      });
+    });
+
+    it("scrolls smoothly when the visitor chose full motion on a reduced system", async () => {
+      window.matchMedia = jest.fn().mockImplementation((query) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }));
+      window.localStorage.setItem("portfolio-motion", "full");
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      button(element).click();
+      expect(window.scrollTo).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: "smooth"
+      });
+    });
+
+    it("steps aside only while the API reference has Redoc on the page", async () => {
+      expect(REFERENCE_EVENT).toBe("portfolio-reference");
+      const element = renderWithFooter();
+      await scrollTo(3000);
+      expect(button(element).className).toBe("back-to-top");
+
+      document.dispatchEvent(
+        new CustomEvent(REFERENCE_EVENT, { detail: { mounted: true } })
+      );
+      await flush();
+      expect(button(element).classList).toContain(
+        "back-to-top_beside-reference"
+      );
+
+      document.dispatchEvent(
+        new CustomEvent(REFERENCE_EVENT, { detail: { mounted: false } })
+      );
+      await flush();
+      expect(button(element).className).toBe("back-to-top");
+    });
+
+    it("keeps the footer lift and the event while the reference is on the page", async () => {
+      const element = renderWithFooter();
+      document.dispatchEvent(
+        new CustomEvent(REFERENCE_EVENT, { detail: { mounted: true } })
+      );
+      footerTop = 500;
+      await scrollTo(3200);
+      const control = button(element);
+      expect(control.getAttribute("style")).toContain(
+        "calc(300px + var(--pf-space-4))"
+      );
+      control.click();
+      expect(trackEvent).toHaveBeenCalledWith("back_to_top_used");
+    });
+
+    it("stops listening for the reference when removed", () => {
+      const remove = jest.spyOn(document, "removeEventListener");
+      const element = renderWithFooter();
+      document.body.removeChild(element);
+      expect(remove).toHaveBeenCalledWith(
+        REFERENCE_EVENT,
+        expect.any(Function)
+      );
     });
 
     it("stops listening to scroll when removed", () => {

@@ -2,13 +2,20 @@
  * @description       : Unit tests for smartChecklist LWC.
  *                      GovernanceController.getPipelineStatus is a mocked wire adapter, and
  *                      c/analyticsService is mocked so the bundle tests on its own.
+ *                      Intl.DateTimeFormat is pinned to America/New_York, so the local time
+ *                      beside each UTC time does not depend on the machine's zone.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 01/03/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import SmartChecklist, { formatTime, shortSha } from "c/smartChecklist";
+import SmartChecklist, {
+  formatTime,
+  localTime,
+  shortSha,
+  timeView
+} from "c/smartChecklist";
 import getPipelineStatus from "@salesforce/apex/GovernanceController.getPipelineStatus";
 import { refreshApex } from "@salesforce/apex";
 import { trackEvent } from "c/analyticsService";
@@ -98,8 +105,26 @@ function setVisibility(value) {
   });
 }
 
+// The zone every test sees as the browser's own.
+const PINNED_ZONE = "America/New_York";
+const RealDateTimeFormat = Intl.DateTimeFormat;
+
+function pinZone(timeZone) {
+  jest
+    .spyOn(Intl, "DateTimeFormat")
+    .mockImplementation(
+      (locale, options) =>
+        new RealDateTimeFormat(locale, { ...options, timeZone })
+    );
+}
+
 describe("c-smart-checklist", () => {
+  beforeEach(() => {
+    pinZone(PINNED_ZONE);
+  });
+
   afterEach(() => {
+    jest.restoreAllMocks();
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }
@@ -203,6 +228,45 @@ describe("c-smart-checklist", () => {
     expect(deploy.textContent).toContain("2026-10-21 08:00 UTC");
   });
 
+  it("adds the visitor's own time and zone after the UTC time, in a time element", async () => {
+    const element = createComponent();
+    getPipelineStatus.emit(
+      pipelineStatus([
+        item("deploy", "PASS", run("deploy", "Success")),
+        item("heartbeat", "NO_SIGNAL"),
+        item("caches", "NO_SIGNAL")
+      ])
+    );
+    await flushPromises();
+
+    const time = row(element, "deploy").querySelector("time.time");
+    expect(time.textContent).toBe(
+      "2026-10-21 08:00 UTC (4:00 AM EDT, your time)"
+    );
+    expect(time.getAttribute("datetime")).toBe("2026-10-21T08:00:00.000Z");
+  });
+
+  it("shows no time when the run has no completion time or an unreadable one", async () => {
+    const element = createComponent();
+    getPipelineStatus.emit(
+      pipelineStatus([
+        item("deploy", "PASS", run("deploy", "Success", { completedAt: null })),
+        item(
+          "heartbeat",
+          "PASS",
+          run("heartbeat", "Success", { completedAt: "not a date" })
+        ),
+        item("caches", "NO_SIGNAL")
+      ])
+    );
+    await flushPromises();
+
+    ["deploy", "heartbeat"].forEach((key) => {
+      expect(row(element, key).querySelector("time")).toBeNull();
+      expect(row(element, key).textContent).not.toMatch(/UTC|your time/);
+    });
+  });
+
   it("never ticks a Failure", async () => {
     const element = createComponent();
     getPipelineStatus.emit(
@@ -253,9 +317,54 @@ describe("c-smart-checklist", () => {
     await flushPromises();
 
     expect(stateText(element, "caches")).toBe("Passed");
-    expect(row(element, "caches").textContent).toContain(
-      "GitHub cache 2026-10-21 11:50 UTC. Jira cache 2026-10-21 11:45 UTC."
+    const lines = Array.from(
+      row(element, "caches").querySelectorAll("p.cache")
+    ).map((line) => line.textContent.replace(/\s+/g, " ").trim());
+    expect(lines).toEqual([
+      "GitHub cache 2026-10-21 11:50 UTC (7:50 AM EDT, your time)",
+      "Jira cache 2026-10-21 11:45 UTC (7:45 AM EDT, your time)"
+    ]);
+    const times = Array.from(row(element, "caches").querySelectorAll("time"));
+    expect(times.map((time) => time.getAttribute("datetime"))).toEqual([
+      "2026-10-21T11:50:00.000Z",
+      "2026-10-21T11:45:00.000Z"
+    ]);
+  });
+
+  it("says none for a cache with no time, beside one that has a time", async () => {
+    const element = createComponent();
+    getPipelineStatus.emit(
+      pipelineStatus(
+        [
+          item("deploy", "NO_SIGNAL"),
+          item("heartbeat", "NO_SIGNAL"),
+          item("caches", "PASS")
+        ],
+        { githubCacheAt: "2026-10-21T11:50:00.000Z", jiraCacheAt: null }
+      )
     );
+    await flushPromises();
+
+    const lines = Array.from(
+      row(element, "caches").querySelectorAll("p.cache")
+    ).map((line) => line.textContent.replace(/\s+/g, " ").trim());
+    expect(lines[1]).toBe("Jira cache none");
+    expect(row(element, "caches").querySelectorAll("time")).toHaveLength(1);
+  });
+
+  it("shows no cache line and no tick when neither cache has a time", async () => {
+    const element = createComponent();
+    getPipelineStatus.emit(
+      pipelineStatus([
+        item("deploy", "NO_SIGNAL"),
+        item("heartbeat", "NO_SIGNAL"),
+        item("caches", "PASS")
+      ])
+    );
+    await flushPromises();
+
+    expect(row(element, "caches").querySelector("p.cache")).toBeNull();
+    expect(stateText(element, "caches")).toBe("No signal yet");
   });
 
   it("shows the sha as text when the run has no link", async () => {
@@ -333,6 +442,40 @@ describe("c-smart-checklist", () => {
       );
       expect(formatTime(null)).toBe("");
       expect(formatTime("not a date")).toBe("");
+    });
+
+    it("gives the local time and short zone in the pinned zone", () => {
+      expect(localTime("2026-10-24T12:06:00.000Z")).toBe("8:06 AM EDT");
+      expect(localTime("2026-12-24T12:06:00.000Z")).toBe("7:06 AM EST");
+      expect(localTime(null)).toBe("");
+      expect(localTime("not a date")).toBe("");
+    });
+
+    it("follows whatever zone the browser is in", () => {
+      jest.restoreAllMocks();
+      pinZone("Europe/London");
+      expect(localTime("2026-10-24T12:06:00.000Z")).toBe("1:06 PM GMT+1");
+      pinZone("UTC");
+      expect(localTime("2026-10-24T12:06:00.000Z")).toBe("12:06 PM UTC");
+    });
+
+    it("builds the full text and the ISO value, as in the example", () => {
+      expect(timeView("2026-10-24T12:06:00.000Z")).toEqual({
+        text: "2026-10-24 12:06 UTC (8:06 AM EDT, your time)",
+        iso: "2026-10-24T12:06:00.000Z"
+      });
+      expect(timeView(undefined)).toBeNull();
+      expect(timeView("not a date")).toBeNull();
+    });
+
+    it("keeps the UTC time alone when Intl cannot format", () => {
+      jest.restoreAllMocks();
+      jest.spyOn(Intl, "DateTimeFormat").mockImplementation(() => {
+        throw new RangeError("no zone data");
+      });
+      expect(timeView("2026-10-24T12:06:00.000Z").text).toBe(
+        "2026-10-24 12:06 UTC"
+      );
     });
 
     it("shortens a sha to seven characters", () => {
