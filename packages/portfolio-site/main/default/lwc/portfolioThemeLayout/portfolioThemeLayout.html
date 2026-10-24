@@ -11,6 +11,7 @@
                   class="nav-link"
                   href={page.href}
                   data-key={page.key}
+                  aria-current={page.current}
                   onclick={handleNavClick}
                   >{page.label}</a
                 >
@@ -52,6 +53,7 @@
                       class="pillar-link"
                       href={pillar.href}
                       data-key={pillar.key}
+                      aria-current={pillar.current}
                       onclick={handleNavClick}
                     >
                       <span class="pillar-letter" aria-hidden="true"
@@ -73,6 +75,7 @@
                               class="pillar-sub-link"
                               href={link.href}
                               data-key={link.key}
+                              aria-current={link.current}
                               onclick={handleNavClick}
                               >{link.label}</a
                             >
