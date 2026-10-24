@@ -18,7 +18,7 @@ on:
       destructive_manifest_dir:
         description: "Destructive mode only: folder under manifest/destructive holding package.xml and destructiveChanges.xml"
         required: false
-        default: "manifest/destructive/placeholderTerminal"
+        default: ""
         type: string
       destructive_timing:
         description: "Destructive Changes Timing"
