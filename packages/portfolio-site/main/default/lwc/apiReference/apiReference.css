@@ -17,11 +17,13 @@
   font-family: var(--pf-font-sans);
 }
 
-/* Pinned just below the site header, whose height the component measures. */
+/* Pinned just below the site header, whose height the component measures. Redoc's middle
+   panel is z-index 1 and comes later, so the switch sits above it at 3, still below Redoc's
+   phone menu (20) and the site header. */
 .reference-body_full .spec-toggle {
   position: sticky;
   top: var(--reference-sticky-top, 0);
-  z-index: 1;
+  z-index: 3;
   padding: var(--pf-space-2) 0;
   background-color: var(--pf-surface);
   color: var(--pf-text);
