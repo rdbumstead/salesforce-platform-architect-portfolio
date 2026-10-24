@@ -39,116 +39,156 @@
         </p>
 
         <div class="param-section slds-m-top_medium">
-          <h3 class="slds-text-title_caps">Query parameters</h3>
-          <template lwc:if={hasParamControls}>
-            <div class="param-grid">
-              <template for:each={paramControls} for:item="control">
-                <div key={control.key} class="param-control">
-                  <template lwc:if={control.isPills}>
-                    <fieldset class="pill-group" data-param={control.name}>
-                      <legend class="param-label">{control.name}</legend>
-                      <template for:each={control.pills} for:item="pill">
-                        <button
-                          key={pill.key}
-                          type="button"
-                          class={pill.className}
-                          aria-pressed={pill.pressed}
-                          data-name={control.name}
-                          data-value={pill.value}
-                          onclick={handlePillClick}
-                        >
-                          {pill.value}
-                        </button>
-                      </template>
-                    </fieldset>
-                  </template>
-                  <template lwc:if={control.isSelect}>
-                    <label class="param-field">
-                      <span class="param-label">{control.name}</span>
-                      <select
-                        class="param-select"
-                        data-name={control.name}
-                        onchange={handleParamInput}
-                      >
-                        <template for:each={control.options} for:item="option">
-                          <option
-                            key={option.key}
-                            value={option.value}
-                            selected={option.selected}
-                          >
-                            {option.label}
-                          </option>
-                        </template>
-                      </select>
-                    </label>
-                  </template>
-                  <template lwc:if={control.isNumber}>
-                    <label class="param-field">
-                      <span class="param-label"
-                        >{control.name}
-                        <span class="param-hint">({control.hint})</span></span
-                      >
-                      <input
-                        type="number"
-                        class="param-input"
-                        inputmode="numeric"
-                        min={control.min}
-                        max={control.max}
-                        value={control.value}
-                        data-name={control.name}
-                        onchange={handleParamInput}
-                      />
-                    </label>
-                  </template>
-                  <template lwc:if={control.isText}>
-                    <label class="param-field">
-                      <span class="param-label"
-                        >{control.name}
-                        <span class="param-hint">{control.hint}</span></span
-                      >
-                      <input
-                        type="text"
-                        class="param-input"
-                        value={control.value}
-                        data-name={control.name}
-                        onchange={handleParamInput}
-                      />
-                    </label>
-                  </template>
-                </div>
-              </template>
-            </div>
+          <template lwc:if={isPhone}>
+            <h3 class="disclosure-heading">
+              <button
+                type="button"
+                class="disclosure"
+                data-section="filters"
+                aria-expanded={filtersExpanded}
+                aria-controls="filters-panel"
+                onclick={handleSectionToggle}
+              >
+                {filtersTitle}
+              </button>
+            </h3>
           </template>
           <template lwc:else>
-            <p class="param-none">This path takes no query parameters.</p>
+            <h3 class="slds-text-title_caps">Query parameters</h3>
           </template>
+          <div id="filters-panel" class="section-panel" hidden={filtersHidden}>
+            <template lwc:if={hasParamControls}>
+              <div class="param-grid">
+                <template for:each={paramControls} for:item="control">
+                  <div key={control.key} class="param-control">
+                    <template lwc:if={control.isPills}>
+                      <fieldset class="pill-group" data-param={control.name}>
+                        <legend class="param-label">{control.name}</legend>
+                        <template for:each={control.pills} for:item="pill">
+                          <button
+                            key={pill.key}
+                            type="button"
+                            class={pill.className}
+                            aria-pressed={pill.pressed}
+                            data-name={control.name}
+                            data-value={pill.value}
+                            onclick={handlePillClick}
+                          >
+                            {pill.value}
+                          </button>
+                        </template>
+                      </fieldset>
+                    </template>
+                    <template lwc:if={control.isSelect}>
+                      <label class="param-field">
+                        <span class="param-label">{control.name}</span>
+                        <span lwc:if={control.selectHint} class="param-hint"
+                          >{control.selectHint}</span
+                        >
+                        <select
+                          class="param-select"
+                          data-name={control.name}
+                          onchange={handleParamInput}
+                        >
+                          <template
+                            for:each={control.options}
+                            for:item="option"
+                          >
+                            <option
+                              key={option.key}
+                              value={option.value}
+                              selected={option.selected}
+                            >
+                              {option.label}
+                            </option>
+                          </template>
+                        </select>
+                      </label>
+                    </template>
+                    <template lwc:if={control.isNumber}>
+                      <label class="param-field">
+                        <span class="param-label">{control.name}</span>
+                        <span class="param-hint">({control.hint})</span>
+                        <input
+                          type="number"
+                          class="param-input"
+                          inputmode="numeric"
+                          min={control.min}
+                          max={control.max}
+                          value={control.value}
+                          data-name={control.name}
+                          onchange={handleParamInput}
+                        />
+                      </label>
+                    </template>
+                    <template lwc:if={control.isText}>
+                      <label class="param-field">
+                        <span class="param-label">{control.name}</span>
+                        <span class="param-hint">{control.hint}</span>
+                        <input
+                          type="text"
+                          class="param-input"
+                          value={control.value}
+                          data-name={control.name}
+                          onchange={handleParamInput}
+                        />
+                      </label>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </template>
+            <template lwc:else>
+              <p class="param-none">This path takes no query parameters.</p>
+            </template>
 
-          <template lwc:if={hasChosenPills}>
-            <ul class="chosen-pills" aria-label="Chosen parameters">
-              <template for:each={chosenPills} for:item="pill">
-                <li key={pill.key} class="chosen-pill">
-                  <code class="chosen-text">{pill.text}</code>
-                  <button
-                    type="button"
-                    class="remove-pill"
-                    aria-label={pill.removeLabel}
-                    data-name={pill.name}
-                    onclick={handleRemovePill}
-                  >
-                    Remove
-                  </button>
-                </li>
-              </template>
-            </ul>
+            <template lwc:if={hasChosenPills}>
+              <ul class="chosen-pills" aria-label="Chosen parameters">
+                <template for:each={chosenPills} for:item="pill">
+                  <li key={pill.key} class="chosen-pill">
+                    <code class="chosen-text">{pill.text}</code>
+                    <button
+                      type="button"
+                      class="remove-pill"
+                      aria-label={pill.removeLabel}
+                      data-name={pill.name}
+                      onclick={handleRemovePill}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                </template>
+              </ul>
+            </template>
+          </div>
+
+          <template lwc:if={isPhone}>
+            <h3 class="disclosure-heading">
+              <button
+                type="button"
+                class="disclosure"
+                data-section="advanced"
+                aria-expanded={advancedExpanded}
+                aria-controls="advanced-panel"
+                onclick={handleSectionToggle}
+              >
+                Advanced
+              </button>
+            </h3>
           </template>
-
-          <lightning-input
-            label="Advanced: query parameters as text (optional)"
-            placeholder="limit=abc&amp;offset=0"
-            value={queryText}
-            onchange={handleQueryChange}
-            class="query-input"
-          ></lightning-input>
+          <div
+            id="advanced-panel"
+            class="section-panel"
+            hidden={advancedHidden}
+          >
+            <lightning-input
+              label="Advanced: query parameters as text (optional)"
+              placeholder="limit=abc&amp;offset=0"
+              value={queryText}
+              onchange={handleQueryChange}
+              class="query-input"
+            ></lightning-input>
+          </div>
           <p class="query-preview" aria-live="polite">
             Query string: <code class="query-string">{queryPreview}</code>
           </p>
@@ -178,212 +218,258 @@
               <dd class="slds-item_detail latency-value">{latencyText}</dd>
             </dl>
 
-            <h3 class="slds-text-title_caps slds-m-top_small">Headers</h3>
-            <dl class="slds-list_horizontal slds-wrap header-panel">
-              <template for:each={headerRows} for:item="row">
-                <dt
-                  key={row.labelKey}
-                  class="slds-item_label field-label header-name"
+            <template lwc:if={isPhone}>
+              <h3 class="disclosure-heading">
+                <button
+                  type="button"
+                  class="disclosure"
+                  data-section="response"
+                  aria-expanded={responseExpanded}
+                  aria-controls="response-panel"
+                  onclick={handleSectionToggle}
                 >
-                  {row.name}
-                </dt>
-                <dd
-                  key={row.valueKey}
-                  class="slds-item_detail header-value"
-                  data-header={row.name}
-                >
-                  {row.value}
-                </dd>
-              </template>
-            </dl>
+                  Response details
+                </button>
+              </h3>
+            </template>
+            <div
+              id="response-panel"
+              class="section-panel"
+              hidden={responseHidden}
+            >
+              <h3 class="slds-text-title_caps slds-m-top_small">Headers</h3>
+              <dl class="slds-list_horizontal slds-wrap header-panel">
+                <template for:each={headerRows} for:item="row">
+                  <dt
+                    key={row.labelKey}
+                    class="slds-item_label field-label header-name"
+                  >
+                    {row.name}
+                  </dt>
+                  <dd
+                    key={row.valueKey}
+                    class="slds-item_detail header-value"
+                    data-header={row.name}
+                  >
+                    {row.value}
+                  </dd>
+                </template>
+              </dl>
 
-            <h3 class="slds-text-title_caps slds-m-top_small">Body</h3>
-            <div class="view-toggle" role="group" aria-label="Body view">
-              <button
-                type="button"
-                class={rawViewClass}
-                data-view="raw"
-                aria-pressed={rawPressed}
-                onclick={handleViewClick}
-              >
-                Raw JSON
-              </button>
-              <button
-                type="button"
-                class={renderedViewClass}
-                data-view="rendered"
-                aria-pressed={renderedPressed}
-                onclick={handleViewClick}
-              >
-                Rendered
-              </button>
-            </div>
-            <template lwc:if={isRawView}>
-              <div
-                class="result-box"
-                tabindex="0"
-                role="region"
-                aria-label="Response body"
-              >
-                <pre class="json-viewer response-body language-json"><code
+              <h3 class="slds-text-title_caps slds-m-top_small">Body</h3>
+              <div class="view-toggle" role="group" aria-label="Body view">
+                <button
+                  type="button"
+                  class={rawViewClass}
+                  data-view="raw"
+                  aria-pressed={rawPressed}
+                  onclick={handleViewClick}
+                >
+                  Raw JSON
+                </button>
+                <button
+                  type="button"
+                  class={renderedViewClass}
+                  data-view="rendered"
+                  aria-pressed={renderedPressed}
+                  onclick={handleViewClick}
+                >
+                  Rendered
+                </button>
+              </div>
+              <template lwc:if={isRawView}>
+                <div
+                  class="result-box"
+                  tabindex="0"
+                  role="region"
+                  aria-label="Response body"
+                >
+                  <pre class="json-viewer response-body language-json"><code
                     class="response-code"
                     lwc:dom="manual"
                   ></code></pre>
-              </div>
-            </template>
-            <template lwc:else>
-              <div class="rendered-view" data-id="rendered-view">
-                <template lwc:if={hasRenderedFields}>
-                  <template for:each={renderedFields} for:item="field">
-                    <section key={field.key} class="rendered-field">
-                      <h4 class="rendered-path">{field.path}</h4>
-                      <pre class="rendered-text" tabindex="0">{field.text}</pre>
-                    </section>
+                </div>
+              </template>
+              <template lwc:else>
+                <div class="rendered-view" data-id="rendered-view">
+                  <template lwc:if={hasRenderedFields}>
+                    <template for:each={renderedFields} for:item="field">
+                      <section key={field.key} class="rendered-field">
+                        <h4 class="rendered-path">{field.path}</h4>
+                        <pre class="rendered-text" tabindex="0">
+{field.text}</pre
+                        >
+                      </section>
+                    </template>
                   </template>
-                </template>
-                <template lwc:else>
-                  <p class="rendered-empty" data-id="rendered-empty">
-                    This response has no long text fields. Raw JSON shows all of
-                    it.
-                  </p>
-                </template>
-              </div>
-            </template>
-
-            <template lwc:if={hasNextPage}>
-              <button
-                type="button"
-                class="next-page-button"
-                onclick={handleNextPage}
-              >
-                Next page
-              </button>
-            </template>
-
-            <section class="schema-check slds-m-top_small">
-              <h3 class="slds-text-title_caps">Response against the spec</h3>
-              <p class="schema-summary">{schemaCheck.summary}</p>
-              <template lwc:if={hasSchemaLists}>
-                <div class="schema-lists">
-                  <template for:each={schemaCheck.lists} for:item="list">
-                    <div
-                      key={list.key}
-                      class="schema-list"
-                      data-list={list.key}
-                    >
-                      <h4 class="schema-list-title">{list.title}</h4>
-                      <template lwc:if={list.isEmpty}>
-                        <p class="schema-none">None</p>
-                      </template>
-                      <template lwc:else>
-                        <ul>
-                          <template for:each={list.items} for:item="item">
-                            <li key={item.key}><code>{item.text}</code></li>
-                          </template>
-                        </ul>
-                      </template>
-                    </div>
+                  <template lwc:else>
+                    <p class="rendered-empty" data-id="rendered-empty">
+                      This response has no long text fields. Raw JSON shows all
+                      of it.
+                    </p>
                   </template>
                 </div>
               </template>
-            </section>
+
+              <template lwc:if={hasNextPage}>
+                <button
+                  type="button"
+                  class="next-page-button"
+                  onclick={handleNextPage}
+                >
+                  Next page
+                </button>
+              </template>
+
+              <section class="schema-check slds-m-top_small">
+                <h3 class="slds-text-title_caps">Response against the spec</h3>
+                <p class="schema-summary">{schemaCheck.summary}</p>
+                <template lwc:if={hasSchemaLists}>
+                  <div class="schema-lists">
+                    <template for:each={schemaCheck.lists} for:item="list">
+                      <div
+                        key={list.key}
+                        class="schema-list"
+                        data-list={list.key}
+                      >
+                        <h4 class="schema-list-title">{list.title}</h4>
+                        <template lwc:if={list.isEmpty}>
+                          <p class="schema-none">None</p>
+                        </template>
+                        <template lwc:else>
+                          <ul>
+                            <template for:each={list.items} for:item="item">
+                              <li key={item.key}><code>{item.text}</code></li>
+                            </template>
+                          </ul>
+                        </template>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+              </section>
+            </div>
           </template>
         </div>
       </section>
 
       <section class="token-section slds-m-top_large">
-        <h2 class="slds-text-heading_small slds-m-bottom_small">
-          Request an evaluator token
-        </h2>
-        <div
-          class="slds-grid slds-wrap slds-gutters slds-grid_vertical-align-end"
-        >
-          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
-            <lightning-input
-              type="email"
-              label="Email"
-              value={email}
-              onchange={handleTokenInput}
-              data-field="email"
-              class="token-email"
-            ></lightning-input>
-          </div>
-          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-            <lightning-input
-              label="Purpose"
-              value={purpose}
-              onchange={handleTokenInput}
-              data-field="purpose"
-              class="token-purpose"
-            ></lightning-input>
-          </div>
-          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-6">
+        <template lwc:if={isPhone}>
+          <h2 class="disclosure-heading">
             <button
               type="button"
-              class="token-button"
-              onclick={handleRequestToken}
-              disabled={isTokenDisabled}
+              class="disclosure"
+              data-section="token"
+              aria-expanded={tokenExpanded}
+              aria-controls="token-panel"
+              onclick={handleSectionToggle}
             >
-              Request token
+              Request an evaluator token
             </button>
-          </div>
-        </div>
-
-        <div aria-live="polite" class="slds-m-top_medium">
-          <template lwc:if={isRequestingToken}>
-            <div class="slds-is-relative slds-p-around_large">
-              <lightning-spinner
-                alternative-text="Requesting a token"
-                size="small"
-              ></lightning-spinner>
+          </h2>
+        </template>
+        <template lwc:else>
+          <h2 class="slds-text-heading_small slds-m-bottom_small">
+            Request an evaluator token
+          </h2>
+        </template>
+        <div id="token-panel" class="section-panel" hidden={tokenHidden}>
+          <div
+            class="slds-grid slds-wrap slds-gutters slds-grid_vertical-align-end"
+          >
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+              <lightning-input
+                type="email"
+                label="Email"
+                value={email}
+                onchange={handleTokenInput}
+                data-field="email"
+                class="token-email"
+              ></lightning-input>
             </div>
-          </template>
-
-          <p lwc:if={tokenError} class="token-error text-error" role="alert">
-            {tokenError}
-          </p>
-
-          <template lwc:if={hasTokenResult}>
-            <template lwc:if={tokenIssued}>
-              <p class="token-issued text-success">
-                Token issued. It is shown once. Every evaluator token shares one
-                session, which ends after 30 minutes without use.
-              </p>
-              <dl class="slds-list_horizontal slds-wrap token-fields">
-                <template for:each={tokenFields} for:item="field">
-                  <dt key={field.labelKey} class="slds-item_label field-label">
-                    {field.name}
-                  </dt>
-                  <dd
-                    key={field.valueKey}
-                    class="slds-item_detail token-value"
-                    data-field={field.name}
-                  >
-                    {field.value}
-                  </dd>
-                </template>
-              </dl>
-            </template>
-            <template lwc:else>
-              <dl
-                class="slds-list_horizontal slds-wrap token-refusal"
-                role="alert"
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+              <lightning-input
+                label="Purpose"
+                value={purpose}
+                onchange={handleTokenInput}
+                data-field="purpose"
+                class="token-purpose"
+              ></lightning-input>
+            </div>
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-6">
+              <button
+                type="button"
+                class="token-button"
+                onclick={handleRequestToken}
+                disabled={isTokenDisabled}
               >
-                <template for:each={tokenRefusalFields} for:item="field">
-                  <dt key={field.labelKey} class="slds-item_label field-label">
-                    {field.name}
-                  </dt>
-                  <dd
-                    key={field.valueKey}
-                    class="slds-item_detail refusal-value"
-                    data-field={field.name}
-                  >
-                    {field.value}
-                  </dd>
-                </template>
-              </dl>
+                Request token
+              </button>
+            </div>
+          </div>
+
+          <div aria-live="polite" class="slds-m-top_medium">
+            <template lwc:if={isRequestingToken}>
+              <div class="slds-is-relative slds-p-around_large">
+                <lightning-spinner
+                  alternative-text="Requesting a token"
+                  size="small"
+                ></lightning-spinner>
+              </div>
             </template>
-          </template>
+
+            <p lwc:if={tokenError} class="token-error text-error" role="alert">
+              {tokenError}
+            </p>
+
+            <template lwc:if={hasTokenResult}>
+              <template lwc:if={tokenIssued}>
+                <p class="token-issued text-success">
+                  Token issued. It is shown once. Every evaluator token shares
+                  one session, which ends after 30 minutes without use.
+                </p>
+                <dl class="slds-list_horizontal slds-wrap token-fields">
+                  <template for:each={tokenFields} for:item="field">
+                    <dt
+                      key={field.labelKey}
+                      class="slds-item_label field-label"
+                    >
+                      {field.name}
+                    </dt>
+                    <dd
+                      key={field.valueKey}
+                      class="slds-item_detail token-value"
+                      data-field={field.name}
+                    >
+                      {field.value}
+                    </dd>
+                  </template>
+                </dl>
+              </template>
+              <template lwc:else>
+                <dl
+                  class="slds-list_horizontal slds-wrap token-refusal"
+                  role="alert"
+                >
+                  <template for:each={tokenRefusalFields} for:item="field">
+                    <dt
+                      key={field.labelKey}
+                      class="slds-item_label field-label"
+                    >
+                      {field.name}
+                    </dt>
+                    <dd
+                      key={field.valueKey}
+                      class="slds-item_detail refusal-value"
+                      data-field={field.name}
+                    >
+                      {field.value}
+                    </dd>
+                  </template>
+                </dl>
+              </template>
+            </template>
+          </div>
         </div>
       </section>
     </div>
