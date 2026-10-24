@@ -15,6 +15,7 @@
 .wait-note,
 .loading-text,
 .provider-caption,
+.word-count,
 .work-heading,
 .work-subheading,
 .work-list dt,
@@ -94,6 +95,7 @@
 
 .provider-line {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--pf-space-2);
   margin-bottom: var(--pf-space-2);
@@ -115,7 +117,21 @@
   border-radius: var(--pf-radius-sm);
   padding: var(--pf-space-4);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   line-height: 1.6;
+  /* A letter of 350 words reads best at about 70 characters a line. */
+  max-width: 72ch;
+}
+
+/* Phones: more of the width for the letter, and the note under Generate reads from the left. */
+@media (max-width: 767.98px) {
+  .letter {
+    padding: var(--pf-space-3);
+  }
+
+  .wait-note {
+    text-align: left;
+  }
 }
 
 .work-toggle {

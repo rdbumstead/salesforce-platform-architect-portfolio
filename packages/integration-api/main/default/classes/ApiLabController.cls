@@ -52,8 +52,6 @@ public with sharing class ApiLabController {
   /** Where the request log line says the cover letter came from. */
   public static final String COVER_LETTER_LOG_PATH = 'aura:ApiLabController.generateCoverLetter';
 
-  /** Cover letter length, the /ai/generate spec maximum. */
-  public static final Integer COVER_LETTER_MAX_LENGTH = 1000;
   public static final Integer MAX_COMPANY_LENGTH = 120;
   public static final Integer MAX_TITLE_LENGTH = 120;
   public static final Integer MAX_DESCRIPTION_LENGTH = 4000;
@@ -414,8 +412,8 @@ public with sharing class ApiLabController {
   }
 
   /**
-   * @description The cover letter prompt, the same text /papi/v1/ai/generate builds for a
-   *              Professional cover letter of 1000 characters, with the grounding facts.
+   * @description The cover letter prompt. ContentGenerationController.coverLetterPrompt
+   *              builds it, so this page and that controller send the same text.
    * @param company Company name, trimmed.
    * @param title Job title, trimmed.
    * @param description Job description, or null.
@@ -427,24 +425,11 @@ public with sharing class ApiLabController {
     String title,
     String description
   ) {
-    List<String> lines = new List<String>{
-      'Write a cover letter for Ryan Bumstead in a professional tone, no longer than ' +
-      COVER_LETTER_MAX_LENGTH +
-      ' characters.',
-      'companyName: ' + company,
-      'role: ' + title
-    };
-    if (description != null) {
-      lines.add('jobDescription: ' + description);
-    }
-    String grounding = ContentGenerationController.groundingSection(
+    return ContentGenerationController.coverLetterPrompt(
+      company,
       title,
       description
     );
-    if (grounding != null) {
-      lines.add(grounding);
-    }
-    return String.join(lines, '\n');
   }
 
   private static Map<String, Object> providerContext(
@@ -456,8 +441,7 @@ public with sharing class ApiLabController {
       'companyName' => company,
       'role' => title,
       'jobTitle' => title,
-      'tone' => 'Professional',
-      'maxLength' => COVER_LETTER_MAX_LENGTH
+      'tone' => 'Professional'
     };
     if (description != null) {
       context.put('jobDescription', description);
@@ -469,7 +453,8 @@ public with sharing class ApiLabController {
     ContentGenerationController.GenerationResult generated
   ) {
     CoverLetterResult result = new CoverLetterResult();
-    result.content = generated.content?.left(COVER_LETTER_MAX_LENGTH);
+    // The whole letter. Its length is asked for in words in the prompt, never cut here.
+    result.content = generated.content;
     result.provider = generated.provider;
     result.model = generated.model;
     result.fallbackOccurred = generated.fallbackOccurred == true;
