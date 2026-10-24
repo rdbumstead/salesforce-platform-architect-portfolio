@@ -66,7 +66,10 @@ jest.mock(
 jest.mock(
   "c/analyticsService",
   () => ({
-    EVENTS: { FINOPS_QUOTA_VISIBILITY: "finops_quota_visibility" },
+    EVENTS: {
+      FINOPS_QUOTA_VISIBILITY: "finops_quota_visibility",
+      BACK_TO_TOP_USED: "back_to_top_used"
+    },
     trackEvent: jest.fn()
   }),
   { virtual: true }
@@ -367,6 +370,14 @@ describe("c-footer", () => {
       left: 0,
       behavior: "auto"
     });
+  });
+
+  it("sends back_to_top_used with no parameters from Back to top", () => {
+    window.scrollTo = jest.fn();
+    const element = createComponent();
+    q(element, '[data-id="back-to-top"]').click();
+    expect(trackEvent).toHaveBeenCalledWith("back_to_top_used");
+    expect(trackEvent.mock.calls.at(-1)).toHaveLength(1);
   });
 
   it("cancels the deferred load when removed before idle", () => {
