@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Access_Mode__c</fullName>
+    <description
+  >USER_MODE or SYSTEM_MODE. SYSTEM_MODE is used only when the code's own query runs in SYSTEM_MODE.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >USER_MODE or SYSTEM_MODE. A record can never run in SYSTEM_MODE when the code's query runs in USER_MODE.</inlineHelpText>
+    <label>Access Mode</label>
+    <length>20</length>
+    <required>false</required>
+    <type>Text</type>
+</CustomField>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Row_Limit__c</fullName>
+    <description
+  >Most rows the read returns, 1 to 50000. The smaller of this and the code's own limit applies.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText
+  >Most rows the read returns, 1 to 50000. The code's own limit still applies when it is smaller.</inlineHelpText>
+    <label>Row Limit</label>
+    <precision>6</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <type>Number</type>
+</CustomField>
