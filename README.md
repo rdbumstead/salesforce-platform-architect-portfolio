@@ -93,7 +93,7 @@ curl -si "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
 EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scripts/api-smoke.sh
 ```
 
-**Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in the Round 2 integration scratch org, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. [unverified] Whether an authenticated PAPI response to a request without an id then carries one id or two (the platform's and the UUID Apex generates) is not yet established; check it in the first live smoke. Send your own UUID to get a single, predictable id back.
+**Correlation id on live responses.** The platform echoes a caller-supplied `X-Request-Id` exactly once, on My Domain and on the site domain (site domain observed in a scratch org copy of the site, including on an Apex 503), and Apex does not set it again (`ApiRequestContext.applyRequestRules`). With no `X-Request-Id`, the platform returns its own 32-character hex id (no dashes) on responses it generates before Apex runs, such as a 401. [unverified] Whether an authenticated PAPI response to a request without an id then carries one id or two (the platform's and the UUID Apex generates) is not yet established, so check it in your own first call. Send your own UUID to get a single, predictable id back.
 
 ---
 
@@ -105,7 +105,7 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 - [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 6 workflows (deploy, PR validation, the live smoke test, heartbeat and worker, plus a Lighthouse audit run on demand)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml) — Twin API pattern with SAPI + PAPI specifications
 - [Multi-cloud design cost-optimized](docs/guides/03-SAS.md#appendix-j-cloud-finops-strategy-phase-8---2027-2028): a $0.00 forever design on the AWS Always-Free tier, for Phase 8. No AWS code is built yet
-- [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
+- [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, October 2026) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix) — Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
 - [AI governance with failover strategy](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine): one dispatch from the Gemini API to a deterministic Local Template, grounded on portfolio records (Agentforce switch off, not implemented)
 
@@ -114,8 +114,11 @@ EVALUATOR_EMAIL=you@example.com EVALUATOR_PURPOSE="Evaluating API design" ./scri
 - **Real-time observability**: the Glass Box footer shows live governor limits (Heap, CPU, SOQL), the org's daily API request and async Apex quotas, AI provider health and the GitHub and Jira circuit breakers
 - **Resilience simulation**: a "Simulate an outage" switch on the changelog and the roadmap shows the cached fallback, and a real outage opens a circuit breaker that the footer and the page report
 - **Executable governance**: a checklist on the Delivery page ticks "production deploy green", "org heartbeat today" (within 26 hours) and "caches under 30 minutes" only from pipeline evidence, written by a platform event that CI publishes
-- **Interactive API testing** — Built-in developer console to call REST endpoints through a Named Credential proxy, compare against OpenAPI spec, verify `X-Request-Id` and rate-limit headers; external reviewers can request a short-lived token and `curl` the APIs directly
-- **Mobile performance validation**: on a phone the skills page shows the matrix and requests no graph engine, measured against the 2.5 s LCP target
+- **Interactive API testing**: a built-in developer console calls REST endpoints through a Named Credential proxy, compares the response with the OpenAPI spec and shows the `X-Request-Id` and rate-limit headers. External reviewers can request a short-lived token and `curl` the APIs directly
+- **View source**: six showcase components open their own code in the page, with syntax highlighting, from a cache a daily job fills from GitHub
+- **Operational settings in custom metadata**: API rate tiers, page sizes, form limits, cache windows and display counts live in `Portfolio_Setting__mdt` records with safe ranges, and the code keeps its own defaults as fallbacks ([ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md))
+- **Contact page and analytics**: a native contact form on `/contact` with spam guards, and GA4 events for how visitors use the site, with no personal data in any event
+- **Mobile performance validation**: on a phone the skills page shows the matrix and requests no graph engine. Mobile LCP medians are 7.5 to 9.6 s on the six main routes, the best the LWR shell allows against a 2.5 s target
 
 ---
 
