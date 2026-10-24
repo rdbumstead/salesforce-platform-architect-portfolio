@@ -7,9 +7,8 @@
  * @Test Class        : [SAPIExperienceSkillTest]
  **/
 @RestResource(urlMapping='/sapi/v1/experience-skills/*')
-global with sharing class SAPIExperienceSkill {
-  private static final String SELECT_FIELDS = 'SELECT Id, Experience__c, Experience__r.Name, Skill__c, Skill__r.Name, Skill__r.Category__c, Skill__r.Proficiency__c FROM Experience_Skill__c';
-  private static final String ORDER_BY = ' ORDER BY Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC';
+global with sharing class SAPIExperienceSkill implements QueryDefinitions.Provider {
+  private static final String LIST_QUERY = 'SAPIExperienceSkill_List';
 
   /**
    * @description GET method. Retrieves Experience_Skill__c junctions with pagination and an experienceId filter.
@@ -40,20 +39,18 @@ global with sharing class SAPIExperienceSkill {
         return;
       }
 
-      String whereClause = ' WHERE Id != null';
-      if (String.isNotBlank(experienceId)) {
-        experienceId = experienceId.trim();
-        whereClause += ' AND Experience__c = :experienceId';
-      }
-
-      List<Experience_Skill__c> records = Database.query(
-        SELECT_FIELDS +
-          whereClause +
-          ORDER_BY +
-          ' LIMIT :limitParam OFFSET :offsetParam'
+      Map<String, Object> binds = listBinds(experienceId?.trim());
+      List<Experience_Skill__c> records = (List<Experience_Skill__c>) QueryDefinitions.runPage(
+        LIST_QUERY,
+        binds,
+        listDefault(),
+        limitParam,
+        offsetParam
       );
-      Integer totalCount = Database.countQuery(
-        'SELECT COUNT() FROM Experience_Skill__c' + whereClause
+      Integer totalCount = QueryDefinitions.count(
+        LIST_QUERY,
+        binds,
+        listDefault()
       );
 
       ctx.paginate(totalCount, records.size());
@@ -62,6 +59,41 @@ global with sharing class SAPIExperienceSkill {
     } catch (Exception e) {
       ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
+  }
+
+  /**
+   * @description The list read as code: every field the response returns, the optional
+   *              filters and the order. Query_Definition.SAPIExperienceSkill_List ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault listDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience_Skill__c',
+        'Id, Experience__c, Experience__r.Name, Skill__c, Skill__r.Name, ' +
+        'Skill__r.Category__c, Skill__r.Proficiency__c'
+      )
+      .filter('(IsDeleted = :hasExperienceId OR Experience__c = :experienceId)')
+      .orderBy('Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(listBinds(null));
+  }
+
+  private static Map<String, Object> listBinds(String experienceId) {
+    return new Map<String, Object>{
+      'hasExperienceId' => String.isNotBlank(experienceId),
+      'experienceId' => experienceId
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      LIST_QUERY => listDefault()
+    };
   }
 
   @TestVisible

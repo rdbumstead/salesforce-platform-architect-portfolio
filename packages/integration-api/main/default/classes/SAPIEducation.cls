@@ -7,9 +7,8 @@
  * @Test Class        : [SAPIEducationTest]
  **/
 @RestResource(urlMapping='/sapi/v1/education/*')
-global with sharing class SAPIEducation {
-  private static final String SELECT_FIELDS = 'SELECT Id, Name, Contact__c, Contact__r.Name, Issuer__c, Issuer__r.Name, Field_of_Study__c, Graduation_Date__c, GPA__c FROM Education__c';
-  private static final String ORDER_BY = ' ORDER BY Graduation_Date__c DESC NULLS LAST, Name ASC';
+global with sharing class SAPIEducation implements QueryDefinitions.Provider {
+  private static final String LIST_QUERY = 'SAPIEducation_List';
 
   /**
    * @description GET method. Retrieves Education__c records with pagination and contactName and issuerName filters.
@@ -34,22 +33,18 @@ global with sharing class SAPIEducation {
       String contactName = ctx.stringParam('contactName');
       String issuerName = ctx.stringParam('issuerName');
 
-      String whereClause = ' WHERE Id != null';
-      if (String.isNotBlank(contactName)) {
-        whereClause += ' AND Contact__r.Name = :contactName';
-      }
-      if (String.isNotBlank(issuerName)) {
-        whereClause += ' AND Issuer__r.Name = :issuerName';
-      }
-
-      List<Education__c> records = Database.query(
-        SELECT_FIELDS +
-          whereClause +
-          ORDER_BY +
-          ' LIMIT :limitParam OFFSET :offsetParam'
+      Map<String, Object> binds = listBinds(contactName, issuerName);
+      List<Education__c> records = (List<Education__c>) QueryDefinitions.runPage(
+        LIST_QUERY,
+        binds,
+        listDefault(),
+        limitParam,
+        offsetParam
       );
-      Integer totalCount = Database.countQuery(
-        'SELECT COUNT() FROM Education__c' + whereClause
+      Integer totalCount = QueryDefinitions.count(
+        LIST_QUERY,
+        binds,
+        listDefault()
       );
 
       ctx.paginate(totalCount, records.size());
@@ -58,6 +53,49 @@ global with sharing class SAPIEducation {
     } catch (Exception e) {
       ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
+  }
+
+  /**
+   * @description The list read as code: every field the response returns, the optional
+   *              filters and the order. Query_Definition.SAPIEducation_List ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault listDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Education__c',
+        'Id, Name, Contact__c, Contact__r.Name, Issuer__c, Issuer__r.Name, ' +
+        'Field_of_Study__c, Graduation_Date__c, GPA__c'
+      )
+      .filter(
+        '(IsDeleted = :hasContactName OR Contact__r.Name = :contactName) AND ' +
+        '(IsDeleted = :hasIssuerName OR Issuer__r.Name = :issuerName)'
+      )
+      .orderBy('Graduation_Date__c DESC NULLS LAST, Name ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(listBinds(null, null));
+  }
+
+  private static Map<String, Object> listBinds(
+    String contactName,
+    String issuerName
+  ) {
+    return new Map<String, Object>{
+      'hasContactName' => String.isNotBlank(contactName),
+      'contactName' => contactName,
+      'hasIssuerName' => String.isNotBlank(issuerName),
+      'issuerName' => issuerName
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      LIST_QUERY => listDefault()
+    };
   }
 
   @TestVisible
