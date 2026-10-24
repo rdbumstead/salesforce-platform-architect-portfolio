@@ -1,0 +1,452 @@
+/**
+ * @description       : Unit tests for c-docs-viewer and its docsRenderer. The Apex reads and
+ *                      the page reference are mocked wire adapters, and the real vendored
+ *                      Marked_Library supplies the lexer. The tests cover the list, a document
+ *                      with its title, contents, tables and Mermaid block, the back link, a
+ *                      missing document, contents links and a hash on load moving focus to
+ *                      their heading, the event with the doc key, and a fixture full of
+ *                      script, event handlers and unsafe links that never reaches the DOM.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 10/24/2026
+ **/
+import { createElement } from "@lwc/engine-dom";
+import DocsViewer, { docKeyFrom, badgeFor } from "c/docsViewer";
+import getDocs from "@salesforce/apex/SourceController.getDocs";
+import getDoc from "@salesforce/apex/SourceController.getDoc";
+import { CurrentPageReference } from "lightning/navigation";
+import { trackEvent } from "c/analyticsService";
+import {
+  slugify,
+  githubSlug,
+  resolveHref,
+  renderMarkdown,
+  indexHeadings
+} from "../docsRenderer";
+
+/**
+ * Runs the vendored file as it is, outside the component compiler, the way the browser does.
+ * Named mock so the hoisted module factories may call it.
+ */
+function mockLoadMarked() {
+  const fs = require("fs");
+  const path = require("path");
+  const vm = require("vm");
+  const code = fs.readFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "staticresources",
+      "Marked_Library.js"
+    ),
+    "utf8"
+  );
+  const mod = { exports: {} };
+  vm.runInNewContext(code, { module: mod, exports: mod.exports });
+  return mod.exports;
+}
+
+const MARKED = mockLoadMarked();
+
+jest.mock(
+  "@salesforce/apex/SourceController.getDocs",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+jest.mock(
+  "@salesforce/apex/SourceController.getDoc",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+// Every lightning/* module maps to one universal mock file in this project, so one factory
+// serves both the page reference wire and the script loader.
+jest.mock(
+  "lightning/navigation",
+  () => {
+    const {
+      createTestWireAdapter
+    } = require("@salesforce/wire-service-jest-util");
+    return {
+      __esModule: true,
+      CurrentPageReference: createTestWireAdapter(jest.fn()),
+      loadScript: jest.fn(() => {
+        globalThis.marked = mockLoadMarked();
+        return Promise.resolve();
+      }),
+      loadStyle: jest.fn(() => Promise.resolve())
+    };
+  },
+  { virtual: true }
+);
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    __esModule: true,
+    EVENTS: { DOCS_OPENED: "docs_opened" },
+    trackEvent: jest.fn()
+  }),
+  { virtual: true }
+);
+
+jest.mock(
+  "@salesforce/community/basePath",
+  () => ({ __esModule: true, default: "/portfolio" }),
+  {
+    virtual: true
+  }
+);
+
+const DOCS = [
+  {
+    key: "sas",
+    title: "Systems Architecture Specification",
+    path: "docs/guides/03-SAS.md"
+  },
+  {
+    key: "adr-027",
+    title: "Platform auth",
+    path: "docs/adr/027-platform-auth.md"
+  }
+];
+
+const SAS = [
+  "# Systems Architecture Specification (SAS)",
+  "",
+  "See [the auth ADR](../adr/027-platform-auth.md#context) and [section 1.1](#11-architectural-north-star).",
+  "",
+  "## 1. System Context & Architecture",
+  "",
+  '### 1.1 Architectural "North Star"',
+  "",
+  "| Object | Purpose |",
+  "| --- | --- |",
+  "| `Project__c` | A pillar card |",
+  "",
+  "```mermaid",
+  "flowchart LR",
+  "  A[Site<br/>LWR] --> B[Apex]",
+  "```",
+  "",
+  "## 6. Front-End Architecture",
+  "",
+  "### 6.2 Site Components",
+  "",
+  "Text."
+].join("\n");
+
+// Built from parts so the lint rule against script URLs does not read the fixture as code.
+const SCRIPT_SCHEME = ["java", "script:"].join("");
+
+const HOSTILE = [
+  "# Hostile fixture",
+  "",
+  "<script>window.__pwned = 1</script>",
+  "",
+  '<img src="x" onerror="window.__pwned = 2">',
+  "",
+  'Inline <b onclick="window.__pwned = 3">bold</b> and <iframe src="https://evil.example"></iframe>.',
+  "",
+  "[js](" +
+    SCRIPT_SCHEME +
+    "window.__pwned=4) [data](data:text/html,hi) [http](http://example.com)",
+  "[mail](mailto:someone@example.com) [ok](https://example.com/page) [hash](#nowhere)",
+  "",
+  '<a href="https://example.com" onmouseover="window.__pwned = 5">raw link</a>',
+  "",
+  "![pic](" + SCRIPT_SCHEME + "alert(1))",
+  "",
+  "## Section <svg onload=alert(1)>",
+  "",
+  "<details><summary>Click to view</summary>",
+  "",
+  "Inside.",
+  "",
+  "</details>"
+].join("\n");
+
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+function shadow(el) {
+  return el.shadowRoot;
+}
+
+async function create(state, docs = DOCS) {
+  const el = createElement("c-docs-viewer", { is: DocsViewer });
+  document.body.appendChild(el);
+  // eslint-disable-next-line @lwc/lwc/no-unexpected-wire-adapter-usages
+  CurrentPageReference.emit({ state });
+  getDocs.emit(docs);
+  await flush();
+  return el;
+}
+
+async function openDoc(key, content, extra = {}) {
+  const el = await create({ doc: key });
+  getDoc.emit({
+    key,
+    title: "Fallback title",
+    path: "docs/guides/03-SAS.md",
+    content,
+    htmlUrl: "https://github.com/o/r/blob/main/docs/guides/03-SAS.md",
+    fetchedAt: "2026-10-24T06:00:00.000Z",
+    truncated: false,
+    ...extra
+  });
+  await flush();
+  await flush();
+  return el;
+}
+
+beforeAll(() => {
+  Element.prototype.scrollIntoView = jest.fn();
+});
+
+afterEach(() => {
+  while (document.body.firstChild) {
+    document.body.removeChild(document.body.firstChild);
+  }
+  jest.clearAllMocks();
+  window.history.replaceState(null, "", "/");
+  delete window.__pwned;
+});
+
+describe("c-docs-viewer list", () => {
+  it("lists every document with its badge and link when no doc is chosen", async () => {
+    const el = await create({});
+    const links = shadow(el).querySelectorAll(".doc-list-link");
+    expect(shadow(el).querySelector("h1").textContent).toBe(
+      "Architecture docs"
+    );
+    expect(links.length).toBe(2);
+    expect(links[0].getAttribute("href")).toBe("/portfolio/docs?doc=sas");
+    expect(links[0].querySelector(".doc-badge").textContent).toBe("SAS");
+    expect(links[1].querySelector(".doc-badge").textContent).toBe("ADR-027");
+    expect(links[1].querySelector(".doc-name").textContent).toBe(
+      "Platform auth"
+    );
+  });
+
+  it("says nothing is available when the cache is empty", async () => {
+    const el = await create({}, []);
+    expect(shadow(el).querySelector(".docs-note").textContent).toContain(
+      "No documents"
+    );
+  });
+});
+
+describe("c-docs-viewer document", () => {
+  it("renders the title, contents, tables, Mermaid source and a back link", async () => {
+    const el = await openDoc("sas", SAS);
+    const root = shadow(el);
+    expect(root.querySelector("h1").textContent).toBe(
+      "Systems Architecture Specification (SAS)"
+    );
+    expect(root.querySelectorAll("h1").length).toBe(1);
+    expect(root.querySelector(".back-link").getAttribute("href")).toBe(
+      "/portfolio/docs"
+    );
+
+    const toc = [...root.querySelectorAll(".toc-link")].map(
+      (a) => a.dataset.id
+    );
+    expect(toc).toEqual([
+      "1-system-context-architecture",
+      "1-1-architectural-north-star",
+      "6-front-end-architecture",
+      "6-2-site-components"
+    ]);
+    expect(root.querySelector(".toc-link").getAttribute("href")).toBe(
+      "/portfolio/docs?doc=sas#1-system-context-architecture"
+    );
+
+    const table = root.querySelector(".doc-body .table-scroll");
+    expect(table.getAttribute("tabindex")).toBe("0");
+    expect(table.getAttribute("role")).toBe("region");
+    expect(table.getAttribute("aria-label")).toContain("Object");
+    expect(table.querySelector("th").getAttribute("scope")).toBe("col");
+
+    const diagram = root.querySelector(".doc-body .doc-diagram");
+    expect(diagram.querySelector("figcaption").textContent).toBe(
+      "Diagram source (Mermaid)"
+    );
+    expect(diagram.querySelector("code").textContent).toContain(
+      "A[Site<br/>LWR]"
+    );
+    expect(diagram.querySelector("br")).toBeNull();
+
+    const anchor = root.querySelector(".doc-body h3 .heading-anchor");
+    expect(anchor.getAttribute("href")).toBe("#1-1-architectural-north-star");
+    expect(anchor.getAttribute("aria-label")).toContain("North Star");
+  });
+
+  it("points a link to another listed document at that document on the site", async () => {
+    const el = await openDoc("sas", SAS);
+    const links = [...shadow(el).querySelectorAll(".doc-body p a.doc-link")];
+    expect(links[0].getAttribute("href")).toBe(
+      "/portfolio/docs?doc=adr-027#context"
+    );
+    expect(links[1].getAttribute("href")).toBe("#1-1-architectural-north-star");
+  });
+
+  it("sends docs_opened once with the doc key", async () => {
+    await openDoc("sas", SAS);
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("docs_opened", { doc_key: "sas" });
+  });
+
+  it("moves focus to the heading and updates the address when a contents link is used", async () => {
+    const el = await openDoc("sas", SAS);
+    const link = shadow(el).querySelector(
+      '.toc-link[data-id="6-2-site-components"]'
+    );
+    link.click();
+    await flush();
+    const heading = shadow(el).querySelector('[id="6-2-site-components"]');
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(shadow(el).activeElement).toBe(heading);
+    expect(window.location.search).toBe("?doc=sas");
+    expect(window.location.hash).toBe("#6-2-site-components");
+  });
+
+  it("lands on the heading a hash names, by slug or by GitHub's slug", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/portfolio/docs?doc=sas#11-architectural-north-star"
+    );
+    const el = await openDoc("sas", SAS);
+    await flush();
+    const heading = shadow(el).querySelector(
+      '[id="1-1-architectural-north-star"]'
+    );
+    expect(shadow(el).activeElement).toBe(heading);
+  });
+
+  it("says the document is not on the site when the read returns nothing", async () => {
+    const el = await create({ doc: "adr-999" });
+    getDoc.emit(null);
+    await flush();
+    expect(shadow(el).querySelector("h1").textContent).toBe(
+      "Document not found"
+    );
+    expect(shadow(el).querySelector(".back-link")).not.toBeNull();
+  });
+
+  it("notes a truncated document", async () => {
+    const el = await openDoc("sas", SAS, { truncated: true });
+    expect(shadow(el).textContent).toContain("longer than the page holds");
+  });
+
+  it("never lets script, event handlers or unsafe links reach the DOM", async () => {
+    const el = await openDoc("sas", HOSTILE);
+    const body = shadow(el).querySelector(".doc-body");
+    expect(
+      body.querySelectorAll("script, iframe, img, svg, b, details").length
+    ).toBe(0);
+    for (const node of shadow(el).querySelectorAll("*")) {
+      for (const attr of node.attributes) {
+        expect(attr.name.startsWith("on")).toBe(false);
+      }
+    }
+    const hrefs = [...body.querySelectorAll("a")].map((a) =>
+      a.getAttribute("href")
+    );
+    expect(hrefs.length).toBeGreaterThan(0);
+    for (const href of hrefs) {
+      expect(/^(https:\/\/|\/|#)/.test(href)).toBe(true);
+    }
+    expect(hrefs).toContain("https://example.com/page");
+    expect(hrefs.some((h) => /javascript|data:|mailto|http:/.test(h))).toBe(
+      false
+    );
+    expect(body.textContent).toContain("Click to view");
+    expect(body.textContent).toContain("raw link");
+    expect(window.__pwned).toBeUndefined();
+  });
+});
+
+describe("docsViewer helpers", () => {
+  it("reads only a well formed doc key", () => {
+    expect(docKeyFrom({ state: { doc: " SAS " } })).toBe("sas");
+    expect(docKeyFrom({ state: {} }, "?doc=adr-027")).toBe("adr-027");
+    expect(docKeyFrom({ state: { doc: "<script>" } })).toBe("");
+    expect(docKeyFrom(null, "")).toBe("");
+    expect(badgeFor("adr-027")).toBe("ADR-027");
+  });
+});
+
+describe("docsRenderer", () => {
+  it("slugs by the docs rule and by GitHub's rule", () => {
+    expect(slugify("6.2 Site Components")).toBe("6-2-site-components");
+    expect(slugify("  !!! ")).toBe("section");
+    expect(githubSlug("1. System Context & Architecture")).toBe(
+      "1-system-context--architecture"
+    );
+    expect(githubSlug('1.1 Architectural "North Star"')).toBe(
+      "11-architectural-north-star"
+    );
+  });
+
+  it("gives repeated headings distinct ids and GitHub aliases", () => {
+    const tokens = MARKED.lexer("## Notes\n\n## Notes\n");
+    const { headings, aliases } = indexHeadings(tokens);
+    expect(headings.map((h) => h.id)).toEqual(["notes", "notes-2"]);
+    expect(aliases.get("notes-1")).toBe("notes-2");
+  });
+
+  it("resolves links to https, this site's docs or a known heading only", () => {
+    const ctx = {
+      baseUrl: "https://github.com/o/r/blob/main/docs/guides/03-SAS.md",
+      docHrefForPath: (path, hash) => {
+        return path === "docs/adr/027-x.md"
+          ? `/docs?doc=adr-027${hash ? `#${hash}` : ""}`
+          : null;
+      },
+      hashTarget: (hash) => (hash === "known" ? "known" : null)
+    };
+    expect(resolveHref("../adr/027-x.md#a", ctx)).toEqual({
+      href: "/docs?doc=adr-027#a",
+      kind: "doc"
+    });
+    expect(resolveHref("../adr/003-stub.md", ctx).href).toBe(
+      "https://github.com/o/r/blob/main/docs/adr/003-stub.md"
+    );
+    expect(resolveHref("#known", ctx)).toEqual({
+      href: "#known",
+      kind: "hash",
+      target: "known"
+    });
+    expect(resolveHref("#unknown", ctx)).toBeNull();
+    expect(resolveHref(SCRIPT_SCHEME + "alert(1)", ctx)).toBeNull();
+    expect(resolveHref(["JaVa", "ScRiPt:alert(1)"].join(""), ctx)).toBeNull();
+    expect(resolveHref("http://example.com", ctx)).toBeNull();
+    expect(resolveHref("java\tscript:alert(1)", ctx)).toBeNull();
+    expect(resolveHref("", ctx)).toBeNull();
+  });
+
+  it("keeps the document's title out of the body and the contents", () => {
+    const result = renderMarkdown(MARKED, "# Title\n\n## One\n", {
+      doc: document,
+      baseUrl: null,
+      docHrefForPath: () => null
+    });
+    expect(result.title).toBe("Title");
+    expect(result.headings.map((h) => h.id)).toEqual(["one"]);
+    const holder = document.createElement("div");
+    holder.appendChild(result.fragment);
+    expect(holder.querySelector("h1")).toBeNull();
+    expect(holder.querySelector("h2").id).toBe("one");
+  });
+});

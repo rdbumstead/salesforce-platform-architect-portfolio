@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>docs adr 032</label>
+    <protected>false</protected>
+    <values>
+        <field>Source_Key__c</field>
+        <value xsi:type="xsd:string">docs</value>
+    </values>
+    <values>
+        <field>Path__c</field>
+        <value
+      xsi:type="xsd:string"
+    >docs/adr/032-operational-settings-in-custom-metadata.md</value>
+    </values>
+    <values>
+        <field>Label__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Operational Settings in Custom Metadata</value>
+    </values>
+    <values>
+        <field>Sort_Order__c</field>
+        <value xsi:type="xsd:double">32</value>
+    </values>
+</CustomMetadata>
