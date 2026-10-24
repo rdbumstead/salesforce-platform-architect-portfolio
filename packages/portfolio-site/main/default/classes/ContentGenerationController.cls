@@ -12,6 +12,11 @@
  *                      breaker. An open circuit records the attempt as
  *                      skipped_open_circuit and moves on. Breaker results are written once
  *                      every provider has been tried, after the last callout.
+ *                      coverLetterPrompt() is the one cover letter prompt builder, used by
+ *                      generateCoverLetter and by ApiLabController.generateCoverLetter. Its
+ *                      instruction comes from the AI_Prompt__mdt record Cover_Letter, with
+ *                      COVER_LETTER_INSTRUCTION as the fallback, and its word range from the
+ *                      Cover_Letter_Min_Words and Cover_Letter_Max_Words settings.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -46,8 +51,40 @@ public with sharing class ContentGenerationController {
   public static final String STATE_OFF = 'off';
   public static final String STATE_NOT_BUILT = 'not built';
 
+  /** DeveloperName of the cover letter's AI_Prompt__mdt record. */
+  public static final String COVER_LETTER_PROMPT_NAME = 'Cover_Letter';
+  /** Code defaults of the word range settings. */
+  public static final Integer COVER_LETTER_MIN_WORDS = 250;
+  public static final Integer COVER_LETTER_MAX_WORDS = 350;
+  public static final String MIN_WORDS_SETTING = 'Cover_Letter_Min_Words';
+  public static final String MAX_WORDS_SETTING = 'Cover_Letter_Max_Words';
+
+  /**
+   * The cover letter instruction used when the Cover_Letter record is missing or blank. The
+   * record ships with the same text.
+   */
+  public static final String COVER_LETTER_INSTRUCTION = String.join(
+    new List<String>{
+      'Write a cover letter from Ryan Bumstead for the job below, in his own voice, in the first person, in one professional tone.',
+      'Shape:',
+      '1. Greet the hiring team at the company by name. Then one short paragraph on why this role at this company, drawn from the role and the job description. Do not open with "I am writing to apply".',
+      '2. Two or three body paragraphs. Each one names one requirement from the job and ties it to one specific fact from the facts below, such as a project, a highlight or a number the facts state. Say which project or role the fact comes from.',
+      '3. A short close of one or two sentences that asks for a conversation. Then sign off with the name Ryan Bumstead.',
+      'Rules:',
+      '- Use only the facts below. Do not invent employers, projects, clients, dates, certifications or numbers. When the job asks for something the facts do not show, leave it out rather than claim it.',
+      '- When there is no job description, work from the role title and the company name, and choose the facts that fit the role best.',
+      '- When a persona is given, lead with the facts that show that kind of work.',
+      '- No clichés, such as "passionate", "team player", "hit the ground running", "perfect fit" or "great asset".',
+      '- Do not write an email address, a phone number, a street address or a placeholder in square brackets.',
+      '- Plain text only, with no markdown, headings or bullet points.',
+      '- Return only the letter.'
+    },
+    '\n'
+  );
+
+  // Tests set this to stand in for the Cover_Letter record. An empty list reads as missing.
   @TestVisible
-  private static final Integer COVER_LETTER_MAX_LENGTH = 1000;
+  private static List<AI_Prompt__mdt> promptOverride;
 
   // GeminiService.generateContent reports failure by returning text with these prefixes
   // instead of throwing, so the dispatch treats such text as a failed attempt.
@@ -294,21 +331,6 @@ public with sharing class ContentGenerationController {
       throw auraError('Job title is required.');
     }
 
-    List<String> lines = new List<String>{
-      'Write a cover letter for Ryan Bumstead in a professional tone, no longer than ' +
-      COVER_LETTER_MAX_LENGTH +
-      ' characters.',
-      'companyName: ' + companyName,
-      'role: ' + jobTitle
-    };
-    if (String.isNotBlank(jobDescription)) {
-      lines.add('jobDescription: ' + jobDescription);
-    }
-    String grounding = groundingSection(jobTitle, jobDescription);
-    if (grounding != null) {
-      lines.add(grounding);
-    }
-
     Map<String, Object> context = new Map<String, Object>{
       'companyName' => companyName,
       'jobTitle' => jobTitle,
@@ -316,7 +338,11 @@ public with sharing class ContentGenerationController {
     };
     try {
       return dispatch(
-        new GenerationRequest(String.join(lines, '\n'), context, true)
+        new GenerationRequest(
+          coverLetterPrompt(companyName, jobTitle, jobDescription),
+          context,
+          true
+        )
       );
     } catch (ContentGenerationException e) {
       throw auraError(
@@ -336,9 +362,28 @@ public with sharing class ContentGenerationController {
     String jobTitle,
     String jobDescription
   ) {
+    return groundingSection(jobTitle, jobDescription, null);
+  }
+
+  /**
+   * @description The grounding block, with the highlights of the persona ranked first.
+   * @param jobTitle Job title the letter is for.
+   * @param jobDescription Job description, may be blank.
+   * @param persona Architect, Developer or Admin, or null.
+   * @return String Instruction line plus facts JSON, or null when there are no facts.
+   */
+  public static String groundingSection(
+    String jobTitle,
+    String jobDescription,
+    String persona
+  ) {
     String facts;
     try {
-      facts = PortfolioGroundingService.build(jobTitle, jobDescription);
+      facts = PortfolioGroundingService.build(
+        jobTitle,
+        jobDescription,
+        persona
+      );
     } catch (QueryException e) {
       facts = null;
     }
@@ -347,6 +392,103 @@ public with sharing class ContentGenerationController {
     }
     return 'Facts about Ryan Bumstead\'s work, as JSON. Use only these facts and do not invent projects, employers or numbers:\n' +
       facts;
+  }
+
+  /**
+   * @description The cover letter prompt, built in one place for every cover letter path.
+   *              Lines, in order: the instruction (the Cover_Letter record, else
+   *              COVER_LETTER_INSTRUCTION), the word range from the settings, the company,
+   *              the role, the job description when given, the persona when the job points
+   *              at one, and the grounding facts when there are any. Email and phone shapes
+   *              are removed from the visitor's text. A grounding failure leaves the facts
+   *              out and never blocks the letter.
+   * @param companyName Company the letter is for.
+   * @param jobTitle Job title.
+   * @param jobDescription Job description, may be blank.
+   * @return String The prompt.
+   * @example
+   * String prompt = ContentGenerationController.coverLetterPrompt('Acme', 'Architect', null);
+   */
+  public static String coverLetterPrompt(
+    String companyName,
+    String jobTitle,
+    String jobDescription
+  ) {
+    String company = PortfolioGroundingService.removeContactDetails(
+      companyName
+    );
+    String title = PortfolioGroundingService.removeContactDetails(jobTitle);
+    String description = PortfolioGroundingService.removeContactDetails(
+      jobDescription
+    );
+    List<Integer> range = coverLetterWordRange();
+    List<String> lines = new List<String>{
+      coverLetterInstruction(),
+      'Length: ' +
+      range[0] +
+      ' to ' +
+      range[1] +
+      ' words.',
+      'companyName: ' + company,
+      'role: ' + title
+    };
+    if (description != null) {
+      lines.add('jobDescription: ' + description);
+    }
+    String persona = PortfolioGroundingService.inferPersona(title, description);
+    if (persona != null) {
+      lines.add('persona: ' + persona);
+    }
+    String grounding = groundingSection(title, description, persona);
+    if (grounding != null) {
+      lines.add(grounding);
+    }
+    return String.join(lines, '\n');
+  }
+
+  /**
+   * @description The cover letter instruction: Instruction__c of the Cover_Letter record,
+   *              read with SOQL because getInstance returns only the first 255 characters of
+   *              a long text field. A missing or blank record gives COVER_LETTER_INSTRUCTION.
+   * @return String The instruction.
+   */
+  public static String coverLetterInstruction() {
+    List<AI_Prompt__mdt> rows = promptOverride != null
+      ? promptOverride
+      : [
+          SELECT Instruction__c
+          FROM AI_Prompt__mdt
+          WHERE DeveloperName = :COVER_LETTER_PROMPT_NAME
+          WITH SYSTEM_MODE
+          LIMIT 1
+        ];
+    String instruction = rows.isEmpty() ? null : rows[0].Instruction__c;
+    return String.isBlank(instruction)
+      ? COVER_LETTER_INSTRUCTION
+      : instruction.replace('\r\n', '\n').trim();
+  }
+
+  /**
+   * @description The word range the prompt asks for, from the two settings. A pair whose
+   *              minimum is above its maximum gives both code defaults.
+   * @return List<Integer> The minimum and the maximum.
+   */
+  public static List<Integer> coverLetterWordRange() {
+    Integer minWords = PortfolioSettings.getInteger(
+      MIN_WORDS_SETTING,
+      COVER_LETTER_MIN_WORDS
+    );
+    Integer maxWords = PortfolioSettings.getInteger(
+      MAX_WORDS_SETTING,
+      COVER_LETTER_MAX_WORDS
+    );
+    if (minWords > maxWords) {
+      return new List<Integer>{
+        COVER_LETTER_MIN_WORDS,
+        COVER_LETTER_MAX_WORDS
+      };
+    }
+    return new List<Integer>{ minWords, maxWords };
   }
 
   /**
