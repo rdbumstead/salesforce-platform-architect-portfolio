@@ -436,12 +436,6 @@
   display: none;
 }
 
-/* The pressed motion toggle keeps a visible state beyond its icon. */
-.motion-toggle[aria-pressed="true"] {
-  background: var(--pf-chip);
-  color: var(--pf-text);
-}
-
 .site-brand:focus-visible,
 .nav-link:focus-visible,
 .pillar-link:focus-visible,
@@ -528,7 +522,7 @@
   }
 }
 
-/* The layout writes data-motion from the visitor's choice or the system setting. */
+/* The layout writes data-motion from the system reduce motion setting. */
 :host([data-motion="full"]) .pillars-toggle .chevron {
   transition: transform 0.15s;
 }

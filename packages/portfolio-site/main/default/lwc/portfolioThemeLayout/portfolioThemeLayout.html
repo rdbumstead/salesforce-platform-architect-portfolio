@@ -178,50 +178,6 @@
             </template>
           </button>
           <button
-            class="icon-button motion-toggle"
-            type="button"
-            aria-label="Reduce motion"
-            aria-pressed={motionPressed}
-            title={motionTitle}
-            onclick={handleMotionToggle}
-          >
-            <template lwc:if={motionReduced}>
-              <svg
-                class="icon-motion-off"
-                aria-hidden="true"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="6" y="5" width="4" height="14" rx="1"></rect>
-                <rect x="14" y="5" width="4" height="14" rx="1"></rect>
-              </svg>
-            </template>
-            <template lwc:else>
-              <svg
-                class="icon-motion-on"
-                aria-hidden="true"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M3 8h9"></path>
-                <path d="M3 16h6"></path>
-                <path d="M15 4l6 8-6 8"></path>
-              </svg>
-            </template>
-          </button>
-          <button
             class="icon-button menu-toggle"
             type="button"
             aria-controls="site-navigation"
