@@ -6,14 +6,19 @@
  *                      values for persona and category. Every read uses a fixed field list made
  *                      only of Ids, record names and lookups to them, so no email, phone or free
  *                      text field is ever queried. It shows only names the API already returns.
- *                      Each list is sorted by label and capped at MAX_OPTIONS.
+ *                      Each list is sorted by label and capped at MAX_OPTIONS. Each read runs
+ *                      through QueryDefinitions, with its fixed field list as the allowlist, so
+ *                      a Query_Definition record can narrow it and never widen it.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/24/2026
  * @Test Class        : [ApiLabOptionsControllerTest]
  **/
-public with sharing class ApiLabOptionsController {
+public with sharing class ApiLabOptionsController implements QueryDefinitions.Provider {
+  /** Each read's Query_Definition record is this prefix and the read's name. */
+  private static final String QUERY_PREFIX = 'ApiLabOptionsController_';
+
   /** The most options any one parameter gets. */
   public static final Integer MAX_OPTIONS = 200;
 
@@ -329,15 +334,45 @@ public with sharing class ApiLabOptionsController {
       this.filter = filter;
     }
 
-    private String soql() {
-      return 'SELECT ' +
-        String.join(fields, ', ') +
-        ' FROM ' +
-        objectName +
-        (filter == null ? '' : ' WHERE ' + filter) +
-        ' WITH SYSTEM_MODE ORDER BY Name ASC LIMIT ' +
-        MAX_ROWS;
+    /**
+     * @description The read as code: the fixed fields, the fixed filter, by name, at most
+     *              MAX_ROWS rows, in system mode. Its Query_Definition record ships equal to it.
+     * @return QueryDefinitions.QueryDefault The default.
+     */
+    @TestVisible
+    private QueryDefinitions.QueryDefault queryDefault() {
+      return new QueryDefinitions.QueryDefault(
+          objectName,
+          String.join(fields, ', ')
+        )
+        .filter(filter)
+        .orderBy('Name ASC')
+        .rowLimit(MAX_ROWS)
+        .mode(QueryDefinitions.Mode.SYSTEM_MODE);
     }
+  }
+
+  /**
+   * @description The Query_Definition record name of a read: ApiLabOptionsController_ and
+   *              the read's name with a capital first letter.
+   * @param readName A key of READS.
+   * @return String The record's DeveloperName.
+   */
+  @TestVisible
+  private static String queryName(String readName) {
+    return QUERY_PREFIX + readName.capitalize();
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    Map<String, QueryDefinitions.QueryDefault> defaults = new Map<String, QueryDefinitions.QueryDefault>();
+    for (String readName : READS.keySet()) {
+      defaults.put(queryName(readName), READS.get(readName).queryDefault());
+    }
+    return defaults;
   }
 
   /**
@@ -360,7 +395,11 @@ public with sharing class ApiLabOptionsController {
     }
 
     private List<SObject> run(String readName) {
-      return Database.query(READS.get(readName).soql());
+      return QueryDefinitions.run(
+        queryName(readName),
+        new Map<String, Object>(),
+        READS.get(readName).queryDefault()
+      );
     }
   }
 }

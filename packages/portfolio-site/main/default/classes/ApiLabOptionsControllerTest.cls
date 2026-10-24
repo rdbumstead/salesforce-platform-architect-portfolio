@@ -503,4 +503,30 @@ private class ApiLabOptionsControllerTest {
       'No email reaches the guest'
     );
   }
+
+  @isTest
+  static void theGuestReadsEveryListThroughItsQueryDefinition() {
+    User guest = SiteGuestTestSupport.preparedGuest();
+
+    Test.startTest();
+    System.runAs(guest) {
+      ApiLabOptionsController.getOptions();
+    }
+    Test.stopTest();
+
+    Map<String, QueryDefinitions.QueryDefault> defaults = new ApiLabOptionsController()
+      .queryDefaults();
+    Assert.areEqual(
+      ApiLabOptionsController.READS.size(),
+      defaults.size(),
+      'One query definition per read'
+    );
+    for (String name : defaults.keySet()) {
+      Assert.areEqual(
+        'record',
+        QueryDefinitions.sourceByName.get(name),
+        'The guest is served by the record ' + name
+      );
+    }
+  }
 }

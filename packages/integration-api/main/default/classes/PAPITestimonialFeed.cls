@@ -10,7 +10,7 @@
  * @Test Class        : [PAPITestimonialFeedTest]
  **/
 @RestResource(urlMapping='/papi/v1/testimonials/feed')
-global with sharing class PAPITestimonialFeed {
+global with sharing class PAPITestimonialFeed implements QueryDefinitions.Provider {
   public static final String MODE_PROFESSIONAL = 'professional';
   public static final String MODE_CASUAL = 'casual';
 
@@ -21,6 +21,11 @@ global with sharing class PAPITestimonialFeed {
     'Peer'
   };
   private static final Integer MAX_ROWS = 200;
+  private static final String CASUAL_QUERY = 'PAPITestimonialFeed_Casual';
+  private static final String PROFESSIONAL_QUERY = 'PAPITestimonialFeed_Professional';
+  private static final String TESTIMONIAL_OBJECT = 'Testimonial__c';
+  private static final String FEED_FIELDS = 'Id, Author_Name__c, Author_Title__c, Relationship_Type__c, Context__c, Vibe_Mode__c, Avatar_URL__c';
+  private static final String FEED_ORDER = 'Sort_Order__c ASC NULLS LAST, CreatedDate DESC';
 
   /**
    * @description GET handler. Rejects an unknown mode with 400; answers with an array of
@@ -81,38 +86,68 @@ global with sharing class PAPITestimonialFeed {
 
   private static List<Testimonial__c> queryApproved(String mode) {
     if (mode == MODE_CASUAL) {
-      return [
-        SELECT
-          Id,
-          Author_Name__c,
-          Author_Title__c,
-          Relationship_Type__c,
-          Context__c,
-          Vibe_Mode__c,
-          Avatar_URL__c
-        FROM Testimonial__c
-        WHERE Approved__c = TRUE
-        ORDER BY Sort_Order__c ASC NULLS LAST, CreatedDate DESC
-        LIMIT :MAX_ROWS
-      ];
+      return (List<Testimonial__c>) QueryDefinitions.run(
+        CASUAL_QUERY,
+        new Map<String, Object>(),
+        casualDefault()
+      );
     }
-    return [
-      SELECT
-        Id,
-        Author_Name__c,
-        Author_Title__c,
-        Relationship_Type__c,
-        Context__c,
-        Vibe_Mode__c,
-        Avatar_URL__c
-      FROM Testimonial__c
-      WHERE
-        Approved__c = TRUE
-        AND Vibe_Mode__c = :VIBE_PROFESSIONAL
-        AND Relationship_Type__c IN :PROFESSIONAL_RELATIONSHIPS
-      ORDER BY Sort_Order__c ASC NULLS LAST, CreatedDate DESC
-      LIMIT :MAX_ROWS
-    ];
+    return (List<Testimonial__c>) QueryDefinitions.run(
+      PROFESSIONAL_QUERY,
+      professionalBinds(),
+      professionalDefault()
+    );
+  }
+
+  /**
+   * @description The casual feed read as code: every approved testimonial.
+   *              Query_Definition.PAPITestimonialFeed_Casual ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault casualDefault() {
+    return new QueryDefinitions.QueryDefault(TESTIMONIAL_OBJECT, FEED_FIELDS)
+      .filter('Approved__c = TRUE')
+      .orderBy(FEED_ORDER)
+      .rowLimit(MAX_ROWS)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The professional feed read as code: approved testimonials with the
+   *              Professional vibe from a Manager, Client or Peer.
+   *              Query_Definition.PAPITestimonialFeed_Professional ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault professionalDefault() {
+    return new QueryDefinitions.QueryDefault(TESTIMONIAL_OBJECT, FEED_FIELDS)
+      .filter(
+        'Approved__c = TRUE AND Vibe_Mode__c = :vibeProfessional ' +
+        'AND Relationship_Type__c IN :professionalRelationships'
+      )
+      .orderBy(FEED_ORDER)
+      .rowLimit(MAX_ROWS)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(professionalBinds());
+  }
+
+  private static Map<String, Object> professionalBinds() {
+    return new Map<String, Object>{
+      'vibeProfessional' => VIBE_PROFESSIONAL,
+      'professionalRelationships' => PROFESSIONAL_RELATIONSHIPS
+    };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      CASUAL_QUERY => casualDefault(),
+      PROFESSIONAL_QUERY => professionalDefault()
+    };
   }
 
   @TestVisible

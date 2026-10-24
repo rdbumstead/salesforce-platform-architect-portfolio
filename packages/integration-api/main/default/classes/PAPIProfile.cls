@@ -7,7 +7,20 @@
  * @Test Class        : [PAPIProfileTest]
  **/
 @RestResource(urlMapping='/papi/v1/profile/*')
-global with sharing class PAPIProfile {
+global with sharing class PAPIProfile implements QueryDefinitions.Provider {
+  private static final String OWNER_QUERY = 'PAPIProfile_Owner';
+  private static final String EXPERIENCE_QUERY = 'PAPIProfile_Experience';
+  private static final String HIGHLIGHTS_QUERY = 'PAPIProfile_Highlights';
+  private static final String SKILLS_QUERY = 'PAPIProfile_Skills';
+  private static final String PROJECTS_QUERY = 'PAPIProfile_Projects';
+  private static final String CERTIFICATIONS_QUERY = 'PAPIProfile_Certifications';
+  private static final String EDUCATION_QUERY = 'PAPIProfile_Education';
+  private static final String TESTIMONIALS_QUERY = 'PAPIProfile_Testimonials';
+  private static final String EXPERIENCE_SKILLS_QUERY = 'PAPIProfile_ExperienceSkills';
+
+  /** The most skills /profile/full returns. /profile/summary asks for fewer. */
+  private static final Integer MAX_SKILLS = 100;
+
   /**
    * @description GET method to retrieve full portfolio or summary based on path.
    *              /profile/full - Complete portfolio payload
@@ -55,7 +68,7 @@ global with sharing class PAPIProfile {
 
     putOwner(payload, agg, true);
     putExperience(payload, agg);
-    putSkills(payload, agg, 100);
+    putSkills(payload, agg, MAX_SKILLS);
     putProjects(payload, agg);
     putCertifications(payload, agg);
     putEducation(payload, agg);
@@ -110,22 +123,11 @@ global with sharing class PAPIProfile {
     }
     try {
       PAPITransformer.guardSection('contacts');
-      List<Contact> contacts = [
-        SELECT
-          Id,
-          Name,
-          Email,
-          Phone,
-          Title,
-          LinkedIn_URL__c,
-          GitHub_URL__c,
-          Trailhead_URL__c,
-          Portfolio_URL__c,
-          Career_Objective__c
-        FROM Contact
-        WHERE Is_Portfolio_Owner__c = TRUE
-        LIMIT 1
-      ];
+      List<Contact> contacts = (List<Contact>) QueryDefinitions.run(
+        OWNER_QUERY,
+        new Map<String, Object>(),
+        ownerDefault()
+      );
       if (contacts.isEmpty()) {
         agg.fail('contacts');
         return;
@@ -153,30 +155,20 @@ global with sharing class PAPIProfile {
     agg.source('experience');
     agg.source('experience-highlights');
     List<Experience__c> experiences = new List<Experience__c>();
+    Map<Id, List<String>> highlightsByExperience = new Map<Id, List<String>>();
     try {
       PAPITransformer.guardSection('experience');
-      experiences = [
-        SELECT
-          Id,
-          Name,
-          Employer__c,
-          Employer__r.Name,
-          Start_Date__c,
-          End_Date__c,
-          Is_Current_Role__c,
-          Is_Remote__c,
-          (
-            SELECT Id, Description__c
-            FROM Experience_Highlights__r
-            ORDER BY Sort_Order__c ASC
-          )
-        FROM Experience__c
-        ORDER BY Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST
-        LIMIT 50
-      ];
+      experiences = (List<Experience__c>) QueryDefinitions.run(
+        EXPERIENCE_QUERY,
+        new Map<String, Object>(),
+        experienceDefault()
+      );
+      // The highlights are a second read, so a failure there fails the section as one read did.
+      highlightsByExperience = highlightsOf(experiences);
     } catch (Exception e) {
       agg.fail('experience');
       experiences = new List<Experience__c>();
+      highlightsByExperience = new Map<Id, List<String>>();
     }
 
     Map<Id, List<String>> expSkillsMap = getExperienceSkills(experiences, agg);
@@ -186,10 +178,9 @@ global with sharing class PAPIProfile {
       List<String> skills = expSkillsMap.containsKey(exp.Id)
         ? expSkillsMap.get(exp.Id)
         : new List<String>();
-      List<String> highlights = new List<String>();
-      for (Experience_Highlight__c h : exp.Experience_Highlights__r) {
-        highlights.add(h.Description__c);
-      }
+      List<String> highlights = highlightsByExperience.containsKey(exp.Id)
+        ? highlightsByExperience.get(exp.Id)
+        : new List<String>();
       enrichedExperiences.add(
         PAPITransformer.transformExperience(exp, skills, highlights)
       );
@@ -207,12 +198,15 @@ global with sharing class PAPIProfile {
     List<Map<String, Object>> transformedSkills = new List<Map<String, Object>>();
     try {
       PAPITransformer.guardSection('skills');
-      for (Skill__c s : [
-        SELECT Id, Name, Category__c, Proficiency__c, Icon_Name__c
-        FROM Skill__c
-        ORDER BY Proficiency__c DESC, Name ASC
-        LIMIT :maxRows
-      ]) {
+      for (
+        Skill__c s : (List<Skill__c>) QueryDefinitions.runPage(
+          SKILLS_QUERY,
+          new Map<String, Object>(),
+          skillsDefault(),
+          maxRows,
+          null
+        )
+      ) {
         transformedSkills.add(PAPITransformer.transformSkill(s));
       }
     } catch (Exception e) {
@@ -230,29 +224,11 @@ global with sharing class PAPIProfile {
     List<Project__c> projects = new List<Project__c>();
     try {
       PAPITransformer.guardSection('projects');
-      projects = [
-        SELECT
-          Id,
-          Name,
-          Challenge__c,
-          Solution__c,
-          Business_Value__c,
-          Status__c,
-          Hero_Image_URL__c,
-          Live_URL__c,
-          Repository_URL__c,
-          Date_Completed__c,
-          Is_Featured__c
-        FROM Project__c
-        WHERE
-          Status__c IN (
-            'Live – In Production',
-            'Live – Demo / Reference',
-            'Active Development'
-          )
-        ORDER BY Sort_Order__c ASC NULLS LAST, Name ASC
-        LIMIT 50
-      ];
+      projects = (List<Project__c>) QueryDefinitions.run(
+        PROJECTS_QUERY,
+        new Map<String, Object>(),
+        projectsDefault()
+      );
     } catch (Exception e) {
       agg.fail('projects');
       projects = new List<Project__c>();
@@ -268,12 +244,13 @@ global with sharing class PAPIProfile {
     List<Map<String, Object>> transformedCerts = new List<Map<String, Object>>();
     try {
       PAPITransformer.guardSection('certifications');
-      for (Certification__c c : [
-        SELECT Id, Name, Issuer__r.Name, Earned_Date__c
-        FROM Certification__c
-        ORDER BY Earned_Date__c DESC
-        LIMIT 50
-      ]) {
+      for (
+        Certification__c c : (List<Certification__c>) QueryDefinitions.run(
+          CERTIFICATIONS_QUERY,
+          new Map<String, Object>(),
+          certificationsDefault()
+        )
+      ) {
         transformedCerts.add(
           new Map<String, Object>{
             'id' => c.Id,
@@ -301,19 +278,13 @@ global with sharing class PAPIProfile {
     List<Map<String, Object>> transformedEdu = new List<Map<String, Object>>();
     try {
       PAPITransformer.guardSection('education');
-      for (Education__c e : [
-        SELECT
-          Id,
-          Issuer__c,
-          Issuer__r.Name,
-          Name,
-          Field_of_Study__c,
-          Graduation_Date__c,
-          GPA__c
-        FROM Education__c
-        ORDER BY Graduation_Date__c DESC
-        LIMIT 10
-      ]) {
+      for (
+        Education__c e : (List<Education__c>) QueryDefinitions.run(
+          EDUCATION_QUERY,
+          new Map<String, Object>(),
+          educationDefault()
+        )
+      ) {
         transformedEdu.add(
           new Map<String, Object>{
             'id' => e.Id,
@@ -342,20 +313,13 @@ global with sharing class PAPIProfile {
     List<Map<String, Object>> transformedTestimonials = new List<Map<String, Object>>();
     try {
       PAPITransformer.guardSection('testimonials');
-      for (Testimonial__c t : [
-        SELECT
-          Id,
-          Author_Name__c,
-          Author_Title__c,
-          Relationship_Type__c,
-          Context__c,
-          Vibe_Mode__c,
-          Avatar_URL__c
-        FROM Testimonial__c
-        WHERE Approved__c = TRUE
-        ORDER BY CreatedDate DESC
-        LIMIT 20
-      ]) {
+      for (
+        Testimonial__c t : (List<Testimonial__c>) QueryDefinitions.run(
+          TESTIMONIALS_QUERY,
+          new Map<String, Object>(),
+          testimonialsDefault()
+        )
+      ) {
         transformedTestimonials.add(PAPITransformer.transformTestimonial(t));
       }
     } catch (Exception e) {
@@ -366,6 +330,29 @@ global with sharing class PAPIProfile {
   }
 
   // --- Helper Methods ---
+
+  // Each experience's highlight texts in Sort_Order__c order, read in one query.
+  private static Map<Id, List<String>> highlightsOf(
+    List<Experience__c> experiences
+  ) {
+    Map<Id, List<String>> result = new Map<Id, List<String>>();
+    if (experiences.isEmpty()) {
+      return result;
+    }
+    for (
+      Experience_Highlight__c highlight : (List<Experience_Highlight__c>) QueryDefinitions.run(
+        HIGHLIGHTS_QUERY,
+        experienceBinds(new Map<Id, Experience__c>(experiences).keySet()),
+        highlightsDefault()
+      )
+    ) {
+      if (!result.containsKey(highlight.Experience__c)) {
+        result.put(highlight.Experience__c, new List<String>());
+      }
+      result.get(highlight.Experience__c).add(highlight.Description__c);
+    }
+    return result;
+  }
 
   private static Map<String, Object> buildConfig(Contact c) {
     return new Map<String, Object>{
@@ -390,11 +377,13 @@ global with sharing class PAPIProfile {
     Map<Id, List<String>> result = new Map<Id, List<String>>();
     try {
       PAPITransformer.guardSection('experience-skills');
-      for (Experience_Skill__c es : [
-        SELECT Experience__c, Skill__r.Name
-        FROM Experience_Skill__c
-        WHERE Experience__c IN :expIds
-      ]) {
+      for (
+        Experience_Skill__c es : (List<Experience_Skill__c>) QueryDefinitions.run(
+          EXPERIENCE_SKILLS_QUERY,
+          experienceBinds(expIds),
+          experienceSkillsDefault()
+        )
+      ) {
         if (!result.containsKey(es.Experience__c)) {
           result.put(es.Experience__c, new List<String>());
         }
@@ -405,6 +394,173 @@ global with sharing class PAPIProfile {
       result.clear();
     }
     return result;
+  }
+
+  // --- Reads as code. Each Query_Definition.PAPIProfile_* record ships equal to its default.
+
+  /**
+   * @description The owner Contact. Email and Phone stay in the read because
+   *              PAPITransformer.transformContact reads them, and putOwner removes both.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault ownerDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Contact',
+        'Id, Name, Email, Phone, Title, LinkedIn_URL__c, GitHub_URL__c, ' +
+        'Trailhead_URL__c, Portfolio_URL__c, Career_Objective__c'
+      )
+      .filter('Is_Portfolio_Owner__c = TRUE')
+      .rowLimit(1)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The experiences, current role first, then the most recent.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault experienceDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience__c',
+        'Id, Name, Employer__c, Employer__r.Name, Start_Date__c, End_Date__c, ' +
+        'Is_Current_Role__c, Is_Remote__c'
+      )
+      .orderBy('Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST')
+      .rowLimit(50)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The highlights of the experiences read, in Sort_Order__c order.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault highlightsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience_Highlight__c',
+        'Id, Experience__c, Description__c'
+      )
+      .filter('Experience__c IN :experienceIds')
+      .orderBy('Sort_Order__c ASC')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(experienceBinds(new Set<Id>()));
+  }
+
+  /**
+   * @description The skills, strongest first. The caller's page size caps the row limit.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault skillsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Skill__c',
+        'Id, Name, Category__c, Proficiency__c, Icon_Name__c'
+      )
+      .orderBy('Proficiency__c DESC, Name ASC')
+      .rowLimit(MAX_SKILLS)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The listed projects, the same rows as the PAPIProjects list.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault projectsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Project__c',
+        PAPIProjects.PROJECT_FIELDS
+      )
+      .filter(PAPIProjects.LISTED_STATUS_FILTER)
+      .orderBy(PAPIProjects.PROJECT_ORDER)
+      .rowLimit(50)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The certifications, newest first.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault certificationsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Certification__c',
+        'Id, Name, Issuer__r.Name, Earned_Date__c'
+      )
+      .orderBy('Earned_Date__c DESC')
+      .rowLimit(50)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The education rows, newest first.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault educationDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Education__c',
+        'Id, Issuer__c, Issuer__r.Name, Name, Field_of_Study__c, ' +
+        'Graduation_Date__c, GPA__c'
+      )
+      .orderBy('Graduation_Date__c DESC')
+      .rowLimit(10)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The approved testimonials, newest first.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault testimonialsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Testimonial__c',
+        'Id, Author_Name__c, Author_Title__c, Relationship_Type__c, ' +
+        'Context__c, Vibe_Mode__c, Avatar_URL__c'
+      )
+      .filter('Approved__c = TRUE')
+      .orderBy('CreatedDate DESC')
+      .rowLimit(20)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
+  /**
+   * @description The skill names linked to the experiences read.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault experienceSkillsDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Experience_Skill__c',
+        'Experience__c, Skill__r.Name'
+      )
+      .filter('Experience__c IN :experienceIds')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(experienceBinds(new Set<Id>()));
+  }
+
+  private static Map<String, Object> experienceBinds(Set<Id> experienceIds) {
+    return new Map<String, Object>{ 'experienceIds' => experienceIds };
+  }
+
+  /**
+   * @description The code defaults this class owns, for QueryDefinitions.validateAll().
+   * @return Map<String, QueryDefinitions.QueryDefault> The defaults by record name.
+   */
+  public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
+    return new Map<String, QueryDefinitions.QueryDefault>{
+      OWNER_QUERY => ownerDefault(),
+      EXPERIENCE_QUERY => experienceDefault(),
+      HIGHLIGHTS_QUERY => highlightsDefault(),
+      SKILLS_QUERY => skillsDefault(),
+      PROJECTS_QUERY => projectsDefault(),
+      CERTIFICATIONS_QUERY => certificationsDefault(),
+      EDUCATION_QUERY => educationDefault(),
+      TESTIMONIALS_QUERY => testimonialsDefault(),
+      EXPERIENCE_SKILLS_QUERY => experienceSkillsDefault()
+    };
   }
 
   @TestVisible
