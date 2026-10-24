@@ -120,7 +120,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - No Critical or High violations from Salesforce Code Analyzer (`npm run scan`, `--severity-threshold 2`, run on every pull request).
 - The network log shows no `D3_Library` request until a graph view is opened.
 - Lighthouse Accessibility score remains 100 with the "Matrix | Graph" view switch present.
-- Skills graph: D3 force layout with pan, zoom and node drag (eleven D3 modules, an 81,502 byte static resource since Round 7, against the 1.57 MB G6 library), loaded only when a visitor opens the graph view on desktop or tablet. Phones show the skills matrix and request no graph engine, and the Pillar A ERD shows its object list.
+- Skills graph: D3 force layout with pan, zoom and node drag (eleven D3 modules, an 81,482 byte static resource, against the 1.57 MB G6 library), loaded only when a visitor opens the graph view on desktop or tablet. Phones show the skills matrix and request no graph engine, and the Pillar A ERD shows its object list. A drag or the arrow keys pan the graph at any zoom, and a plain wheel scrolls the page.
 
 **Engagement:**
 

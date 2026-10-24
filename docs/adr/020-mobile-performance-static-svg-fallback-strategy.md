@@ -46,3 +46,7 @@ The owner replaced the static SVG fallback and the G6 graph on 2026-10-22 (Round
 ## Amendment (2026-10-23, Round 7): pan, zoom and node drag
 
 The graph view gains pan, zoom and node drag (audit E1). `D3_Library` appends the official UMD builds of d3-selection, d3-color, d3-interpolate, d3-ease, d3-transition, d3-drag and d3-zoom, unchanged, so the resource grows from 18,544 to 81,502 bytes. The mobile rule stands: the resource still loads only when the graph view opens, and phones never request it. Zoom in, Zoom out and Reset view are buttons for keyboard users, and the zoom level is announced politely. Nothing animates on its own, so reduced motion still needs no special case (Technical Guide §2.1).
+
+## Amendment (2026-10-23): the wheel scrolls the page, and the graph pans at every zoom
+
+A plain mouse wheel over the graph now scrolls the page at every zoom level, and only Ctrl with the wheel, or a trackpad pinch, zooms, one step at a time. Before, a wheel up at 100% zoomed in. The owner chose that the wheel keeps scrolling the page at rest. A background drag or the arrow keys on the focused graph pan it at any zoom, 100% included, up to 120 units past the graph's edge, with a visible hint while it has focus. The buttons stay, and Reset view also returns dragged nodes. The mobile rule is unchanged: phones never request `D3_Library` (Technical Guide §2.1).
