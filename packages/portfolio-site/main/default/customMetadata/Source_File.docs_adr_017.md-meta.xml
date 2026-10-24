@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>docs adr 017</label>
+    <protected>false</protected>
+    <values>
+        <field>Source_Key__c</field>
+        <value xsi:type="xsd:string">docs</value>
+    </values>
+    <values>
+        <field>Path__c</field>
+        <value
+      xsi:type="xsd:string"
+    >docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md</value>
+    </values>
+    <values>
+        <field>Label__c</field>
+        <value
+      xsi:type="xsd:string"
+    >System API Security &amp; Dual-Sided Auth Pattern</value>
+    </values>
+    <values>
+        <field>Sort_Order__c</field>
+        <value xsi:type="xsd:double">17</value>
+    </values>
+</CustomMetadata>

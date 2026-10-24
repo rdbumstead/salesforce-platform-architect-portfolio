@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>docs adr 024</label>
+    <protected>false</protected>
+    <values>
+        <field>Source_Key__c</field>
+        <value xsi:type="xsd:string">docs</value>
+    </values>
+    <values>
+        <field>Path__c</field>
+        <value
+      xsi:type="xsd:string"
+    >docs/adr/024-twin-api-pattern-contract-first-parity.md</value>
+    </values>
+    <values>
+        <field>Label__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Twin API Pattern: Contract-First Parity</value>
+    </values>
+    <values>
+        <field>Sort_Order__c</field>
+        <value xsi:type="xsd:double">24</value>
+    </values>
+</CustomMetadata>
