@@ -3,7 +3,7 @@
  * d3-force 3.0.0, d3-selection 3.0.0, d3-color 3.1.0, d3-interpolate 3.0.1, d3-ease 3.0.1,
  * d3-transition 3.0.1, d3-drag 3.0.0 and d3-zoom 3.0.0, copied unchanged from the npm tarballs
  * (dist/<name>.min.js) and concatenated in dependency order. Together they attach to one window.d3
- * namespace. Loaded by c/graphEngine. Round 7 (audit E1) appended the last seven for pan, zoom
+ * namespace. Loaded by c/graphEngine. The last seven modules add pan, zoom
  * and node drag.
  *
  * Each module carries this licence (ISC), with its own copyright years in its banner line:
