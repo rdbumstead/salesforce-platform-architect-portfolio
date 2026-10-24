@@ -112,3 +112,14 @@
   font-size: 0.875rem;
   color: var(--pf-muted);
 }
+
+@media (max-width: 479.98px) {
+  .numbers {
+    padding: var(--pf-space-4);
+  }
+
+  .vibe-table th,
+  .vibe-table td {
+    padding: var(--pf-space-2) var(--pf-space-1);
+  }
+}
