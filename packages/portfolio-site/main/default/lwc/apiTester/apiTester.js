@@ -7,7 +7,13 @@
  *                      that, true and false pills for a boolean, bounded number inputs for limit
  *                      and offset, a text input with a hint for an id filter), every
  *                      chosen value shows as a removable pill with the query string under them,
- *                      and the free text "Advanced" field stays. Calls go through
+ *                      and the free text "Advanced" field stays. A name or Id filter becomes a
+ *                      picklist with "Any" first when ApiLabOptionsController.getOptions,
+ *                      read once per page load, returns values for it: a name sends itself and
+ *                      a record's name sends its Id. Each hint sits on its own line under its
+ *                      name. Below the site's phone breakpoint the filters, Advanced, the
+ *                      response details and the token form start as closed button disclosures,
+ *                      each press sending api_lab_section_toggled. Calls go through
  *                      ApiLabController.invoke (ADR-027), which returns the status, latency,
  *                      tracing and paging headers, the Named Credential and the body. The body
  *                      has a highlighted Raw JSON view (c/prismHighlighter) and a Rendered view
@@ -24,6 +30,7 @@
  **/
 import { LightningElement, wire } from "lwc";
 import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
+import getOptions from "@salesforce/apex/ApiLabOptionsController.getOptions";
 import invoke from "@salesforce/apex/ApiLabController.invoke";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
 import { trackEvent, EVENTS } from "c/analyticsService";
@@ -50,9 +57,27 @@ export const KIND_SELECT = "select";
 export const KIND_NUMBER = "number";
 export const KIND_ID = "id";
 export const KIND_TEXT = "text";
+export const KIND_OPTIONS = "options";
+
+/** The site's phone breakpoint, the same value as portfolioThemeLayout.css. */
+export const PHONE_QUERY = "(max-width: 767.98px)";
+
+/** The sections that start closed on a phone, in page order. */
+export const SECTION_FILTERS = "filters";
+export const SECTION_ADVANCED = "advanced";
+export const SECTION_RESPONSE = "response";
+export const SECTION_TOKEN = "token";
+export const SECTIONS = [
+  SECTION_FILTERS,
+  SECTION_ADVANCED,
+  SECTION_RESPONSE,
+  SECTION_TOKEN
+];
 
 export const ID_HINT =
   "Paste an Id from an earlier response, for example from /sapi/v1/projects.";
+
+export const ID_OPTION_HINT = "Pick a name. Its Id is what the call sends.";
 
 const NOT_RETURNED = "(not returned)";
 
@@ -122,8 +147,11 @@ export function parseCatalog(text) {
   }
 }
 
-/** Which control a spec parameter becomes. */
-export function controlKind(param) {
+/**
+ * Which control a spec parameter becomes. A free text or Id parameter becomes a picklist of
+ * the values that exist when the org returned options for it, and stays a text box when not.
+ */
+export function controlKind(param, options) {
   if (Array.isArray(param.enum) && param.enum.length) {
     return param.enum.length <= MAX_PILL_VALUES ? KIND_PILLS : KIND_SELECT;
   }
@@ -132,6 +160,10 @@ export function controlKind(param) {
   }
   if (param.type === "integer" || param.type === "number") {
     return KIND_NUMBER;
+  }
+  const known = options && options[param.name];
+  if (Array.isArray(known) && known.length) {
+    return KIND_OPTIONS;
   }
   if (/Id$/.test(param.name)) {
     return KIND_ID;
@@ -294,6 +326,26 @@ export default class ApiTester extends LightningElement {
   tokenResult;
   tokenError = "";
 
+  /** Option lists by parameter name, from the org. Empty until they load or when they fail. */
+  options = {};
+  isPhone = false;
+  openSections = {};
+  phoneQuery;
+  phoneListener;
+
+  /**
+   * One read per page load. When it fails every parameter keeps its text box, so the Lab
+   * still works.
+   */
+  @wire(getOptions)
+  wiredOptions({ data, error }) {
+    if (data) {
+      this.options = data;
+    } else if (error) {
+      this.options = {};
+    }
+  }
+
   @wire(getCatalog)
   wiredCatalog({ data, error }) {
     if (data) {
@@ -315,6 +367,39 @@ export default class ApiTester extends LightningElement {
       this.paintedBody = undefined;
       this.paintBody();
     });
+    this.watchPhoneWidth();
+  }
+
+  disconnectedCallback() {
+    if (this.phoneQuery && this.phoneListener) {
+      if (typeof this.phoneQuery.removeEventListener === "function") {
+        this.phoneQuery.removeEventListener("change", this.phoneListener);
+      } else if (typeof this.phoneQuery.removeListener === "function") {
+        this.phoneQuery.removeListener(this.phoneListener);
+      }
+    }
+    this.phoneQuery = undefined;
+    this.phoneListener = undefined;
+  }
+
+  /** Follows the phone breakpoint, so sections fold below it and stay open above it. */
+  watchPhoneWidth() {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return;
+    }
+    this.phoneQuery = window.matchMedia(PHONE_QUERY);
+    this.isPhone = Boolean(this.phoneQuery && this.phoneQuery.matches);
+    this.phoneListener = (event) => {
+      this.isPhone = Boolean(event.matches);
+    };
+    if (typeof this.phoneQuery.addEventListener === "function") {
+      this.phoneQuery.addEventListener("change", this.phoneListener);
+    } else if (typeof this.phoneQuery.addListener === "function") {
+      this.phoneQuery.addListener(this.phoneListener);
+    }
   }
 
   renderedCallback() {
@@ -371,25 +456,28 @@ export default class ApiTester extends LightningElement {
   }
 
   controlFor(entry, param) {
-    const kind = controlKind(param);
+    const kind = controlKind(param, this.options);
     const value = this.paramValues[param.name];
     let hint = param.description;
     if (kind === KIND_NUMBER) {
       hint = numberHint(param);
     } else if (kind === KIND_ID) {
       hint = ID_HINT;
+    } else if (kind === KIND_OPTIONS && /Id$/.test(param.name)) {
+      hint = ID_OPTION_HINT;
     }
     const control = {
       name: param.name,
       key: `${entry.path}:${param.name}`,
       value: value === undefined ? "" : value,
       isPills: kind === KIND_PILLS,
-      isSelect: kind === KIND_SELECT,
+      isSelect: kind === KIND_SELECT || kind === KIND_OPTIONS,
       isNumber: kind === KIND_NUMBER,
       isText: kind === KIND_TEXT || kind === KIND_ID,
       min: param.minimum,
       max: param.maximum,
-      hint
+      hint,
+      selectHint: kind === KIND_OPTIONS ? hint : ""
     };
     if (kind === KIND_PILLS) {
       control.pills = pillValues(param).map((option) => ({
@@ -407,6 +495,17 @@ export default class ApiTester extends LightningElement {
           label: option,
           key: `${param.name}-${option}`,
           selected: value === option
+        }))
+      ];
+    }
+    if (kind === KIND_OPTIONS) {
+      control.options = [
+        { value: "", label: "Any", key: `${param.name}-any`, selected: !value },
+        ...this.options[param.name].map((option) => ({
+          value: option.value,
+          label: option.label,
+          key: `${param.name}-${option.value}`,
+          selected: value === option.value
         }))
       ];
     }
@@ -433,6 +532,58 @@ export default class ApiTester extends LightningElement {
 
   get hasChosenPills() {
     return this.chosenPills.length > 0;
+  }
+
+  /** "Filters (2)": the heading of the folded filters, with how many values are chosen. */
+  get filtersTitle() {
+    return `Filters (${Object.keys(this.paramValues).length})`;
+  }
+
+  isSectionOpen(section) {
+    return !this.isPhone || Boolean(this.openSections[section]);
+  }
+
+  get filtersHidden() {
+    return !this.isSectionOpen(SECTION_FILTERS);
+  }
+
+  get advancedHidden() {
+    return !this.isSectionOpen(SECTION_ADVANCED);
+  }
+
+  get responseHidden() {
+    return !this.isSectionOpen(SECTION_RESPONSE);
+  }
+
+  get tokenHidden() {
+    return !this.isSectionOpen(SECTION_TOKEN);
+  }
+
+  get filtersExpanded() {
+    return this.filtersHidden ? "false" : "true";
+  }
+
+  get advancedExpanded() {
+    return this.advancedHidden ? "false" : "true";
+  }
+
+  get responseExpanded() {
+    return this.responseHidden ? "false" : "true";
+  }
+
+  get tokenExpanded() {
+    return this.tokenHidden ? "false" : "true";
+  }
+
+  /** Opens or closes one folded section on a phone and records it once per press. */
+  handleSectionToggle(event) {
+    const section = event.currentTarget.dataset.section;
+    if (!SECTIONS.includes(section)) {
+      return;
+    }
+    const expanded = !this.openSections[section];
+    this.openSections = { ...this.openSections, [section]: expanded };
+    trackEvent(EVENTS.API_LAB_SECTION_TOGGLED, { section, expanded });
   }
 
   get queryPreview() {
