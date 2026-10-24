@@ -14,13 +14,21 @@
   font-size: 13px;
 }
 
-/* The metrics take their own row, in labelled groups split by vertical rules. */
+/*
+ * The metrics take their own row, in labelled groups split by vertical rules. Every group
+ * carries its rule on the left and sits 1 px further left. The row starts one gutter to the
+ * left with its overflow clipped, so the group that starts any line, the first or one that
+ * wrapped, has its rule clipped away and lines up with the copyright.
+ */
 .metrics {
   display: flex;
   flex: 1 1 100%;
   flex-wrap: wrap;
   gap: var(--pf-space-3) 0;
   align-items: flex-start;
+  margin-left: calc(-1 * var(--pf-space-4));
+  padding: var(--pf-space-1) 0;
+  overflow: hidden;
   font-family: var(--pf-font-mono);
   font-size: 12px;
 }
@@ -30,13 +38,14 @@
   flex-direction: column;
   gap: var(--pf-space-1);
   min-width: 0;
+  margin-left: -1px;
   padding: 0 var(--pf-space-4);
   border-left: 1px solid var(--pf-border);
 }
 
-.metric-group:first-child {
-  padding-left: 0;
-  border-left: 0;
+/* The GraphQL probe renders nothing, so it takes no gap in the row. */
+.graphql-probe {
+  display: none;
 }
 
 .group-label {
@@ -117,9 +126,11 @@ a.target:hover,
   .metrics {
     flex-direction: column;
     gap: var(--pf-space-4);
+    margin-left: 0;
   }
 
   .metric-group {
+    margin-left: 0;
     padding: 0;
     border-left: 0;
   }
