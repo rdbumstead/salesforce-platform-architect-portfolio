@@ -2,7 +2,9 @@
  * @description       : Tests for PortfolioStatsController. Each count has its own test on
  *                      rows made here, the records ship equal to their code defaults, and a
  *                      guest test runs as the real Portfolio1 site guest user to prove the
- *                      result holds counts and nothing else.
+ *                      result holds counts and nothing else. The other tests read as a user
+ *                      made here with Portfolio_Admin, so they never lean on the org's own
+ *                      assignments.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -13,6 +15,51 @@ private class PortfolioStatsControllerTest {
   private static final String DEPLOY = GovernanceEventHandler.WORKFLOW_DEPLOY;
   private static final String AUTHOR_SENTINEL = 'Sentinel Author Zq';
   private static final String NOTE_SENTINEL = 'sentinel note text zq';
+
+  // An internal reader made inside the test, with Portfolio_Admin assigned here, so the
+  // approved read in user mode never depends on what the org has assigned.
+  private static User adminReader() {
+    Profile admin = [
+      SELECT Id
+      FROM Profile
+      WHERE Name = 'System Administrator'
+      LIMIT 1
+    ];
+    User user = new User(
+      Alias = 'reader',
+      Email = 'reader@example.com',
+      EmailEncodingKey = 'UTF-8',
+      LastName = 'Reader',
+      LanguageLocaleKey = 'en_US',
+      LocaleSidKey = 'en_US',
+      ProfileId = admin.Id,
+      TimeZoneSidKey = 'America/Los_Angeles',
+      Username = 'reader.' + Crypto.getRandomInteger() + '@example.com.stats'
+    );
+    // Setup records in their own runAs block avoid mixed DML with the test's own inserts.
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      insert user;
+      insert new PermissionSetAssignment(
+        AssigneeId = user.Id,
+        PermissionSetId = [
+          SELECT Id
+          FROM PermissionSet
+          WHERE Name = 'Portfolio_Admin'
+          LIMIT 1
+        ]
+        .Id
+      );
+    }
+    return user;
+  }
+
+  private static PortfolioStatsController.Stats statsAs(User reader) {
+    PortfolioStatsController.Stats stats;
+    System.runAs(reader) {
+      stats = PortfolioStatsController.getStats();
+    }
+    return stats;
+  }
 
   private static Testimonial__c testimonial(String vibe, Boolean approved) {
     return new Testimonial__c(
@@ -69,8 +116,10 @@ private class PortfolioStatsControllerTest {
   static void countsApprovedTestimonials() {
     insertTestimonials();
 
+    User reader = adminReader();
+
     Test.startTest();
-    PortfolioStatsController.Stats stats = PortfolioStatsController.getStats();
+    PortfolioStatsController.Stats stats = statsAs(reader);
     Test.stopTest();
 
     Assert.areEqual(3, stats.testimonialsApproved, 'Approved total');
@@ -82,8 +131,10 @@ private class PortfolioStatsControllerTest {
   static void countsWaitingTestimonials() {
     insertTestimonials();
 
+    User reader = adminReader();
+
     Test.startTest();
-    PortfolioStatsController.Stats stats = PortfolioStatsController.getStats();
+    PortfolioStatsController.Stats stats = statsAs(reader);
     Test.stopTest();
 
     Assert.areEqual(4, stats.testimonialsWaiting, 'Waiting total');
@@ -93,8 +144,10 @@ private class PortfolioStatsControllerTest {
 
   @isTest
   static void listsEveryVibeEvenWithNoTestimonials() {
+    User reader = adminReader();
+
     Test.startTest();
-    PortfolioStatsController.Stats stats = PortfolioStatsController.getStats();
+    PortfolioStatsController.Stats stats = statsAs(reader);
     Test.stopTest();
 
     Assert.areEqual(2, stats.testimonialsByVibe.size(), 'Both vibes listed');
@@ -113,8 +166,10 @@ private class PortfolioStatsControllerTest {
       run(GovernanceEventHandler.WORKFLOW_HEARTBEAT, null, Datetime.now())
     };
 
+    User reader = adminReader();
+
     Test.startTest();
-    PortfolioStatsController.Stats stats = PortfolioStatsController.getStats();
+    PortfolioStatsController.Stats stats = statsAs(reader);
     Test.stopTest();
 
     Assert.areEqual(2, stats.deployRuns, 'Heartbeat runs are not deploys');
@@ -136,8 +191,10 @@ private class PortfolioStatsControllerTest {
       run(GovernanceEventHandler.WORKFLOW_HEARTBEAT, 5, Datetime.now())
     };
 
+    User reader = adminReader();
+
     Test.startTest();
-    PortfolioStatsController.Stats stats = PortfolioStatsController.getStats();
+    PortfolioStatsController.Stats stats = statsAs(reader);
     Test.stopTest();
 
     Assert.areEqual(965, stats.latestTestsRun, 'Tests run');
@@ -147,8 +204,10 @@ private class PortfolioStatsControllerTest {
 
   @isTest
   static void leavesTheTestNumbersEmptyWithNoDeploy() {
+    User reader = adminReader();
+
     Test.startTest();
-    PortfolioStatsController.Stats stats = PortfolioStatsController.getStats();
+    PortfolioStatsController.Stats stats = statsAs(reader);
     Test.stopTest();
 
     Assert.areEqual(0, stats.deployRuns, 'No deploys');
@@ -170,8 +229,10 @@ private class PortfolioStatsControllerTest {
       new API_Access_Request__c(Outcome__c = 'Cap_Reached')
     };
 
+    User reader = adminReader();
+
     Test.startTest();
-    PortfolioStatsController.Stats stats = PortfolioStatsController.getStats();
+    PortfolioStatsController.Stats stats = statsAs(reader);
     Test.stopTest();
 
     Assert.areEqual(2, stats.tokensIssued, 'Only issued tokens count');
@@ -181,9 +242,11 @@ private class PortfolioStatsControllerTest {
   static void aFailedReadReturnsAPlainError() {
     PortfolioStatsController.throwForTest = true;
 
+    User reader = adminReader();
+
     Test.startTest();
     try {
-      PortfolioStatsController.getStats();
+      statsAs(reader);
       Assert.fail('Expected an AuraHandledException');
     } catch (AuraHandledException e) {
       Assert.areEqual(
@@ -310,8 +373,10 @@ private class PortfolioStatsControllerTest {
 
   @isTest
   static void everyStatsReadRunsThroughItsRecord() {
+    User reader = adminReader();
+
     Test.startTest();
-    PortfolioStatsController.getStats();
+    statsAs(reader);
     Test.stopTest();
 
     for (
