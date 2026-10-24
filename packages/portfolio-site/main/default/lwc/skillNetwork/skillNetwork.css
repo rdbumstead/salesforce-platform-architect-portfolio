@@ -401,9 +401,15 @@
   }
 }
 
-/* View source, at the top right of the card body. */
+/* View source, at the top right of the card body on desktop and at the left on phones. */
 .card-tools {
   display: flex;
   justify-content: flex-end;
   margin-bottom: var(--pf-space-2);
+}
+
+@media (max-width: 767.98px) {
+  .card-tools {
+    justify-content: flex-start;
+  }
 }
