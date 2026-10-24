@@ -17,7 +17,7 @@
  *                      aria-expanded, showing those blocks and the Live and Source links that
  *                      are set and safe.
  *                      Smooth scrolling and the card hover transition follow
- *                      c/motionPreference: the visitor's own choice, else the system setting.
+ *                      c/motionPreference, which follows the system "reduce motion" setting.
  *                      Opening a case study sends case_study_opened with the pillar letter,
  *                      and following a start here path sends start_path_followed.
  * @author            : Ryan Bumstead
@@ -126,8 +126,7 @@ function joinNames(names) {
 /**
  * Scrolls to an element and moves focus to it, smoothly unless motion is reduced.
  * @param {HTMLElement} target the heading to move to
- * @param {boolean} reduced true when the visitor's motion preference (their own choice, else
- *        the system setting) asks for less motion
+ * @param {boolean} reduced true when the system "reduce motion" setting asks for less motion
  */
 function moveTo(target, reduced) {
   if (!target) {
