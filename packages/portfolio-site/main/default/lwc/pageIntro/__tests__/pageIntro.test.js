@@ -59,9 +59,9 @@ describe("c-page-intro", () => {
 
   it("uses the design label when one is set", () => {
     const element = mount({ ...FULL, designLabel: "Read the SAS" });
-    expect(
-      element.shadowRoot.querySelector("a.intro-design").textContent
-    ).toBe("Read the SAS");
+    expect(element.shadowRoot.querySelector("a.intro-design").textContent).toBe(
+      "Read the SAS"
+    );
   });
 
   it("opens an https design link in a new tab with a safe rel", () => {
