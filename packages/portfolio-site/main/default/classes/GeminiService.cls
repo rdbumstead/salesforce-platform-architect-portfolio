@@ -5,6 +5,11 @@
  *                      thinking model returns its reasoning as parts marked thought, ahead of
  *                      the answer. Only the answer parts are returned. A response with no answer
  *                      text comes back empty, which the dispatch treats as a failed attempt.
+ *                      Every request carries a generationConfig with maxOutputTokens and
+ *                      temperature from the Ai_Max_Output_Tokens and Ai_Temperature settings.
+ *                      The output limit counts the model's reasoning too, so it is set well
+ *                      above the letter's own length. lastUsage() keeps the finish reason and
+ *                      token counts of the last answer for the tuning runs.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -28,6 +33,12 @@ public with sharing class GeminiService implements IAIGenerationService {
 
   /** DeveloperName of this provider's AI_Provider_Config__mdt record. */
   public static final String CONFIG_NAME = 'Gemini';
+
+  /** Code defaults of the generation config settings. */
+  public static final Integer DEFAULT_MAX_OUTPUT_TOKENS = 8192;
+  public static final Decimal DEFAULT_TEMPERATURE = 0.7;
+  public static final String MAX_OUTPUT_TOKENS_SETTING = 'Ai_Max_Output_Tokens';
+  public static final String TEMPERATURE_SETTING = 'Ai_Temperature';
 
   private static final Integer MAX_TIMEOUT_MS = 120000;
   private static final String ENDPOINT_PREFIX = 'callout:Gemini_API/v1beta/models/';
@@ -61,6 +72,7 @@ public with sharing class GeminiService implements IAIGenerationService {
    */
   public static String generateContentStatic(String prompt) {
     failureDetail = null;
+    lastUsage = null;
     try {
       HttpResponse res = callGemini(prompt);
       if (res.getStatusCode() == 200) {
@@ -93,6 +105,45 @@ public with sharing class GeminiService implements IAIGenerationService {
   }
 
   private static String failureDetail;
+
+  /**
+   * @description The finishReason of the first candidate and the token counts of the last
+   *              200 response in this transaction: finishReason, promptTokenCount,
+   *              candidatesTokenCount, thoughtsTokenCount, totalTokenCount. A key the
+   *              response did not send is left out. It holds no text of the prompt or answer.
+   * @return Map<String, Object> The values, or null when the last call had no 200 body.
+   */
+  public static Map<String, Object> lastUsage() {
+    return lastUsage;
+  }
+
+  private static Map<String, Object> lastUsage;
+
+  private static final List<String> USAGE_KEYS = new List<String>{
+    'promptTokenCount',
+    'candidatesTokenCount',
+    'thoughtsTokenCount',
+    'totalTokenCount'
+  };
+
+  /**
+   * @description The generationConfig of every request: maxOutputTokens from
+   *              Ai_Max_Output_Tokens and temperature from Ai_Temperature, each with its code
+   *              default when the setting is missing or out of its range.
+   * @return GenerationConfig The config sent with the prompt.
+   */
+  public static GenerationConfig generationConfig() {
+    GenerationConfig config = new GenerationConfig();
+    config.maxOutputTokens = PortfolioSettings.getInteger(
+      MAX_OUTPUT_TOKENS_SETTING,
+      DEFAULT_MAX_OUTPUT_TOKENS
+    );
+    config.temperature = PortfolioSettings.getDecimal(
+      TEMPERATURE_SETTING,
+      DEFAULT_TEMPERATURE
+    );
+    return config;
+  }
 
   private static final Integer DETAIL_MAX_LENGTH = 120;
 
@@ -179,6 +230,7 @@ public with sharing class GeminiService implements IAIGenerationService {
       jsonBody
     );
     List<Object> candidates = (List<Object>) root.get('candidates');
+    lastUsage = usageOf(root, candidates);
     if (candidates == null || candidates.isEmpty()) {
       return '';
     }
@@ -205,12 +257,45 @@ public with sharing class GeminiService implements IAIGenerationService {
     return String.join(answer, '');
   }
 
+  private static Map<String, Object> usageOf(
+    Map<String, Object> root,
+    List<Object> candidates
+  ) {
+    Map<String, Object> usage = new Map<String, Object>();
+    if (candidates != null && !candidates.isEmpty()) {
+      Object reason = ((Map<String, Object>) candidates[0]).get('finishReason');
+      if (reason instanceof String) {
+        usage.put('finishReason', reason);
+      }
+    }
+    Object metadata = root.get('usageMetadata');
+    if (metadata instanceof Map<String, Object>) {
+      Map<String, Object> counts = (Map<String, Object>) metadata;
+      for (String key : USAGE_KEYS) {
+        if (counts.get(key) instanceof Integer) {
+          usage.put(key, counts.get(key));
+        }
+      }
+    }
+    return usage;
+  }
+
   // --- Wrappers ---
   public class RequestWrapper {
     public List<Content> contents;
+    public GenerationConfig generationConfig;
     public RequestWrapper(String text) {
       this.contents = new List<Content>{ new Content(text) };
+      this.generationConfig = GeminiService.generationConfig();
     }
+  }
+
+  /**
+   * @description The generationConfig of a request, named as the Gemini API names it.
+   */
+  public class GenerationConfig {
+    public Integer maxOutputTokens;
+    public Decimal temperature;
   }
   public class Content {
     public List<Part> parts;

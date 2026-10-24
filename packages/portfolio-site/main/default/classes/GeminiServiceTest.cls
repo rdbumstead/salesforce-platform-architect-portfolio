@@ -390,6 +390,93 @@ private class GeminiServiceTest {
     Assert.areEqual(GeminiService.MODEL, invalid, 'Not a model id');
   }
 
+  // --- Generation config and usage ---
+
+  private static Map<String, Object> sentConfig(StatusMock mock) {
+    Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(
+      mock.received.getBody()
+    );
+    return (Map<String, Object>) body.get('generationConfig');
+  }
+
+  @isTest
+  static void requestCarriesTheGenerationConfigFromTheSettings() {
+    PortfolioSettings.overrideNumber('Ai_Max_Output_Tokens', 4096);
+    PortfolioSettings.overrideNumber('Ai_Temperature', 0.4);
+    StatusMock mock = new StatusMock(200, TWO_PART_RESPONSE);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    GeminiService.generateContentStatic('Write a letter');
+    Test.stopTest();
+
+    Map<String, Object> config = sentConfig(mock);
+    Assert.areEqual(4096, config.get('maxOutputTokens'), 'Output limit');
+    Assert.areEqual(0.4, (Decimal) config.get('temperature'), 'Temperature');
+  }
+
+  @isTest
+  static void missingSettingsSendTheCodeDefaults() {
+    PortfolioSettings.overrides.put('Ai_Max_Output_Tokens', null);
+    PortfolioSettings.overrides.put('Ai_Temperature', null);
+    StatusMock mock = new StatusMock(200, TWO_PART_RESPONSE);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    GeminiService.generateContentStatic('Write a letter');
+    Test.stopTest();
+
+    Map<String, Object> config = sentConfig(mock);
+    Assert.areEqual(
+      GeminiService.DEFAULT_MAX_OUTPUT_TOKENS,
+      config.get('maxOutputTokens'),
+      'Default output limit'
+    );
+    Assert.areEqual(
+      GeminiService.DEFAULT_TEMPERATURE,
+      (Decimal) config.get('temperature'),
+      'Default temperature'
+    );
+    Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(
+      mock.received.getBody()
+    );
+    Assert.areEqual(
+      new Set<String>{ 'contents', 'generationConfig' },
+      body.keySet(),
+      'Only the prompt and the config are sent'
+    );
+    Assert.isTrue(
+      mock.received.getBody().contains('"text":"Write a letter"'),
+      'The prompt is the content'
+    );
+  }
+
+  @isTest
+  static void usageOfTheLastAnswerIsKept() {
+    Test.setMock(HttpCalloutMock.class, new StatusMock(200, TWO_PART_RESPONSE));
+
+    Test.startTest();
+    GeminiService.generateContentStatic('Write a letter');
+    Test.stopTest();
+
+    Map<String, Object> usage = GeminiService.lastUsage();
+    Assert.areEqual('STOP', usage.get('finishReason'), 'Finish reason');
+    Assert.areEqual(289, usage.get('thoughtsTokenCount'), 'Reasoning tokens');
+    Assert.areEqual(310, usage.get('totalTokenCount'), 'Total tokens');
+    Assert.isFalse(usage.containsKey('promptTokenCount'), 'Only what was sent');
+  }
+
+  @isTest
+  static void failedCallKeepsNoUsage() {
+    Test.setMock(HttpCalloutMock.class, new StatusMock(500, '{}'));
+
+    Test.startTest();
+    GeminiService.generateContentStatic('Write a letter');
+    Test.stopTest();
+
+    Assert.isNull(GeminiService.lastUsage(), 'No 200 body');
+  }
+
   public class MockTrigger implements HttpCalloutMock {
     public HttpResponse respond(HttpRequest req) {
       CalloutException e = (CalloutException) CalloutException.class
