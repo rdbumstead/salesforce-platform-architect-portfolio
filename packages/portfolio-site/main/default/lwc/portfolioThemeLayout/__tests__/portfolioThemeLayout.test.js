@@ -1,7 +1,8 @@
 /**
  * @description       : Unit tests for portfolioThemeLayout LWC: header navigation, Pillars menu
- *                      and its Docs link, phone menu, the theme and motion toggles and the
- *                      floating Back to top. c/motionPreference is the real module.
+ *                      and its Docs link, phone menu, the theme toggle, motion following the
+ *                      system setting with no motion button, and the floating Back to top.
+ *                      c/motionPreference is the real module.
  *                      c/pillarData is a fixed stand in.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -892,7 +893,7 @@ describe("c-portfolio-theme-layout", () => {
     });
   });
 
-  describe("motion toggle", () => {
+  describe("motion", () => {
     const MOTION_KEY = "portfolio-motion";
 
     function mockSystemMotion(reduced) {
@@ -906,75 +907,85 @@ describe("c-portfolio-theme-layout", () => {
       return listeners;
     }
 
-    function toggle(element) {
-      return element.shadowRoot.querySelector(".motion-toggle");
+    function actionClasses(element) {
+      return Array.from(
+        element.shadowRoot.querySelector(".site-actions").children
+      ).map((node) => node.getAttribute("class"));
     }
 
-    it("sits right after the theme button as a real button", () => {
+    it("has no motion button in the header, and the theme button sits right before the menu button", () => {
       const element = render();
-      const control = toggle(element);
-      expect(control.tagName).toBe("BUTTON");
-      expect(control.getAttribute("type")).toBe("button");
-      expect(control.getAttribute("aria-label")).toBe("Reduce motion");
+      expect(element.shadowRoot.querySelector(".motion-toggle")).toBeNull();
       expect(
-        element.shadowRoot.querySelector(".theme-toggle").nextElementSibling
-      ).toBe(control);
+        element.shadowRoot.querySelector('[aria-label="Reduce motion"]')
+      ).toBeNull();
+      expect(actionClasses(element)).toEqual([
+        "divider",
+        "icon-button theme-toggle",
+        "icon-button menu-toggle"
+      ]);
+      const theme = element.shadowRoot.querySelector(".theme-toggle");
+      expect(theme.tagName).toBe("BUTTON");
+      expect(theme.getAttribute("type")).toBe("button");
+      expect(theme.getAttribute("aria-label")).toBe("Dark theme");
+      expect(theme.getAttribute("aria-pressed")).toBe("false");
+      expect(theme.getAttribute("title")).toBe("Switch to dark theme");
+      expect(theme.nextElementSibling).toBe(
+        element.shadowRoot.querySelector(".menu-toggle")
+      );
+      expect(
+        element.shadowRoot.querySelectorAll(".site-actions button")
+      ).toHaveLength(2);
     });
 
-    it("follows a full motion system setting until the visitor chooses", () => {
+    it("has no motion button in the open phone menu, and the theme button still works there", async () => {
+      const element = render();
+      element.shadowRoot.querySelector(".menu-toggle").click();
+      await flush();
+      expect(
+        element.shadowRoot
+          .querySelector(".menu-toggle")
+          .getAttribute("aria-expanded")
+      ).toBe("true");
+      expect(element.shadowRoot.querySelector(".motion-toggle")).toBeNull();
+      expect(actionClasses(element)).toEqual([
+        "divider",
+        "icon-button theme-toggle",
+        "icon-button menu-toggle"
+      ]);
+      element.shadowRoot.querySelector(".theme-toggle").click();
+      await flush();
+      expect(element.getAttribute("data-theme")).toBe("dark");
+      expect(trackEvent).toHaveBeenCalledWith("theme_changed", {
+        theme: "dark"
+      });
+    });
+
+    it("follows a full motion system setting on the host only", () => {
       mockSystemMotion(false);
       const element = render();
-      expect(toggle(element).getAttribute("aria-pressed")).toBe("false");
-      expect(toggle(element).getAttribute("title")).toBe("Reduce motion");
       expect(element.getAttribute("data-motion")).toBe("full");
-      expect(window.localStorage.getItem(MOTION_KEY)).toBeNull();
       expect(document.documentElement.hasAttribute("data-motion")).toBe(false);
     });
 
     it("follows a reduced motion system setting", () => {
       mockSystemMotion(true);
       const element = render();
-      expect(toggle(element).getAttribute("aria-pressed")).toBe("true");
-      expect(toggle(element).getAttribute("title")).toBe("Turn motion back on");
       expect(element.getAttribute("data-motion")).toBe("reduce");
     });
 
-    it("stores the choice, marks the page and sends motion_toggled on each press", async () => {
-      mockSystemMotion(false);
-      const element = render();
-
-      toggle(element).click();
-      await flush();
-      expect(toggle(element).getAttribute("aria-pressed")).toBe("true");
-      expect(window.localStorage.getItem(MOTION_KEY)).toBe("reduce");
-      expect(element.getAttribute("data-motion")).toBe("reduce");
-      expect(document.documentElement.getAttribute("data-motion")).toBe(
-        "reduce"
-      );
-      expect(trackEvent).toHaveBeenLastCalledWith("motion_toggled", {
-        motion: "reduce"
-      });
-
-      toggle(element).click();
-      await flush();
-      expect(toggle(element).getAttribute("aria-pressed")).toBe("false");
-      expect(window.localStorage.getItem(MOTION_KEY)).toBe("full");
-      expect(element.getAttribute("data-motion")).toBe("full");
-      expect(trackEvent).toHaveBeenLastCalledWith("motion_toggled", {
-        motion: "full"
-      });
-      expect(trackEvent).toHaveBeenCalledTimes(2);
-    });
-
-    it("applies a saved choice on load over the system setting", () => {
+    it("ignores a stored choice and removes it on load, leaving the theme choice", () => {
       mockSystemMotion(true);
       window.localStorage.setItem(MOTION_KEY, "full");
+      window.localStorage.setItem(STORAGE_KEY, "dark");
       const element = render();
-      expect(toggle(element).getAttribute("aria-pressed")).toBe("false");
-      expect(document.documentElement.getAttribute("data-motion")).toBe("full");
+      expect(element.getAttribute("data-motion")).toBe("reduce");
+      expect(window.localStorage.getItem(MOTION_KEY)).toBeNull();
+      expect(window.localStorage.getItem(STORAGE_KEY)).toBe("dark");
+      expect(document.documentElement.hasAttribute("data-motion")).toBe(false);
     });
 
-    it("follows the system setting when it changes and nothing is stored", async () => {
+    it("follows the system setting when it changes", async () => {
       const listeners = mockSystemMotion(false);
       const element = render();
       window.matchMedia.mockImplementation((query) => ({
@@ -985,11 +996,21 @@ describe("c-portfolio-theme-layout", () => {
       }));
       listeners.forEach((fn) => fn({ matches: true }));
       await flush();
-      expect(toggle(element).getAttribute("aria-pressed")).toBe("true");
+      expect(element.getAttribute("data-motion")).toBe("reduce");
     });
 
-    it("keeps working when localStorage throws on every call", async () => {
+    it("never sends motion_toggled", async () => {
       mockSystemMotion(false);
+      const element = render();
+      element.shadowRoot.querySelector(".theme-toggle").click();
+      element.shadowRoot.querySelector(".menu-toggle").click();
+      await flush();
+      const names = trackEvent.mock.calls.map((call) => call[0]);
+      expect(names).toEqual(["theme_changed"]);
+    });
+
+    it("keeps working when localStorage throws on every call", () => {
+      mockSystemMotion(true);
       Object.defineProperty(window, "localStorage", {
         configurable: true,
         value: {
@@ -998,13 +1019,13 @@ describe("c-portfolio-theme-layout", () => {
           },
           setItem: () => {
             throw new Error("QuotaExceededError");
+          },
+          removeItem: () => {
+            throw new Error("SecurityError");
           }
         }
       });
       const element = render();
-      toggle(element).click();
-      await flush();
-      expect(toggle(element).getAttribute("aria-pressed")).toBe("true");
       expect(element.getAttribute("data-motion")).toBe("reduce");
     });
 
@@ -1014,7 +1035,7 @@ describe("c-portfolio-theme-layout", () => {
       document.body.removeChild(element);
       document.dispatchEvent(
         new CustomEvent("portfolio-motion", {
-          detail: { motion: "reduce", reduced: true }
+          detail: { reduced: true }
         })
       );
       await flush();
@@ -1180,7 +1201,7 @@ describe("c-portfolio-theme-layout", () => {
       });
     });
 
-    it("jumps without animation when the visitor chose reduced motion", async () => {
+    it("scrolls smoothly when a stored reduce is left from an earlier version", async () => {
       window.localStorage.setItem("portfolio-motion", "reduce");
       const element = renderWithFooter();
       await scrollTo(3000);
@@ -1188,11 +1209,11 @@ describe("c-portfolio-theme-layout", () => {
       expect(window.scrollTo).toHaveBeenCalledWith({
         top: 0,
         left: 0,
-        behavior: "auto"
+        behavior: "smooth"
       });
     });
 
-    it("scrolls smoothly when the visitor chose full motion on a reduced system", async () => {
+    it("jumps without animation on a reduced system even with a stored full", async () => {
       window.matchMedia = jest.fn().mockImplementation((query) => ({
         matches: query === "(prefers-reduced-motion: reduce)",
         media: query,
@@ -1206,7 +1227,7 @@ describe("c-portfolio-theme-layout", () => {
       expect(window.scrollTo).toHaveBeenCalledWith({
         top: 0,
         left: 0,
-        behavior: "smooth"
+        behavior: "auto"
       });
     });
 

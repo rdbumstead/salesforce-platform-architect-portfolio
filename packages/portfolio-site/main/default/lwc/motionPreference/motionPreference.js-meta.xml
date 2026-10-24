@@ -3,5 +3,5 @@
     <apiVersion>62.0</apiVersion>
     <isExposed>false</isExposed>
     <description
-  >The visitor's motion choice, the system setting as the default, and its change event.</description>
+  >The system reduce motion setting and its change event, for every component that animates.</description>
 </LightningComponentBundle>

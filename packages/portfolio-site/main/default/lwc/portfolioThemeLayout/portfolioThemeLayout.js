@@ -7,10 +7,10 @@
  *                      everywhere. The link to the page on screen carries aria-current="page".
  *                      Owns the theme: the stylesheet follows the system
  *                      setting, and the toggle writes data-theme and the portfolio-theme storage key.
- *                      Beside it, the motion toggle (aria-pressed when motion is reduced) stores
- *                      the visitor's choice through c/motionPreference, defaults to the system
- *                      setting, mirrors the choice on the host as data-motion and sends
- *                      motion_toggled. The Pillars menu ends with a Docs link to /docs.
+ *                      Motion follows the system "reduce motion" setting alone through
+ *                      c/motionPreference, mirrored on the host as data-motion. There is no
+ *                      motion button, and a choice an earlier version stored is removed on load.
+ *                      The Pillars menu ends with a Docs link to /docs.
  *                      A floating "Back to top" button appears once the visitor has
  *                      scrolled one screen height and rises above the footer when the footer is
  *                      in view. It sits right after the main content in the tab order, scrolls to
@@ -30,11 +30,10 @@ import basePath from "@salesforce/community/basePath";
 import { PILLARS } from "c/pillarData";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import {
-  applyStoredMotion,
+  forgetStoredMotion,
   isReduced,
   onMotionChange,
   scrollBehavior,
-  setMotion,
   MOTION_FULL,
   MOTION_REDUCE
 } from "c/motionPreference";
@@ -157,8 +156,6 @@ export default class PortfolioThemeLayout extends LightningElement {
   // True while a click that passed through the Pillars wrapper bubbles up to the document.
   _clickInPillars = false;
 
-  // True while motion is reduced, by the visitor's choice or the system setting.
-  motionReduced = false;
   _stopMotion = null;
   // True while the API reference has Redoc rendered on the page.
   referenceMounted = false;
@@ -237,7 +234,7 @@ export default class PortfolioThemeLayout extends LightningElement {
     if (this.chosenTheme) {
       this.applyTheme(this.chosenTheme);
     }
-    applyStoredMotion();
+    forgetStoredMotion();
     this.applyMotion(isReduced());
     this._stopMotion = onMotionChange((reduced) => this.applyMotion(reduced));
     document.addEventListener(REFERENCE_EVENT, this._onReference);
@@ -339,19 +336,10 @@ export default class PortfolioThemeLayout extends LightningElement {
    * @param {boolean} reduced true when motion is reduced
    */
   applyMotion(reduced) {
-    this.motionReduced = reduced;
     this.template.host.setAttribute(
       "data-motion",
       reduced ? MOTION_REDUCE : MOTION_FULL
     );
-  }
-
-  get motionPressed() {
-    return this.motionReduced ? "true" : "false";
-  }
-
-  get motionTitle() {
-    return this.motionReduced ? "Turn motion back on" : "Reduce motion";
   }
 
   get isDark() {
@@ -440,15 +428,6 @@ export default class PortfolioThemeLayout extends LightningElement {
     this.applyTheme(next);
     storeTheme(next);
     trackEvent(EVENTS.THEME_CHANGED, { theme: next });
-  }
-
-  handleMotionToggle() {
-    const next = this.motionReduced ? MOTION_FULL : MOTION_REDUCE;
-    // setMotion sends the portfolio-motion event, which applyMotion hears through
-    // onMotionChange. Applying here too keeps the button right where storage fails.
-    setMotion(next);
-    this.applyMotion(next === MOTION_REDUCE);
-    trackEvent(EVENTS.MOTION_TOGGLED, { motion: next });
   }
 
   handleMenuToggle() {
