@@ -1,7 +1,9 @@
 /**
- * @description       : Serves the View source dialog.
+ * @description       : Serves the View source dialog and the docs page.
  *                      getSourceFiles(sourceKey) returns the files Source_File__mdt lists for a
- *                      showcase component, read from Source_Cache__c only. No
+ *                      showcase component, getDocs() lists the documents under the docs key
+ *                      and getDoc(docKey) returns one of them. All three read
+ *                      Source_Cache__c only, joining a file's parts in order. No
  *                      method here calls GitHub: SourceCacheRefreshJob fills the cache as the
  *                      admin. The site guest has no access to Source_Cache__c, so the read goes
  *                      through CacheSelector, which runs without sharing and in system mode and
@@ -14,6 +16,10 @@
  **/
 public with sharing class SourceController {
   public static final String LANGUAGE_NONE = 'none';
+  /** The Source_Key__c of every document the docs page shows. */
+  public static final String DOCS_KEY = 'docs';
+  /** A docs record's DeveloperName starts with this, for example docs_adr_027. */
+  private static final String DOCS_NAME_PREFIX = 'docs_';
 
   /** Mirrors languageForPath in c/prismHighlighter. */
   private static final Map<String, String> LANGUAGE_BY_EXTENSION = new Map<String, String>{
@@ -48,6 +54,47 @@ public with sharing class SourceController {
     public Boolean truncated;
   }
 
+  /**
+   * @description One document in the docs list. The key is what the page's doc query
+   *              string names, for example sas or adr-027.
+   */
+  public class DocSummary {
+    @AuraEnabled
+    public String key;
+    @AuraEnabled
+    public String title;
+    @AuraEnabled
+    public String path;
+  }
+
+  /**
+   * @description One document with its whole cached text.
+   */
+  public class DocContent {
+    @AuraEnabled
+    public String key;
+    @AuraEnabled
+    public String title;
+    @AuraEnabled
+    public String path;
+    @AuraEnabled
+    public String content;
+    @AuraEnabled
+    public String htmlUrl;
+    @AuraEnabled
+    public Datetime fetchedAt;
+    @AuraEnabled
+    public Boolean truncated;
+  }
+
+  /** A file's cached text with its parts joined. */
+  private class CachedFile {
+    String content;
+    String htmlUrl;
+    Datetime fetchedAt;
+    Boolean truncated;
+  }
+
   // Tests set this to stand in for the org's Source_File__mdt records.
   @TestVisible
   private static List<Source_File__mdt> filesOverride;
@@ -68,21 +115,70 @@ public with sharing class SourceController {
     if (files.isEmpty()) {
       return result;
     }
-    Set<String> paths = new Set<String>();
+    Map<String, CachedFile> cacheByPath = cachedFiles(pathsOf(files));
     for (Source_File__mdt file : files) {
-      paths.add(file.Path__c);
-    }
-    Map<String, Source_Cache__c> cacheByPath = new Map<String, Source_Cache__c>();
-    for (Source_Cache__c row : new CacheSelector().fetchedRows(paths)) {
-      cacheByPath.put(row.Path__c, row);
-    }
-    for (Source_File__mdt file : files) {
-      Source_Cache__c row = cacheByPath.get(file.Path__c);
-      if (row != null) {
-        result.add(toSourceFile(file, row));
+      CachedFile cached = cacheByPath.get(file.Path__c);
+      if (cached != null) {
+        result.add(toSourceFile(file, cached));
       }
     }
     return result;
+  }
+
+  /**
+   * @description The documents the docs page lists, in Sort_Order__c order, without their
+   *              text. A document with no good fetch yet is left out.
+   * @return List<DocSummary> Empty when nothing is cached, never null.
+   * @example
+   * List<SourceController.DocSummary> docs = SourceController.getDocs();
+   */
+  @AuraEnabled(cacheable=true)
+  public static List<DocSummary> getDocs() {
+    List<DocSummary> result = new List<DocSummary>();
+    List<Source_File__mdt> files = filesForKey(DOCS_KEY);
+    if (files.isEmpty()) {
+      return result;
+    }
+    Set<String> fetched = new Set<String>();
+    for (
+      Source_Cache__c row : new CacheSelector().fetchedPaths(pathsOf(files))
+    ) {
+      fetched.add(row.Path__c);
+    }
+    for (Source_File__mdt file : files) {
+      if (fetched.contains(file.Path__c)) {
+        DocSummary summary = new DocSummary();
+        summary.key = docKeyFor(file);
+        summary.title = titleOf(file);
+        summary.path = file.Path__c;
+        result.add(summary);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * @description One document with its parts joined.
+   * @param docKey For example sas or adr-027, any case.
+   * @return DocContent Null for an unknown key or a document not yet fetched.
+   * @example
+   * SourceController.DocContent sas = SourceController.getDoc('sas');
+   */
+  @AuraEnabled(cacheable=true)
+  public static DocContent getDoc(String docKey) {
+    if (String.isBlank(docKey)) {
+      return null;
+    }
+    String wanted = docKey.trim().toLowerCase();
+    for (Source_File__mdt file : filesForKey(DOCS_KEY)) {
+      if (docKeyFor(file) != wanted) {
+        continue;
+      }
+      CachedFile cached = cachedFiles(new Set<String>{ file.Path__c })
+        .get(file.Path__c);
+      return cached == null ? null : toDocContent(file, cached);
+    }
+    return null;
   }
 
   /**
@@ -105,6 +201,19 @@ public with sharing class SourceController {
   }
 
   /**
+   * @description The doc key of a docs record: its DeveloperName without the docs_
+   *              prefix, lower case, underscores as hyphens.
+   * @param file A Source_File__mdt record.
+   * @return String For example adr-027 for docs_adr_027.
+   */
+  public static String docKeyFor(Source_File__mdt file) {
+    String name = file?.DeveloperName ?? '';
+    return name.removeStartIgnoreCase(DOCS_NAME_PREFIX)
+      .replace('_', '-')
+      .toLowerCase();
+  }
+
+  /**
    * @description The Prism language for a repository path, from its extension.
    * @param path For example packages/.../SourceController.cls.
    * @return String apex, javascript, markup, css, yaml, json or none.
@@ -119,6 +228,55 @@ public with sharing class SourceController {
       : LANGUAGE_NONE;
   }
 
+  private static Set<String> pathsOf(List<Source_File__mdt> files) {
+    Set<String> paths = new Set<String>();
+    for (Source_File__mdt file : files) {
+      paths.add(file.Path__c);
+    }
+    return paths;
+  }
+
+  /**
+   * @description Reads each path's rows and joins its parts in order, stopping at the
+   *              first missing part. A path with no fetched first part is left out.
+   */
+  private static Map<String, CachedFile> cachedFiles(Set<String> paths) {
+    Set<String> candidates = new Set<String>();
+    for (String path : paths) {
+      for (Integer part = 1; part <= SourceCacheRefreshJob.MAX_PARTS; part++) {
+        candidates.add(SourceCacheRefreshJob.partPath(path, part));
+      }
+    }
+    Map<String, Source_Cache__c> rowByPath = new Map<String, Source_Cache__c>();
+    for (Source_Cache__c row : new CacheSelector().fetchedRows(candidates)) {
+      rowByPath.put(row.Path__c, row);
+    }
+    Map<String, CachedFile> result = new Map<String, CachedFile>();
+    for (String path : paths) {
+      Source_Cache__c first = rowByPath.get(path);
+      if (first == null) {
+        continue;
+      }
+      List<String> pieces = new List<String>{ first.Content__c ?? '' };
+      for (Integer part = 2; part <= SourceCacheRefreshJob.MAX_PARTS; part++) {
+        Source_Cache__c row = rowByPath.get(
+          SourceCacheRefreshJob.partPath(path, part)
+        );
+        if (row == null) {
+          break;
+        }
+        pieces.add(row.Content__c ?? '');
+      }
+      CachedFile cached = new CachedFile();
+      cached.content = String.join(pieces, '');
+      cached.htmlUrl = first.Html_Url__c;
+      cached.fetchedAt = first.Fetched_At__c;
+      cached.truncated = first.Truncated__c == true;
+      result.put(path, cached);
+    }
+    return result;
+  }
+
   private static List<Source_File__mdt> filesForKey(String sourceKey) {
     List<Source_File__mdt> matches = new List<Source_File__mdt>();
     if (String.isBlank(sourceKey)) {
@@ -129,7 +287,7 @@ public with sharing class SourceController {
         matches.add(row);
       }
     }
-    // Insertion sort on a handful of rows: Sort_Order__c, then Label__c.
+    // Insertion sort on a few dozen rows at most: Sort_Order__c, then Label__c.
     for (Integer i = 1; i < matches.size(); i++) {
       Source_File__mdt current = matches[i];
       Integer j = i - 1;
@@ -154,32 +312,62 @@ public with sharing class SourceController {
     return (left.Label__c ?? '') > (right.Label__c ?? '');
   }
 
+  private static String titleOf(Source_File__mdt file) {
+    return String.isBlank(file.Label__c)
+      ? file.Path__c.substringAfterLast('/')
+      : file.Label__c;
+  }
+
   private static SourceFile toSourceFile(
     Source_File__mdt file,
-    Source_Cache__c row
+    CachedFile cached
   ) {
     SourceFile result = new SourceFile();
     result.path = file.Path__c;
-    result.label = String.isBlank(file.Label__c)
-      ? file.Path__c.substringAfterLast('/')
-      : file.Label__c;
+    result.label = titleOf(file);
     result.language = languageForPath(file.Path__c);
-    result.content = row.Content__c ?? '';
-    result.htmlUrl = row.Html_Url__c;
-    result.fetchedAt = row.Fetched_At__c;
-    result.truncated = row.Truncated__c == true;
+    result.content = cached.content;
+    result.htmlUrl = cached.htmlUrl;
+    result.fetchedAt = cached.fetchedAt;
+    result.truncated = cached.truncated;
+    return result;
+  }
+
+  private static DocContent toDocContent(
+    Source_File__mdt file,
+    CachedFile cached
+  ) {
+    DocContent result = new DocContent();
+    result.key = docKeyFor(file);
+    result.title = titleOf(file);
+    result.path = file.Path__c;
+    result.content = cached.content;
+    result.htmlUrl = cached.htmlUrl;
+    result.fetchedAt = cached.fetchedAt;
+    result.truncated = cached.truncated;
     return result;
   }
 
   /**
    * @description Reads Source_Cache__c for the guest, without sharing and in system mode,
    *              because the guest has no access to the object. Only rows for configured
-   *              paths with a good fetch, and only the fields the dialog shows.
+   *              paths and their parts with a good fetch, and only the fields the dialog and
+   *              the docs page show.
    */
   private without sharing class CacheSelector {
     List<Source_Cache__c> fetchedRows(Set<String> paths) {
       return [
         SELECT Path__c, Content__c, Html_Url__c, Fetched_At__c, Truncated__c
+        FROM Source_Cache__c
+        WHERE Path__c IN :paths AND Fetched_At__c != NULL
+        WITH SYSTEM_MODE
+        LIMIT 200
+      ];
+    }
+
+    List<Source_Cache__c> fetchedPaths(Set<String> paths) {
+      return [
+        SELECT Path__c
         FROM Source_Cache__c
         WHERE Path__c IN :paths AND Fetched_At__c != NULL
         WITH SYSTEM_MODE
