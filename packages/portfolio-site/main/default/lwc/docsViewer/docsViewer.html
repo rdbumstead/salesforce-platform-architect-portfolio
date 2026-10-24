@@ -1,0 +1,101 @@
+<template>
+  <div class="docs">
+    <template lwc:if={showList}>
+      <h1 class="docs-title">Architecture docs</h1>
+      <p class="docs-lead">
+        The Systems Architecture Specification and the architecture decision
+        records behind this site, read from the repository once a day.
+      </p>
+      <template lwc:if={hasDocs}>
+        <ul class="doc-list" aria-label="Documents">
+          <template for:each={listItems} for:item="item">
+            <li key={item.key} class="doc-list-item">
+              <a class="doc-list-link" href={item.href}>
+                <span class="doc-badge">{item.badge}</span>
+                <span class="doc-name">{item.title}</span>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </template>
+      <template lwc:elseif={listEmpty}>
+        <p class="docs-note">No documents are available yet.</p>
+      </template>
+      <template lwc:else>
+        <p class="docs-note" role="status">Loading the documents.</p>
+      </template>
+    </template>
+
+    <template lwc:if={showDoc}>
+      <a class="back-link" href={listHref}>Back to all docs</a>
+      <template lwc:if={showDocMissing}>
+        <h1 class="docs-title">Document not found</h1>
+        <p class="docs-note">
+          That document is not on this site. The list has every one that is.
+        </p>
+      </template>
+      <template lwc:elseif={showRenderError}>
+        <h1 class="docs-title">This document could not be shown</h1>
+        <p class="docs-note">
+          The page could not load its reader. Try again, or read it on GitHub.
+        </p>
+        <template lwc:if={githubUrl}>
+          <a class="doc-link" href={githubUrl} rel="noopener noreferrer"
+            >Open the document on GitHub</a
+          >
+        </template>
+      </template>
+      <template lwc:else>
+        <template lwc:if={isLoading}>
+          <p class="docs-note" role="status">Loading the document.</p>
+        </template>
+        <template lwc:if={pageTitle}>
+          <h1 class="docs-title doc-title">{pageTitle}</h1>
+        </template>
+        <template lwc:if={doc}>
+          <p class="doc-meta">
+            <template lwc:if={fetchedLabel}>
+              <span>From the repository, read {fetchedLabel}.</span>
+            </template>
+            <template lwc:if={githubUrl}>
+              <a class="doc-link" href={githubUrl} rel="noopener noreferrer"
+                >View on GitHub</a
+              >
+            </template>
+          </p>
+          <template lwc:if={isTruncated}>
+            <p class="docs-note">
+              This document is longer than the page holds. The full text is on
+              GitHub.
+            </p>
+          </template>
+          <template lwc:if={hasToc}>
+            <details class="toc" open={tocOpen} ontoggle={handleTocToggle}>
+              <summary class="toc-summary">Contents</summary>
+              <nav lwc:if={tocOpen} class="toc-nav" aria-label="Contents">
+                <ul class="toc-list">
+                  <template for:each={tocItems} for:item="item">
+                    <li key={item.id} class={item.className}>
+                      <a
+                        class="toc-link"
+                        href={item.href}
+                        data-id={item.id}
+                        onclick={handleTocClick}
+                        >{item.text}</a
+                      >
+                    </li>
+                  </template>
+                </ul>
+              </nav>
+            </details>
+          </template>
+          <div
+            class="doc-body"
+            lwc:dom="manual"
+            onclick={handleBodyClick}
+          ></div>
+        </template>
+      </template>
+    </template>
+  </div>
+</template>
