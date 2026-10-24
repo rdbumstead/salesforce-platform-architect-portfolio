@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>64.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Page Intro</masterLabel>
+    <description
+  >The opening block of a pillar page: an eyebrow, the page's one heading, a lead paragraph and a link to the design.</description>
+    <targets>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightningCommunity__Default">
+            <property
+        name="eyebrow"
+        type="String"
+        label="Eyebrow"
+        description="Short line above the heading, for example Pillar A."
+      />
+            <property
+        name="heading"
+        type="String"
+        label="Heading"
+        description="The page's one top level heading."
+      />
+            <property
+        name="lead"
+        type="String"
+        label="Lead"
+        description="The opening paragraph, shown in a larger size."
+      />
+            <property
+        name="designLabel"
+        type="String"
+        label="Design link text"
+        description="Text of the design link. Read the design when blank."
+      />
+            <property
+        name="designUrl"
+        type="String"
+        label="Design link URL"
+        description="An https address, a site path starting with a slash, or an anchor. No link when blank."
+      />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

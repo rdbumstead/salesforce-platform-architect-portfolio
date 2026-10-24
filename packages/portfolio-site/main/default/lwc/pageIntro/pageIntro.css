@@ -1,0 +1,80 @@
+/*
+ * Built on the --pf- site tokens only, so the intro follows the light and dark themes. The h1
+ * is larger than the 1.25rem section headings the page's components draw, at every width.
+ */
+:host {
+  display: block;
+}
+
+.intro {
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  padding: var(--pf-space-5) 0 var(--pf-space-6);
+  margin-bottom: var(--pf-space-5);
+  border-bottom: 1px solid var(--pf-border);
+  overflow-wrap: anywhere;
+}
+
+.intro-eyebrow {
+  margin: 0 0 var(--pf-space-2);
+  color: var(--pf-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.intro-heading {
+  margin: 0;
+  color: var(--pf-text);
+  font-size: 2.5rem;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.intro-lead {
+  margin: var(--pf-space-4) 0 0;
+  max-width: 48rem;
+  color: var(--pf-body);
+  font-size: 1.125rem;
+  line-height: 1.65;
+}
+
+.intro-actions {
+  margin: var(--pf-space-4) 0 0;
+}
+
+.intro-design {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--pf-accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.intro-design:hover {
+  text-decoration-thickness: 2px;
+}
+
+.intro-design:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+  border-radius: var(--pf-radius-sm);
+}
+
+@media (max-width: 767.98px) {
+  .intro {
+    padding: var(--pf-space-4) 0 var(--pf-space-5);
+  }
+
+  .intro-heading {
+    font-size: 2rem;
+  }
+
+  .intro-lead {
+    font-size: 1.0625rem;
+  }
+}
