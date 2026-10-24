@@ -1,4 +1,4 @@
-# 06 – Guardrails & Executable Governance
+# Guardrails & Executable Governance
 
 **Table of Contents**
 
@@ -18,16 +18,16 @@ Owner: Ryan Bumstead
 
 Version: 1.0
 
-Date: MVP – Q1 2027
+Launch target: Q1 2027
 
-This document outlines the governance framework and constraint-based design principles that enable the portfolio to operate within zero-budget constraints while maintaining enterprise-grade quality, security, and performance standards.
+This document outlines the governance framework and constraint-based design principles that let the portfolio run on a zero budget while it keeps to enterprise quality, security and performance habits. Where a performance target is not met, the measured number is given.
 
 ## 1. Strategic Intent: Constraint-Based Design
 
 This portfolio is built on a "Zero-Dollar Budget" requirement. That is not a limitation. It is an architectural challenge. We demonstrate **Constraint-Based Design** by building a resilient, observable system that runs within the strict limits of a Salesforce Developer Edition (free tier). The AWS Always-Free design in section 3 is for a later phase and is not built: the repository holds no AWS code.
 
 > [!TIP]
-> **Why Constraint-Based Design Matters**: Many architects treat free tiers as temporary scaffolding. This portfolio proves you can build production-grade systems within zero-budget constraints, a skill that translates directly to cost optimization in enterprise environments where every dollar of cloud spend requires justification.
+> **Why Constraint-Based Design Matters**: Many architects treat free tiers as temporary scaffolding. This portfolio shows a production system built within zero-budget constraints, a skill that translates directly to cost optimization in enterprise environments where every dollar of cloud spend requires justification.
 
 ## 2. The Salesforce "Governor" Rosetta Stone
 
@@ -37,9 +37,9 @@ We treat these limits as a blueprint for building high-performance systems.
 
 | Salesforce Constraint                | What It Means                                                                                                                                    | Enterprise Pattern Applied               | Portfolio Implementation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | :----------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **100 SOQL Queries per transaction** | SOQL (Salesforce Object Query Language) is like SQL for databases. You get 100 database queries per page load. Exceed this and your app crashes. | **Bulkification** (batch processing)     | A `SAPI*` list read runs a fixed number of queries whatever the record count: one page query and one `COUNT()` query (for example `SAPIContact.cls` lines 41 and 47), plus the rate limit read in `RateWindowLimiter`.                                                                                                                                                                                                                                                                                                                                                                                             |
+| **100 SOQL Queries per transaction** | SOQL (Salesforce Object Query Language) is like SQL for databases. You get 100 database queries per page load. Exceed this and your app crashes. | **Bulkification** (batch processing)     | A `SAPI*` list read runs a fixed number of queries whatever the record count: one page query and one `COUNT()` query through `QueryDefinitions` (for example `SAPIContact.cls` lines 36 and 43), plus the rate limit read in `RateWindowLimiter`.                                                                                                                                                                                                                                                                                                                                                                  |
 | **10 second CPU timeout**            | Your code gets 10 seconds of processing time. After that, Salesforce kills it to protect other customers.                                        | **Async Strategy** (offload work)        | No heavy work runs in Apex while a visitor waits. The resume PDF is drawn in the browser with jsPDF ([ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)), and GitHub and Jira are read by scheduled Queueable jobs, so a page view never makes a callout. Moving PDF generation to AWS Lambda is a Phase 8 design and is not built.                                                                                                                                                                                                                                                                 |
-| **6MB Heap Size**                    | Your code can only use 6MB of memory per transaction. For context, a single high-res image is ~5MB.                                              | **Lazy Loading** (load only when needed) | The D3 graph engine (`D3_Library`, 81,502 bytes with pan, zoom and drag since Round 7) loads only when a visitor opens a graph view, and never on a phone.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **6MB Heap Size**                    | Your code can only use 6MB of memory per transaction. For context, a single high-res image is ~5MB.                                              | **Lazy Loading** (load only when needed) | The D3.js graph engine (`D3_Library`, 81,482 bytes, with pan, zoom and drag) loads only when a visitor opens a graph view, and never on a phone.                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Guest User Security**              | Anonymous visitors have restricted permissions by default. They can't see sensitive data without explicit grants.                                | **Zero Trust** (deny by default)         | `Portfolio_Guest` grants read on six portfolio objects, create and read on `Testimonial__c`, and no permission on Account, Contact or any other standard object apart from read on `UserExternalCredential`. The few records a page needs beyond that, such as the owner's Contact for the resume header, are read by Apex in system mode through `without sharing` selectors that select a fixed list of public fields and never an email, phone or address (`ResumeController.ResumeSelector`, `PortfolioGroundingService.Selector`). The guest reaches that data only through the shape the controller returns. |
 | **Real-time Telemetry**              | Salesforce provides APIs to check how close you are to hitting limits.                                                                           | **Glass Box Telemetry** (show your work) | Governor limits (SOQL count, heap usage, CPU time) displayed in site footer so visitors can see the system is healthy.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
@@ -47,23 +47,23 @@ We treat these limits as a blueprint for building high-performance systems.
 
 ## 3. AWS FinOps & Serverless Guardrails (Phase 8)
 
-| Phase       | Status                         | Rationale                                                               |
-| :---------- | :----------------------------- | :---------------------------------------------------------------------- |
-| **Phase 8** | **Design Complete / Deferred** | Fully architected to prove "Scale Up" capability, but deferred for MVP. |
+| Phase       | Status                  | Rationale                                                                   |
+| :---------- | :---------------------- | :-------------------------------------------------------------------------- |
+| **Phase 8** | **Designed, not built** | Designed to show how the site would scale out, deferred until after launch. |
 
 > [!IMPORTANT]
-> **Nothing about AWS in this section is built.** The repository holds no AWS code, and no Lambda function, S3 bucket or CloudWatch log group serves the portfolio. The Lambda, VPC and CloudWatch parts below are the Phase 8 design. The Gemini quota part describes what runs today.
+> **Nothing about AWS in this section is built.** The repository holds no AWS code, and no Lambda function, storage bucket or CloudWatch log group serves the portfolio. The Lambda, VPC and CloudWatch parts below are the Phase 8 design. The Gemini quota part describes what runs today.
 
 > [!NOTE]
 > **Architectural Reference:** For the detailed system diagrams and component specifications of the Phase 8 architecture, please refer to the **[Systems Architecture Specification (SAS)](./03-SAS.md#11-architectural-north-star)**.
 
 **What is FinOps?** Financial Operations (FinOps) is the practice of making cloud costs visible and controllable. AWS charges for everything (compute time, network traffic, log storage), so architectural decisions directly impact the monthly bill.
 
-To maintain a "$0.00 Forever" guarantee, the architecture avoids common "cost traps":
+To keep the design at $0.00 a month, the architecture avoids common "cost traps":
 
 ### Lambda Function URLs vs API Gateway
 
-**The Problem:** AWS Lambda (serverless functions) needs a way for the internet to reach it. The "official" way is API Gateway, but it costs $3.50 per million requests after a 12-month free trial.
+**The Problem:** AWS Lambda (serverless functions) needs a way for the internet to reach it. The "official" way is API Gateway, which is billed per request once its 12 month free tier ends.
 
 **Our Solution:** Lambda Function URLs (direct HTTP access) are free forever and sufficient for this use case. We sacrifice advanced features (request throttling, API keys) to stay within the free tier.
 
@@ -73,7 +73,7 @@ To maintain a "$0.00 Forever" guarantee, the architecture avoids common "cost tr
 
 ### The "No-VPC" Rule
 
-**The Problem:** A VPC (Virtual Private Cloud) is AWS's isolated network. Running Lambda inside a VPC is considered "best practice" for security, but it requires a NAT Gateway to reach the internet. NAT Gateways cost $32+/month just to exist, even with zero traffic.
+**The Problem:** A VPC (Virtual Private Cloud) is AWS's isolated network. Running Lambda inside a VPC is considered "best practice" for security, but it requires a NAT Gateway to reach the internet. A NAT Gateway is billed by the hour just to exist, even with zero traffic.
 
 **Our Solution:** Run Lambda functions outside a VPC. They can still call public APIs (Salesforce, GitHub) securely via HTTPS without the NAT Gateway tax.
 
@@ -89,13 +89,13 @@ To maintain a "$0.00 Forever" guarantee, the architecture avoids common "cost tr
 
 - The `papi-ai` rate tier of `RateWindowLimiter`: 10 requests a minute on `POST /papi/v1/ai/generate`, and a separate 10 a minute for the site's cover letter page, shared by every visitor (`papi-ai:site-cover-letter`).
 - When Google refuses or fails, the cover letter falls back to the Local Template, so the visitor still gets a letter (`ContentGenerationController.dispatch`).
-- The footer shows "AI requests today", the sum of today's `papi-ai` counts in `API_Rate_Window__c`. It counts requests, not Gemini calls, and a Local fallback counts too, so it is never labelled as a Gemini quota (owner decision PD-D9, 2026-10-21).
+- The footer shows "AI requests today", the sum of today's `papi-ai` counts in `API_Rate_Window__c`. It counts requests, not Gemini calls, and a Local fallback counts too, so it is never labelled as a Gemini quota (owner decision, 2026-10-21).
 
 ---
 
 ### CloudWatch Logs Retention
 
-**The Problem:** AWS charges for log storage beyond 5GB. Lambda functions generate logs every time they run.
+**The Problem:** AWS charges for log storage beyond its free allowance. Lambda functions generate logs every time they run.
 
 **Our Solution:** Set retention to 1 day (minimum allowed). Production environments would use 30-90 days for incident investigation, but this portfolio prioritizes cost over long-term debugging.
 
@@ -123,9 +123,9 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### LCP Target (2.5 seconds)
 
 **What is LCP?** Largest Contentful Paint: the time until the main content appears on screen. Google uses this for search ranking.  
-**Our target:** 2.5 seconds (Google's "good" threshold). On mobile, render delay in the LWR framework's own script keeps LCP above it, so the gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, Round 6) on the six main routes ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)).  
+**Our target:** 2.5 seconds (Google's "good" threshold). On mobile, render delay in the LWR framework's own script keeps LCP above it, so the gate is the best the LWR shell allows: mobile LCP medians of 7.5 to 9.6 s on the six main routes, measured with Lighthouse 11 mobile on a scratch copy of the site ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)).  
 **How we enforce:** Lighthouse runs on demand (`performance.yml`, started by hand with a target URL, which runs `npm run test:lighthouse`) and as a launch gate. It does not run on every commit, and no build fails on it automatically.  
-**Why it matters:** Slow sites lose users. Amazon found every 100ms delay costs 1% of revenue.
+**Why it matters:** Slow sites lose users, and LCP is one of the signals Google uses for search ranking.
 
 ---
 
@@ -197,7 +197,7 @@ sequenceDiagram
 
 ## 6. The Three-Gate Approval Process
 
-Every architectural decision follows a strict three-gate approval process before implementation:
+Each architectural decision is meant to pass three gates before it is built. They are a working checklist, not a workflow any tool enforces:
 
 ### Gate 1: Technical Feasibility
 
@@ -206,13 +206,13 @@ Every architectural decision follows a strict three-gate approval process before
 
 ### Gate 2: Security & Privacy
 
-- Guest User FLS matrix updated.
-- Named Credential secrets rotated (90-day policy).
+- Guest User FLS matrix updated (SAS section 4.6 and `Portfolio_Guest`).
+- Credentials rotated on the schedule in the [Maintenance Guide](./05-Maintenance-Guide.md#1-security-rotation-policy-cicd).
 
 ### Gate 3: Definition of Ready (DoR)
 
 - User Story Acceptance Criteria defined in Jira.
-- Figma mockups approved by Product Owner.
+- Mockups agreed with the owner before the build.
 
 ## 7. Business Impact of Executable Governance
 
