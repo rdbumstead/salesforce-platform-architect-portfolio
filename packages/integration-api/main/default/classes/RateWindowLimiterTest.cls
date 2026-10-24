@@ -81,7 +81,7 @@ private class RateWindowLimiterTest {
     Assert.areEqual(14, decision.remaining, 'One of 15 used');
     Assert.areEqual(0, decision.retryAfterSeconds, 'No wait when allowed');
     Assert.areEqual(1, queries, 'Exactly the window read');
-    Assert.areEqual(0, dml, 'check never writes (contract C2)');
+    Assert.areEqual(0, dml, 'check never writes');
     Assert.isNull(storedWindow(CALLER_KEY), 'Nothing stored until commit');
   }
 

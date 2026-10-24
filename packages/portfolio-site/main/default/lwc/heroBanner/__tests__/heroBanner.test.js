@@ -297,7 +297,7 @@ describe("c-hero-banner", () => {
   });
 
   describe("pillars", () => {
-    it("shows a card for every live pillar, in order, with K7 links", () => {
+    it("shows a card for every live pillar, in order, with their route links", () => {
       const element = render();
       const cards = element.shadowRoot.querySelectorAll(".pillar-card");
       expect(Array.from(cards).map((card) => card.dataset.key)).toEqual([
@@ -583,7 +583,7 @@ describe("c-hero-banner", () => {
     });
   });
 
-  describe("start here paths (E2)", () => {
+  describe("start here paths", () => {
     it("offers three paths in order with their audiences and links", () => {
       const element = render();
       const root = element.shadowRoot;
@@ -658,7 +658,7 @@ describe("c-hero-banner", () => {
     });
   });
 
-  describe("F8 to F10 layout", () => {
+  describe("hero buttons, rule and photo layout", () => {
     it("draws no rule before the section labels", () => {
       const element = render();
       expect(element.shadowRoot.querySelector(".section-rule")).toBeNull();
@@ -683,7 +683,7 @@ describe("c-hero-banner", () => {
     });
   });
 
-  describe("case study disclosure (E3)", () => {
+  describe("case study disclosure", () => {
     const CASE_E = {
       pillar: "E",
       challenge: "  The challenge.  ",

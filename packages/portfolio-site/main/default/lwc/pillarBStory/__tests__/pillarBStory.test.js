@@ -101,7 +101,7 @@ describe("c-pillar-b-story", () => {
     );
   });
 
-  it("opens section 2 by framing the work as pre-sales (D3)", () => {
+  it("opens section 2 by framing the work as pre-sales", () => {
     const element = createComponent();
     const discovery = q(element, '[data-section="discovery"]');
     const first = discovery.querySelector("p");
@@ -111,7 +111,7 @@ describe("c-pillar-b-story", () => {
     );
   });
 
-  it("has no video prototype section and no D3 or D8 placeholder (D8)", () => {
+  it("has no video prototype section and no D3 or D8 placeholder", () => {
     const element = createComponent();
     expect(q(element, '[data-section="video"]')).toBeNull();
     expect(q(element, '[data-placeholder="D3"]')).toBeNull();
@@ -144,7 +144,7 @@ describe("c-pillar-b-story", () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 
-  it("makes every table scroll region keyboard reachable with a name (log 299)", () => {
+  it("makes every table scroll region keyboard reachable with a name", () => {
     const element = createComponent();
     const regions = qa(element, ".table-scroll");
     expect(regions).toHaveLength(2);

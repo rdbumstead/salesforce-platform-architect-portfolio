@@ -46,7 +46,7 @@ const EXPECTED = [
 ];
 
 describe("c/pillarData", () => {
-  it("lists the five pillars A to E in order with K7 hrefs", () => {
+  it("lists the five pillars A to E in order with their route hrefs", () => {
     expect(PILLARS).toHaveLength(5);
     PILLARS.forEach((pillar, index) => {
       const [letter, pageLabel, sasName, href, inProgress] = EXPECTED[index];
@@ -96,7 +96,7 @@ describe("c/pillarData", () => {
     expect(pillarByLetter(3)).toBeUndefined();
   });
 
-  it("has all five pillars live and none coming (Round 5 plan, M9)", () => {
+  it("has all five pillars live and none coming", () => {
     expect(LIVE_PILLARS.map((pillar) => pillar.letter)).toEqual([
       "A",
       "B",
@@ -119,7 +119,7 @@ describe("c/pillarData", () => {
     );
   });
 
-  it("keeps the pillar A and B tour lines and summaries from the Round 5 plan", () => {
+  it("keeps the pillar A and B tour lines and summaries", () => {
     expect(pillarByLetter("A").tour).toBe(
       "See how a business process maps to its data model, drawn live from the org."
     );

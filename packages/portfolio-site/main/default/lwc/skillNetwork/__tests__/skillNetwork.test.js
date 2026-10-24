@@ -158,7 +158,7 @@ describe("c-skill-network (Large form factor)", () => {
     delete window.matchMedia;
   });
 
-  it("places View source with the skillNetwork key at the top of the card (contract P2)", () => {
+  it("places View source with the skillNetwork key at the top of the card", () => {
     const element = mount();
 
     const control = element.shadowRoot.querySelector(

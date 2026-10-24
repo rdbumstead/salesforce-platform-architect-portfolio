@@ -110,7 +110,7 @@ function setUrl(search, hash) {
   );
 }
 
-describe("c-api-reference section links (audit F5)", () => {
+describe("c-api-reference section links", () => {
   beforeEach(() => {
     loadScript.mockReset();
     loadScript.mockResolvedValue();

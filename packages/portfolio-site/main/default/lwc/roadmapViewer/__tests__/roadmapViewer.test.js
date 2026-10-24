@@ -271,7 +271,7 @@ describe("c-roadmap-viewer", () => {
     expect(keysIn(element, "indeterminate")).toEqual(["SPAP-6", "SPAP-5"]);
   });
 
-  describe("the column cap (Round 7 F7, every column)", () => {
+  describe("the column cap, every column", () => {
     // Twelve done items, SPAP-101 the newest, each one hour older than the last.
     // SPAP-112 (the oldest) and SPAP-104 are epics.
     function doneItems(count) {
@@ -624,7 +624,7 @@ describe("c-roadmap-viewer", () => {
     expect(ageLabel(0)).toBe("Last updated 0 min ago");
     expect(ageLabel(undefined)).toBe("");
   });
-  it("places the View source control for its key next to the heading (contract P2)", () => {
+  it("places the View source control for its key next to the heading", () => {
     const element = createComponent();
     const control = q(element, ".roadmap-header c-view-source");
     expect(control).not.toBeNull();

@@ -366,7 +366,7 @@ describe("c/graphEngine layoutGraph", () => {
   });
 });
 
-describe("c/graphEngine attachPanZoom and attachNodeDrag (audit E1)", () => {
+describe("c/graphEngine attachPanZoom and attachNodeDrag", () => {
   const SVG_NS = "http://www.w3.org/2000/svg";
   const EXTENT = [
     [0, 0],

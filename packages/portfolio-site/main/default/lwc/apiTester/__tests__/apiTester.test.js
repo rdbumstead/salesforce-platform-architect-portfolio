@@ -141,7 +141,7 @@ describe("c-api-tester", () => {
     expect(query(element, "button.execute-button").disabled).toBe(true);
   });
 
-  it("places View source with the apiTester key under the card heading (contract P2)", async () => {
+  it("places View source with the apiTester key under the card heading", async () => {
     const element = createComponent();
     await flushPromises();
 

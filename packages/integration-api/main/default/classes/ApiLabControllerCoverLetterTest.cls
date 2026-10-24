@@ -186,7 +186,7 @@ private class ApiLabControllerCoverLetterTest {
     Assert.areEqual(
       0,
       mock.callsTo('callout:Portfolio_API'),
-      'No request goes to the org\'s own API (trap 30)'
+      'No request goes to the org\'s own API'
     );
     Assert.areEqual(1, mock.endpoints.size(), 'No other callout at all');
     Assert.isTrue(

@@ -117,7 +117,7 @@ private class PAPIAuthTokenTest {
       body.get('access_token'),
       'Token'
     );
-    Assert.isFalse(body.containsKey('expires_in'), 'No expires_in (log 155)');
+    Assert.isFalse(body.containsKey('expires_in'), 'No expires_in');
     assertNoStore();
     assertOneRow('Issued');
   }

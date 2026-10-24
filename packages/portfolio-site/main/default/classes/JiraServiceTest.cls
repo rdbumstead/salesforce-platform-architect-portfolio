@@ -30,7 +30,7 @@ private class JiraServiceTest {
     Assert.areEqual(
       'project = SPAP AND labels = "portfolio-roadmap" ORDER BY updated DESC',
       JiraService.roadmapJql('SPAP'),
-      'E6 (a)'
+      'The roadmap JQL'
     );
   }
 

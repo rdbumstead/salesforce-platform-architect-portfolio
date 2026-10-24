@@ -175,7 +175,7 @@ private class PortfolioGroundingServiceTest {
     }
     Test.stopTest();
 
-    Assert.isNotNull(grounding, 'The guest gets facts (trap 31)');
+    Assert.isNotNull(grounding, 'The guest gets facts');
     Map<String, Object> facts = parse(grounding);
     Assert.isFalse(
       ((List<Object>) facts.get('highlights')).isEmpty(),

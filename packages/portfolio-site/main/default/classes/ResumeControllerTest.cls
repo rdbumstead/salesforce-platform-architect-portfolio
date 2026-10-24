@@ -537,14 +537,14 @@ private class ResumeControllerTest {
       Assert.areEqual(
         ROLE_KEYS,
         ((Map<String, Object>) role).keySet(),
-        'Role carries only the N6 fields'
+        'Role carries only the timeline fields'
       );
     }
     for (Object entry : (List<Object>) payload.get('education')) {
       Assert.areEqual(
         SCHOOL_KEYS,
         ((Map<String, Object>) entry).keySet(),
-        'School carries only the N6 fields'
+        'School carries only the timeline fields'
       );
     }
   }

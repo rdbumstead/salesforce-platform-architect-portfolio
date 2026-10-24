@@ -281,7 +281,7 @@ describe("c-portfolio-theme-layout", () => {
   });
 
   describe("navigation", () => {
-    it("links every K7 route from the brand, the pages and the Pillars menu", () => {
+    it("links every site route from the brand, the pages and the Pillars menu", () => {
       const element = render();
       const brand = element.shadowRoot.querySelector(".site-brand");
       const nav = element.shadowRoot.querySelector('nav[aria-label="Primary"]');

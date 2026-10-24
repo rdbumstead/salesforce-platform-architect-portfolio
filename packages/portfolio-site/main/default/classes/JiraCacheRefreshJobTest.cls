@@ -109,7 +109,7 @@ private class JiraCacheRefreshJobTest {
     Assert.areEqual(
       'project = SPAP AND labels = "portfolio-roadmap" ORDER BY updated DESC',
       body.get('jql'),
-      'E6 (a) JQL'
+      'The roadmap JQL'
     );
     Assert.areEqual(50, body.get('maxResults'), 'maxResults');
     Assert.areEqual(

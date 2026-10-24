@@ -66,7 +66,7 @@ private class GovernanceControllerTest {
     Test.startTest();
     GovernanceController.PipelineStatus status = GovernanceController.getPipelineStatus();
     Test.stopTest();
-    Assert.areEqual(3, status.items.size(), 'Three E4 items');
+    Assert.areEqual(3, status.items.size(), 'Three checklist items');
     return itemsByKey(status);
   }
 

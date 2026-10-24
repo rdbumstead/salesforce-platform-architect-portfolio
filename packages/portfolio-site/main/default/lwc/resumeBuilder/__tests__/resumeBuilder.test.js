@@ -237,7 +237,7 @@ describe("c-resume-builder", () => {
     expect(query(element, ".resume-name")).not.toBeNull();
   });
 
-  it("uses brand buttons and no light SLDS theme panel (contract K9)", async () => {
+  it("uses brand buttons and no light SLDS theme panel", async () => {
     const element = createComponent();
     getResume.emit(RESUME);
     await flushPromises();
@@ -434,7 +434,7 @@ describe("c-resume-builder", () => {
     delete navigator.clipboard;
   });
 
-  describe("certifications (Round 6 plan N5)", () => {
+  describe("certifications", () => {
     // A stored value with plus signs in the query string, which must survive as plus signs.
     const VERIFY_URL =
       "https://trailhead.salesforce.com/en/credentials/certification-detail-print/?searchString=9mtUhy8GnfeJ+wZ2qMHSoTtn5Li90a2pHeJQ9ycm+2M7cecsvBBbSOauy5RarT+M";
@@ -585,7 +585,7 @@ describe("c-resume-builder", () => {
     });
   });
 
-  it("places View source with the resumeBuilder key under the card heading (contract P2)", () => {
+  it("places View source with the resumeBuilder key under the card heading", () => {
     const element = createComponent();
     const control = element.shadowRoot.querySelector(
       ".card-tools c-view-source"

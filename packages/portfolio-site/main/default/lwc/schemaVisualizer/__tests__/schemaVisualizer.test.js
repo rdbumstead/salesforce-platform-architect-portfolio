@@ -103,7 +103,7 @@ describe("c-schema-visualizer", () => {
     jest.clearAllMocks();
   });
 
-  it("places View source with the schemaVisualizer key beside the heading (contract P2)", async () => {
+  it("places View source with the schemaVisualizer key beside the heading", async () => {
     const element = mount();
     await flushPromises();
 

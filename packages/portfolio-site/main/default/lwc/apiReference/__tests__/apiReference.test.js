@@ -342,7 +342,7 @@ describe("c-api-reference", () => {
     });
   });
 
-  it("keeps every generated spec copy in step with scripts/sync-specs.js (audit G2)", () => {
+  it("keeps every generated spec copy in step with scripts/sync-specs.js", () => {
     // The one source is packages/integration-api/specs. A failure here means a spec changed
     // without node scripts/sync-specs.js being run.
     const sync = require(join(process.cwd(), "scripts/sync-specs.js"));

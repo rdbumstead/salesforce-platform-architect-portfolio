@@ -89,7 +89,7 @@ function views() {
     .filter(Boolean);
 }
 
-describe("pillar names agree across sources (G3)", () => {
+describe("pillar names agree across sources", () => {
   it("has a formula label for exactly the five pillar letters", () => {
     const labels = formulaLabels();
     expect([...labels.keys()].sort()).toEqual(PILLARS.map((p) => p.letter));
