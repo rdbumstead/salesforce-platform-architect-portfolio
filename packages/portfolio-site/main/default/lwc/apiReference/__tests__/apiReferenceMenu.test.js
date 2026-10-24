@@ -14,6 +14,8 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
+  REDOC_ACTIVE_MENU_COLOR,
+  REDOC_OPTIONS,
   REDOC_STYLE_OVERRIDES,
   disposePreviousRedoc,
   headerOffset
@@ -282,6 +284,13 @@ describe("c-api-reference menu rows", () => {
     );
     const rule = css.match(/\.reference-card_full \{([^}]*)\}/);
     expect(rule[1]).toContain("overflow: visible;");
+  });
+
+  it("draws the open row's label in a blue readable on Redoc's active row grey", () => {
+    expect(REDOC_OPTIONS.theme.sidebar.activeTextColor).toBe(
+      REDOC_ACTIVE_MENU_COLOR
+    );
+    expect(REDOC_ACTIVE_MENU_COLOR).toBe("#1D4ED8");
   });
 
   describe("header measured through a layout it cannot open", () => {

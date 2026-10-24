@@ -75,6 +75,14 @@ export const REDOC_TAB_COLORS = {
 export const REDOC_CONSTRAINT_COLOR = "#1D4ED8";
 
 /**
+ * Label of the active menu row. Redoc draws it in the primary colour on its sidebar grey
+ * darkened for the active row, #ededed for a tag (4.41:1) and #e1e1e1 for a group (3.95:1).
+ * This darker blue is 5.72:1 and 5.12:1 there. A tag is active whenever it is open, so the
+ * open row needs it.
+ */
+export const REDOC_ACTIVE_MENU_COLOR = "#1D4ED8";
+
+/**
  * The bottom edge of the sticky or fixed element at the top of the viewport, the site
  * header, so a section scrolled into view lands below it. 0 when nothing is pinned there.
  * The element is found through every open shadow root, because the header sits inside
@@ -169,6 +177,9 @@ export const REDOC_OPTIONS = {
         redirect: { tabTextColor: REDOC_TAB_COLORS.redirect },
         info: { tabTextColor: REDOC_TAB_COLORS.info }
       }
+    },
+    sidebar: {
+      activeTextColor: REDOC_ACTIVE_MENU_COLOR
     },
     typography: {
       fontFamily: SYSTEM_FONTS,
