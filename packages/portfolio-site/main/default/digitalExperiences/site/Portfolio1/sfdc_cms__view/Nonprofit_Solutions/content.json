@@ -26,7 +26,7 @@
                     {
                       "attributes": {
                         "designLabel": "Read the design",
-                        "designUrl": "/docs?doc=sas",
+                        "designUrl": "/docs?doc=sas#5-2-pillar-b-solution-architecture-nonprofit-literacy-platform",
                         "eyebrow": "Pillar B",
                         "heading": "Solution Architecture",
                         "lead": "A pre-sales solution design for a regional adult literacy nonprofit, with a decision matrix and a cost comparison."
