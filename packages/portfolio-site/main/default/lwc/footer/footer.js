@@ -1,8 +1,14 @@
 /**
- * @description       : Glass Box footer. One line:
- *                      copyright, the production deploy badge with a text link fallback, the
- *                      telemetry from FooterController.getSystemSnapshot(), profile links from
- *                      getLinks(), and Back to top. The snapshot is requested only once the
+ * @description       : Glass Box footer: copyright, the metrics in four labelled groups,
+ *                      profile links from getLinks(), a Docs link to /docs, and Back to top.
+ *                      Each group is a list named by its visible label (Deploy, Platform,
+ *                      Integrations, Quotas and limits), set apart by vertical rules on wide
+ *                      screens and stacked on phones. Deploy holds the production deploy badge
+ *                      with a text link fallback. Platform holds the GraphQL timing, or the
+ *                      snapshot error. Integrations holds the AI providers and the GitHub and
+ *                      Jira breakers. Quotas and limits holds AI requests today, the org quotas
+ *                      and the governor limits. Platform shows once it has a line, the last two
+ *                      once the telemetry from FooterController.getSystemSnapshot() has loaded. The snapshot is requested only once the
  *                      page has loaded and the browser is idle, so it never delays first paint
  *                      (ADR-014). Every provider word on screen comes from the snapshot data.
  *                      At the same moment one small GraphQL query is timed, and the footer says
@@ -126,6 +132,7 @@ export default class Footer extends LightningElement {
   badgeUrl = BADGE_URL;
   actionsUrl = ACTIONS_URL;
   contactUrl = `${basePath || ""}/contact`;
+  docsUrl = `${basePath || ""}/docs`;
 
   probeConstructor;
   graphqlMs;
@@ -208,6 +215,14 @@ export default class Footer extends LightningElement {
 
   get snapshotLoaded() {
     return Boolean(this.snapshot);
+  }
+
+  get showPlatform() {
+    return Boolean(this.graphqlLabel) || this.snapshotFailed;
+  }
+
+  get showIntegrations() {
+    return this.providerRows.length > 0 || this.integrationRows.length > 0;
   }
 
   get providerRows() {

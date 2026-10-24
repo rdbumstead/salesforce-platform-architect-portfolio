@@ -4,41 +4,58 @@
       >&copy; {currentYear} Ryan Bumstead. Built on Salesforce LWR.</span
     >
 
-    <span class="metrics" data-id="metrics">
-      <span class="metric deploy">
-        <span class="status-dot" aria-hidden="true"></span>
-        <span>deploy</span>
-        <template lwc:if={badgeFailed}>
-          <a
-            class="target badge-fallback"
-            data-id="badge-fallback"
-            href={actionsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            >Production deploy status</a
-          >
-        </template>
-        <template lwc:else>
-          <a
-            class="target badge-link"
-            href={actionsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              class="badge"
-              data-id="badge"
-              src={badgeUrl}
-              alt="Production deploy status"
-              height="20"
-              onerror={handleBadgeError}
-            />
-          </a>
-        </template>
-      </span>
+    <div class="metrics" data-id="metrics">
+      <div class="metric-group" data-group="deploy">
+        <span class="group-label" id="footer-group-deploy">Deploy</span>
+        <ul class="group-list" aria-labelledby="footer-group-deploy">
+          <li class="metric deploy">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>deploy</span>
+            <template lwc:if={badgeFailed}>
+              <a
+                class="target badge-fallback"
+                data-id="badge-fallback"
+                href={actionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                >Production deploy status</a
+              >
+            </template>
+            <template lwc:else>
+              <a
+                class="target badge-link"
+                href={actionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  class="badge"
+                  data-id="badge"
+                  src={badgeUrl}
+                  alt="Production deploy status"
+                  height="20"
+                  onerror={handleBadgeError}
+                />
+              </a>
+            </template>
+          </li>
+        </ul>
+      </div>
 
-      <template lwc:if={graphqlLabel}>
-        <span class="metric" data-id="graphql">{graphqlLabel}</span>
+      <template lwc:if={showPlatform}>
+        <div class="metric-group" data-group="platform">
+          <span class="group-label" id="footer-group-platform">Platform</span>
+          <ul class="group-list" aria-labelledby="footer-group-platform">
+            <template lwc:if={graphqlLabel}>
+              <li class="metric" data-id="graphql">{graphqlLabel}</li>
+            </template>
+            <template lwc:if={snapshotFailed}>
+              <li class="metric" data-id="snapshot-error">
+                status unavailable
+              </li>
+            </template>
+          </ul>
+        </div>
       </template>
       <template lwc:if={probeConstructor}>
         <lwc:component
@@ -49,38 +66,54 @@
       </template>
 
       <template lwc:if={snapshotLoaded}>
-        <template for:each={providerRows} for:item="row">
-          <span key={row.key} class="metric" data-id="provider"
-            >{row.label}</span
+        <template lwc:if={showIntegrations}>
+          <div class="metric-group" data-group="integrations">
+            <span class="group-label" id="footer-group-integrations"
+              >Integrations</span
+            >
+            <ul class="group-list" aria-labelledby="footer-group-integrations">
+              <template for:each={providerRows} for:item="row">
+                <li key={row.key} class="metric" data-id="provider">
+                  {row.label}
+                </li>
+              </template>
+              <template for:each={integrationRows} for:item="row">
+                <li key={row.key} class="metric" data-id="integration">
+                  {row.label}
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
+        <div class="metric-group" data-group="quotas">
+          <span class="group-label" id="footer-group-quotas"
+            >Quotas and limits</span
           >
-        </template>
-        <template for:each={integrationRows} for:item="row">
-          <span key={row.key} class="metric" data-id="integration"
-            >{row.label}</span
-          >
-        </template>
-        <span
-          class="metric target ai-requests"
-          data-id="ai-requests"
-          tabindex="0"
-          onmouseenter={handleQuotaVisibility}
-          onfocus={handleQuotaVisibility}
-          >AI requests today: {aiRequestsToday}</span
-        >
-        <template for:each={quotaRows} for:item="row">
-          <span key={row.key} class="metric" data-id="quota">{row.label}</span>
-        </template>
-        <template for:each={limitRows} for:item="row">
-          <span key={row.key} class="metric" data-id="limit">{row.label}</span>
-        </template>
+          <ul class="group-list" aria-labelledby="footer-group-quotas">
+            <li class="metric">
+              <span
+                class="target ai-requests"
+                data-id="ai-requests"
+                tabindex="0"
+                onmouseenter={handleQuotaVisibility}
+                onfocus={handleQuotaVisibility}
+                >AI requests today: {aiRequestsToday}</span
+              >
+            </li>
+            <template for:each={quotaRows} for:item="row">
+              <li key={row.key} class="metric" data-id="quota">{row.label}</li>
+            </template>
+            <template for:each={limitRows} for:item="row">
+              <li key={row.key} class="metric" data-id="limit">{row.label}</li>
+            </template>
+          </ul>
+        </div>
       </template>
-      <template lwc:elseif={snapshotFailed}>
-        <span class="metric" data-id="snapshot-error">status unavailable</span>
-      </template>
-    </span>
+    </div>
 
     <span class="links">
       <a class="target" data-id="contact" href={contactUrl}>Contact</a>
+      <a class="target" data-id="docs" href={docsUrl}>Docs</a>
       <template lwc:if={gitHubUrl}>
         <a
           class="target"
