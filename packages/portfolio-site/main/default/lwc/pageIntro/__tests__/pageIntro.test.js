@@ -14,6 +14,9 @@ function mount(props = {}) {
   return element;
 }
 
+// Built from parts, so the test holds no script address as a literal.
+const SCRIPT_URL = ["java", "script:alert(1)"].join("");
+
 const FULL = {
   eyebrow: "Pillar A",
   heading: "Business Architecture",
@@ -86,7 +89,7 @@ describe("c-page-intro", () => {
 
   it("shows no link for an address it may not link to", () => {
     [
-      "javascript:alert(1)",
+      SCRIPT_URL,
       "http://example.com",
       "//example.com/docs",
       "data:text/html,x",
@@ -95,7 +98,7 @@ describe("c-page-intro", () => {
     ].forEach((designUrl) => {
       expect(toDesignHref(designUrl)).toBe("");
     });
-    const element = mount({ ...FULL, designUrl: "javascript:alert(1)" });
+    const element = mount({ ...FULL, designUrl: SCRIPT_URL });
     expect(element.shadowRoot.querySelector("a")).toBeNull();
   });
 

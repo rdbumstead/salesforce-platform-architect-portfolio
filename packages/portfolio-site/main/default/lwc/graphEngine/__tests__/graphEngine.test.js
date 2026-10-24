@@ -635,7 +635,7 @@ describe("c/graphEngine attachPanZoom and attachNodeDrag", () => {
 
   // A touch event as d3-zoom reads it: touches still down, and the ones that changed.
   function touch(type, down, changed) {
-    const event = new Event(type, { bubbles: true, cancelable: true });
+    const event = new CustomEvent(type, { bubbles: true, cancelable: true });
     const list = (points) =>
       points.map(([identifier, x, y]) => ({
         identifier,
