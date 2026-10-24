@@ -16,6 +16,10 @@
  *                      beside the reader. A tag row opens and closes with Redoc's own expand by
  *                      click, Enter or Space and scrolls its intro into view. An operation row
  *                      scrolls its section into view and moves focus there.
+ *                      After Redoc renders, a portfolio-reference document event with
+ *                      { mounted: true } tells the theme layout, whose floating Back to top
+ *                      would sit on Redoc's phone menu button. A failed render or leaving the
+ *                      page sends { mounted: false }.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -38,6 +42,23 @@ export const TIMEOUT_MESSAGE =
   "The interactive reference could not load in this browser.";
 
 class RenderTimeoutError extends Error {}
+
+/** The document event the theme layout listens for, with { mounted }. */
+export const REFERENCE_EVENT = "portfolio-reference";
+
+/**
+ * Tells the theme layout whether Redoc is on the page. Never throws.
+ * @param {boolean} mounted true once Redoc has rendered, false when it is gone or failed
+ */
+function announceReference(mounted) {
+  try {
+    document.dispatchEvent(
+      new CustomEvent(REFERENCE_EVENT, { detail: { mounted } })
+    );
+  } catch {
+    // No document. Nothing listens.
+  }
+}
 
 export const SPECS = {
   sapi: { label: "System API (SAPI)", url: SAPI_SPEC },
@@ -457,6 +478,7 @@ export default class ApiReference extends LightningElement {
 
   disconnectedCallback() {
     this.clearRenderTimeout();
+    announceReference(false);
     if (this.boundHashChange) {
       window.removeEventListener("hashchange", this.boundHashChange);
     }
@@ -691,11 +713,13 @@ export default class ApiReference extends LightningElement {
       await Promise.race([this.renderSpec(), this.renderTimeout()]);
       if (renderId === this.renderCount) {
         this.afterRender();
+        announceReference(true);
       }
     } catch (error) {
       if (renderId !== this.renderCount) {
         return;
       }
+      announceReference(false);
       this.errorMessage =
         error instanceof RenderTimeoutError
           ? error.message
