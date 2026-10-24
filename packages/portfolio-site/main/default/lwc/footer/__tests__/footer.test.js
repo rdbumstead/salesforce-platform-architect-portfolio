@@ -542,11 +542,11 @@ describe("c-footer", () => {
     });
   });
 
-  it("links Contact to the contact form on the home page", () => {
+  it("links Contact to the /contact page", () => {
     const element = createComponent();
     const link = q(element, '[data-id="contact"]');
     expect(link.textContent).toBe("Contact");
-    expect(link.getAttribute("href")).toBe("/portfolio/#contact");
+    expect(link.getAttribute("href")).toBe("/portfolio/contact");
     expect(link.getAttribute("target")).toBeNull();
   });
 

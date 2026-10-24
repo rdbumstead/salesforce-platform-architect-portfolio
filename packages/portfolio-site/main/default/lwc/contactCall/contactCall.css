@@ -1,0 +1,57 @@
+/*
+ * Built on the --pf- site tokens, as contactForm is, so the line follows the light and dark
+ * theme. The link takes the form's submit button look. Every element that sets a background
+ * also sets its text colour.
+ */
+:host {
+  display: block;
+}
+
+.contact-call {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  max-width: 40rem;
+  margin: 2rem auto 0;
+  padding: 1rem;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+}
+
+.contact-call__heading {
+  margin: 0;
+  color: var(--pf-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.contact-call__text {
+  flex: 1 1 14rem;
+  margin: 0;
+  color: var(--pf-muted);
+}
+
+.contact-call__button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+  border: 1px solid var(--pf-btn);
+  border-radius: var(--pf-radius-sm);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.contact-call__button:hover {
+  text-decoration: underline;
+}
+
+.contact-call__button:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}

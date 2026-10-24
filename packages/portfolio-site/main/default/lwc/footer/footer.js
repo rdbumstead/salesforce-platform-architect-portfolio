@@ -15,7 +15,7 @@
  *                      put it in the layout's preloads. The snapshot's
  *                      org quotas (OrgLimits) and the GitHub and Jira breakers show next to
  *                      the AI providers, the GraphQL line shows only a finite time, and a
- *                      Contact link goes to the home page's contact form.
+ *                      Contact link goes to the /contact page.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -124,8 +124,7 @@ export default class Footer extends LightningElement {
 
   badgeUrl = BADGE_URL;
   actionsUrl = ACTIONS_URL;
-  // The contact form handles #contact itself.
-  contactUrl = `${basePath || ""}/#contact`;
+  contactUrl = `${basePath || ""}/contact`;
 
   probeConstructor;
   graphqlMs;

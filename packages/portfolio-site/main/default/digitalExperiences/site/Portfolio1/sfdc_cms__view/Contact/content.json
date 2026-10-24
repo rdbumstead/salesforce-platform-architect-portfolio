@@ -1,0 +1,81 @@
+{
+  "type": "sfdc_cms__view",
+  "title": "Contact",
+  "contentBody": {
+    "component": {
+      "children": [
+        {
+          "children": [
+            {
+              "attributes": {
+                "backgroundImageConfig": "",
+                "backgroundImageOverlay": "rgba(0,0,0,0)",
+                "componentSpacerSize": "",
+                "layoutDirectionDesktop": "row",
+                "layoutDirectionMobile": "column",
+                "layoutDirectionTablet": "column",
+                "maxContentWidth": "",
+                "sectionColumnGutterWidth": "",
+                "sectionConfig": "{\"UUID\":\"39c95677-65ed-4172-bde6-b3f32a7f155b\",\"columns\":[{\"UUID\":\"751c5dfa-d573-4ed1-962a-c51ea1aa7ad0\",\"columnName\":\"Column 1\",\"columnKey\":\"col1\",\"columnWidth\":\"12\",\"seedComponents\":null}]}",
+                "sectionMinHeight": "",
+                "sectionVerticalAlign": "flex-start"
+              },
+              "children": [
+                {
+                  "children": [
+                    {
+                      "attributes": {
+                        "heading": "Get in touch",
+                        "intro": "Questions about a project, a role or this site? Send a note and Ryan will reply."
+                      },
+                      "definition": "c:contactForm",
+                      "id": "2d22e199-1dbc-4076-8f6f-5255c5958a3e",
+                      "type": "component"
+                    }
+                  ],
+                  "id": "751c5dfa-d573-4ed1-962a-c51ea1aa7ad0",
+                  "name": "col1",
+                  "title": "Column 1",
+                  "type": "region"
+                }
+              ],
+              "definition": "community_layout:section",
+              "id": "39c95677-65ed-4172-bde6-b3f32a7f155b",
+              "type": "component"
+            }
+          ],
+          "id": "26477b88-df9e-4948-b13a-de921f3ba69a",
+          "name": "content",
+          "title": "Content",
+          "type": "region"
+        },
+        {
+          "children": [
+            {
+              "attributes": {
+                "customHeadTags": "",
+                "description": "Send Ryan Bumstead a message about a Salesforce project, a role or this portfolio.",
+                "pageTitle": "Contact | Ryan Bumstead",
+                "recordId": "{!recordId}"
+              },
+              "definition": "community_builder:seoAssistant",
+              "id": "f39373c1-8400-498b-8e11-bd28540a6830",
+              "type": "component"
+            }
+          ],
+          "id": "213abded-03f6-4578-a076-5b6c1a122a9f",
+          "name": "sfdcHiddenRegion",
+          "title": "sfdcHiddenRegion",
+          "type": "region"
+        }
+      ],
+      "definition": "community_layout:sldsFlexibleLayout",
+      "id": "a314b5b6-5c1f-425d-9013-16b44e9c039e",
+      "type": "component"
+    },
+    "dataProviders": [],
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
+    "viewType": "custom-contact"
+  },
+  "urlName": "contact"
+}
