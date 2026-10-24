@@ -14,6 +14,8 @@
   - [3.3 Pipeline Strategy: Delta Deployment](#33-pipeline-strategy-delta-deployment)
   - [3.4 Org Persistence](#34-org-persistence)
   - [3.5 Changing an Operational Setting](#35-changing-an-operational-setting)
+  - [3.6 Changing a Query Definition](#36-changing-a-query-definition)
+  - [3.7 Site Content the Owner Edits](#37-site-content-the-owner-edits)
 - [4. Disaster Recovery](#4-disaster-recovery)
   - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
   - [4.2 Scenario: Security Misconfiguration (Guest User)](#42-scenario-security-misconfiguration-guest-user)
@@ -146,7 +148,7 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 
 ### 3.2 Pipeline Triggers
 
-- **PR Validation (pr.yml):** Runs on pull requests to `main` that modify `packages/**`, `sfdx-project.json`, `package.json` or `pr.yml` itself.
+- **PR Validation (pr.yml):** Runs on pull requests to `main` that modify `packages/**`, `sfdx-project.json`, `package.json`, `scripts/**` or `pr.yml` itself. One run per PR at a time: a new push cancels the run still going, and a label event runs in its own group, so it never cancels a real run.
   - _Quality Gate:_ every Apex test passes and org wide coverage is 90% or more (`scripts/coverage-gate.js --min 90`).
   - _Security Gate:_ no Critical or High violation from Salesforce Code Analyzer (`npm run scan`), plus `npm run scan:secrets`, the Jest tests and `npm run docs:verify`.
   - _Internal references:_ the `quality-check` job runs the gate's own tests and then `scripts/check-internal-refs.js` over `packages/`, and fails the PR on any hit.
@@ -173,12 +175,28 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 
 ### 3.5 Changing an Operational Setting
 
-Page sizes, rate tiers, the token rate and cap default, circuit breaker limits, form guard limits, source refresh limits, governance freshness windows, AI length bounds, the health check timeout and the roadmap and timeline display counts are `Portfolio_Setting__mdt` records ([Technical Guide §1.6](./04-Technical-Guide.md#16-operational-settings-portfolio_setting__mdt), [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)).
+Page sizes, rate tiers, the token rate and cap default, circuit breaker limits, form guard limits, source refresh limits, governance freshness windows, AI length bounds, the health check timeout, the roadmap and timeline display counts, the cover letter word range, the Gemini output token limit and temperature, and the home page testimonial minimum are `Portfolio_Setting__mdt` records ([Technical Guide §1.6](./04-Technical-Guide.md#16-operational-settings-portfolio_setting__mdt), [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)).
 
 1. To change a limit, edit the record's **Number Value** in Setup > Custom Metadata Types > Portfolio Setting > Manage Records. It takes effect on the next request, with no deploy.
 2. Keep it inside the record's **Min Value** to **Max Value**. A value outside that range is ignored and the code default applies, and so does a cleared value or a deleted record. Its **Description** says what it controls and what is safe. A fraction is dropped (2.75 reads as 2).
 3. Commit the same value to the record's file under `packages/portfolio-site/main/default/customMetadata/`. A full mode deploy writes every record in source, and a delta that touches the file writes it too, so a value changed only in Setup can be put back to the shipped one.
 4. `Token_Daily_Cap_Default` applies only while `Portfolio_Config__mdt.Token_Daily_Cap__c` is blank. To pause or lower token vending, set the config cap (§4.4).
+
+### 3.6 Changing a Query Definition
+
+The SAPI list reads are `Query_Definition__mdt` records, one per read, each checked against the query its class holds in code ([Technical Guide §1.7](./04-Technical-Guide.md#17-query-definitions-query_definition__mdt), [ADR-033](../adr/033-queries-in-custom-metadata.md)).
+
+1. A record can only narrow its read. Its filter is added to the class's filter, the smaller row limit applies, and a field outside the class's allowlist, a missing required field, an unknown bind, a weaker access mode or a filter that does not parse makes the class run its own query instead. So a record that seems to change nothing has probably failed a check.
+2. Edit the record in Setup > Custom Metadata Types > Query Definition > Manage Records, or in its file under `packages/portfolio-site/main/default/customMetadata/`. Write an optional filter as `(IsDeleted = :hasX OR Field = :x)`, using only the binds the class already supplies.
+3. Run `SAPIQueryDefinitionsTest`. `everyDeployedRecordPassesValidation` lists every record that fails a check, with the reasons. `everySapiRecordShipsEqualToItsDefault` fails for any record that differs from its class, so a deliberate change to a shipped record needs the class's default changed to match, which is a code change.
+4. Commit the change. A full mode deploy writes every record in source, so a change made only in Setup can be put back.
+
+### 3.7 Site Content the Owner Edits
+
+- **The hero line.** Edit **Hero Line** on the portfolio owner's Contact. It shows under the name on the home page, and nothing shows while it is blank.
+- **When home testimonials appear.** Edit **Home testimonials minimum** in Portfolio Setting (§3.5). The home page shows up to three approved testimonials once that many are approved.
+- **The cover letter instruction.** Edit **Instruction** on the **Cover Letter** record of the AI Prompt custom metadata type, and commit the same text to `AI_Prompt.Cover_Letter.md-meta.xml`. A blank or missing record falls back to the text in `ContentGenerationController`. The word range is the `Cover_Letter_Min_Words` and `Cover_Letter_Max_Words` settings.
+- **A document on `/docs`.** Each listed document is a `Source_File__mdt` record with `Source_Key__c` `docs`, its `Path__c` in the repository, its `Label__c` and its `Sort_Order__c`. The daily source refresh reads it from `main`, so a new or changed document shows within a day of its merge. The doc key in the address comes from the record name: `docs_sas` gives `sas` and `docs_adr_027` gives `adr-027`. Keep the SAS headings 5.1 to 5.5 as they are, because each pillar page's "Read the design" link uses their slugs.
 
 ## 4. Disaster Recovery
 

@@ -367,6 +367,8 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 - **Objective:** Demonstrate Enterprise Integration Patterns and Developer Experience (DX).
 - **Design:** OpenAPI Specification (OAS 3.0) hosted on GitHub.
 - **Implementation:** Native Apex REST Class (`SAPIExperience`).
+- **Query definitions:** each SAPI list read is a `Query_Definition__mdt` record checked against the query in its class, so an edit to a record can narrow a read and never widen it ([ADR-033](../adr/033-queries-in-custom-metadata.md)).
+- **API Lab:** each name and Id filter is a picklist of values read from the org on page load, with the free text Advanced field kept. On phones the Lab opens with the endpoint and Execute showing, and the filters, Advanced, the response details and the token form are closed sections ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
 - **Technical Detail:** For the complete breakdown of the caching strategy, caching patterns, and API tooling, refer to the **[Technical Guide: Integration Service Implementation](./04-Technical-Guide.md#1-integration-service-implementation)**.
 
 ### 5.4 Pillar D: AI & Innovation (Agentforce)
@@ -389,8 +391,9 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 - **The Architecture as built:**
   - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`, which checks the AI tier limit on the key `papi-ai:site-cover-letter` (10 requests per minute, one bucket shared by every site visitor), runs `ContentGenerationController.dispatch` in process as the site guest, and writes the count afterwards. The guest holds the `Gemini_Auth-Gemini_Principal` principal for this and no other AI grant. The page used to call `/papi/v1/ai/generate` through the `Portfolio_API` Named Credential, but a request that arrives as a callout from the same org may not call out again, so Gemini could never answer it ([ADR-015 amendment on the in process dispatch](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-the-site-cover-letter-dispatches-in-process)). `/papi/v1/ai/generate` stays for outside callers.
   - **Retrieval Layer:** `PortfolioGroundingService` reads featured `Project__c` records (name, challenge, solution, business value, skills) and `Experience_Highlight__c` text with its role and employer, ranks them by keywords from the job title and description, and adds them to the prompt as JSON. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and stays under 8,000 characters. Its reads go through a `without sharing` selector with a fixed field list, because the site guest sees only rows shared to it. This is direct CRM retrieval in Apex. No Data 360 index exists (section 5.4).
-  - **Generation Layer:** `ContentGenerationController.dispatch`, described below.
-  - **Show your work:** the page's badge shows the provider and model from the response. A panel the visitor opens shows whether a fallback happened, the round trip and generation time, every attempt and the prompt that was sent.
+  - **Prompt Layer:** `ContentGenerationController.coverLetterPrompt` builds the one cover letter prompt for both cover letter paths: the instruction from the `AI_Prompt__mdt` record `Cover_Letter` (the same text in code as the fallback), the length as 250 to 350 words from two settings, the job, the persona (Architect, Developer or Admin) inferred from the job, and the grounding. Highlights tagged with that persona rank first. Email and phone shapes are removed from the visitor's text. The letter is never cut.
+  - **Generation Layer:** `ContentGenerationController.dispatch`, described below. Every Gemini request sends a `generationConfig` with the output token limit and the temperature from two settings.
+  - **Show your work:** the page shows the whole letter with its word count beside the badge, which shows the provider and model from the response. A panel the visitor opens shows whether a fallback happened, the round trip and generation time, every attempt and the prompt that was sent.
 
 **Generation strategy as built.** Providers implement `IAIGenerationService` (`generateContent`, `isAvailable`). One dispatch method, `ContentGenerationController.dispatch`, serves both `PAPIAiGenerate.generate` and the page (in process, as the guest):
 
@@ -457,6 +460,7 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 - **Mechanism:** the CI/CD pipeline publishes the `Governance_Event__e` platform event, an Apex trigger persists it as a `Pipeline_Run__c` record, and the `c-smart-checklist` component reads the result through cacheable Apex ([ADR-019 amendment of 2026-10-21](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-21-the-event-the-subscriber-and-the-page)).
 - **Workflow:** after a production deploy (`deploy.yml`) and after the daily heartbeat (`keep-alive.yml`), the workflow's existing JWT user publishes one event with the run's status, id, URL, commit and time. The trigger upserts `Pipeline_Run__c` by `Run_Key__c`, so a replayed event changes nothing. The component reads `GovernanceController.getPipelineStatus()` when the page is viewed and again when the tab becomes visible. There is no timer and no polling. Each item shows its evidence (the commit linking to the run, and the time), and an item with no data shows "No signal yet". A third workflow, the Live Smoke Test that runs after every deploy that changed production, publishes only on a failure, as workflow `smoke`. The checklist does not read those rows ([ADR-019 amendment](../adr/019-executable-governance-platform-events-for-documentation-logic.md#amendment-2026-10-23)).
 - **Page text:** the Delivery page's introduction describes this in the present tense: after every production deploy and every daily heartbeat the pipeline publishes the result, passed or failed, and the checklist says so when a run failed or is out of date (`sfdc_cms__view/Delivery/content.json`).
+- **Times:** each time shows in UTC and then in the visitor's own time and zone.
 - **What it claims:** the production deploy is green, the org heartbeat ran today (within 26 hours, the `Heartbeat_Stale_Hours` setting), and the integration caches are under 30 minutes old (`Governance_Cache_Minutes`).
 - **Why no browser subscription:** `lightning-emp-api` is unsupported in LWR sites, and each subscribed browser would count against the org's 20 concurrent streaming clients. The event-driven part is server-side: publish, an asynchronous subscriber and idempotent handling of a replayed event.
 - **Roadmap and changelog:** `c-roadmap-viewer` and `c-changelog` read cached Jira and GitHub data through `DeliveryController` (cacheable Apex). Scheduled Queueable jobs refresh the caches every 15 minutes, so a visitor never triggers a callout ([ADR-007 amendment of 2026-10-21](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-the-cache-objects-and-the-scheduled-refresh)). The roadmap shows only `SPAP` issues labelled `portfolio-roadmap`. The site's CDN caching of guest Apex stays off (owner decision), so every visit reads the org.
@@ -482,20 +486,23 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 
 ### 6.2 Lightning Web Components (LWC)
 
-- **`c-hero-banner`:** The hero, three "start here" paths (recruiters to the resume, architects to the pillars, developers to the API Lab), the pillar cards with computed numbers and an optional case study, and the 5 minute tour ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
+- **`c-hero-banner`:** The hero, a line in the owner's voice under the name when one is set, three "start here" paths (recruiters to the resume, architects to the pillars, developers to the API Lab), the pillar cards with computed numbers and an optional case study, and the 5 minute tour ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
 - **`c-testimonial-submit`:** The accessible "Mad Libs" sentence builder, gated by vibe ([ADR-005 amendment](../adr/005-gamified-testimonial-ui.md)).
 - **`c-testimonial-wall`:** Approved testimonials on `/testimonials` with a "Professional / All" filter. It renders nothing when there are none.
-- **`c-experience-timeline`:** The home page timeline with Work, Education and Certifications tabs, each showing its first entries up to the `Timeline_Tab_Limit` setting and then a View all button ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
+- **`c-home-testimonials`:** Up to three approved testimonials on the home page, Professional ones first, hidden until the `Home_Testimonials_Min` setting's count is approved ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
+- **`c-experience-timeline`:** The home page timeline with Work, Certifications and Education tabs, each showing its first entries up to the `Timeline_Tab_Limit` setting and then a View all button ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
 - **`c-contact-form`:** The contact form on the `/contact` page, saved as a Lead ([ADR-031](../adr/031-native-contact-form.md)).
 - **`c-contact-call`:** The home page's one line "Get in touch" prompt with a link to `/contact`. It sends an old `/#contact` address on to `/contact`.
 - **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invoke`, which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3).
 - **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
 - **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with d3-force that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-matrix-first-the-graph-on-open-d3-force-as-the-engine)).
+- **`c-docs-viewer`:** The SAS and the 24 full ADRs at `/docs`, from the daily source cache, rendered without parsing any HTML ([Technical Guide §2.17](./04-Technical-Guide.md#217-docs-page-c-docs-viewer)).
+- **`c-page-intro`:** The opening of each of the five pillar pages: the pillar, the page's one heading, a lead paragraph and a "Read the design" link to its section of this document ([Technical Guide §2.18](./04-Technical-Guide.md#218-page-intro-c-page-intro)).
 - **`c-code-viewer`:** Shows one source file highlighted by `c/prismHighlighter`. It fetches nothing itself.
 - **`c-view-source`:** The View source button and dialog on the showcase components. It reads cached GitHub source through `SourceController.getSourceFiles` and never calls GitHub ([Technical Guide §2.14](./04-Technical-Guide.md#214-view-source-c-view-source)).
 - **`c-resume-builder`:** Client-side PDF generation via jsPDF.
 - **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category, each capped at 8 cards with its own "Show all N" button. It makes no callout.
-- **`c-footer`:** Contains the GitHub Actions deploy badge, the Glass Box telemetry (section 9) and a Contact link to the `/contact` page.
+- **`c-footer`:** Contains the GitHub Actions deploy badge, the Glass Box telemetry in four labelled groups (section 9), a Docs link to `/docs` and a Contact link to the `/contact` page.
 - **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
 - **`c-schema-visualizer`:** The live ERD on the Pillar A page, drawn with the shared d3-force engine (section 5.1).
 - **`c-project-asset-gallery`:** The image, document, video and link gallery for any pillar's project, from `Project_Asset__c`.
@@ -544,6 +551,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema Visualizer Scope, Discovery and Caching                  | Accepted (2026-10-22)    |
 | [ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)                            | Decision Matrix as Custom Metadata                              | Accepted (2026-10-22)    |
 | [ADR-031](../adr/031-native-contact-form.md)                                           | Native Contact Form                                             | Accepted (2026-10-23)    |
+| [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)                       | Operational Settings in Custom Metadata                         | Accepted (2026-10-23)    |
+| [ADR-033](../adr/033-queries-in-custom-metadata.md)                                    | Queries in Custom Metadata                                      | Accepted (2026-10-24)    |
 
 </details>
 
@@ -591,7 +600,7 @@ Ensuring the system fails gracefully during outage events ([ADR-022 amendment of
 
 ## 9. Observability & Glass Box Telemetry
 
-The footer (`c-footer`) shows a short telemetry line to demonstrate "Glass Box Telemetry". It loads after the first paint ([ADR-014](../adr/014-deferred-telemetry-loading-performance.md)) from `FooterController.getSystemSnapshot()`, which is not cacheable, so the values are current.
+The footer (`c-footer`) shows its telemetry in four labelled groups, Deploy, Platform, Integrations, and Quotas and limits, to demonstrate "Glass Box Telemetry". Rules separate the groups on wide screens, and they stack on phones. It loads after the first paint ([ADR-014](../adr/014-deferred-telemetry-loading-performance.md)) from `FooterController.getSystemSnapshot()`, which is not cacheable, so the values are current.
 
 - **Limits:** CPU time, heap size and SOQL queries used against their governor limits, read from `Limits` in that transaction.
 - **Org quotas:** daily API requests and daily async Apex executions against their limits, from `OrgLimits`. A quota the org does not report is left out, never guessed.
@@ -1069,6 +1078,30 @@ One operational value per record, read by `PortfolioSettings` with the code defa
 | **Max Value**    | `Max_Value__c`    | Number (18,4) | -      | No       | Highest safe number. Above it the code default applies. |
 | **Description**  | `Description__c`  | Text Area     | 255    | No       | What the setting controls and its safe range.           |
 
+#### D.14 Object: `Query_Definition__mdt` (Custom Metadata)
+
+One content read per record, run by `QueryDefinitions` only when it passes the checks of its class's code default ([ADR-033](../adr/033-queries-in-custom-metadata.md), [Technical Guide §1.7](./04-Technical-Guide.md#17-query-definitions-query_definition__mdt)). The DeveloperName is the read's name, `Class_Purpose`.
+
+| Field Label     | API Name         | Type           | Length | Required | Description                                                                     |
+| :-------------- | :--------------- | :------------- | :----- | :------- | :------------------------------------------------------------------------------ |
+| **Object**      | `Object__c`      | Text           | 80     | No       | The object read. Must equal the default's.                                      |
+| **Fields**      | `Fields__c`      | Long Text Area | 4000   | No       | Comma list of fields, relationship paths allowed, inside the class's allowlist. |
+| **Filter**      | `Filter__c`      | Long Text Area | 4000   | No       | WHERE body joined to the default's with AND. Named binds only.                  |
+| **Order By**    | `Order_By__c`    | Text           | 255    | No       | ORDER BY body.                                                                  |
+| **Row Limit**   | `Row_Limit__c`   | Number (6,0)   | -      | No       | 1 to 50000. The smaller of this and the default's applies.                      |
+| **Access Mode** | `Access_Mode__c` | Text           | 20     | No       | `USER_MODE` or `SYSTEM_MODE`, never weaker than the default's.                  |
+| **Active**      | `Active__c`      | Checkbox       | -      | No       | Default true. An inactive record is not used.                                   |
+| **Description** | `Description__c` | Text Area      | 255    | No       | What the read is for.                                                           |
+
+#### D.15 Object: `AI_Prompt__mdt` (Custom Metadata)
+
+One prompt instruction per record. `Cover_Letter` holds the cover letter instruction, with the same text in `ContentGenerationController` as the fallback.
+
+| Field Label     | API Name         | Type           | Length | Required | Description                             |
+| :-------------- | :--------------- | :------------- | :----- | :------- | :-------------------------------------- |
+| **Instruction** | `Instruction__c` | Long Text Area | 8000   | No       | The instruction the prompt starts with. |
+| **Description** | `Description__c` | Text Area      | 255    | No       | What the prompt is for.                 |
+
 ### Appendix E: Environment Strategy
 
 - **Strategy:** Refer to **[Maintenance & Operations Guide: Environment Hygiene](./05-Maintenance-Guide.md#2-environment-hygiene-the-clean-sweep)** for the comprehensive environment strategy, including org separation and authorized code rules.
@@ -1080,7 +1113,7 @@ One operational value per record, read by `PortfolioSettings` with the code defa
 ### Appendix G: Accessibility Strategy (A11y)
 
 - **G.1 The "Shadow Structure" Pattern:** every graph has a list beside it that holds the same content. On the skills page the graph's SVG is `aria-hidden` and a visually hidden list names every node and its connections, so its length equals the node count. On the Pillar A page the object list mirrors every node and edge, and on phones it is the visible view. The skills matrix itself is native buttons (`aria-pressed`) in rows by category.
-- **G.2 Motion Sensitivity:** nothing animates. The d3-force layout runs to completion before anything is drawn, so `prefers-reduced-motion` needs no special case and no pause control.
+- **G.2 Motion Sensitivity:** the graphs do not animate: the d3-force layout runs to completion before anything is drawn. A "Reduce motion" button beside the theme button stores the visitor's choice, defaulting to the system setting, and the smooth scrolls and the home hero's card transition follow it.
 - **G.3 Keyboard Navigation:** the "Matrix | Graph" switch is two 44 px buttons in a labelled group. Skill chips, the ERD's object list, the scope toggle and the gallery links are reachable by keyboard. Skip links function normally.
 - **G.4 Decision matrix:** a table with a caption, `scope` on every header, and a labelled range slider per criterion ("Weight for" and the criterion, 0 to 10). The ranking and the sensitivity line are text, not colour.
 - **G.5 Compliance Checklist:** (WCAG 2.1 AA compliant).
