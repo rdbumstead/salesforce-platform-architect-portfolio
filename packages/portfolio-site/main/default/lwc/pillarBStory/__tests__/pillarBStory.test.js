@@ -101,6 +101,18 @@ describe("c-pillar-b-story", () => {
     );
   });
 
+  it("links the client's ten Power of Us licences to the public P10 page", () => {
+    const element = createComponent();
+    const item = q(element, '[data-id="client-licences"]');
+    expect(text(item)).toContain("ten free licences under Power of Us");
+    const link = item.querySelector("a");
+    expect(link.getAttribute("href")).toBe(
+      "https://help.salesforce.com/s/articleView?id=000385150&language=en_US&type=1"
+    );
+    expect(link.target).toBe("_blank");
+    expect(link.rel).toBe("noopener noreferrer");
+  });
+
   it("opens section 2 by framing the work as pre-sales", () => {
     const element = createComponent();
     const discovery = q(element, '[data-section="discovery"]');
