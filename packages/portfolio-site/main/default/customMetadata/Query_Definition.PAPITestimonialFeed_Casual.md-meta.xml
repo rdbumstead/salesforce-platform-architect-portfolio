@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>PAPITestimonialFeed Casual</label>
+    <protected>false</protected>
+    <values>
+        <field>Object__c</field>
+        <value xsi:type="xsd:string">Testimonial__c</value>
+    </values>
+    <values>
+        <field>Fields__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Id, Author_Name__c, Author_Title__c, Relationship_Type__c, Context__c, Vibe_Mode__c, Avatar_URL__c</value>
+    </values>
+    <values>
+        <field>Filter__c</field>
+        <value xsi:type="xsd:string">Approved__c = TRUE</value>
+    </values>
+    <values>
+        <field>Order_By__c</field>
+        <value
+      xsi:type="xsd:string"
+    >Sort_Order__c ASC NULLS LAST, CreatedDate DESC</value>
+    </values>
+    <values>
+        <field>Row_Limit__c</field>
+        <value xsi:type="xsd:double">200</value>
+    </values>
+    <values>
+        <field>Access_Mode__c</field>
+        <value xsi:type="xsd:string">SYSTEM_MODE</value>
+    </values>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >GET /papi/v1/testimonials/feed with mode=casual. Every approved testimonial.</value>
+    </values>
+</CustomMetadata>
