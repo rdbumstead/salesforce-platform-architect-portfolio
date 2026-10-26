@@ -1,0 +1,193 @@
+<template>
+  <template lwc:if={hasRoles}>
+    <div class="career">
+      <section
+        class="section"
+        aria-labelledby="career-heading"
+        onkeydown={handleKeydown}
+      >
+        <h2
+          id="career-heading"
+          class="visually-hidden"
+          data-id="career-heading"
+        >
+          Career, newest role first
+        </h2>
+
+        <div class={lineWrapClass} data-id="line-wrap">
+          <ol
+            class="line"
+            data-id="line"
+            tabindex={lineTabIndex}
+            aria-labelledby="career-heading"
+            onscroll={handleLineScroll}
+          >
+            <template for:each={lineRoles} for:item="role">
+              <li key={role.key} class={role.pointClass} data-id="line-role">
+                <span class="dot" aria-hidden="true"></span>
+                <template lwc:if={role.hasHighlights}>
+                  <button
+                    type="button"
+                    class="point-body point-button"
+                    aria-expanded={role.expanded}
+                    aria-controls={role.controls}
+                    data-role-button="true"
+                    data-list="line"
+                    data-key={role.key}
+                    onclick={handleRoleClick}
+                  >
+                    <span class="employer"
+                      >{role.employer}<span class="visually-hidden"
+                        >{comma}</span
+                      ></span
+                    >
+                    <span class="role-title"
+                      >{role.title}<span class="visually-hidden"
+                        >{comma}</span
+                      ></span
+                    >
+                    <span class="years">{role.years}</span>
+                  </button>
+                </template>
+                <template lwc:else>
+                  <div class="point-body">
+                    <span class="employer"
+                      >{role.employer}<span class="visually-hidden"
+                        >{comma}</span
+                      ></span
+                    >
+                    <span class="role-title"
+                      >{role.title}<span class="visually-hidden"
+                        >{comma}</span
+                      ></span
+                    >
+                    <span class="years">{role.years}</span>
+                  </div>
+                </template>
+              </li>
+            </template>
+          </ol>
+        </div>
+
+        <div
+          id="career-panel"
+          class={linePanelClass}
+          data-id="line-panel"
+          hidden={linePanelHidden}
+        >
+          <template lwc:if={openRole}>
+            <p class="panel-head">
+              <span class="panel-title">{openRole.title}</span>
+              <span class="panel-meta">{openRole.meta}</span>
+            </p>
+            <ul class="highlights">
+              <template for:each={openRole.highlights} for:item="item">
+                <li key={item.key}>{item.text}</li>
+              </template>
+            </ul>
+          </template>
+        </div>
+
+        <ol class="stack" data-id="stack" aria-labelledby="career-heading">
+          <template for:each={stackRoles} for:item="role">
+            <li key={role.key} class={role.pointClass} data-id="stack-role">
+              <span class="dot" aria-hidden="true"></span>
+              <template lwc:if={role.hasHighlights}>
+                <button
+                  type="button"
+                  class="point-body point-button"
+                  aria-expanded={role.expanded}
+                  aria-controls={role.controls}
+                  data-role-button="true"
+                  data-list="stack"
+                  data-key={role.key}
+                  onclick={handleRoleClick}
+                >
+                  <span class="employer"
+                    >{role.employer}<span class="visually-hidden"
+                      >{comma}</span
+                    ></span
+                  >
+                  <span class="role-title"
+                    >{role.title}<span class="visually-hidden"
+                      >{comma}</span
+                    ></span
+                  >
+                  <span class="years">{role.years}</span>
+                </button>
+                <div
+                  id={role.stackPanelId}
+                  class={role.stackPanelClass}
+                  data-id="stack-panel"
+                  hidden={role.stackPanelHidden}
+                >
+                  <ul class="highlights">
+                    <template for:each={role.highlights} for:item="item">
+                      <li key={item.key}>{item.text}</li>
+                    </template>
+                  </ul>
+                </div>
+              </template>
+              <template lwc:else>
+                <div class="point-body">
+                  <span class="employer"
+                    >{role.employer}<span class="visually-hidden"
+                      >{comma}</span
+                    ></span
+                  >
+                  <span class="role-title"
+                    >{role.title}<span class="visually-hidden"
+                      >{comma}</span
+                    ></span
+                  >
+                  <span class="years">{role.years}</span>
+                </div>
+              </template>
+            </li>
+          </template>
+        </ol>
+
+        <div class="career-foot">
+          <button
+            type="button"
+            class="timeline-toggle"
+            data-id="timeline-toggle"
+            aria-expanded={timelineExpanded}
+            aria-controls="career-timeline"
+            onclick={handleTimelineToggle}
+          >
+            {timelineLabel}
+            <svg
+              class="toggle-chevron"
+              aria-hidden="true"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <div
+          id="career-timeline"
+          class={timelineClass}
+          data-id="full-timeline"
+          role="region"
+          aria-label="Full timeline"
+          tabindex="-1"
+          hidden={timelineHidden}
+        >
+          <template lwc:if={timelineOpen}>
+            <c-experience-timeline></c-experience-timeline>
+          </template>
+        </div>
+      </section>
+    </div>
+  </template>
+</template>
