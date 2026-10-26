@@ -2,8 +2,8 @@
  * @description       : Proves the numbers panel on the org's own testimonials, as the real
  *                      Portfolio1 site guest. The guest reads approved rows through the
  *                      Guest_Read_Testimonials sharing rule, and the Block_Unapproved_Testimonials
- *                      restriction rule hides every waiting row from it, so the panel's two
- *                      testimonial counts must still equal the counts an admin sees. Reads the
+ *                      restriction rule hides every waiting row from it, so the approved count
+ *                      must equal the count an admin sees, and no waiting count is returned. Reads the
  *                      org's data (SeeAllData), because guest sharing rules never reach records
  *                      inserted inside an Apex test. In an org with no testimonials the checks
  *                      hold trivially.
@@ -22,12 +22,6 @@ private class PortfolioStatsControllerGuestTest {
       WHERE Approved__c = TRUE
       WITH SYSTEM_MODE
     ];
-    Integer waitingInOrg = [
-      SELECT COUNT()
-      FROM Testimonial__c
-      WHERE Approved__c = FALSE
-      WITH SYSTEM_MODE
-    ];
     User guest = SiteGuestTestSupport.preparedGuest();
     PortfolioStatsController.Stats stats;
 
@@ -38,7 +32,10 @@ private class PortfolioStatsControllerGuestTest {
     Test.stopTest();
 
     Assert.areEqual(approvedInOrg, stats.testimonialsApproved, 'Approved');
-    Assert.areEqual(waitingInOrg, stats.testimonialsWaiting, 'Waiting');
+    Assert.isFalse(
+      JSON.serialize(stats).containsIgnoreCase('waiting'),
+      'The waiting count is not part of the guest\'s answer'
+    );
   }
 
   @isTest

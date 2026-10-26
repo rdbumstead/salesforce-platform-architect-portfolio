@@ -9,6 +9,9 @@
  *                      guest, under the AI tier limit on the papi-ai key prefix. It makes no
  *                      call into this org's own API, because a request that arrives as a callout
  *                      from the same org cannot call out to Gemini ("Callout loop not allowed").
+ *                      invoke() and generateCoverLetter() each add one to a daily counter
+ *                      (UsageCounterWriter) as their last step. A counter failure is swallowed
+ *                      and never reaches the visitor.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -258,6 +261,8 @@ public with sharing class ApiLabController {
         result.headers.put(name, value);
       }
     }
+    // Last of all: the response is in hand and the callout is done. Never throws.
+    UsageCounterWriter.record(UsageCounterWriter.KIND_API_LAB_REQUEST);
     return result;
   }
 
@@ -330,6 +335,8 @@ public with sharing class ApiLabController {
     result.latencyMs = System.currentTimeMillis() - started;
     result.requestId = requestId;
     logCoverLetter(200, requestId, started);
+    // Last of all: the letter, from any provider, is in hand. Never throws.
+    UsageCounterWriter.record(UsageCounterWriter.KIND_COVER_LETTER);
     return result;
   }
 

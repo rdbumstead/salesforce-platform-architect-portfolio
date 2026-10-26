@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Kind__c</fullName>
+    <description
+  >What this row counts: a cover letter written, or a request sent from the API Lab.</description>
+    <label>Kind</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Cover_Letter</fullName><default
+        >false</default><label>Cover Letter</label></value>
+            <value><fullName>Api_Lab_Request</fullName><default
+        >false</default><label>API Lab Request</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
