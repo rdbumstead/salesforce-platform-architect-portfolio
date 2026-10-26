@@ -48,6 +48,7 @@ const ROUTES = [
     ]
   },
   { path: "/contact", components: ["c-contact-form"] },
+  { path: "/docs", components: ["c-docs-viewer"] },
   {
     path: "/resume",
     components: ["c-resume-builder", "c-experience-timeline"]
@@ -347,12 +348,18 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  finish(
-    {
-      ok: false,
-      summary: `live smoke: FAIL, ${String(error.message).split("\n")[0]}`
-    },
-    1
-  );
-});
+// The route list is shared with scripts/check-smoke-routes.js, which checks it against the
+// site's views without a browser. Requiring this file runs nothing.
+module.exports = { ROUTES };
+
+if (require.main === module) {
+  main().catch((error) => {
+    finish(
+      {
+        ok: false,
+        summary: `live smoke: FAIL, ${String(error.message).split("\n")[0]}`
+      },
+      1
+    );
+  });
+}
