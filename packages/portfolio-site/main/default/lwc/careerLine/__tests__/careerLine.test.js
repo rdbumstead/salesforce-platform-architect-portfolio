@@ -563,7 +563,9 @@ describe("c-career-line", () => {
       Object.defineProperty(line, "scrollLeft", {
         configurable: true,
         get: () => 120,
-        set: (value) => writes.push(value)
+        set(value) {
+          writes.push(value);
+        }
       });
       filter(element, "work").click();
       expect(writes).toEqual([]);
