@@ -230,6 +230,16 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Pipeline_Run__c.Jest_Tests_Passed__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Pipeline_Run__c.Jest_Tests_Run__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Pipeline_Run__c.Org_Coverage__c</field>
         <readable>true</readable>
     </fieldPermissions>
