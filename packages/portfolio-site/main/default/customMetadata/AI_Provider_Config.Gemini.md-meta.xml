@@ -16,7 +16,7 @@
     </values>
     <values>
         <field>Model_Or_Template__c</field>
-        <value xsi:type="xsd:string">gemma-4-31b-it</value>
+        <value xsi:type="xsd:string">gemini-2.5-flash</value>
     </values>
     <values>
         <field>Sort_Order__c</field>
