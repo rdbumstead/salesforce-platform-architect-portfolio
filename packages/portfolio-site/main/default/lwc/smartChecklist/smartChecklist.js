@@ -112,7 +112,7 @@ export function localDateTime(value) {
       })
         .format(date)
         // Some engines put a narrow no-break space before AM or PM.
-        .replace(/ /g, " ")
+        .replace(/\u202f/g, " ")
     );
   } catch {
     return "";
