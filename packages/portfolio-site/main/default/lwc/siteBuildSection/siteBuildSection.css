@@ -1,0 +1,376 @@
+/*
+ * "How this site is built", on the --pf- site tokens only, in the hero's column. Every element
+ * that sets a background also sets its text colour. The opening motion uses transform and
+ * opacity only and is off under reduce motion, both from c/motionPreference and the media query.
+ */
+:host {
+  display: block;
+}
+
+.build {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 var(--pf-space-4) 48px;
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.section {
+  padding: 64px 0 24px;
+}
+
+.section-heading {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pf-text);
+}
+
+.section-intro {
+  margin: var(--pf-space-2) 0 var(--pf-space-6);
+  max-width: 62ch;
+  color: var(--pf-muted);
+}
+
+.build-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--pf-border);
+}
+
+.build-item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: baseline;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.letter {
+  font-family: var(--pf-font-mono);
+  font-weight: 500;
+  color: var(--pf-accent);
+}
+
+.build-main {
+  min-width: 0;
+}
+
+.build-name {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.build-text {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--pf-muted);
+}
+
+.build-stat {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--pf-body);
+}
+
+/* The site's a:link rule outranks a plain class, so :link and :visited are matched too. */
+.build-go,
+.build-go:link,
+.build-go:visited,
+.foot-link,
+.foot-link:link,
+.foot-link:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--pf-accent);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.build-go {
+  white-space: nowrap;
+}
+
+.build-go:hover,
+.build-go:link:hover,
+.build-go:visited:hover,
+.foot-link:hover,
+.foot-link:link:hover,
+.foot-link:visited:hover {
+  text-decoration: underline;
+}
+
+.coming-note {
+  margin: var(--pf-space-4) 0 0;
+  font-size: 14px;
+  color: var(--pf-muted);
+}
+
+.build-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 24px;
+  margin-top: var(--pf-space-4);
+}
+
+.live,
+.live:link,
+.live:visited {
+  color: var(--pf-ok);
+  font-family: var(--pf-font-mono);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tour-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pf-accent);
+  cursor: pointer;
+}
+
+.tour-button:hover {
+  text-decoration: underline;
+}
+
+/* Case study disclosure */
+.case-study {
+  margin-top: var(--pf-space-2);
+}
+
+.case-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pf-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.case-toggle:hover {
+  color: var(--pf-accent);
+}
+
+.case-chevron {
+  font-family: var(--pf-font-mono);
+  font-size: 16px;
+}
+
+.case-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-space-3);
+  padding: var(--pf-space-2) 0 var(--pf-space-3);
+}
+
+.case-body[hidden],
+.tour[hidden] {
+  display: none;
+}
+
+.case-heading {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.case-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--pf-body);
+  white-space: pre-line;
+}
+
+.case-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2) var(--pf-space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.case-link,
+.case-link:link,
+.case-link:visited {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--pf-accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.assistive-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Tour */
+.tour {
+  margin-top: var(--pf-space-6);
+}
+
+.tour-heading {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: var(--pf-text);
+  scroll-margin-top: 88px;
+}
+
+.tour-heading:focus {
+  outline: none;
+}
+
+.tour-heading:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 4px;
+}
+
+.tour-intro {
+  margin: var(--pf-space-2) 0 var(--pf-space-4);
+  color: var(--pf-muted);
+}
+
+.tour-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--pf-border);
+}
+
+.tour-step {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2) var(--pf-space-5);
+  padding: 16px 0;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.tour-lead {
+  flex: 0 0 200px;
+  display: flex;
+  align-items: baseline;
+  gap: var(--pf-space-3);
+}
+
+.tour-number {
+  font-family: var(--pf-font-mono);
+  font-size: 13px;
+  color: var(--pf-muted);
+}
+
+.tour-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: var(--pf-text);
+  font-weight: 600;
+}
+
+.tour-link:hover {
+  color: var(--pf-accent);
+}
+
+.tour-text {
+  flex: 1 1 320px;
+  min-width: 0;
+  color: var(--pf-body);
+}
+
+.tour-duration {
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: var(--pf-muted);
+}
+
+.build-go:focus-visible,
+.foot-link:focus-visible,
+.case-toggle:focus-visible,
+.case-link:focus-visible,
+.tour-link:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+/* A short fade and slide when a case study or the tour opens. */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reveal:not([hidden]) {
+  animation: reveal-in 0.2s ease-out;
+}
+
+.motion-reduced .reveal:not([hidden]) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal:not([hidden]) {
+    animation: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .section-heading {
+    font-size: 26px;
+  }
+
+  .tour-lead {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 559.98px) {
+  .build-item {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .build-go {
+    grid-column: 2;
+  }
+}
