@@ -80,9 +80,39 @@
   gap: var(--pf-space-3);
 }
 
-.spinner-holder {
-  width: 2rem;
-  height: 2rem;
+.elapsed {
+  margin: 0;
+  color: var(--pf-text);
+  font-family: var(--pf-font-mono);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* The skeleton letter shown while the real one is written. Static unless motion is welcome. */
+.skeleton {
+  display: grid;
+  gap: var(--pf-space-2);
+  max-width: 72ch;
+  margin-top: var(--pf-space-3);
+  padding: var(--pf-space-4);
+  background-color: var(--pf-subtle);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+}
+
+.skeleton-line {
+  display: block;
+  height: 0.75rem;
+  background-color: var(--pf-chip);
+  border-radius: 999px;
+}
+
+.skeleton-line_short {
+  width: 35%;
+}
+
+.skeleton-line_medium {
+  width: 70%;
 }
 
 .error-text {
@@ -121,6 +151,40 @@
   line-height: 1.6;
   /* A letter of 350 words reads best at about 70 characters a line. */
   max-width: 72ch;
+}
+
+/* Motion is opacity only, and never on a phone, where the form fills the first screen. */
+@media (prefers-reduced-motion: no-preference) {
+  .result-fade {
+    animation: coverLetterFadeIn 400ms ease-out;
+  }
+
+  @media (min-width: 768px) {
+    .skeleton-line {
+      animation: coverLetterPulse 1.6s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes coverLetterFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes coverLetterPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 /* Phones: more of the width for the letter, and the note under Generate reads from the left. */

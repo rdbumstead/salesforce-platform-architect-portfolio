@@ -10,7 +10,10 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
-import CoverLetterGenerator from "c/coverLetterGenerator";
+import CoverLetterGenerator, {
+  STATUS_STEPS,
+  statusLineFor
+} from "c/coverLetterGenerator";
 import generateCoverLetter from "@salesforce/apex/ApiLabController.generateCoverLetter";
 import { trackEvent } from "c/analyticsService";
 
@@ -172,9 +175,7 @@ describe("c-cover-letter-generator", () => {
 
     await fillAndGenerate(element);
     const line = query(element, '[data-id="status-line"]');
-    expect(line.textContent.trim()).toBe(
-      "Writing your letter. This can take about a minute."
-    );
+    expect(line.textContent.trim()).toBe(STATUS_STEPS[0].text);
     expect(region.contains(line)).toBe(true);
 
     resolveCall(GEMINI_RESULT);
@@ -378,7 +379,116 @@ describe("c-cover-letter-generator", () => {
     );
   });
 
-  it("uses no timer and no provider literal in its source", () => {
+  it("says the wait once: the intro and the status line do not repeat the wait note", async () => {
+    generateCoverLetter.mockReturnValue(new Promise(() => {}));
+    const element = createComponent();
+    await flushPromises();
+
+    expect(query(element, ".intro").textContent).not.toMatch(
+      /minute|provider|template/
+    );
+    await fillAndGenerate(element);
+    expect(query(element, '[data-id="status-line"]').textContent).not.toMatch(
+      /about a minute/
+    );
+    const text = element.shadowRoot.textContent;
+    expect(text.match(/about a minute/g)).toHaveLength(1);
+  });
+
+  it("counts the seconds while waiting and moves through the status lines", async () => {
+    jest.useFakeTimers({ doNotFake: ["nextTick"] });
+    try {
+      generateCoverLetter.mockReturnValue(new Promise(() => {}));
+      const element = createComponent();
+      await flushPromises();
+      setInput(element, "lightning-input.company-input", "Acme");
+      setInput(element, "lightning-input.title-input", "Architect");
+      await flushPromises();
+      query(element, "button.generate-button").click();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const elapsed = () => query(element, '[data-id="elapsed"]');
+      expect(elapsed().textContent.trim()).toBe("Writing, 0 s");
+      expect(elapsed().getAttribute("aria-hidden")).toBe("true");
+
+      jest.advanceTimersByTime(23000);
+      await Promise.resolve();
+      expect(elapsed().textContent.trim()).toBe("Writing, 23 s");
+      expect(query(element, '[data-id="status-line"]').textContent.trim()).toBe(
+        statusLineFor(23)
+      );
+      expect(statusLineFor(23)).not.toBe(statusLineFor(0));
+
+      jest.advanceTimersByTime(60000);
+      await Promise.resolve();
+      expect(query(element, '[data-id="status-line"]').textContent.trim()).toBe(
+        statusLineFor(83)
+      );
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("picks the last status line whose start has passed", () => {
+    expect(statusLineFor(0)).toBe(STATUS_STEPS[0].text);
+    expect(statusLineFor(7)).toBe(STATUS_STEPS[0].text);
+    expect(statusLineFor(8)).toBe(STATUS_STEPS[1].text);
+    expect(statusLineFor(500)).toBe(STATUS_STEPS[STATUS_STEPS.length - 1].text);
+    STATUS_STEPS.forEach((step) => {
+      expect(step.text).not.toMatch(PROVIDER_WORDS);
+    });
+  });
+
+  it("shows a skeleton letter only while waiting, then the letter that fades in", async () => {
+    let resolveCall;
+    generateCoverLetter.mockReturnValue(
+      new Promise((resolve) => {
+        resolveCall = resolve;
+      })
+    );
+    const element = createComponent();
+    await flushPromises();
+    expect(query(element, '[data-id="skeleton"]')).toBeNull();
+
+    await fillAndGenerate(element);
+    const skeleton = query(element, '[data-id="skeleton"]');
+    expect(skeleton.getAttribute("aria-hidden")).toBe("true");
+    expect(skeleton.querySelectorAll(".skeleton-line").length).toBeGreaterThan(
+      3
+    );
+    expect(query(element, '[data-id="result"]')).toBeNull();
+
+    resolveCall(GEMINI_RESULT);
+    await flushPromises();
+    await flushPromises();
+    expect(query(element, '[data-id="skeleton"]')).toBeNull();
+    expect(
+      query(element, '[data-id="result"]').classList.contains("result-fade")
+    ).toBe(true);
+    expect(query(element, '[data-id="elapsed"]')).toBeNull();
+  });
+
+  it("stops its timer when the call ends and when the page goes away", async () => {
+    jest.useFakeTimers({ doNotFake: ["nextTick"] });
+    try {
+      generateCoverLetter.mockReturnValue(new Promise(() => {}));
+      const element = createComponent();
+      await flushPromises();
+      setInput(element, "lightning-input.company-input", "Acme");
+      setInput(element, "lightning-input.title-input", "Architect");
+      await flushPromises();
+      query(element, "button.generate-button").click();
+      await Promise.resolve();
+      expect(jest.getTimerCount()).toBe(1);
+      document.body.removeChild(element);
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("uses a timer only for the elapsed count and names no provider in its source", () => {
     const source = readFileSync(
       join(__dirname, "..", "coverLetterGenerator.js"),
       "utf8"
@@ -387,7 +497,8 @@ describe("c-cover-letter-generator", () => {
       join(__dirname, "..", "coverLetterGenerator.html"),
       "utf8"
     );
-    expect(source).not.toMatch(/setTimeout|setInterval/);
+    expect(source).not.toMatch(/setTimeout/);
+    expect(source.match(/setInterval/g)).toHaveLength(1);
     expect(source + template).not.toMatch(PROVIDER_WORDS);
   });
 
