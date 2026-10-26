@@ -256,7 +256,7 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 
 The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed the owner above a threshold. **It is not built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
 
-- The Gemini API key's own limits for Gemma 4 31B: 30 requests per minute, 16,000 tokens per minute, 14,400 requests per day (AI Studio). Past them, `/papi/v1/ai/generate` falls back to the local template for cover letters and answers 503 `ALL_PROVIDERS_UNAVAILABLE` otherwise.
+- The Gemini API key's own limits for Gemini 2.5 Flash, as recorded on 2026-10-20 (AI Studio): 5 requests per minute and 20 requests per day. Read the current figures before relying on them. Past them, `/papi/v1/ai/generate` falls back to the local template for cover letters and answers 503 `ALL_PROVIDERS_UNAVAILABLE` otherwise.
 - The `papi-ai` rate tier, 10 requests per minute (`RateWindowLimiter`). The site cover letter has its own bucket, `papi-ai:site-cover-letter`, shared by every site visitor. `/papi/v1/ai/generate` keys by session, and every evaluator token is the same session, so evaluators share one bucket too.
 - The footer's "AI requests today" line (`FooterController.getSystemSnapshot`), the sum of today's `papi-ai` counts. It counts requests, not Gemini calls.
 - The audit object `API_Access_Request__c` for evaluator token requests.
