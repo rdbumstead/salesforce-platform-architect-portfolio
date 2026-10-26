@@ -1,7 +1,9 @@
 /**
- * @description       : Unit tests for pillarBStory: the six sections, captioned tables, the ROI sources,
+ * @description       : Unit tests for pillarBStory: the six sections, captioned tables, the cost sources,
  *                      pre-sales framing, no video prototype, the architecture image
- *                      and its alt text, and tokens only in the CSS.
+ *                      and its alt text and link, the decision matrix under section 3, the list
+ *                      markers, the repeats cut, the cost table as phone cards, and tokens only
+ *                      in the CSS.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -16,7 +18,7 @@ const HEADINGS = [
   "1. The client",
   "2. Discovery",
   "3. The decision matrix",
-  "4. ROI and cost",
+  "4. Cost and effort",
   "5. Solution design",
   "6. Outcome"
 ];
@@ -139,9 +141,65 @@ describe("c-pillar-b-story", () => {
     );
     expect(img.getAttribute("alt")).toContain("Object model");
     expect(text(q(element, "figcaption"))).toBe(
-      "Minimalist architecture, redrawn from public object names."
+      "Redrawn from public object names.Open full size"
     );
-    expect(qa(element, "ul.decisions li")).toHaveLength(8);
+    expect(qa(element, "ul.decisions li")).toHaveLength(7);
+  });
+
+  it("links the architecture image to its full size file in a new tab", () => {
+    const element = createComponent();
+    const link = q(element, "a.architecture-link");
+    expect(link.contains(q(element, "img.architecture-image"))).toBe(true);
+    expect(link.getAttribute("href")).toContain(
+      "NL_Assets/minimalist-architecture.svg"
+    );
+    expect(link.target).toBe("_blank");
+    expect(link.rel).toBe("noopener noreferrer");
+    expect(q(element, "a.full-size-link").getAttribute("href")).toBe(
+      link.getAttribute("href")
+    );
+  });
+
+  it("puts the decision matrix right after section 3 and before section 4", () => {
+    const element = createComponent();
+    const matrix = q(element, "c-decision-matrix");
+    expect(matrix).not.toBeNull();
+    const three = q(element, '[data-section="matrix"]');
+    const four = q(element, '[data-section="roi"]');
+    expect(
+      three.compareDocumentPosition(matrix) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      matrix.compareDocumentPosition(four) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("says fundraising is out of scope once and keeps the outcome to two sentences", () => {
+    const element = createComponent();
+    const all = text(q(element, "article"));
+    expect(all.match(/fundraising is out of scope/gi)).toHaveLength(1);
+    const outcome = text(q(element, '[data-section="outcome"] p'));
+    expect(outcome.match(/\./g)).toHaveLength(2);
+    expect(outcome).toContain("user acceptance testing");
+  });
+
+  it("labels every cost table cell for the phone card layout", () => {
+    const element = createComponent();
+    const cells = qa(element, ".cost-table tbody td");
+    expect(cells).toHaveLength(12);
+    cells.forEach((cell) => {
+      expect(cell.dataset.label).toMatch(
+        /^(Licence model|Implementation effort|Why|Source)$/
+      );
+    });
+  });
+
+  it("sets list markers back, because the shared reset removes them", () => {
+    const css = readFileSync(join(__dirname, "..", "pillarBStory.css"), "utf8");
+    expect(css).toMatch(
+      /\.facts,\s*\.decisions,\s*\.not-built\s*\{[^}]*list-style:\s*disc/
+    );
+    expect(css).toMatch(/max-width:\s*599\.98px/);
   });
 
   it("never names the client", () => {

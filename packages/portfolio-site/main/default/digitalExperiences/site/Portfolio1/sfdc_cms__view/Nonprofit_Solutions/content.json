@@ -29,7 +29,7 @@
                         "designUrl": "/docs?doc=sas#5-2-pillar-b-solution-architecture-nonprofit-literacy-platform",
                         "eyebrow": "Pillar B",
                         "heading": "Solution Architecture",
-                        "lead": "A pre-sales solution design for a regional adult literacy nonprofit, with a decision matrix and a cost comparison."
+                        "lead": "A solution design for a regional adult literacy nonprofit, done before it chose a platform. A decision matrix scored three options, and the nonprofit chose NPSP with the Program Management Module. The build is now in user acceptance testing."
                       },
                       "definition": "c:pageIntro",
                       "id": "df3a3f51-58a8-4371-b0a1-c057baa18195",
@@ -38,11 +38,6 @@
                     {
                       "definition": "c:pillarBStory",
                       "id": "78507e18-1179-4211-8c01-37294dcd55e8",
-                      "type": "component"
-                    },
-                    {
-                      "definition": "c:decisionMatrix",
-                      "id": "4a2bd202-f8a9-42e4-b2c9-60d6405007c6",
                       "type": "component"
                     },
                     {
