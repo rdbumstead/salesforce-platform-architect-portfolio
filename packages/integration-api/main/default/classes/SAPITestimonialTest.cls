@@ -102,4 +102,70 @@ private class SAPITestimonialTest {
       'Should return 500 on internal error'
     );
   }
+
+  @IsTest
+  static void filteredTotalCountsTheFilteredRowsNotThePage() {
+    List<Testimonial__c> more = new List<Testimonial__c>();
+    for (Integer i = 0; i < 2; i++) {
+      more.add(newTestimonial('Professional', true, 2 + i));
+    }
+    more.add(newTestimonial('Casual', true, 5));
+    more.add(newTestimonial('Professional', false, 6));
+    insert more;
+
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/testimonials/',
+      new Map<String, String>{ 'vibeMode' => 'Professional', 'limit' => '1' }
+    );
+    Test.startTest();
+    SAPITestimonial.getTestimonials();
+    Test.stopTest();
+    RestResponse filtered = RestTestUtil.getResponse();
+    Assert.areEqual(200, filtered.statusCode, 'Filtered request is OK');
+    Assert.areEqual(
+      '3',
+      filtered.headers.get('X-Total-Count'),
+      'Three approved Professional rows, not the unapproved one'
+    );
+    Assert.areEqual(
+      'true',
+      filtered.headers.get('X-Has-More'),
+      'More rows follow'
+    );
+  }
+
+  @IsTest
+  static void unfilteredTotalCountsEveryApprovedTestimonial() {
+    insert new List<Testimonial__c>{
+      newTestimonial('Casual', true, 2),
+      newTestimonial('Professional', false, 3)
+    };
+
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/testimonials/',
+      new Map<String, String>{ 'limit' => '1' }
+    );
+    Test.startTest();
+    SAPITestimonial.getTestimonials();
+    Test.stopTest();
+    Assert.areEqual(
+      '2',
+      RestTestUtil.getResponse().headers.get('X-Total-Count'),
+      'Every approved testimonial'
+    );
+  }
+
+  private static Testimonial__c newTestimonial(
+    String vibe,
+    Boolean approved,
+    Integer sortOrder
+  ) {
+    return new Testimonial__c(
+      Author_Name__c = 'Author ' + sortOrder,
+      Approved__c = approved,
+      Relationship_Type__c = 'Manager',
+      Vibe_Mode__c = vibe,
+      Sort_Order__c = sortOrder
+    );
+  }
 }

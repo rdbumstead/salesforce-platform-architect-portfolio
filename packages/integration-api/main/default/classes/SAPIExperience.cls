@@ -42,10 +42,10 @@ global with sharing class SAPIExperience implements QueryDefinitions.Provider {
         limitParam,
         offsetParam
       );
-      // The total counts every experience, whatever the filters.
+      // The total counts the rows the request's filters match, not one page of them.
       Integer totalCount = QueryDefinitions.count(
         LIST_QUERY,
-        listBinds(null, null, null),
+        listBinds(currentlyEmployed, employerName, contactName),
         listDefault()
       );
 

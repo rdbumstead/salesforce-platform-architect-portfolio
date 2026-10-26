@@ -249,4 +249,60 @@ private class SAPIExperienceTest {
 
     Assert.areEqual(2, items.size(), 'A blank filter returns every experience');
   }
+
+  @IsTest
+  static void filteredTotalCountsTheFilteredRowsNotThePage() {
+    addPastRoles(2);
+
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/experience/',
+      new Map<String, String>{ 'currentlyEmployed' => 'false', 'limit' => '1' }
+    );
+    Test.startTest();
+    SAPIExperience.getExperiences();
+    Test.stopTest();
+
+    RestResponse res = RestTestUtil.getResponse();
+    Assert.areEqual(200, res.statusCode, 'Filtered request is OK');
+    Assert.areEqual(
+      '2',
+      res.headers.get('X-Total-Count'),
+      'Two past roles, more than the page of one'
+    );
+    Assert.areEqual('true', res.headers.get('X-Has-More'), 'More rows follow');
+  }
+
+  @IsTest
+  static void unfilteredTotalCountsEveryExperience() {
+    addPastRoles(1);
+
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/experience/',
+      new Map<String, String>{ 'limit' => '1' }
+    );
+    Test.startTest();
+    SAPIExperience.getExperiences();
+    Test.stopTest();
+
+    RestResponse res = RestTestUtil.getResponse();
+    Assert.areEqual('2', res.headers.get('X-Total-Count'), 'Every experience');
+  }
+
+  private static void addPastRoles(Integer count) {
+    Account employer = [SELECT Id FROM Account WHERE Name = 'Salesforce'];
+    List<Experience__c> past = new List<Experience__c>();
+    for (Integer i = 0; i < count; i++) {
+      past.add(
+        new Experience__c(
+          Employer__c = employer.Id,
+          Name = 'Past role ' + i,
+          Start_Date__c = Date.today().addYears(-5),
+          End_Date__c = Date.today().addYears(-3),
+          Is_Current_Role__c = false,
+          Sort_Order__c = 2 + i
+        )
+      );
+    }
+    insert past;
+  }
 }

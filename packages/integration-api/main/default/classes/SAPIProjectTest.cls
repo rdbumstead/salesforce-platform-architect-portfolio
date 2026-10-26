@@ -331,4 +331,74 @@ private class SAPIProjectTest {
 
     Assert.areEqual(2, items.size(), 'Blank filters return every project');
   }
+
+  @IsTest
+  static void filteredTotalCountsTheFilteredRowsNotThePage() {
+    List<Project__c> more = new List<Project__c>();
+    for (Integer i = 0; i < 2; i++) {
+      more.add(
+        new Project__c(
+          Name = 'Live ' + i,
+          Status__c = 'Live – In Production',
+          Pillar__c = 'A',
+          Sort_Order__c = 2 + i
+        )
+      );
+    }
+    more.add(
+      new Project__c(
+        Name = 'In build',
+        Status__c = 'Active Development',
+        Pillar__c = 'A',
+        Sort_Order__c = 9
+      )
+    );
+    insert more;
+
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/projects/',
+      new Map<String, String>{
+        'status' => 'Live – In Production',
+        'limit' => '1'
+      }
+    );
+    Test.startTest();
+    SAPIProject.getProjects();
+    Test.stopTest();
+    RestResponse filtered = RestTestUtil.getResponse();
+    Assert.areEqual(200, filtered.statusCode, 'Filtered request is OK');
+    Assert.areEqual(
+      '3',
+      filtered.headers.get('X-Total-Count'),
+      'Three live projects, more than the page of one'
+    );
+    Assert.areEqual(
+      'true',
+      filtered.headers.get('X-Has-More'),
+      'More rows follow'
+    );
+  }
+
+  @IsTest
+  static void unfilteredTotalCountsEveryListedProject() {
+    insert new Project__c(
+      Name = 'In build',
+      Status__c = 'Active Development',
+      Pillar__c = 'A',
+      Sort_Order__c = 9
+    );
+
+    RestTestUtil.initGet(
+      '/services/apexrest/sapi/v1/projects/',
+      new Map<String, String>{ 'limit' => '1' }
+    );
+    Test.startTest();
+    SAPIProject.getProjects();
+    Test.stopTest();
+    Assert.areEqual(
+      '2',
+      RestTestUtil.getResponse().headers.get('X-Total-Count'),
+      'Every listed project'
+    );
+  }
 }
