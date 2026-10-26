@@ -4,11 +4,17 @@
  *                      and Ryan [strength]. The result? [outcome]". One fieldset holds it, its
  *                      legend reads the sentence, and each blank is a labelled select. A polite
  *                      live region previews the finished sentence. The vibe switch chooses the
- *                      fragment set, and a Recruiter or a Fan or visitor sees only the outcomes
- *                      anyone could say. Fragments come from Testimonial_Fragment__mdt through
- *                      TestimonialController.getFragments. The server checks every choice again
- *                      and stores each review unapproved. Each submit the server answers sends
- *                      testimonial_submitted with the vibe and the outcome (accepted,
+ *                      fragment set. Its label never changes ("Casual vibe"), the switch itself
+ *                      reports on or off, and a separate polite line says which phrases are
+ *                      showing. A Recruiter or a Fan or visitor sees only the outcomes anyone
+ *                      could say. Fragments come from Testimonial_Fragment__mdt through
+ *                      TestimonialController.getFragments. The submit button stays enabled
+ *                      except while a send is in flight. A send with something missing or too
+ *                      long shows a message under each field that needs one and moves focus to
+ *                      the first of them. The server checks every choice again and stores each
+ *                      review unapproved. A saved review replaces the form with a short thank
+ *                      you panel that fades in and takes focus. Each submit the server answers
+ *                      sends testimonial_submitted with the vibe and the outcome (accepted,
  *                      rate_limited or invalid) and nothing the visitor typed or chose.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -31,8 +37,9 @@ export const VIBE_PROFESSIONAL = "Professional";
 export const VIBE_CASUAL = "Casual";
 export const AUDIENCE_ANYONE = "Anyone";
 
-const SUCCESS_MESSAGE =
-  "Thank you. Your review was received and will appear once it is approved.";
+export const SUCCESS_TITLE = "Thank you.";
+export const SUCCESS_MESSAGE =
+  "Your review was received and will appear once it is approved.";
 const FALLBACK_ERROR = "Your testimonial could not be saved. Try again later.";
 const LOAD_ERROR =
   "The sentence builder could not load. Try again later, or reach Ryan on LinkedIn.";
@@ -40,6 +47,27 @@ const PREVIEW_PROMPT = "Pick all three blanks to see your sentence.";
 // TestimonialController's message when one address sends too many reviews in a minute. The
 // analytics outcome is the only thing that reads it.
 export const RATE_LIMITED_TEXT = "Too many submissions. Try again in a minute.";
+
+// The message under each field that fails on submit.
+export const FIELD_ERRORS = {
+  authorName: "Enter your name.",
+  authorNameLong: `Use ${MAX_NAME_LENGTH} characters or fewer.`,
+  authorTitle: `Use ${MAX_TITLE_LENGTH} characters or fewer.`,
+  relationship: "Choose how you know Ryan.",
+  strength: "Choose a strength.",
+  outcome: "Choose a result.",
+  note: `Use ${MAX_NOTE_LENGTH} characters or fewer.`
+};
+
+// The order a visitor meets the fields in, so the first invalid one gets focus.
+export const FIELD_ORDER = [
+  "authorName",
+  "authorTitle",
+  "relationship",
+  "strength",
+  "outcome",
+  "note"
+];
 
 const RELATIONSHIP_LABELS = {
   Manager: "Manager",
@@ -69,6 +97,12 @@ function emptyForm() {
   };
 }
 
+function without(errors, ...names) {
+  const next = { ...errors };
+  names.forEach((name) => delete next[name]);
+  return next;
+}
+
 export function errorMessage(error) {
   if (error && error.body && typeof error.body.message === "string") {
     return error.body.message;
@@ -88,13 +122,17 @@ export default class TestimonialSubmit extends LightningElement {
   fragments = [];
   loadError = "";
   isSubmitting = false;
-  successMessage = "";
+  isSent = false;
   serverError = "";
+  errors = {};
+  vibeAnnouncement = "";
   startedAt = Date.now();
 
   maxNameLength = MAX_NAME_LENGTH;
   maxTitleLength = MAX_TITLE_LENGTH;
   maxNoteLength = MAX_NOTE_LENGTH;
+  successTitle = SUCCESS_TITLE;
+  successMessage = SUCCESS_MESSAGE;
 
   connectedCallback() {
     this.startedAt = Date.now();
@@ -107,6 +145,13 @@ export default class TestimonialSubmit extends LightningElement {
       const select = this.template.querySelector(`select[name="${name}"]`);
       if (select && select.value !== this.form[name]) {
         select.value = this.form[name];
+      }
+    }
+    if (this.focusSuccess) {
+      this.focusSuccess = false;
+      const success = this.template.querySelector('[data-id="success"]');
+      if (success) {
+        success.focus();
       }
     }
   }
@@ -172,12 +217,23 @@ export default class TestimonialSubmit extends LightningElement {
     return this.form.vibeMode === VIBE_CASUAL;
   }
 
+  get showForm() {
+    return !this.isSent;
+  }
+
   get vibeChecked() {
     return this.isCasual ? "true" : "false";
   }
 
+  // The switch keeps one label. Its on or off state is the switch's own.
   get vibeLabel() {
-    return this.form.vibeMode;
+    return "Casual vibe";
+  }
+
+  // The visible word beside the switch. It is hidden from assistive technology, which hears
+  // the switch state and the announcement instead.
+  get vibeValue() {
+    return this.isCasual ? "On" : "Off";
   }
 
   get vibeHint() {
@@ -207,24 +263,76 @@ export default class TestimonialSubmit extends LightningElement {
     )}`;
   }
 
-  get isValid() {
-    const name = this.form.authorName.trim();
-    const title = this.form.authorTitle.trim();
-    const note = this.form.note.trim();
-    return (
-      !this.loadError &&
-      name.length > 0 &&
-      name.length <= MAX_NAME_LENGTH &&
-      title.length <= MAX_TITLE_LENGTH &&
-      RELATIONSHIPS.includes(this.form.relationship) &&
-      this.strengthOptions.some((o) => o.value === this.form.strength) &&
-      this.outcomeOptions.some((o) => o.value === this.form.outcome) &&
-      note.length <= MAX_NOTE_LENGTH
-    );
+  get authorNameError() {
+    return this.errors.authorName || "";
+  }
+  get authorTitleError() {
+    return this.errors.authorTitle || "";
+  }
+  get relationshipError() {
+    return this.errors.relationship || "";
+  }
+  get strengthError() {
+    return this.errors.strength || "";
+  }
+  get outcomeError() {
+    return this.errors.outcome || "";
+  }
+  get noteError() {
+    return this.errors.note || "";
+  }
+  get authorNameInvalid() {
+    return this.errors.authorName ? "true" : undefined;
+  }
+  get authorTitleInvalid() {
+    return this.errors.authorTitle ? "true" : undefined;
+  }
+  get relationshipInvalid() {
+    return this.errors.relationship ? "true" : undefined;
+  }
+  get strengthInvalid() {
+    return this.errors.strength ? "true" : undefined;
+  }
+  get outcomeInvalid() {
+    return this.errors.outcome ? "true" : undefined;
+  }
+  get noteInvalid() {
+    return this.errors.note ? "true" : undefined;
   }
 
+  /**
+   * The message for each field that fails. A field that passes has no entry.
+   * @returns {object} field name to message
+   */
+  validate() {
+    const errors = {};
+    const name = this.form.authorName.trim();
+    if (!name.length) {
+      errors.authorName = FIELD_ERRORS.authorName;
+    } else if (name.length > MAX_NAME_LENGTH) {
+      errors.authorName = FIELD_ERRORS.authorNameLong;
+    }
+    if (this.form.authorTitle.trim().length > MAX_TITLE_LENGTH) {
+      errors.authorTitle = FIELD_ERRORS.authorTitle;
+    }
+    if (!RELATIONSHIPS.includes(this.form.relationship)) {
+      errors.relationship = FIELD_ERRORS.relationship;
+    }
+    if (!this.strengthOptions.some((o) => o.value === this.form.strength)) {
+      errors.strength = FIELD_ERRORS.strength;
+    }
+    if (!this.outcomeOptions.some((o) => o.value === this.form.outcome)) {
+      errors.outcome = FIELD_ERRORS.outcome;
+    }
+    if (this.form.note.trim().length > MAX_NOTE_LENGTH) {
+      errors.note = FIELD_ERRORS.note;
+    }
+    return errors;
+  }
+
+  // The button is off only while a send is in flight. Anything else is answered on submit.
   get isSubmitDisabled() {
-    return !this.isValid || this.isSubmitting;
+    return this.isSubmitting;
   }
 
   get submitLabel() {
@@ -238,8 +346,13 @@ export default class TestimonialSubmit extends LightningElement {
       next = this.keepAllowedOutcome(next);
     }
     this.form = next;
-    this.successMessage = "";
     this.serverError = "";
+    // A message goes as soon as its field is touched. A new relationship may change which
+    // results are allowed, so a result message goes with it.
+    this.errors =
+      field === "relationship"
+        ? without(this.errors, field, "outcome")
+        : without(this.errors, field);
   }
 
   // A recruiter or a visitor cannot keep an outcome only a colleague could choose.
@@ -260,6 +373,18 @@ export default class TestimonialSubmit extends LightningElement {
       strength: "",
       outcome: ""
     };
+    this.errors = without(this.errors, "strength", "outcome");
+    this.vibeAnnouncement = this.isCasual
+      ? "Casual phrases are showing."
+      : "Professional phrases are showing.";
+  }
+
+  focusFirstInvalid(errors) {
+    const name = FIELD_ORDER.find((field) => errors[field]);
+    const field = name && this.template.querySelector(`[name="${name}"]`);
+    if (field) {
+      field.focus();
+    }
   }
 
   async handleSubmit(event) {
@@ -267,9 +392,18 @@ export default class TestimonialSubmit extends LightningElement {
     if (this.isSubmitDisabled) {
       return;
     }
-    this.isSubmitting = true;
-    this.successMessage = "";
     this.serverError = "";
+    if (this.loadError) {
+      // The alert above the sentence already says why. Nothing can be sent.
+      return;
+    }
+    const errors = this.validate();
+    this.errors = errors;
+    if (Object.keys(errors).length) {
+      this.focusFirstInvalid(errors);
+      return;
+    }
+    this.isSubmitting = true;
     const vibe = this.form.vibeMode;
     const title = this.form.authorTitle.trim();
     const note = this.form.note.trim();
@@ -286,12 +420,10 @@ export default class TestimonialSubmit extends LightningElement {
         elapsedMs: Date.now() - this.startedAt
       });
       this.form = emptyForm();
-      // A textarea takes no value binding in a template, so it is cleared here.
-      const noteField = this.template.querySelector("textarea");
-      if (noteField) {
-        noteField.value = "";
-      }
-      this.successMessage = SUCCESS_MESSAGE;
+      this.vibeAnnouncement = "";
+      this.isSent = true;
+      // The form leaves the page, so focus moves to the thanks once it has rendered.
+      this.focusSuccess = true;
       trackEvent(EVENTS.TESTIMONIAL_SUBMITTED, { vibe, outcome: "accepted" });
     } catch (error) {
       this.serverError = errorMessage(error);

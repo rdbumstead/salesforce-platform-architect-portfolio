@@ -39,7 +39,7 @@ const ITEMS = [
     authorTitle: null,
     relationship: "Peer",
     vibe: "Casual",
-    sentence: "I'm a peer, and Ryan speaks fluent Flow. The result? We stan.",
+    sentence: "I'm a peer, and Ryan speaks fluent Flow. The result? Instant fan.",
     note: null,
     professional: false
   },
