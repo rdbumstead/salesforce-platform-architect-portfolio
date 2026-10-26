@@ -224,7 +224,7 @@ private class TestimonialControllerTest {
     Assert.isNull(saved.Author_Title__c, 'Blank title saved empty');
     Assert.isNull(saved.Note__c, 'Blank note saved empty');
     Assert.areEqual(
-      'I\'m a fan or visitor, and Ryan is an absolute beast. The result? We stan.',
+      'I\'m a fan or visitor, and Ryan is the GOAT. The result? Instant fan.',
       saved.Context__c,
       'Casual sentence'
     );
