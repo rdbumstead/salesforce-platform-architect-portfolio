@@ -345,25 +345,16 @@ describe("c-footer", () => {
     expect(q(element, '[data-id="ai-requests"]')).toBeNull();
   });
 
-  it("tracks finops_quota_visibility once on hover or focus", async () => {
+  it("tracks finops_quota_visibility once on hover", async () => {
     const element = createComponent();
     await runIdle();
 
     const line = q(element, '[data-id="ai-requests"]');
-    expect(line.getAttribute("tabindex")).toBe("0");
+    // Not a tab stop of its own: a keyboard visitor opens the quotas, which sends the event.
+    expect(line.hasAttribute("tabindex")).toBe(false);
     line.dispatchEvent(new CustomEvent("mouseenter"));
-    line.dispatchEvent(new CustomEvent("focus"));
+    line.dispatchEvent(new CustomEvent("mouseenter"));
     expect(trackEvent).toHaveBeenCalledTimes(1);
-    expect(trackEvent).toHaveBeenCalledWith("finops_quota_visibility");
-  });
-
-  it("tracks finops_quota_visibility on keyboard focus", async () => {
-    const element = createComponent();
-    await runIdle();
-
-    q(element, '[data-id="ai-requests"]').dispatchEvent(
-      new CustomEvent("focus")
-    );
     expect(trackEvent).toHaveBeenCalledWith("finops_quota_visibility");
   });
 
@@ -708,7 +699,7 @@ describe("c-footer", () => {
     details.open = true;
     details.dispatchEvent(new CustomEvent("toggle"));
     q(element, '[data-id="ai-requests"]').dispatchEvent(
-      new CustomEvent("focus")
+      new CustomEvent("mouseenter")
     );
     expect(trackEvent).toHaveBeenCalledTimes(1);
     expect(trackEvent).toHaveBeenCalledWith("finops_quota_visibility");

@@ -24,8 +24,8 @@
  *                      The probe is the c/graphqlProbe child, imported with a literal dynamic import
  *                      only at that moment, so the GraphQL adapter stack is not part of what loads
  *                      before first paint. A statically rendered child, even behind lwc:if, still
- *                      put it in the layout's preloads. Opening the quotas, or hovering or
- *                      focusing the AI requests line, sends finops_quota_visibility once.
+ *                      put it in the layout's preloads. Opening the quotas, or hovering over
+ *                      the AI requests line, sends finops_quota_visibility once.
  *                      Back to top sends back_to_top_used, as the header's arrow does.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
