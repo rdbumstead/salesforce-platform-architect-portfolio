@@ -224,7 +224,8 @@ public with sharing class GitHubService {
   @TestVisible
   private static Boolean isMerge(Map<String, Object> root) {
     Object parents = root.get('parents');
-    return parents instanceof List<Object> && ((List<Object>) parents).size() > 1;
+    return parents instanceof List<Object> &&
+      ((List<Object>) parents).size() > 1;
   }
 
   private static DeliveryController.CommitItem toItem(

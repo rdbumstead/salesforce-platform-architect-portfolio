@@ -115,7 +115,11 @@ private class GitHubServiceTest {
     String exact = 'x'.repeat(GitHubService.MESSAGE_MAX_LENGTH);
 
     Assert.areEqual(exact, GitHubService.firstLine(exact), 'Exact length kept');
-    Assert.areEqual('short', GitHubService.firstLine(' short \nmore'), 'Trimmed');
+    Assert.areEqual(
+      'short',
+      GitHubService.firstLine(' short \nmore'),
+      'Trimmed'
+    );
     Assert.isNull(GitHubService.firstLine(null), 'Null stays null');
   }
 
