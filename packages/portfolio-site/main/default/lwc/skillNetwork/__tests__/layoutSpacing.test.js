@@ -2,11 +2,13 @@
  * @description       : Spacing measure for the skills graph. Mounts the real component on
  *                      a fixture shaped like production (59 skills in 12 categories, 11 roles, 5 projects,
  *                      58 role links and 17 project links, read only from production with record Ids
- *                      replaced and role and project names replaced by placeholders of the same length),
+ *                      replaced and role and project names replaced by placeholders of the same length,
+ *                      plus the 8 certifications and their 16 skill links, read only from production
+ *                      on 2026-10-26 with record Ids replaced),
  *                      runs the real layoutGraph on the real D3_Library build, and measures what the
  *                      template draws: label boxes that overlap, labels that sit on another node, circles
  *                      that overlap, the smallest gap between category clusters, nodes held on the clamp
- *                      at the box edge, and labels cut off by the view box.
+ *                      at the box edge, and labels outside the view once the opening fit is applied.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -18,12 +20,14 @@ import SkillNetwork from "c/skillNetwork";
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { graphql } from "lightning/uiGraphQLApi";
 import { loadGraphEngine, layoutGraph } from "c/graphEngine";
+import getCertificationLinks from "@salesforce/apex/SkillGraphController.getCertificationLinks";
 
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 
 const PAYLOAD = require("./data/productionSkills.json");
+const CERTIFICATIONS = require("./data/productionCertifications.json");
 
 // Text metrics from skillNetwork.css: node labels are 12px in the sans face, category labels
 // 13px in the mono face. Average character widths are 0.56em (sans) and 0.6em (mono). A box
@@ -51,13 +55,27 @@ jest.mock(
 );
 
 jest.mock(
+  "@salesforce/apex/SkillGraphController.getCertificationLinks",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+jest.mock(
   "c/graphEngine",
-  () => ({
-    loadGraphEngine: jest.fn(),
-    layoutGraph: jest.fn(),
-    attachPanZoom: jest.fn(),
-    attachNodeDrag: jest.fn()
-  }),
+  () => {
+    const actual = jest.requireActual("c/graphEngine");
+    return {
+      loadGraphEngine: jest.fn(),
+      layoutGraph: jest.fn(),
+      attachPanZoom: jest.fn(),
+      attachNodeDrag: jest.fn(),
+      boundsOf: actual.boundsOf,
+      fitTransform: actual.fitTransform
+    };
+  },
   { virtual: true }
 );
 
@@ -172,7 +190,7 @@ function visibleLabels(element) {
 function circles(element) {
   return [...element.shadowRoot.querySelectorAll("g.graph-node")].map(
     (group) => {
-      const circle = group.querySelector("circle");
+      const circle = group.querySelector(".node-dot");
       return {
         id: group.dataset.id,
         x: num(circle, "cx"),
@@ -196,19 +214,30 @@ function labelsOnOtherNodes(labels, nodes) {
   return hits;
 }
 
+// Labels outside the view box once the drawn zoom transform is applied.
 function labelsOutsideView(element, labels) {
   const [minX, minY, width, height] = element.shadowRoot
     .querySelector("svg.graph-svg")
     .getAttribute("viewBox")
     .split(" ")
     .map(Number);
-  return labels.filter(
-    ({ box }) =>
-      box.left < minX ||
-      box.right > minX + width ||
-      box.top < minY ||
-      box.bottom > minY + height
-  ).length;
+  const [, x, y, k] = element.shadowRoot
+    .querySelector(".graph-viewport")
+    .getAttribute("transform")
+    .match(/translate\(([^,]+),([^)]+)\) scale\(([^)]+)\)/)
+    .map(Number);
+  return labels.filter(({ box }) => {
+    const left = box.left * k + x;
+    const right = box.right * k + x;
+    const top = box.top * k + y;
+    const bottom = box.bottom * k + y;
+    return (
+      left < minX ||
+      right > minX + width ||
+      top < minY ||
+      bottom > minY + height
+    );
+  }).length;
 }
 
 // Layout facts from the engine's own input and output. Only drawn nodes (skills, roles and
@@ -250,13 +279,16 @@ function layoutFacts(call) {
 
 let lastCall;
 
-async function measure() {
+async function measure({ withCertifications = true } = {}) {
   const element = createElement("c-skill-network", { is: SkillNetwork });
   document.body.appendChild(element);
   graphql.emit({
     data: JSON.parse(JSON.stringify(PAYLOAD)),
     errors: undefined
   });
+  getCertificationLinks.emit(
+    withCertifications ? JSON.parse(JSON.stringify(CERTIFICATIONS)) : []
+  );
   await flushPromises();
   element.shadowRoot.querySelector('.view-button[data-view="graph"]').click();
   await flushPromises();
@@ -323,22 +355,38 @@ describe("c-skill-network graph spacing on production shaped data", () => {
 
   // Before the spacing was tuned (960 by 680, charge -25, padding 2, category ring 0.25, no label nodes):
   // cluster gap 34.9, 28 labels on other nodes, 67 label overlaps over all hovers, 13 at worst.
+  // Before the rings were sized by node count and labels were placed (960 by 840, no
+  // certifications, 75 nodes): cluster gap 65.8, 9 label overlaps over all hovers, 1 at worst,
+  // 61 labels on other nodes over all hovers.
   it("measures the layout the page draws", async () => {
     const result = await measure();
 
     expect(result).toEqual({
-      nodes: 75,
-      box: "960x840",
+      nodes: 83,
+      box: "955x955",
       circleOverlaps: 0,
-      clusterGap: 65.8,
+      clusterGap: 54.7,
       onClamp: 0,
-      restLabels: 28,
+      restLabels: 36,
       restLabelOverlaps: 0,
       restLabelsOnNodes: 0,
       labelsOutsideView: 0,
-      hoverOverlapsTotal: 9,
-      hoverOverlapsMax: 1,
-      hoverLabelsOnNodesTotal: 61
+      hoverOverlapsTotal: 0,
+      hoverOverlapsMax: 0,
+      hoverLabelsOnNodesTotal: 0
     });
+  });
+
+  it("places every label clear with no certification to draw", async () => {
+    const result = await measure({ withCertifications: false });
+
+    expect(result.nodes).toBe(75);
+    expect(result.circleOverlaps).toBe(0);
+    expect(result.onClamp).toBe(0);
+    expect(result.restLabelOverlaps).toBe(0);
+    expect(result.restLabelsOnNodes).toBe(0);
+    expect(result.labelsOutsideView).toBe(0);
+    expect(result.hoverOverlapsTotal).toBe(0);
+    expect(result.hoverLabelsOnNodesTotal).toBe(0);
   });
 });

@@ -26,6 +26,15 @@
   margin-bottom: var(--pf-space-3);
 }
 
+/* The title and View source share one row, View source at its right end. */
+.erd-title-row {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-3);
+}
+
 .erd-title {
   color: var(--pf-text);
   font-size: 1.25rem;
@@ -33,17 +42,10 @@
   margin: 0;
 }
 
-/*
- * On phones the title takes a line of its own, so View source wraps straight under it at the
- * left instead of landing at the far right or alone after the title.
- */
+/* On phones the scope toggle starts at the left under the title row. */
 @media (max-width: 767.98px) {
   .erd-header {
     justify-content: flex-start;
-  }
-
-  .erd-title {
-    flex: 1 0 100%;
   }
 }
 

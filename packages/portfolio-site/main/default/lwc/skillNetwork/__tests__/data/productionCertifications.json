@@ -1,0 +1,50 @@
+[
+  {
+    "id": "C01",
+    "name": "Salesforce Certified Agentforce Specialist",
+    "isRetired": false,
+    "skillIds": ["S49", "S50"]
+  },
+  {
+    "id": "C02",
+    "name": "Salesforce Certified AI Associate",
+    "isRetired": true,
+    "skillIds": ["S49", "S51"]
+  },
+  {
+    "id": "C03",
+    "name": "Salesforce Certified Data 360 Consultant",
+    "isRetired": false,
+    "skillIds": ["S45", "S47"]
+  },
+  {
+    "id": "C04",
+    "name": "Salesforce Certified Education Cloud Consultant",
+    "isRetired": false,
+    "skillIds": ["S39", "S46", "S41"]
+  },
+  {
+    "id": "C05",
+    "name": "Salesforce Certified Marketing Cloud Engagement Foundations",
+    "isRetired": false,
+    "skillIds": ["S42"]
+  },
+  {
+    "id": "C06",
+    "name": "Salesforce Certified Platform Administrator",
+    "isRetired": false,
+    "skillIds": ["S12", "S16"]
+  },
+  {
+    "id": "C07",
+    "name": "Salesforce Certified Platform Administrator II",
+    "isRetired": false,
+    "skillIds": ["S03", "S12"]
+  },
+  {
+    "id": "C08",
+    "name": "Salesforce Certified Platform App Builder",
+    "isRetired": false,
+    "skillIds": ["S21", "S16"]
+  }
+]

@@ -35,6 +35,15 @@ jest.mock(
 );
 
 jest.mock(
+  "@salesforce/apex/SkillGraphController.getCertificationLinks",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+jest.mock(
   "c/graphEngine",
   () => ({
     loadGraphEngine: jest.fn(),

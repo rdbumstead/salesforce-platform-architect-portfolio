@@ -23,7 +23,11 @@ jest.mock(
 
 jest.mock(
   "c/graphEngine",
-  () => ({ loadGraphEngine: jest.fn(), layoutGraph: jest.fn() }),
+  () => ({
+    loadGraphEngine: jest.fn(),
+    layoutGraph: jest.fn(),
+    boundsOf: jest.requireActual("c/graphEngine").boundsOf
+  }),
   { virtual: true }
 );
 
@@ -80,8 +84,9 @@ describe("c-schema-visualizer (Small form factor)", () => {
     const list = element.shadowRoot.querySelector(".object-list");
     expect(list.className).not.toContain("object-list_assistive");
     expect(element.shadowRoot.querySelectorAll(".object-item")).toHaveLength(3);
+    // The payload holds three references, Account.ParentId is a platform self lookup.
     expect(element.shadowRoot.querySelectorAll(".relationship")).toHaveLength(
-      3
+      2
     );
   });
 
