@@ -3,8 +3,6 @@
     "sobject": "Project__c",
     "saveRefs": true,
     "resolveRefs": false,
-    "files": [
-      "Project__c.json"
-    ]
+    "files": ["Project__c.json"]
   }
 ]
