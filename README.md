@@ -29,7 +29,7 @@ Salesforce platform architecture, including:
 
 - **DevOps Maturity**: delta deployments, automated quality gates, and JWT-based CI/CD.
 - **Contract-First APIs**: OpenAPI 3.0 specs for a System API and a Process API, written before the Apex REST classes that serve them.
-- **Applied AI Governance**: one provider dispatch behind `POST /papi/v1/ai/generate`. Gemma 4 31B through the Gemini API writes the content, and a deterministic Local Template serves a cover letter when Gemini fails. Cover letters are grounded on portfolio records. The site's cover letter page runs the same dispatch in process, under its own AI rate limit of 10 a minute, and shows which provider wrote each letter.
+- **Applied AI Governance**: one provider dispatch behind `POST /papi/v1/ai/generate`. Gemini 2.5 Flash through the Gemini API writes the content, and a deterministic Local Template serves a cover letter when Gemini fails. Cover letters are grounded on portfolio records. The site's cover letter page runs the same dispatch in process, under its own AI rate limit of 10 a minute, and shows which provider wrote each letter.
 - **Observability**: the Glass Box footer shows live governor limits, the org's daily quotas, and the AI provider and circuit breaker states.
 
 ### Portfolio Overview

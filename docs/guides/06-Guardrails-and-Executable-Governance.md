@@ -83,7 +83,7 @@ To keep the design at $0.00 a month, the architecture avoids common "cost traps"
 
 ### Gemini API Quota Management
 
-**The Problem:** The Gemini API key's free tier allows Gemma 4 31B 30 requests per minute, 16,000 tokens per minute and 14,400 requests per day. Gemma 4 reasons before it answers and spends most of its tokens on that, so only a few cover letters a minute fit. Past the limit, Google answers HTTP 429.
+**The Problem:** The Gemini API key's free tier allowed Gemini 2.5 Flash 5 requests per minute and 20 requests per day when it was read on 2026-10-20 (a recorded reading, not a live one). Flash reasons before it answers and spends most of its tokens on that, so only a few cover letters a minute fit and few a day. Past the limit, Google answers HTTP 429.
 
 **Our Solution:** No quota counter is stored and no Platform Cache is used (the org has no partition). The bounds are:
 

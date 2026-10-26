@@ -69,7 +69,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Apex REST API implementation** in MuleSoft's API led layers (a System API and a Process API), matching the OpenAPI specifications in the repository (15 SAPI and 8 PAPI paths, version 1.3.0).
 - **Generative AI** grounding and prompt engineering in Apex (`PortfolioGroundingService`, `ContentGenerationController.dispatch`). Agentforce is built as a switch in the dispatch and ships off.
 - **Client-side document generation** (Resume).
-- **Generative AI Utility:** A "Dynamic Cover Letter Engine" that uses Gemma 4 31B through the Gemini API, with a local template as the last resort, to write personalized application letters based on the visitor's job description and the architect's matching project history (featured projects and experience highlights).
+- **Generative AI Utility:** A "Dynamic Cover Letter Engine" that uses Gemini 2.5 Flash through the Gemini API, with a local template as the last resort, to write personalized application letters based on the visitor's job description and the architect's matching project history (featured projects and experience highlights).
 - **Gamified Social Proof engine** with "Vibe-Gated" submission logic.
 - **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and a results step summary on every PR run ("PR Validation Results" in `pr.yml`).
 - **External API Integration (GitHub):** the portfolio repository's recent commits on the site, read by a scheduled job into a cache.
@@ -191,7 +191,7 @@ The delivery is organized into four parallel tracks:
 - **Data 360 streams:** the CRM connector ingests the portfolio objects. No search index or retriever is built, and grounding on Data 360 is deferred ([ADR-011 amendment, 2026-10-22](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md#amendment-2026-10-22-deferred)).
 - **Grounding:** in Apex, reading the CRM directly (`PortfolioGroundingService.build`, SAS section 5.4.1).
 - **Prompt Engineering:** and the "Show your work" panel (provider, model, latency, attempts and the prompt that was sent, filled by Apex, not by the model)
-- **AI Generation Service:** one dispatch: Agentforce only when switched on (it ships off), then Gemma 4 31B through the Gemini API, then the Local Template
+- **AI Generation Service:** one dispatch: Agentforce only when switched on (it ships off), then Gemini 2.5 Flash through the Gemini API, then the Local Template
 
 **Phase 6: Observability & Launch**
 
