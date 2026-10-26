@@ -1152,6 +1152,16 @@ describe("c-portfolio-theme-layout", () => {
       );
     });
 
+    it("hands over to the grid's own reveal when it offers one", async () => {
+      const { page, target } = caseStudies(900);
+      target.revealHeading = jest.fn();
+      const element = render([page]);
+      element.shadowRoot.querySelector('.nav-link[data-key="work"]').click();
+      await flush();
+      expect(target.revealHeading).toHaveBeenCalledWith(false);
+      expect(window.scrollTo).not.toHaveBeenCalled();
+    });
+
     it("goes to the top when the page has no case studies", async () => {
       const element = render();
       element.shadowRoot.querySelector('.nav-link[data-key="work"]').click();

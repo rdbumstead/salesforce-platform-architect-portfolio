@@ -640,7 +640,8 @@ export default class PortfolioThemeLayout extends LightningElement {
 
   /**
    * Work on the home page scrolls to the case studies and moves focus there. Elsewhere it is a
-   * plain link to the home page. With no case studies on the page it goes to the top.
+   * plain link to the home page. The case study grid's own revealHeading() is used when it has
+   * one. With no case studies on the page it goes to the top.
    * @param {Event} event the click
    */
   handleWorkClick(event) {
@@ -655,6 +656,11 @@ export default class PortfolioThemeLayout extends LightningElement {
     );
     if (!target) {
       window.scrollTo({ top: 0, left: 0, behavior: scrollBehavior() });
+      return;
+    }
+    // The case study grid offers its own reveal, which scrolls to its heading and focuses it.
+    if (typeof target.revealHeading === "function") {
+      target.revealHeading(isReduced());
       return;
     }
     // The sticky header covers the top of the window, so the section stops just under it.
