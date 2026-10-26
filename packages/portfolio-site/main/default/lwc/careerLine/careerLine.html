@@ -47,7 +47,13 @@
                       ></span
                     >
                     <span class="years"
-                      >{role.years}
+                      ><span aria-hidden="true">{role.years}</span
+                      ><span class="visually-hidden">{role.yearsSpoken}</span
+                      ><template lwc:if={role.isCurrent}
+                        ><span class="active-tag" aria-hidden="true"
+                          >Active</span
+                        ></template
+                      >
                       <svg
                         class="role-chevron"
                         aria-hidden="true"
@@ -76,7 +82,15 @@
                         >{comma}</span
                       ></span
                     >
-                    <span class="years">{role.years}</span>
+                    <span class="years"
+                      ><span aria-hidden="true">{role.years}</span
+                      ><span class="visually-hidden">{role.yearsSpoken}</span
+                      ><template lwc:if={role.isCurrent}
+                        ><span class="active-tag" aria-hidden="true"
+                          >Active</span
+                        ></template
+                      ></span
+                    >
                   </div>
                 </template>
               </li>
@@ -129,7 +143,13 @@
                     ></span
                   >
                   <span class="years"
-                    >{role.years}
+                    ><span aria-hidden="true">{role.years}</span
+                    ><span class="visually-hidden">{role.yearsSpoken}</span
+                    ><template lwc:if={role.isCurrent}
+                      ><span class="active-tag" aria-hidden="true"
+                        >Active</span
+                      ></template
+                    >
                     <svg
                       class="role-chevron"
                       aria-hidden="true"
@@ -170,7 +190,15 @@
                       >{comma}</span
                     ></span
                   >
-                  <span class="years">{role.years}</span>
+                  <span class="years"
+                    ><span aria-hidden="true">{role.years}</span
+                    ><span class="visually-hidden">{role.yearsSpoken}</span
+                    ><template lwc:if={role.isCurrent}
+                      ><span class="active-tag" aria-hidden="true"
+                        >Active</span
+                      ></template
+                    ></span
+                  >
                 </div>
               </template>
             </li>

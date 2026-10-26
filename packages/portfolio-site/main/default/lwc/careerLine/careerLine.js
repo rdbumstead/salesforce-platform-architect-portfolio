@@ -2,7 +2,8 @@
  * @description       : The career line under the home hero, so a visitor sees the arc of the
  *                      work history at a glance. The roles come from ResumeController.getTimeline,
  *                      newest first, each with the employer, the role title and its years
- *                      ("2026 to now"). Each role's highlights come from
+ *                      ("2021 to 2025"). A role held now shows its start year with a plus
+ *                      ("2026+") and an Active tag. Each role's highlights come from
  *                      ResumeController.getResume for the Architect persona, the resume page's
  *                      default read, matched by the role's Experience Id.
  *                      At 768 px and up the roles sit on one horizontal line that scrolls
@@ -16,8 +17,10 @@
  *                      highlights is a plain point.
  *                      "See the full timeline" opens c-experience-timeline right under the line
  *                      and "Hide the full timeline" closes it. The timeline is only in the page
- *                      while it is open. Focus moves to the opened timeline and back to the
- *                      button on close.
+ *                      while it is open. Focus moves to the opened timeline's heading and back
+ *                      to the button on close. Opening a role sends career_role_opened with its
+ *                      position (1 is the newest), and the timeline button sends
+ *                      career_timeline_toggled with expanded.
  *                      Openings fade and slide in for about 200 ms, and appear at once when the
  *                      visitor asks for reduced motion (c/motionPreference).
  *                      Renders nothing when the role read fails or has no roles. When only the
@@ -31,6 +34,7 @@ import { LightningElement, wire } from "lwc";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import getResume from "@salesforce/apex/ResumeController.getResume";
 import { isReduced } from "c/motionPreference";
+import { trackEvent, EVENTS } from "c/analyticsService";
 
 /** The persona whose highlights a role opens: the resume page's default view. */
 export const HIGHLIGHT_PERSONA = "Architect";
@@ -43,6 +47,7 @@ const STACK = "stack";
 const LINE_PANEL_ID = "career-panel";
 const OPEN_TIMELINE_LABEL = "See the full timeline";
 const CLOSE_TIMELINE_LABEL = "Hide the full timeline";
+const ACTIVE_LABEL = "Active";
 
 function clean(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -56,23 +61,46 @@ function yearOf(value) {
 }
 
 /**
- * The years of a role: "2026 to now", "2021 to 2025", "2016" when it started and ended in one
- * year, or the one year known when the other is missing.
+ * Whether a role is held now. The same rule as the full timeline: a current role, or one with
+ * no end date.
+ * @param {object} role a TimelineRole
+ * @returns {boolean} true when the role is held now
+ */
+export function isCurrentRole(role) {
+  return role.isCurrent === true || !role.endDate;
+}
+
+/**
+ * The years of a role as shown: "2026+" for a current role, which also carries an Active tag,
+ * "2021 to 2025", "2016" when it started and ended in one year, or the one year known when the
+ * other is missing. A current role with no start date shows only its tag.
  * @param {object} role a TimelineRole
  * @returns {string} the years
  */
 export function formatYears(role) {
   const start = yearOf(role.startDate);
-  // The same rule as the full timeline: a current role, or one with no end date, runs to now.
-  const end =
-    role.isCurrent === true || !role.endDate ? "now" : yearOf(role.endDate);
+  if (isCurrentRole(role)) {
+    return start ? `${start}+` : "";
+  }
+  const end = yearOf(role.endDate);
   if (start && end) {
     return start === end ? start : `${start} to ${end}`;
   }
-  if (start) {
-    return start;
+  return start || end;
+}
+
+/**
+ * The years as a screen reader hears them, with the Active tag: "since 2026, active" for a
+ * current role, otherwise the years as shown.
+ * @param {object} role a TimelineRole
+ * @returns {string} the spoken years
+ */
+export function spokenYears(role) {
+  if (!isCurrentRole(role)) {
+    return formatYears(role);
   }
-  return end === "now" ? "Now" : end;
+  const start = yearOf(role.startDate);
+  return start ? `since ${start}, active` : "active";
 }
 
 /**
@@ -120,7 +148,8 @@ export default class CareerLine extends LightningElement {
           title: clean(role.title),
           employer: clean(role.employer),
           years: formatYears(role),
-          isCurrent: role.isCurrent === true
+          yearsSpoken: spokenYears(role),
+          isCurrent: isCurrentRole(role)
         }));
     } else if (error) {
       // An extra under the hero: on an error it stays hidden.
@@ -161,7 +190,9 @@ export default class CareerLine extends LightningElement {
         text
       })),
       hasHighlights: highlights.length > 0,
-      meta: [role.employer, role.years].filter((part) => part).join(", "),
+      meta: [role.employer, role.years, role.isCurrent ? ACTIVE_LABEL : ""]
+        .filter((part) => part)
+        .join(", "),
       expanded: String(open),
       controls: list === LINE ? LINE_PANEL_ID : stackPanelId,
       stackPanelId,
@@ -250,6 +281,8 @@ export default class CareerLine extends LightningElement {
     this.openKey = key;
     this.openList = list;
     this.revealKey = isReduced() ? null : key;
+    const position = this.roles.findIndex((role) => role.key === key) + 1;
+    trackEvent(EVENTS.CAREER_ROLE_OPENED, { position });
   }
 
   closeRole(moveFocus) {
@@ -282,6 +315,9 @@ export default class CareerLine extends LightningElement {
     this.focusAfterRender = this.timelineOpen
       ? '[data-id="full-timeline"]'
       : '[data-id="timeline-toggle"]';
+    trackEvent(EVENTS.CAREER_TIMELINE_TOGGLED, {
+      expanded: this.timelineOpen
+    });
   }
 
   handleLineScroll() {
@@ -314,6 +350,11 @@ export default class CareerLine extends LightningElement {
     const target = this.template.querySelector(selector);
     if (target) {
       target.focus();
+      // The opened timeline then takes focus onto its heading, once the heading has rendered.
+      const timeline = target.querySelector("c-experience-timeline");
+      if (timeline) {
+        timeline.focusHeading();
+      }
     }
   }
 }

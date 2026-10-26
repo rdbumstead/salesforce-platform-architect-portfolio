@@ -20,6 +20,16 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--pf-text);
+  scroll-margin-top: 88px;
+}
+
+.section-heading:focus {
+  outline: none;
+}
+
+.section-heading:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 4px;
 }
 
 .section-intro {

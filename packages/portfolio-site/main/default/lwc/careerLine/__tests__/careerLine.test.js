@@ -14,10 +14,29 @@ import CareerLine, {
   HIGHLIGHT_PERSONA,
   PHONE_ROLES,
   formatYears,
-  highlightsById
+  highlightsById,
+  isCurrentRole,
+  spokenYears
 } from "c/careerLine";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import getResume from "@salesforce/apex/ResumeController.getResume";
+import { trackEvent } from "c/analyticsService";
+
+// The nested full timeline sends its own two events through the same mock.
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    __esModule: true,
+    trackEvent: jest.fn(),
+    EVENTS: {
+      CAREER_ROLE_OPENED: "career_role_opened",
+      CAREER_TIMELINE_TOGGLED: "career_timeline_toggled",
+      TIMELINE_TAB_CHANGED: "timeline_tab_changed",
+      TIMELINE_EXPANDED: "timeline_expanded"
+    }
+  }),
+  { virtual: true }
+);
 
 jest.mock(
   "@salesforce/apex/ResumeController.getTimeline",
@@ -140,13 +159,21 @@ describe("c-career-line", () => {
   });
 
   describe("helpers", () => {
-    it("writes the years as a range, with now for a current role", () => {
-      expect(formatYears(WORK[0])).toBe("2026 to now");
+    it("writes a past role as a range and a current one as its start year with a plus", () => {
+      expect(formatYears(WORK[0])).toBe("2026+");
       expect(formatYears(WORK[2])).toBe("2025 to 2026");
       expect(formatYears(WORK[3])).toBe("2016");
       expect(formatYears({ endDate: "2021-06-18" })).toBe("2021");
-      expect(formatYears({ isCurrent: true })).toBe("Now");
-      expect(formatYears({ startDate: "2017-01-02" })).toBe("2017 to now");
+      expect(formatYears({ isCurrent: true })).toBe("");
+      expect(formatYears({ startDate: "2017-01-02" })).toBe("2017+");
+    });
+
+    it("speaks a current role as since its start year, active", () => {
+      expect(spokenYears(WORK[0])).toBe("since 2026, active");
+      expect(spokenYears({ isCurrent: true })).toBe("active");
+      expect(spokenYears(WORK[2])).toBe("2025 to 2026");
+      expect(isCurrentRole({ startDate: "2017-01-02" })).toBe(true);
+      expect(isCurrentRole(WORK[3])).toBe(false);
     });
 
     it("keys highlights by role Id, trimmed, and ignores rows with no Id", () => {
@@ -216,11 +243,40 @@ describe("c-career-line", () => {
         "Creighton University",
         "Fiserv, Inc"
       ]);
-      expect(text(points[0])).toBe(
-        "TELUS Digital, Senior Solution Consultant, 2026 to now"
+      expect(text(points[0].querySelector(".role-title"))).toBe(
+        "Senior Solution Consultant,"
       );
       expect(points[0].classList.contains("point-current")).toBe(true);
       expect(points[2].classList.contains("point-current")).toBe(false);
+    });
+
+    it("shows a current role's start year with a plus and an Active tag, spoken once", async () => {
+      const element = await renderWithData();
+      const points = element.shadowRoot.querySelectorAll(
+        '[data-id="line-role"]'
+      );
+      const years = (point) => ({
+        shown: text(point.querySelector('.years [aria-hidden="true"]')),
+        spoken: text(point.querySelector(".years .visually-hidden")),
+        tag: point.querySelector(".active-tag")
+      });
+      const current = years(points[0]);
+      expect(current.shown).toBe("2026+");
+      expect(current.spoken).toBe("since 2026, active");
+      expect(text(current.tag)).toBe("Active");
+      expect(current.tag.getAttribute("aria-hidden")).toBe("true");
+      const past = years(points[2]);
+      expect(past.shown).toBe("2025 to 2026");
+      expect(past.spoken).toBe("2025 to 2026");
+      expect(past.tag).toBeNull();
+      // The plain point, with no highlights, carries the same parts.
+      expect(years(points[3]).shown).toBe("2016");
+      expect(years(points[3]).tag).toBeNull();
+      const stack = element.shadowRoot.querySelectorAll(
+        '[data-id="stack-role"]'
+      );
+      expect(years(stack[0]).shown).toBe("2026+");
+      expect(text(years(stack[0]).tag)).toBe("Active");
     });
 
     it("makes a role a button only when it has highlights", async () => {
@@ -271,11 +327,26 @@ describe("c-career-line", () => {
         "Senior Solution Consultant"
       );
       expect(text(panel.querySelector(".panel-meta"))).toBe(
-        "TELUS Digital, 2026 to now"
+        "TELUS Digital, 2026+, Active"
       );
       expect(
         Array.from(panel.querySelectorAll(".highlights li")).map(text)
       ).toEqual(["Led the design.", "Shipped it."]);
+    });
+
+    it("sends career_role_opened with the role's position on each opening only", async () => {
+      const element = await renderWithData();
+      const [, second] = lineButtons(element);
+      second.click();
+      await flush();
+      second.click();
+      await flush();
+      stackButtons(element)[0].click();
+      await flush();
+      expect(trackEvent.mock.calls).toEqual([
+        ["career_role_opened", { position: 2 }],
+        ["career_role_opened", { position: 1 }]
+      ]);
     });
 
     it("keeps one role open at a time", async () => {
@@ -409,7 +480,7 @@ describe("c-career-line", () => {
       expect(element.shadowRoot.querySelector("a")).toBeNull();
     });
 
-    it("opens the timeline in place, moves focus to it, and closes it again", async () => {
+    it("opens the timeline in place, moves focus to its heading, and closes it again", async () => {
       const element = await renderWithData();
       const button = toggle(element);
       button.click();
@@ -420,8 +491,16 @@ describe("c-career-line", () => {
       expect(button.getAttribute("aria-expanded")).toBe("true");
       expect(text(button)).toBe("Hide the full timeline");
       expect(region.hidden).toBe(false);
-      expect(region.querySelector("c-experience-timeline")).not.toBeNull();
+      const nested = region.querySelector("c-experience-timeline");
+      expect(nested).not.toBeNull();
+      // Until the timeline's data arrives, focus waits on the region.
       expect(element.shadowRoot.activeElement).toBe(region);
+      getTimeline.emit(TIMELINE);
+      await flush();
+      expect(element.shadowRoot.activeElement).toBe(nested);
+      expect(nested.shadowRoot.activeElement).toBe(
+        nested.shadowRoot.querySelector('[data-id="timeline-heading"]')
+      );
 
       button.click();
       await flush();
@@ -432,6 +511,18 @@ describe("c-career-line", () => {
         element.shadowRoot.querySelector("c-experience-timeline")
       ).toBeNull();
       expect(element.shadowRoot.activeElement).toBe(button);
+    });
+
+    it("sends career_timeline_toggled with expanded on each press", async () => {
+      const element = await renderWithData();
+      toggle(element).click();
+      await flush();
+      toggle(element).click();
+      await flush();
+      expect(trackEvent.mock.calls).toEqual([
+        ["career_timeline_toggled", { expanded: true }],
+        ["career_timeline_toggled", { expanded: false }]
+      ]);
     });
 
     it("leaves Escape inside the opened timeline to the timeline", async () => {

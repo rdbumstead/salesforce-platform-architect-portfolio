@@ -1,6 +1,7 @@
 /**
- * @description       : Work, Certifications and Education timeline on the Resume page, under
- *                      the resume. Reads ResumeController.getTimeline and shows roles, current
+ * @description       : Work, Certifications and Education timeline, opened in place from the
+ *                      home page's career line, which can move focus to its heading through
+ *                      focusHeading. Reads ResumeController.getTimeline and shows roles, current
  *                      certifications and schools under an accessible tab list, in that order,
  *                      with Work selected first. Renders nothing when every
  *                      list is empty and hides a tab whose list is empty.
@@ -17,7 +18,7 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/22/2026
  **/
-import { LightningElement, wire } from "lwc";
+import { LightningElement, api, wire } from "lwc";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { isReduced } from "c/motionPreference";
@@ -114,8 +115,29 @@ export default class ExperienceTimeline extends LightningElement {
   expandedTabs = {};
   focusTabOnRender = false;
   focusToggleOnRender = null;
+  focusHeadingOnRender = false;
   revealTab = null;
   newTabNote = ", opens in a new tab";
+
+  /**
+   * Moves focus to the timeline's heading, now when it has rendered, or as soon as it renders.
+   * The career line calls this when it opens the timeline in place.
+   */
+  @api
+  focusHeading() {
+    if (!this.focusHeadingNow()) {
+      this.focusHeadingOnRender = true;
+    }
+  }
+
+  focusHeadingNow() {
+    const heading = this.template.querySelector('[data-id="timeline-heading"]');
+    if (!heading) {
+      return false;
+    }
+    heading.focus();
+    return true;
+  }
 
   @wire(getTimeline)
   wiredTimeline({ data, error }) {
@@ -276,6 +298,9 @@ export default class ExperienceTimeline extends LightningElement {
   }
 
   renderedCallback() {
+    if (this.focusHeadingOnRender && this.focusHeadingNow()) {
+      this.focusHeadingOnRender = false;
+    }
     if (this.focusToggleOnRender) {
       const toggleTab = this.focusToggleOnRender;
       this.focusToggleOnRender = null;

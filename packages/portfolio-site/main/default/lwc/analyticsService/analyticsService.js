@@ -50,7 +50,9 @@ export const EVENTS = Object.freeze({
   DOCS_OPENED: "docs_opened", // doc_key
   API_LAB_SECTION_TOGGLED: "api_lab_section_toggled", // section, expanded
   CASE_STUDY_LINK_FOLLOWED: "case_study_link_followed", // name
-  GRAPH_LAYOUT_CHANGED: "graph_layout_changed" // action: drag, fit or reset_layout
+  GRAPH_LAYOUT_CHANGED: "graph_layout_changed", // action: drag, fit or reset_layout
+  CAREER_ROLE_OPENED: "career_role_opened", // position: 1 is the newest role
+  CAREER_TIMELINE_TOGGLED: "career_timeline_toggled" // expanded
 });
 
 /** The document event the site's head script listens for and passes to gtag. */

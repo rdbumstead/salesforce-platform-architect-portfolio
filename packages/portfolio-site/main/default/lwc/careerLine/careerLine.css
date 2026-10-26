@@ -154,6 +154,16 @@
   gap: var(--pf-space-1);
 }
 
+/* A role held now: its start year with a plus, then this tag. */
+.active-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--pf-chip);
+  color: var(--pf-chip-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .role-chevron {
   flex: 0 0 auto;
   color: var(--pf-accent);

@@ -2,7 +2,12 @@
   <template lwc:if={hasAny}>
     <div class="timeline">
       <section class="section" aria-labelledby="timeline-heading">
-        <h2 id="timeline-heading" class="section-heading">
+        <h2
+          id="timeline-heading"
+          class="section-heading"
+          data-id="timeline-heading"
+          tabindex="-1"
+        >
           Work, education and certifications.
         </h2>
         <p class="section-intro">Newest first.</p>
