@@ -9,9 +9,16 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
-import Changelog, { STATUS_NOTES, ageLabel, formatDate } from "c/changelog";
+import Changelog, {
+  STATUS_NOTES,
+  ageLabel,
+  formatDate,
+  isMerge,
+  parseMessage
+} from "c/changelog";
 import getRecentCommits from "@salesforce/apex/DeliveryController.getRecentCommits";
 import { trackEvent } from "c/analyticsService";
+import { setSimulating } from "c/outageSimulation";
 
 jest.mock(
   "@salesforce/apex/DeliveryController.getRecentCommits",
@@ -86,6 +93,7 @@ describe("c-changelog", () => {
       document.body.removeChild(document.body.firstChild);
     }
     jest.clearAllMocks();
+    setSimulating(false);
   });
 
   it("shows a loading line until the wire emits", async () => {
@@ -112,9 +120,7 @@ describe("c-changelog", () => {
     expect(link.getAttribute("href")).toBe(ITEMS[0].url);
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(first.querySelector('[data-id="author"]').textContent).toBe(
-      "Ryan Bumstead"
-    );
+    expect(first.querySelector('[data-id="author"]')).toBeNull();
     expect(first.querySelector('[data-id="date"]').textContent).toBe(
       "2026-10-21"
     );
@@ -190,55 +196,131 @@ describe("c-changelog", () => {
     expect(element.shadowRoot.textContent).not.toContain("No access");
   });
 
-  it("renders the outage switch off, labelled, and reads with simulate false", async () => {
+  it("has no outage switch of its own and follows the shared one", async () => {
     const element = createComponent();
     await flushPromises();
-
-    const input = q(element, '[data-id="simulate-switch"]');
-    expect(input.type).toBe("checkbox");
-    expect(input.getAttribute("role")).toBe("switch");
-    expect(input.checked).toBe(false);
-    expect(input.closest("label").textContent.trim()).toBe(
-      "Simulate an outage"
-    );
+    expect(q(element, '[data-id="simulate-switch"]')).toBeNull();
     expect(getRecentCommits.getLastConfig()).toEqual({ simulate: false });
-  });
 
-  it("turning the switch on re-reads with simulate true and shows SIMULATED", async () => {
-    const element = createComponent();
     getRecentCommits.emit(feed("FRESH"));
     await flushPromises();
-
-    const input = q(element, '[data-id="simulate-switch"]');
-    input.checked = true;
-    input.dispatchEvent(new CustomEvent("change"));
+    setSimulating(true);
     await flushPromises();
     expect(getRecentCommits.getLastConfig()).toEqual({ simulate: true });
-    expect(trackEvent).toHaveBeenCalledWith("resilience_test_triggered", {
-      source: "changelog"
-    });
 
     getRecentCommits.emit(feed("SIMULATED"));
     await flushPromises();
     expect(q(element, '[data-id="status-badge"]').textContent).toBe(
       "Simulated"
     );
-    expect(element.shadowRoot.querySelectorAll("li.commit-item")).toHaveLength(
-      2
-    );
+    expect(qa(element, "li.commit-item")).toHaveLength(2);
     expect(q(element, '[data-id="status-note"]').textContent.trim()).toBe(
       STATUS_NOTES.SIMULATED
     );
 
-    input.checked = false;
-    input.dispatchEvent(new CustomEvent("change"));
+    setSimulating(false);
     await flushPromises();
     expect(getRecentCommits.getLastConfig()).toEqual({ simulate: false });
-    expect(
-      trackEvent.mock.calls.filter(
-        ([name]) => name === "resilience_test_triggered"
-      )
-    ).toHaveLength(1);
+    // The switch lived here once, so this panel sends no outage event of its own.
+    expect(trackEvent).not.toHaveBeenCalled();
+
+    document.body.removeChild(element);
+    setSimulating(true);
+    await flushPromises();
+    expect(getRecentCommits.getLastConfig()).toEqual({ simulate: false });
+  });
+
+  it("starts in the simulated state when the switch is already on", async () => {
+    setSimulating(true);
+    createComponent();
+    await flushPromises();
+    expect(getRecentCommits.getLastConfig()).toEqual({ simulate: true });
+  });
+
+  it("leaves merge commits out and keeps the rest in order", async () => {
+    const element = createComponent();
+    getRecentCommits.emit(
+      feed("FRESH", {
+        items: [
+          { ...ITEMS[0], message: "Merge pull request #121 from a/b" },
+          { ...ITEMS[1], message: "Merge r10/b-numbers (5451d4f): the stats" },
+          {
+            ...ITEMS[0],
+            sha: "0000111122223333444455556666777788889999",
+            message: "feat(lwc): give the AI Lab page its intro sentence"
+          },
+          { ...ITEMS[1], message: "Merged data is kept" }
+        ]
+      })
+    );
+    await flushPromises();
+    const rows = qa(element, "li.commit-item");
+    expect(rows).toHaveLength(2);
+    expect(rows[0].querySelector('[data-id="message"]').textContent).toBe(
+      "Give the AI Lab page its intro sentence"
+    );
+    expect(rows[1].querySelector('[data-id="message"]').textContent).toBe(
+      "Merged data is kept"
+    );
+  });
+
+  it("turns the commit type into a tag and shows no author", async () => {
+    const element = createComponent();
+    getRecentCommits.emit(feed("FRESH"));
+    await flushPromises();
+    const rows = qa(element, "li.commit-item");
+    // An unknown prefix is left alone and has no tag.
+    expect(rows[0].querySelector('[data-id="tag"]')).toBeNull();
+    expect(rows[1].querySelector('[data-id="tag"]').textContent).toBe("Fix");
+    expect(rows[1].querySelector('[data-id="message"]').textContent).toBe(
+      "Second commit"
+    );
+    expect(q(element, '[data-id="author"]')).toBeNull();
+    expect(element.shadowRoot.textContent).not.toContain("Ryan Bumstead");
+    expect(element.shadowRoot.textContent).not.toContain("Ada Lovelace");
+  });
+
+  it("parses the conventional types", () => {
+    expect(parseMessage("feat(lwc): add a thing")).toEqual({
+      tag: "Feature",
+      text: "Add a thing"
+    });
+    expect(parseMessage("fix: stop the jump")).toEqual({
+      tag: "Fix",
+      text: "Stop the jump"
+    });
+    expect(parseMessage("docs(adr): write it")).toEqual({
+      tag: "Docs",
+      text: "Write it"
+    });
+    expect(parseMessage("test(apex): read as a user")).toEqual({
+      tag: "Tests",
+      text: "Read as a user"
+    });
+    expect(parseMessage("tests: more")).toEqual({ tag: "Tests", text: "More" });
+    expect(parseMessage("feat(api)!: break it")).toEqual({
+      tag: "Feature",
+      text: "Break it"
+    });
+    // Known types without a tag lose the prefix only.
+    expect(parseMessage("ci(refs): gate the docs")).toEqual({
+      tag: "",
+      text: "Gate the docs"
+    });
+    expect(parseMessage("refactor: tidy")).toEqual({ tag: "", text: "Tidy" });
+    // No type, an unknown type, or nothing after the colon stays as written.
+    expect(parseMessage("Plain sentence")).toEqual({
+      tag: "",
+      text: "Plain sentence"
+    });
+    expect(parseMessage("seed: delivery walk").text).toBe(
+      "seed: delivery walk"
+    );
+    expect(parseMessage("feat:").text).toBe("feat:");
+    expect(parseMessage(null)).toEqual({ tag: "", text: "" });
+    expect(isMerge("Merge branch 'x'")).toBe(true);
+    expect(isMerge("Merged")).toBe(false);
+    expect(isMerge(undefined)).toBe(false);
   });
 
   it("DEGRADED explains itself in a live region, FRESH says nothing", async () => {
@@ -274,9 +356,6 @@ describe("c-changelog", () => {
   it("styles only with design tokens, never a hex colour", () => {
     const css = readFileSync(join(__dirname, "..", "changelog.css"), "utf8");
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(css).toMatch(
-      /\.simulate-input\s*\{[^}]*width:\s*24px;[^}]*height:\s*24px;/
-    );
   });
 
   it("formats labels and dates", () => {
