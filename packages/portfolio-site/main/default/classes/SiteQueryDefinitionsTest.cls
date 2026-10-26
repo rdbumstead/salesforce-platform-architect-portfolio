@@ -37,7 +37,8 @@ private class SiteQueryDefinitionsTest {
       new GovernanceController(),
       new DeliveryController(),
       new SourceController(),
-      new TestimonialController()
+      new TestimonialController(),
+      new SkillGraphController()
     };
   }
 
@@ -68,7 +69,7 @@ private class SiteQueryDefinitionsTest {
     Map<String, QueryDefinitions.QueryDefault> defaults = siteDefaults();
     Map<String, Query_Definition__mdt> records = Query_Definition__mdt.getAll();
 
-    Assert.areEqual(21, defaults.size(), 'Twenty one site content reads');
+    Assert.areEqual(22, defaults.size(), 'Twenty two site content reads');
     for (String name : defaults.keySet()) {
       Assert.isTrue(records.containsKey(name), 'Record ships for ' + name);
       Assert.isTrue(records.get(name).Active__c, name + ' ships active');
