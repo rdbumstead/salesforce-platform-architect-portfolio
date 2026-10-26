@@ -547,11 +547,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Usage_Counter__c.Key__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Usage_Counter__c.Kind__c</field>
         <readable>true</readable>
     </fieldPermissions>
