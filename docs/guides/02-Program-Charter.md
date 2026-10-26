@@ -69,7 +69,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Apex REST API implementation** in MuleSoft's API led layers (a System API and a Process API), matching the OpenAPI specifications in the repository (15 SAPI and 8 PAPI paths, version 1.3.0).
 - **Generative AI** grounding and prompt engineering in Apex (`PortfolioGroundingService`, `ContentGenerationController.dispatch`). Agentforce is built as a switch in the dispatch and ships off.
 - **Client-side document generation** (Resume).
-- **Generative AI Utility:** A "Dynamic Cover Letter Engine" that uses Gemma 4 31B through the Gemini API, with a local template as the last resort, to write personalized application letters based on the visitor's job description and the architect's matching project history (featured projects and experience highlights).
+- **Generative AI Utility:** A "Dynamic Cover Letter Engine" that uses Gemini 2.5 Flash through the Gemini API, with a local template as the last resort, to write personalized application letters based on the visitor's job description and the architect's matching project history (featured projects and experience highlights).
 - **Gamified Social Proof engine** with "Vibe-Gated" submission logic.
 - **Automated CI/CD Pipeline** with Static Analysis, Unit Testing gates, and a results step summary on every PR run ("PR Validation Results" in `pr.yml`).
 - **External API Integration (GitHub):** the portfolio repository's recent commits on the site, read by a scheduled job into a cache.
@@ -108,7 +108,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 | Metric | Current Baseline (Est.) | Target (Hard Gate) |
 | :--- | :--- | :--- |
 | **LCP (Mobile)** | 7.51 s median on `/`, Lighthouse 11 mobile on a scratch copy of the site (Technical Guide §2.11) | Target **2.5 s**. Gate: the best the LWR shell allows, mobile LCP medians of 7.5 to 9.6 s on the six main routes, measured the same way |
-| **Apex Coverage** | 98% org wide, 965 of 965 tests passing (production's post deploy test run, 2026-10-24) | **90% or more**, enforced on every pull request |
+| **Apex Coverage** | 98% org wide, 1000 of 1000 tests passing (production's post deploy test run of the 2026-10-24 deploy) | **90% or more**, enforced on every pull request |
 | **Code Scanning** | N/A | **0 Critical or High violations** (`npm run scan`) |
 | **Accessibility** | 100 on every Lighthouse mobile run of the six main routes (scratch copy, Technical Guide §2.11) | **100** |
 
@@ -177,8 +177,8 @@ The delivery is organized into four parallel tracks:
 
 **Phase 3: UI Framework (Completed)**
 
-- **Theme Layout:** `c-portfolio-theme-layout`, with the header, the Pillars menu and the theme toggle.
-- **Hero Banner:** `c-hero-banner`, with the tour and the pillar cards.
+- **Theme Layout:** `c-portfolio-theme-layout`, with the header, its "How it's built" menu, the Back to top arrow and the theme toggle.
+- **Home page:** `c-hero-banner`, then the case studies (`c-case-study-grid`), and a "How this site is built" section (`c-site-build-section`) with the tour and the pillar cards.
 - **Navigation:** the header and the tour read one pillar list, `c/pillarData`.
 
 **Phase 4: Integrations (Completed)**
@@ -191,7 +191,7 @@ The delivery is organized into four parallel tracks:
 - **Data 360 streams:** the CRM connector ingests the portfolio objects. No search index or retriever is built, and grounding on Data 360 is deferred ([ADR-011 amendment, 2026-10-22](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md#amendment-2026-10-22-deferred)).
 - **Grounding:** in Apex, reading the CRM directly (`PortfolioGroundingService.build`, SAS section 5.4.1).
 - **Prompt Engineering:** and the "Show your work" panel (provider, model, latency, attempts and the prompt that was sent, filled by Apex, not by the model)
-- **AI Generation Service:** one dispatch: Agentforce only when switched on (it ships off), then Gemma 4 31B through the Gemini API, then the Local Template
+- **AI Generation Service:** one dispatch: Agentforce only when switched on (it ships off), then Gemini 2.5 Flash through the Gemini API, then the Local Template
 
 **Phase 6: Observability & Launch**
 
@@ -317,7 +317,7 @@ Before user stories are written, features are evaluated against a "Problem State
 | :---------- | :-------------------- | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **SPAP-47** | Motion-Sensitive User | Avoid motion                     | The site is accessible and I avoid motion sickness triggers. Met by following the system "reduce motion" setting, and the graphs are drawn without animation. |
 | **SPAP-46** | Mobile User           | Have fast loading visuals        | Performance stays high and I don't burn data.                                                                                                                 |
-| **SPAP-44** | Visitor               | See a skill network              | I understand capability relationships visually. Built as a static D3.js graph beside the skills matrix, with no animation.                                    |
+| **SPAP-44** | Visitor               | See a skill network              | I understand capability relationships visually. Built as a D3.js graph beside the skills matrix that never moves on its own.                                  |
 | **SPAP-40** | Recruiter             | Generate a tailored cover letter | I immediately see candidate fit without reading a generic bio.                                                                                                |
 | **SPAP-35** | Viewer                | See live roadmap data            | I know the current project status and active work.                                                                                                            |
 | **SPAP-31** | Recruiter             | See persona-specific bullets     | I see role-relevant accomplishments (Admin vs Architect).                                                                                                     |

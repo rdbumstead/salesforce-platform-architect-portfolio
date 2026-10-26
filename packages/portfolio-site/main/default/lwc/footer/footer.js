@@ -1,16 +1,22 @@
 /**
- * @description       : Glass Box footer: copyright, the metrics in four labelled groups,
- *                      profile links from getLinks(), a Docs link to /docs, and Back to top.
+ * @description       : Glass Box footer, in the same 1024 px column as the header: copyright,
+ *                      one caption over the live readings, the readings in labelled groups,
+ *                      the footer links (Skills, Testimonials, Contact, Docs, then the profile
+ *                      links from getLinks()), and Back to top.
  *                      Each group is a list named by its visible label (Deploy, Platform,
  *                      Integrations, Quotas and limits), set apart by vertical rules on wide
  *                      screens and stacked on phones. Deploy holds the production deploy badge
  *                      with a text link fallback. Platform holds the GraphQL timing, or the
  *                      snapshot error. Integrations holds the AI providers and the GitHub and
- *                      Jira breakers. Quotas and limits holds AI requests today, the org quotas
- *                      and the governor limits. Platform shows once it has a line, the last two
- *                      once the telemetry from FooterController.getSystemSnapshot() has loaded. The snapshot is requested only once the
- *                      page has loaded and the browser is idle, so it never delays first paint
- *                      (ADR-014). Every provider word on screen comes from the snapshot data.
+ *                      Jira connections, in plain words: "connected", or "paused" while a
+ *                      circuit breaker holds calls back. Quotas and limits sits in a closed
+ *                      disclosure and holds AI requests today, the org quotas and the governor
+ *                      limits, every number grouped by thousands. Platform shows once it has a
+ *                      line, the last two once the telemetry from
+ *                      FooterController.getSystemSnapshot() has loaded. The snapshot is requested
+ *                      only once the page has loaded and the browser is idle, so it never delays
+ *                      first paint (ADR-014). Every provider word on screen comes from the
+ *                      snapshot data.
  *                      At the same moment one small GraphQL query is timed, and the footer says
  *                      "GraphQL: live, N ms" or "GraphQL: unavailable". When the probe says the
  *                      answer came from the data service cache with no request, the footer
@@ -18,11 +24,9 @@
  *                      The probe is the c/graphqlProbe child, imported with a literal dynamic import
  *                      only at that moment, so the GraphQL adapter stack is not part of what loads
  *                      before first paint. A statically rendered child, even behind lwc:if, still
- *                      put it in the layout's preloads. The snapshot's
- *                      org quotas (OrgLimits) and the GitHub and Jira breakers show next to
- *                      the AI providers, the GraphQL line shows only a finite time, and a
- *                      Contact link goes to the /contact page. Back to top sends
- *                      back_to_top_used, as the layout's floating button does.
+ *                      put it in the layout's preloads. Opening the quotas, or hovering over
+ *                      the AI requests line, sends finops_quota_visibility once.
+ *                      Back to top sends back_to_top_used, as the header's arrow does.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -39,6 +43,19 @@ const REPO_URL =
 export const BADGE_URL = `${REPO_URL}/actions/workflows/deploy.yml/badge.svg?branch=main`;
 export const ACTIONS_URL = `${REPO_URL}/actions/workflows/deploy.yml`;
 export const CACHED_GRAPHQL_LABEL = "GraphQL: cached, no request made";
+
+const NUMBER_FORMAT = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 0
+});
+
+/**
+ * A whole number grouped by thousands, for example 5,000,000.
+ * @param {number} value the number
+ * @returns {string} the formatted number, "0" when it is not a finite number
+ */
+export function formatNumber(value) {
+  return NUMBER_FORMAT.format(Number.isFinite(value) ? value : 0);
+}
 
 /**
  * Local HH:MM for a circuit reopen time.
@@ -57,40 +74,40 @@ export function formatTime(value) {
 /**
  * One provider row's text, built only from the row's own fields.
  * @param {object} row A ContentGenerationController.ProviderStatus.
- * @returns {string} For example "Agentforce: off" or "Gemini: circuit open until 14:05".
+ * @returns {string} For example "Agentforce: off" or "Gemini: paused until 14:05".
  */
 export function providerLabel(row) {
   const until = row.circuitOpenUntil ? formatTime(row.circuitOpenUntil) : "";
-  const state = until ? `circuit open until ${until}` : row.state;
+  const state = until ? `paused until ${until}` : row.state;
   return `${row.provider}: ${state}`;
 }
 
 /**
- * One integration's breaker text, built only from the row's own fields.
+ * One integration's connection text, built only from the row's own fields. A closed breaker
+ * means calls go through, so it reads "connected". An open one holds calls back for a while,
+ * so it reads "paused".
  * @param {object} row A FooterController.IntegrationState.
- * @returns {string} For example "GitHub: circuit closed" or "Jira: circuit open until 14:05".
+ * @returns {string} For example "GitHub: connected" or "Jira: paused until 14:05".
  */
 export function integrationLabel(row) {
   const until = row.open && row.openUntil ? formatTime(row.openUntil) : "";
   if (until) {
-    return `${row.label}: circuit open until ${until}`;
+    return `${row.label}: paused until ${until}`;
   }
-  return row.open
-    ? `${row.label}: circuit open`
-    : `${row.label}: circuit closed`;
+  return row.open ? `${row.label}: paused` : `${row.label}: connected`;
 }
 
 /**
  * One org quota's text, or null when either number is not a finite number, so a failed or
  * partial read never shows as NaN or a made up 0.
  * @param {object} row A FooterController.OrgQuota.
- * @returns {string|null} For example "API requests today 739 of 5000000".
+ * @returns {string|null} For example "API requests today: 739 of 5,000,000".
  */
 export function quotaLabel(row) {
   if (!row || !Number.isFinite(row.used) || !Number.isFinite(row.max)) {
     return null;
   }
-  return `${row.label} ${row.used} of ${row.max}`;
+  return `${row.label}: ${formatNumber(row.used)} of ${formatNumber(row.max)}`;
 }
 
 /**
@@ -131,6 +148,8 @@ export default class Footer extends LightningElement {
 
   badgeUrl = BADGE_URL;
   actionsUrl = ACTIONS_URL;
+  skillsUrl = `${basePath || ""}/skills`;
+  testimonialsUrl = `${basePath || ""}/testimonials`;
   contactUrl = `${basePath || ""}/contact`;
   docsUrl = `${basePath || ""}/docs`;
 
@@ -256,24 +275,26 @@ export default class Footer extends LightningElement {
   }
 
   get aiRequestsToday() {
-    return this.snapshot?.aiRequestsToday ?? 0;
+    return formatNumber(this.snapshot?.aiRequestsToday ?? 0);
   }
 
   get limitRows() {
     const s = this.snapshot || {};
     const kb = (bytes) => Math.round((bytes || 0) / 1024);
+    const of = (used, max) =>
+      `${formatNumber(used ?? 0)} of ${formatNumber(max ?? 0)}`;
     return [
       {
         key: "cpu",
-        label: `cpu ${s.cpuTimeMs ?? 0} of ${s.cpuTimeLimitMs ?? 0} ms`
+        label: `CPU time: ${of(s.cpuTimeMs, s.cpuTimeLimitMs)} ms`
       },
       {
         key: "heap",
-        label: `heap ${kb(s.heapBytes)} of ${kb(s.heapLimitBytes)} KB`
+        label: `Memory: ${of(kb(s.heapBytes), kb(s.heapLimitBytes))} KB`
       },
       {
         key: "soql",
-        label: `soql ${s.soqlQueries ?? 0} of ${s.soqlQueryLimit ?? 0}`
+        label: `Database queries: ${of(s.soqlQueries, s.soqlQueryLimit)}`
       }
     ];
   }
@@ -288,6 +309,12 @@ export default class Footer extends LightningElement {
     }
     this._quotaTracked = true;
     trackEvent(EVENTS.FINOPS_QUOTA_VISIBILITY);
+  }
+
+  handleQuotaToggle(event) {
+    if (event.currentTarget.open) {
+      this.handleQuotaVisibility();
+    }
   }
 
   handleBackToTop() {

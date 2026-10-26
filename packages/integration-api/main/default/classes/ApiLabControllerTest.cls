@@ -325,6 +325,98 @@ private class ApiLabControllerTest {
     Test.stopTest();
   }
 
+  private static Decimal requestsCounted() {
+    Decimal total = 0;
+    for (Usage_Counter__c row : [
+      SELECT Count__c
+      FROM Usage_Counter__c
+      WHERE Kind__c = 'Api_Lab_Request'
+    ]) {
+      total += row.Count__c;
+    }
+    return total;
+  }
+
+  @IsTest
+  static void shouldCountOneRequestWhenTheApiAnswers() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PortfolioApiCalloutMock().withRestResponse(200, '[]', apiHeaders())
+    );
+    User guest = SiteGuestTestSupport.preparedGuest();
+
+    Test.startTest();
+    System.runAs(guest) {
+      ApiLabController.invoke('/sapi/v1/skills', null);
+    }
+    Test.stopTest();
+
+    Assert.areEqual(1, requestsCounted(), 'One request, one count');
+    Assert.areEqual(
+      0,
+      [SELECT COUNT() FROM Usage_Counter__c WHERE Kind__c = 'Cover_Letter'],
+      'The other kind is untouched'
+    );
+  }
+
+  @IsTest
+  static void shouldCountARequestWhenTheApiAnswersWithAnError() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PortfolioApiCalloutMock().withRestResponse(400, '{}', null)
+    );
+
+    Test.startTest();
+    ApiLabController.invoke('/sapi/v1/skills', null);
+    Test.stopTest();
+
+    Assert.areEqual(1, requestsCounted(), 'The request was sent, so it counts');
+  }
+
+  @IsTest
+  static void shouldNotCountWhenThePathIsRefusedOrTheApiIsUnreachable() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PortfolioApiCalloutMock().throwing('Read timed out')
+    );
+
+    Test.startTest();
+    try {
+      ApiLabController.invoke('/services/data/v64.0/sobjects/User', null);
+    } catch (AuraHandledException e) {
+      Assert.isTrue(e.getMessage().contains('not available'), 'Refused');
+    }
+    try {
+      ApiLabController.invoke('/papi/v1/health', null);
+    } catch (AuraHandledException e) {
+      Assert.isTrue(e.getMessage().contains('could not be reached'), 'Down');
+    }
+    Test.stopTest();
+
+    Assert.areEqual(0, requestsCounted(), 'No request sent, no count');
+  }
+
+  @IsTest
+  static void shouldReturnTheSameResultWhenTheCounterWriteFails() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PortfolioApiCalloutMock()
+        .withRestResponse(200, '[{"id":"a"}]', apiHeaders())
+    );
+    UsageCounterWriter.failForTest = true;
+
+    Test.startTest();
+    ApiLabController.InvokeResult result = ApiLabController.invoke(
+      '/sapi/v1/skills',
+      null
+    );
+    Test.stopTest();
+
+    Assert.areEqual(200, result.statusCode, 'Status unchanged');
+    Assert.areEqual('[{"id":"a"}]', result.body, 'Body unchanged');
+    Assert.areEqual(0, requestsCounted(), 'Nothing was counted');
+  }
+
   @IsTest
   static void shouldIssueTokenThroughSharedPathWhenRequestedFromApiLab() {
     ApiRequestContext.limiterOverride = new AllowAllLimiter();

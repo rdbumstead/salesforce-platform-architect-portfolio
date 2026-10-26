@@ -24,6 +24,16 @@
                 {
                   "children": [
                     {
+                      "attributes": {
+                        "eyebrow": "",
+                        "heading": "Testimonials",
+                        "lead": "Worked with Ryan? Leave a short review."
+                      },
+                      "definition": "c:pageIntro",
+                      "id": "966e1595-7fd8-47a7-aab8-3718b1faa766",
+                      "type": "component"
+                    },
+                    {
                       "definition": "c:testimonialWall",
                       "id": "4f0c9a52-6d1e-4b8a-9e3f-2a7b5c8d1e60",
                       "type": "component"

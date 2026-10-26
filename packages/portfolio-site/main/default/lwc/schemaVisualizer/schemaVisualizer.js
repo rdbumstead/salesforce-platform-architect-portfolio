@@ -4,7 +4,9 @@
  *                      this template. The engine loads only on desktop and tablet, and only once the
  *                      component is on screen. Phones and narrow viewports get the object list as the
  *                      visible view and never request the engine. The list mirrors every node and edge
- *                      in every mode (SAS App. G shadow structure).
+ *                      in every mode (SAS App. G shadow structure), apart from the platform self
+ *                      lookups MasterRecordId and ParentId, which say nothing about the design. The
+ *                      view box is fitted to the drawn boxes, so the canvas has no empty band.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -13,7 +15,7 @@
 import { LightningElement, api, wire } from "lwc";
 import FORM_FACTOR from "@salesforce/client/formFactor";
 import getSchemaGraph from "@salesforce/apex/SchemaService.getSchemaGraph";
-import { loadGraphEngine, layoutGraph } from "c/graphEngine";
+import { boundsOf, loadGraphEngine, layoutGraph } from "c/graphEngine";
 import { trackEvent, EVENTS } from "c/analyticsService";
 
 export const SCOPES = Object.freeze([
@@ -39,6 +41,19 @@ const LAYOUT_RADIUS = 40;
 const LAYOUT_PADDING = 16;
 const LABEL_MAX = 20;
 const DOT_RADIUS = 5;
+// Space kept round the drawn boxes when the view box is fitted to them, and the narrowest
+// fitted view box, so a small diagram is not drawn more than a quarter larger than before.
+const FIT_MARGIN = 24;
+const MIN_FIT_WIDTH = 768;
+// Platform self lookups on standard objects, left out of the list.
+const PLATFORM_SELF_LOOKUPS = Object.freeze(["MasterRecordId", "ParentId"]);
+
+function isPlatformSelfLookup(edge) {
+  return (
+    edge.fromObject === edge.toObject &&
+    PLATFORM_SELF_LOOKUPS.includes(edge.field)
+  );
+}
 
 function isScope(value) {
   return SCOPES.some((scope) => scope.value === value);
@@ -311,8 +326,30 @@ export default class SchemaVisualizer extends LightningElement {
     return `${count} ${objectWord}, described in ${this.graph.cpuMs} ms of server CPU`;
   }
 
+  // The drawn boxes plus a margin, so the diagram fills its canvas. The layout box is the
+  // fallback before anything is drawn.
   get viewBox() {
-    return `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`;
+    const bounds = boundsOf(
+      this.svgNodes.map((node) => ({
+        left: node.x,
+        top: node.y,
+        right: node.x + node.width,
+        bottom: node.y + node.height
+      })),
+      FIT_MARGIN
+    );
+    if (!bounds) {
+      return `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`;
+    }
+    const round = (value) => Math.round(value * 10) / 10;
+    const width = Math.max(bounds.right - bounds.left, MIN_FIT_WIDTH);
+    const left = (bounds.left + bounds.right) / 2 - width / 2;
+    return [
+      round(left),
+      round(bounds.top),
+      round(width),
+      round(bounds.bottom - bounds.top)
+    ].join(" ");
   }
 
   get diagramLabel() {
@@ -376,10 +413,13 @@ export default class SchemaVisualizer extends LightningElement {
   }
 
   // One entry per object, each naming the reference fields it holds, so every node and
-  // every edge appears exactly once.
+  // every edge appears exactly once, apart from the platform self lookups.
   get listItems() {
     const edgesByObject = new Map();
     this.edges.forEach((edge, index) => {
+      if (isPlatformSelfLookup(edge)) {
+        return;
+      }
       if (!edgesByObject.has(edge.fromObject)) {
         edgesByObject.set(edge.fromObject, []);
       }

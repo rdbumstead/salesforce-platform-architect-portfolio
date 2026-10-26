@@ -1,8 +1,10 @@
 <template>
   <section class="erd" aria-label="Data model">
     <div class="erd-header">
-      <h2 class="erd-title">Data model, live</h2>
-      <c-view-source source-key="schemaVisualizer"></c-view-source>
+      <div class="erd-title-row">
+        <h2 class="erd-title">Data model, live</h2>
+        <c-view-source source-key="schemaVisualizer"></c-view-source>
+      </div>
       <div class="scope-toggle" role="group" aria-label="Schema scope">
         <template for:each={scopeButtons} for:item="button">
           <button

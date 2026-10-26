@@ -61,10 +61,10 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
           limitParam,
           offsetParam
         );
-        // The total counts every listed project, whatever the filters.
+        // The total counts the rows the request's filters match, not one page of them.
         Integer totalCount = QueryDefinitions.count(
           LIST_QUERY,
-          listBinds(null, null, null, null),
+          listBinds(statusFilter, isFeatured, contactName, projectName),
           listDefault()
         );
 

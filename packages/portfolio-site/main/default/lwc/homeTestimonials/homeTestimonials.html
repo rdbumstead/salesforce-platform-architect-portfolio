@@ -2,7 +2,6 @@
   <template lwc:if={hasItems}>
     <div class="home-testimonials">
       <section class="section" aria-labelledby="home-testimonials-heading">
-        <p class="section-label">04 / WHAT PEOPLE SAY</p>
         <h2 id="home-testimonials-heading" class="section-heading">
           What people say.
         </h2>
@@ -28,6 +27,33 @@
         <a class="wall-link" href={wallHref} data-id="wall-link"
           >Read every testimonial <span aria-hidden="true">→</span></a
         >
+      </section>
+    </div>
+  </template>
+  <template lwc:if={showCredentials}>
+    <div class="home-testimonials">
+      <section
+        class="credentials"
+        aria-label="Credentials"
+        data-id="credentials"
+      >
+        <ul class="credentials-list">
+          <li class="credential">{certificationsText}</li>
+          <template lwc:if={trailheadHref}>
+            <li class="credential">
+              <a
+                class="credential-link"
+                href={trailheadHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-id="trailhead-link"
+                >Verify on Trailhead <span aria-hidden="true">→</span
+                ><span class="assistive-text">, opens in a new tab</span></a
+              >
+            </li>
+          </template>
+          <li class="credential">References available on request</li>
+        </ul>
       </section>
     </div>
   </template>

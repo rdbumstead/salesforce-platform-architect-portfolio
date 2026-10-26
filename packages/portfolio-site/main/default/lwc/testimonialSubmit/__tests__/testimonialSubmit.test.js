@@ -186,7 +186,7 @@ describe("c-testimonial-submit", () => {
       (f) => f.vibe === "Casual" && f.slot === "Strength"
     ).map((f) => f.text);
     expect(optionTexts(element, "strength")).toEqual(casual);
-    expect(optionTexts(element, "strength")).toContain("is an absolute beast");
+    expect(optionTexts(element, "strength")).toContain("is the GOAT");
   });
 
   it("switching the vibe clears the two phrase blanks", async () => {
@@ -197,7 +197,9 @@ describe("c-testimonial-submit", () => {
     expect(q(element, '[name="strength"]').value).toBe("");
     expect(q(element, '[name="outcome"]').value).toBe("");
     expect(q(element, '[name="relationship"]').value).toBe("Peer");
-    expect(q(element, '[data-id="submit"]').disabled).toBe(true);
+    expect(q(element, '[data-id="vibe-status"]').textContent.trim()).toBe(
+      "Casual phrases are showing."
+    );
   });
 
   it("a Recruiter or a Fan sees only Anyone outcomes", async () => {
@@ -228,30 +230,53 @@ describe("c-testimonial-submit", () => {
     );
   });
 
-  it("keeps submit disabled until every required choice is valid", async () => {
+  it("keeps submit enabled and answers an invalid send with a message and focus", async () => {
     const element = await ready();
     const button = q(element, '[data-id="submit"]');
-    expect(button.disabled).toBe(true);
-    await setField(element, "authorName", "Ada");
-    await setField(element, "relationship", "Peer");
-    await setField(element, "strength", "Professional_Strength_01");
-    expect(button.disabled).toBe(true);
-    await setField(element, "outcome", "Professional_Outcome_01");
     expect(button.disabled).toBe(false);
 
+    await submit(element);
+    expect(submitTestimonial).not.toHaveBeenCalled();
+    const text = (name) =>
+      q(element, `[data-id="${name}-error"]`).textContent.trim();
+    expect(text("authorName")).toBe("Enter your name.");
+    expect(text("relationship")).toBe("Choose how you know Ryan.");
+    expect(text("strength")).toBe("Choose a strength.");
+    expect(text("outcome")).toBe("Choose a result.");
+    expect(q(element, '[name="authorName"]').getAttribute("aria-invalid")).toBe(
+      "true"
+    );
+    expect(
+      q(element, '[name="authorName"]')
+        .getAttribute("aria-describedby")
+        .replace(/-\d+$/, "")
+    ).toBe("authorName-error");
+    expect(element.shadowRoot.activeElement).toBe(
+      q(element, '[name="authorName"]')
+    );
+
+    // A message goes as soon as its field is touched, and focus goes to the next one.
+    await setField(element, "authorName", "Ada");
+    expect(q(element, '[data-id="authorName-error"]')).toBeNull();
+    await submit(element);
+    expect(element.shadowRoot.activeElement).toBe(
+      q(element, '[name="relationship"]')
+    );
+
+    await setField(element, "relationship", "Peer");
+    await setField(element, "strength", "Professional_Strength_01");
+    await setField(element, "outcome", "Professional_Outcome_01");
     await setField(element, "authorName", "x".repeat(MAX_NAME_LENGTH + 1));
-    expect(button.disabled).toBe(true);
+    await submit(element);
+    expect(text("authorName")).toBe("Use 80 characters or fewer.");
     await setField(element, "authorName", "Ada");
     await setField(element, "authorTitle", "t".repeat(101));
-    expect(button.disabled).toBe(true);
+    await submit(element);
+    expect(text("authorTitle")).toBe("Use 100 characters or fewer.");
     await setField(element, "authorTitle", "");
     await setField(element, "note", "n".repeat(MAX_NOTE_LENGTH + 1));
-    expect(button.disabled).toBe(true);
-    await setField(element, "note", "");
-    await setField(element, "relationship", "");
-    expect(button.disabled).toBe(true);
-
     await submit(element);
+    expect(text("note")).toBe("Use 255 characters or fewer.");
     expect(submitTestimonial).not.toHaveBeenCalled();
   });
 
@@ -292,17 +317,19 @@ describe("c-testimonial-submit", () => {
       website: null,
       elapsedMs: expect.any(Number)
     });
-    expect(q(element, '[data-id="success"]').textContent.trim()).toBe(
-      "Thank you. Your review was received and will appear once it is approved."
+    const success = q(element, '[data-id="success"]');
+    const paragraphs = [...success.querySelectorAll("p")].map((p) =>
+      p.textContent.trim()
     );
+    expect(paragraphs).toEqual([
+      "Thank you.",
+      "Your review was received and will appear once it is approved."
+    ]);
+    expect(success.getAttribute("tabindex")).toBe("-1");
+    expect(element.shadowRoot.activeElement).toBe(success);
     expect(q(element, '[data-id="error"]')).toBeNull();
-    expect(q(element, '[name="authorName"]').value).toBe("");
-    expect(q(element, '[name="note"]').value).toBe("");
-    expect(q(element, '[name="relationship"]').value).toBe("");
-    expect(
-      q(element, '[data-id="vibe-toggle"]').getAttribute("aria-checked")
-    ).toBe("false");
-    expect(q(element, '[data-id="submit"]').disabled).toBe(true);
+    // The form leaves the page, so nothing of it is left to resend.
+    expect(q(element, "form")).toBeNull();
   });
 
   it("sends a blank title and note as null, and a Casual vibe when switched", async () => {
@@ -363,14 +390,17 @@ describe("c-testimonial-submit", () => {
     expect(q(element, '[data-id="submit"]').disabled).toBe(false);
   });
 
-  it("says so and keeps submit off when the fragments cannot load", async () => {
+  it("says so and sends nothing when the fragments cannot load", async () => {
     const element = createComponent();
     getFragments.error();
     await flushPromises();
     expect(q(element, '[data-id="load-error"]').textContent.trim()).toMatch(
       /could not load/
     );
-    expect(q(element, '[data-id="submit"]').disabled).toBe(true);
+    // Submit stays on, and a send says nothing more and calls nothing.
+    expect(q(element, '[data-id="submit"]').disabled).toBe(false);
+    await submit(element);
+    expect(submitTestimonial).not.toHaveBeenCalled();
   });
 
   it("falls back to a readable message when the error has no body", () => {
@@ -382,26 +412,60 @@ describe("c-testimonial-submit", () => {
     );
   });
 
-  it("the vibe switch toggles between Professional and Casual", async () => {
+  it("the vibe switch keeps one label and announces its state separately", async () => {
     const element = await ready();
     const toggle = q(element, '[data-id="vibe-toggle"]');
     expect(toggle.getAttribute("role")).toBe("switch");
     expect(toggle.getAttribute("aria-checked")).toBe("false");
+    const label = q(element, ".vibe-field .field-label");
+    expect(label.textContent.trim()).toBe("Casual vibe");
+    // The switch is named by that label alone, and the visible state is hidden from the name.
+    expect(toggle.getAttribute("aria-labelledby").replace(/-\d+$/, "")).toBe(
+      "vibe-label"
+    );
+    expect(
+      toggle.querySelector(".vibe-value").getAttribute("aria-hidden")
+    ).toBe("true");
+    expect(
+      q(element, '[data-id="vibe-status"]').getAttribute("aria-live")
+    ).toBe("polite");
     toggle.click();
     await flushPromises();
     expect(toggle.getAttribute("aria-checked")).toBe("true");
-    expect(q(element, ".vibe-value").textContent).toBe("Casual");
+    expect(label.textContent.trim()).toBe("Casual vibe");
+    expect(q(element, ".vibe-value").textContent).toBe("On");
     expect(q(element, ".vibe-field .field-hint").textContent).toBe(
       "Casual shows the fun phrases."
     );
+    expect(q(element, '[data-id="vibe-status"]').textContent.trim()).toBe(
+      "Casual phrases are showing."
+    );
     toggle.click();
     await flushPromises();
-    expect(q(element, ".vibe-value").textContent).toBe("Professional");
+    expect(q(element, ".vibe-value").textContent).toBe("Off");
+    expect(q(element, '[data-id="vibe-status"]').textContent.trim()).toBe(
+      "Professional phrases are showing."
+    );
+  });
+
+  it("moves the switch with a transform and stops the motion under reduce motion", () => {
+    const css = readFileSync(
+      join(__dirname, "..", "testimonialSubmit.css"),
+      "utf8"
+    );
+    expect(css).toMatch(/transition: transform/);
+    expect(css).not.toMatch(/transition: left/);
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.vibe-thumb\s*\{\s*transition: none/
+    );
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.thanks\s*\{\s*animation: none/
+    );
   });
 
   it("composes the sentence the server stores", () => {
-    expect(composeSentence("Fan", "is an absolute beast", "We stan.")).toBe(
-      "I'm a fan or visitor, and Ryan is an absolute beast. The result? We stan."
+    expect(composeSentence("Fan", "is the GOAT", "Instant fan.")).toBe(
+      "I'm a fan or visitor, and Ryan is the GOAT. The result? Instant fan."
     );
   });
 

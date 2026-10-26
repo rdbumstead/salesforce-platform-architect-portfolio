@@ -1,11 +1,7 @@
 <template>
   <lightning-card title="AI Cover Letter Generator" icon-name="custom:custom15">
     <div class="slds-p-around_medium generator">
-      <p class="intro">
-        Enter a job and the page writes a letter grounded on the projects and
-        experience in this portfolio. The badge and the panel below the letter
-        show which provider wrote it.
-      </p>
+      <p class="intro">Fill in the company and the job, then press Generate.</p>
 
       <div class="slds-grid slds-wrap slds-gutters">
         <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
@@ -73,27 +69,36 @@
 
       <div class="loading-state slds-m-top_medium">
         <template lwc:if={isLoading}>
-          <div class="slds-is-relative spinner-holder">
-            <lightning-spinner
-              alternative-text="Writing your letter"
-              size="small"
-            ></lightning-spinner>
-          </div>
+          <p class="elapsed" data-id="elapsed" aria-hidden="true">
+            {elapsedText}
+          </p>
         </template>
         <div class="status-region" aria-live="polite" data-id="status-region">
           <template lwc:if={isLoading}>
-            <p class="loading-text" data-id="status-line">
-              Writing your letter. This can take about a minute.
-            </p>
+            <p class="loading-text" data-id="status-line">{statusLine}</p>
           </template>
         </div>
+      </div>
+
+      <div
+        lwc:if={isLoading}
+        class="skeleton"
+        data-id="skeleton"
+        aria-hidden="true"
+      >
+        <span class="skeleton-line skeleton-line_short"></span>
+        <span class="skeleton-line"></span>
+        <span class="skeleton-line"></span>
+        <span class="skeleton-line skeleton-line_medium"></span>
+        <span class="skeleton-line"></span>
+        <span class="skeleton-line skeleton-line_medium"></span>
       </div>
 
       <div class="slds-m-top_medium">
         <p lwc:if={error} class="error-text" role="alert">{error}</p>
 
         <template lwc:if={hasResult}>
-          <div class="result">
+          <div class="result result-fade" data-id="result">
             <p class="provider-line">
               <span class="provider-caption">Written by</span>
               <span class="provider-badge" data-id="provider-badge"

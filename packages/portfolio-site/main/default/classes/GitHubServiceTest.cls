@@ -76,6 +76,54 @@ private class GitHubServiceTest {
   }
 
   @IsTest
+  static void shouldLeaveOutMergeCommitsWhenAMessageHasTwoParents() {
+    String body =
+      '[' +
+      '{"sha":"m1","commit":{"message":"Merge pull request #1"},"parents":[{"sha":"a"},{"sha":"b"}]},' +
+      '{"sha":"c1","commit":{"message":"feat(lwc): one parent"},"parents":[{"sha":"a"}]},' +
+      '{"sha":"c2","commit":{"message":"no parents list"}},' +
+      '{"sha":"c3","commit":{"message":"empty parents"},"parents":[]}' +
+      ']';
+
+    List<DeliveryController.CommitItem> items = GitHubService.parseCommits(
+      body
+    );
+
+    Assert.areEqual(3, items.size(), 'Only the merge is dropped');
+    Assert.areEqual('c1', items[0].sha, 'Order kept');
+    Assert.areEqual('c2', items[1].sha, 'No parents list is not a merge');
+    Assert.areEqual('c3', items[2].sha, 'Empty parents is not a merge');
+  }
+
+  @IsTest
+  static void shouldEndACutMessageWithAnEllipsisWithinTheLimit() {
+    String longLine = 'word '.repeat(40);
+
+    String cut = GitHubService.firstLine(longLine + '\nsecond line');
+
+    Assert.areEqual(
+      GitHubService.MESSAGE_MAX_LENGTH,
+      cut.length(),
+      'The ellipsis fits inside the limit'
+    );
+    Assert.isTrue(cut.endsWith(GitHubService.ELLIPSIS), 'Ends in an ellipsis');
+    Assert.areEqual(1, GitHubService.ELLIPSIS.length(), 'One character');
+  }
+
+  @IsTest
+  static void shouldKeepAShortOrExactLengthMessageWhole() {
+    String exact = 'x'.repeat(GitHubService.MESSAGE_MAX_LENGTH);
+
+    Assert.areEqual(exact, GitHubService.firstLine(exact), 'Exact length kept');
+    Assert.areEqual(
+      'short',
+      GitHubService.firstLine(' short \nmore'),
+      'Trimmed'
+    );
+    Assert.isNull(GitHubService.firstLine(null), 'Null stays null');
+  }
+
+  @IsTest
   static void shouldRejectPathsWhenNotOwnerSlashRepo() {
     Assert.isTrue(GitHubService.isValidRepoPath('owner/repo.name'), 'Valid');
     Assert.isFalse(GitHubService.isValidRepoPath('owner'), 'No repository');

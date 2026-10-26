@@ -1,23 +1,36 @@
 /**
  * @description       : Skills page. A matrix by default: one row per category, one chip per
  *                      skill with its proficiency and the years it was used, worked out from the dates of the
- *                      roles linked through Experience_Skill__c. Selecting a chip lists the roles and projects
- *                      that used it. On desktop and tablet a "Matrix | Graph" switch opens a graph view that
- *                      loads the d3-force graph engine (c/graphEngine) on first open only, clusters skills by category with
- *                      the roles and projects on a ring, and draws edges only for the hovered or selected node.
+ *                      roles linked through Experience_Skill__c. Selecting a chip opens its detail under
+ *                      the chip's row, moves focus to the detail's heading and lists the roles, projects
+ *                      and certifications that back it, with a line saying which kinds of evidence back
+ *                      it. On desktop and tablet a "Matrix | Graph" switch opens a graph view that
+ *                      loads the d3-force graph engine (c/graphEngine) on first open only, clusters skills by
+ *                      category with the roles, projects and certifications on an outer ring, and draws
+ *                      edges only for the hovered or selected node. Certifications come from
+ *                      SkillGraphController, and a retired one shows, marked retired. Each skill carries
+ *                      its evidence at rest: a ring whose weight counts the kinds of evidence behind it
+ *                      (a role, a project, a certification, never the number of rows), and its lines
+ *                      step up the same way when shown. A legend says what the weights mean.
  *                      Phones and narrow viewports get the matrix only and never request the engine.
- *                      Nothing animates: positions are computed once and drawn as SVG from this template, so
- *                      prefers-reduced-motion needs no special case. The graph also has pan and zoom
- *                      (d3-zoom) and node drag (d3-drag) from the same engine, plus Zoom in, Zoom out and
- *                      Reset view buttons for keyboard users. A background drag or the arrow keys on the
- *                      focused graph pan it at any zoom level, a little past the graph's edge at most.
- *                      A plain wheel scrolls the page, Ctrl with the wheel or a pinch zooms. Both report
- *                      positions back here, so the template still draws everything. A persona filter sits above
- *                      both views with the resume's personas, read from Skill__c.Persona_Tag__c by a query
- *                      of its own. It shows only once at least one skill is tagged. The rule is the same in
- *                      both views: a skill without the chosen tag is left out, and so is a category left
- *                      with no skill. The graph keeps every role and project and its computed positions,
- *                      so a node never moves when the persona changes.
+ *                      Positions are computed once and drawn as SVG from this template. The ring radii
+ *                      follow the node counts, and a label placement pass puts each label right, left,
+ *                      above or below its node, wherever it covers no other label or node. The graph
+ *                      opens fitted to its content, Fit shows it whole again, and Reset layout puts every
+ *                      dragged node back. The view eases about 250 ms only after a button press, and
+ *                      moves at once under reduced motion. Nothing moves on its own. Pan and zoom
+ *                      (d3-zoom) and node drag (d3-drag) come from the same engine. A background drag or
+ *                      the arrow keys on the focused graph pan it, a plain wheel scrolls the page, Ctrl
+ *                      with the wheel or a pinch zooms, and the view can zoom out past the fit. Dragged
+ *                      nodes stay where they were put for the visit, kept in sessionStorage, and a
+ *                      saved position for a node the data no longer has is dropped. A persona filter
+ *                      sits above both views with the resume's personas, read from
+ *                      Skill__c.Persona_Tag__c by a query of its own. It shows only once at least one
+ *                      skill is tagged. The rule is the same in both views: a skill without the chosen
+ *                      tag is left out, and so is a category left with no skill. The chips that drop out
+ *                      fade first, except under reduced motion. The graph keeps every role, project and
+ *                      certification and its computed positions, so a node never moves when the persona
+ *                      changes.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -29,13 +42,17 @@ import { LightningElement, wire } from "lwc";
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { gql, graphql } from "lightning/uiGraphQLApi";
 import FORM_FACTOR from "@salesforce/client/formFactor";
+import getCertificationLinks from "@salesforce/apex/SkillGraphController.getCertificationLinks";
 import {
   attachNodeDrag,
   attachPanZoom,
+  boundsOf,
+  fitTransform,
   layoutGraph,
   loadGraphEngine
 } from "c/graphEngine";
 import { EVENTS, trackEvent } from "c/analyticsService";
+import { isReduced } from "c/motionPreference";
 
 // Reads only fields the guest can read: the skill fields Portfolio_Guest grants, the required
 // Category_Order__c, and the two Experience__c dates. GraphQL returns a field to the guest
@@ -144,7 +161,12 @@ const YEAR_DAYS = 365.25;
 const VIEW_MATRIX = "matrix";
 const VIEW_GRAPH = "graph";
 
-const KIND_LABELS = { skill: "Skill", role: "Role", project: "Project" };
+const KIND_LABELS = {
+  skill: "Skill",
+  role: "Role",
+  project: "Project",
+  certification: "Certification"
+};
 
 // The resume's personas: the same labels, values and order as PERSONA_OPTIONS in resumeBuilder.js,
 // which a test checks. The value is the Persona_Tag__c value.
@@ -155,30 +177,39 @@ const PERSONA_OPTIONS = [
 ];
 const PERSONA_ALL = "";
 
-// Graph geometry. The view box leaves room either side of the layout box for the labels.
-// The spacing was tuned on production shaped data (layoutSpacing.test.js measures it).
-const GRAPH_WIDTH = 960;
-const GRAPH_HEIGHT = 840;
-const LABEL_ROOM = 150;
-const CATEGORY_RING = 0.25;
-const WORK_RING = 0.45;
+// Graph geometry, in layout units. Rings are sized by their node counts: each category gets
+// CATEGORY_ARC of the inner ring and each outer node OUTER_ARC of the outer ring, and the outer
+// ring keeps CLUSTER_ROOM outside the inner one for the clusters. The layout box is the outer
+// ring plus BOX_MARGIN all round. Tuned on production shaped data (layoutSpacing.test.js).
+const CATEGORY_ARC = 140;
+const CATEGORY_RING_MIN = 120;
+const OUTER_ARC = 100;
+const CLUSTER_ROOM = 170;
+const BOX_MARGIN = 40;
+const WORK_RADIUS = 10;
 const LABEL_MAX = 24;
+// Certification names all open with this. The label leaves it out, the title and lists keep it.
+const CERTIFICATION_PREFIX = /^Salesforce Certified\s+/i;
 // A category label is drawn in its cluster. An unseen node of this radius per character holds
 // the label's place, so skills settle round the label instead of under it (13px mono, 0.6em
 // a character, a circle 0.6 of the label's half width).
 const CATEGORY_RADIUS_PER_CHAR = 2.34;
-// The drawn box in view box units: the layout box plus the label room either side.
+
+// The drawn view: a fixed box the content is fitted into, so the canvas keeps one shape at
+// every width (the SVG is 100% wide with its height from this ratio).
+const VIEW_WIDTH = 1280;
+const VIEW_HEIGHT = 800;
 const VIEW_EXTENT = [
-  [-LABEL_ROOM, 0],
-  [GRAPH_WIDTH + LABEL_ROOM, GRAPH_HEIGHT]
+  [0, 0],
+  [VIEW_WIDTH, VIEW_HEIGHT]
 ];
-// The pan limit: the drawn box plus this margin on every side, so the view pans at 100% too,
-// and no further than the margin past the graph's edge, so the graph can never be lost.
+// Space kept round the content when it is fitted, in view units.
+const FIT_MARGIN = 24;
+// The view zooms out to half the fitted scale and in to four times it.
+const MIN_ZOOM_OF_FIT = 0.5;
+const MAX_ZOOM_OF_FIT = 4;
+// The pan limit: the content plus this margin on every side, in layout units.
 const PAN_MARGIN = 120;
-const PAN_EXTENT = [
-  [VIEW_EXTENT[0][0] - PAN_MARGIN, VIEW_EXTENT[0][1] - PAN_MARGIN],
-  [VIEW_EXTENT[1][0] + PAN_MARGIN, VIEW_EXTENT[1][1] + PAN_MARGIN]
-];
 // One arrow key press pans this far on screen, in view box units, at any zoom level.
 const PAN_STEP = 40;
 // Each arrow key moves the view that way, so the graph moves the other way.
@@ -188,7 +219,32 @@ const PAN_KEYS = Object.freeze({
   ArrowUp: [0, PAN_STEP],
   ArrowDown: [0, -PAN_STEP]
 });
-const IDENTITY_TRANSFORM = "translate(0,0) scale(1)";
+// A button press eases the view this long, unless motion is reduced.
+const EASE_MS = 250;
+// The chips that drop out on a persona change fade for this long before they leave.
+const CHIP_FADE_MS = 200;
+
+// Evidence: the ring weight round a skill for 1, 2 and 3 kinds, and the line weight when shown.
+const EVIDENCE_RING_WIDTH = [0, 1, 2, 3];
+const EVIDENCE_RING_GAP = 2;
+const EVIDENCE_EDGE_CLASS = [
+  "graph-edge",
+  "graph-edge edge-weight-1",
+  "graph-edge edge-weight-2",
+  "graph-edge edge-weight-3"
+];
+
+// Label metrics, matching skillNetwork.css: node labels 12px sans at about 0.56em a
+// character, category labels 13px mono at 0.6em. A box runs 0.75em above the baseline and
+// 0.25em below it.
+const NODE_FONT = 12;
+const NODE_CHAR = 0.56 * NODE_FONT;
+const CATEGORY_FONT = 13;
+const CATEGORY_CHAR = 0.6 * CATEGORY_FONT;
+const LABEL_GAP = 4;
+
+// sessionStorage key for the dragged positions of this visit.
+export const POSITIONS_KEY = "skillNetwork.positions";
 
 function fieldValue(record, field) {
   return record && record[field] ? record[field].value : null;
@@ -278,9 +334,59 @@ function shorten(text) {
   return text.length > LABEL_MAX ? `${text.slice(0, LABEL_MAX - 1)}…` : text;
 }
 
-// Turns the GraphQL payload into skills, roles, projects and the links between them.
-// A junction row whose skill is not in the skill result is dropped, so every link has both ends.
-function buildModel(data, today) {
+function labelOf(node) {
+  const name =
+    node.kind === "certification"
+      ? node.name.replace(CERTIFICATION_PREFIX, "")
+      : node.name;
+  return shorten(name || node.name);
+}
+
+function certificationText(certification) {
+  return certification.isRetired
+    ? `${certification.name} (retired)`
+    : certification.name;
+}
+
+// The kinds of evidence behind a skill, 0 to 3, counted by kind and never by rows.
+function evidenceOf(skill) {
+  return (
+    (skill.roleIds.length > 0 ? 1 : 0) +
+    (skill.projectIds.length > 0 ? 1 : 0) +
+    (skill.certificationIds.length > 0 ? 1 : 0)
+  );
+}
+
+function joinKinds(parts) {
+  if (parts.length < 2) {
+    return parts.join("");
+  }
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+}
+
+// "Backed by a role, a project and a certification." A skill whose only certifications are
+// retired says "a retired certification". Empty for a skill with no evidence.
+export function evidenceSentence(skill, certifications) {
+  const parts = [];
+  if (skill.roleIds.length) {
+    parts.push("a role");
+  }
+  if (skill.projectIds.length) {
+    parts.push("a project");
+  }
+  if (skill.certificationIds.length) {
+    const allRetired = skill.certificationIds.every(
+      (id) => certifications.get(id) && certifications.get(id).isRetired
+    );
+    parts.push(allRetired ? "a retired certification" : "a certification");
+  }
+  return parts.length ? `Backed by ${joinKinds(parts)}.` : "";
+}
+
+// Turns the GraphQL payload and the certification links into skills, roles, projects,
+// certifications and the links between them. A junction row whose skill is not in the skill
+// result is dropped, so every link has both ends.
+function buildModel(data, certificationLinks, today) {
   const skills = new Map();
   rowsOf(data, "Skill__c").forEach((row) => {
     const name =
@@ -301,12 +407,14 @@ function buildModel(data, today) {
         ? Math.min(Math.max(proficiency, 0), 5)
         : 0,
       roleIds: [],
-      projectIds: []
+      projectIds: [],
+      certificationIds: []
     });
   });
 
   const roles = new Map();
   const projects = new Map();
+  const certifications = new Map();
   const links = [];
 
   rowsOf(data, "Experience_Skill__c").forEach((row) => {
@@ -349,18 +457,176 @@ function buildModel(data, today) {
     }
   });
 
+  (Array.isArray(certificationLinks) ? certificationLinks : []).forEach(
+    (entry) => {
+      if (!entry || !entry.id || !Array.isArray(entry.skillIds)) {
+        return;
+      }
+      entry.skillIds.forEach((skillId) => {
+        const skill = skills.get(skillId);
+        if (!skill || skill.certificationIds.includes(entry.id)) {
+          return;
+        }
+        if (!certifications.has(entry.id)) {
+          certifications.set(entry.id, {
+            id: entry.id,
+            name: entry.name || "Certification",
+            isRetired: entry.isRetired === true
+          });
+        }
+        skill.certificationIds.push(entry.id);
+        links.push({
+          id: `${entry.id}:${skill.id}`,
+          source: skill.id,
+          target: entry.id
+        });
+      });
+    }
+  );
+
   skills.forEach((skill) => {
     skill.years = yearsUsed(
       skill.roleIds.map((id) => roles.get(id)),
       today
     );
+    skill.evidence = evidenceOf(skill);
   });
 
-  return { skills, roles, projects, links };
+  return { skills, roles, projects, certifications, links };
+}
+
+// ---------- label placement ----------
+
+function textBox(x, y, anchor, text, charWidth, fontSize) {
+  const width = text.length * charWidth;
+  let left = x;
+  if (anchor === "middle") {
+    left = x - width / 2;
+  } else if (anchor === "end") {
+    left = x - width;
+  }
+  return {
+    left,
+    right: left + width,
+    top: y - 0.75 * fontSize,
+    bottom: y + 0.25 * fontSize
+  };
+}
+
+function boxesOverlap(a, b) {
+  return (
+    a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
+  );
+}
+
+function boxHitsCircle(box, circle) {
+  const nearX = Math.min(Math.max(circle.x, box.left), box.right);
+  const nearY = Math.min(Math.max(circle.y, box.top), box.bottom);
+  return Math.hypot(circle.x - nearX, circle.y - nearY) < circle.r;
+}
+
+// Spots round a node, nearest first: beside it on the outward side, then the other side, then
+// above or below, then the four corners.
+function labelSpots(entry, centre) {
+  const { x, y, r } = entry;
+  const side = r + LABEL_GAP;
+  const right = { x: x + side, y: y + 4, anchor: "start" };
+  const left = { x: x - side, y: y + 4, anchor: "end" };
+  const above = { x, y: y - side - 1, anchor: "middle" };
+  const below = { x, y: y + side + 9, anchor: "middle" };
+  const corner = r * 0.7 + LABEL_GAP;
+  const corners = [
+    { x: x + corner, y: y - corner, anchor: "start" },
+    { x: x + corner, y: y + corner + 8, anchor: "start" },
+    { x: x - corner, y: y - corner, anchor: "end" },
+    { x: x - corner, y: y + corner + 8, anchor: "end" }
+  ];
+  const sideFirst = x >= centre.x ? [right, left] : [left, right];
+  const verticalFirst = y >= centre.y ? [below, above] : [above, below];
+  return [...sideFirst, ...verticalFirst, ...corners];
+}
+
+/**
+ * Places labels one at a time, in the order given, at the first spot that covers no label
+ * already placed, no fixed box and no other node. When every spot covers something, the one
+ * covering least wins. Pure, so the same input always gives the same placement.
+ * @param {Array<object>} entries each { id, text, x, y, r }
+ * @param {Array<object>} circles every drawn node as { id, x, y, r }
+ * @param {Array<object>} fixed boxes labels must not cover, such as the category labels
+ * @param {object} centre the graph's centre { x, y }, so labels lean outward
+ * @returns {Map<string, object>} id to { x, y, anchor, box }
+ */
+export function placeLabels(entries, circles, fixed, centre) {
+  const placed = new Map();
+  const taken = [...fixed];
+  entries.forEach((entry) => {
+    let best;
+    let bestHits = Infinity;
+    for (const spot of labelSpots(entry, centre)) {
+      const box = textBox(
+        spot.x,
+        spot.y,
+        spot.anchor,
+        entry.text,
+        NODE_CHAR,
+        NODE_FONT
+      );
+      let hits = 0;
+      taken.forEach((other) => {
+        if (boxesOverlap(box, other)) {
+          hits++;
+        }
+      });
+      circles.forEach((circle) => {
+        if (circle.id !== entry.id && boxHitsCircle(box, circle)) {
+          hits++;
+        }
+      });
+      if (hits < bestHits) {
+        best = { ...spot, box };
+        bestHits = hits;
+        if (hits === 0) {
+          break;
+        }
+      }
+    }
+    placed.set(entry.id, best);
+    taken.push(best.box);
+  });
+  return placed;
+}
+
+// ---------- visit storage ----------
+
+function readPositions() {
+  try {
+    const raw = window.sessionStorage.getItem(POSITIONS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePositions(size, positions) {
+  try {
+    if (Object.keys(positions).length) {
+      window.sessionStorage.setItem(
+        POSITIONS_KEY,
+        JSON.stringify({ size, positions })
+      );
+    } else {
+      window.sessionStorage.removeItem(POSITIONS_KEY);
+    }
+  } catch {
+    // Storage can be blocked. The positions then last as long as the page.
+  }
 }
 
 export default class SkillNetwork extends LightningElement {
   model;
+  networkData;
+  certificationLinks = [];
   isLoading = true;
   errorMessage;
   isSmall = false;
@@ -369,6 +635,12 @@ export default class SkillNetwork extends LightningElement {
   // Persona filter: tags by skill id, and the chosen persona ("" for All).
   personaTags = new Map();
   persona = PERSONA_ALL;
+  // Chips fading out or in after a persona change, by skill id.
+  leavingIds = new Set();
+  enteringIds = new Set();
+  fadeTimer;
+  // Focus to move after the next render: the detail heading, or the chip it was opened from.
+  pendingFocus;
 
   // Graph view state.
   graphLoading = false;
@@ -380,13 +652,16 @@ export default class SkillNetwork extends LightningElement {
 
   // Pan, zoom and drag state. moved holds the dragged positions by node id, on top of
   // the computed layout. engine, panZoom and the bound markers are plain references, not drawn.
-  zoomTransform = IDENTITY_TRANSFORM;
+  zoomTransform = "translate(0,0) scale(1)";
   zoomScale = 1;
+  fitScale = 1;
   moved = {};
+  draggedId;
   canZoom = false;
   engine;
   panZoom;
   boundSvg;
+  boundLayout;
   boundNodeKey = "";
   keyboardPanTracked = false;
 
@@ -401,10 +676,15 @@ export default class SkillNetwork extends LightningElement {
   disconnectedCallback() {
     this.disconnected = true;
     this.unbindGraph();
+    if (this.fadeTimer) {
+      clearTimeout(this.fadeTimer);
+      this.fadeTimer = undefined;
+    }
   }
 
   renderedCallback() {
     this.bindGraphInteractions();
+    this.applyPendingFocus();
   }
 
   isNarrowViewport() {
@@ -428,13 +708,37 @@ export default class SkillNetwork extends LightningElement {
     if (!data) {
       return;
     }
-    this.model = buildModel(data, todayUtc());
+    this.networkData = data;
     this.errorMessage = undefined;
     this.isLoading = false;
-    // New data means new positions. An open graph lays itself out again.
+    this.refreshModel();
+  }
+
+  // The certification evidence. A failed read leaves the graph with roles and projects only.
+  @wire(getCertificationLinks)
+  wiredCertifications({ data, error }) {
+    if (error) {
+      this.certificationLinks = [];
+    } else if (data) {
+      this.certificationLinks = data;
+    } else {
+      return;
+    }
+    this.refreshModel();
+  }
+
+  // New data means new positions. An open graph lays itself out again, keeping the dragged
+  // positions of nodes that are still there.
+  refreshModel() {
+    if (!this.networkData) {
+      return;
+    }
+    this.model = buildModel(
+      this.networkData,
+      this.certificationLinks,
+      todayUtc()
+    );
     this.layout = undefined;
-    this.moved = {};
-    this.resetZoomState();
     if (this.isGraph) {
       this.openGraph();
     }
@@ -532,6 +836,16 @@ export default class SkillNetwork extends LightningElement {
     return Boolean(tags) && tags.includes(this.persona);
   }
 
+  shownSkillIds() {
+    return new Set(
+      this.model
+        ? [...this.model.skills.values()]
+            .filter((skill) => this.matchesPersona(skill))
+            .map((skill) => skill.id)
+        : []
+    );
+  }
+
   get personaSummary() {
     if (!this.personaFilterActive) {
       return "";
@@ -550,7 +864,9 @@ export default class SkillNetwork extends LightningElement {
     if (value === this.persona) {
       return;
     }
+    const before = this.shownSkillIds();
     this.persona = value;
+    this.startChipFade(before, this.shownSkillIds());
     const selected =
       this.model && this.selectedSkillId
         ? this.model.skills.get(this.selectedSkillId)
@@ -568,22 +884,84 @@ export default class SkillNetwork extends LightningElement {
     trackEvent(EVENTS.SKILLS_PERSONA_FILTERED, { persona: value || "All" });
   }
 
+  // The chips that drop out stay a moment, fading, and the new ones fade in. Under reduced
+  // motion the matrix changes at once.
+  startChipFade(before, after) {
+    if (this.fadeTimer) {
+      clearTimeout(this.fadeTimer);
+      this.fadeTimer = undefined;
+    }
+    if (isReduced() || !this.isMatrix) {
+      this.leavingIds = new Set();
+      this.enteringIds = new Set();
+      return;
+    }
+    this.leavingIds = new Set([...before].filter((id) => !after.has(id)));
+    this.enteringIds = new Set([...after].filter((id) => !before.has(id)));
+    if (!this.leavingIds.size && !this.enteringIds.size) {
+      return;
+    }
+    // A timer is the only way to end the fade, because jsdom and some browsers never send
+    // animationend for a chip that is removed or hidden.
+
+    this.fadeTimer = setTimeout(() => {
+      this.fadeTimer = undefined;
+      this.leavingIds = new Set();
+      this.enteringIds = new Set();
+    }, CHIP_FADE_MS);
+  }
+
   // ---------- matrix ----------
 
-  // The matrix rows under the persona filter. Categories left with no skill are left out.
+  // The matrix rows under the persona filter. Categories left with no skill are left out,
+  // except while their chips fade out.
   get matrixRows() {
+    const selection = this.selection;
     return this.categoryRows
+      .map((row) => {
+        const chips = row.chips
+          .filter(
+            (chip) =>
+              this.matchesPersona(this.model.skills.get(chip.id)) ||
+              this.leavingIds.has(chip.id)
+          )
+          .map((chip) => {
+            const leaving = this.leavingIds.has(chip.id);
+            const entering = this.enteringIds.has(chip.id);
+            let itemClass = "chip-item";
+            if (leaving) {
+              itemClass = "chip-item is-leaving";
+            } else if (entering) {
+              itemClass = "chip-item is-entering";
+            }
+            return { ...chip, isLeaving: leaving, itemClass };
+          });
+        const showSelection =
+          Boolean(selection) &&
+          chips.some((chip) => chip.id === this.selectedSkillId);
+        return {
+          ...row,
+          chips,
+          showSelection,
+          leavingOnly: chips.every((chip) => chip.isLeaving)
+        };
+      })
+      .filter((row) => row.chips.length > 0)
       .map((row) => ({
         ...row,
-        chips: row.chips.filter((chip) =>
-          this.matchesPersona(this.model.skills.get(chip.id))
-        )
-      }))
-      .filter((row) => row.chips.length > 0);
+        rowClass: row.leavingOnly ? "matrix-row is-leaving" : "matrix-row"
+      }));
   }
 
   get matrixIsEmpty() {
-    return this.personaFilterActive && this.matrixRows.length === 0;
+    return (
+      this.personaFilterActive &&
+      !this.categoryRows.some((row) =>
+        row.chips.some((chip) =>
+          this.matchesPersona(this.model.skills.get(chip.id))
+        )
+      )
+    );
   }
 
   // The graph under the same rule: true when the persona leaves no skill to draw.
@@ -597,7 +975,7 @@ export default class SkillNetwork extends LightningElement {
     );
   }
 
-  // Roles and projects always show. A skill shows when it matches the persona.
+  // Roles, projects and certifications always show. A skill shows when it matches the persona.
   isNodeShown(id) {
     const skill = this.model && this.model.skills.get(id);
     return skill ? this.matchesPersona(skill) : true;
@@ -669,26 +1047,72 @@ export default class SkillNetwork extends LightningElement {
       .map((id) => this.model.projects.get(id))
       .sort(byName)
       .map((project) => ({ id: project.id, name: project.name }));
+    const certifications = skill.certificationIds
+      .map((id) => this.model.certifications.get(id))
+      .sort(byName)
+      .map((certification) => ({
+        id: certification.id,
+        name: certificationText(certification)
+      }));
     const years = yearsLabel(skill.years);
     return {
       name: skill.name,
       summary: years
         ? `Proficiency ${skill.proficiency} of 5, ${years} used.`
         : `Proficiency ${skill.proficiency} of 5.`,
+      evidence: evidenceSentence(skill, this.model.certifications),
       roles,
       projects,
+      certifications,
       hasRoles: roles.length > 0,
       hasProjects: projects.length > 0,
-      isUnused: roles.length === 0 && projects.length === 0
+      hasCertifications: certifications.length > 0,
+      isUnused: skill.evidence === 0
     };
   }
 
   handleChipClick(event) {
-    this.selectSkill(event.currentTarget.dataset.id);
+    const id = event.currentTarget.dataset.id;
+    const opening = this.selectedSkillId !== id;
+    this.selectSkill(id);
+    if (opening && this.selectedSkillId === id) {
+      this.pendingFocus = { kind: "detail" };
+    }
   }
 
   handleClearSelection() {
+    const id = this.selectedSkillId;
     this.selectedSkillId = undefined;
+    if (id) {
+      this.pendingFocus = { kind: "chip", id };
+    }
+  }
+
+  // Moves focus once, after the render that drew its target. The detail heading also scrolls
+  // into view if it is not on screen, smoothly unless motion is reduced.
+  applyPendingFocus() {
+    const pending = this.pendingFocus;
+    if (!pending) {
+      return;
+    }
+    this.pendingFocus = undefined;
+    const target =
+      pending.kind === "detail"
+        ? this.template.querySelector(".selection-title")
+        : this.template.querySelector(`button.chip[data-id="${pending.id}"]`);
+    if (!target) {
+      return;
+    }
+    if (pending.kind === "detail") {
+      const panel = this.template.querySelector(".selection-panel");
+      if (panel && typeof panel.scrollIntoView === "function") {
+        panel.scrollIntoView({
+          block: "nearest",
+          behavior: isReduced() ? "auto" : "smooth"
+        });
+      }
+    }
+    target.focus({ preventScroll: true });
   }
 
   selectSkill(id) {
@@ -720,9 +1144,8 @@ export default class SkillNetwork extends LightningElement {
     this.view = view;
     trackEvent(EVENTS.SKILLS_VIEW_CHANGED, { view });
     if (view === VIEW_MATRIX) {
-      // The graph's SVG leaves the page, so its zoom starts fresh next time. Dragged nodes stay.
+      // The graph's SVG leaves the page, so it opens fitted next time. Dragged nodes stay.
       this.unbindGraph();
-      this.resetZoomState();
     }
     if (view === VIEW_GRAPH) {
       this.openGraph();
@@ -733,6 +1156,9 @@ export default class SkillNetwork extends LightningElement {
   // Never runs on a phone or a narrow viewport.
   openGraph() {
     if (this.isSmall || this.layout || this.graphLoading || !this.hasSkills) {
+      if (this.layout) {
+        this.applyFit(this.fitFor(true));
+      }
       return Promise.resolve();
     }
     this.graphLoading = true;
@@ -742,6 +1168,8 @@ export default class SkillNetwork extends LightningElement {
         if (!this.disconnected) {
           this.engine = d3;
           this.layout = this.computeLayout(d3);
+          this.moved = this.restoreMoved();
+          this.applyFit(this.fitFor(true));
         }
       })
       .catch((error) => {
@@ -758,7 +1186,7 @@ export default class SkillNetwork extends LightningElement {
   }
 
   graphNodes() {
-    const { skills, roles, projects } = this.model;
+    const { skills, roles, projects, certifications } = this.model;
     const nodes = [];
     skills.forEach((skill) =>
       nodes.push({
@@ -775,7 +1203,7 @@ export default class SkillNetwork extends LightningElement {
         kind: "role",
         name: role.name,
         group: `work:${role.id}`,
-        radius: 10
+        radius: WORK_RADIUS
       })
     );
     projects.forEach((project) =>
@@ -784,41 +1212,69 @@ export default class SkillNetwork extends LightningElement {
         kind: "project",
         name: project.name,
         group: `work:${project.id}`,
-        radius: 10
+        radius: WORK_RADIUS
+      })
+    );
+    certifications.forEach((certification) =>
+      nodes.push({
+        id: certification.id,
+        kind: "certification",
+        name: certification.name,
+        isRetired: certification.isRetired,
+        group: `work:${certification.id}`,
+        radius: WORK_RADIUS
       })
     );
     return nodes;
   }
 
-  // Categories on an inner ring in matrix order. Roles, then projects, on an outer ring.
-  graphAnchors(categoryNames) {
-    const cx = GRAPH_WIDTH / 2;
-    const cy = GRAPH_HEIGHT / 2;
-    const short = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT);
+  // Ring sizes from the node counts: the categories on the inner ring, then roles, projects
+  // and certifications, each kind an arc of its own, on the outer ring.
+  graphGeometry(categoryCount) {
+    const outerCount =
+      this.model.roles.size +
+      this.model.projects.size +
+      this.model.certifications.size;
+    const categoryRadius = Math.max(
+      CATEGORY_RING_MIN,
+      (categoryCount * CATEGORY_ARC) / (2 * Math.PI)
+    );
+    const outerRadius = Math.max(
+      categoryRadius + CLUSTER_ROOM,
+      (outerCount * OUTER_ARC) / (2 * Math.PI)
+    );
+    const size = Math.round(2 * (outerRadius + BOX_MARGIN));
+    return { categoryRadius, outerRadius, size };
+  }
+
+  graphAnchors(categoryNames, geometry) {
+    const centre = geometry.size / 2;
     const anchors = {};
     const onRing = (keys, radius) =>
       keys.forEach((key, index) => {
         const angle = (2 * Math.PI * index) / keys.length - Math.PI / 2;
         anchors[key] = {
-          x: cx + radius * Math.cos(angle),
-          y: cy + radius * Math.sin(angle)
+          x: centre + radius * Math.cos(angle),
+          y: centre + radius * Math.sin(angle)
         };
       });
     onRing(
       categoryNames.map((name) => `category:${name}`),
-      short * CATEGORY_RING
+      geometry.categoryRadius
     );
-    const work = [
+    const outer = [
       ...[...this.model.roles.values()].sort(byName),
-      ...[...this.model.projects.values()].sort(byName)
+      ...[...this.model.projects.values()].sort(byName),
+      ...[...this.model.certifications.values()].sort(byName)
     ].map((item) => `work:${item.id}`);
-    onRing(work, short * WORK_RING);
+    onRing(outer, geometry.outerRadius);
     return anchors;
   }
 
   computeLayout(d3) {
     const categoryNames = this.categoryRows.map((row) => row.name);
-    const anchors = this.graphAnchors(categoryNames);
+    const geometry = this.graphGeometry(categoryNames.length);
+    const anchors = this.graphAnchors(categoryNames, geometry);
     const labelNodes = categoryNames.map((name) => ({
       id: `category:${name}`,
       kind: "category",
@@ -831,10 +1287,10 @@ export default class SkillNetwork extends LightningElement {
       [...this.graphNodes(), ...labelNodes],
       this.model.links,
       {
-        width: GRAPH_WIDTH,
-        height: GRAPH_HEIGHT,
+        width: geometry.size,
+        height: geometry.size,
         anchors,
-        // Category labels hold their anchor and roles and projects their place on the ring.
+        // Category labels hold their anchor and the outer nodes their place on the ring.
         // Skills gather by category.
         anchorStrength: (node) => {
           if (node.kind === "skill") {
@@ -857,11 +1313,182 @@ export default class SkillNetwork extends LightningElement {
         y: node.y
       }));
     const nodes = result.nodes.filter((node) => node.kind !== "category");
-    return { nodes, edges: result.edges, categories };
+    return { nodes, edges: result.edges, categories, size: geometry.size };
+  }
+
+  // The saved positions of this visit, for nodes the layout still has, inside its box. A
+  // saved set from a box of another size, or for ids no longer drawn, is dropped.
+  restoreMoved() {
+    const size = this.layout.size;
+    const saved = readPositions();
+    const merged = {
+      ...(saved && saved.size === size && saved.positions
+        ? saved.positions
+        : {}),
+      ...(this.movedSize === size ? this.moved : {})
+    };
+    const kept = {};
+    this.layout.nodes.forEach((node) => {
+      const point = merged[node.id];
+      if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+        kept[node.id] = this.clampToBox(node, point.x, point.y);
+      }
+    });
+    this.movedSize = size;
+    return kept;
+  }
+
+  clampToBox(node, x, y) {
+    const r = node.radius || 0;
+    const size = this.layout.size;
+    return {
+      x: Math.min(Math.max(x, r), size - r),
+      y: Math.min(Math.max(y, r), size - r)
+    };
   }
 
   get activeId() {
     return this.hoverId || this.selectedNodeId;
+  }
+
+  positionedNodes() {
+    return this.layout.nodes
+      .filter((placed) => this.isNodeShown(placed.id))
+      .map((placed) => this.withMoved(placed));
+  }
+
+  // A placed node at its dragged position, when it has one.
+  withMoved(placed) {
+    const point = this.moved[placed.id];
+    return point ? { ...placed, ...point } : placed;
+  }
+
+  // The category labels as boxes, for the persona's categories.
+  shownCategories(nodes) {
+    if (!this.personaFilterActive) {
+      return this.layout.categories;
+    }
+    const names = new Set(
+      nodes
+        .filter((node) => node.kind === "skill")
+        .map((node) => this.model.skills.get(node.id).category)
+    );
+    return this.layout.categories.filter((category) =>
+      names.has(category.name)
+    );
+  }
+
+  evidenceOfNode(node) {
+    return node.kind === "skill" ? this.model.skills.get(node.id).evidence : 0;
+  }
+
+  reachOf(node) {
+    const ring = EVIDENCE_RING_WIDTH[this.evidenceOfNode(node)];
+    return ring ? node.radius + EVIDENCE_RING_GAP + ring : node.radius;
+  }
+
+  // Labels shown at rest: every node that is not a skill. The rest are shown on hover.
+  labelPlan(nodes, categories, extraIds) {
+    const centre = { x: this.layout.size / 2, y: this.layout.size / 2 };
+    const circles = nodes.map((node) => ({
+      id: node.id,
+      x: node.x,
+      y: node.y,
+      r: this.reachOf(node)
+    }));
+    const fixed = categories.map((category) =>
+      textBox(
+        category.x,
+        category.y,
+        "middle",
+        category.name,
+        CATEGORY_CHAR,
+        CATEGORY_FONT
+      )
+    );
+    const byId = new Map(nodes.map((node) => [node.id, node]));
+    const entryOf = (node) => ({
+      id: node.id,
+      text: labelOf(node),
+      x: node.x,
+      y: node.y,
+      r: this.reachOf(node)
+    });
+    const rest = nodes.filter((node) => node.kind !== "skill").map(entryOf);
+    const extra = extraIds
+      .map((id) => byId.get(id))
+      .filter((node) => node && node.kind === "skill")
+      .map(entryOf);
+    return {
+      placements: placeLabels([...rest, ...extra], circles, fixed, centre),
+      circles,
+      fixed
+    };
+  }
+
+  // The view that shows every drawn node and every label at rest. allNodes ignores the
+  // persona, for the first fit, so the view does not change with the filter.
+  fitFor(allNodes) {
+    if (!this.layout) {
+      return { x: 0, y: 0, k: 1 };
+    }
+    const nodes = allNodes
+      ? this.layout.nodes.map((placed) => this.withMoved(placed))
+      : this.positionedNodes();
+    const categories = allNodes
+      ? this.layout.categories
+      : this.shownCategories(nodes);
+    const { placements, circles, fixed } = this.labelPlan(
+      nodes,
+      categories,
+      []
+    );
+    const boxes = [
+      ...circles.map((circle) => ({
+        left: circle.x - circle.r,
+        right: circle.x + circle.r,
+        top: circle.y - circle.r,
+        bottom: circle.y + circle.r
+      })),
+      ...fixed,
+      ...[...placements.values()].map((spot) => spot.box)
+    ];
+    const bounds = boundsOf(boxes);
+    if (!bounds) {
+      return { x: 0, y: 0, k: 1 };
+    }
+    const extent = [
+      [FIT_MARGIN, FIT_MARGIN],
+      [VIEW_WIDTH - FIT_MARGIN, VIEW_HEIGHT - FIT_MARGIN]
+    ];
+    return fitTransform(bounds, extent, { min: 0.05, max: 4 });
+  }
+
+  // The pan limit in layout units: the whole layout box and its labels, plus a margin.
+  panExtent() {
+    const fit = this.fitFor(true);
+    const left = (FIT_MARGIN - fit.x) / fit.k;
+    const top = (FIT_MARGIN - fit.y) / fit.k;
+    const right = (VIEW_WIDTH - FIT_MARGIN - fit.x) / fit.k;
+    const bottom = (VIEW_HEIGHT - FIT_MARGIN - fit.y) / fit.k;
+    const size = this.layout.size;
+    return [
+      [Math.min(left, 0) - PAN_MARGIN, Math.min(top, 0) - PAN_MARGIN],
+      [Math.max(right, size) + PAN_MARGIN, Math.max(bottom, size) + PAN_MARGIN]
+    ];
+  }
+
+  // Draws a fit at once, and tells d3-zoom when it is wired, so a later gesture starts there.
+  applyFit(fit, duration) {
+    this.fitScale = fit.k;
+    if (this.panZoom && typeof this.panZoom.fitTo === "function") {
+      this.panZoom.fitTo(fit, duration);
+      if (!duration) {
+        this.applyZoom(fit);
+      }
+    } else {
+      this.applyZoom(fit);
+    }
   }
 
   get graphModel() {
@@ -880,8 +1507,10 @@ export default class SkillNetwork extends LightningElement {
         linked.add(edge.target);
         const from = this.moved[edge.source] || { x: edge.x1, y: edge.y1 };
         const to = this.moved[edge.target] || { x: edge.x2, y: edge.y2 };
+        const skill = this.model.skills.get(edge.source);
         edges.push({
           key: edge.id,
+          className: EVIDENCE_EDGE_CLASS[skill ? skill.evidence : 1],
           x1: from.x,
           y1: from.y,
           x2: to.x,
@@ -889,23 +1518,23 @@ export default class SkillNetwork extends LightningElement {
         });
       }
     });
-    const cx = GRAPH_WIDTH / 2;
-    const shownCategories = new Set();
-    const shown = this.layout.nodes.filter((placed) => {
-      const visible = this.isNodeShown(placed.id);
-      if (visible && placed.kind === "skill") {
-        shownCategories.add(this.model.skills.get(placed.id).category);
-      }
-      return visible;
-    });
-    const nodes = shown.map((placed) => {
-      const node = this.moved[placed.id]
-        ? { ...placed, ...this.moved[placed.id] }
-        : placed;
+    const shown = this.positionedNodes();
+    const categories = this.shownCategories(shown);
+    const extraIds = active
+      ? [active, ...[...linked].filter((id) => id !== active)]
+      : [];
+    const { placements } = this.labelPlan(shown, categories, extraIds);
+    const nodes = shown.map((node) => {
       const isActive = node.id === active;
       const isLinked = linked.has(node.id) && !isActive;
-      const rightSide = node.x >= cx;
       const classes = [`graph-node node-${node.kind}`];
+      const evidence = this.evidenceOfNode(node);
+      if (node.kind === "skill") {
+        classes.push(`evidence-${evidence}`);
+      }
+      if (node.isRetired) {
+        classes.push("is-retired");
+      }
       if (isActive) {
         classes.push("is-active");
       } else if (isLinked) {
@@ -913,6 +1542,11 @@ export default class SkillNetwork extends LightningElement {
       } else if (active) {
         classes.push("is-dim");
       }
+      const spot = placements.get(node.id);
+      const ringWidth = EVIDENCE_RING_WIDTH[evidence];
+      const kindLabel = node.isRetired
+        ? `${KIND_LABELS[node.kind]}, retired`
+        : KIND_LABELS[node.kind];
       return {
         key: node.id,
         id: node.id,
@@ -920,24 +1554,22 @@ export default class SkillNetwork extends LightningElement {
         cx: node.x,
         cy: node.y,
         r: node.radius,
-        title: `${node.name} (${KIND_LABELS[node.kind]})`,
-        showLabel: node.kind !== "skill" || isActive || isLinked,
-        label: shorten(node.name),
-        labelX: rightSide ? node.x + node.radius + 4 : node.x - node.radius - 4,
-        labelY: node.y + 4,
-        anchor: rightSide ? "start" : "end"
+        hasRing: ringWidth > 0,
+        ringR: node.radius + EVIDENCE_RING_GAP + ringWidth / 2,
+        title: `${node.name} (${kindLabel})`,
+        showLabel: Boolean(spot),
+        label: labelOf(node),
+        labelX: spot ? spot.x : node.x,
+        labelY: spot ? spot.y : node.y,
+        anchor: spot ? spot.anchor : "start"
       };
     });
     return {
-      viewBox: `${-LABEL_ROOM} 0 ${GRAPH_WIDTH + LABEL_ROOM * 2} ${GRAPH_HEIGHT}`,
+      viewBox: `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`,
       transform: this.zoomTransform,
       edges,
       nodes,
-      categories: this.personaFilterActive
-        ? this.layout.categories.filter((category) =>
-            shownCategories.has(category.name)
-          )
-        : this.layout.categories
+      categories
     };
   }
 
@@ -960,7 +1592,8 @@ export default class SkillNetwork extends LightningElement {
   // ---------- pan, zoom and drag ----------
 
   // Wires d3-zoom to the SVG once per SVG element and d3-drag to the nodes once per node set.
-  // Guarded, so the re-render each zoom or drag step causes binds nothing new.
+  // Guarded, so the re-render each zoom or drag step causes binds nothing new. A new layout on
+  // the same SVG is fitted again.
   bindGraphInteractions() {
     if (!this.engine || !this.layout) {
       return;
@@ -969,12 +1602,18 @@ export default class SkillNetwork extends LightningElement {
     if (!svg) {
       return;
     }
-    if (svg !== this.boundSvg) {
+    if (svg !== this.boundSvg || this.layout !== this.boundLayout) {
       this.unbindGraph();
       this.boundSvg = svg;
+      this.boundLayout = this.layout;
+      const fit = this.fitFor(true);
       this.panZoom = attachPanZoom(this.engine, svg, {
         extent: VIEW_EXTENT,
-        translateExtent: PAN_EXTENT,
+        translateExtent: this.panExtent(),
+        min: fit.k * MIN_ZOOM_OF_FIT,
+        max: fit.k * MAX_ZOOM_OF_FIT,
+        // One finger on a touch screen scrolls the page while the graph sits at its fit.
+        rest: fit.k,
         // A plain wheel scrolls the page. Ctrl with the wheel, or a pinch, zooms.
         ctrlWheel: true,
         onZoom: (transform) => this.applyZoom(transform),
@@ -989,6 +1628,7 @@ export default class SkillNetwork extends LightningElement {
       if (this.canZoom !== canZoom) {
         this.canZoom = canZoom;
       }
+      this.applyFit(fit);
     }
     // Keyed by the drawn ids, so a persona change that swaps nodes binds the new ones.
     const nodes = this.template.querySelectorAll(".graph-node");
@@ -997,7 +1637,8 @@ export default class SkillNetwork extends LightningElement {
       this.boundNodeKey = nodeKey;
       attachNodeDrag(this.engine, nodes, {
         position: (id) => this.positionOf(id),
-        onDrag: (id, x, y) => this.moveNode(id, x, y)
+        onDrag: (id, x, y) => this.moveNode(id, x, y),
+        onEnd: (id) => this.endDrag(id)
       });
     }
   }
@@ -1008,12 +1649,8 @@ export default class SkillNetwork extends LightningElement {
     }
     this.panZoom = undefined;
     this.boundSvg = undefined;
+    this.boundLayout = undefined;
     this.boundNodeKey = "";
-  }
-
-  resetZoomState() {
-    this.zoomTransform = IDENTITY_TRANSFORM;
-    this.zoomScale = 1;
   }
 
   applyZoom(transform) {
@@ -1037,14 +1674,19 @@ export default class SkillNetwork extends LightningElement {
     if (!node || !Number.isFinite(x) || !Number.isFinite(y)) {
       return;
     }
-    const r = node.radius || 0;
-    this.moved = {
-      ...this.moved,
-      [id]: {
-        x: Math.min(Math.max(x, r), GRAPH_WIDTH - r),
-        y: Math.min(Math.max(y, r), GRAPH_HEIGHT - r)
-      }
-    };
+    this.moved = { ...this.moved, [id]: this.clampToBox(node, x, y) };
+    this.movedSize = this.layout.size;
+    this.draggedId = id;
+  }
+
+  // A drag that moved its node is kept for the visit and sent once. A click sends nothing.
+  endDrag(id) {
+    if (this.draggedId !== id) {
+      return;
+    }
+    this.draggedId = undefined;
+    writePositions(this.layout.size, this.moved);
+    trackEvent(EVENTS.GRAPH_LAYOUT_CHANGED, { action: "drag" });
   }
 
   // The graph takes focus for arrow key panning only when pan and zoom are wired.
@@ -1052,38 +1694,49 @@ export default class SkillNetwork extends LightningElement {
     return this.canZoom ? "0" : "-1";
   }
 
+  // The zoom level against the fitted view, so the graph opens at 100%.
   get zoomLabel() {
-    return `Zoom ${Math.round(this.zoomScale * 100)}%`;
+    const scale = this.fitScale ? this.zoomScale / this.fitScale : 1;
+    return `Zoom ${Math.round(scale * 100)}%`;
   }
 
-  // control is one of in, out, reset, wheel, pinch or keyboard. No node name or id is sent.
+  easeMs() {
+    return isReduced() ? 0 : EASE_MS;
+  }
+
+  // control is one of in, out, wheel, pinch or keyboard. No node name or id is sent.
   trackZoom(control) {
     trackEvent(EVENTS.GRAPH_ZOOM_USED, { control });
   }
 
   handleZoomIn() {
     if (this.panZoom) {
-      this.panZoom.zoomIn();
+      this.panZoom.zoomIn(this.easeMs());
       this.trackZoom("in");
     }
   }
 
   handleZoomOut() {
     if (this.panZoom) {
-      this.panZoom.zoomOut();
+      this.panZoom.zoomOut(this.easeMs());
       this.trackZoom("out");
     }
   }
 
-  // Puts every dragged node back and zooms out to the whole graph.
-  handleResetView() {
+  // Shows every drawn node and label, dragged ones where they are.
+  handleFit() {
+    this.applyFit(this.fitFor(false), this.easeMs());
+    trackEvent(EVENTS.GRAPH_LAYOUT_CHANGED, { action: "fit" });
+  }
+
+  // Puts every dragged node back, forgets them for the visit and fits the whole graph.
+  handleResetLayout() {
     this.moved = {};
-    if (this.panZoom) {
-      this.panZoom.reset();
-      this.trackZoom("reset");
-    } else {
-      this.resetZoomState();
+    if (this.layout) {
+      writePositions(this.layout.size, {});
     }
+    this.applyFit(this.fitFor(true), this.easeMs());
+    trackEvent(EVENTS.GRAPH_LAYOUT_CHANGED, { action: "reset_layout" });
   }
 
   // Arrow keys on the focused graph pan it. The key's own page scroll is cancelled only when the
@@ -1110,35 +1763,61 @@ export default class SkillNetwork extends LightningElement {
     if (!id || !this.model) {
       return "";
     }
-    const names = (ids, map) => ids.map((key) => map.get(key).name).sort();
+    const names = (ids, map, text) =>
+      ids.map((key) => (text ? text(map.get(key)) : map.get(key).name)).sort();
     let name;
     let lines;
+    let evidence = "";
     const skill = this.model.skills.get(id);
     if (skill) {
       name = skill.name;
       lines = [
         ...names(skill.roleIds, this.model.roles),
-        ...names(skill.projectIds, this.model.projects)
+        ...names(skill.projectIds, this.model.projects),
+        ...names(
+          skill.certificationIds,
+          this.model.certifications,
+          certificationText
+        )
       ];
+      evidence = evidenceSentence(skill, this.model.certifications);
     } else {
-      const work = this.model.roles.get(id) || this.model.projects.get(id);
+      const work =
+        this.model.roles.get(id) ||
+        this.model.projects.get(id) ||
+        this.model.certifications.get(id);
       if (!work) {
         return "";
       }
-      name = work.name;
+      name = work.isRetired ? certificationText(work) : work.name;
       lines = [...this.model.skills.values()]
         .filter(
           (candidate) =>
             this.matchesPersona(candidate) &&
             (candidate.roleIds.includes(id) ||
-              candidate.projectIds.includes(id))
+              candidate.projectIds.includes(id) ||
+              candidate.certificationIds.includes(id))
         )
         .map((candidate) => candidate.name)
         .sort();
     }
-    return lines.length
+    const text = lines.length
       ? `${name}: ${lines.join(", ")}.`
       : `${name}: no connections.`;
+    return evidence ? `${text} ${evidence}` : text;
+  }
+
+  // ---------- legend ----------
+
+  get hasCertifications() {
+    return Boolean(this.model) && this.model.certifications.size > 0;
+  }
+
+  get hasRetired() {
+    return (
+      Boolean(this.model) &&
+      [...this.model.certifications.values()].some((item) => item.isRetired)
+    );
   }
 
   // ---------- accessible list ----------
@@ -1158,11 +1837,21 @@ export default class SkillNetwork extends LightningElement {
     });
     return nodes.map((node) => {
       const connected = connections.get(node.id);
-      const kind = KIND_LABELS[node.kind];
-      const text = connected.length
+      const kind = node.isRetired
+        ? `${KIND_LABELS[node.kind]}, retired`
+        : KIND_LABELS[node.kind];
+      const skill = node.kind === "skill" && this.model.skills.get(node.id);
+      const evidence = skill
+        ? evidenceSentence(skill, this.model.certifications)
+        : "";
+      const base = connected.length
         ? `${node.name}, ${kind}. Connected to ${connected.join(", ")}.`
         : `${node.name}, ${kind}. No connections.`;
-      return { id: node.id, text, connectionCount: connected.length };
+      return {
+        id: node.id,
+        text: evidence ? `${base} ${evidence}` : base,
+        connectionCount: connected.length
+      };
     });
   }
 

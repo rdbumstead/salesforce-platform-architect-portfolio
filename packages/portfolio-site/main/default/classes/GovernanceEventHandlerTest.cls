@@ -55,7 +55,9 @@ private class GovernanceEventHandlerTest {
         Completed_At__c,
         Tests_Run__c,
         Tests_Passed__c,
-        Org_Coverage__c
+        Org_Coverage__c,
+        Jest_Tests_Run__c,
+        Jest_Tests_Passed__c
       FROM Pipeline_Run__c
       ORDER BY Run_Key__c
     ];
@@ -394,6 +396,98 @@ private class GovernanceEventHandlerTest {
       GovernanceEventHandler.validTestResult(0, 0, 90),
       'A run with no tests is not a result'
     );
+  }
+
+  @isTest
+  static void shouldStoreJestCountsWhenEventCarriesThem() {
+    Governance_Event__e both = event('deploy', 'Success', '310');
+    both.Tests_Run__c = 1000;
+    both.Tests_Passed__c = 1000;
+    both.Org_Coverage__c = 98;
+    both.Jest_Tests_Run__c = 748;
+    both.Jest_Tests_Passed__c = 747;
+    Governance_Event__e jestOnly = event('deploy', 'Success', '311');
+    jestOnly.Jest_Tests_Run__c = 10;
+    jestOnly.Jest_Tests_Passed__c = 10;
+
+    Test.startTest();
+    publishAndDeliver(new List<Governance_Event__e>{ both, jestOnly });
+    Test.stopTest();
+
+    Map<String, Pipeline_Run__c> byKey = new Map<String, Pipeline_Run__c>();
+    for (Pipeline_Run__c run : runs()) {
+      byKey.put(run.Run_Key__c, run);
+    }
+    Assert.areEqual(748, byKey.get('deploy:310').Jest_Tests_Run__c, 'Jest run');
+    Assert.areEqual(
+      747,
+      byKey.get('deploy:310').Jest_Tests_Passed__c,
+      'Jest passed'
+    );
+    Assert.areEqual(1000, byKey.get('deploy:310').Tests_Run__c, 'Apex kept');
+    Assert.areEqual(10, byKey.get('deploy:311').Jest_Tests_Run__c, 'Alone');
+    Assert.isNull(
+      byKey.get('deploy:311').Tests_Run__c,
+      'A Jest pair does not need an Apex one'
+    );
+  }
+
+  @isTest
+  static void shouldDropJestCountsWhenValuesDoNotFit() {
+    Governance_Event__e morePassed = event('deploy', 'Success', '312');
+    morePassed.Jest_Tests_Run__c = 10;
+    morePassed.Jest_Tests_Passed__c = 11;
+    Governance_Event__e partial = event('deploy', 'Success', '313');
+    partial.Jest_Tests_Run__c = 10;
+    Governance_Event__e apexOnly = event('deploy', 'Success', '314');
+    apexOnly.Tests_Run__c = 5;
+    apexOnly.Tests_Passed__c = 5;
+    apexOnly.Org_Coverage__c = 95;
+    apexOnly.Jest_Tests_Run__c = 0;
+    apexOnly.Jest_Tests_Passed__c = 0;
+
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{ morePassed, partial, apexOnly }
+    );
+    Test.stopTest();
+
+    for (Pipeline_Run__c run : runs()) {
+      Assert.isNull(run.Jest_Tests_Run__c, 'No Jest run on ' + run.Run_Key__c);
+      Assert.isNull(
+        run.Jest_Tests_Passed__c,
+        'No Jest passed on ' + run.Run_Key__c
+      );
+    }
+    Assert.areEqual(
+      5,
+      [SELECT Tests_Run__c FROM Pipeline_Run__c WHERE Run_Id__c = '314']
+      .Tests_Run__c,
+      'A bad Jest pair never drops the Apex counts'
+    );
+    Assert.isFalse(
+      GovernanceEventHandler.validJestResult(10.5, 10),
+      'A fraction of a test is not a count'
+    );
+  }
+
+  @isTest
+  static void shouldUpdateRowWhenReplayAddsJestCounts() {
+    publishAndDeliver(
+      new List<Governance_Event__e>{ event('deploy', 'Success', '315') }
+    );
+    Governance_Event__e withJest = event('deploy', 'Success', '315');
+    withJest.Jest_Tests_Run__c = 748;
+    withJest.Jest_Tests_Passed__c = 748;
+
+    Test.startTest();
+    publishAndDeliver(new List<Governance_Event__e>{ withJest });
+    Test.stopTest();
+
+    List<Pipeline_Run__c> stored = runs();
+    Assert.areEqual(1, stored.size(), 'Same row');
+    Assert.areEqual(748, stored[0].Jest_Tests_Run__c, 'Jest added');
+    Assert.areEqual(1, GovernanceEventHandler.lastWriteCount, 'One write');
   }
 
   @isTest

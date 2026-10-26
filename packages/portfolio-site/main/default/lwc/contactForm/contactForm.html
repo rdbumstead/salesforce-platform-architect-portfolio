@@ -36,9 +36,20 @@
               required
               autocomplete="given-name"
               maxlength={maxFirstName}
+              aria-invalid={firstNameInvalid}
+              aria-describedby="firstName-error"
               value={form.firstName}
               oninput={handleInput}
             />
+            <template lwc:if={firstNameError}>
+              <p
+                id="firstName-error"
+                class="field-error"
+                data-id="firstName-error"
+              >
+                {firstNameError}
+              </p>
+            </template>
           </div>
           <div class="field">
             <label class="field-label" for="lastName">Last name</label>
@@ -50,9 +61,20 @@
               required
               autocomplete="family-name"
               maxlength={maxLastName}
+              aria-invalid={lastNameInvalid}
+              aria-describedby="lastName-error"
               value={form.lastName}
               oninput={handleInput}
             />
+            <template lwc:if={lastNameError}>
+              <p
+                id="lastName-error"
+                class="field-error"
+                data-id="lastName-error"
+              >
+                {lastNameError}
+              </p>
+            </template>
           </div>
         </div>
 
@@ -64,7 +86,8 @@
             name="email"
             type="email"
             required
-            aria-describedby="email-hint"
+            aria-invalid={emailInvalid}
+            aria-describedby="email-hint email-error"
             autocomplete="email"
             maxlength={maxEmail}
             value={form.email}
@@ -73,6 +96,11 @@
           <p id="email-hint" class="field-hint">
             Ryan replies to this address.
           </p>
+          <template lwc:if={emailError}>
+            <p id="email-error" class="field-error" data-id="email-error">
+              {emailError}
+            </p>
+          </template>
         </div>
 
         <div class="field">
@@ -84,9 +112,16 @@
             type="text"
             autocomplete="organization"
             maxlength={maxCompany}
+            aria-invalid={companyInvalid}
+            aria-describedby="company-error"
             value={form.company}
             oninput={handleInput}
           />
+          <template lwc:if={companyError}>
+            <p id="company-error" class="field-error" data-id="company-error">
+              {companyError}
+            </p>
+          </template>
         </div>
 
         <div class="field">
@@ -98,10 +133,16 @@
             required
             rows="5"
             maxlength={maxMessage}
-            aria-describedby="message-count"
+            aria-invalid={messageInvalid}
+            aria-describedby="message-count message-error"
             oninput={handleInput}
           ></textarea>
           <p id="message-count" class="field-hint">{messageCount}</p>
+          <template lwc:if={messageError}>
+            <p id="message-error" class="field-error" data-id="message-error">
+              {messageError}
+            </p>
+          </template>
         </div>
 
         <div class="trap" aria-hidden="true">

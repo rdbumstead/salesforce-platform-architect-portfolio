@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The Usage Counter object holds one row per UTC day and kind of site use: cover letters written and API Lab requests sent. It captures Kind, Day, Count and Key (unique, external ID, kind:yyyy-mm-dd). Rows are written only by UsageCounterWriter, never deleted, and hold no request content and no personal data. Admin-only counter state.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>Usage Counter</label>
+    <nameField>
+        <displayFormat>UC-{000000}</displayFormat>
+        <label>Usage Counter Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Usage Counters</pluralLabel>
+    <searchLayouts />
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

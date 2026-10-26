@@ -1,21 +1,23 @@
 <template>
-  <lightning-card title="Resume Generator" icon-name="doctype:pdf">
-    <div class="builder-body slds-p-around_medium">
-      <div class="card-tools">
-        <c-view-source source-key="resumeBuilder"></c-view-source>
-      </div>
-      <div class="slds-grid slds-wrap slds-gutters">
-        <div
-          class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3 slds-m-bottom_medium"
-        >
-          <div class="config-panel slds-box">
-            <h2 class="slds-text-heading_small slds-m-bottom_medium">
-              Configuration
-            </h2>
+  <lightning-card
+    title="Resume Generator"
+    icon-name="doctype:pdf"
+    class="builder-card"
+  >
+    <c-view-source
+      slot="actions"
+      source-key="resumeBuilder"
+      class="card-source"
+    ></c-view-source>
+    <div class="builder-body">
+      <div class="builder-grid">
+        <div class="config-column">
+          <div class="config-panel">
+            <h2 class="config-title">Configuration</h2>
 
             <lightning-combobox
               name="persona"
-              label="Target persona"
+              label="Tailor for"
               value={selectedPersona}
               options={personaOptions}
               onchange={handlePersonaChange}
@@ -40,18 +42,18 @@
               ></lightning-input>
             </div>
 
-            <div class="slds-grid slds-grid_vertical">
+            <div class="actions">
               <lightning-button
                 variant="brand"
                 label={downloadLabel}
                 icon-name="utility:download"
                 onclick={handleDownload}
                 disabled={exportDisabled}
-                class="download-pdf slds-m-bottom_x-small"
+                class="download-pdf"
               >
               </lightning-button>
               <lightning-button
-                variant="brand"
+                variant="neutral"
                 label="Copy ATS text"
                 icon-name="utility:copy"
                 onclick={handleCopyText}
@@ -72,8 +74,8 @@
           </div>
         </div>
 
-        <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3">
-          <div class="preview-paper slds-p-around_large" aria-busy={isLoading}>
+        <div class="preview-column">
+          <div class="preview-paper" style={paperStyle} aria-busy={isLoading}>
             <template lwc:if={isLoading}>
               <div
                 class="loading-state slds-is-relative slds-p-around_xx-large"
@@ -86,37 +88,26 @@
             </template>
 
             <template lwc:if={hasError}>
-              <div
-                class="error-state paper-error slds-p-around_medium"
-                role="alert"
-              >
+              <div class="error-state paper-error" role="alert">
                 <p>The resume could not be loaded.</p>
                 <p>{errorMessage}</p>
               </div>
             </template>
 
             <template lwc:if={isEmpty}>
-              <p class="empty-state paper-muted slds-p-around_medium">
+              <p class="empty-state paper-muted">
                 No resume content is available for this persona yet.
               </p>
             </template>
 
             <template lwc:if={hasContent}>
               <template lwc:if={model.hasHeader}>
-                <header
-                  class="preview-header slds-text-align_center slds-m-bottom_large"
-                >
-                  <h2 class="resume-name slds-text-heading_large">
-                    {model.header.name}
-                  </h2>
-                  <p class="resume-title slds-text-body_regular">
-                    {model.header.title}
-                  </p>
-                  <ul
-                    class="resume-links slds-list_horizontal slds-has-dividers_left slds-grid_align-center"
-                  >
+                <header class="preview-header">
+                  <h2 class="resume-name">{model.header.name}</h2>
+                  <p class="resume-title">{model.header.title}</p>
+                  <ul class="resume-links">
                     <template for:each={model.header.links} for:item="link">
-                      <li key={link.key} class="slds-item">
+                      <li key={link.key} class="resume-link">
                         <a
                           href={link.url}
                           target="_blank"
@@ -128,97 +119,102 @@
                   </ul>
                   <p
                     lwc:if={model.header.careerObjective}
-                    class="resume-objective slds-m-top_small slds-text-align_left"
+                    class="resume-objective"
                   >
                     {model.header.careerObjective}
                   </p>
                 </header>
               </template>
 
-              <section lwc:if={model.hasRoles} class="resume-experience">
-                <h3 class="section-title">Experience</h3>
-                <template for:each={model.roles} for:item="role">
-                  <div key={role.key} class="resume-role slds-m-bottom_medium">
-                    <div class="slds-grid slds-wrap slds-grid_align-spread">
-                      <strong class="role-heading">{role.heading}</strong>
-                      <span class="role-dates">{role.dateRange}</span>
-                    </div>
-                    <ul class="slds-list_dotted slds-m-top_x-small">
-                      <template for:each={role.highlights} for:item="highlight">
-                        <li key={highlight.key} class="role-highlight">
-                          {highlight.text}
+              <template for:each={model.sections} for:item="section">
+                <section key={section.key} class={section.className}>
+                  <h3 class="section-title">{section.title}</h3>
+
+                  <template lwc:if={section.isExperience}>
+                    <template for:each={model.roles} for:item="role">
+                      <div key={role.key} class="resume-role">
+                        <div class="role-row">
+                          <strong class="role-heading">{role.heading}</strong>
+                          <span class="role-dates">{role.datesText}</span>
+                        </div>
+                        <ul lwc:if={role.highlights.length} class="role-list">
+                          <template
+                            for:each={role.highlights}
+                            for:item="highlight"
+                          >
+                            <li key={highlight.key} class="role-highlight">
+                              {highlight.text}
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </template>
+                    <p lwc:if={model.hasEarlierRoles} class="earlier-roles">
+                      <strong class="item-label"
+                        >{model.earlierRoles.labelText}</strong
+                      >{model.earlierRoles.text}
+                    </p>
+                  </template>
+
+                  <template lwc:if={section.isSkills}>
+                    <template for:each={model.skillGroups} for:item="group">
+                      <p key={group.key} class="skill-group">
+                        <strong lwc:if={group.labelText} class="item-label"
+                          >{group.labelText}</strong
+                        >{group.skillsText}
+                      </p>
+                    </template>
+                  </template>
+
+                  <template lwc:if={section.isCertifications}>
+                    <ul
+                      lwc:if={model.hasCurrentCertifications}
+                      class="current-certifications plain-list"
+                    >
+                      <template
+                        for:each={model.currentCertifications}
+                        for:item="cert"
+                      >
+                        <li key={cert.key} class="certification">
+                          {cert.text}
                         </li>
                       </template>
                     </ul>
-                  </div>
-                </template>
-              </section>
-
-              <section lwc:if={model.hasSkills} class="resume-skills">
-                <h3 class="section-title">Skills</h3>
-                <template for:each={model.skillGroups} for:item="group">
-                  <p key={group.key} class="skill-group slds-m-bottom_x-small">
-                    <strong>{group.category}:</strong> {group.skillsText}
-                  </p>
-                </template>
-              </section>
-
-              <section
-                lwc:if={model.hasCertifications}
-                class="resume-certifications slds-m-top_medium"
-              >
-                <h3 class="section-title">Certifications</h3>
-                <ul
-                  lwc:if={model.hasCurrentCertifications}
-                  class="current-certifications"
-                >
-                  <template
-                    for:each={model.currentCertifications}
-                    for:item="cert"
-                  >
-                    <li key={cert.key} class="certification">{cert.text}</li>
-                  </template>
-                </ul>
-                <p
-                  lwc:if={model.hasVerificationLink}
-                  class="verify slds-m-top_x-small"
-                >
-                  <a
-                    class="verify-link"
-                    href={model.verificationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >Verify on Trailhead<span class="slds-assistive-text">
-                      (opens in a new tab)</span
-                    ></a
-                  >
-                </p>
-                <template lwc:if={model.hasRetiredCertifications}>
-                  <h4 class="retired-title slds-m-top_small">Retired</h4>
-                  <ul class="retired-certifications">
-                    <template
-                      for:each={model.retiredCertifications}
-                      for:item="cert"
-                    >
-                      <li key={cert.key} class="retired-certification">
-                        {cert.text}
-                      </li>
+                    <p lwc:if={model.hasVerificationLink} class="verify">
+                      <a
+                        class="verify-link"
+                        href={model.verificationUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >{model.verifyLabel}<span class="slds-assistive-text">
+                          (opens in a new tab)</span
+                        ></a
+                      >
+                    </p>
+                    <template lwc:if={model.hasRetiredCertifications}>
+                      <h4 class="retired-title">{model.retiredLabel}</h4>
+                      <ul class="retired-certifications plain-list">
+                        <template
+                          for:each={model.retiredCertifications}
+                          for:item="cert"
+                        >
+                          <li key={cert.key} class="retired-certification">
+                            {cert.text}
+                          </li>
+                        </template>
+                      </ul>
                     </template>
-                  </ul>
-                </template>
-              </section>
-
-              <section
-                lwc:if={model.hasEducation}
-                class="resume-education slds-m-top_medium"
-              >
-                <h3 class="section-title">Education</h3>
-                <ul>
-                  <template for:each={model.education} for:item="edu">
-                    <li key={edu.key} class="education">{edu.text}</li>
                   </template>
-                </ul>
-              </section>
+
+                  <template lwc:if={section.isEducation}>
+                    <ul class="plain-list">
+                      <template for:each={model.education} for:item="edu">
+                        <li key={edu.key} class="education">{edu.text}</li>
+                      </template>
+                    </ul>
+                  </template>
+                </section>
+              </template>
             </template>
           </div>
         </div>

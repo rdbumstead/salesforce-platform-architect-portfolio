@@ -14,18 +14,6 @@
       </div>
     </header>
 
-    <label class="simulate-switch">
-      <input
-        type="checkbox"
-        role="switch"
-        class="simulate-input"
-        data-id="simulate-switch"
-        checked={simulate}
-        onchange={handleSimulateChange}
-      />
-      <span class="simulate-label">Simulate an outage</span>
-    </label>
-
     <p class="status-note" data-id="status-note" aria-live="polite">
       {statusNote}
     </p>
@@ -38,7 +26,12 @@
       <ul class="commit-list">
         <template for:each={commits} for:item="commit">
           <li key={commit.sha} class="commit-item" data-sha={commit.sha}>
-            <p class="commit-message" data-id="message">{commit.message}</p>
+            <p class="commit-message">
+              <template lwc:if={commit.tag}>
+                <span class="commit-tag" data-id="tag">{commit.tag}</span>
+              </template>
+              <span data-id="message">{commit.message}</span>
+            </p>
             <p class="commit-details">
               <a
                 class="commit-link"
@@ -50,9 +43,6 @@
                 data-sha={commit.sha}
                 onclick={handleCommitClick}
                 >{commit.shortSha}</a
-              >
-              <span class="commit-author" data-id="author"
-                >{commit.authorName}</span
               >
               <span class="commit-date" data-id="date">{commit.date}</span>
             </p>

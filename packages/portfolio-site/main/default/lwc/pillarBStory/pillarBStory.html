@@ -144,8 +144,10 @@
       </p>
     </section>
 
+    <c-decision-matrix class="matrix-host"></c-decision-matrix>
+
     <section class="story-section" data-section="roi">
-      <h2 class="section-heading">4. ROI and cost</h2>
+      <h2 class="section-heading">4. Cost and effort</h2>
       <p>
         Cost is compared from public licence facts only. Effort is a relative
         band, not an estimate, and no client rates or totals appear here.
@@ -156,46 +158,46 @@
         role="region"
         aria-label="Licence and effort table, scrolls sideways"
       >
-        <table class="story-table">
+        <table class="story-table cost-table" role="table">
           <caption>
             Licence model and implementation effort by option, from public
             sources
           </caption>
-          <thead>
-            <tr>
-              <th scope="col">Option</th>
-              <th scope="col">Licence model</th>
-              <th scope="col">Implementation effort</th>
-              <th scope="col">Why</th>
-              <th scope="col">Source</th>
+          <thead role="rowgroup">
+            <tr role="row">
+              <th scope="col" role="columnheader">Option</th>
+              <th scope="col" role="columnheader">Licence model</th>
+              <th scope="col" role="columnheader">Implementation effort</th>
+              <th scope="col" role="columnheader">Why</th>
+              <th scope="col" role="columnheader">Source</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <th scope="row">NPSP and PMM</th>
-              <td>
+          <tbody role="rowgroup">
+            <tr role="row">
+              <th scope="row" role="rowheader">NPSP and PMM</th>
+              <td role="cell" data-label="Licence model">
                 Free, open source packages on the ten donated Power of Us
                 licences (Sales and Service, Enterprise Edition) for an eligible
                 nonprofit
               </td>
-              <td>Smallest</td>
-              <td>
+              <td role="cell" data-label="Implementation effort">Smallest</td>
+              <td role="cell" data-label="Why">
                 Two packages in one org and the smallest model, so a small staff
                 can adopt it first
               </td>
-              <td>
+              <td role="cell" data-label="Source">
                 <a
                   href="https://trailhead.salesforce.com/content/learn/modules/nonprofit-success-pack-basics/meet-nonprofit-success-pack"
                   target="_blank"
                   rel="noopener noreferrer"
                   >Meet Nonprofit Success Pack (Trailhead)</a
-                >,
+                >
                 <a
                   href="https://help.salesforce.com/s/articleView?id=sfdo.pmm_install.htm&amp;type=5"
                   target="_blank"
                   rel="noopener noreferrer"
                   >Install Program Management Module (Help)</a
-                >,
+                >
                 <a
                   href="https://help.salesforce.com/s/articleView?id=000385150&amp;language=en_US&amp;type=1"
                   target="_blank"
@@ -204,18 +206,18 @@
                 >
               </td>
             </tr>
-            <tr>
-              <th scope="row">Education Cloud</th>
-              <td>
+            <tr role="row">
+              <th scope="row" role="rowheader">Education Cloud</th>
+              <td role="cell" data-label="Licence model">
                 A paid Education Cloud licence. A Developer Edition qualifies
                 only with Education Cloud
               </td>
-              <td>Largest</td>
-              <td>
+              <td role="cell" data-label="Implementation effort">Largest</td>
+              <td role="cell" data-label="Why">
                 The academic model, Person Accounts and a configuration heavy
                 setup need the most build and training
               </td>
-              <td>
+              <td role="cell" data-label="Source">
                 <a
                   href="https://help.salesforce.com/s/articleView?id=sfdo.ec_enable_education_cloud.htm&amp;type=5"
                   target="_blank"
@@ -224,31 +226,31 @@
                 >
               </td>
             </tr>
-            <tr>
-              <th scope="row">Nonprofit Cloud</th>
-              <td>
+            <tr role="row">
+              <th scope="row" role="rowheader">Nonprofit Cloud</th>
+              <td role="cell" data-label="Licence model">
                 The ten donated Power of Us licences can be Nonprofit Cloud
                 instead. Paid editions start at $70 per user per month, billed
                 annually
               </td>
-              <td>Medium</td>
-              <td>
+              <td role="cell" data-label="Implementation effort">Medium</td>
+              <td role="cell" data-label="Why">
                 Program, volunteer and outcome features are native, but Person
                 Accounts and a new data model take work to adopt
               </td>
-              <td>
+              <td role="cell" data-label="Source">
                 <a
                   href="https://developer.salesforce.com/docs/platform/sfdx-dev/guide/sfdx-dev-scratch-orgs-def-file-config-values.html"
                   target="_blank"
                   rel="noopener noreferrer"
                   >Scratch Org Features (Salesforce Developers)</a
-                >,
+                >
                 <a
                   href="https://help.salesforce.com/s/articleView?id=000385150&amp;language=en_US&amp;type=1"
                   target="_blank"
                   rel="noopener noreferrer"
                   >Power of Us (P10) Application (Help)</a
-                >,
+                >
                 <a
                   href="https://www.salesforce.com/nonprofit/pricing/"
                   target="_blank"
@@ -270,16 +272,31 @@
     <section class="story-section" data-section="design">
       <h2 class="section-heading">5. Solution design</h2>
       <figure class="architecture">
-        <img
-          class="architecture-image"
-          src={architectureImageUrl}
-          alt="Object model: NPSP Household Account and Contact, the Program Management Module objects from Program to Service Delivery, three custom objects on Contact for assessment, employment and partner referral, and Volunteers for Salesforce Volunteer Job, Shift and Hours."
-          width="1000"
-          height="660"
-          loading="lazy"
-        />
+        <a
+          class="architecture-link"
+          href={architectureImageUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            class="architecture-image"
+            src={architectureImageUrl}
+            alt="Object model: NPSP Household Account and Contact, the Program Management Module objects from Program to Service Delivery, three custom objects on Contact for assessment, employment and partner referral, and Volunteers for Salesforce Volunteer Job, Shift and Hours."
+            width="1000"
+            height="660"
+            loading="lazy"
+          />
+          <span class="assistive">, opens full size in a new tab</span>
+        </a>
         <figcaption>
-          Minimalist architecture, redrawn from public object names.
+          Redrawn from public object names.
+          <a
+            class="full-size-link"
+            href={architectureImageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            >Open full size</a
+          >
         </figcaption>
       </figure>
       <h3 class="sub-heading">Architecture decisions</h3>
@@ -314,14 +331,10 @@
           Donations external: donor management was out of scope by agreement,
           and the existing donor system keeps fundraising.
         </li>
-        <li>
-          State reporting external: the state system stays where reports are
-          filed, and the platform holds the data the report needs.
-        </li>
       </ul>
       <h3 class="sub-heading">What we deliberately did not build</h3>
       <ul class="not-built">
-        <li>Fundraising, gifts or donor records, out of scope by agreement.</li>
+        <li>Fundraising, gifts or donor records.</li>
         <li>A portal for learners or instructors, who hold no licences.</li>
         <li>An automated sync to the state reporting system.</li>
         <li>An integration with the accounting system.</li>
@@ -333,14 +346,9 @@
       <p>
         The build is on NPSP with the Program Management Module on the
         minimalist model, and the nonprofit is in user acceptance testing,
-        preparing for production. The delivery covers a registration desk intake
-        that registers students and assigns cohorts, attendance and counselling
-        hours recorded as service deliveries with the bulk tool, recorded admin
-        and end user training, and a self paced learning path. Staff will record
-        classes, sessions and attendance in one place, with assessment,
-        employment and referral outcomes on the learner's record, ready for the
-        state report. Fundraising and state filing stay in the systems that
-        already do them well.
+        preparing for production. Staff record classes, sessions and attendance
+        in one place, with assessment, employment and referral outcomes on the
+        learner's record, ready for the state report.
       </p>
     </section>
   </article>

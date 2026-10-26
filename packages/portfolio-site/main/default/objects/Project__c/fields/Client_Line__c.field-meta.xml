@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Client_Line__c</fullName>
+    <description
+  >The short line under a home page case study title that says who the work was for, without a client name. Read by ProjectCardController.getHomeCaseStudies. Blank shows no line.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Who the work was for, with no client name, 120 characters at most. For example: Regional adult literacy nonprofit, freelance.</inlineHelpText>
+    <label>Client Line</label>
+    <length>120</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

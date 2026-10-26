@@ -50,3 +50,11 @@ The graph view gains pan, zoom and node drag. `D3_Library` appends the official 
 ## Amendment (2026-10-23): the wheel scrolls the page, and the graph pans at every zoom
 
 A plain mouse wheel over the graph now scrolls the page at every zoom level, and only Ctrl with the wheel, or a trackpad pinch, zooms, one step at a time. Before, a wheel up at 100% zoomed in. The owner chose that the wheel keeps scrolling the page at rest. A background drag or the arrow keys on the focused graph pan it at any zoom, 100% included, up to 120 units past the graph's edge, with a visible hint while it has focus. The buttons stay, and Reset view also returns dragged nodes. The mobile rule is unchanged: phones never request `D3_Library` (Technical Guide §2.1).
+
+## Amendment (2026-10-26): evidence, a fitted view and an eased zoom on a button press
+
+The skills graph gains three things, and the rule that nothing animates on its own stays as written.
+
+- **Evidence.** Certifications join roles and projects as nodes, served by `SkillGraphController` because the guest cannot read them through GraphQL. Each skill's ring weighs the kinds of evidence behind it (a role, a project, a certification, never the number of rows), its lines step up the same way when shown, and a legend says what the weights mean.
+- **A fitted view.** The graph opens fitted to its content. The ring radii follow the node counts, a label placement pass puts each label right, left, above or below its node where it covers nothing, and a Fit button and a Reset layout button join the zoom buttons. Dragged nodes stay where they were put for the visit, kept in `sessionStorage`. `c/graphEngine` gains an opt in `fitTo` and takes a minimum zoom from its caller, so the engine's defaults, and the ERD's pinned numbers that depend on them, do not move. The ERD opts in to the same fit.
+- **Motion.** The view eases for about 250 ms, and only after the visitor presses Fit, Reset layout, Zoom in or Zoom out. Under the system "reduce motion" setting it moves at once. The layout still runs to completion before anything is drawn, and nothing moves on its own.

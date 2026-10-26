@@ -1,0 +1,146 @@
+<template>
+  <div class={sectionClass}>
+    <section class="section" aria-labelledby="build-heading">
+      <h2 id="build-heading" class="section-heading">How this site is built</h2>
+      <p class="section-intro">
+        This site runs on a Salesforce org I designed, built and deploy myself.
+        Each part below is live, so a technical reviewer can check the work
+        instead of taking my word for it.
+      </p>
+      <ul class="build-list" data-id="pillar-list">
+        <template for:each={pillars} for:item="pillar">
+          <li key={pillar.key} class="build-item" data-key={pillar.key}>
+            <span class="letter" aria-hidden="true">{pillar.letter}</span>
+            <div class="build-main">
+              <h3 class="build-name">{pillar.name}</h3>
+              <p class="build-text">{pillar.summary}</p>
+              <template lwc:if={pillar.stat}>
+                <p class="build-stat" data-id="pillar-stat">{pillar.stat}</p>
+              </template>
+              <template lwc:if={pillar.hasCaseStudy}>
+                <div class="case-study" data-id="case-study">
+                  <button
+                    type="button"
+                    class="case-toggle"
+                    aria-expanded={pillar.expandedText}
+                    aria-controls={pillar.caseId}
+                    data-key={pillar.key}
+                    onclick={handleCaseToggle}
+                  >
+                    <span>{pillar.caseToggleLabel}</span>
+                    <span class="case-chevron" aria-hidden="true"
+                      >{pillar.caseChevron}</span
+                    >
+                  </button>
+                  <div
+                    id={pillar.caseId}
+                    class="case-body reveal"
+                    data-id="case-body"
+                    hidden={pillar.caseHidden}
+                  >
+                    <template for:each={pillar.caseBlocks} for:item="block">
+                      <div key={block.key} class="case-block">
+                        <h4 class="case-heading">{block.heading}</h4>
+                        <p class="case-text">{block.text}</p>
+                      </div>
+                    </template>
+                    <template lwc:if={pillar.hasCaseLinks}>
+                      <ul class="case-links" aria-label="Links">
+                        <template for:each={pillar.caseLinks} for:item="link">
+                          <li key={link.key}>
+                            <a
+                              class="case-link"
+                              href={link.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              data-key={link.key}
+                              >{link.label}<span class="assistive-text"
+                                >{newTabNote}</span
+                              ></a
+                            >
+                          </li>
+                        </template>
+                      </ul>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <a
+              class="build-go"
+              href={pillar.href}
+              aria-label={pillar.linkAriaLabel}
+              data-id="pillar-link"
+              >Open <span aria-hidden="true">→</span></a
+            >
+          </li>
+        </template>
+        <li class="build-item" data-key="skills">
+          <span class="letter" aria-hidden="true"></span>
+          <div class="build-main">
+            <h3 class="build-name">Skills</h3>
+            <p class="build-text">
+              Every skill rated 1 to 5, with the years I used it in a role.
+            </p>
+          </div>
+          <a
+            class="build-go"
+            href={skillsHref}
+            aria-label="Open Skills"
+            data-id="skills-link"
+            >Open <span aria-hidden="true">→</span></a
+          >
+        </li>
+      </ul>
+      <template lwc:if={hasComing}>
+        <p class="coming-note" data-id="coming-note">{comingText}</p>
+      </template>
+      <div class="build-foot">
+        <template lwc:if={countsText}>
+          <a class="foot-link live" href={deliveryHref} data-id="counts-link"
+            >{countsText} <span aria-hidden="true">→</span></a
+          >
+        </template>
+        <a class="foot-link" href={docsHref} data-id="docs-link"
+          >Read the design: the architecture spec and the decision records
+          <span aria-hidden="true">→</span></a
+        >
+        <button
+          type="button"
+          class="foot-link tour-button"
+          aria-expanded={tourExpandedText}
+          aria-controls="build-tour"
+          data-id="tour-button"
+          onclick={handleTourClick}
+        >
+          {tourButtonLabel} <span aria-hidden="true">↓</span>
+        </button>
+      </div>
+      <div
+        id="build-tour"
+        class="tour reveal"
+        data-id="tour"
+        hidden={tourHidden}
+      >
+        <h3 class="tour-heading" data-id="tour-heading" tabindex="-1">
+          {tourHeading}
+        </h3>
+        <p class="tour-intro">One stop per pillar.</p>
+        <ol class="tour-list">
+          <template for:each={tourSteps} for:item="step">
+            <li key={step.key} class="tour-step" data-key={step.key}>
+              <span class="tour-lead">
+                <span class="tour-number" aria-hidden="true"
+                  >{step.number}</span
+                >
+                <a class="tour-link" href={step.href}>{step.title}</a>
+              </span>
+              <span class="tour-text">{step.text}</span>
+              <span class="tour-duration">{step.duration}</span>
+            </li>
+          </template>
+        </ol>
+      </div>
+    </section>
+  </div>
+</template>

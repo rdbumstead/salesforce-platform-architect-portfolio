@@ -25,8 +25,17 @@
                   "children": [
                     {
                       "attributes": {
-                        "heading": "Get in touch",
-                        "intro": "Questions about a project, a role or this site? Send a note and Ryan will reply."
+                        "eyebrow": "",
+                        "heading": "Contact",
+                        "lead": "Questions about a project, a role or this site? Send a note."
+                      },
+                      "definition": "c:pageIntro",
+                      "id": "0a4bdac9-58a1-43d1-9fc8-f9e965b4e2a8",
+                      "type": "component"
+                    },
+                    {
+                      "attributes": {
+                        "heading": "Get in touch"
                       },
                       "definition": "c:contactForm",
                       "id": "2d22e199-1dbc-4076-8f6f-5255c5958a3e",

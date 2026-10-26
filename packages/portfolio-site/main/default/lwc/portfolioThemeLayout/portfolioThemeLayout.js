@@ -1,24 +1,26 @@
 /**
- * @description       : Site theme layout. Renders the slim sticky header for every portfolio page
- *                      (name, Home, Resume, Skills, Testimonials, Contact, a Pillars menu and the
- *                      theme toggle), the page content in the unnamed slot, and the footer region.
- *                      Home is left out of the links on the home page itself, in the desktop
- *                      header and the phone menu alike, and the name stays a home link
- *                      everywhere. The link to the page on screen carries aria-current="page".
- *                      Owns the theme: the stylesheet follows the system
- *                      setting, and the toggle writes data-theme and the portfolio-theme storage key.
+ * @description       : Site theme layout. Renders the slim sticky header for every portfolio page,
+ *                      the page content in the unnamed slot, and the footer region.
+ *                      The header holds the name (a home link everywhere), then Work, Resume, a
+ *                      "How it's built" menu and Contact, then the Back to top arrow, the theme
+ *                      toggle and the phone menu button. Work scrolls to the case studies on the
+ *                      home page and links to the home page from every other page. The menu lists
+ *                      the five pillars from c/pillarData, then Docs and each pillar's own pages
+ *                      (the API reference) as items of their own. The link to the page on screen
+ *                      carries aria-current="page". Skills and Testimonials live in the footer.
+ *                      Owns the theme: the stylesheet follows the system setting, and the toggle
+ *                      writes data-theme and the portfolio-theme storage key, with a 200 ms
+ *                      crossfade where the browser supports view transitions.
  *                      Motion follows the system "reduce motion" setting alone through
  *                      c/motionPreference, mirrored on the host as data-motion. There is no
  *                      motion button, and a choice an earlier version stored is removed on load.
- *                      The Pillars menu ends with a Docs link to /docs.
- *                      A floating "Back to top" button appears once the visitor has
- *                      scrolled one screen height and rises above the footer when the footer is
- *                      in view. It sits right after the main content in the tab order, scrolls to
- *                      the top (instantly when motion is reduced), moves focus to the
- *                      top of the main content and sends back_to_top_used. While the API
- *                      reference has rendered Redoc on the page, a portfolio-reference document
- *                      event marks the button, and below Redoc's own 50rem breakpoint, where
- *                      Redoc shows its floating menu button in the same corner, it is hidden.
+ *                      The menus fade and slide in, a soft shadow shows under the header once the
+ *                      page scrolls under it, and the theme crossfades, all only under full motion.
+ *                      The Back to top arrow sits in the header in the same place on every page
+ *                      and width. It appears once the page has scrolled past the home hero, or
+ *                      one screen height on a page with no hero, stays while it has focus,
+ *                      scrolls to the top (instantly when motion is reduced), moves focus to the
+ *                      top of the main content and sends back_to_top_used.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -38,25 +40,35 @@ import {
   MOTION_REDUCE
 } from "c/motionPreference";
 
-// Route URLs match the urlPrefix of each route in the Portfolio1 site bundle.
-// Home comes first and shares its href with the brand link. It is left out on the home page.
+// The id the home page gives its case studies section. Work scrolls to it on the home page.
+export const CASE_STUDIES_ID = "case-studies";
+
+// The header links in order, with the "How it's built" menu between Resume and Contact. Work is
+// built per route, the rest are plain route links. URLs match the urlPrefix of each route in
+// the Portfolio1 site bundle.
 const PAGES = [
-  { key: "home", label: "Home", url: "" },
+  { key: "work", label: "Work" },
   { key: "resume", label: "Resume", url: "resume" },
-  { key: "skills", label: "Skills", url: "skills" },
-  { key: "testimonials", label: "Testimonials", url: "testimonials" },
-  { key: "contact", label: "Contact", url: "contact" }
+  { key: "contact", label: "Contact", url: "contact", afterMenu: true }
 ];
+
+// The label of the menu that holds the pillars, Docs and the API reference.
+export const BUILT_MENU_LABEL = "How it's built";
 
 const THEME_STORAGE_KEY = "portfolio-theme";
 const THEMES = ["light", "dark"];
 const DARK_QUERY = "(prefers-color-scheme: dark)";
-// The route of the architecture docs page, linked from the Pillars menu.
+// The route of the architecture docs page, an item of its own in the menu.
 export const DOCS_URL = "docs";
-// The document event c-api-reference sends with { mounted } when Redoc renders or goes away.
-export const REFERENCE_EVENT = "portfolio-reference";
-// The button appears once the visitor has scrolled one screen height.
+// The home hero. Back to top appears once the page has scrolled past it.
+export const HERO_SELECTOR = "c-hero-banner";
+// On a page with no hero the arrow appears once the visitor has scrolled one screen height.
 export const BACK_TO_TOP_SCREENS = 1;
+// How often, at most, the layout looks for the hero again while none is on the page. The look
+// walks the page's shadow trees, so it is not repeated on every scroll frame.
+export const HERO_LOOKUP_MS = 1000;
+// The length of the theme crossfade.
+export const THEME_FADE_MS = 200;
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -102,6 +114,57 @@ function routeOfHref(href) {
 }
 
 /**
+ * The selector for an id. A shadow tree that is not native can add a suffix to the id, so a
+ * suffixed id matches too.
+ * @param {string} id the id
+ * @returns {string} a CSS selector
+ */
+export function idSelector(id) {
+  return `[id="${id}"], [id^="${id}-"]`;
+}
+
+/**
+ * Finds the first element that matches the selector in the page content: the elements given to
+ * the layout's content slot, their descendants, and the open shadow trees inside them, because
+ * each component renders its sections inside its own shadow tree.
+ * @param {Element[]} roots the elements assigned to the content slot
+ * @param {string} selector a CSS selector
+ * @returns {Element|null} the element
+ */
+export function findInContent(roots, selector) {
+  const visitTree = (root) => {
+    const direct = root.querySelector(selector);
+    if (direct) {
+      return direct;
+    }
+    for (const node of root.querySelectorAll("*")) {
+      if (node.shadowRoot) {
+        const found = visitTree(node.shadowRoot);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+  try {
+    for (const root of roots || []) {
+      if (root.matches(selector)) {
+        return root;
+      }
+      const found =
+        visitTree(root) || (root.shadowRoot && visitTree(root.shadowRoot));
+      if (found) {
+        return found;
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
  * Reads the visitor's saved theme. Storage can be missing or throw (private mode, blocked
  * site data), and the page must work either way.
  * @returns {string|null} "light", "dark" or null for "follow the system"
@@ -142,6 +205,44 @@ function darkQuery() {
 }
 
 /**
+ * Runs the change inside a view transition, so the old and new colours crossfade, and sets the
+ * transition's animations to THEME_FADE_MS. Where the browser has no view transitions, or one
+ * fails to start, the change simply applies at once.
+ * @param {Function} change applies the new theme
+ */
+function crossfade(change) {
+  let transition = null;
+  try {
+    if (typeof document.startViewTransition === "function") {
+      transition = document.startViewTransition(change);
+    }
+  } catch {
+    transition = null;
+  }
+  if (!transition) {
+    change();
+    return;
+  }
+  if (transition.ready && typeof transition.ready.then === "function") {
+    transition.ready
+      .then(() => {
+        if (typeof document.getAnimations !== "function") {
+          return;
+        }
+        document.getAnimations().forEach((animation) => {
+          const pseudo = animation.effect && animation.effect.pseudoElement;
+          if (pseudo && pseudo.startsWith("::view-transition")) {
+            animation.effect.updateTiming({ duration: THEME_FADE_MS });
+          }
+        });
+      })
+      .catch(() => {
+        // The transition was skipped. The theme has still changed.
+      });
+  }
+}
+
+/**
  * @slot header
  * @slot footer
  */
@@ -153,16 +254,19 @@ export default class PortfolioThemeLayout extends LightningElement {
   systemDark = false;
 
   _query = null;
-  // True while a click that passed through the Pillars wrapper bubbles up to the document.
+  // True while a click that passed through the menu wrapper bubbles up to the document.
   _clickInPillars = false;
 
   _stopMotion = null;
-  // True while the API reference has Redoc rendered on the page.
-  referenceMounted = false;
+  // True from a press that opens the phone menu until its first link has focus.
+  _focusFirstLink = false;
 
   showBackToTop = false;
-  // How far the footer reaches into the viewport, so the button can sit above it.
-  backToTopLift = 0;
+  // The hero found on the page, and when the layout last looked for one.
+  _hero = null;
+  _heroLookedAt = -Infinity;
+  // True once page content has scrolled under the sticky header.
+  headerRaised = false;
   _scrollFrame = null;
 
   // The layout stays on screen while the site changes routes in place, so the current route
@@ -172,6 +276,7 @@ export default class PortfolioThemeLayout extends LightningElement {
   @wire(CurrentPageReference)
   wiredPageReference() {
     this.routeUrl = currentRouteUrl();
+    this._heroLookedAt = -Infinity;
   }
 
   _onPopState = () => {
@@ -188,18 +293,12 @@ export default class PortfolioThemeLayout extends LightningElement {
         : (callback) => setTimeout(callback, 0);
     this._scrollFrame = schedule(() => {
       this._scrollFrame = null;
-      this.updateBackToTop();
+      this.updateScrollState();
     });
   };
 
   _onSystemChange = (event) => {
     this.systemDark = event.matches;
-  };
-
-  _onReference = (event) => {
-    this.referenceMounted = Boolean(
-      event && event.detail && event.detail.mounted
-    );
   };
 
   // On the published site the document listener sees a composed path that stops at this
@@ -216,7 +315,7 @@ export default class PortfolioThemeLayout extends LightningElement {
 
   // Safari does not focus a button on a mouse click, so after a click on the toggle the focus is
   // outside the header and its keydown handler never hears Escape. This listener closes the
-  // Pillars menu from anywhere. The header handler runs first when the focus is inside it.
+  // menu from anywhere. The header handler runs first when the focus is inside it.
   _onDocumentKeydown = (event) => {
     if (event.key === "Escape" && this.pillarsOpen) {
       this.pillarsOpen = false;
@@ -237,7 +336,6 @@ export default class PortfolioThemeLayout extends LightningElement {
     forgetStoredMotion();
     this.applyMotion(isReduced());
     this._stopMotion = onMotionChange((reduced) => this.applyMotion(reduced));
-    document.addEventListener(REFERENCE_EVENT, this._onReference);
     document.addEventListener("click", this._onDocumentClick);
     document.addEventListener("keydown", this._onDocumentKeydown);
     window.addEventListener("scroll", this._onScroll, { passive: true });
@@ -247,6 +345,10 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   renderedCallback() {
+    if (this._focusFirstLink) {
+      this._focusFirstLink = false;
+      this.focusControl(".site-nav_open .nav-link");
+    }
     // The router can update the address after it has told the page about the new route.
     const now = currentRouteUrl();
     if (now !== this.routeUrl) {
@@ -262,7 +364,6 @@ export default class PortfolioThemeLayout extends LightningElement {
       this._stopMotion();
       this._stopMotion = null;
     }
-    document.removeEventListener(REFERENCE_EVENT, this._onReference);
     document.removeEventListener("click", this._onDocumentClick);
     document.removeEventListener("keydown", this._onDocumentKeydown);
     window.removeEventListener("scroll", this._onScroll);
@@ -271,40 +372,92 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   /**
-   * Shows the floating button once the page is scrolled one screen height, and lifts it above
-   * the footer while the footer is on screen, so it never covers the footer.
+   * The elements the page gives the content slot, where the page's own components live.
+   * @returns {Element[]} the slotted elements
    */
-  updateBackToTop() {
+  contentRoots() {
+    const slot = this.template.querySelector(".region-content slot");
+    return slot && typeof slot.assignedElements === "function"
+      ? slot.assignedElements({ flatten: true })
+      : [];
+  }
+
+  /**
+   * The home hero, when it is on the page. A found hero is kept while it stays connected. With
+   * none found, the page is searched again at most once every HERO_LOOKUP_MS, because pages
+   * render after the layout and the search walks every shadow tree.
+   * @returns {Element|null} the hero
+   */
+  heroElement() {
+    if (this._hero && this._hero.isConnected) {
+      return this._hero;
+    }
+    this._hero = null;
+    const now = Date.now();
+    if (now - this._heroLookedAt < HERO_LOOKUP_MS) {
+      return null;
+    }
+    this._heroLookedAt = now;
+    this._hero = findInContent(this.contentRoots(), HERO_SELECTOR);
+    return this._hero;
+  }
+
+  /**
+   * The scroll position past which Back to top appears: the bottom of the home hero under the
+   * header when the hero is on the page, one screen height otherwise.
+   * @param {number} viewport the window height
+   * @returns {number} the threshold in px
+   */
+  backToTopThreshold(viewport) {
+    const screen = viewport * BACK_TO_TOP_SCREENS;
+    const hero = this.heroElement();
+    if (!hero) {
+      return screen;
+    }
+    const header = this.template.querySelector(".site-header");
+    const headerHeight = header ? header.getBoundingClientRect().height : 0;
+    const heroBottom =
+      hero.getBoundingClientRect().bottom + (window.scrollY || 0);
+    const past = Math.ceil(heroBottom - headerHeight);
+    return past > 0 ? past : screen;
+  }
+
+  /**
+   * Raises the header once content scrolls under it, and shows Back to top once the page is
+   * past the threshold. A focused arrow stays, so focus is never dropped under a keyboard
+   * visitor.
+   */
+  updateScrollState() {
     const viewport = window.innerHeight || 0;
-    const threshold = viewport * BACK_TO_TOP_SCREENS;
-    const scrolled =
-      viewport > 0 && (window.scrollY || window.pageYOffset || 0) >= threshold;
-    const footer = this.template.querySelector(".region-footer");
-    const footerTop = footer ? footer.getBoundingClientRect().top : viewport;
-    this.backToTopLift = Math.max(0, Math.ceil(viewport - footerTop));
-    // WebKit scrolls the page when a fixed button takes focus. A focused button stays put, so
-    // focus is never dropped to the page body under a keyboard visitor.
-    const button = this.template.querySelector(
-      '[data-id="floating-back-to-top"]'
-    );
+    const y = window.scrollY || window.pageYOffset || 0;
+    this.headerRaised = y > 0;
+    const scrolled = viewport > 0 && y >= this.backToTopThreshold(viewport);
+    const button = this.template.querySelector('[data-id="back-to-top"]');
     const focused = Boolean(button) && this.template.activeElement === button;
     this.showBackToTop = scrolled || focused;
   }
 
   handleBackToTopBlur() {
-    this.updateBackToTop();
+    this.updateScrollState();
+  }
+
+  get headerClass() {
+    return this.headerRaised ? "site-header site-header_raised" : "site-header";
   }
 
   get backToTopClass() {
-    return this.referenceMounted
-      ? "back-to-top back-to-top_beside-reference"
-      : "back-to-top";
+    return this.showBackToTop
+      ? "icon-button back-to-top back-to-top_shown"
+      : "icon-button back-to-top";
   }
 
-  get backToTopStyle() {
-    return this.backToTopLift > 0
-      ? `bottom: calc(${this.backToTopLift}px + var(--pf-space-4));`
-      : "";
+  // Hidden from the tab order and from assistive technology until it is shown.
+  get backToTopHidden() {
+    return this.showBackToTop ? null : "true";
+  }
+
+  get backToTopTabIndex() {
+    return this.showBackToTop ? "0" : "-1";
   }
 
   handleBackToTop() {
@@ -358,14 +511,6 @@ export default class PortfolioThemeLayout extends LightningElement {
     return toHref("");
   }
 
-  get docsHref() {
-    return toHref(DOCS_URL);
-  }
-
-  get docsCurrent() {
-    return this.currentFor(this.docsHref);
-  }
-
   get isHomePage() {
     return this.routeUrl === "";
   }
@@ -375,10 +520,26 @@ export default class PortfolioThemeLayout extends LightningElement {
     return routeOfHref(href) === this.routeUrl ? "page" : null;
   }
 
+  get pagesBeforeMenu() {
+    return this.pages.filter((page) => !page.afterMenu);
+  }
+
+  get pagesAfterMenu() {
+    return this.pages.filter((page) => page.afterMenu);
+  }
+
   get pages() {
-    return PAGES.filter(
-      (page) => !(page.key === "home" && this.isHomePage)
-    ).map((page) => {
+    return PAGES.map((page) => {
+      if (page.key === "work") {
+        return {
+          ...page,
+          // A full path, not a bare fragment, so the template keeps the href as written.
+          href: this.isHomePage
+            ? `${toHref("")}#${CASE_STUDIES_ID}`
+            : toHref(""),
+          current: null
+        };
+      }
       const href = toHref(page.url);
       return { ...page, href, current: this.currentFor(href) };
     });
@@ -392,14 +553,40 @@ export default class PortfolioThemeLayout extends LightningElement {
       sasName: pillar.sasName,
       href: pillar.href,
       current: this.currentFor(pillar.href),
-      inProgress: pillar.inProgress,
-      subLinks: pillar.subLinks.map((link) => ({
-        ...link,
-        current: this.currentFor(link.href)
-      })),
-      hasSubLinks: pillar.subLinks.length > 0,
-      subLabel: `${pillar.pageLabel} pages`
+      inProgress: pillar.inProgress
     }));
+  }
+
+  // Docs, then every pillar's own pages, each an item of its own after the pillars.
+  get builtLinks() {
+    const docsHref = toHref(DOCS_URL);
+    const links = [
+      {
+        key: "docs",
+        label: "Docs",
+        description: "Architecture specification and decision records",
+        href: docsHref,
+        current: this.currentFor(docsHref),
+        isDocs: true
+      }
+    ];
+    PILLARS.forEach((pillar) => {
+      (pillar.subLinks || []).forEach((link) => {
+        links.push({
+          key: link.key,
+          label: link.label,
+          description: `${pillar.pageLabel}, every endpoint and response`,
+          href: link.href,
+          current: this.currentFor(link.href),
+          isDocs: false
+        });
+      });
+    });
+    return links;
+  }
+
+  get builtMenuLabel() {
+    return BUILT_MENU_LABEL;
   }
 
   get menuExpanded() {
@@ -424,8 +611,15 @@ export default class PortfolioThemeLayout extends LightningElement {
 
   handleThemeToggle() {
     const next = this.isDark ? "light" : "dark";
-    this.chosenTheme = next;
-    this.applyTheme(next);
+    const change = () => {
+      this.chosenTheme = next;
+      this.applyTheme(next);
+    };
+    if (isReduced()) {
+      change();
+    } else {
+      crossfade(change);
+    }
     storeTheme(next);
     trackEvent(EVENTS.THEME_CHANGED, { theme: next });
   }
@@ -435,6 +629,9 @@ export default class PortfolioThemeLayout extends LightningElement {
     if (!this.menuOpen) {
       this.pillarsOpen = false;
     }
+    // The phone menu sits before its button in the page, so a Tab from the button would skip
+    // it. Focus moves to its first link once it shows, and Escape brings it back to the button.
+    this._focusFirstLink = this.menuOpen;
   }
 
   handlePillarsClick() {
@@ -448,6 +645,64 @@ export default class PortfolioThemeLayout extends LightningElement {
   handleNavClick() {
     this.menuOpen = false;
     this.pillarsOpen = false;
+  }
+
+  /**
+   * Work on the home page scrolls to the case studies and moves focus there. Elsewhere it is a
+   * plain link to the home page. The case study grid's own revealHeading() is used when it has
+   * one. With no case studies on the page it goes to the top.
+   * @param {Event} event the click
+   */
+  handleWorkClick(event) {
+    this.handleNavClick();
+    if (!this.isHomePage) {
+      return;
+    }
+    event.preventDefault();
+    // The scroll waits until the closed phone menu has left the header, because a header that
+    // shrinks mid scroll stops a smooth scroll short in WebKit.
+    Promise.resolve().then(() => this.revealWork());
+  }
+
+  /**
+   * Scrolls to the case studies and focuses them, or to the top when the page has none.
+   */
+  revealWork() {
+    const target = findInContent(
+      this.contentRoots(),
+      idSelector(CASE_STUDIES_ID)
+    );
+    if (!target) {
+      window.scrollTo({ top: 0, left: 0, behavior: scrollBehavior() });
+      return;
+    }
+    // The case study grid offers its own reveal, which scrolls to its heading and focuses it.
+    if (typeof target.revealHeading === "function") {
+      target.revealHeading(isReduced());
+      return;
+    }
+    // The sticky header covers the top of the window, so the section stops just under it.
+    const header = this.template.querySelector(".site-header");
+    const headerHeight = header ? header.getBoundingClientRect().height : 0;
+    const top =
+      target.getBoundingClientRect().top + (window.scrollY || 0) - headerHeight;
+    window.scrollTo({
+      top: Math.max(0, Math.round(top)),
+      left: 0,
+      behavior: scrollBehavior()
+    });
+    if (!target.hasAttribute("tabindex")) {
+      target.setAttribute("tabindex", "-1");
+    }
+    target.focus({ preventScroll: true });
+  }
+
+  handleNavLinkClick(event) {
+    if (event.currentTarget.dataset.key === "work") {
+      this.handleWorkClick(event);
+    } else {
+      this.handleNavClick();
+    }
   }
 
   handleKeydown(event) {

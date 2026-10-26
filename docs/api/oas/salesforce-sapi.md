@@ -259,7 +259,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -392,7 +392,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -523,7 +523,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -690,7 +690,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -822,7 +822,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -956,7 +956,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -1071,7 +1071,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -1196,7 +1196,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -1319,7 +1319,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -1445,7 +1445,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -1570,7 +1570,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -1691,7 +1691,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
@@ -1812,7 +1812,7 @@ Status Code **200**
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|200|X-Total-Count|integer||Total number of records available for this resource (Estimation).|
+|200|X-Total-Count|integer||Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.|
 |200|X-Has-More|boolean||Boolean indicator if more records exist beyond the current offset.|
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|

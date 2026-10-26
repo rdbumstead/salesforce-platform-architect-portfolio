@@ -1,6 +1,7 @@
 /**
  * @description       : The architecture docs page. Without a doc in the query string it lists
- *                      the documents SourceController.getDocs returns. With one, for example
+ *                      the documents SourceController.getDocs returns, in three groups: Start
+ *                      here, Specifications and Decisions, which is closed until opened. With one, for example
  *                      ?doc=sas, it shows that document from the daily source cache, never
  *                      from a live GitHub call: the title, where it came from, a table of
  *                      contents and the body, which c/docsViewer's docsRenderer builds from
@@ -84,6 +85,29 @@ export function badgeFor(key) {
   return SHORT_BADGES.get(value) || value.toUpperCase();
 }
 
+/** The three groups of the list, in the order shown. */
+export const DOC_GROUPS = Object.freeze([
+  { key: "start", label: "Start here", open: true },
+  { key: "specifications", label: "Specifications", open: true },
+  { key: "decisions", label: "Decisions", open: false }
+]);
+const START_KEYS = new Set(["executive-overview", "program-charter"]);
+
+/**
+ * The group a document belongs to: the architecture decision records are Decisions, the
+ * executive overview and the program charter are Start here, and every other document is a
+ * Specification, so a document added later is listed without a code change.
+ * @param {string} key the doc key, for example adr-027 or sas
+ * @returns {string} start, specifications or decisions
+ */
+export function groupFor(key) {
+  const value = String(key || "");
+  if (/^adr-/.test(value)) {
+    return "decisions";
+  }
+  return START_KEYS.has(value) ? "start" : "specifications";
+}
+
 function docsPath() {
   return `${basePath || ""}/docs`;
 }
@@ -113,6 +137,9 @@ export default class DocsViewer extends LightningElement {
   aliases = new Map();
   marked;
   tocOpen = true;
+  // Which closed-by-default groups the visitor has opened. A closed group draws no rows, so
+  // a link nobody can reach is never in the page.
+  openedGroups = {};
 
   _painted = null;
   _pendingHash = null;
@@ -214,8 +241,26 @@ export default class DocsViewer extends LightningElement {
       key: d.key,
       title: d.title,
       badge: badgeFor(d.key),
+      // Said whole, so a row inside the closed Decisions group still has a name.
+      label: `${badgeFor(d.key)}: ${d.title}`,
       href: docHref(d.key)
     }));
+  }
+
+  /** The list's groups. A group with no document is left out. */
+  get groups() {
+    const items = this.listItems;
+    return DOC_GROUPS.map((group) => {
+      const members = items.filter((i) => groupFor(i.key) === group.key);
+      return {
+        key: group.key,
+        label: group.label,
+        isOpenGroup: group.open,
+        isExpanded: Boolean(this.openedGroups[group.key]),
+        items: members,
+        countLabel: `${members.length} ${members.length === 1 ? "record" : "records"}`
+      };
+    }).filter((group) => group.items.length > 0);
   }
 
   get hasDocs() {
@@ -422,6 +467,14 @@ export default class DocsViewer extends LightningElement {
       );
     } catch {
       // The address stays as it was. The page still scrolls.
+    }
+  }
+
+  handleGroupToggle(event) {
+    const key = event.currentTarget.dataset.group;
+    const open = event.currentTarget.open;
+    if (key && Boolean(this.openedGroups[key]) !== open) {
+      this.openedGroups = { ...this.openedGroups, [key]: open };
     }
   }
 

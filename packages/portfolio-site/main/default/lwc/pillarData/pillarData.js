@@ -1,6 +1,7 @@
 /**
- * @description       : The one list of the five portfolio pillars.
- *                      A service module with no template. heroBanner and portfolioThemeLayout import it.
+ * @description       : The one list of the five portfolio pillars, and the home page's proof
+ *                      points. A service module with no template. siteBuildSection,
+ *                      portfolioThemeLayout, heroBanner and homeTestimonials import it.
  *                      Nobody else edits it. Text follows the agreed home mockup, route URLs follow
  *                      the urlPrefix of each route in the Portfolio1 site bundle.
  * @author            : Ryan Bumstead
@@ -40,7 +41,7 @@ const SOURCE = [
     url: "nonprofit-solutions",
     summary:
       "A solution design, decision matrix and cost comparison for a regional adult literacy nonprofit.",
-    tour: "Follow the pre-sales reasoning behind a platform choice for a literacy program.",
+    tour: "Follow the reasoning behind a platform choice for a literacy program.",
     tags: ["Solution design", "Decision matrix"],
     inProgress: false
   },
@@ -104,6 +105,17 @@ export const PILLARS = Object.freeze(
     })
   )
 );
+
+/**
+ * The home hero's proof strip, in order. Static, so it paints at once. Each one was checked
+ * against the owner's Trailhead profile and his word. The count of active certifications is
+ * here once, so the hero and the credentials strip under the testimonials always agree.
+ */
+export const ACTIVE_CERTIFICATIONS = "7 active Salesforce certifications";
+export const PROOF_POINTS = Object.freeze([
+  "On Salesforce since 2017",
+  ACTIVE_CERTIFICATIONS
+]);
 
 /** The pillars a visitor can open today, in tour order. */
 export const LIVE_PILLARS = Object.freeze(

@@ -128,7 +128,7 @@ private class PortfolioStatsControllerTest {
   }
 
   @isTest
-  static void countsWaitingTestimonials() {
+  static void neverReturnsTheWaitingCount() {
     insertTestimonials();
 
     User reader = adminReader();
@@ -137,9 +137,15 @@ private class PortfolioStatsControllerTest {
     PortfolioStatsController.Stats stats = statsAs(reader);
     Test.stopTest();
 
-    Assert.areEqual(4, stats.testimonialsWaiting, 'Waiting total');
-    Assert.areEqual(1, vibe(stats, 'Professional').waiting, 'Professional');
-    Assert.areEqual(3, vibe(stats, 'Casual').waiting, 'Casual');
+    Assert.areEqual(
+      3,
+      stats.testimonialsApproved,
+      'Approved are still counted'
+    );
+    Assert.isFalse(
+      JSON.serialize(stats).containsIgnoreCase('waiting'),
+      'No waiting count in the answer: ' + JSON.serialize(stats)
+    );
   }
 
   @isTest
@@ -153,9 +159,7 @@ private class PortfolioStatsControllerTest {
     Assert.areEqual(2, stats.testimonialsByVibe.size(), 'Both vibes listed');
     Assert.areEqual('Professional', stats.testimonialsByVibe[0].vibe, 'Order');
     Assert.areEqual(0, stats.testimonialsByVibe[0].approved, 'No approved');
-    Assert.areEqual(0, stats.testimonialsByVibe[1].waiting, 'No waiting');
     Assert.areEqual(0, stats.testimonialsApproved, 'Approved total');
-    Assert.areEqual(0, stats.testimonialsWaiting, 'Waiting total');
   }
 
   @isTest
@@ -182,6 +186,10 @@ private class PortfolioStatsControllerTest {
     Pipeline_Run__c newest = run(DEPLOY, 965, Datetime.now().addDays(-1));
     newest.Tests_Passed__c = 964;
     newest.Org_Coverage__c = 98;
+    older.Jest_Tests_Run__c = 700;
+    older.Jest_Tests_Passed__c = 700;
+    newest.Jest_Tests_Run__c = 748;
+    newest.Jest_Tests_Passed__c = 747;
     insert new List<Pipeline_Run__c>{
       older,
       newest,
@@ -200,6 +208,86 @@ private class PortfolioStatsControllerTest {
     Assert.areEqual(965, stats.latestTestsRun, 'Tests run');
     Assert.areEqual(964, stats.latestTestsPassed, 'Tests passed');
     Assert.areEqual(98, stats.latestCoverage, 'Coverage');
+    Assert.areEqual(748, stats.latestJestRun, 'Jest run');
+    Assert.areEqual(747, stats.latestJestPassed, 'Jest passed');
+  }
+
+  @isTest
+  static void leavesTheJestNumbersEmptyWhenTheNewestDeployHasNone() {
+    insert run(DEPLOY, 965, Datetime.now());
+
+    User reader = adminReader();
+
+    Test.startTest();
+    PortfolioStatsController.Stats stats = statsAs(reader);
+    Test.stopTest();
+
+    Assert.areEqual(965, stats.latestTestsRun, 'Apex still shows');
+    Assert.isNull(stats.latestJestRun, 'No Jest run');
+    Assert.isNull(stats.latestJestPassed, 'No Jest passed');
+  }
+
+  private static Usage_Counter__c usage(String kind, Date day, Integer count) {
+    return new Usage_Counter__c(
+      Kind__c = kind,
+      Day__c = day,
+      Count__c = count,
+      Key__c = kind + ':' + String.valueOf(day)
+    );
+  }
+
+  @isTest
+  static void sumsEachKindAndReadsTheEarliestDay() {
+    insert new List<Usage_Counter__c>{
+      usage('Cover_Letter', Date.newInstance(2026, 11, 3), 4),
+      usage('Cover_Letter', Date.newInstance(2026, 10, 28), 2),
+      usage('Api_Lab_Request', Date.newInstance(2026, 11, 3), 30),
+      usage('Api_Lab_Request', Date.newInstance(2026, 11, 4), 12)
+    };
+
+    User reader = adminReader();
+
+    Test.startTest();
+    PortfolioStatsController.Stats stats = statsAs(reader);
+    Test.stopTest();
+
+    Assert.areEqual(6, stats.coverLettersWritten, 'Letters');
+    Assert.areEqual(42, stats.apiLabRequests, 'Requests');
+    Assert.areEqual(
+      Date.newInstance(2026, 10, 28),
+      stats.countingSince,
+      'The earliest day on any row'
+    );
+  }
+
+  @isTest
+  static void showsZeroAndNoMonthWhenNothingIsCounted() {
+    User reader = adminReader();
+
+    Test.startTest();
+    PortfolioStatsController.Stats stats = statsAs(reader);
+    Test.stopTest();
+
+    Assert.areEqual(0, stats.coverLettersWritten, 'Letters');
+    Assert.areEqual(0, stats.apiLabRequests, 'Requests');
+    Assert.isNull(stats.countingSince, 'No month');
+  }
+
+  @isTest
+  static void countsFromTheWriterRowsEndToEnd() {
+    UsageCounterWriter.record(UsageCounterWriter.KIND_COVER_LETTER);
+    UsageCounterWriter.record(UsageCounterWriter.KIND_COVER_LETTER);
+    UsageCounterWriter.record(UsageCounterWriter.KIND_API_LAB_REQUEST);
+
+    User reader = adminReader();
+
+    Test.startTest();
+    PortfolioStatsController.Stats stats = statsAs(reader);
+    Test.stopTest();
+
+    Assert.areEqual(2, stats.coverLettersWritten, 'Letters');
+    Assert.areEqual(1, stats.apiLabRequests, 'Requests');
+    Assert.isNotNull(stats.countingSince, 'A month to show');
   }
 
   @isTest
@@ -275,8 +363,6 @@ private class PortfolioStatsControllerTest {
     }
     Test.stopTest();
 
-    // The waiting rows stay hidden from the guest's own reads, yet they are counted.
-    Assert.areEqual(4, stats.testimonialsWaiting, 'Waiting counted');
     Assert.areEqual(1, stats.deployRuns, 'Deploys counted');
     Assert.areEqual(965, stats.latestTestsRun, 'Tests run');
     Assert.areEqual(1, stats.tokensIssued, 'Tokens counted');
@@ -302,13 +388,17 @@ private class PortfolioStatsControllerTest {
     Assert.areEqual(
       new Set<String>{
         'testimonialsApproved',
-        'testimonialsWaiting',
         'testimonialsByVibe',
         'deployRuns',
         'latestTestsRun',
         'latestTestsPassed',
         'latestCoverage',
-        'tokensIssued'
+        'latestJestRun',
+        'latestJestPassed',
+        'tokensIssued',
+        'coverLettersWritten',
+        'apiLabRequests',
+        'countingSince'
       },
       top.keySet(),
       'Only the count keys'
@@ -336,7 +426,7 @@ private class PortfolioStatsControllerTest {
       records.put(record.DeveloperName, record);
     }
 
-    Assert.areEqual(5, defaults.size(), 'Five reads');
+    Assert.areEqual(6, defaults.size(), 'Six reads');
     Assert.areEqual(defaults.keySet(), records.keySet(), 'A record per read');
     for (String name : defaults.keySet()) {
       QueryDefinitions.QueryDefault codeDefault = defaults.get(name);
@@ -379,15 +469,23 @@ private class PortfolioStatsControllerTest {
     statsAs(reader);
     Test.stopTest();
 
-    for (
-      String name : new PortfolioStatsController().queryDefaults().keySet()
-    ) {
+    // The waiting read is kept only so its shipped record has a default. Nothing runs it.
+    Set<String> names = new Set<String>(
+      new PortfolioStatsController().queryDefaults().keySet()
+    );
+    names.remove(PortfolioStatsController.WAITING_QUERY);
+    Assert.areEqual(5, names.size(), 'Five reads are in use');
+    for (String name : names) {
       Assert.areEqual(
         'record',
         QueryDefinitions.sourceByName.get(name),
         name + ' is read through its record'
       );
     }
+    Assert.isNull(
+      QueryDefinitions.sourceByName.get(PortfolioStatsController.WAITING_QUERY),
+      'The waiting read no longer runs'
+    );
   }
 
   private static String normal(String text) {

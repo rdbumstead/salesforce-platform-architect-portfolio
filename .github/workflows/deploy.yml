@@ -172,6 +172,33 @@ jobs:
              echo "::warning::$((RAN - PASSED)) Apex tests failed in production after the deploy."
           fi
 
+      # Runs the Jest suite on the merged commit after the Apex tests, for the numbers panel.
+      # A failed test is reported here and on the run record, and does not undo the deploy.
+      # The second "--" hands the reporter options through sfdx-lwc-jest to Jest itself.
+      - name: Run Jest Tests
+        id: jest
+        if: steps.execute.outputs.deployed == 'true'
+        continue-on-error: true
+        run: |
+          npm ci
+          npm run test:unit -- -- --json --outputFile=jest-results.json --silent || true
+
+          RAN=$(jq -r '.numTotalTests // empty' jest-results.json)
+          PASSED=$(jq -r '.numPassedTests // empty' jest-results.json)
+
+          if ! [[ "$RAN" =~ ^[0-9]+$ && "$PASSED" =~ ^[0-9]+$ ]]; then
+             echo "::warning::The Jest run returned no usable summary, so no Jest counts are published."
+             exit 0
+          fi
+
+          echo "Jest tests run: $RAN, passed: $PASSED"
+          echo "jest_run=$RAN" >> "$GITHUB_OUTPUT"
+          echo "jest_passed=$PASSED" >> "$GITHUB_OUTPUT"
+
+          if [ "$PASSED" != "$RAN" ]; then
+             echo "::warning::$((RAN - PASSED)) Jest tests failed after the deploy."
+          fi
+
       - name: Publish Governance Event
         if: success() && steps.execute.outputs.deployed == 'true'
         continue-on-error: true
@@ -180,6 +207,10 @@ jobs:
 
           if [ -n "${{ steps.tests.outputs.tests_run }}" ]; then
              VALUES="$VALUES Tests_Run__c=${{ steps.tests.outputs.tests_run }} Tests_Passed__c=${{ steps.tests.outputs.tests_passed }} Org_Coverage__c=${{ steps.tests.outputs.coverage }}"
+          fi
+
+          if [ -n "${{ steps.jest.outputs.jest_run }}" ]; then
+             VALUES="$VALUES Jest_Tests_Run__c=${{ steps.jest.outputs.jest_run }} Jest_Tests_Passed__c=${{ steps.jest.outputs.jest_passed }}"
           fi
 
           sf data create record \

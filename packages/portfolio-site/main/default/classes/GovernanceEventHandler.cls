@@ -8,7 +8,8 @@
  *                      that runs after a production deploy).
  *                      Test counts and org coverage are stored only when they make sense together
  *                      (whole numbers, passed no more than run, coverage from 0 to 100), so the
- *                      Pillar E card never shows a broken number.
+ *                      Pillar E card never shows a broken number. The Jest counts follow the
+ *                      same rule as a pair of their own, kept or dropped apart from the Apex ones.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -106,6 +107,10 @@ public with sharing class GovernanceEventHandler {
       event.Tests_Passed__c,
       event.Org_Coverage__c
     );
+    Boolean jestValid = validJestResult(
+      event.Jest_Tests_Run__c,
+      event.Jest_Tests_Passed__c
+    );
     return new Pipeline_Run__c(
       Run_Key__c = workflow + ':' + runId,
       Workflow__c = workflow,
@@ -116,8 +121,26 @@ public with sharing class GovernanceEventHandler {
       Completed_At__c = event.Completed_At__c,
       Tests_Run__c = testsValid ? event.Tests_Run__c : null,
       Tests_Passed__c = testsValid ? event.Tests_Passed__c : null,
-      Org_Coverage__c = testsValid ? event.Org_Coverage__c : null
+      Org_Coverage__c = testsValid ? event.Org_Coverage__c : null,
+      Jest_Tests_Run__c = jestValid ? event.Jest_Tests_Run__c : null,
+      Jest_Tests_Passed__c = jestValid ? event.Jest_Tests_Passed__c : null
     );
+  }
+
+  // The Jest pair is judged on its own. A deploy can report Apex without Jest and the other
+  // way round, so one pair being absent or broken never drops the other.
+  @TestVisible
+  private static Boolean validJestResult(
+    Decimal testsRun,
+    Decimal testsPassed
+  ) {
+    return testsRun != null &&
+      testsPassed != null &&
+      testsRun > 0 &&
+      testsRun == testsRun.round(System.RoundingMode.DOWN) &&
+      testsPassed >= 0 &&
+      testsPassed == testsPassed.round(System.RoundingMode.DOWN) &&
+      testsPassed <= testsRun;
   }
 
   // All three values arrive together from one test run, or none of them is kept.
@@ -186,7 +209,9 @@ public with sharing class GovernanceEventHandler {
       existing.Completed_At__c == incoming.Completed_At__c &&
       existing.Tests_Run__c == incoming.Tests_Run__c &&
       existing.Tests_Passed__c == incoming.Tests_Passed__c &&
-      existing.Org_Coverage__c == incoming.Org_Coverage__c;
+      existing.Org_Coverage__c == incoming.Org_Coverage__c &&
+      existing.Jest_Tests_Run__c == incoming.Jest_Tests_Run__c &&
+      existing.Jest_Tests_Passed__c == incoming.Jest_Tests_Passed__c;
   }
 
   // Rows arrive grouped by workflow, newest first, so everything past the 60th of a group goes.
@@ -224,7 +249,9 @@ public with sharing class GovernanceEventHandler {
           Completed_At__c,
           Tests_Run__c,
           Tests_Passed__c,
-          Org_Coverage__c
+          Org_Coverage__c,
+          Jest_Tests_Run__c,
+          Jest_Tests_Passed__c
         FROM Pipeline_Run__c
         WHERE Run_Key__c IN :keys
         WITH SYSTEM_MODE

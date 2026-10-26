@@ -37,7 +37,8 @@ private class SiteQueryDefinitionsTest {
       new GovernanceController(),
       new DeliveryController(),
       new SourceController(),
-      new TestimonialController()
+      new TestimonialController(),
+      new SkillGraphController()
     };
   }
 
@@ -68,7 +69,7 @@ private class SiteQueryDefinitionsTest {
     Map<String, QueryDefinitions.QueryDefault> defaults = siteDefaults();
     Map<String, Query_Definition__mdt> records = Query_Definition__mdt.getAll();
 
-    Assert.areEqual(20, defaults.size(), 'Twenty site content reads');
+    Assert.areEqual(22, defaults.size(), 'Twenty two site content reads');
     for (String name : defaults.keySet()) {
       Assert.isTrue(records.containsKey(name), 'Record ships for ' + name);
       Assert.isTrue(records.get(name).Active__c, name + ' ships active');
@@ -236,14 +237,20 @@ private class SiteQueryDefinitionsTest {
   static void theGuestReadsThePillarCardsThroughItsRecords() {
     User guest = SiteGuestTestSupport.preparedGuest();
     List<ProjectCardController.PillarCard> cards;
+    List<ProjectCardController.CaseStudy> caseStudies;
+    ProjectCardController.BuildCounts counts;
 
     Test.startTest();
     System.runAs(guest) {
       cards = ProjectCardController.getPillarCards();
+      caseStudies = ProjectCardController.getHomeCaseStudies();
+      counts = ProjectCardController.getBuildCounts();
     }
     Test.stopTest();
 
     Assert.areEqual(1, cards.size(), 'One pillar card');
+    Assert.areEqual(0, caseStudies.size(), 'No project has a home sort');
+    Assert.isNotNull(counts, 'The build counts come back');
     assertReadFromRecords(
       new List<String>(new ProjectCardController().queryDefaults().keySet())
     );

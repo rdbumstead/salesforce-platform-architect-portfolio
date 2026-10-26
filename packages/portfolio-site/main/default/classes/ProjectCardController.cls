@@ -1,10 +1,16 @@
 /**
- * @description       : Serves the home page pillar cards.
- *                      Returns one row per pillar letter, A to E, with the headline number and
- *                      its label, the card image with its alternative text, and the case study
- *                      (Challenge, Solution, Business Value, Live and Source links). The static
- *                      c/pillarData still drives every card, so heroBanner merges these rows in
- *                      by letter and a missing row changes nothing.
+ * @description       : Serves the home page's project reads.
+ *                      getPillarCards returns one row per pillar letter, A to E, with the headline
+ *                      number and its label, the card image with its alternative text, and the
+ *                      case study (Challenge, Solution, Business Value, Live and Source links). The
+ *                      static c/pillarData still drives every pillar, so c/siteBuildSection merges
+ *                      these rows in by letter and a missing row changes nothing.
+ *                      getHomeCaseStudies returns at most three case study cards, the projects
+ *                      with Home_Sort__c set, lowest first. It never reads Is_Featured__c, so a
+ *                      home card never changes the featured projects the API and the cover
+ *                      letters use. Each card gets the same headline rule as a pillar card.
+ *                      getBuildCounts returns the newest successful run's passed Apex tests, its
+ *                      coverage and its passed Jest tests, for the "How this site is built" line.
  *                      A card whose Headline_Metric_Source__c is set gets its number computed
  *                      from a live source: the Employer Hub object count from
  *                      the ERD's describe, the paths in the SAPI_Spec and PAPI_Spec resources,
@@ -18,11 +24,13 @@
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/22/2026
- * @Test Class        : [ProjectCardControllerTest]
+ * @Test Class        : [ProjectCardControllerTest, ProjectCardControllerHomeTest]
  **/
 public with sharing class ProjectCardController implements QueryDefinitions.Provider {
   private static final String CARDS_QUERY = 'ProjectCardController_Cards';
   private static final String TEST_RUN_QUERY = 'ProjectCardController_LatestTestRun';
+  private static final String HOME_QUERY = 'ProjectCardController_HomeCaseStudies';
+  private static final Integer HOME_CARD_LIMIT = 3;
   public static final String SOURCE_EMPLOYER_HUB_OBJECTS = 'Employer Hub objects';
   public static final String SOURCE_API_PATHS = 'API paths';
   public static final String SOURCE_AI_PROVIDERS = 'AI providers';
@@ -83,11 +91,66 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   }
 
   /**
-   * @description One computed value: the number, plus the coverage for Apex tests.
+   * @description The fixed shape of one home page case study card. Every value is null when
+   *              its field is blank, and tags is an empty list when Case_Tags__c is blank.
+   *              title is Home_Title__c when set, otherwise the project Name.
+   */
+  public class CaseStudy {
+    @AuraEnabled
+    public String key;
+    @AuraEnabled
+    public String title;
+    @AuraEnabled
+    public String clientLine;
+    @AuraEnabled
+    public String headlineMetric;
+    @AuraEnabled
+    public String headlineLabel;
+    @AuraEnabled
+    public String headlineSource;
+    @AuraEnabled
+    public String challenge;
+    @AuraEnabled
+    public String solution;
+    @AuraEnabled
+    public String businessValue;
+    @AuraEnabled
+    public String liveUrl;
+    @AuraEnabled
+    public List<String> tags;
+  }
+
+  /**
+   * @description The newest successful run's counts. A value is null when the run did not
+   *              record it, and every value is null when there is no such run.
+   */
+  public class BuildCounts {
+    @AuraEnabled
+    public Integer apexPassed;
+    @AuraEnabled
+    public Integer coverage;
+    @AuraEnabled
+    public Integer jestPassed;
+  }
+
+  /**
+   * @description One computed value: the number, plus the coverage and the Jest count for
+   *              Apex tests.
    */
   private class Computed {
     private Integer n;
     private Integer coverage;
+    private Integer jest;
+  }
+
+  /**
+   * @description A card's headline after the source rule: the number, its label and where the
+   *              number came from, all null when the headline cannot be shown.
+   */
+  private class Headline {
+    private String metric;
+    private String label;
+    private String source;
   }
 
   /**
@@ -105,6 +168,99 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
     } catch (QueryException e) {
       throw new AuraHandledException('The pillar cards could not be loaded.');
     }
+  }
+
+  /**
+   * @description Returns at most three home page case study cards, the projects with
+   *              Home_Sort__c set, lowest first, then by Name. A project with no Home_Sort__c
+   *              is never a card. Is_Featured__c plays no part.
+   * @return List<CaseStudy> The cards, never null.
+   * @example
+   * List<ProjectCardController.CaseStudy> cards = ProjectCardController.getHomeCaseStudies();
+   */
+  @AuraEnabled(cacheable=true)
+  public static List<CaseStudy> getHomeCaseStudies() {
+    try {
+      return toCaseStudies(new ProjectCardSelector().selectHomeCaseStudies());
+    } catch (QueryException e) {
+      throw new AuraHandledException('The case studies could not be loaded.');
+    }
+  }
+
+  /**
+   * @description Returns the newest successful run with a test count: its passed Apex tests,
+   *              its coverage rounded down and its passed Jest tests. Every value is null when
+   *              no such run exists, so the page shows no line rather than a made up number.
+   * @return BuildCounts The counts, never null.
+   * @example
+   * ProjectCardController.BuildCounts counts = ProjectCardController.getBuildCounts();
+   */
+  @AuraEnabled(cacheable=true)
+  public static BuildCounts getBuildCounts() {
+    try {
+      return toBuildCounts(latestTestRun());
+    } catch (QueryException e) {
+      throw new AuraHandledException('The test counts could not be loaded.');
+    }
+  }
+
+  private static BuildCounts toBuildCounts(Computed run) {
+    BuildCounts counts = new BuildCounts();
+    if (run == null || run.n == null || run.n <= 0) {
+      return counts;
+    }
+    counts.apexPassed = run.n;
+    counts.coverage = run.coverage;
+    counts.jestPassed = run.jest != null && run.jest > 0 ? run.jest : null;
+    return counts;
+  }
+
+  private static List<CaseStudy> toCaseStudies(List<Project__c> projects) {
+    Map<String, Computed> computedBySource = new Map<String, Computed>();
+    List<CaseStudy> cards = new List<CaseStudy>();
+    for (Project__c project : projects) {
+      if (cards.size() == HOME_CARD_LIMIT) {
+        break;
+      }
+      CaseStudy card = new CaseStudy();
+      card.key = project.Id;
+      card.title = valueOrNull(project.Home_Title__c) ??
+        valueOrNull(project.Name);
+      card.clientLine = valueOrNull(project.Client_Line__c);
+      card.challenge = valueOrNull(project.Challenge__c);
+      card.solution = valueOrNull(project.Solution__c);
+      card.businessValue = valueOrNull(project.Business_Value__c);
+      card.liveUrl = valueOrNull(project.Live_URL__c);
+      card.tags = splitTags(project.Case_Tags__c);
+      Headline headline = headlineOf(project, computedBySource);
+      card.headlineMetric = headline.metric;
+      card.headlineLabel = headline.label;
+      card.headlineSource = headline.source;
+      cards.add(card);
+    }
+    return cards;
+  }
+
+  /**
+   * @description Splits a comma separated tag list, trimmed, blanks and repeats dropped in
+   *              the order written.
+   * @param text The Case_Tags__c value.
+   * @return List<String> The tags, empty when the text is blank.
+   */
+  @TestVisible
+  private static List<String> splitTags(String text) {
+    List<String> tags = new List<String>();
+    if (String.isBlank(text)) {
+      return tags;
+    }
+    Set<String> seen = new Set<String>();
+    for (String part : text.split(',')) {
+      String tag = part.trim();
+      if (tag.length() > 0 && seen.add(tag.toLowerCase())) {
+        tags.add(tag);
+      }
+    }
+    return tags;
   }
 
   private static List<PillarCard> toCards(List<Project__c> projects) {
@@ -141,6 +297,17 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
     Project__c project,
     Map<String, Computed> computedBySource
   ) {
+    Headline headline = headlineOf(project, computedBySource);
+    card.headlineMetric = headline.metric;
+    card.headlineLabel = headline.label;
+    card.headlineSource = headline.source;
+  }
+
+  private static Headline headlineOf(
+    Project__c project,
+    Map<String, Computed> computedBySource
+  ) {
+    Headline headline = new Headline();
     String storedMetric = valueOrNull(project.Headline_Metric__c);
     String storedLabel = valueOrNull(project.Headline_Metric_Label__c);
     String source = valueOrNull(project.Headline_Metric_Source__c);
@@ -155,22 +322,20 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
     if (computed == null) {
       // Stored text only. A label that still holds a token cannot be shown.
       Boolean labelUsable = storedLabel == null || !hasToken(storedLabel);
-      card.headlineMetric = labelUsable ? storedMetric : null;
-      card.headlineLabel = labelUsable ? storedLabel : null;
-      card.headlineSource = card.headlineMetric == null ? null : SOURCE_STORED;
-      return;
+      headline.metric = labelUsable ? storedMetric : null;
+      headline.label = labelUsable ? storedLabel : null;
+      headline.source = headline.metric == null ? null : SOURCE_STORED;
+      return headline;
     }
 
     String label = fillTokens(storedLabel, computed);
     if (label != null && hasToken(label)) {
-      card.headlineMetric = null;
-      card.headlineLabel = null;
-      card.headlineSource = null;
-      return;
+      return headline;
     }
-    card.headlineMetric = fillMetric(storedMetric, computed.n);
-    card.headlineLabel = label;
-    card.headlineSource = source;
+    headline.metric = fillMetric(storedMetric, computed.n);
+    headline.label = label;
+    headline.source = source;
+    return headline;
   }
 
   /**
@@ -273,6 +438,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
     Computed computed = new Computed();
     // The label says passing, so the number is the passed count.
     computed.n = runs[0].Tests_Passed__c?.intValue();
+    computed.jest = runs[0].Jest_Tests_Passed__c?.intValue();
     computed.coverage = runs[0].Org_Coverage__c == null
       ? null
       : runs[0]
@@ -331,6 +497,14 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
       );
     }
 
+    private List<Project__c> selectHomeCaseStudies() {
+      return (List<Project__c>) QueryDefinitions.run(
+        HOME_QUERY,
+        new Map<String, Object>(),
+        homeDefault()
+      );
+    }
+
     private List<StaticResource> selectSpecs(List<String> names) {
       return [
         SELECT Name, Body
@@ -371,12 +545,32 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
       .binds(cardBinds());
   }
 
+  /**
+   * @description The home case study read as code: the projects with Home_Sort__c set,
+   *              lowest first, at most three, in system mode. It filters on Home_Sort__c only,
+   *              never on Is_Featured__c. Query_Definition.ProjectCardController_HomeCaseStudies
+   *              ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault homeDefault() {
+    return new QueryDefinitions.QueryDefault(
+        'Project__c',
+        'Name, Home_Title__c, Client_Line__c, Case_Tags__c, Headline_Metric__c, Headline_Metric_Label__c, Headline_Metric_Source__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c'
+      )
+      .filter('Home_Sort__c != NULL')
+      .orderBy('Home_Sort__c ASC, Name ASC')
+      .rowLimit(HOME_CARD_LIMIT)
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE);
+  }
+
   private static Map<String, Object> cardBinds() {
     return new Map<String, Object>{ 'pillarLetters' => PILLAR_LETTERS };
   }
 
   /**
-   * @description The newest successful run with a test count, as code, in system mode.
+   * @description The newest successful run with a test count, as code, in system mode, with
+   *              its passed Apex and Jest counts and its coverage.
    *              Query_Definition.ProjectCardController_LatestTestRun ships equal to it.
    * @return QueryDefinitions.QueryDefault The default.
    */
@@ -384,7 +578,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   private static QueryDefinitions.QueryDefault testRunDefault() {
     return new QueryDefinitions.QueryDefault(
         'Pipeline_Run__c',
-        'Tests_Passed__c, Org_Coverage__c'
+        'Tests_Passed__c, Org_Coverage__c, Jest_Tests_Passed__c'
       )
       .filter('Status__c = :status AND Tests_Run__c != NULL')
       .orderBy('Completed_At__c DESC NULLS LAST, CreatedDate DESC')
@@ -404,7 +598,8 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   public Map<String, QueryDefinitions.QueryDefault> queryDefaults() {
     return new Map<String, QueryDefinitions.QueryDefault>{
       CARDS_QUERY => cardsDefault(),
-      TEST_RUN_QUERY => testRunDefault()
+      TEST_RUN_QUERY => testRunDefault(),
+      HOME_QUERY => homeDefault()
     };
   }
 }

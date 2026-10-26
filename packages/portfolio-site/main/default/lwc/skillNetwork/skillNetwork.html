@@ -1,9 +1,7 @@
 <template>
   <lightning-card title="Skill Network" icon-name="standard:invocable_action">
+    <c-view-source slot="actions" source-key="skillNetwork"></c-view-source>
     <div class="slds-p-around_medium network-body">
-      <div class="card-tools">
-        <c-view-source source-key="skillNetwork"></c-view-source>
-      </div>
       <template lwc:if={isLoading}>
         <div class="state state-loading">
           <lightning-spinner
@@ -82,74 +80,108 @@
             <template for:each={matrixRows} for:item="row">
               <section
                 key={row.key}
-                class="matrix-row"
+                class={row.rowClass}
                 aria-labelledby={row.headingId}
               >
                 <h3 class="row-name" id={row.headingId}>{row.name}</h3>
                 <ul class="chips">
                   <template for:each={row.chips} for:item="chip">
-                    <li key={chip.id} class="chip-item">
-                      <button
-                        type="button"
-                        class={chip.className}
-                        data-id={chip.id}
-                        aria-pressed={chip.pressed}
-                        aria-label={chip.ariaLabel}
-                        onclick={handleChipClick}
-                      >
-                        <span class="chip-name">{chip.name}</span>
-                        <span class="chip-meta">
-                          <span class="chip-proficiency"
-                            >{chip.proficiency}</span
-                          >
-                          <template lwc:if={chip.hasYears}>
-                            <span class="chip-years">{chip.years}</span>
-                          </template>
-                        </span>
-                      </button>
+                    <li key={chip.id} class={chip.itemClass}>
+                      <template lwc:if={chip.isLeaving}>
+                        <span class="chip chip-ghost" aria-hidden="true"
+                          >{chip.name}</span
+                        >
+                      </template>
+                      <template lwc:else>
+                        <button
+                          type="button"
+                          class={chip.className}
+                          data-id={chip.id}
+                          aria-pressed={chip.pressed}
+                          aria-label={chip.ariaLabel}
+                          onclick={handleChipClick}
+                        >
+                          <span class="chip-name">{chip.name}</span>
+                          <span class="chip-meta">
+                            <span class="chip-proficiency"
+                              >{chip.proficiency}</span
+                            >
+                            <template lwc:if={chip.hasYears}>
+                              <span class="chip-years">{chip.years}</span>
+                            </template>
+                          </span>
+                        </button>
+                      </template>
                     </li>
                   </template>
                 </ul>
+                <template lwc:if={row.showSelection}>
+                  <div class="selection">
+                    <div
+                      class="selection-panel"
+                      role="region"
+                      aria-labelledby="selection-title"
+                    >
+                      <div class="selection-head">
+                        <h3
+                          class="selection-title"
+                          id="selection-title"
+                          tabindex="-1"
+                        >
+                          {selection.name}
+                        </h3>
+                        <button
+                          type="button"
+                          class="selection-close"
+                          onclick={handleClearSelection}
+                        >
+                          Close
+                        </button>
+                      </div>
+                      <p class="selection-summary">{selection.summary}</p>
+                      <template lwc:if={selection.evidence}>
+                        <p class="selection-evidence">{selection.evidence}</p>
+                      </template>
+                      <template lwc:if={selection.hasRoles}>
+                        <h4 class="selection-label">Roles</h4>
+                        <ul class="selection-list selection-roles">
+                          <template for:each={selection.roles} for:item="role">
+                            <li key={role.id}>{role.name}</li>
+                          </template>
+                        </ul>
+                      </template>
+                      <template lwc:if={selection.hasProjects}>
+                        <h4 class="selection-label">Projects</h4>
+                        <ul class="selection-list selection-projects">
+                          <template
+                            for:each={selection.projects}
+                            for:item="project"
+                          >
+                            <li key={project.id}>{project.name}</li>
+                          </template>
+                        </ul>
+                      </template>
+                      <template lwc:if={selection.hasCertifications}>
+                        <h4 class="selection-label">Certifications</h4>
+                        <ul class="selection-list selection-certifications">
+                          <template
+                            for:each={selection.certifications}
+                            for:item="certification"
+                          >
+                            <li key={certification.id}>{certification.name}</li>
+                          </template>
+                        </ul>
+                      </template>
+                      <template lwc:if={selection.isUnused}>
+                        <p class="selection-none">
+                          No role, project or certification is linked to this
+                          skill yet.
+                        </p>
+                      </template>
+                    </div>
+                  </div>
+                </template>
               </section>
-            </template>
-          </div>
-
-          <div class="selection" aria-live="polite">
-            <template lwc:if={selection}>
-              <div class="selection-panel">
-                <div class="selection-head">
-                  <h3 class="selection-title">{selection.name}</h3>
-                  <button
-                    type="button"
-                    class="selection-close"
-                    onclick={handleClearSelection}
-                  >
-                    Close
-                  </button>
-                </div>
-                <p class="selection-summary">{selection.summary}</p>
-                <template lwc:if={selection.hasRoles}>
-                  <h4 class="selection-label">Roles</h4>
-                  <ul class="selection-list selection-roles">
-                    <template for:each={selection.roles} for:item="role">
-                      <li key={role.id}>{role.name}</li>
-                    </template>
-                  </ul>
-                </template>
-                <template lwc:if={selection.hasProjects}>
-                  <h4 class="selection-label">Projects</h4>
-                  <ul class="selection-list selection-projects">
-                    <template for:each={selection.projects} for:item="project">
-                      <li key={project.id}>{project.name}</li>
-                    </template>
-                  </ul>
-                </template>
-                <template lwc:if={selection.isUnused}>
-                  <p class="selection-none">
-                    No role or project is linked to this skill yet.
-                  </p>
-                </template>
-              </div>
             </template>
           </div>
         </template>
@@ -175,9 +207,11 @@
             <template lwc:if={showGraphCanvas}>
               <p class="graph-hint">
                 Hover or select a node to see its connections. Drag a node to
-                move it. Zoom with the buttons, Ctrl and the mouse wheel, or a
-                pinch. Drag the background, or use the arrow keys on the focused
-                graph, to pan.
+                move it, and it stays there for this visit. Zoom with the
+                buttons, Ctrl and the mouse wheel, or a pinch. Drag the
+                background, or use the arrow keys on the focused graph, to pan.
+                Fit shows the whole graph, and Reset layout puts every node
+                back.
               </p>
               <template lwc:if={canZoom}>
                 <div
@@ -204,10 +238,18 @@
                   <button
                     type="button"
                     class="graph-control"
-                    data-action="reset"
-                    onclick={handleResetView}
+                    data-action="fit"
+                    onclick={handleFit}
                   >
-                    Reset view
+                    Fit
+                  </button>
+                  <button
+                    type="button"
+                    class="graph-control"
+                    data-action="reset-layout"
+                    onclick={handleResetLayout}
+                  >
+                    Reset layout
                   </button>
                   <span class="zoom-level" aria-live="polite">{zoomLabel}</span>
                 </div>
@@ -222,7 +264,7 @@
                 onfocusout={handleGraphBlur}
               >
                 <p class="pan-hint" id="pan-hint">
-                  Arrow keys pan the graph. Reset view centres it again.
+                  Arrow keys pan the graph. Fit shows all of it again.
                 </p>
                 <svg
                   class="graph-svg"
@@ -234,7 +276,7 @@
                     <template for:each={graphModel.edges} for:item="edge">
                       <line
                         key={edge.key}
-                        class="graph-edge"
+                        class={edge.className}
                         x1={edge.x1}
                         y1={edge.y1}
                         x2={edge.x2}
@@ -251,7 +293,20 @@
                         onclick={handleNodeClick}
                       >
                         <title>{node.title}</title>
-                        <circle cx={node.cx} cy={node.cy} r={node.r}></circle>
+                        <template lwc:if={node.hasRing}>
+                          <circle
+                            class="evidence-ring"
+                            cx={node.cx}
+                            cy={node.cy}
+                            r={node.ringR}
+                          ></circle>
+                        </template>
+                        <circle
+                          class="node-dot"
+                          cx={node.cx}
+                          cy={node.cy}
+                          r={node.r}
+                        ></circle>
                         <template lwc:if={node.showLabel}>
                           <text
                             class="node-label"
@@ -281,6 +336,133 @@
                   </g>
                 </svg>
               </div>
+              <ul class="graph-legend" aria-label="Graph legend">
+                <li class="legend-item">
+                  <svg
+                    class="legend-swatch"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      class="legend-dot legend-skill"
+                      cx="10"
+                      cy="10"
+                      r="6"
+                    ></circle>
+                  </svg>
+                  Skill
+                </li>
+                <li class="legend-item">
+                  <svg
+                    class="legend-swatch"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      class="legend-dot legend-role"
+                      cx="10"
+                      cy="10"
+                      r="6"
+                    ></circle>
+                  </svg>
+                  Role
+                </li>
+                <li class="legend-item">
+                  <svg
+                    class="legend-swatch"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      class="legend-dot legend-project"
+                      cx="10"
+                      cy="10"
+                      r="6"
+                    ></circle>
+                  </svg>
+                  Project
+                </li>
+                <template lwc:if={hasCertifications}>
+                  <li class="legend-item">
+                    <svg
+                      class="legend-swatch"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                    >
+                      <circle
+                        class="legend-dot legend-certification"
+                        cx="10"
+                        cy="10"
+                        r="6"
+                      ></circle>
+                    </svg>
+                    Certification
+                  </li>
+                </template>
+                <template lwc:if={hasRetired}>
+                  <li class="legend-item">
+                    <svg
+                      class="legend-swatch"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                    >
+                      <circle
+                        class="legend-dot legend-retired"
+                        cx="10"
+                        cy="10"
+                        r="6"
+                      ></circle>
+                    </svg>
+                    Retired certification
+                  </li>
+                </template>
+                <li class="legend-item legend-evidence">
+                  <svg
+                    class="legend-swatch legend-swatch_wide"
+                    viewBox="0 0 84 20"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      class="legend-ring legend-ring-1"
+                      cx="10"
+                      cy="10"
+                      r="7.5"
+                    ></circle>
+                    <circle
+                      class="legend-dot legend-skill"
+                      cx="10"
+                      cy="10"
+                      r="5"
+                    ></circle>
+                    <circle
+                      class="legend-ring legend-ring-2"
+                      cx="40"
+                      cy="10"
+                      r="8"
+                    ></circle>
+                    <circle
+                      class="legend-dot legend-skill"
+                      cx="40"
+                      cy="10"
+                      r="5"
+                    ></circle>
+                    <circle
+                      class="legend-ring legend-ring-3"
+                      cx="72"
+                      cy="10"
+                      r="8.5"
+                    ></circle>
+                    <circle
+                      class="legend-dot legend-skill"
+                      cx="72"
+                      cy="10"
+                      r="5"
+                    ></circle>
+                  </svg>
+                  A heavier ring and line: more kinds of evidence (a role, a
+                  project, a certification) back the skill.
+                </li>
+              </ul>
               <p class="graph-selection" aria-live="polite">
                 {graphSelectionText}
               </p>

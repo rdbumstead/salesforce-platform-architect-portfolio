@@ -8,9 +8,13 @@
  *                      that SVG and report back through callbacks, so the template stays the only thing
  *                      that draws. attachPanZoom can also leave the plain wheel to the page, pan past
  *                      the drawn box at the resting scale and pan by a fixed step for arrow keys.
- *                      Consumers: skillNetwork for the force layout and pan, zoom and drag,
- *                      schemaVisualizer for the force layout. Callers never load the engine on a
- *                      phone or before a graph opens.
+ *                      The fit is opt in, so a caller that passes nothing keeps the old view:
+ *                      boundsOf and fitTransform work out the view that holds a drawing, fitTo
+ *                      moves the view there, and a duration on a button move eases it with
+ *                      d3-transition. Wheel, pinch and drag moves never ease.
+ *                      Consumers: skillNetwork for the force layout, the fit and pan, zoom and
+ *                      drag, schemaVisualizer for the force layout and boundsOf. Callers never
+ *                      load the engine on a phone or before a graph opens.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -238,6 +242,67 @@ export function layoutGraph(d3, nodes, edges, options = {}) {
 /** Zoom limits and the factor one zoom in or zoom out step applies. */
 export const ZOOM = Object.freeze({ min: 1, max: 4, step: 1.5 });
 
+/**
+ * The box that holds every given box, or null when none is finite.
+ * @param {Array<object>} boxes each { left, top, right, bottom }
+ * @param {number} [margin] added on every side, 0 by default
+ * @returns {{left: number, top: number, right: number, bottom: number}|null} the union
+ */
+export function boundsOf(boxes, margin = 0) {
+  let result = null;
+  (Array.isArray(boxes) ? boxes : []).forEach((box) => {
+    if (
+      !box ||
+      ![box.left, box.top, box.right, box.bottom].every(Number.isFinite)
+    ) {
+      return;
+    }
+    result = result
+      ? {
+          left: Math.min(result.left, box.left),
+          top: Math.min(result.top, box.top),
+          right: Math.max(result.right, box.right),
+          bottom: Math.max(result.bottom, box.bottom)
+        }
+      : { left: box.left, top: box.top, right: box.right, bottom: box.bottom };
+  });
+  const pad = numberOr(margin, 0);
+  return result
+    ? {
+        left: result.left - pad,
+        top: result.top - pad,
+        right: result.right + pad,
+        bottom: result.bottom + pad
+      }
+    : null;
+}
+
+/**
+ * The zoom transform that shows a box whole and centred in the visible extent. Pure.
+ * @param {object} bounds { left, top, right, bottom } in the SVG's own units
+ * @param {Array<Array<number>>} extent the visible box as [[x0, y0], [x1, y1]]
+ * @param {object} [options] min and max (the scale limits, default ZOOM)
+ * @returns {{x: number, y: number, k: number}} translate and scale, as d3-zoom applies them
+ */
+export function fitTransform(bounds, extent, options = {}) {
+  const min = numberOr(options.min, ZOOM.min);
+  const max = numberOr(options.max, ZOOM.max);
+  if (!bounds || !Array.isArray(extent)) {
+    return { x: 0, y: 0, k: 1 };
+  }
+  const [[x0, y0], [x1, y1]] = extent;
+  const width = Math.max(bounds.right - bounds.left, 1);
+  const height = Math.max(bounds.bottom - bounds.top, 1);
+  const k = clamp(Math.min((x1 - x0) / width, (y1 - y0) / height), min, max);
+  const centreX = (bounds.left + bounds.right) / 2;
+  const centreY = (bounds.top + bounds.bottom) / 2;
+  return {
+    x: (x0 + x1) / 2 - centreX * k,
+    y: (y0 + y1) / 2 - centreY * k,
+    k
+  };
+}
+
 /** The gesture name onGestureEnd reports for the event that started it. */
 const GESTURES = Object.freeze({
   wheel: "wheel",
@@ -282,10 +347,15 @@ function cappedWheelDelta(step) {
  *   event), onGestureEnd (called with "wheel", "mouse", "touch" or "pinch" when a pointer gesture
  *   ends, once per gesture. "pinch" is a touch gesture that had two or more fingers down at any
  *   point, also when the second finger joined after the first had started to pan),
- *   min, max and step (default ZOOM)
- * @returns {object|undefined} { zoomIn, zoomOut, reset, panBy, scale, detach }, or undefined
- *   when the loaded library has no d3-zoom (an older cached copy), so callers simply hide their
- *   controls. panBy(dx, dy) moves the view by that many SVG units on screen at any scale.
+ *   min, max and step (default ZOOM), rest (the resting scale, default min: one finger on a
+ *   touch screen pans the graph only above it, so a caller that rests above min still leaves
+ *   one finger to the page)
+ * @returns {object|undefined} { zoomIn, zoomOut, reset, fitTo, panBy, scale, detach }, or
+ *   undefined when the loaded library has no d3-zoom (an older cached copy), so callers simply
+ *   hide their controls. panBy(dx, dy) moves the view by that many SVG units on screen at any
+ *   scale. fitTo({ x, y, k }) moves the view to that transform. zoomIn, zoomOut, reset and
+ *   fitTo take an optional duration in ms, and ease over it when d3-transition is loaded. With
+ *   no duration, or 0, they move at once.
  */
 export function attachPanZoom(d3, svg, options = {}) {
   if (
@@ -300,6 +370,7 @@ export function attachPanZoom(d3, svg, options = {}) {
   const min = numberOr(options.min, ZOOM.min);
   const max = numberOr(options.max, ZOOM.max);
   const step = numberOr(options.step, ZOOM.step);
+  const rest = numberOr(options.rest, min);
   const ctrlWheel = options.ctrlWheel === true;
   const selection = d3.select(svg);
   // The pointer gesture in progress, named as onGestureEnd reports it.
@@ -311,7 +382,7 @@ export function attachPanZoom(d3, svg, options = {}) {
     // Two fingers, or any touch once zoomed in, pan and zoom.
     .filter((event) => {
       if (event.type === "touchstart") {
-        return event.touches.length > 1 || d3.zoomTransform(svg).k > min;
+        return event.touches.length > 1 || d3.zoomTransform(svg).k > rest;
       }
       if (ctrlWheel && event.type === "wheel") {
         // Turned down here, the wheel event is never cancelled, so the page scrolls.
@@ -359,10 +430,35 @@ export function attachPanZoom(d3, svg, options = {}) {
   }
   // A double click selects a node twice, so it never zooms.
   selection.call(behaviour).on("dblclick.zoom", null);
+  // A button move eases over the duration when one is given and d3-transition is loaded.
+  const mover = (duration) => {
+    if (
+      numberOr(duration, 0) > 0 &&
+      typeof selection.transition === "function"
+    ) {
+      return selection.interrupt().transition().duration(duration);
+    }
+    return selection;
+  };
   return {
-    zoomIn: () => selection.call(behaviour.scaleBy, step),
-    zoomOut: () => selection.call(behaviour.scaleBy, 1 / step),
-    reset: () => selection.call(behaviour.transform, d3.zoomIdentity),
+    zoomIn: (duration) => mover(duration).call(behaviour.scaleBy, step),
+    zoomOut: (duration) => mover(duration).call(behaviour.scaleBy, 1 / step),
+    reset: (duration) =>
+      mover(duration).call(behaviour.transform, d3.zoomIdentity),
+    fitTo: (transform, duration) => {
+      if (
+        !transform ||
+        ![transform.x, transform.y, transform.k].every(Number.isFinite)
+      ) {
+        return;
+      }
+      mover(duration).call(
+        behaviour.transform,
+        d3.zoomIdentity
+          .translate(transform.x, transform.y)
+          .scale(clamp(transform.k, min, max))
+      );
+    },
     // translateBy moves by its arguments times the scale, so divide to move a fixed distance.
     panBy: (dx, dy) => {
       const k = d3.zoomTransform(svg).k || 1;

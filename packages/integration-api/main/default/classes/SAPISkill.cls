@@ -39,10 +39,10 @@ global with sharing class SAPISkill implements QueryDefinitions.Provider {
         limitParam,
         offsetParam
       );
-      // The total counts every skill, whatever the category filter.
+      // The total counts the rows the request's filter matches, not one page of them.
       Integer totalCount = QueryDefinitions.count(
         LIST_QUERY,
-        listBinds(null),
+        listBinds(category),
         listDefault()
       );
 

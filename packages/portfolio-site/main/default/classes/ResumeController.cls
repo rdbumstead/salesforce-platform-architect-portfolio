@@ -6,7 +6,8 @@
  *                      current certifications, with how many entries each tab shows at first.
  *                      Skills follow the persona: a chosen persona gets the skills tagged for
  *                      it plus every untagged skill, and no persona gets them all.
- *                      getHeader also returns heroLine, the owner's one line for the home hero.
+ *                      getHeader also returns heroLine (the hero's title line) and valueSentence
+ *                      (the hero's one sentence on what the owner does), for the home hero.
  *                      Never returns an email, a phone number, an address or
  *                      any Owner_* value.
  * @author            : Ryan Bumstead
@@ -187,8 +188,9 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
    * @description Returns only the owner header, for the home page hero. One query on the owner
    *              Contact, so the hero bio never waits on the roles, skills and credentials that
    *              getResume reads. Same fields and same selector as getResume's header, plus
-   *              heroLine: Hero_Line__c trimmed, or null when it is blank. getResume leaves
-   *              heroLine null, because the resume does not show it.
+   *              heroLine and valueSentence: Hero_Line__c and Value_Sentence__c trimmed, or
+   *              null when blank. getResume leaves both null, because the resume does not
+   *              show them.
    * @return Header The owner header, or null when no Contact is the portfolio owner.
    * @example
    * ResumeController.Header header = ResumeController.getHeader();
@@ -201,6 +203,9 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
       header.heroLine = String.isBlank(owner.Hero_Line__c)
         ? null
         : owner.Hero_Line__c.trim();
+      header.valueSentence = String.isBlank(owner.Value_Sentence__c)
+        ? null
+        : owner.Value_Sentence__c.trim();
     }
     return header;
   }
@@ -439,7 +444,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   private static QueryDefinitions.QueryDefault ownerDefault() {
     return new QueryDefinitions.QueryDefault(
         'Contact',
-        'Name, Title, Career_Objective__c, Hero_Line__c, LinkedIn_URL__c, GitHub_URL__c, Trailhead_URL__c, Portfolio_URL__c'
+        'Name, Title, Career_Objective__c, Hero_Line__c, Value_Sentence__c, LinkedIn_URL__c, GitHub_URL__c, Trailhead_URL__c, Portfolio_URL__c'
       )
       .filter('Is_Portfolio_Owner__c = TRUE')
       .orderBy('CreatedDate ASC')
@@ -631,8 +636,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   }
 
   /**
-   * @description The owner header. Holds public profile links only. heroLine is set by
-   *              getHeader alone.
+   * @description The owner header. Holds public profile links only. heroLine and
+   *              valueSentence are set by getHeader alone.
    */
   public class Header {
     @AuraEnabled
@@ -651,6 +656,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     public String portfolioUrl;
     @AuraEnabled
     public String heroLine;
+    @AuraEnabled
+    public String valueSentence;
   }
 
   /**

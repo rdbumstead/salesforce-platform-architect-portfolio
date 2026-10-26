@@ -124,12 +124,14 @@ describe("c-experience-timeline", () => {
     expect(query(element, "section")).toBeNull();
   });
 
-  it("renders the section in the home page style", async () => {
+  it("renders the section with its heading and no eyebrow repeating it", async () => {
     const element = await render(TIMELINE);
-    expect(query(element, ".section-label").textContent).toContain(
-      "03 / WORK, EDUCATION AND CERTIFICATIONS"
-    );
+    expect(query(element, ".section-label")).toBeNull();
+    expect(query(element, "section").textContent).not.toContain("03 /");
     const heading = query(element, "h2.section-heading");
+    expect(heading.textContent.trim()).toBe(
+      "Work, education and certifications."
+    );
     expect(heading).not.toBeNull();
     expect(query(element, "section").getAttribute("aria-labelledby")).toBe(
       heading.getAttribute("id")
@@ -491,7 +493,7 @@ describe("c-experience-timeline View all", () => {
     const button = toggle(element, "work");
     expect(button.tagName).toBe("BUTTON");
     expect(button.getAttribute("type")).toBe("button");
-    expect(button.textContent.trim()).toBe("View all 7");
+    expect(button.textContent.trim()).toBe("View all 7 roles");
     expect(button.getAttribute("aria-expanded")).toBe("false");
     const list = query(element, '[data-panel="work"] ol');
     expect(button.getAttribute("aria-controls")).toBe(list.getAttribute("id"));
@@ -518,13 +520,49 @@ describe("c-experience-timeline View all", () => {
     await flushPromises();
     button = toggle(element, "work");
     expect(rows(element, "work")).toHaveLength(5);
-    expect(button.textContent.trim()).toBe("View all 7");
+    expect(button.textContent.trim()).toBe("View all 7 roles");
     expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(element.shadowRoot.activeElement).toBe(button);
     expect(trackEvent).toHaveBeenLastCalledWith("timeline_expanded", {
       tab: "work",
       expanded: false
     });
+  });
+
+  it("animates only the entries a View all press reveals", async () => {
+    const element = await render({ work: roles(7), education: [] });
+    expect(query(element, ".entry-revealed")).toBeNull();
+    toggle(element, "work").click();
+    await flushPromises();
+    const revealed = rows(element, "work").map((row) =>
+      row.classList.contains("entry-revealed")
+    );
+    expect(revealed).toEqual([false, false, false, false, false, true, true]);
+
+    toggle(element, "work").click();
+    await flushPromises();
+    expect(query(element, ".entry-revealed")).toBeNull();
+  });
+
+  it("reveals the entries at once under reduced motion", async () => {
+    const original = window.matchMedia;
+    window.matchMedia = jest.fn((media) => ({
+      matches: media === "(prefers-reduced-motion: reduce)",
+      media,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn()
+    }));
+    try {
+      const element = await render({ work: roles(7), education: [] });
+      toggle(element, "work").click();
+      await flushPromises();
+      expect(rows(element, "work")).toHaveLength(7);
+      expect(query(element, ".entry-revealed")).toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
   });
 
   it("keeps each tab's own state", async () => {
@@ -534,7 +572,9 @@ describe("c-experience-timeline View all", () => {
     tab(element, "education").click();
     await flushPromises();
     expect(rows(element, "education")).toHaveLength(5);
-    expect(toggle(element, "education").textContent.trim()).toBe("View all 6");
+    expect(toggle(element, "education").textContent.trim()).toBe(
+      "View all 6 schools"
+    );
     tab(element, "work").click();
     await flushPromises();
     expect(rows(element, "work")).toHaveLength(7);
@@ -555,7 +595,7 @@ describe("c-experience-timeline View all", () => {
       tabLimit: 2
     });
     expect(rows(element, "work")).toHaveLength(2);
-    expect(toggle(element, "work").textContent.trim()).toBe("View all 4");
+    expect(toggle(element, "work").textContent.trim()).toBe("View all 4 roles");
   });
 
   it("caps the Certifications tab the same way", async () => {
@@ -573,7 +613,7 @@ describe("c-experience-timeline View all", () => {
     });
     expect(rows(element, "certifications")).toHaveLength(5);
     expect(toggle(element, "certifications").textContent.trim()).toBe(
-      "View all 6"
+      "View all 6 certifications"
     );
     expect(query(element, '[data-id="verify-link"]')).not.toBeNull();
   });

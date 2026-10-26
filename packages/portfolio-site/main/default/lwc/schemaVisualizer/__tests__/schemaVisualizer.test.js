@@ -24,7 +24,11 @@ jest.mock(
 
 jest.mock(
   "c/graphEngine",
-  () => ({ loadGraphEngine: jest.fn(), layoutGraph: jest.fn() }),
+  () => ({
+    loadGraphEngine: jest.fn(),
+    layoutGraph: jest.fn(),
+    boundsOf: jest.requireActual("c/graphEngine").boundsOf
+  }),
   { virtual: true }
 );
 
@@ -44,7 +48,14 @@ const PAYLOAD = require("./data/schemaGraph.json");
 
 // Three objects and three reference fields. Account.ParentId points at Account itself,
 // so it is listed but not drawn.
-const EXPECTED = { nodes: 3, edges: 3, drawnEdges: 2, masterDetail: 1 };
+// Account.ParentId is a platform self lookup: not drawn and not listed.
+const EXPECTED = {
+  nodes: 3,
+  edges: 3,
+  listedEdges: 2,
+  drawnEdges: 2,
+  masterDetail: 1
+};
 
 const FAKE_D3 = { forceSimulation: jest.fn() };
 
@@ -103,13 +114,14 @@ describe("c-schema-visualizer", () => {
     jest.clearAllMocks();
   });
 
-  it("places View source with the schemaVisualizer key beside the heading", async () => {
+  it("places View source with the schemaVisualizer key last in the title row", async () => {
     const element = mount();
     await flushPromises();
 
-    const control = q(element, ".erd-header c-view-source");
-    expect(control).not.toBeNull();
-    expect(control.sourceKey).toBe("schemaVisualizer");
+    const row = q(element, ".erd-title-row");
+    expect(row.firstElementChild.tagName).toBe("H2");
+    expect(row.lastElementChild.tagName).toBe("C-VIEW-SOURCE");
+    expect(row.lastElementChild.sourceKey).toBe("schemaVisualizer");
   });
 
   it("asks for the employerHub scope by default and shows a loading line", async () => {
@@ -127,13 +139,13 @@ describe("c-schema-visualizer", () => {
     expect(getSchemaGraph.getLastConfig()).toEqual({ scope: "portfolio" });
   });
 
-  it("puts every node and every edge from the payload in the list, with the caption", async () => {
+  it("puts every node and every edge but the platform self lookups in the list, with the caption", async () => {
     const element = mount();
     getSchemaGraph.emit(PAYLOAD);
     await flushPromises();
 
     expect(qa(element, ".object-item")).toHaveLength(EXPECTED.nodes);
-    expect(qa(element, ".relationship")).toHaveLength(EXPECTED.edges);
+    expect(qa(element, ".relationship")).toHaveLength(EXPECTED.listedEdges);
     expect(q(element, ".caption").textContent).toBe(
       "3 objects, described in 142 ms of server CPU"
     );
@@ -144,6 +156,42 @@ describe("c-schema-visualizer", () => {
       "Partner_Engagement__c: master-detail to EH_Partner_Engagement__c"
     );
     expect(texts).toContain("Account__c: lookup to Account");
+    expect(texts.join(" ")).not.toContain("ParentId");
+  });
+
+  it("leaves out only the MasterRecordId and ParentId self lookups", async () => {
+    const element = mount();
+    const payload = JSON.parse(JSON.stringify(PAYLOAD));
+    payload.edges.push(
+      {
+        fromObject: "Account",
+        toObject: "Account",
+        field: "MasterRecordId",
+        kind: "lookup"
+      },
+      {
+        fromObject: "Account",
+        toObject: "Account",
+        field: "Reports_To__c",
+        kind: "lookup"
+      },
+      {
+        fromObject: "EH_Partner_Engagement__c",
+        toObject: "Account",
+        field: "ParentId",
+        kind: "lookup"
+      }
+    );
+    getSchemaGraph.emit(payload);
+    await flushPromises();
+
+    const texts = Array.from(qa(element, ".relationship")).map(
+      (item) => item.textContent
+    );
+    expect(texts).toContain("Reports_To__c: lookup to Account");
+    expect(texts).toContain("ParentId: lookup to Account");
+    expect(texts.join(" ")).not.toContain("MasterRecordId");
+    expect(texts).toHaveLength(EXPECTED.listedEdges + 2);
   });
 
   it("loads the engine on desktop and draws every node and each edge with length", async () => {

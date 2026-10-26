@@ -93,7 +93,7 @@ components:
         format: uuid
 
     TotalCountResponse:
-      description: "Total number of records available for this resource (Estimation)."
+      description: "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request."
       schema:
         type: integer
 

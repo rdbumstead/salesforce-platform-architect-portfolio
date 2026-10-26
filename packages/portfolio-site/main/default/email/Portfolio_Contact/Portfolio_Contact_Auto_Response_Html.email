@@ -1,0 +1,60 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Thanks for reaching out</title>
+</head>
+<body style="margin:0;padding:0;background:#eef0f3;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef0f3;padding:16px 8px 40px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;">
+        <tr>
+          <td style="height:4px;background:#2563eb;border-radius:12px 12px 0 0;font-size:0;line-height:0;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td style="padding:32px 32px 8px;font-family:Inter,Arial,Helvetica,sans-serif;">
+            <p style="margin:0 0 4px;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:#667085;">ryanbumstead.com</p>
+            <h1 style="margin:0;font-size:24px;line-height:1.3;font-weight:700;color:#101828;">Thanks, {!Lead.FirstName}. Your message reached me.</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 0;font-family:Inter,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#101828;">
+            <p style="margin:0 0 16px;">Thanks for getting in touch through my portfolio. I read every message myself, and I'll reply within two business days.</p>
+            <p style="margin:0 0 24px;">If it's urgent, LinkedIn is the fastest way to reach me.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 8px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="border-radius:8px;background:#2563eb;">
+                  <a href="https://www.linkedin.com/in/ryanbumstead" style="display:inline-block;padding:12px 20px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">Message me on LinkedIn</a>
+                </td>
+                <td style="width:12px;">&nbsp;</td>
+                <td style="border-radius:8px;border:1px solid #d0d5dd;">
+                  <a href="https://ryanbumstead.com/resume" style="display:inline-block;padding:11px 20px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:15px;font-weight:600;color:#101828;text-decoration:none;border-radius:8px;">View the resume</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:28px 32px 32px;font-family:Inter,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#101828;">
+            <p style="margin:0;font-weight:700;">Ryan Bumstead</p>
+            <p style="margin:0;color:#667085;">Salesforce Platform Architect</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 24px;border-top:1px solid #e5e7eb;font-family:Inter,Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#667085;">
+            You're getting this one email because you sent a message through <a href="https://ryanbumstead.com" style="color:#2563eb;">ryanbumstead.com</a>. There's no mailing list, and you won't hear from this address again unless I'm replying to you.
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

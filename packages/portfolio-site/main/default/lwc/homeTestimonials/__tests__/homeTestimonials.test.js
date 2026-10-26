@@ -1,7 +1,9 @@
 /**
- * @description       : Unit tests for homeTestimonials: hidden until the server sends quotes,
- *                      up to three quotes in the order sent, each in its tone, and the link to
- *                      every testimonial.
+ * @description       : Unit tests for homeTestimonials: the quotes once the server sends
+ *                      them, up to three in the order sent, each in its tone, and the link to
+ *                      every testimonial. Until then, the credentials strip with the
+ *                      certification count, the Trailhead link when it is safe, and the
+ *                      references line.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -10,9 +12,19 @@
 import { createElement } from "@lwc/engine-dom";
 import HomeTestimonials from "c/homeTestimonials";
 import getHomeTestimonials from "@salesforce/apex/TestimonialController.getHomeTestimonials";
+import getHeader from "@salesforce/apex/ResumeController.getHeader";
 
 jest.mock(
   "@salesforce/apex/TestimonialController.getHomeTestimonials",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+jest.mock(
+  "@salesforce/apex/ResumeController.getHeader",
   () => {
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
@@ -91,25 +103,81 @@ describe("c-home-testimonials", () => {
     expect(element.shadowRoot.querySelector("section")).toBeNull();
   });
 
-  it("renders nothing while the server sends no quotes, a null or an error", async () => {
+  it("shows the credentials strip instead of quotes while the server sends none, a null or an error", async () => {
     const element = render();
+    const quotes = () => element.shadowRoot.querySelector('[data-id="quotes"]');
+    const strip = () =>
+      element.shadowRoot.querySelector('[data-id="credentials"]');
     getHomeTestimonials.emit([]);
     await flush();
-    expect(element.shadowRoot.querySelector("section")).toBeNull();
+    expect(quotes()).toBeNull();
+    expect(strip()).not.toBeNull();
 
     getHomeTestimonials.emit(QUOTES);
     await flush();
-    expect(element.shadowRoot.querySelector("section")).not.toBeNull();
+    expect(quotes()).not.toBeNull();
+    expect(strip()).toBeNull();
 
     getHomeTestimonials.emit(null);
     await flush();
-    expect(element.shadowRoot.querySelector("section")).toBeNull();
+    expect(quotes()).toBeNull();
+    expect(strip()).not.toBeNull();
 
     getHomeTestimonials.emit(QUOTES);
     await flush();
     getHomeTestimonials.error();
     await flush();
-    expect(element.shadowRoot.querySelector("section")).toBeNull();
+    expect(quotes()).toBeNull();
+    expect(strip()).not.toBeNull();
+  });
+
+  it("names the active certifications and references, and links to Trailhead in a new tab", async () => {
+    const element = render();
+    getHomeTestimonials.emit([]);
+    getHeader.emit({ trailheadUrl: "www.salesforce.com/trailblazer/someone" });
+    await flush();
+    const items = [...element.shadowRoot.querySelectorAll(".credential")].map(
+      text
+    );
+    expect(items).toEqual([
+      "7 active Salesforce certifications",
+      "Verify on Trailhead →, opens in a new tab",
+      "References available on request"
+    ]);
+    const link = element.shadowRoot.querySelector('[data-id="trailhead-link"]');
+    expect(link.getAttribute("href")).toBe(
+      "https://www.salesforce.com/trailblazer/someone"
+    );
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it("drops only the Trailhead link when the URL is missing, unsafe or the header fails", async () => {
+    const element = render();
+    getHomeTestimonials.emit([]);
+    // The script URL is the input under test, proving it never renders as a link.
+    // eslint-disable-next-line no-script-url
+    getHeader.emit({ trailheadUrl: "javascript:alert(1)" });
+    await flush();
+    const link = () =>
+      element.shadowRoot.querySelector('[data-id="trailhead-link"]');
+    expect(link()).toBeNull();
+    expect(element.shadowRoot.querySelectorAll(".credential")).toHaveLength(2);
+
+    getHeader.error();
+    await flush();
+    expect(link()).toBeNull();
+    expect(element.shadowRoot.querySelectorAll(".credential")).toHaveLength(2);
+  });
+
+  it("shows no numbered eyebrow over the quotes heading", async () => {
+    const element = render();
+    getHomeTestimonials.emit(QUOTES);
+    await flush();
+    expect(element.shadowRoot.querySelector(".section-label")).toBeNull();
+    expect(text(element.shadowRoot.querySelector("h2"))).toBe(
+      "What people say."
+    );
   });
 
   it("shows the quotes in the order sent, trimmed, with author and byline", async () => {

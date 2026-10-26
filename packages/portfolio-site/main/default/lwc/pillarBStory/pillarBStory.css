@@ -1,8 +1,11 @@
 /*
  * Colours, fonts, radii and spacing come only from the --pf- design tokens,
  * so the story follows the light and dark themes. Every element that sets a background also
- * sets its text colour. The architecture image carries its own light panel, so it reads in
- * both themes. Section numbers use the mono font like the other pillar labels.
+ * sets its text colour. The architecture image carries its own light panel, so it is dimmed a
+ * little in the dark theme by an overlay that multiplies the page background over it, which
+ * changes nothing in the light theme. The shared SLDS reset removes list markers from every
+ * list, so the lists here set theirs back. Below 600 px the cost table becomes one card per
+ * option.
  */
 :host {
   display: block;
@@ -42,6 +45,12 @@
 .not-built {
   margin: var(--pf-space-2) 0 0;
   padding-left: var(--pf-space-5);
+  list-style: disc;
+}
+
+.matrix-host {
+  display: block;
+  margin-bottom: var(--pf-space-4);
 }
 
 .facts li,
@@ -99,6 +108,12 @@
   min-height: 24px;
 }
 
+.cost-table td a:not(:last-child)::after {
+  content: ",";
+  color: var(--pf-body);
+  margin-right: 0.25em;
+}
+
 .story-table a:focus-visible {
   outline: 2px solid var(--pf-accent);
   outline-offset: 2px;
@@ -113,6 +128,29 @@
   margin: 0;
 }
 
+.architecture-link {
+  position: relative;
+  display: block;
+  border-radius: var(--pf-radius-sm);
+  overflow: hidden;
+}
+
+.architecture-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--pf-bg);
+  mix-blend-mode: multiply;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.architecture-link:focus-visible,
+.full-size-link:focus-visible {
+  outline: 2px solid var(--pf-focus, var(--pf-accent));
+  outline-offset: 2px;
+}
+
 .architecture-image {
   display: block;
   width: 100%;
@@ -125,4 +163,83 @@
   color: var(--pf-muted);
   font-size: 0.8125rem;
   margin-top: var(--pf-space-2);
+}
+
+.full-size-link {
+  display: block;
+  min-height: 24px;
+  color: var(--pf-accent);
+}
+
+.assistive {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 599.98px) {
+  .cost-table caption {
+    display: block;
+  }
+
+  .cost-table td a:not(:last-child)::after {
+    content: none;
+  }
+
+  .cost-table,
+  .cost-table thead,
+  .cost-table tbody,
+  .cost-table tr,
+  .cost-table th,
+  .cost-table td {
+    display: block;
+  }
+
+  .cost-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .cost-table tbody tr {
+    margin-bottom: var(--pf-space-3);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-sm);
+    background-color: var(--pf-surface);
+    color: var(--pf-body);
+  }
+
+  .cost-table tbody th {
+    border-bottom: 1px solid var(--pf-border);
+    background-color: var(--pf-subtle);
+    padding: var(--pf-space-3);
+  }
+
+  .cost-table tbody td {
+    border-bottom: 0;
+    padding: var(--pf-space-2) var(--pf-space-3);
+  }
+
+  .cost-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--pf-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .cost-table a {
+    display: block;
+  }
 }
