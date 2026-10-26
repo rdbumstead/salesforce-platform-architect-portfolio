@@ -30,6 +30,12 @@
         description="The opening paragraph, shown in a larger size."
       />
             <property
+        name="points"
+        type="String"
+        label="Bullet points"
+        description="Short bullets under the lead, separated by a vertical bar. None when blank."
+      />
+            <property
         name="designLabel"
         type="String"
         label="Design link text"

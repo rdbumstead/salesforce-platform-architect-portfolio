@@ -7,6 +7,13 @@
     <template lwc:if={leadText}>
       <p class="intro-lead">{leadText}</p>
     </template>
+    <template lwc:if={hasPoints}>
+      <ul class="intro-points">
+        <template for:each={pointItems} for:item="point">
+          <li key={point.key}>{point.text}</li>
+        </template>
+      </ul>
+    </template>
     <template lwc:if={designHref}>
       <p class="intro-actions">
         <a
