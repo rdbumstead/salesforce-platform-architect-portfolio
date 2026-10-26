@@ -13,6 +13,7 @@ import { createElement } from "@lwc/engine-dom";
 import SmartChecklist, {
   formatTime,
   localTime,
+  localDateTime,
   shortSha,
   timeView
 } from "c/smartChecklist";
@@ -177,7 +178,7 @@ describe("c-smart-checklist", () => {
     expect(element.shadowRoot.querySelector("a.run-link")).toBeNull();
   });
 
-  it("labels the three items, the heartbeat as Org heartbeat today", async () => {
+  it("labels the three items, plain sentences for the heartbeat and the caches", async () => {
     const element = createComponent();
     getPipelineStatus.emit(
       pipelineStatus([
@@ -191,8 +192,10 @@ describe("c-smart-checklist", () => {
     const label = (key) =>
       row(element, key).querySelector(".label").textContent.trim();
     expect(label("deploy")).toBe("Production deploy green");
-    expect(label("heartbeat")).toBe("Org heartbeat today");
-    expect(label("caches")).toBe("Integration caches under 30 minutes old");
+    expect(label("heartbeat")).toBe("Daily health check passed");
+    expect(label("caches")).toBe(
+      "Jira and GitHub data refreshed in the last 30 minutes"
+    );
   });
 
   it("shows No signal yet for every item while the wire returns an error", async () => {
@@ -225,10 +228,10 @@ describe("c-smart-checklist", () => {
     expect(link.getAttribute("href")).toBe(RUN_URL);
     expect(link.getAttribute("title")).toBe(SHA);
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(deploy.textContent).toContain("2026-10-21 08:00 UTC");
+    expect(deploy.textContent).toContain("Oct 21, 4:00 AM EDT");
   });
 
-  it("adds the visitor's own time and zone after the UTC time, in a time element", async () => {
+  it("shows the visitor's own time first and keeps the UTC time in the title", async () => {
     const element = createComponent();
     getPipelineStatus.emit(
       pipelineStatus([
@@ -240,9 +243,8 @@ describe("c-smart-checklist", () => {
     await flushPromises();
 
     const time = row(element, "deploy").querySelector("time.time");
-    expect(time.textContent).toBe(
-      "2026-10-21 08:00 UTC (4:00 AM EDT, your time)"
-    );
+    expect(time.textContent).toBe("Oct 21, 4:00 AM EDT");
+    expect(time.getAttribute("title")).toBe("2026-10-21 08:00 UTC");
     expect(time.getAttribute("datetime")).toBe("2026-10-21T08:00:00.000Z");
   });
 
@@ -263,7 +265,7 @@ describe("c-smart-checklist", () => {
 
     ["deploy", "heartbeat"].forEach((key) => {
       expect(row(element, key).querySelector("time")).toBeNull();
-      expect(row(element, key).textContent).not.toMatch(/UTC|your time/);
+      expect(row(element, key).textContent).not.toMatch(/UTC|EDT/);
     });
   });
 
@@ -321,8 +323,8 @@ describe("c-smart-checklist", () => {
       row(element, "caches").querySelectorAll("p.cache")
     ).map((line) => line.textContent.replace(/\s+/g, " ").trim());
     expect(lines).toEqual([
-      "GitHub cache 2026-10-21 11:50 UTC (7:50 AM EDT, your time)",
-      "Jira cache 2026-10-21 11:45 UTC (7:45 AM EDT, your time)"
+      "GitHub cache Oct 21, 7:50 AM EDT",
+      "Jira cache Oct 21, 7:45 AM EDT"
     ]);
     const times = Array.from(row(element, "caches").querySelectorAll("time"));
     expect(times.map((time) => time.getAttribute("datetime"))).toEqual([
@@ -459,9 +461,18 @@ describe("c-smart-checklist", () => {
       expect(localTime("2026-10-24T12:06:00.000Z")).toBe("12:06 PM UTC");
     });
 
-    it("builds the full text and the ISO value, as in the example", () => {
+    it("gives the local date and time with the zone", () => {
+      expect(localDateTime("2026-10-24T12:06:00.000Z")).toBe(
+        "Oct 24, 8:06 AM EDT"
+      );
+      expect(localDateTime(null)).toBe("");
+      expect(localDateTime("not a date")).toBe("");
+    });
+
+    it("builds the local text, the UTC title and the ISO value", () => {
       expect(timeView("2026-10-24T12:06:00.000Z")).toEqual({
-        text: "2026-10-24 12:06 UTC (8:06 AM EDT, your time)",
+        text: "Oct 24, 8:06 AM EDT",
+        title: "2026-10-24 12:06 UTC",
         iso: "2026-10-24T12:06:00.000Z"
       });
       expect(timeView(undefined)).toBeNull();
@@ -476,6 +487,7 @@ describe("c-smart-checklist", () => {
       expect(timeView("2026-10-24T12:06:00.000Z").text).toBe(
         "2026-10-24 12:06 UTC"
       );
+      expect(localDateTime("2026-10-24T12:06:00.000Z")).toBe("");
     });
 
     it("shortens a sha to seven characters", () => {

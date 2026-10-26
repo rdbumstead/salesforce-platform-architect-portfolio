@@ -5,10 +5,13 @@
  *                      with refreshApex when the tab becomes visible. There is no timer and no
  *                      streaming subscription. The pipeline publishes a platform event, a
  *                      trigger stores it, and this component reads the stored result.
- *                      Each time shows in UTC first, then the visitor's own time and zone, for
- *                      example "2026-10-24 12:06 UTC (8:06 AM EDT, your time)", inside a time
- *                      element whose datetime is the ISO value. A missing or unreadable value
- *                      shows no time.
+ *                      Each time shows in the visitor's own time and zone first, for example
+ *                      "Oct 24, 8:06 AM EDT", inside a time element whose datetime is the ISO
+ *                      value and whose title is the UTC time ("2026-10-24 12:06 UTC"). Where
+ *                      the browser cannot format a local time the UTC time is shown instead. A
+ *                      missing or unreadable value shows no time. The three items read as plain
+ *                      sentences: a production deploy, a daily health check and Jira and GitHub
+ *                      data refreshed in the last 30 minutes.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -31,8 +34,8 @@ const STATES = {
 const ITEM_LABELS = {
   deploy: "Production deploy green",
   // The server still marks a heartbeat older than 26 hours as out of date.
-  heartbeat: "Org heartbeat today",
-  caches: "Integration caches under 30 minutes old"
+  heartbeat: "Daily health check passed",
+  caches: "Jira and GitHub data refreshed in the last 30 minutes"
 };
 
 const ITEM_ORDER = ["deploy", "heartbeat", "caches"];
@@ -84,18 +87,53 @@ export function localTime(value) {
 }
 
 /**
- * The text and the machine readable value for one time.
+ * The visitor's own date, time and short zone name for an Apex Datetime, such as
+ * "Oct 24, 8:06 AM EDT". Returns "" for a missing or unreadable value or where Intl cannot
+ * format it.
+ * @param {string} value ISO 8601 date time
+ * @returns {string} the local date and time with the zone
+ */
+export function localDateTime(value) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  try {
+    return (
+      new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short"
+      })
+        .format(date)
+        // Some engines put a narrow no-break space before AM or PM.
+        .replace(/ /g, " ")
+    );
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * The text, the hover title and the machine readable value for one time. The text is the
+ * visitor's own time, or the UTC time where a local one cannot be made. The title is always
+ * the UTC time.
  * @param {string} value ISO 8601 date time from Apex
- * @returns {{text: string, iso: string}|null} null for a missing or unreadable value
+ * @returns {{text: string, title: string, iso: string}|null} null for a missing or unreadable value
  */
 export function timeView(value) {
   const utc = formatTime(value);
   if (!utc) {
     return null;
   }
-  const local = localTime(value);
   return {
-    text: local ? `${utc} (${local}, your time)` : utc,
+    text: localDateTime(value) || utc,
+    title: utc,
     iso: new Date(value).toISOString()
   };
 }
@@ -116,6 +154,7 @@ function runEvidence(run) {
     shortSha: short || "run",
     url: run.runUrl || null,
     time: time ? time.text : "",
+    timeTitle: time ? time.title : "",
     iso: time ? time.iso : "",
     linkLabel: `Open the ${run.workflow} run for commit ${short || "unknown"} on GitHub`
   };
@@ -144,6 +183,7 @@ function cacheEvidence(status) {
     // in the text itself and the line reads "GitHub cache 2026-..." to a screen reader too.
     lead: `${row.label} `,
     text: row.view ? row.view.text : "",
+    title: row.view ? row.view.title : "",
     iso: row.view ? row.view.iso : "",
     known: Boolean(row.view)
   }));
