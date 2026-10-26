@@ -1,4 +1,4 @@
-/* Home page timeline, on the --pf- site tokens only, matching heroBanner's section style. */
+/* The timeline under the resume, on the --pf- site tokens only. */
 .timeline {
   max-width: 1024px;
   margin: 0 auto;
@@ -11,18 +11,6 @@
 
 .section {
   padding: 64px 0 24px;
-}
-
-.section-label {
-  margin: 0 0 10px;
-  display: flex;
-  align-items: center;
-  gap: var(--pf-space-3);
-  font-family: var(--pf-font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: var(--pf-muted);
 }
 
 .section-heading {
@@ -118,6 +106,29 @@
   font-family: var(--pf-font-mono);
   font-size: 13px;
   color: var(--pf-muted);
+}
+
+/* Entries a View all press reveals fade and slide in. Transform and opacity only. */
+.entry-revealed {
+  animation: entry-reveal 200ms ease-out both;
+}
+
+@keyframes entry-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-revealed {
+    animation: none;
+  }
 }
 
 /* View all and Show fewer: a real button, sized for touch. */

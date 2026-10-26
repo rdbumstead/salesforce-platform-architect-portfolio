@@ -1,15 +1,17 @@
 /**
- * @description       : Work, Certifications and Education timeline on the home page.
- *                      Reads ResumeController.getTimeline and shows roles, current
+ * @description       : Work, Certifications and Education timeline on the Resume page, under
+ *                      the resume. Reads ResumeController.getTimeline and shows roles, current
  *                      certifications and schools under an accessible tab list, in that order,
  *                      with Work selected first. Renders nothing when every
  *                      list is empty and hides a tab whose list is empty.
  *                      Each tab shows its first tabLimit entries (from the server, 5 when it
- *                      sends nothing usable). A longer tab gets a real "View all N" button with
- *                      aria-expanded and aria-controls that shows the rest in place and then
- *                      reads "Show fewer". Each tab keeps its own state and focus stays on the
- *                      button. The Certifications tab ends with one "Verify on Trailhead" link
- *                      when the server sends a verification link, used exactly as sent.
+ *                      sends nothing usable). A longer tab gets a real "View all N roles" (or
+ *                      certifications, or schools) button with aria-expanded and aria-controls
+ *                      that shows the rest in place and then reads "Show fewer". The entries it
+ *                      reveals fade and slide in briefly, and appear at once when the visitor
+ *                      asks for reduced motion. Each tab keeps its own state and focus stays on
+ *                      the button. The Certifications tab ends with one "Verify on Trailhead"
+ *                      link when the server sends a verification link, used exactly as sent.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -18,6 +20,7 @@
 import { LightningElement, wire } from "lwc";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { isReduced } from "c/motionPreference";
 
 const MONTHS = [
   "Jan",
@@ -45,6 +48,13 @@ const TAB_LABELS = [
   [CERTIFICATIONS, "Certifications"],
   [EDUCATION, "Education"]
 ];
+
+// What the View all button counts on each tab: "View all 11 roles".
+const TAB_NOUNS = {
+  [WORK]: "roles",
+  [CERTIFICATIONS]: "certifications",
+  [EDUCATION]: "schools"
+};
 
 // Entries per tab before "View all" when the server sends no usable limit.
 const DEFAULT_TAB_LIMIT = 5;
@@ -104,6 +114,7 @@ export default class ExperienceTimeline extends LightningElement {
   expandedTabs = {};
   focusTabOnRender = false;
   focusToggleOnRender = null;
+  revealTab = null;
   newTabNote = ", opens in a new tab";
 
   @wire(getTimeline)
@@ -142,7 +153,7 @@ export default class ExperienceTimeline extends LightningElement {
         this.selectedTab = first;
       }
     } else if (error) {
-      // The timeline is an extra on the home page. On an error it stays hidden.
+      // The timeline is an extra under the resume. On an error it stays hidden.
       this.work = [];
       this.education = [];
       this.certifications = [];
@@ -187,6 +198,14 @@ export default class ExperienceTimeline extends LightningElement {
         const isActive = key === active;
         const hasMore = entries.length > limit;
         const expanded = hasMore && Boolean(this.expandedTabs[key]);
+        const reveal = expanded && this.revealTab === key;
+        const shown = (expanded ? entries : entries.slice(0, limit)).map(
+          (entry, index) => ({
+            ...entry,
+            className:
+              reveal && index >= limit ? "entry entry-revealed" : "entry"
+          })
+        );
         return {
           key,
           label,
@@ -196,10 +215,12 @@ export default class ExperienceTimeline extends LightningElement {
           selected: String(isActive),
           tabIndex: isActive ? "0" : "-1",
           hidden: !isActive,
-          entries: expanded ? entries : entries.slice(0, limit),
+          entries: shown,
           hasMore,
           expandedText: String(expanded),
-          toggleLabel: expanded ? "Show fewer" : `View all ${entries.length}`,
+          toggleLabel: expanded
+            ? "Show fewer"
+            : `View all ${entries.length} ${TAB_NOUNS[key]}`,
           showVerify: key === CERTIFICATIONS && this.verificationUrl !== null
         };
       }
@@ -211,6 +232,7 @@ export default class ExperienceTimeline extends LightningElement {
       return;
     }
     this.selectedTab = tab;
+    this.revealTab = null;
     this.focusTabOnRender = moveFocus;
     trackEvent(EVENTS.TIMELINE_TAB_CHANGED, { tab });
   }
@@ -247,6 +269,8 @@ export default class ExperienceTimeline extends LightningElement {
     const tab = event.currentTarget.dataset.tab;
     const expanded = !this.expandedTabs[tab];
     this.expandedTabs = { ...this.expandedTabs, [tab]: expanded };
+    // Only entries revealed by this press animate, and none under reduced motion.
+    this.revealTab = expanded && !isReduced() ? tab : null;
     this.focusToggleOnRender = tab;
     trackEvent(EVENTS.TIMELINE_EXPANDED, { tab, expanded });
   }

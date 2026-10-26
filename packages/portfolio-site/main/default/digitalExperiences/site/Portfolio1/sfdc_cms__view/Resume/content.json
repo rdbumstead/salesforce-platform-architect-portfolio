@@ -24,8 +24,25 @@
                 {
                   "children": [
                     {
+                      "attributes": {
+                        "designLabel": "",
+                        "designUrl": "",
+                        "eyebrow": "",
+                        "heading": "Resume",
+                        "lead": "My resume, tailored to the role you're hiring for. Download it as a PDF or copy it as plain text."
+                      },
+                      "definition": "c:pageIntro",
+                      "id": "f74ead84-a285-440f-9f80-ab852dd98281",
+                      "type": "component"
+                    },
+                    {
                       "definition": "c:resumeBuilder",
                       "id": "664d4eba-5a4d-4074-aafb-96166da86ed2",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:experienceTimeline",
+                      "id": "c3c762f7-5bf3-468b-bdf4-9b15f68fe1ac",
                       "type": "component"
                     }
                   ],
