@@ -32,7 +32,7 @@ Run it from Git Bash with stdin closed, or it can hang. The running user needs f
 
 ## Production
 
-Production records change only through the owner's scripts, run by hand from the owner's local checkout. `.claude/data-changes/2026-10-22-pillar-a-production.apex` (Round 5, already run) renamed the Pillar A project, removed the old deck asset and inserted the four image rows. `.claude/data-changes/2026-10-22-pillar-a-reword.apex` (Round 6) sets the name, Challenge, Solution and Business Value to the text above. No deck row is published.
+Production records change only through the owner's scripts, run by hand from the owner's local checkout. `.claude/data-changes/2026-10-22-pillar-a-production.apex` (Round 5, already run) renamed the Pillar A project, removed the old deck asset and inserted the four image rows. `.claude/data-changes/2026-10-22-pillar-a-reword.apex` (Round 6) set the name, Challenge, Solution and Business Value to their earlier wording. The demo only Solution and Business Value above reach production through the owner's home case study script. No deck row is published.
 
 ## Pillar B
 
