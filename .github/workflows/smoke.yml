@@ -87,9 +87,11 @@ jobs:
           if-no-files-found: ignore
 
   # Outside the container, as before, so the Salesforce sign in runs where it always has.
+  # Only a check of the production site reports. A run by hand against another site, such as
+  # a scratch org's, writes nothing to production.
   report-failure:
     needs: [smoke]
-    if: failure()
+    if: failure() && (inputs.site_base == '' || inputs.site_base == 'https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio')
     runs-on: ubuntu-latest
     steps:
       - name: Sign In For The Failure Event
