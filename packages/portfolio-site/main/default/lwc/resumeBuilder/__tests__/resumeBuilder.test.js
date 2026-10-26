@@ -987,7 +987,9 @@ describe("c-resume-builder", () => {
       let currentRole = null;
       trace.forEach((piece) => {
         if (piece.kind === "role") currentRole = piece.text;
-        if (piece.kind === "section") currentRole = null;
+        if (!["role", "dates", "marker", "bullet"].includes(piece.kind)) {
+          currentRole = null;
+        }
         if (currentRole) {
           pagesByRole[currentRole] = pagesByRole[currentRole] || new Set();
           pagesByRole[currentRole].add(piece.page);
