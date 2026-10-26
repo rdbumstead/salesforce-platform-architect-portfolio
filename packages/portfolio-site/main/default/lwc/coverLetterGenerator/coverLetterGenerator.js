@@ -2,8 +2,13 @@
  * @description       : Cover letter page (Pillar D). Calls ApiLabController.generateCoverLetter,
  *                      which writes the letter in process. The provider
  *                      badge and the show-your-work panel are filled only from the response,
- *                      never from a literal, so the page cannot claim a provider on its own. No
- *                      timer drives the progress line. Sends ai_generation_completed on a
+ *                      never from a literal, so the page cannot claim a provider on its own.
+ *                      While the letter is written the page shows the seconds so far and one
+ *                      of a few plain status lines chosen by those seconds alone (a one second
+ *                      timer drives the count, and no line names a provider or says a step is
+ *                      done), over a skeleton letter. The letter fades in when it arrives, and
+ *                      only the fade is animation, so it is off under reduced motion in CSS.
+ *                      Sends ai_generation_completed on a
  *                      result and ai_complete_failure on an error. The whole letter is shown
  *                      with its word count, in a box that wraps long words and keeps a
  *                      readable line length on wide screens.
@@ -35,6 +40,33 @@ export const KIND_RATE_LIMITED = "rate_limited";
 export const KIND_NO_PROVIDER = "no_provider";
 export const KIND_INVALID_INPUT = "invalid_input";
 export const KIND_OTHER = "other";
+
+/** Status lines while the letter is written, each from this many seconds on. */
+export const STATUS_STEPS = [
+  { from: 0, text: "Sending your job description." },
+  { from: 8, text: "The model is reading the job and the portfolio records." },
+  { from: 20, text: "Drafting the letter." },
+  { from: 50, text: "Still writing. A longer wait is normal for this model." },
+  { from: 80, text: "Still writing. This one is taking longer than most." }
+];
+
+/** How often the elapsed count is refreshed, in milliseconds. */
+export const TICK_MS = 1000;
+
+/**
+ * The status line for a number of elapsed seconds.
+ * @param {number} seconds whole seconds since the request started
+ * @returns {string} the last line whose start has passed
+ */
+export function statusLineFor(seconds) {
+  let line = STATUS_STEPS[0].text;
+  STATUS_STEPS.forEach((step) => {
+    if (seconds >= step.from) {
+      line = step.text;
+    }
+  });
+  return line;
+}
 
 /**
  * The model attempt that failed before the template served: the last failed attempt
@@ -90,6 +122,8 @@ export default class CoverLetterGenerator extends LightningElement {
   error = null;
   result = null;
   showWork = false;
+  elapsedSeconds = 0;
+  timerId;
 
   maxCompanyLength = MAX_COMPANY_LENGTH;
   maxTitleLength = MAX_TITLE_LENGTH;
@@ -104,6 +138,34 @@ export default class CoverLetterGenerator extends LightningElement {
     return (
       !this.companyName?.trim() || !this.jobTitle?.trim() || this.isLoading
     );
+  }
+
+  disconnectedCallback() {
+    this.stopTimer();
+  }
+
+  startTimer() {
+    this.stopTimer();
+    const startedAt = Date.now();
+    this.elapsedSeconds = 0;
+    this.timerId = setInterval(() => {
+      this.elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+    }, TICK_MS);
+  }
+
+  stopTimer() {
+    if (this.timerId !== undefined) {
+      clearInterval(this.timerId);
+      this.timerId = undefined;
+    }
+  }
+
+  get elapsedText() {
+    return `Writing, ${this.elapsedSeconds} s`;
+  }
+
+  get statusLine() {
+    return statusLineFor(this.elapsedSeconds);
   }
 
   get hasResult() {
@@ -207,6 +269,7 @@ export default class CoverLetterGenerator extends LightningElement {
     this.error = null;
     this.result = null;
     this.showWork = false;
+    this.startTimer();
     try {
       this.result = await generateCoverLetter({
         companyName: this.companyName.trim(),
@@ -223,6 +286,7 @@ export default class CoverLetterGenerator extends LightningElement {
         message_kind: messageKind(this.error)
       });
     } finally {
+      this.stopTimer();
       this.isLoading = false;
     }
   }

@@ -134,4 +134,120 @@ private class SAPISkillTest {
       'categoryOrder'
     );
   }
+
+  @IsTest
+  static void filteredTotalCountsTheFilteredRowsNotThePage() {
+    List<Skill__c> more = new List<Skill__c>();
+    for (Integer i = 0; i < 2; i++) {
+      more.add(
+        new Skill__c(
+          Name = 'Backend ' + i,
+          Category__c = 'Backend',
+          Proficiency__c = 3
+        )
+      );
+    }
+    more.add(
+      new Skill__c(
+        Name = 'Design',
+        Category__c = 'Frontend',
+        Proficiency__c = 2
+      )
+    );
+    more.add(
+      new Skill__c(
+        Name = 'Styling',
+        Category__c = 'Frontend',
+        Proficiency__c = 1
+      )
+    );
+    insert more;
+
+    RestResponse filtered = getPage(
+      new Map<String, String>{ 'category' => 'Backend', 'limit' => '2' }
+    );
+    Assert.areEqual(200, filtered.statusCode, 'Filtered request is OK');
+    Assert.areEqual(
+      '3',
+      filtered.headers.get('X-Total-Count'),
+      'Three Backend rows, more than the page of two'
+    );
+    Assert.areEqual(
+      'true',
+      filtered.headers.get('X-Has-More'),
+      'A full page of a filter with more rows says there are more'
+    );
+  }
+
+  @IsTest
+  static void filteredTotalStaysTheSameOnTheLastPage() {
+    insert new List<Skill__c>{
+      new Skill__c(
+        Name = 'Backend 1',
+        Category__c = 'Backend',
+        Proficiency__c = 3
+      ),
+      new Skill__c(
+        Name = 'Backend 2',
+        Category__c = 'Backend',
+        Proficiency__c = 3
+      ),
+      new Skill__c(
+        Name = 'Design',
+        Category__c = 'Frontend',
+        Proficiency__c = 2
+      )
+    };
+
+    RestResponse lastPage = getPage(
+      new Map<String, String>{
+        'category' => 'Backend',
+        'limit' => '2',
+        'offset' => '2'
+      }
+    );
+    Assert.areEqual(
+      '3',
+      lastPage.headers.get('X-Total-Count'),
+      'The total does not change with the offset'
+    );
+    Assert.areEqual(
+      'false',
+      lastPage.headers.get('X-Has-More'),
+      'The last page has no more'
+    );
+  }
+
+  @IsTest
+  static void unfilteredTotalCountsEverySkill() {
+    insert new List<Skill__c>{
+      new Skill__c(
+        Name = 'Backend 1',
+        Category__c = 'Backend',
+        Proficiency__c = 3
+      ),
+      new Skill__c(
+        Name = 'Design',
+        Category__c = 'Frontend',
+        Proficiency__c = 2
+      )
+    };
+
+    RestResponse unfiltered = getPage(
+      new Map<String, String>{ 'limit' => '1' }
+    );
+    Assert.areEqual(
+      '3',
+      unfiltered.headers.get('X-Total-Count'),
+      'Without a filter the total is every skill'
+    );
+  }
+
+  private static RestResponse getPage(Map<String, String> params) {
+    RestTestUtil.initGet('/services/apexrest/sapi/v1/skills/', params);
+    Test.startTest();
+    SAPISkill.getSkills();
+    Test.stopTest();
+    return RestTestUtil.getResponse();
+  }
 }

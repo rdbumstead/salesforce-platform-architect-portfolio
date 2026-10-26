@@ -41,10 +41,10 @@ global with sharing class SAPITestimonial implements QueryDefinitions.Provider {
         limitParam,
         offsetParam
       );
-      // The total counts every approved testimonial, whatever the filters.
+      // The total counts the approved testimonials the request's filters match.
       Integer totalCount = QueryDefinitions.count(
         LIST_QUERY,
-        listBinds(null, null),
+        listBinds(vibeMode, relationshipType),
         listDefault()
       );
 

@@ -1,9 +1,7 @@
 <template>
-  <lightning-card title="API Lab" icon-name="utility:apex">
+  <lightning-card title="Try a request" icon-name="utility:apex">
+    <c-view-source slot="actions" source-key="apiTester"></c-view-source>
     <div class="slds-p-around_medium console-container">
-      <div class="card-tools">
-        <c-view-source source-key="apiTester"></c-view-source>
-      </div>
       <section class="invoke-section">
         <h2 class="slds-text-heading_small slds-m-bottom_small">
           Call the API
@@ -183,7 +181,7 @@
           >
             <lightning-input
               label="Advanced: query parameters as text (optional)"
-              placeholder="limit=abc&amp;offset=0"
+              placeholder="limit=10&amp;offset=0"
               value={queryText}
               onchange={handleQueryChange}
               class="query-input"
@@ -196,20 +194,32 @@
 
         <div aria-live="polite" class="slds-m-top_medium">
           <template lwc:if={isLoading}>
-            <div class="loading-state slds-is-relative slds-p-around_large">
-              <lightning-spinner
-                alternative-text="Calling the API"
-                size="small"
-              ></lightning-spinner>
+            <div class="loading-state" data-id="sending">
+              <p class="sending-text">Sending…</p>
+              <div class="progress" aria-hidden="true">
+                <div class="progress-bar"></div>
+              </div>
             </div>
           </template>
+
+          <div
+            lwc:if={showEmptyPanel}
+            class="response-empty"
+            data-id="response-empty"
+          >
+            <p class="response-empty-text">
+              Press Execute GET to see the status, headers and body here.
+            </p>
+          </div>
 
           <p lwc:if={invokeError} class="invoke-error text-error" role="alert">
             {invokeError}
           </p>
 
           <template lwc:if={hasResult}>
-            <dl class="slds-list_horizontal slds-wrap result-summary">
+            <dl
+              class="slds-list_horizontal slds-wrap result-summary result-fade"
+            >
               <dt class="slds-item_label field-label">Status</dt>
               <dd class="slds-item_detail">
                 <span class={statusClass}>{statusText}</span>

@@ -22,7 +22,11 @@
  *                      X-Has-More. Also requests an evaluator token through
  *                      ApiLabController.requestEvaluatorToken (ADR-028) and shows the result as
  *                      the controller returns it. Sends api_test_executed with the path, status
- *                      and param_count after each call through c/analyticsService.
+ *                      and param_count after each call through c/analyticsService. Before the
+ *                      first call the response area says how to fill it. While a call is out it
+ *                      reads "Sending…" over a thin bar that moves by transform alone, and when
+ *                      the answer arrives on a phone it is scrolled into view, smoothly unless
+ *                      the visitor asks for reduced motion (c/motionPreference).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -35,6 +39,7 @@ import invoke from "@salesforce/apex/ApiLabController.invoke";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { loadPrism, highlight } from "c/prismHighlighter";
+import { isReduced } from "c/motionPreference";
 
 /** api_test_executed status when the call itself failed and no HTTP status came back. */
 export const STATUS_CALL_FAILED = "error";
@@ -319,6 +324,7 @@ export default class ApiTester extends LightningElement {
   prism;
   paintedBody;
   paintedTarget;
+  revealPending = false;
 
   email = "";
   purpose = "";
@@ -404,6 +410,27 @@ export default class ApiTester extends LightningElement {
 
   renderedCallback() {
     this.paintBody();
+    this.revealAnswer();
+  }
+
+  /** Scrolls a new answer into view on a phone, where it can land below the fold. */
+  revealAnswer() {
+    if (!this.revealPending || this.isLoading) {
+      return;
+    }
+    const target = this.template.querySelector(
+      ".result-summary, .invoke-error"
+    );
+    if (!target) {
+      return;
+    }
+    this.revealPending = false;
+    if (typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({
+        behavior: isReduced() ? "auto" : "smooth",
+        block: "start"
+      });
+    }
   }
 
   /** Writes the highlighted body into the manual DOM node of the Raw JSON view. */
@@ -596,6 +623,11 @@ export default class ApiTester extends LightningElement {
 
   get hasResult() {
     return Boolean(this.result);
+  }
+
+  /** True before the first call and after anything that clears the answer. */
+  get showEmptyPanel() {
+    return !this.isLoading && !this.result && !this.invokeError;
   }
 
   get statusText() {
@@ -867,6 +899,7 @@ export default class ApiTester extends LightningElement {
       });
     } finally {
       this.isLoading = false;
+      this.revealPending = this.isPhone;
     }
   }
 
