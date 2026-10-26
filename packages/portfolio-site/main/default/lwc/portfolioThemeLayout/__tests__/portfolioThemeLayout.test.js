@@ -1,7 +1,9 @@
 /**
- * @description       : Unit tests for portfolioThemeLayout LWC: header navigation, Pillars menu
- *                      and its Docs link, phone menu, the theme toggle, motion following the
- *                      system setting with no motion button, and the floating Back to top.
+ * @description       : Unit tests for portfolioThemeLayout LWC: header navigation (Work, Resume,
+ *                      the "How it's built" menu with Docs and the API reference, Contact), the
+ *                      phone menu, the theme toggle and its crossfade, motion following the
+ *                      system setting with no motion button, the header shadow, and Back to top
+ *                      in the header.
  *                      c/motionPreference is the real module.
  *                      c/pillarData is a fixed stand in.
  * @author            : Ryan Bumstead
@@ -12,9 +14,14 @@
 import { createElement } from "@lwc/engine-dom";
 import PortfolioThemeLayout, {
   BACK_TO_TOP_SCREENS,
+  BUILT_MENU_LABEL,
+  CASE_STUDIES_ID,
   DOCS_URL,
-  REFERENCE_EVENT,
-  currentRouteUrl
+  HERO_SELECTOR,
+  THEME_FADE_MS,
+  currentRouteUrl,
+  findInContent,
+  idSelector
 } from "c/portfolioThemeLayout";
 import { PILLARS, reset, setComingLetters } from "c/pillarData";
 import { trackEvent } from "c/analyticsService";
@@ -147,23 +154,23 @@ jest.mock(
   { virtual: true }
 );
 
-// Every route URL the header links off the home page, the API reference page included.
-// Home is the brand link and the first nav link.
+// Every href the header links off the home page, in order: the brand, Work (the home page
+// here), Resume, the five pillars, Docs, the API reference, then Contact.
 const EXPECTED_HREFS = [
   "/portfolio/",
   "/portfolio/",
   "/portfolio/resume",
-  "/portfolio/skills",
-  "/portfolio/testimonials",
-  "/portfolio/contact",
   "/portfolio/business-architecture",
   "/portfolio/nonprofit-solutions",
   "/portfolio/api-lab",
-  "/portfolio/api-lab/reference",
   "/portfolio/ai-lab",
   "/portfolio/delivery",
-  "/portfolio/docs"
+  "/portfolio/docs",
+  "/portfolio/api-lab/reference",
+  "/portfolio/contact"
 ];
+
+const NAV_LABELS = ["Work", "Resume", "How it's built", "Contact"];
 
 const STORAGE_KEY = "portfolio-theme";
 const realLocalStorage = window.localStorage;
@@ -179,11 +186,15 @@ function mockSystemTheme(dark) {
   return listeners;
 }
 
-function render() {
+function render(content = []) {
   const element = createElement("c-portfolio-theme-layout", {
     is: PortfolioThemeLayout
   });
   document.body.appendChild(element);
+  // The test shadow polyfill does not assign light DOM added from a test to the slot, so the
+  // content slot hands back the page content directly, as a browser's slot does on the site.
+  const slot = element.shadowRoot.querySelector(".region-content slot");
+  slot.assignedElements = () => content;
   return element;
 }
 
@@ -303,42 +314,42 @@ describe("c-portfolio-theme-layout", () => {
       expect(hrefs).toEqual(EXPECTED_HREFS);
     });
 
-    it("lists Home first, with the brand href, then Resume, Skills, Testimonials and Contact", () => {
+    it("lists Work, Resume, How it's built and Contact, with the name as the home link", () => {
       const element = render();
       const brand = element.shadowRoot.querySelector(".site-brand");
-      const items = Array.from(
-        element.shadowRoot.querySelectorAll(".nav-list > .nav-item")
-      );
-      const first = items[0].querySelector("a");
-      expect(first.textContent).toBe("Home");
-      expect(first.dataset.key).toBe("home");
-      expect(first.getAttribute("href")).toBe(brand.getAttribute("href"));
       expect(brand.textContent).toBe("Ryan Bumstead");
-      expect(navLabels(element)).toEqual([
-        "Home",
-        "Resume",
-        "Skills",
-        "Testimonials",
-        "Contact",
-        "Pillars"
-      ]);
+      expect(brand.getAttribute("href")).toBe("/portfolio/");
+      expect(navLabels(element)).toEqual(NAV_LABELS);
+      const work = element.shadowRoot.querySelector(
+        '.nav-link[data-key="work"]'
+      );
+      expect(work.getAttribute("href")).toBe("/portfolio/");
+      expect(work.getAttribute("aria-current")).toBeNull();
     });
 
-    it("leaves Home out on the home page and keeps the name as a home link", () => {
+    it("has no Home, Skills or Testimonials link in the header", () => {
+      const element = render();
+      ["home", "skills", "testimonials"].forEach((key) => {
+        expect(
+          element.shadowRoot.querySelector(`[data-key="${key}"]`)
+        ).toBeNull();
+      });
+    });
+
+    it("points Work at the case studies on the home page and keeps the name as a home link", () => {
       goTo("/portfolio/");
       const element = render();
-      expect(navLabels(element)).toEqual([
-        "Resume",
-        "Skills",
-        "Testimonials",
-        "Contact",
-        "Pillars"
-      ]);
-      expect(
-        element.shadowRoot.querySelector('.nav-link[data-key="home"]')
-      ).toBeNull();
+      expect(navLabels(element)).toEqual(NAV_LABELS);
+      expect(CASE_STUDIES_ID).toBe("case-studies");
+      const work = element.shadowRoot.querySelector(
+        '.nav-link[data-key="work"]'
+      );
+      expect(work.getAttribute("href")).toBe("/portfolio/#case-studies");
       const brand = element.shadowRoot.querySelector(".site-brand");
       expect(brand.getAttribute("href")).toBe("/portfolio/");
+      expect(
+        element.shadowRoot.querySelectorAll('[aria-current="page"]')
+      ).toHaveLength(0);
     });
 
     it("reads the home page with or without the trailing slash", () => {
@@ -350,20 +361,25 @@ describe("c-portfolio-theme-layout", () => {
       expect(currentRouteUrl()).toBe("api-lab/reference");
     });
 
-    it("leaves Home out of the phone menu on the home page too", async () => {
+    it("shows the same links in the phone menu on the home page", async () => {
       goTo("/portfolio/");
       const element = render();
       element.shadowRoot.querySelector(".menu-toggle").click();
       await flush();
       const nav = element.shadowRoot.querySelector("nav");
       expect(nav.classList.contains("site-nav_open")).toBe(true);
-      expect(nav.querySelector(".nav-link").dataset.key).toBe("resume");
+      expect(nav.querySelector(".nav-link").dataset.key).toBe("work");
+      expect(navLabels(element)).toEqual(NAV_LABELS);
     });
 
-    it("brings Home back and moves aria-current when the route changes in place", async () => {
+    it("repoints Work and moves aria-current when the route changes in place", async () => {
       goTo("/portfolio/");
       const element = render();
-      expect(navLabels(element)[0]).toBe("Resume");
+      const workHref = () =>
+        element.shadowRoot
+          .querySelector('.nav-link[data-key="work"]')
+          .getAttribute("href");
+      expect(workHref()).toBe("/portfolio/#case-studies");
 
       goTo("/portfolio/contact");
       // The test adapter's emit stands in for the router announcing the new route.
@@ -373,7 +389,7 @@ describe("c-portfolio-theme-layout", () => {
         attributes: { name: "Contact__c" }
       });
       await flush();
-      expect(navLabels(element)[0]).toBe("Home");
+      expect(workHref()).toBe("/portfolio/");
       const current = element.shadowRoot.querySelectorAll(
         '[aria-current="page"]'
       );
@@ -383,7 +399,7 @@ describe("c-portfolio-theme-layout", () => {
       goTo("/portfolio/");
       window.dispatchEvent(new PopStateEvent("popstate"));
       await flush();
-      expect(navLabels(element)[0]).toBe("Resume");
+      expect(workHref()).toBe("/portfolio/#case-studies");
       expect(
         element.shadowRoot.querySelectorAll('[aria-current="page"]')
       ).toHaveLength(0);
@@ -406,18 +422,19 @@ describe("c-portfolio-theme-layout", () => {
         '[aria-current="page"]'
       );
       expect(current).toHaveLength(1);
-      expect(current[0].classList.contains("pillar-sub-link")).toBe(true);
+      expect(current[0].dataset.key).toBe("api-reference");
+      expect(current[0].classList.contains("docs-link")).toBe(true);
     });
 
-    it("puts Contact last before the Pillars menu, linking /contact", () => {
+    it("puts Contact last, right after the How it's built menu, linking /contact", () => {
       const element = render();
       const items = Array.from(
         element.shadowRoot.querySelectorAll(".nav-list > .nav-item")
       );
-      const contact = items[items.length - 2].querySelector("a");
+      const contact = items[items.length - 1].querySelector("a");
       expect(contact.textContent).toBe("Contact");
       expect(contact.getAttribute("href")).toBe("/portfolio/contact");
-      expect(items[items.length - 1].classList.contains("pillars")).toBe(true);
+      expect(items[items.length - 2].classList.contains("pillars")).toBe(true);
     });
 
     it("stops listening for history changes when removed", () => {
@@ -472,16 +489,31 @@ describe("c-portfolio-theme-layout", () => {
       ).toBe("Coming");
     });
 
-    it("lists the API reference under API Lab", () => {
+    it("lists the API reference as an item of its own, last in the menu", () => {
       const element = render();
-      const subLinks = element.shadowRoot.querySelectorAll(".pillar-sub-link");
-      expect(subLinks).toHaveLength(1);
-      expect(subLinks[0].textContent).toBe("API reference");
-      expect(subLinks[0].getAttribute("href")).toBe(
-        "/portfolio/api-lab/reference"
+      expect(element.shadowRoot.querySelector(".pillar-sub-link")).toBeNull();
+      const items = element.shadowRoot.querySelectorAll(".pillar-menu > li");
+      const last = items[items.length - 1].querySelector("a");
+      expect(last.dataset.key).toBe("api-reference");
+      expect(last.querySelector(".pillar-label").textContent).toBe(
+        "API reference"
       );
-      const owner = subLinks[0].closest("ul").closest("li");
-      expect(owner.querySelector(".pillar-label").textContent).toBe("API Lab");
+      expect(last.querySelector(".pillar-sas").textContent).toBe(
+        "API Lab, every endpoint and response"
+      );
+      expect(last.getAttribute("href")).toBe("/portfolio/api-lab/reference");
+    });
+
+    it("names the menu and its button How it's built", () => {
+      const element = render();
+      const toggle = element.shadowRoot.querySelector(".pillars-toggle");
+      expect(toggle.textContent.trim()).toBe(BUILT_MENU_LABEL);
+      expect(BUILT_MENU_LABEL).toBe("How it's built");
+      expect(
+        element.shadowRoot
+          .querySelector(".pillar-menu")
+          .getAttribute("aria-label")
+      ).toBe("How it's built");
     });
 
     it("exposes an unnamed content slot plus header and footer slots", () => {
@@ -711,7 +743,7 @@ describe("c-portfolio-theme-layout", () => {
       await flush();
 
       const link = element.shadowRoot.querySelector(".nav-link");
-      expect(link.dataset.key).toBe("home");
+      expect(link.dataset.key).toBe("work");
       link.addEventListener("click", (event) => event.preventDefault());
       link.click();
       await flush();
@@ -847,7 +879,7 @@ describe("c-portfolio-theme-layout", () => {
       );
     }
 
-    it("ends the Pillars menu with Docs, linking /docs", () => {
+    it("puts Docs right after the five pillars, linking /docs", () => {
       const element = render();
       expect(DOCS_URL).toBe("docs");
       const link = docsLink(element);
@@ -855,7 +887,9 @@ describe("c-portfolio-theme-layout", () => {
       expect(link.querySelector(".pillar-label").textContent).toBe("Docs");
       expect(link.getAttribute("href")).toBe("/portfolio/docs");
       const items = element.shadowRoot.querySelectorAll(".pillar-menu > li");
-      expect(items[items.length - 1].contains(link)).toBe(true);
+      expect(items).toHaveLength(7);
+      expect(items[5].contains(link)).toBe(true);
+      expect(items[5].classList.contains("built-item")).toBe(true);
       expect(link.getAttribute("aria-current")).toBeNull();
     });
 
@@ -913,14 +947,14 @@ describe("c-portfolio-theme-layout", () => {
       ).map((node) => node.getAttribute("class"));
     }
 
-    it("has no motion button in the header, and the theme button sits right before the menu button", () => {
+    it("has no motion button or divider in the header, and the theme button sits between Back to top and the menu button", () => {
       const element = render();
       expect(element.shadowRoot.querySelector(".motion-toggle")).toBeNull();
       expect(
         element.shadowRoot.querySelector('[aria-label="Reduce motion"]')
       ).toBeNull();
       expect(actionClasses(element)).toEqual([
-        "divider",
+        "icon-button back-to-top",
         "icon-button theme-toggle",
         "icon-button menu-toggle"
       ]);
@@ -935,7 +969,8 @@ describe("c-portfolio-theme-layout", () => {
       );
       expect(
         element.shadowRoot.querySelectorAll(".site-actions button")
-      ).toHaveLength(2);
+      ).toHaveLength(3);
+      expect(element.shadowRoot.querySelector(".divider")).toBeNull();
     });
 
     it("has no motion button in the open phone menu, and the theme button still works there", async () => {
@@ -949,7 +984,7 @@ describe("c-portfolio-theme-layout", () => {
       ).toBe("true");
       expect(element.shadowRoot.querySelector(".motion-toggle")).toBeNull();
       expect(actionClasses(element)).toEqual([
-        "divider",
+        "icon-button back-to-top",
         "icon-button theme-toggle",
         "icon-button menu-toggle"
       ]);
@@ -1043,9 +1078,189 @@ describe("c-portfolio-theme-layout", () => {
     });
   });
 
-  describe("floating Back to top", () => {
+  describe("Work on the home page", () => {
+    beforeEach(() => {
+      window.scrollTo = jest.fn();
+      window.scrollY = 0;
+      goTo("/portfolio/");
+    });
+
+    // The case studies section sits inside a page component's shadow tree, and that component
+    // is in the layout's content slot, as on the site.
+    function caseStudies(top = 900) {
+      const page = document.createElement("div");
+      const root = page.attachShadow({ mode: "open" });
+      const grid = document.createElement("div");
+      const gridRoot = grid.attachShadow({ mode: "open" });
+      const target = document.createElement("section");
+      target.id = "case-studies";
+      target.getBoundingClientRect = () => ({ top, bottom: top + 400 });
+      gridRoot.appendChild(target);
+      root.appendChild(grid);
+      return { page, target };
+    }
+
+    it("finds the section through nested open shadow roots, by id or a suffixed id", () => {
+      const { page, target } = caseStudies();
+      expect(findInContent([page], idSelector("case-studies"))).toBe(target);
+      expect(findInContent([page], idSelector("missing"))).toBeNull();
+      target.id = "case-studies-12";
+      expect(findInContent([page], idSelector("case-studies"))).toBe(target);
+      expect(findInContent([target], "section")).toBe(target);
+      expect(findInContent(null, "section")).toBeNull();
+    });
+
+    it("scrolls to the case studies under the header and moves focus there", async () => {
+      const { page, target } = caseStudies(900);
+      target.focus = jest.fn();
+      const element = render([page]);
+      element.shadowRoot.querySelector(".site-header").getBoundingClientRect =
+        () => ({ height: 61 });
+      const work = element.shadowRoot.querySelector(
+        '.nav-link[data-key="work"]'
+      );
+      const click = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true
+      });
+      work.dispatchEvent(click);
+      await flush();
+      expect(click.defaultPrevented).toBe(true);
+      expect(window.scrollTo).toHaveBeenCalledWith({
+        top: 839,
+        left: 0,
+        behavior: "smooth"
+      });
+      expect(target.getAttribute("tabindex")).toBe("-1");
+      expect(target.focus).toHaveBeenCalledWith({ preventScroll: true });
+      expect(trackEvent).not.toHaveBeenCalled();
+    });
+
+    it("jumps without animation when reduced motion is asked for", async () => {
+      window.matchMedia = jest.fn().mockImplementation((query) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }));
+      const element = render([caseStudies(500).page]);
+      element.shadowRoot.querySelector('.nav-link[data-key="work"]').click();
+      await flush();
+      expect(window.scrollTo).toHaveBeenCalledWith(
+        expect.objectContaining({ behavior: "auto" })
+      );
+    });
+
+    it("goes to the top when the page has no case studies", async () => {
+      const element = render();
+      element.shadowRoot.querySelector('.nav-link[data-key="work"]').click();
+      await flush();
+      expect(window.scrollTo).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: "smooth"
+      });
+    });
+
+    it("is a plain link to the home page from another page", async () => {
+      goTo("/portfolio/resume");
+      const element = render();
+      const work = element.shadowRoot.querySelector(
+        '.nav-link[data-key="work"]'
+      );
+      work.addEventListener("click", (event) => {
+        // jsdom does not navigate. Record whether the layout stopped the link first.
+        work.dataset.prevented = String(event.defaultPrevented);
+        event.preventDefault();
+      });
+      work.click();
+      await flush();
+      expect(work.dataset.prevented).toBe("false");
+      expect(window.scrollTo).not.toHaveBeenCalled();
+    });
+
+    it("closes the phone menu when followed", async () => {
+      const element = render([caseStudies().page]);
+      const menu = element.shadowRoot.querySelector(".menu-toggle");
+      menu.click();
+      await flush();
+      element.shadowRoot.querySelector('.nav-link[data-key="work"]').click();
+      await flush();
+      expect(menu.getAttribute("aria-expanded")).toBe("false");
+    });
+  });
+
+  describe("theme crossfade", () => {
+    afterEach(() => {
+      delete document.startViewTransition;
+      delete document.getAnimations;
+    });
+
+    it("crossfades the change for 200 ms where the browser has view transitions", async () => {
+      const timing = jest.fn();
+      const other = jest.fn();
+      document.getAnimations = () => [
+        {
+          effect: {
+            pseudoElement: "::view-transition-new(root)",
+            updateTiming: timing
+          }
+        },
+        { effect: { pseudoElement: null, updateTiming: other } }
+      ];
+      document.startViewTransition = jest.fn((change) => {
+        change();
+        return { ready: Promise.resolve() };
+      });
+      const element = render();
+      element.shadowRoot.querySelector(".theme-toggle").click();
+      await flush();
+      await flush();
+      expect(document.startViewTransition).toHaveBeenCalledTimes(1);
+      expect(element.getAttribute("data-theme")).toBe("dark");
+      expect(THEME_FADE_MS).toBe(200);
+      expect(timing).toHaveBeenCalledWith({ duration: 200 });
+      expect(other).not.toHaveBeenCalled();
+      expect(trackEvent).toHaveBeenCalledWith("theme_changed", {
+        theme: "dark"
+      });
+    });
+
+    it("changes the theme at once when motion is reduced", () => {
+      window.matchMedia = jest.fn().mockImplementation((query) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }));
+      document.startViewTransition = jest.fn();
+      const element = render();
+      element.shadowRoot.querySelector(".theme-toggle").click();
+      expect(document.startViewTransition).not.toHaveBeenCalled();
+      expect(element.getAttribute("data-theme")).toBe("dark");
+    });
+
+    it("still changes the theme when the transition throws or is skipped", async () => {
+      document.startViewTransition = jest.fn(() => {
+        throw new Error("InvalidStateError");
+      });
+      const element = render();
+      element.shadowRoot.querySelector(".theme-toggle").click();
+      expect(element.getAttribute("data-theme")).toBe("dark");
+
+      document.startViewTransition = jest.fn((change) => {
+        change();
+        return { ready: Promise.reject(new Error("AbortError")) };
+      });
+      element.shadowRoot.querySelector(".theme-toggle").click();
+      await flush();
+      expect(element.getAttribute("data-theme")).toBe("light");
+    });
+  });
+
+  describe("Back to top in the header", () => {
     let frames;
-    let footerTop;
+    let hero;
 
     function scrollTo(y, height = 800) {
       window.innerHeight = height;
@@ -1056,21 +1271,26 @@ describe("c-portfolio-theme-layout", () => {
     }
 
     function button(element) {
-      return element.shadowRoot.querySelector(
-        '[data-id="floating-back-to-top"]'
-      );
+      return element.shadowRoot.querySelector('[data-id="back-to-top"]');
     }
 
-    function renderWithFooter() {
-      const element = render();
-      const footer = element.shadowRoot.querySelector(".region-footer");
-      footer.getBoundingClientRect = () => ({ top: footerTop });
-      return element;
+    function shown(element) {
+      return button(element).classList.contains("back-to-top_shown");
+    }
+
+    // A stand in for the home hero in the content slot, its bottom edge heroBottom px down
+    // the page.
+    function heroAt(heroBottom) {
+      hero = document.createElement(HERO_SELECTOR);
+      hero.getBoundingClientRect = () => ({
+        bottom: heroBottom - (window.scrollY || 0)
+      });
+      return hero;
     }
 
     beforeEach(() => {
       frames = [];
-      footerTop = 5000;
+      hero = null;
       window.requestAnimationFrame = jest.fn((callback) => {
         frames.push(callback);
         return frames.length;
@@ -1084,40 +1304,86 @@ describe("c-portfolio-theme-layout", () => {
       window.scrollY = 0;
     });
 
-    it("appears after one screen height", () => {
-      expect(BACK_TO_TOP_SCREENS).toBe(1);
-    });
-
-    it("stays hidden short of one screen and appears at one screen height", async () => {
-      const element = renderWithFooter();
-      expect(button(element)).toBeNull();
-
-      await scrollTo(799, 800);
-      expect(button(element)).toBeNull();
-
-      await scrollTo(800, 800);
+    it("sits in the header actions, before the theme toggle, with a real label", () => {
+      const element = render();
       const control = button(element);
       expect(control.tagName).toBe("BUTTON");
       expect(control.getAttribute("type")).toBe("button");
-      expect(control.textContent.trim()).toBe("Back to top");
+      expect(control.getAttribute("aria-label")).toBe("Back to top");
+      expect(control.getAttribute("title")).toBe("Back to top");
+      expect(control.closest(".site-actions")).not.toBeNull();
+      expect(control.nextElementSibling).toBe(
+        element.shadowRoot.querySelector(".theme-toggle")
+      );
+      expect(
+        element.shadowRoot.querySelector('[data-id="floating-back-to-top"]')
+      ).toBeNull();
+    });
+
+    it("is hidden, out of the tab order and the accessibility tree, at the top", () => {
+      const element = render();
+      expect(shown(element)).toBe(false);
+      expect(button(element).getAttribute("aria-hidden")).toBe("true");
+      expect(button(element).getAttribute("tabindex")).toBe("-1");
+    });
+
+    it("appears after one screen height on a page with no hero", async () => {
+      expect(BACK_TO_TOP_SCREENS).toBe(1);
+      const element = render();
+      await scrollTo(799, 800);
+      expect(shown(element)).toBe(false);
+      await scrollTo(800, 800);
+      expect(shown(element)).toBe(true);
+      expect(button(element).getAttribute("aria-hidden")).toBeNull();
+      expect(button(element).getAttribute("tabindex")).toBe("0");
     });
 
     it("follows the screen height on a phone", async () => {
-      const element = renderWithFooter();
+      const element = render();
       await scrollTo(843, 844);
-      expect(button(element)).toBeNull();
+      expect(shown(element)).toBe(false);
       await scrollTo(844, 844);
-      expect(button(element)).not.toBeNull();
+      expect(shown(element)).toBe(true);
+    });
+
+    it("appears once the page has scrolled past the hero, under the header", async () => {
+      goTo("/portfolio/");
+      const element = render([heroAt(1400)]);
+      element.shadowRoot.querySelector(".site-header").getBoundingClientRect =
+        () => ({ height: 60 });
+      await scrollTo(1339, 800);
+      expect(shown(element)).toBe(false);
+      await scrollTo(1340, 800);
+      expect(shown(element)).toBe(true);
+    });
+
+    it("uses one screen height when the hero is shorter than the header", async () => {
+      const element = render([heroAt(40)]);
+      element.shadowRoot.querySelector(".site-header").getBoundingClientRect =
+        () => ({ height: 60 });
+      await scrollTo(799, 800);
+      expect(shown(element)).toBe(false);
+      await scrollTo(800, 800);
+      expect(shown(element)).toBe(true);
     });
 
     it("stays hidden when the viewport has no height", async () => {
-      const element = renderWithFooter();
+      const element = render();
       await scrollTo(3000, 0);
-      expect(button(element)).toBeNull();
+      expect(shown(element)).toBe(false);
+    });
+
+    it("keeps its place in the header whether shown or not", async () => {
+      const element = render();
+      const before = button(element);
+      await scrollTo(3000);
+      expect(button(element)).toBe(before);
+      await scrollTo(0);
+      expect(button(element)).toBe(before);
     });
 
     it("sends back_to_top_used with no parameters when pressed", async () => {
-      const element = renderWithFooter();
+      const element = render();
       await scrollTo(3000);
       button(element).click();
       await flush();
@@ -1125,49 +1391,20 @@ describe("c-portfolio-theme-layout", () => {
       expect(trackEvent.mock.calls.at(-1)).toHaveLength(1);
     });
 
-    it("rises above the footer while the footer is on screen", async () => {
-      const element = renderWithFooter();
-      await scrollTo(3000);
-      expect(button(element).getAttribute("style") || "").toBe("");
-
-      footerTop = 500;
-      await scrollTo(3200);
-      const control = button(element);
-      expect(control).not.toBeNull();
-      expect(control.getAttribute("style")).toContain(
-        "calc(300px + var(--pf-space-4))"
-      );
-    });
-
-    it("sits after the main content and before the footer in the tab order", async () => {
-      const element = renderWithFooter();
-      await scrollTo(3000);
-      const control = button(element);
-      const main = element.shadowRoot.querySelector('[data-id="main-content"]');
-      const footer = element.shadowRoot.querySelector(".region-footer");
-      expect(
-        main.compareDocumentPosition(control) & Node.DOCUMENT_POSITION_FOLLOWING
-      ).toBeTruthy();
-      expect(
-        control.compareDocumentPosition(footer) &
-          Node.DOCUMENT_POSITION_FOLLOWING
-      ).toBeTruthy();
-    });
-
     it("stays while it has focus, even when the page scrolls back up", async () => {
-      const element = renderWithFooter();
+      const element = render();
       await scrollTo(3000);
       button(element).focus();
       await scrollTo(40);
-      expect(button(element)).not.toBeNull();
+      expect(shown(element)).toBe(true);
 
       button(element).blur();
       await flush();
-      expect(button(element)).toBeNull();
+      expect(shown(element)).toBe(false);
     });
 
     it("scrolls smoothly to the top and moves focus to the main content", async () => {
-      const element = renderWithFooter();
+      const element = render();
       await scrollTo(3000);
       button(element).click();
       await flush();
@@ -1180,7 +1417,7 @@ describe("c-portfolio-theme-layout", () => {
       const main = element.shadowRoot.querySelector('[data-id="main-content"]');
       expect(main.getAttribute("tabindex")).toBe("-1");
       expect(element.shadowRoot.activeElement).toBe(main);
-      expect(button(element)).toBeNull();
+      expect(shown(element)).toBe(false);
     });
 
     it("jumps without animation when reduced motion is asked for", async () => {
@@ -1190,7 +1427,7 @@ describe("c-portfolio-theme-layout", () => {
         addEventListener: jest.fn(),
         removeEventListener: jest.fn()
       }));
-      const element = renderWithFooter();
+      const element = render();
       await scrollTo(3000);
       button(element).click();
 
@@ -1203,7 +1440,7 @@ describe("c-portfolio-theme-layout", () => {
 
     it("scrolls smoothly when a stored reduce is left from an earlier version", async () => {
       window.localStorage.setItem("portfolio-motion", "reduce");
-      const element = renderWithFooter();
+      const element = render();
       await scrollTo(3000);
       button(element).click();
       expect(window.scrollTo).toHaveBeenCalledWith({
@@ -1221,7 +1458,7 @@ describe("c-portfolio-theme-layout", () => {
         removeEventListener: jest.fn()
       }));
       window.localStorage.setItem("portfolio-motion", "full");
-      const element = renderWithFooter();
+      const element = render();
       await scrollTo(3000);
       button(element).click();
       expect(window.scrollTo).toHaveBeenCalledWith({
@@ -1231,58 +1468,63 @@ describe("c-portfolio-theme-layout", () => {
       });
     });
 
-    it("steps aside only while the API reference has Redoc on the page", async () => {
-      expect(REFERENCE_EVENT).toBe("portfolio-reference");
-      const element = renderWithFooter();
-      await scrollTo(3000);
-      expect(button(element).className).toBe("back-to-top");
-
-      document.dispatchEvent(
-        new CustomEvent(REFERENCE_EVENT, { detail: { mounted: true } })
-      );
-      await flush();
-      expect(button(element).classList).toContain(
-        "back-to-top_beside-reference"
-      );
-
-      document.dispatchEvent(
-        new CustomEvent(REFERENCE_EVENT, { detail: { mounted: false } })
-      );
-      await flush();
-      expect(button(element).className).toBe("back-to-top");
-    });
-
-    it("keeps the footer lift and the event while the reference is on the page", async () => {
-      const element = renderWithFooter();
-      document.dispatchEvent(
-        new CustomEvent(REFERENCE_EVENT, { detail: { mounted: true } })
-      );
-      footerTop = 500;
-      await scrollTo(3200);
-      const control = button(element);
-      expect(control.getAttribute("style")).toContain(
-        "calc(300px + var(--pf-space-4))"
-      );
-      control.click();
-      expect(trackEvent).toHaveBeenCalledWith("back_to_top_used");
-    });
-
-    it("stops listening for the reference when removed", () => {
-      const remove = jest.spyOn(document, "removeEventListener");
-      const element = renderWithFooter();
-      document.body.removeChild(element);
-      expect(remove).toHaveBeenCalledWith(
-        REFERENCE_EVENT,
-        expect.any(Function)
-      );
+    it("no longer listens for the API reference, which it never overlaps now", () => {
+      const add = jest.spyOn(document, "addEventListener");
+      render();
+      const types = add.mock.calls.map((call) => call[0]);
+      expect(types).not.toContain("portfolio-reference");
     });
 
     it("stops listening to scroll when removed", () => {
       const remove = jest.spyOn(window, "removeEventListener");
-      const element = renderWithFooter();
+      const element = render();
       document.body.removeChild(element);
       expect(remove).toHaveBeenCalledWith("scroll", expect.any(Function));
       remove.mockRestore();
+    });
+  });
+
+  describe("header shadow", () => {
+    let frames;
+
+    beforeEach(() => {
+      frames = [];
+      window.requestAnimationFrame = jest.fn((callback) => {
+        frames.push(callback);
+        return frames.length;
+      });
+    });
+
+    afterEach(() => {
+      delete window.requestAnimationFrame;
+      window.scrollY = 0;
+    });
+
+    it("shows once content scrolls under the header and goes at the top", async () => {
+      const element = render();
+      const header = element.shadowRoot.querySelector("header");
+      expect(header.className).toBe("site-header");
+
+      window.innerHeight = 800;
+      window.scrollY = 1;
+      window.dispatchEvent(new CustomEvent("scroll"));
+      frames.splice(0).forEach((callback) => callback());
+      await flush();
+      expect(header.classList.contains("site-header_raised")).toBe(true);
+
+      window.scrollY = 0;
+      window.dispatchEvent(new CustomEvent("scroll"));
+      frames.splice(0).forEach((callback) => callback());
+      await flush();
+      expect(header.classList.contains("site-header_raised")).toBe(false);
+    });
+
+    it("reads the scroll once per frame", () => {
+      render();
+      window.dispatchEvent(new CustomEvent("scroll"));
+      window.dispatchEvent(new CustomEvent("scroll"));
+      window.dispatchEvent(new CustomEvent("resize"));
+      expect(window.requestAnimationFrame).toHaveBeenCalledTimes(1);
     });
   });
 });

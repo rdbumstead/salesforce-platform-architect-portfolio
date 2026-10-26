@@ -30,6 +30,8 @@
   --pf-focus: #2563eb;
   --pf-glass: rgba(255, 255, 255, 0.9);
   --pf-shadow: 0 12px 32px rgba(16, 24, 40, 0.14);
+  /* The layout's own: the soft shadow under the header once content scrolls under it. */
+  --shell-raise-shadow: 0 6px 16px -8px rgba(16, 24, 40, 0.28);
 
   --pf-font-sans: "Inter", system-ui, sans-serif;
   --pf-font-mono: "Fira Code", ui-monospace, monospace;
@@ -98,6 +100,7 @@
     --pf-focus: #60a5fa;
     --pf-glass: rgba(11, 15, 23, 0.9);
     --pf-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    --shell-raise-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7);
   }
 }
 
@@ -125,6 +128,7 @@
   --pf-focus: #60a5fa;
   --pf-glass: rgba(11, 15, 23, 0.9);
   --pf-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  --shell-raise-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7);
 }
 
 .portfolio-layout-wrapper {
@@ -160,52 +164,6 @@
   outline: none;
 }
 
-/*
- * Floating Back to top. Real button, 44 px target, button tokens in both themes,
- * above the iOS home bar through the safe area inset. Lifted above the footer by an inline
- * bottom value while the footer is on screen.
- */
-.back-to-top {
-  position: fixed;
-  right: max(var(--pf-space-4), env(safe-area-inset-right));
-  bottom: calc(var(--pf-space-4) + env(safe-area-inset-bottom));
-  z-index: 50;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--pf-space-2);
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0 var(--pf-space-4);
-  border: 1px solid var(--pf-btn);
-  border-radius: 999px;
-  background: var(--pf-btn);
-  color: var(--pf-btn-text);
-  box-shadow: var(--pf-shadow);
-  font: 600 14px/1 var(--pf-font-sans);
-  cursor: pointer;
-}
-
-.back-to-top:hover {
-  background: var(--pf-btn-hover);
-  border-color: var(--pf-btn-hover);
-}
-
-.back-to-top:focus-visible {
-  outline: 3px solid var(--pf-focus);
-  outline-offset: 3px;
-}
-
-/*
- * While the API reference has Redoc on the page, Redoc puts its own floating menu button in
- * the same corner at widths up to its 50rem breakpoint. The two would overlap there, so this
- * button steps aside. The footer's Back to top and Redoc's menu stay.
- */
-@media screen and (max-width: 50rem) {
-  .back-to-top_beside-reference {
-    display: none;
-  }
-}
-
 /* Slim sticky header */
 .site-header {
   position: sticky;
@@ -217,6 +175,24 @@
   border-bottom: 1px solid var(--pf-border);
 }
 
+/* The soft shadow under the header, shown once page content scrolls under it. */
+.site-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 12px;
+  margin-top: -12px;
+  box-shadow: var(--shell-raise-shadow);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.site-header_raised::after {
+  opacity: 1;
+}
+
 .site-header__bar {
   max-width: 1024px;
   margin: 0 auto;
@@ -225,6 +201,39 @@
   display: flex;
   align-items: center;
   gap: var(--pf-space-2) var(--pf-space-4);
+}
+
+/* The site's link rule in dxp-slds-extensions.css (a:link:not(...), specificity 0,2,2)
+   outranks a plain class rule and paints these links blue. Matching :link and :visited too
+   puts these rules above it, in both themes, so the brand and the nav keep one colour. */
+.site-brand,
+.site-brand:link,
+.site-brand:visited {
+  color: var(--pf-text);
+}
+
+.nav-link,
+.nav-link:link,
+.nav-link:visited {
+  color: var(--pf-body);
+}
+
+.nav-link:hover,
+.nav-link:link:hover,
+.nav-link:visited:hover,
+.nav-link[aria-current="page"],
+.nav-link[aria-current="page"]:link,
+.nav-link[aria-current="page"]:visited {
+  color: var(--pf-text);
+}
+
+.pillar-link,
+.pillar-link:link,
+.pillar-link:visited,
+.docs-link,
+.docs-link:link,
+.docs-link:visited {
+  color: var(--pf-text);
 }
 
 .site-brand {
@@ -372,30 +381,8 @@
   font-weight: 500;
 }
 
-.pillar-sub {
-  list-style: none;
-  margin: 0 0 2px;
-  padding: 0 0 0 52px;
-}
-
-.pillar-sub-link {
-  display: flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 10px;
-  border-radius: var(--pf-radius-sm);
-  color: var(--pf-body);
-  font-size: 14px;
-  text-decoration: none;
-}
-
-.pillar-sub-link:hover {
-  background: var(--pf-chip);
-  color: var(--pf-text);
-}
-
-/* Docs closes the Pillars menu, set apart from the pillars by a rule. */
-.pillar-docs {
+/* Docs and the API reference close the menu, set apart from the pillars by a rule. */
+.pillar-menu > li:not(.built-item) + .built-item {
   margin-top: 2px;
   padding-top: 4px;
   border-top: 1px solid var(--pf-border);
@@ -405,13 +392,6 @@
   display: flex;
   align-items: center;
   gap: 2px;
-}
-
-.divider {
-  width: 1px;
-  height: 20px;
-  margin: 0 6px;
-  background: var(--pf-border);
 }
 
 .icon-button {
@@ -440,7 +420,6 @@
 .nav-link:focus-visible,
 .pillar-link:focus-visible,
 .docs-link:focus-visible,
-.pillar-sub-link:focus-visible,
 .icon-button:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
@@ -450,27 +429,6 @@
 @media screen and (max-width: 767.98px) {
   .portfolio-layout-wrapper {
     min-height: 100dvh;
-  }
-
-  /* Room under the last content, so the button never sits on it once the page is at its end. */
-  .region-content {
-    padding-bottom: 76px;
-  }
-
-  /* On a phone the button is a 44 px circle with the label kept for screen readers. */
-  .back-to-top {
-    width: 44px;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .back-to-top__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
   }
 
   .site-header__bar {
@@ -525,4 +483,47 @@
 /* The layout writes data-motion from the system reduce motion setting. */
 :host([data-motion="full"]) .pillars-toggle .chevron {
   transition: transform 0.15s;
+}
+
+/* Back to top in the header. It keeps its place while hidden, so the buttons beside it never
+   move, and it is out of the tab order and the accessibility tree until shown. */
+.back-to-top {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.back-to-top_shown {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Motion, only under full motion: the arrow and the header shadow fade, the menus fade and
+   slide 4 px as they open. Transform and opacity only. */
+@media (prefers-reduced-motion: no-preference) {
+  :host([data-motion="full"]) .back-to-top {
+    transition:
+      opacity 150ms ease,
+      visibility 150ms;
+  }
+
+  :host([data-motion="full"]) .site-header::after {
+    transition: opacity 150ms ease;
+  }
+
+  :host([data-motion="full"]) .pillar-menu:not([hidden]),
+  :host([data-motion="full"]) .site-nav_open {
+    animation: shell-menu-in 150ms ease-out;
+  }
+}
+
+@keyframes shell-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
