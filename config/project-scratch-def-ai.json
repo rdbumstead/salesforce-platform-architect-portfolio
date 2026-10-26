@@ -1,0 +1,22 @@
+{
+  "orgName": "Portfolio AI",
+  "edition": "Developer",
+  "features": ["EnableSetPasswordInApi", "Communities", "Einstein1AIPlatform"],
+  "settings": {
+    "lightningExperienceSettings": {
+      "enableS1DesktopEnabled": true
+    },
+    "mobileSettings": {
+      "enableS1EncryptedStoragePref2": false
+    },
+    "communitiesSettings": {
+      "enableNetworksEnabled": true
+    },
+    "einsteinGptSettings": {
+      "enableEinsteinGptPlatform": true
+    },
+    "agentPlatformSettings": {
+      "enableAgentPlatform": true
+    }
+  }
+}
