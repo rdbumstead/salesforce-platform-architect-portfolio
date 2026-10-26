@@ -73,7 +73,7 @@ const CARDS = [
     challenge: "A resume gives a reviewer nothing to check.",
     solution: "This site is its own delivery evidence.",
     businessValue: "The numbers change when the pipeline does.",
-    liveUrl: "/docs",
+    liveUrl: "/delivery",
     tags: null
   }
 ];
@@ -250,7 +250,7 @@ describe("c-case-study-grid", () => {
     ).toBe("/portfolio/business-architecture");
     expect(
       third.querySelector('[data-id="card-link"]').getAttribute("href")
-    ).toBe("/portfolio/docs");
+    ).toBe("/portfolio/delivery");
     expect(first.querySelector(".card-go").getAttribute("aria-hidden")).toBe(
       "true"
     );

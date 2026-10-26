@@ -59,7 +59,7 @@
       "Solution__c": "This site is its own delivery evidence. Every pull request is validated in a fresh scratch org with the local Apex tests and static analysis, and every merge that changes the app deploys to production through GitHub Actions and runs the local tests. Each run publishes a governance event that is stored as a pipeline run record. The Delivery page shows the latest run per workflow, the Jira roadmap and the recent commits, read from caches that scheduled jobs refresh.",
       "Business_Value__c": "The test count on this card and the checklist on the Delivery page come from those stored runs, so they change when the pipeline does. A reviewer sees the roadmap, the commits and the latest pipeline results on one page.",
       "Case_Tags__c": "Experience Cloud, Apex REST, CI/CD",
-      "Live_URL__c": "/docs",
+      "Live_URL__c": "/delivery",
       "Home_Sort__c": 3
     }
   ]
