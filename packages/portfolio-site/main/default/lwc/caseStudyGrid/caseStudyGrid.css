@@ -1,0 +1,184 @@
+/*
+ * Home page case studies, on the --pf- site tokens only, in the hero's column and type
+ * scale. Every element that sets a background also sets its text colour.
+ */
+:host {
+  display: block;
+  scroll-margin-top: 88px;
+}
+
+.case-studies {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 var(--pf-space-4);
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.section {
+  padding: 64px 0 24px;
+}
+
+.section-heading {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pf-text);
+  scroll-margin-top: 88px;
+}
+
+.section-heading:focus {
+  outline: none;
+}
+
+.section-heading:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 4px;
+}
+
+.section-intro {
+  margin: var(--pf-space-2) 0 var(--pf-space-6);
+  max-width: 62ch;
+  color: var(--pf-muted);
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--pf-space-4);
+}
+
+@media (min-width: 980px) {
+  .cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.card {
+  min-width: 0;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-lg);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 18px;
+}
+
+.metric {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-number {
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--pf-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: var(--pf-muted);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--pf-text);
+}
+
+.client {
+  margin: -6px 0 0;
+  font-size: 12px;
+  color: var(--pf-muted);
+}
+
+.blocks {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.block-heading {
+  font-family: var(--pf-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pf-muted);
+}
+
+.block-text {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--pf-body);
+  white-space: pre-line;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tag {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--pf-chip);
+  color: var(--pf-chip-text);
+  font-size: 12px;
+}
+
+/* The site's a:link rule outranks a plain class, so :link and :visited are matched too. */
+.card-link,
+.card-link:link,
+.card-link:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-top: auto;
+  color: var(--pf-accent);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.card-link:hover,
+.card-link:link:hover,
+.card-link:visited:hover {
+  text-decoration: underline;
+}
+
+.card-link:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767.98px) {
+  .section-heading {
+    font-size: 26px;
+  }
+}
