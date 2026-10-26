@@ -140,26 +140,6 @@
   overflow-wrap: anywhere;
 }
 
-/* The title and View source share one row, View source at the right end. */
-.title-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--pf-space-2);
-}
-
-.card-title {
-  flex: 1 1 auto;
-  margin: 0;
-  color: var(--pf-text);
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.title-row {
-  margin-bottom: var(--pf-space-3);
-}
-
 /* Query parameter controls. Pills and buttons are 44 px high. */
 .param-section h3 {
   margin-bottom: var(--pf-space-2);

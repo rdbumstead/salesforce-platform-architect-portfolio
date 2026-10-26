@@ -141,13 +141,20 @@ describe("c-api-tester", () => {
     expect(query(element, "button.execute-button").disabled).toBe(true);
   });
 
-  it("places View source with the apiTester key in the title row, after the heading", async () => {
+  it("places View source with the apiTester key in the card actions slot", async () => {
     const element = createComponent();
     await flushPromises();
 
-    const control = query(element, ".title-row c-view-source");
+    const control = query(element, "lightning-card c-view-source");
     expect(control).not.toBeNull();
     expect(control.sourceKey).toBe("apiTester");
+    const template = readFileSync(
+      join(__dirname, "..", "apiTester.html"),
+      "utf8"
+    );
+    expect(template).toMatch(
+      /<c-view-source\s+slot="actions"\s+source-key="apiTester"/
+    );
   });
 
   it("reads the catalog the controller allows and matches RETURNED_HEADERS in source", () => {

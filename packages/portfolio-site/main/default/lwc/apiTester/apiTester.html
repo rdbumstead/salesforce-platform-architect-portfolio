@@ -1,15 +1,7 @@
 <template>
-  <lightning-card>
+  <lightning-card title="Try a request" icon-name="utility:apex">
+    <c-view-source slot="actions" source-key="apiTester"></c-view-source>
     <div class="slds-p-around_medium console-container">
-      <div class="title-row">
-        <lightning-icon
-          icon-name="utility:apex"
-          size="small"
-          class="card-icon"
-        ></lightning-icon>
-        <h2 class="card-title">Try a request</h2>
-        <c-view-source source-key="apiTester"></c-view-source>
-      </div>
       <section class="invoke-section">
         <h2 class="slds-text-heading_small slds-m-bottom_small">
           Call the API
