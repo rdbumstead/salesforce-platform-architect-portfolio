@@ -40,17 +40,30 @@ const SMOKE_JSON = process.env.SMOKE_JSON || "";
 const ROUTES = [
   {
     path: "/",
-    components: ["c-hero-banner", "c-experience-timeline", "c-contact-call"]
+    components: [
+      "c-hero-banner",
+      { tag: "c-case-study-grid", mayBeEmpty: true },
+      "c-contact-call",
+      "c-site-build-section"
+    ]
   },
   { path: "/contact", components: ["c-contact-form"] },
-  { path: "/resume", components: ["c-resume-builder"] },
+  {
+    path: "/resume",
+    components: ["c-resume-builder", "c-experience-timeline"]
+  },
   { path: "/skills", components: ["c-skill-network"] },
   { path: "/api-lab", components: ["c-api-tester"] },
   { path: "/api-lab/reference", components: ["c-api-reference"] },
   { path: "/ai-lab", components: ["c-cover-letter-generator"] },
   {
     path: "/delivery",
-    components: ["c-roadmap-viewer", "c-changelog", "c-smart-checklist"]
+    components: [
+      "c-roadmap-viewer",
+      "c-changelog",
+      "c-smart-checklist",
+      "c-by-the-numbers"
+    ]
   },
   {
     path: "/testimonials",
@@ -61,7 +74,11 @@ const ROUTES = [
   },
   {
     path: "/business-architecture",
-    components: ["c-project-asset-gallery", "c-schema-visualizer"]
+    components: [
+      "c-project-asset-gallery",
+      "c-schema-visualizer",
+      "c-pillar-a-walkthrough"
+    ]
   },
   {
     path: "/nonprofit-solutions",
