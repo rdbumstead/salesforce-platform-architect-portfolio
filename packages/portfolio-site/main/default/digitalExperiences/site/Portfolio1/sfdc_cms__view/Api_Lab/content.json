@@ -36,15 +36,6 @@
                       "type": "component"
                     },
                     {
-                      "attributes": {
-                        "imageInfos": "",
-                        "richTextValue": "<p>The full contract is in the <a href=\"https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi\" target=\"_blank\" rel=\"noopener noreferrer\">hosted API reference</a>.</p>"
-                      },
-                      "definition": "community_builder:richTextEditor",
-                      "id": "fde2f7b7-4676-4a60-9193-c0abb21c347e",
-                      "type": "component"
-                    },
-                    {
                       "definition": "c:apiTester",
                       "id": "a9a35330-34fb-47d1-9e06-5d548c4da7c7",
                       "type": "component"
