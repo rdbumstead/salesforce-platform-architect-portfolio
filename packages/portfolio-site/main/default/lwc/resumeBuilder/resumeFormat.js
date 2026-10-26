@@ -1,14 +1,19 @@
 /**
  * @description       : Pure helpers for resumeBuilder. They turn the ResumeController.getResume
- *                      payload into a preview view model and into one ordered list of
- *                      typed lines. The ATS text export and the PDF export both read that list,
- *                      so the two exports always carry the same content.
+ *                      payload into one view model. The preview renders that model, the ATS text
+ *                      export reads it as typed lines (buildLines), and the PDF writer (writePdf)
+ *                      draws it with the sizes, spacing, colours and section order in
+ *                      resumeLayout.js, which the preview reads too. So the preview, the PDF and
+ *                      the ATS text carry the same sections, roles and certification groups.
+ *                      Past roles with no highlights for the persona fold into one "Earlier roles"
+ *                      line at the end of Experience.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/21/2026
  **/
 import { toExternalUrl } from "c/externalUrl";
+import { RESUME_LAYOUT } from "./resumeLayout";
 
 const MONTHS = [
   "Jan",
@@ -49,6 +54,24 @@ export function formatDateRange(role) {
   return start ? `${start} - ${end}` : end;
 }
 
+function yearOf(value) {
+  const match = /^(\d{4})/.exec(value ? String(value) : "");
+  return match ? match[1] : "";
+}
+
+/**
+ * The years of an earlier role: "2017 to 2021", or one year when it starts and ends in the
+ * same year or only one end is known.
+ */
+export function formatYearRange(role) {
+  const start = yearOf(role.startDate);
+  const end = yearOf(role.endDate);
+  if (start && end && start !== end) {
+    return `${start} to ${end}`;
+  }
+  return start || end;
+}
+
 function clean(value) {
   return value === null || value === undefined ? "" : String(value).trim();
 }
@@ -67,8 +90,7 @@ function credentialLine(credential) {
     clean(credential.name),
     clean(credential.detail),
     clean(credential.issuer),
-    formatMonthYear(credential.dateValue),
-    credential.isRetired === true ? "Retired" : ""
+    formatMonthYear(credential.dateValue)
   ]
     .filter((part) => part)
     .join(", ");
@@ -95,7 +117,7 @@ function byNewestDate(left, right) {
 }
 
 /**
- * The preview's certification block: the current ones newest first with name, issuer and
+ * The certification block: the current ones newest first with name, issuer and
  * earned month and year, then the retired ones with name and date only.
  */
 function certificationBlock(list) {
@@ -125,8 +147,68 @@ function certificationBlock(list) {
   return { current, retired };
 }
 
+function toRole(role, roleIndex) {
+  const dateRange = formatDateRange(role);
+  const isRemote = role.isRemote === true;
+  return {
+    key: role.id || `role-${roleIndex}`,
+    title: clean(role.title),
+    employer: clean(role.employer),
+    heading: [clean(role.title), clean(role.employer)]
+      .filter((part) => part)
+      .join(", "),
+    dateRange,
+    datesText: isRemote
+      ? `${dateRange} | ${RESUME_LAYOUT.labels.remote}`
+      : dateRange,
+    isRemote,
+    isCurrent: role.isCurrent === true,
+    yearRange: formatYearRange(role),
+    highlights: (role.highlights || [])
+      .map((text, index) => ({
+        key: `${role.id || roleIndex}-h${index}`,
+        text: clean(text)
+      }))
+      .filter((highlight) => highlight.text)
+  };
+}
+
 /**
- * Builds the preview view model. Keys are stable and unique so the template can
+ * The one line for the past roles with no highlights: "Title, Employer (2017 to 2021)" for
+ * each, joined by a middle dot.
+ */
+function earlierRolesText(roles) {
+  return roles
+    .map((role) => {
+      return role.yearRange
+        ? `${role.heading} (${role.yearRange})`
+        : role.heading;
+    })
+    .join(" · ");
+}
+
+function sectionList(model) {
+  const has = {
+    experience: model.hasRoles,
+    skills: model.hasSkills,
+    certifications: model.hasCertifications,
+    education: model.hasEducation
+  };
+  return RESUME_LAYOUT.sections
+    .filter((key) => has[key])
+    .map((key) => ({
+      key,
+      title: RESUME_LAYOUT.labels[key],
+      className: `resume-section resume-${key}`,
+      isExperience: key === "experience",
+      isSkills: key === "skills",
+      isCertifications: key === "certifications",
+      isEducation: key === "education"
+    }));
+}
+
+/**
+ * Builds the view model. Keys are stable and unique so the template can
  * iterate without collisions when two highlights or skills share the same text.
  */
 export function buildViewModel(resume, options) {
@@ -146,53 +228,55 @@ export function buildViewModel(resume, options) {
         }
       : null;
 
-  const roles = (resume.roles || []).map((role, roleIndex) => ({
-    key: role.id || `role-${roleIndex}`,
-    title: clean(role.title),
-    employer: clean(role.employer),
-    heading: [clean(role.title), clean(role.employer)]
-      .filter((part) => part)
-      .join(", "),
-    dateRange: formatDateRange(role),
-    isRemote: role.isRemote === true,
-    highlights: (role.highlights || []).map((text, index) => ({
-      key: `${role.id || roleIndex}-h${index}`,
-      text: clean(text)
-    }))
-  }));
+  const allRoles = (resume.roles || []).map(toRole);
+  const roles = allRoles.filter(
+    (role) => role.isCurrent || role.highlights.length > 0
+  );
+  const earlier = allRoles.filter(
+    (role) => !role.isCurrent && role.highlights.length === 0
+  );
 
   const skillGroups = options.includeSkills
     ? (resume.skillGroups || []).map((group, index) => ({
         key: `skills-${index}`,
         category: clean(group.category),
+        labelText: clean(group.category) ? `${clean(group.category)}: ` : "",
         skillsText: (group.skills || []).map(clean).join(", ")
       }))
     : [];
 
-  const toCredentials = (list, prefix) =>
-    (list || []).map((credential, index) => ({
-      key: `${prefix}-${index}`,
-      text: credentialLine(credential)
-    }));
-
-  const certifications = toCredentials(resume.certifications, "cert");
-  const education = toCredentials(resume.education, "edu");
   const certificationGroups = certificationBlock(resume.certifications);
+  const certificationCount =
+    certificationGroups.current.length + certificationGroups.retired.length;
+  const education = (resume.education || []).map((credential, index) => ({
+    key: `edu-${index}`,
+    text: credentialLine(credential)
+  }));
   const verifyUrl = verificationUrl(resume.credentialVerificationUrl);
 
-  return {
+  const model = {
     header,
     roles,
+    earlierRoles: earlier.length
+      ? {
+          label: RESUME_LAYOUT.labels.earlierRoles,
+          labelText: `${RESUME_LAYOUT.labels.earlierRoles}: `,
+          text: earlierRolesText(earlier),
+          count: earlier.length
+        }
+      : null,
     skillGroups,
-    certifications,
     currentCertifications: certificationGroups.current,
     retiredCertifications: certificationGroups.retired,
     verificationUrl: verifyUrl,
+    verifyLabel: RESUME_LAYOUT.labels.verify,
+    retiredLabel: RESUME_LAYOUT.labels.retired,
     education,
     hasHeader: header !== null,
-    hasRoles: roles.length > 0,
+    hasRoles: allRoles.length > 0,
+    hasEarlierRoles: earlier.length > 0,
     hasSkills: skillGroups.length > 0,
-    hasCertifications: certifications.length > 0,
+    hasCertifications: certificationCount > 0,
     hasCurrentCertifications: certificationGroups.current.length > 0,
     hasRetiredCertifications: certificationGroups.retired.length > 0,
     hasVerificationLink:
@@ -200,16 +284,18 @@ export function buildViewModel(resume, options) {
     hasEducation: education.length > 0,
     isEmpty:
       header === null &&
-      roles.length === 0 &&
+      allRoles.length === 0 &&
       skillGroups.length === 0 &&
-      certifications.length === 0 &&
+      certificationCount === 0 &&
       education.length === 0
   };
+  model.sections = sectionList(model);
+  return model;
 }
 
 /**
- * Flattens the view model into typed lines. Kinds: name, title, meta, text,
- * heading, entry, detail, bullet, spacer.
+ * Flattens the view model into typed lines for the ATS text, sections in the spec's order.
+ * Kinds: name, title, meta, text, heading, subheading, entry, detail, bullet, spacer.
  */
 export function buildLines(model) {
   const lines = [];
@@ -240,42 +326,45 @@ export function buildLines(model) {
     }
   }
 
-  if (model.roles.length > 0) {
-    section("Experience");
-    model.roles.forEach((role, index) => {
-      if (index > 0) {
-        push("spacer", "");
+  model.sections.forEach((entry) => {
+    section(entry.title);
+    if (entry.isExperience) {
+      model.roles.forEach((role, index) => {
+        if (index > 0) {
+          push("spacer", "");
+        }
+        push("entry", role.heading);
+        push("detail", role.datesText);
+        role.highlights.forEach((highlight) => push("bullet", highlight.text));
+      });
+      if (model.earlierRoles) {
+        if (model.roles.length > 0) {
+          push("spacer", "");
+        }
+        push("text", `${model.earlierRoles.label}: ${model.earlierRoles.text}`);
       }
-      push("entry", role.heading);
-      push(
-        "detail",
-        role.isRemote ? `${role.dateRange} | Remote` : role.dateRange
+    } else if (entry.isSkills) {
+      model.skillGroups.forEach((group) =>
+        push(
+          "text",
+          group.category
+            ? `${group.category}: ${group.skillsText}`
+            : group.skillsText
+        )
       );
-      role.highlights.forEach((highlight) => push("bullet", highlight.text));
-    });
-  }
-
-  if (model.skillGroups.length > 0) {
-    section("Skills");
-    model.skillGroups.forEach((group) =>
-      push(
-        "text",
-        group.category
-          ? `${group.category}: ${group.skillsText}`
-          : group.skillsText
-      )
-    );
-  }
-
-  if (model.certifications.length > 0) {
-    section("Certifications");
-    model.certifications.forEach((credential) => push("text", credential.text));
-  }
-
-  if (model.education.length > 0) {
-    section("Education");
-    model.education.forEach((credential) => push("text", credential.text));
-  }
+    } else if (entry.isCertifications) {
+      model.currentCertifications.forEach((cert) => push("text", cert.text));
+      if (model.hasVerificationLink) {
+        push("text", `${model.verifyLabel}: ${model.verificationUrl}`);
+      }
+      if (model.hasRetiredCertifications) {
+        push("subheading", model.retiredLabel);
+        model.retiredCertifications.forEach((cert) => push("text", cert.text));
+      }
+    } else if (entry.isEducation) {
+      model.education.forEach((credential) => push("text", credential.text));
+    }
+  });
 
   return lines;
 }
@@ -298,51 +387,367 @@ export function toAtsText(lines) {
     .join("\n");
 }
 
-const PDF_STYLES = {
-  name: { size: 18, style: "bold", after: 4 },
-  title: { size: 12, style: "normal", after: 4 },
-  meta: { size: 9, style: "normal", after: 2 },
-  heading: { size: 11, style: "bold", after: 4, upper: true },
-  entry: { size: 10.5, style: "bold", after: 2 },
-  detail: { size: 9.5, style: "italic", after: 3 },
-  bullet: { size: 10, style: "normal", after: 2, indent: 12 },
-  text: { size: 10, style: "normal", after: 3 },
-  spacer: { size: 10, style: "normal", after: 0 }
-};
+/**
+ * Breaks text into lines no wider than the widths given, measured with the document's current
+ * font. The first line can be narrower, for a bold label or a date in the same row.
+ */
+function wrapText(doc, text, firstWidth, restWidth) {
+  const words = String(text)
+    .split(/\s+/)
+    .filter((word) => word);
+  const lines = [];
+  let current = "";
+  words.forEach((word) => {
+    const candidate = current ? `${current} ${word}` : word;
+    const limit = lines.length === 0 ? firstWidth : restWidth;
+    if (current && doc.getTextWidth(candidate) > limit) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  });
+  if (current || lines.length === 0) {
+    lines.push(current);
+  }
+  return lines;
+}
 
 /**
- * Writes the lines into a jsPDF document as real text (selectable and readable by
- * parsers), wrapping long lines and adding pages as needed.
+ * Draws the model into a jsPDF document as real text (selectable, in reading order), with the
+ * sizes, spacing, colours and section order from resumeLayout.js. A role, a skill group and the
+ * header never split across pages, and a section or Retired title always has its first entry
+ * under it. Links are clickable. When trace is an array, every drawn piece is pushed onto it as
+ * { section, kind, text } in drawing order.
+ * @param {object} doc a jsPDF document in points
+ * @param {object} model the view model from buildViewModel
+ * @param {object} options { family, trace }: the registered font family (the spec's fallback
+ *                 when not given) and an optional trace array
+ * @returns {object} the document
  */
-export function writePdf(doc, lines) {
-  const margin = 54;
+export function writePdf(doc, model, options = {}) {
+  const layout = RESUME_LAYOUT;
+  const family = options.family || layout.font.fallback;
+  const trace = Array.isArray(options.trace) ? options.trace : null;
+  const { type, space, colors, marks } = layout;
+  const margin = layout.page.margin;
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const usableWidth = pageWidth - margin * 2;
-  let y = margin;
+  const width = pageWidth - margin * 2;
+  const bottom = pageHeight - margin;
+  const blocks = [];
+  let section = "header";
 
-  lines.forEach((line) => {
-    const style = PDF_STYLES[line.kind] || PDF_STYLES.text;
-    const lineHeight = style.size * 1.25;
-    if (line.kind === "spacer") {
-      y += lineHeight / 2;
+  const setType = (style) => {
+    doc.setFont(family, style.bold ? "bold" : "normal");
+    doc.setFontSize(style.size);
+  };
+  const lineOf = (style) => style.size * layout.lineHeight;
+  const measure = (text, style) => {
+    setType(style);
+    return doc.getTextWidth(text);
+  };
+  const shown = (text, style) => (style.upper ? text.toUpperCase() : text);
+
+  // A row is one line box: its height and the pieces drawn in it, x absolute, y from its top.
+  const textRow = (pieces, style, extra = 0) => ({
+    height: lineOf(style) + extra,
+    pieces: pieces.map((piece) => ({ ...piece, style: piece.style || style }))
+  });
+  const block = (rows, after, keepWithNext = false) => {
+    blocks.push({ rows, after, keepWithNext, section });
+  };
+
+  const paragraph = (kind, text, style, indent = 0) => {
+    setType(style);
+    return wrapText(doc, text, width - indent, width - indent).map((part) =>
+      textRow([{ kind, text: part, x: margin + indent }], style)
+    );
+  };
+
+  const labelled = (kind, label, text, style, labelStyle) => {
+    const labelText = `${label}:`;
+    const labelWidth = measure(`${labelText} `, labelStyle);
+    setType(style);
+    return wrapText(doc, text, width - labelWidth, width).map((part, index) =>
+      textRow(
+        index === 0
+          ? [
+              {
+                kind: `${kind}-label`,
+                text: labelText,
+                x: margin,
+                style: labelStyle
+              },
+              { kind, text: part, x: margin + labelWidth }
+            ]
+          : [{ kind, text: part, x: margin }],
+        style
+      )
+    );
+  };
+
+  // Header: centred name, title and links side by side, then the summary with no heading.
+  if (model.header) {
+    const rows = [];
+    const centred = (kind, text, style) => {
+      const textWidth = measure(text, style);
+      return textRow(
+        [{ kind, text, x: margin + (width - textWidth) / 2 }],
+        style,
+        space.headerGap
+      );
+    };
+    if (model.header.name) {
+      rows.push(centred("name", model.header.name, type.name));
+    }
+    if (model.header.title) {
+      rows.push(centred("title", model.header.title, type.title));
+    }
+    if (model.header.links.length) {
+      const separator = marks.linkSeparator;
+      const gap = space.linkGap;
+      const separatorWidth = measure(separator, type.links);
+      const widths = model.header.links.map((link) =>
+        measure(link.label, type.links)
+      );
+      const total =
+        widths.reduce((sum, value) => sum + value, 0) +
+        (widths.length - 1) * (separatorWidth + gap * 2);
+      let x = margin + (width - total) / 2;
+      const pieces = [];
+      model.header.links.forEach((link, index) => {
+        if (index > 0) {
+          pieces.push({ kind: "separator", text: separator, x: x + gap });
+          x += separatorWidth + gap * 2;
+        }
+        pieces.push({ kind: "link", text: link.label, x, url: link.url });
+        x += widths[index];
+      });
+      rows.push(textRow(pieces, type.links, space.headerGap));
+    }
+    if (model.header.careerObjective) {
+      const summary = paragraph(
+        "summary",
+        model.header.careerObjective,
+        type.summary
+      );
+      summary[0].height += space.summaryBefore;
+      summary[0].offset = space.summaryBefore;
+      rows.push(...summary);
+    }
+    block(rows, space.headerAfter);
+  }
+
+  model.sections.forEach((entry) => {
+    section = entry.title;
+    if (blocks.length > 0) {
+      blocks.push({ spacer: space.sectionBefore });
+    }
+    const titleRow = textRow(
+      [
+        {
+          kind: "section",
+          text: shown(entry.title, type.sectionTitle),
+          x: margin
+        }
+      ],
+      type.sectionTitle,
+      space.ruleGap + space.ruleWidth
+    );
+    titleRow.rule = true;
+    block([titleRow], space.sectionTitleAfter, true);
+
+    if (entry.isExperience) {
+      model.roles.forEach((role) => {
+        const datesWidth = measure(role.datesText, type.roleDates);
+        setType(type.roleHeading);
+        const rows = wrapText(
+          doc,
+          role.heading,
+          width - datesWidth - space.linkGap * 2,
+          width
+        ).map((part, index) =>
+          textRow(
+            index === 0
+              ? [
+                  { kind: "role", text: part, x: margin },
+                  {
+                    kind: "dates",
+                    text: role.datesText,
+                    x: margin + width - datesWidth,
+                    style: type.roleDates
+                  }
+                ]
+              : [{ kind: "role", text: part, x: margin }],
+            type.roleHeading
+          )
+        );
+        role.highlights.forEach((highlight) => {
+          const bulletRows = paragraph(
+            "bullet",
+            highlight.text,
+            type.bullet,
+            space.bulletIndent
+          );
+          bulletRows[0].pieces.unshift({
+            kind: "marker",
+            text: marks.bullet,
+            x: margin + space.bulletMarker,
+            style: type.bullet
+          });
+          bulletRows[bulletRows.length - 1].height += space.itemGap;
+          rows.push(...bulletRows);
+        });
+        block(rows, space.roleAfter);
+      });
+      if (model.earlierRoles) {
+        block(
+          labelled(
+            "earlier",
+            model.earlierRoles.label,
+            model.earlierRoles.text,
+            type.text,
+            type.label
+          ),
+          space.itemGap
+        );
+      }
+    } else if (entry.isSkills) {
+      model.skillGroups.forEach((group) => {
+        block(
+          group.category
+            ? labelled(
+                "skill",
+                group.category,
+                group.skillsText,
+                type.text,
+                type.label
+              )
+            : paragraph("skill", group.skillsText, type.text),
+          space.itemGap
+        );
+      });
+    } else if (entry.isCertifications) {
+      model.currentCertifications.forEach((cert) =>
+        block(paragraph("cert", cert.text, type.text), space.itemGap)
+      );
+      if (model.hasVerificationLink) {
+        block(
+          [
+            textRow(
+              [
+                {
+                  kind: "verify",
+                  text: model.verifyLabel,
+                  x: margin,
+                  url: model.verificationUrl
+                }
+              ],
+              type.text
+            )
+          ],
+          space.itemGap
+        );
+      }
+      if (model.hasRetiredCertifications) {
+        blocks.push({ spacer: space.subheadingBefore });
+        block(
+          [
+            textRow(
+              [
+                {
+                  kind: "retired-title",
+                  text: shown(model.retiredLabel, type.subheading),
+                  x: margin
+                }
+              ],
+              type.subheading
+            )
+          ],
+          space.itemGap,
+          true
+        );
+        model.retiredCertifications.forEach((cert) =>
+          block(paragraph("retired", cert.text, type.text), space.itemGap)
+        );
+      }
+    } else if (entry.isEducation) {
+      model.education.forEach((credential) =>
+        block(paragraph("education", credential.text, type.text), space.itemGap)
+      );
+    }
+  });
+
+  // Pagination and drawing, one block at a time.
+  const heightOf = (item) =>
+    item.rows.reduce((sum, row) => sum + row.height, 0);
+  let y = margin;
+  let page = 1;
+  let onPage = false;
+  const newPage = () => {
+    doc.addPage();
+    page += 1;
+    y = margin;
+    onPage = false;
+  };
+  const drawRow = (row, label) => {
+    const top = y + (row.offset || 0);
+    row.pieces.forEach((piece) => {
+      const style = piece.style;
+      setType(style);
+      const baseline = top + lineOf(style) / 2 + style.size * 0.35;
+      if (piece.url) {
+        doc.setTextColor(colors.link);
+        doc.textWithLink(piece.text, piece.x, baseline, { url: piece.url });
+      } else {
+        doc.setTextColor(colors.ink);
+        doc.text(piece.text, piece.x, baseline);
+      }
+      if (trace) {
+        trace.push({
+          section: label,
+          kind: piece.kind,
+          text: piece.text,
+          page,
+          y: Math.round(baseline)
+        });
+      }
+    });
+    if (row.rule) {
+      const ruleY = top + row.height - space.ruleWidth / 2;
+      doc.setDrawColor(colors.rule);
+      doc.setLineWidth(space.ruleWidth);
+      doc.line(margin, ruleY, margin + width, ruleY);
+    }
+    y += row.height;
+    onPage = true;
+  };
+
+  blocks.forEach((item, index) => {
+    if (item.spacer) {
+      if (onPage) {
+        y += item.spacer;
+      }
       return;
     }
-    doc.setFont("helvetica", style.style);
-    doc.setFontSize(style.size);
-    const indent = style.indent || 0;
-    const text = style.upper ? line.text.toUpperCase() : line.text;
-    const prefix = line.kind === "bullet" ? "- " : "";
-    const wrapped = doc.splitTextToSize(prefix + text, usableWidth - indent);
-    wrapped.forEach((part) => {
-      if (y + lineHeight > pageHeight - margin) {
-        doc.addPage();
-        y = margin;
+    let needed = heightOf(item);
+    if (item.keepWithNext) {
+      const next = blocks.slice(index + 1).find((candidate) => candidate.rows);
+      if (next) {
+        needed += item.after + heightOf(next);
       }
-      doc.text(part, margin + indent, y);
-      y += lineHeight;
+    }
+    if (onPage && y + needed > bottom) {
+      newPage();
+    }
+    item.rows.forEach((row) => {
+      if (onPage && y + row.height > bottom) {
+        newPage();
+      }
+      drawRow(row, item.section);
     });
-    y += style.after;
+    y += item.after;
   });
   return doc;
 }

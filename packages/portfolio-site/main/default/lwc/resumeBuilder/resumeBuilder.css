@@ -1,6 +1,8 @@
 /*
- * Built on the --pf- site tokens, so the builder and the preview follow
- * the light and dark theme. Every element that sets a background also sets its text colour.
+ * The builder sits on the --pf- site tokens, so its panel follows the light and dark theme.
+ * The preview is white paper in both themes. Its type, spacing and colours come from
+ * resumeLayout.js as --resume- custom properties on .preview-paper, the same values the PDF
+ * writer reads. Every element that sets a background also sets its text colour.
  */
 .builder-body,
 .config-panel {
@@ -8,13 +10,33 @@
   color: var(--pf-text);
 }
 
+.builder-body {
+  padding: var(--pf-space-4);
+}
+
+.builder-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--pf-space-4);
+}
+
 .config-panel {
+  padding: var(--pf-space-4);
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius);
 }
 
-.config-panel h2 {
+.config-title {
+  margin: 0 0 var(--pf-space-4);
+  font-size: 16px;
+  font-weight: 700;
   color: var(--pf-text);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-space-2);
 }
 
 .text-success {
@@ -27,68 +49,217 @@
   background-color: var(--pf-bg);
 }
 
+/* The paper: white in both themes, like the PDF. */
 .preview-paper {
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
+  min-width: 0;
+  min-height: 500px;
+  padding: var(--pf-space-6);
+  background-color: var(--resume-paper);
+  color: var(--resume-ink);
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);
-  min-height: 500px;
+  font-family: var(--pf-font-sans);
+  font-size: var(--resume-text-size);
+  font-weight: var(--resume-text-weight);
+  line-height: var(--resume-line-height);
+  overflow-wrap: anywhere;
 }
 
 .preview-paper h2,
 .preview-paper h3,
 .preview-paper h4,
 .preview-paper p,
+.preview-paper ul,
 .preview-paper li,
 .preview-paper strong,
 .preview-paper span,
 .preview-paper section,
 .preview-paper header {
-  color: var(--pf-text);
+  color: var(--resume-ink);
+  background-color: transparent;
 }
 
-.preview-paper a {
-  color: var(--pf-accent);
+.preview-paper p,
+.preview-paper ul,
+.preview-paper h2,
+.preview-paper h3,
+.preview-paper h4 {
+  margin: 0;
+}
+
+.preview-paper a,
+.preview-paper a:link,
+.preview-paper a:visited {
+  color: var(--resume-link);
+}
+
+.preview-paper a:focus-visible {
+  outline: 2px solid var(--resume-link);
+  outline-offset: 2px;
 }
 
 .preview-paper .paper-error,
 .preview-paper .paper-error p {
-  color: var(--pf-error-text);
+  color: var(--resume-error);
 }
 
 .preview-paper .paper-muted {
-  color: var(--pf-muted);
+  color: var(--resume-muted);
 }
 
-.section-title {
-  text-transform: uppercase;
-  border-bottom: 2px solid currentColor;
-  margin-bottom: 0.5rem;
-  font-weight: bold;
-  font-size: 0.9rem;
+/* Header: centred name, title and links side by side, then the summary with no heading. */
+.preview-header {
+  margin-bottom: var(--resume-header-after);
+  text-align: center;
+}
+
+.resume-name {
+  font-size: var(--resume-name-size);
+  font-weight: var(--resume-name-weight);
+  line-height: var(--resume-line-height);
+}
+
+.resume-title {
+  margin-top: var(--resume-header-gap);
+  font-size: var(--resume-title-size);
+  font-weight: var(--resume-title-weight);
 }
 
 .resume-links {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  margin-top: var(--resume-header-gap);
+  padding: 0;
+  list-style: none;
+  font-size: var(--resume-links-size);
+  font-weight: var(--resume-links-weight);
 }
 
-.retired-title {
-  font-size: 0.8rem;
-  font-weight: bold;
+.resume-link + .resume-link::before {
+  content: "\2022";
+  margin: 0 var(--resume-link-gap);
+  color: var(--resume-ink);
+}
+
+.resume-objective {
+  margin-top: var(--resume-summary-before);
+  text-align: left;
+  font-size: var(--resume-summary-size);
+  font-weight: var(--resume-summary-weight);
+}
+
+/* Sections: upper case title with a rule under it, as in the PDF. */
+.resume-section + .resume-section {
+  margin-top: var(--resume-section-before);
+}
+
+.section-title {
+  margin-bottom: var(--resume-section-title-after);
+  padding-bottom: var(--resume-rule-gap);
+  border-bottom: var(--resume-rule-width) solid var(--resume-rule);
+  font-size: var(--resume-section-title-size);
+  font-weight: var(--resume-section-title-weight);
   text-transform: uppercase;
 }
 
-/* View source sits under the card heading, on the right on desktop and at the left on phones. */
-.card-tools {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--pf-space-2);
+.resume-role + .resume-role,
+.resume-role + .earlier-roles {
+  margin-top: var(--resume-role-after);
 }
 
+/* Title and dates on one row. The dates wrap under the title when the row is too narrow. */
+.role-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  column-gap: var(--resume-link-gap);
+}
+
+.role-heading {
+  font-size: var(--resume-role-heading-size);
+  font-weight: var(--resume-role-heading-weight);
+}
+
+.role-dates {
+  font-size: var(--resume-role-dates-size);
+  font-weight: var(--resume-role-dates-weight);
+  white-space: nowrap;
+}
+
+.role-list {
+  padding-left: var(--resume-bullet-indent);
+  list-style: disc;
+}
+
+.role-highlight {
+  margin-bottom: var(--resume-item-gap);
+  font-size: var(--resume-bullet-size);
+  font-weight: var(--resume-bullet-weight);
+}
+
+.plain-list {
+  padding: 0;
+  list-style: none;
+}
+
+.skill-group,
+.earlier-roles,
+.certification,
+.retired-certification,
+.education,
+.verify {
+  margin-bottom: var(--resume-item-gap);
+}
+
+.item-label {
+  font-weight: var(--resume-label-weight);
+}
+
+.retired-title {
+  margin-top: var(--resume-subheading-before);
+  margin-bottom: var(--resume-item-gap);
+  font-size: var(--resume-subheading-size);
+  font-weight: var(--resume-subheading-weight);
+  text-transform: uppercase;
+}
+
+/* The card's View source sits in the title row on the right, at body size. */
+.card-source {
+  display: inline-flex;
+}
+
+@media (min-width: 768px) {
+  .builder-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    align-items: start;
+  }
+
+  .config-column {
+    align-self: stretch;
+  }
+
+  /* The settings stay in view while the resume scrolls, below the sticky site header. */
+  .config-panel {
+    position: sticky;
+    top: var(--resume-sticky-top, 88px);
+  }
+}
+
+/* Phones: no outer card, so the resume is not boxed three times. */
 @media (max-width: 767.98px) {
-  .card-tools {
-    justify-content: flex-start;
+  .builder-card {
+    --slds-c-card-color-border: transparent;
+    --slds-c-card-shadow: none;
+    --slds-c-card-radius-border: 0;
+    --slds-c-card-color-background: transparent;
+  }
+
+  .builder-body {
+    padding: 0;
+  }
+
+  .preview-paper {
+    padding: var(--pf-space-4);
   }
 }

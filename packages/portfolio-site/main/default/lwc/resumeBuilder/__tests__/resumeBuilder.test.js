@@ -1,6 +1,8 @@
 /**
- * @description       : Unit tests for resumeBuilder LWC. The getResume wire adapter and the
- *                      resource loader are mocked, so no mock data lives in the component.
+ * @description       : Unit tests for resumeBuilder LWC. The getResume wire adapter, the
+ *                      resource loader and the font fetch are mocked, so no mock data lives in
+ *                      the component. The PDF tests run the real writer against a stand in for
+ *                      jsPDF that measures text and records every piece drawn.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -11,6 +13,12 @@ import ResumeBuilder from "c/resumeBuilder";
 import getResume from "@salesforce/apex/ResumeController.getResume";
 import { loadScript } from "lightning/platformResourceLoader";
 import { trackEvent } from "c/analyticsService";
+import { buildViewModel, writePdf } from "../resumeFormat";
+import {
+  RESUME_LAYOUT,
+  PREVIEW_PX_PER_PT,
+  previewStyle
+} from "../resumeLayout";
 
 jest.mock(
   "@salesforce/apex/ResumeController.getResume",
@@ -97,6 +105,58 @@ const RESUME = {
   ]
 };
 
+// Past roles with no highlights fold into the Earlier roles line.
+const EARLIER = [
+  {
+    id: "a01000000000003AAA",
+    title: "Support Analyst",
+    employer: "Initech",
+    startDate: "2017-07-03",
+    endDate: "2019-12-31",
+    isCurrent: false,
+    isRemote: false,
+    highlights: []
+  },
+  {
+    id: "a01000000000004AAA",
+    title: "Technician",
+    employer: "Fiserv, Inc",
+    startDate: "2016-01-01",
+    endDate: "2016-10-03",
+    isCurrent: false,
+    isRemote: false,
+    highlights: null
+  }
+];
+
+// A stored value with plus signs in the query string, which must survive as plus signs.
+const VERIFY_URL =
+  "https://trailhead.salesforce.com/en/credentials/certification-detail-print/?searchString=9mtUhy8GnfeJ+wZ2qMHSoTtn5Li90a2pHeJQ9ycm+2M7cecsvBBbSOauy5RarT+M";
+
+const CERTS = [
+  {
+    name: "Salesforce Certified AI Associate",
+    issuer: "Salesforce",
+    dateValue: "2024-07-22",
+    detail: null,
+    isRetired: true
+  },
+  {
+    name: "Salesforce Certified Platform Administrator",
+    issuer: "Salesforce",
+    dateValue: "2024-06-19",
+    detail: null,
+    isRetired: false
+  },
+  {
+    name: "Salesforce Certified Data 360 Consultant",
+    issuer: "Salesforce",
+    dateValue: "2025-03-17",
+    detail: null,
+    isRetired: false
+  }
+];
+
 const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
 
 function createComponent() {
@@ -117,24 +177,71 @@ function button(element, cssClass) {
   return query(element, `lightning-button.${cssClass}`);
 }
 
+/**
+ * A stand in for a jsPDF document: letter size in points, text measured at half the font
+ * size per character, and every call recorded in order.
+ */
+function fakeDoc() {
+  const state = { size: 10, font: "", style: "" };
+  const doc = {
+    internal: {
+      pageSize: { getWidth: () => 612, getHeight: () => 792 }
+    },
+    drawn: [],
+    pages: 1,
+    setFont: jest.fn((font, style) => {
+      state.font = font;
+      state.style = style;
+    }),
+    setFontSize: jest.fn((size) => {
+      state.size = size;
+    }),
+    getTextWidth: jest.fn((text) => String(text).length * state.size * 0.5),
+    setTextColor: jest.fn(),
+    setDrawColor: jest.fn(),
+    setLineWidth: jest.fn(),
+    line: jest.fn(),
+    text: jest.fn((text, x, y) => {
+      doc.drawn.push({ text, x, y, page: doc.pages, ...state });
+    }),
+    textWithLink: jest.fn((text, x, y, options) => {
+      doc.drawn.push({
+        text,
+        x,
+        y,
+        page: doc.pages,
+        url: options.url,
+        ...state
+      });
+      return text.length;
+    }),
+    addPage: jest.fn(() => {
+      doc.pages += 1;
+    }),
+    addFileToVFS: jest.fn(),
+    addFont: jest.fn(),
+    save: jest.fn()
+  };
+  return doc;
+}
+
+function fontResponse(ok = true) {
+  return Promise.resolve({
+    ok,
+    status: ok ? 200 : 404,
+    arrayBuffer: () => Promise.resolve(new Uint8Array([65, 66, 67]).buffer)
+  });
+}
+
 describe("c-resume-builder", () => {
   let jsPdfInstance;
 
   beforeEach(() => {
-    jsPdfInstance = {
-      internal: {
-        pageSize: { getWidth: () => 612, getHeight: () => 792 }
-      },
-      setFont: jest.fn(),
-      setFontSize: jest.fn(),
-      splitTextToSize: jest.fn((text) => [text]),
-      text: jest.fn(),
-      addPage: jest.fn(),
-      save: jest.fn()
-    };
+    jsPdfInstance = fakeDoc();
     window.jspdf = { jsPDF: jest.fn(() => jsPdfInstance) };
     loadScript.mockReset();
     loadScript.mockResolvedValue();
+    global.fetch = jest.fn(() => fontResponse());
   });
 
   afterEach(() => {
@@ -142,6 +249,7 @@ describe("c-resume-builder", () => {
       document.body.removeChild(document.body.firstChild);
     }
     delete window.jspdf;
+    delete global.fetch;
     jest.clearAllMocks();
   });
 
@@ -175,6 +283,9 @@ describe("c-resume-builder", () => {
       "https://github.com/rdbumstead",
       "https://ryanbumstead.com/"
     ]);
+    expect(query(element, ".resume-objective").textContent.trim()).toBe(
+      "Design platforms that last."
+    );
 
     const roles = queryAll(element, ".resume-role");
     expect(roles).toHaveLength(2);
@@ -182,11 +293,15 @@ describe("c-resume-builder", () => {
       "Technical Architect, Acme"
     );
     expect(roles[0].querySelector(".role-dates").textContent).toBe(
-      "Apr 2023 - Present"
+      "Apr 2023 - Present | Remote"
     );
     expect(roles[1].querySelector(".role-dates").textContent).toBe(
       "Jan 2020 - Mar 2023"
     );
+    // Title and dates share one row.
+    expect(
+      roles[0].querySelector(".role-row .role-heading + .role-dates")
+    ).not.toBeNull();
     expect(
       queryAll(element, ".role-highlight").map((li) => li.textContent.trim())
     ).toEqual([
@@ -196,20 +311,22 @@ describe("c-resume-builder", () => {
     ]);
 
     expect(query(element, ".skill-group").textContent).toContain("Apex, LWC");
-    expect(query(element, ".certification").textContent).toBe(
+    expect(query(element, ".certification").textContent.trim()).toBe(
       "Application Architect, Salesforce, Jun 2024"
     );
     expect(query(element, ".education").textContent).toBe(
       "BSc, Computer Science, State University, May 2015"
     );
+    expect(query(element, ".earlier-roles")).toBeNull();
   });
 
-  it("offers the personas without the Technical Architect title", async () => {
+  it("offers the personas under Tailor for, without the Technical Architect title", async () => {
     const element = createComponent();
     getResume.emit(RESUME);
     await flushPromises();
 
     const picker = query(element, "lightning-combobox.persona-picker");
+    expect(picker.label).toBe("Tailor for");
     expect(picker.options.map((option) => option.label)).toEqual([
       "Platform Architect",
       "Salesforce Developer",
@@ -237,16 +354,36 @@ describe("c-resume-builder", () => {
     expect(query(element, ".resume-name")).not.toBeNull();
   });
 
-  it("uses brand buttons and no light SLDS theme panel", async () => {
+  it("has one primary button and no light SLDS theme panel", async () => {
     const element = createComponent();
     getResume.emit(RESUME);
     await flushPromises();
 
     expect(button(element, "download-pdf").variant).toBe("brand");
-    expect(button(element, "copy-ats").variant).toBe("brand");
+    expect(button(element, "copy-ats").variant).toBe("neutral");
+    expect(
+      queryAll(element, "lightning-button").filter(
+        (control) => control.variant === "brand"
+      )
+    ).toHaveLength(1);
     expect(query(element, ".config-panel")).not.toBeNull();
     expect(query(element, '[class*="slds-theme_"]')).toBeNull();
     expect(query(element, '[class*="slds-text-color_"]')).toBeNull();
+  });
+
+  it("puts the layout spec on the paper, so it stays white in both themes", async () => {
+    const element = createComponent();
+    getResume.emit(RESUME);
+    await flushPromises();
+
+    const style = query(element, ".preview-paper").getAttribute("style");
+    expect(style).toContain(`--resume-paper: ${RESUME_LAYOUT.colors.paper}`);
+    expect(style).toContain(`--resume-ink: ${RESUME_LAYOUT.colors.ink}`);
+    expect(style).toContain(
+      `--resume-name-size: ${RESUME_LAYOUT.type.name.size * PREVIEW_PX_PER_PT}px`
+    );
+    expect(style).toContain("--resume-name-weight: 700");
+    expect(RESUME_LAYOUT.colors.paper).toBe("#ffffff");
   });
 
   it("shows the controller message in the error state", async () => {
@@ -297,26 +434,47 @@ describe("c-resume-builder", () => {
     expect(queryAll(element, ".resume-role")).toHaveLength(2);
   });
 
-  it("does not load jsPDF until the download button is clicked", async () => {
+  it("does not load jsPDF or the fonts until the download button is clicked", async () => {
     const element = createComponent();
     getResume.emit(RESUME);
     await flushPromises();
 
     expect(loadScript).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
 
     button(element, "download-pdf").click();
+    await flushPromises();
     await flushPromises();
 
     expect(loadScript).toHaveBeenCalledTimes(1);
     expect(loadScript.mock.calls[0][1]).toBe("jsPDF_Library");
-    expect(window.jspdf.jsPDF).toHaveBeenCalledTimes(1);
+    expect(global.fetch.mock.calls.map((call) => call[0])).toEqual([
+      "Portfolio_Fonts/inter-latin-400-normal.ttf",
+      "Portfolio_Fonts/inter-latin-700-normal.ttf"
+    ]);
+    expect(window.jspdf.jsPDF).toHaveBeenCalledWith({
+      unit: "pt",
+      format: "letter",
+      compress: true
+    });
+    expect(jsPdfInstance.addFileToVFS).toHaveBeenCalledWith(
+      "inter-latin-400-normal.ttf",
+      "QUJD"
+    );
+    expect(jsPdfInstance.addFont).toHaveBeenCalledWith(
+      "inter-latin-700-normal.ttf",
+      "Inter",
+      "bold"
+    );
+    expect(jsPdfInstance.setFont).toHaveBeenCalledWith("Inter", "normal");
     expect(jsPdfInstance.save).toHaveBeenCalledWith(
       "Ryan_Bumstead_Resume_Architect.pdf"
     );
-    const written = jsPdfInstance.text.mock.calls.map((call) => call[0]);
+    const written = jsPdfInstance.drawn.map((piece) => piece.text);
     expect(written).toContain("Ryan Bumstead");
     expect(written).toContain("EXPERIENCE");
-    expect(written).toContain("- Led the integration layer.");
+    expect(written).toContain("Led the integration layer.");
+    expect(written).not.toContain("SUMMARY");
     expect(query(element, ".export-message").textContent).toContain(
       "PDF downloaded."
     );
@@ -327,8 +485,33 @@ describe("c-resume-builder", () => {
 
     button(element, "download-pdf").click();
     await flushPromises();
+    await flushPromises();
     expect(loadScript).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
     expect(jsPdfInstance.save).toHaveBeenCalledTimes(2);
+  });
+
+  it("still writes the PDF in the fallback font when the fonts cannot be fetched", async () => {
+    global.fetch = jest.fn(() => fontResponse(false));
+    const element = createComponent();
+    getResume.emit(RESUME);
+    await flushPromises();
+
+    button(element, "download-pdf").click();
+    await flushPromises();
+    await flushPromises();
+
+    expect(jsPdfInstance.addFont).not.toHaveBeenCalled();
+    expect(jsPdfInstance.setFont).toHaveBeenCalledWith("helvetica", "bold");
+    expect(jsPdfInstance.save).toHaveBeenCalledTimes(1);
+
+    // The next click tries the fonts again.
+    global.fetch = jest.fn(() => fontResponse());
+    button(element, "download-pdf").click();
+    await flushPromises();
+    await flushPromises();
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(jsPdfInstance.addFont).toHaveBeenCalledTimes(2);
   });
 
   it("leaves the skills out of the PDF when the toggle is off", async () => {
@@ -346,8 +529,9 @@ describe("c-resume-builder", () => {
 
     button(element, "download-pdf").click();
     await flushPromises();
+    await flushPromises();
 
-    const written = jsPdfInstance.text.mock.calls.map((call) => call[0]);
+    const written = jsPdfInstance.drawn.map((piece) => piece.text);
     expect(written).not.toContain("SKILLS");
     expect(written).toContain("CERTIFICATIONS");
   });
@@ -360,6 +544,7 @@ describe("c-resume-builder", () => {
 
     button(element, "download-pdf").click();
     await flushPromises();
+    await flushPromises();
 
     expect(query(element, ".export-error").textContent).toContain(
       "The PDF could not be created."
@@ -368,6 +553,7 @@ describe("c-resume-builder", () => {
     expect(trackEvent).not.toHaveBeenCalled();
 
     button(element, "download-pdf").click();
+    await flushPromises();
     await flushPromises();
     expect(loadScript).toHaveBeenCalledTimes(2);
     expect(jsPdfInstance.save).toHaveBeenCalledTimes(1);
@@ -434,35 +620,68 @@ describe("c-resume-builder", () => {
     delete navigator.clipboard;
   });
 
+  describe("earlier roles", () => {
+    it("folds past roles with no highlights into one line after the other roles", async () => {
+      const element = createComponent();
+      getResume.emit({ ...RESUME, roles: [...RESUME.roles, ...EARLIER] });
+      await flushPromises();
+
+      expect(queryAll(element, ".resume-role")).toHaveLength(2);
+      const line = query(element, ".resume-experience .earlier-roles");
+      expect(line.querySelector(".item-label").textContent.trim()).toBe(
+        "Earlier roles:"
+      );
+      expect(line.textContent.replace(/\s+/g, " ").trim()).toBe(
+        "Earlier roles: Support Analyst, Initech (2017 to 2019) · Technician, Fiserv, Inc (2016)"
+      );
+      const lastRole = queryAll(element, ".resume-role")[1];
+      expect(
+        lastRole.compareDocumentPosition(line) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    });
+
+    it("keeps a current role with no highlights as a role", () => {
+      const model = buildViewModel(
+        {
+          ...RESUME,
+          roles: [{ ...RESUME.roles[0], highlights: [] }, ...EARLIER]
+        },
+        { includeHeader: true, includeSkills: true }
+      );
+      expect(model.roles.map((role) => role.title)).toEqual([
+        "Technical Architect"
+      ]);
+      expect(model.earlierRoles.count).toBe(2);
+    });
+
+    it("puts the same line in the ATS text and the PDF", async () => {
+      const writeText = jest.fn().mockResolvedValue();
+      Object.defineProperty(navigator, "clipboard", {
+        value: { writeText },
+        configurable: true
+      });
+      const element = createComponent();
+      getResume.emit({ ...RESUME, roles: [...RESUME.roles, ...EARLIER] });
+      await flushPromises();
+
+      button(element, "copy-ats").click();
+      await flushPromises();
+      const text = writeText.mock.calls[0][0];
+      expect(text).toContain(
+        "- Shipped Lightning components.\n\nEarlier roles: Support Analyst, Initech (2017 to 2019) · Technician, Fiserv, Inc (2016)\n\nSKILLS"
+      );
+      delete navigator.clipboard;
+
+      button(element, "download-pdf").click();
+      await flushPromises();
+      await flushPromises();
+      const written = jsPdfInstance.drawn.map((piece) => piece.text);
+      expect(written).toContain("Earlier roles:");
+    });
+  });
+
   describe("certifications", () => {
-    // A stored value with plus signs in the query string, which must survive as plus signs.
-    const VERIFY_URL =
-      "https://trailhead.salesforce.com/en/credentials/certification-detail-print/?searchString=9mtUhy8GnfeJ+wZ2qMHSoTtn5Li90a2pHeJQ9ycm+2M7cecsvBBbSOauy5RarT+M";
-
-    const CERTS = [
-      {
-        name: "Salesforce Certified AI Associate",
-        issuer: "Salesforce",
-        dateValue: "2024-07-22",
-        detail: null,
-        isRetired: true
-      },
-      {
-        name: "Salesforce Certified Platform Administrator",
-        issuer: "Salesforce",
-        dateValue: "2024-06-19",
-        detail: null,
-        isRetired: false
-      },
-      {
-        name: "Salesforce Certified Data 360 Consultant",
-        issuer: "Salesforce",
-        dateValue: "2025-03-17",
-        detail: null,
-        isRetired: false
-      }
-    ];
-
     async function render(resume) {
       const element = createComponent();
       getResume.emit(resume);
@@ -504,7 +723,7 @@ describe("c-resume-builder", () => {
     it("lists current certifications newest first with issuer and month", async () => {
       const element = await render({ ...RESUME, certifications: CERTS });
       expect(
-        queryAll(element, ".certification").map((li) => li.textContent)
+        queryAll(element, ".certification").map((li) => li.textContent.trim())
       ).toEqual([
         "Salesforce Certified Data 360 Consultant, Salesforce, Mar 2025",
         "Salesforce Certified Platform Administrator, Salesforce, Jun 2024"
@@ -561,7 +780,7 @@ describe("c-resume-builder", () => {
       expect(queryAll(element, ".retired-certification")).toHaveLength(1);
     });
 
-    it("marks a retired certification in the ATS text", async () => {
+    it("groups the certifications in the ATS text as the preview does", async () => {
       const writeText = jest.fn().mockResolvedValue();
       Object.defineProperty(navigator, "clipboard", {
         value: { writeText },
@@ -576,21 +795,246 @@ describe("c-resume-builder", () => {
       await flushPromises();
       const text = writeText.mock.calls[0][0];
       expect(text).toContain(
-        "Salesforce Certified AI Associate, Salesforce, Jul 2024, Retired"
-      );
-      expect(text).toContain(
-        "Salesforce Certified Data 360 Consultant, Salesforce, Mar 2025"
+        [
+          "CERTIFICATIONS",
+          "Salesforce Certified Data 360 Consultant, Salesforce, Mar 2025",
+          "Salesforce Certified Platform Administrator, Salesforce, Jun 2024",
+          `Verify on Trailhead: ${VERIFY_URL}`,
+          "Retired",
+          "Salesforce Certified AI Associate, Jul 2024",
+          "",
+          "EDUCATION"
+        ].join("\n")
       );
       delete navigator.clipboard;
     });
+
+    it("makes the header links and Verify on Trailhead clickable in the PDF", async () => {
+      const element = await render({
+        ...RESUME,
+        certifications: CERTS,
+        credentialVerificationUrl: VERIFY_URL
+      });
+      button(element, "download-pdf").click();
+      await flushPromises();
+      await flushPromises();
+      const links = jsPdfInstance.drawn.filter((piece) => piece.url);
+      expect(links.map((piece) => [piece.text, piece.url])).toEqual([
+        ["LinkedIn", "https://www.linkedin.com/in/example"],
+        ["GitHub", "https://github.com/rdbumstead"],
+        ["Portfolio", "https://ryanbumstead.com"],
+        ["Verify on Trailhead", VERIFY_URL]
+      ]);
+      // Side by side on one centred row.
+      const ys = new Set(links.slice(0, 3).map((piece) => piece.y));
+      expect(ys.size).toBe(1);
+    });
   });
 
-  it("places View source with the resumeBuilder key under the card heading", () => {
-    const element = createComponent();
-    const control = element.shadowRoot.querySelector(
-      ".card-tools c-view-source"
+  // The drift check: the preview and the PDF come from one model and one layout spec, so they
+  // must show the same sections in the same order, the same roles and the same certification
+  // groups. A change to one that is not made to the other fails here.
+  describe("preview and PDF drift check", () => {
+    const FULL = {
+      ...RESUME,
+      roles: [...RESUME.roles, ...EARLIER],
+      certifications: CERTS,
+      credentialVerificationUrl: VERIFY_URL
+    };
+
+    function previewOutline(element) {
+      return queryAll(element, ".preview-paper section").map((section) => ({
+        title: section.querySelector(".section-title").textContent.trim(),
+        roles: Array.from(section.querySelectorAll(".role-heading")).map(
+          (node) => node.textContent.trim()
+        ),
+        dates: Array.from(section.querySelectorAll(".role-dates")).map((node) =>
+          node.textContent.trim()
+        ),
+        bullets: Array.from(section.querySelectorAll(".role-highlight")).map(
+          (node) => node.textContent.trim()
+        ),
+        current: Array.from(section.querySelectorAll(".certification")).map(
+          (node) => node.textContent.trim()
+        ),
+        retired: Array.from(
+          section.querySelectorAll(".retired-certification")
+        ).map((node) => node.textContent.trim()),
+        hasVerify: section.querySelector(".verify-link") !== null,
+        hasRetiredTitle: section.querySelector(".retired-title") !== null
+      }));
+    }
+
+    function pdfOutline(trace) {
+      const sections = [];
+      trace.forEach((piece) => {
+        if (piece.kind === "section") {
+          sections.push({
+            title: piece.text,
+            roles: [],
+            dates: [],
+            bullets: [],
+            current: [],
+            retired: [],
+            hasVerify: false,
+            hasRetiredTitle: false
+          });
+          return;
+        }
+        const last = sections[sections.length - 1];
+        if (!last) {
+          return;
+        }
+        if (piece.kind === "role") last.roles.push(piece.text);
+        if (piece.kind === "dates") last.dates.push(piece.text);
+        if (piece.kind === "bullet") last.bullets.push(piece.text);
+        if (piece.kind === "cert") last.current.push(piece.text);
+        if (piece.kind === "retired") last.retired.push(piece.text);
+        if (piece.kind === "verify") last.hasVerify = true;
+        if (piece.kind === "retired-title") last.hasRetiredTitle = true;
+      });
+      return sections;
+    }
+
+    it("draws the same sections, order, roles and certification groups as the preview", async () => {
+      const element = createComponent();
+      getResume.emit(FULL);
+      await flushPromises();
+
+      const model = buildViewModel(FULL, {
+        includeHeader: true,
+        includeSkills: true
+      });
+      const trace = [];
+      const doc = fakeDoc();
+      writePdf(doc, model, { family: "Inter", trace });
+
+      const preview = previewOutline(element);
+      const pdf = pdfOutline(trace);
+      expect(preview.map((section) => section.title)).toEqual([
+        "Experience",
+        "Skills",
+        "Certifications",
+        "Education"
+      ]);
+      expect(pdf.map((section) => section.title)).toEqual(
+        preview.map((section) => section.title.toUpperCase())
+      );
+      pdf.forEach((section, index) => {
+        expect({ ...section, title: "" }).toEqual({
+          ...preview[index],
+          title: ""
+        });
+      });
+
+      // The trace is what was drawn: every traced piece is in the document's text calls.
+      const drawn = doc.drawn.map((piece) => piece.text);
+      trace.forEach((piece) => expect(drawn).toContain(piece.text));
+      // The header has no Summary heading in either.
+      expect(drawn).not.toContain("SUMMARY");
+      expect(element.shadowRoot.textContent).not.toContain("Summary");
+    });
+
+    it("draws the header centred, the title and dates of a role on one row", () => {
+      const model = buildViewModel(FULL, {
+        includeHeader: true,
+        includeSkills: true
+      });
+      const doc = fakeDoc();
+      writePdf(doc, model, { family: "Inter" });
+      const name = doc.drawn.find((piece) => piece.text === "Ryan Bumstead");
+      const nameWidth = "Ryan Bumstead".length * name.size * 0.5;
+      expect(name.x + nameWidth / 2).toBeCloseTo(306, 5);
+      const heading = doc.drawn.find(
+        (piece) => piece.text === "Technical Architect, Acme"
+      );
+      const dates = doc.drawn.find(
+        (piece) => piece.text === "Apr 2023 - Present | Remote"
+      );
+      expect(dates.y).toBe(heading.y);
+      expect(dates.x).toBeGreaterThan(heading.x);
+      expect(heading.style).toBe("bold");
+      expect(dates.style).toBe("normal");
+      // One rule under each section title.
+      expect(doc.line).toHaveBeenCalledTimes(4);
+    });
+
+    it("never splits a role across pages", () => {
+      const longRoles = Array.from({ length: 14 }, (unused, index) => ({
+        id: `a0100000000010${index}AAA`,
+        title: `Role ${index + 1}`,
+        employer: "Acme",
+        startDate: "2020-01-01",
+        endDate: "2021-01-01",
+        isCurrent: index === 0,
+        isRemote: false,
+        highlights: [
+          "A highlight long enough to wrap across more than one line of the page in the writer.",
+          "A second highlight.",
+          "A third highlight."
+        ]
+      }));
+      const model = buildViewModel(
+        { ...FULL, roles: longRoles },
+        { includeHeader: true, includeSkills: true }
+      );
+      const trace = [];
+      const doc = fakeDoc();
+      writePdf(doc, model, { family: "Inter", trace });
+      expect(doc.addPage).toHaveBeenCalled();
+
+      const pagesByRole = {};
+      let currentRole = null;
+      trace.forEach((piece) => {
+        if (piece.kind === "role") currentRole = piece.text;
+        if (piece.kind === "section") currentRole = null;
+        if (currentRole) {
+          pagesByRole[currentRole] = pagesByRole[currentRole] || new Set();
+          pagesByRole[currentRole].add(piece.page);
+        }
+      });
+      Object.values(pagesByRole).forEach((pages) => expect(pages.size).toBe(1));
+      // A section title is never the last thing on a page.
+      trace
+        .filter((piece) => piece.kind === "section")
+        .forEach((title) => {
+          const index = trace.indexOf(title);
+          expect(trace[index + 1].page).toBe(title.page);
+        });
+      // Every piece sits inside the page margins.
+      trace.forEach((piece) => {
+        expect(piece.y).toBeGreaterThan(RESUME_LAYOUT.page.margin);
+        expect(piece.y).toBeLessThan(792 - RESUME_LAYOUT.page.margin);
+      });
+    });
+
+    it("builds the preview's custom properties from the spec at 1.6 px per point", () => {
+      const style = previewStyle(RESUME_LAYOUT);
+      Object.keys(RESUME_LAYOUT.type).forEach((key) => {
+        const name = key.replace(
+          /[A-Z]/g,
+          (letter) => `-${letter.toLowerCase()}`
+        );
+        const px =
+          Math.round(RESUME_LAYOUT.type[key].size * PREVIEW_PX_PER_PT * 100) /
+          100;
+        expect(style).toContain(`--resume-${name}-size: ${px}px`);
+      });
+      expect(style).toContain("--resume-section-title-size: 14.4px");
+      expect(style).toContain("--resume-text-size: 16px");
+    });
+  });
+
+  it("places View source with the resumeBuilder key in the card's title row", () => {
+    // The test card mock has no actions slot, so the slotted control is read from the template.
+    const template = require("fs").readFileSync(
+      require("path").join(__dirname, "..", "resumeBuilder.html"),
+      "utf8"
     );
-    expect(control).not.toBeNull();
-    expect(control.sourceKey).toBe("resumeBuilder");
+    expect(template).toMatch(
+      /<c-view-source\s+slot="actions"\s+source-key="resumeBuilder"/
+    );
+    const element = createComponent();
+    expect(query(element, ".card-tools")).toBeNull();
   });
 });
