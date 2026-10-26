@@ -24,6 +24,15 @@
                 {
                   "children": [
                     {
+                      "attributes": {
+                        "heading": "Skills",
+                        "lead": "Every skill rated 1 to 5, with the years I used it in a role. Pick a role to narrow the list."
+                      },
+                      "definition": "c:pageIntro",
+                      "id": "0080e266-5ee0-4db9-8130-34da9950dfcf",
+                      "type": "component"
+                    },
+                    {
                       "definition": "c:skillNetwork",
                       "id": "25e605bd-67ac-408d-9a23-732fc6dfba9c",
                       "type": "component"
