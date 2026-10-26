@@ -29,10 +29,20 @@
                         "designUrl": "/docs?doc=sas#5-5-pillar-e-agile-delivery-devops-roadmap",
                         "eyebrow": "Pillar E",
                         "heading": "Delivery",
-                        "lead": "Agile Delivery and DevOps. Work on this site is planned in Jira, and GitHub Actions validates and deploys every change to Salesforce. The roadmap and changelog below read copies of the Jira and GitHub data that are stored in Salesforce, so your browser never calls either service directly. After every production deploy and every daily heartbeat, the pipeline publishes a platform event with the result, passed or failed. The governance checklist at the end of the page shows the newest run of each with its commit and time, and it says so when a run failed or is out of date."
+                        "lead": "How this site is planned, tested and shipped. Work is tracked in Jira, and GitHub Actions tests and deploys every change. The checklist below shows whether the latest deploy and today's health check passed."
                       },
                       "definition": "c:pageIntro",
                       "id": "34ca758c-d413-4393-a89e-d9e104b2344b",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:byTheNumbers",
+                      "id": "65e2f0d7-5e1b-4010-adc2-de5b0d7120c6",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:smartChecklist",
+                      "id": "0a35156b-3623-49ad-9c01-59a218b57573",
                       "type": "component"
                     },
                     {
@@ -43,16 +53,6 @@
                     {
                       "definition": "c:changelog",
                       "id": "e8dd52e9-7fad-4544-ac20-881fc4b9664d",
-                      "type": "component"
-                    },
-                    {
-                      "definition": "c:smartChecklist",
-                      "id": "0a35156b-3623-49ad-9c01-59a218b57573",
-                      "type": "component"
-                    },
-                    {
-                      "definition": "c:byTheNumbers",
-                      "id": "65e2f0d7-5e1b-4010-adc2-de5b0d7120c6",
                       "type": "component"
                     }
                   ],

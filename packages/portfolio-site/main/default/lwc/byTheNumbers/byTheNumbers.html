@@ -11,47 +11,94 @@
     </template>
     <template lwc:elseif={hasStats}>
       <ul class="stats">
-        <li class="stat" data-stat="deploys">
-          <p class="value">{deployRuns}</p>
-          <p class="label">Production deploys recorded</p>
-          <p class="detail">Newest with tests: {latestTests}</p>
-        </li>
-        <li class="stat" data-stat="tokens">
-          <p class="value">{tokensIssued}</p>
-          <p class="label">API Lab evaluator tokens issued</p>
-        </li>
+        <template for:each={tiles} for:item="tile">
+          <li class="stat" key={tile.key} data-stat={tile.key}>
+            <template lwc:if={tile.hasValue}>
+              <p class="value">
+                <span class={finalClass}>{tile.valueText}</span>
+                <template lwc:if={isCounting}>
+                  <span class="value-live" aria-hidden="true"
+                    >{tile.liveText}</span
+                  >
+                </template>
+              </p>
+            </template>
+            <template lwc:else>
+              <p class="message">{tile.message}</p>
+            </template>
+            <p class="label">{tile.label}</p>
+            <template lwc:if={tile.hasDetail}>
+              <p class="detail">{tile.detail}</p>
+            </template>
+            <template lwc:if={tile.hasLine}>
+              <p class="plain-line">{tile.line}</p>
+            </template>
+          </li>
+        </template>
       </ul>
 
-      <div class="table-scroll">
-        <table class="vibe-table">
-          <caption>
-            Testimonials by vibe
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Vibe</th>
-              <th scope="col" class="num">Approved</th>
-              <th scope="col" class="num">Waiting for approval</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template for:each={vibeRows} for:item="row">
-              <tr key={row.key} data-vibe={row.vibe}>
-                <th scope="row">{row.vibe}</th>
-                <td class="num">{row.approved}</td>
-                <td class="num">{row.waiting}</td>
-              </tr>
+      <details class="covers" data-covers>
+        <summary class="covers-summary">What the tests cover</summary>
+        <div class="covers-body">
+          <p class="covers-intro">
+            These groups are counted from the test files in the repository on
+            {countedOn}. The Apex total above is what Salesforce reported after
+            the newest deploy, so the two can differ.
+          </p>
+          <h3 class="covers-heading">
+            Apex tests, {apexGroupsTotal} in the repository
+          </h3>
+          <ul class="groups" data-groups="apex">
+            <template for:each={apexGroups} for:item="group">
+              <li class="group" key={group.key}>
+                <span class="group-name">{group.name}</span>
+                <span class="group-count">{group.tests}</span>
+              </li>
             </template>
-          </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row">Total</th>
-              <td class="num" data-total="approved">{approvedTotal}</td>
-              <td class="num" data-total="waiting">{waitingTotal}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+          </ul>
+          <h3 class="covers-heading">
+            Jest tests, {jestGroupsTotal} in the repository
+          </h3>
+          <ul class="groups" data-groups="jest">
+            <template for:each={jestGroups} for:item="group">
+              <li class="group" key={group.key}>
+                <span class="group-name">{group.name}</span>
+                <span class="group-count">{group.tests}</span>
+              </li>
+            </template>
+          </ul>
+        </div>
+      </details>
+
+      <template lwc:if={hasApproved}>
+        <div class="table-scroll">
+          <table class="vibe-table">
+            <caption>
+              Testimonials by vibe
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Vibe</th>
+                <th scope="col" class="num">Approved</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={vibeRows} for:item="row">
+                <tr key={row.key} data-vibe={row.vibe}>
+                  <th scope="row">{row.vibe}</th>
+                  <td class="num">{row.approved}</td>
+                </tr>
+              </template>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total</th>
+                <td class="num" data-total="approved">{approvedTotal}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </template>
 
       <p class="note">
         Each number is counted from Salesforce records. No record, name or
