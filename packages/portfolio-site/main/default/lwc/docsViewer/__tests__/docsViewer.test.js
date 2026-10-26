@@ -70,8 +70,6 @@ jest.mock(
   { virtual: true }
 );
 
-// Every lightning/* module maps to one universal mock file in this project, so one factory
-// serves both the page reference wire and the script loader.
 jest.mock(
   "lightning/navigation",
   () => {
@@ -80,14 +78,23 @@ jest.mock(
     } = require("@salesforce/wire-service-jest-util");
     return {
       __esModule: true,
-      CurrentPageReference: createTestWireAdapter(jest.fn()),
-      loadScript: jest.fn(() => {
-        globalThis.marked = mockLoadMarked();
-        return Promise.resolve();
-      }),
-      loadStyle: jest.fn(() => Promise.resolve())
+      CurrentPageReference: createTestWireAdapter(jest.fn())
     };
   },
+  { virtual: true }
+);
+
+// The loader puts the bundled marked build on globalThis, as the static resource does.
+jest.mock(
+  "lightning/platformResourceLoader",
+  () => ({
+    __esModule: true,
+    loadScript: jest.fn(() => {
+      globalThis.marked = mockLoadMarked();
+      return Promise.resolve();
+    }),
+    loadStyle: jest.fn(() => Promise.resolve())
+  }),
   { virtual: true }
 );
 

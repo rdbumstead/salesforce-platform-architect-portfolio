@@ -6,16 +6,9 @@ const projectRoot = path.resolve(__dirname, "..");
 module.exports = {
   ...jestConfig,
   rootDir: projectRoot,
-  moduleNameMapper: {
-    ...jestConfig.moduleNameMapper,
-    "^lightning/(.+)$": path.join(
-      projectRoot,
-      "test",
-      "jest-mocks",
-      "lightning",
-      "universalMock.js"
-    )
-  },
+  // No lightning/* mapping: the sfdx-lwc-jest resolver gives each base component and module
+  // its own stub with the real public API. Add a repo mock here only for a component with no
+  // stub, or for a test that needs behaviour the stub lacks, and name the component.
   roots: [path.join(projectRoot, "packages", "portfolio-site")],
   testMatch: ["**/__tests__/**/*.{js,ts}"],
   modulePathIgnorePatterns: [
