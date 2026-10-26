@@ -147,13 +147,13 @@
   transform: rotate(225deg) translate(-0.1em, -0.1em);
 }
 
-.option-head.leading,
+.matrix-table thead th.option-head.leading,
 .total-cell.leading {
   background-color: color-mix(in srgb, var(--pf-accent) 16%, var(--pf-surface));
   color: var(--pf-text);
 }
 
-.option-head.leading .option-summary {
+.matrix-table thead th.option-head.leading .option-summary {
   color: var(--pf-body);
 }
 
@@ -285,6 +285,10 @@
 
 /* Phones: each criterion is a card. The option names sit beside their scores and totals. */
 @media (max-width: 599.98px) {
+  .matrix-table caption {
+    display: block;
+  }
+
   .matrix-table,
   .matrix-table thead,
   .matrix-table tbody,
