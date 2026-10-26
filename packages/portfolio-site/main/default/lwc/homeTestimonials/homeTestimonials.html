@@ -30,31 +30,4 @@
       </section>
     </div>
   </template>
-  <template lwc:if={showCredentials}>
-    <div class="home-testimonials">
-      <section
-        class="credentials"
-        aria-label="Credentials"
-        data-id="credentials"
-      >
-        <ul class="credentials-list">
-          <li class="credential">{certificationsText}</li>
-          <template lwc:if={trailheadHref}>
-            <li class="credential">
-              <a
-                class="credential-link"
-                href={trailheadHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-id="trailhead-link"
-                >Verify on Trailhead <span aria-hidden="true">→</span
-                ><span class="assistive-text">, opens in a new tab</span></a
-              >
-            </li>
-          </template>
-          <li class="credential">References available on request</li>
-        </ul>
-      </section>
-    </div>
-  </template>
 </template>

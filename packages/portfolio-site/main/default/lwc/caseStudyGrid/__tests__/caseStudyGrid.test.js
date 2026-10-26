@@ -1,6 +1,7 @@
 /**
- * @description       : Unit tests for caseStudyGrid: three cards in order with their blocks,
- *                      the number only with its label, the link only when safe, the
+ * @description       : Unit tests for caseStudyGrid: three compact cards in order, each with
+ *                      the number only with its label, the title as the card's one link and
+ *                      the client line, a card with no safe link hidden, the
  *                      case_study_link_followed event, nothing at all on an empty or failed
  *                      read, and the case-studies anchor with its scroll and focus.
  * @author            : Ryan Bumstead
@@ -9,7 +10,7 @@
  * @Created           : 10/26/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import CaseStudyGrid from "c/caseStudyGrid";
+import CaseStudyGrid, { isShownCase } from "c/caseStudyGrid";
 import getHomeCaseStudies from "@salesforce/apex/ProjectCardController.getHomeCaseStudies";
 import { trackEvent } from "c/analyticsService";
 
@@ -72,12 +73,18 @@ const CARDS = [
     challenge: "A resume gives a reviewer nothing to check.",
     solution: "This site is its own delivery evidence.",
     businessValue: "The numbers change when the pipeline does.",
-    // The script URL is the input under test, proving it never renders as a link.
-    // eslint-disable-next-line no-script-url
-    liveUrl: "javascript:alert(1)",
+    liveUrl: "/docs",
     tags: null
   }
 ];
+
+// The script URL is the input under test, proving a card with no safe link never shows.
+const UNSAFE = {
+  key: "u",
+  title: "A card with an unsafe link",
+  // eslint-disable-next-line no-script-url
+  liveUrl: "javascript:alert(1)"
+};
 
 function render() {
   const element = createElement("c-case-study-grid", { is: CaseStudyGrid });
@@ -148,7 +155,7 @@ describe("c-case-study-grid", () => {
     const root = element.shadowRoot;
     expect(text(root.querySelector("h2"))).toBe("Case studies");
     expect(text(root.querySelector(".section-intro"))).toBe(
-      "Client names are left out. Each one shows the problem, the call I made and what happened."
+      "Client names are left out. Pick one for the problem, the call I made and how it turned out."
     );
     expect(
       cards(element).map((card) => text(card.querySelector("h3")))
@@ -164,7 +171,7 @@ describe("c-case-study-grid", () => {
     getHomeCaseStudies.emit([
       { key: "x", title: "  " },
       ...CARDS,
-      { key: "z", title: "A fourth" }
+      { key: "z", title: "A fourth", liveUrl: "/delivery" }
     ]);
     await flush();
     expect(cards(element)).toHaveLength(3);
@@ -173,20 +180,38 @@ describe("c-case-study-grid", () => {
     );
   });
 
-  it("labels the blocks The problem, My call and The result, and shows only the ones set", async () => {
+  it("shows no blocks, no topic chips and no second link on a card", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
-    const [first, second] = cards(element);
-    expect(
-      Array.from(first.querySelectorAll("dt")).map((dt) => text(dt))
-    ).toEqual(["The problem", "My call", "The result"]);
-    expect(text(first.querySelector("dd"))).toBe(
-      "A small staff needed one system."
+    cards(element).forEach((card) => {
+      expect(card.querySelector("dl")).toBeNull();
+      expect(card.querySelector(".tags")).toBeNull();
+      expect(card.querySelectorAll("a")).toHaveLength(1);
+    });
+  });
+
+  it("hides a card with no link or an unsafe one, and shows nothing when none can show", async () => {
+    const element = render();
+    getHomeCaseStudies.emit([UNSAFE, { key: "n", title: "No link" }, ...CARDS]);
+    await flush();
+    expect(cards(element)).toHaveLength(3);
+    expect(text(cards(element)[0].querySelector("h3"))).toBe(
+      "Choosing the right platform for a literacy nonprofit"
     );
-    expect(
-      Array.from(second.querySelectorAll("dt")).map((dt) => text(dt))
-    ).toEqual(["The problem", "The result"]);
+    getHomeCaseStudies.emit([UNSAFE]);
+    await flush();
+    expect(element.shadowRoot.querySelector("section")).toBeNull();
+    expect(element.hasAttribute("id")).toBe(false);
+  });
+
+  it("decides which rows can show by a title and a safe link", () => {
+    expect(isShownCase(CARDS[0])).toBe(true);
+    expect(isShownCase(CARDS[1])).toBe(true);
+    expect(isShownCase(UNSAFE)).toBe(false);
+    expect(isShownCase({ title: "x" })).toBe(false);
+    expect(isShownCase({ title: " ", liveUrl: "/docs" })).toBe(false);
+    expect(isShownCase(null)).toBe(false);
   });
 
   it("shows the number only with its label, and the client line only when set", async () => {
@@ -207,35 +232,28 @@ describe("c-case-study-grid", () => {
     expect(second.querySelector('[data-id="client"]')).toBeNull();
   });
 
-  it("shows the topic chips trimmed, and no list without them", async () => {
+  it("makes the title the card's one link, to an https address or a site path", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
     const [first, second, third] = cards(element);
-    expect(
-      Array.from(first.querySelectorAll(".tag")).map((tag) => text(tag))
-    ).toEqual(["NPSP", "Platform selection", "Cost"]);
-    expect(second.querySelector(".tags")).toBeNull();
-    expect(third.querySelector(".tags")).toBeNull();
-  });
-
-  it("links an https address and a site path, and hides an unsafe link", async () => {
-    const element = render();
-    getHomeCaseStudies.emit(CARDS);
-    await flush();
-    const [first, second, third] = cards(element);
-    const link = first.querySelector('[data-id="card-link"]');
+    const link = first.querySelector('h3 [data-id="card-link"]');
     expect(link.getAttribute("href")).toBe(
       "https://ryanbumstead.com/nonprofit-solutions"
     );
-    expect(text(link)).toBe("See the full design →");
-    expect(link.getAttribute("aria-label")).toBe(
-      "See the full design: Choosing the right platform for a literacy nonprofit"
+    expect(text(link)).toBe(
+      "Choosing the right platform for a literacy nonprofit"
     );
+    expect(link.getAttribute("aria-label")).toBeNull();
     expect(
       second.querySelector('[data-id="card-link"]').getAttribute("href")
     ).toBe("/portfolio/business-architecture");
-    expect(third.querySelector('[data-id="card-link"]')).toBeNull();
+    expect(
+      third.querySelector('[data-id="card-link"]').getAttribute("href")
+    ).toBe("/portfolio/docs");
+    expect(first.querySelector(".card-go").getAttribute("aria-hidden")).toBe(
+      "true"
+    );
   });
 
   it("sends case_study_link_followed with the card title when a link is used", async () => {

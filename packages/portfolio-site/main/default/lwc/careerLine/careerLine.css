@@ -1,5 +1,5 @@
 /*
- * The career line under the home hero, on the --pf- site tokens only, in the hero's column.
+ * The career timeline under the home hero, on the --pf- site tokens only, in the hero's column.
  * Every element that sets a background also sets its text colour. Motion is transform and
  * opacity only, and only when the visitor has not asked for reduced motion.
  */
@@ -99,6 +99,69 @@
   background-color: var(--pf-accent);
 }
 
+/* A certification is a small badge: a square turned on its corner. */
+.point-certification .dot {
+  top: 2px;
+  left: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+
+/* The school is a milestone: a ring with a filled centre. */
+.point-school .dot {
+  top: -1px;
+  left: -1px;
+  width: 15px;
+  height: 15px;
+  border-width: 4px;
+  background-color: var(--pf-bg);
+}
+
+/* The earlier roles fold is a dashed ring. */
+.point-fold .dot {
+  border-style: dashed;
+}
+
+/* The selector. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+  margin: 0 0 var(--pf-space-3);
+}
+
+.filter {
+  min-height: 44px;
+  padding: 0 var(--pf-space-3);
+  border: 1px solid var(--pf-border);
+  border-radius: 999px;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.filter:hover {
+  background-color: var(--pf-chip);
+  color: var(--pf-text);
+}
+
+.filter-active,
+.filter-active:hover {
+  border-color: var(--pf-accent);
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  font-weight: 600;
+}
+
+.filter:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
 .point-body {
   display: flex;
   flex-direction: column;
@@ -120,8 +183,10 @@
   cursor: pointer;
 }
 
-.point-button:hover .role-title,
-.point-open .role-title {
+.point-button:hover .point-second,
+.point-open .point-second,
+.point-button:hover .point-first,
+.point-open .point-first {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -131,13 +196,13 @@
   outline-offset: 2px;
 }
 
-.employer {
+.point-first {
   font-size: 14px;
   font-weight: 600;
   color: var(--pf-text);
 }
 
-.role-title {
+.point-second {
   font-size: 14px;
   color: var(--pf-body);
 }
@@ -164,12 +229,12 @@
   font-weight: 600;
 }
 
-.role-chevron {
+.point-chevron {
   flex: 0 0 auto;
   color: var(--pf-accent);
 }
 
-.point-button[aria-expanded="true"] .role-chevron {
+.point-button[aria-expanded="true"] .point-chevron {
   transform: rotate(180deg);
 }
 
@@ -282,57 +347,41 @@
   top: 9px;
 }
 
+.stack .point-certification .dot {
+  top: 10px;
+}
+
+.stack .point-school .dot {
+  top: 7px;
+}
+
 .stack .panel {
   margin: 0 0 var(--pf-space-3);
 }
 
+/* The one quiet verify link, under the line and in an opened certification. */
 .career-foot {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--pf-space-2);
-}
-
-.timeline-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 0 var(--pf-space-3);
-  border: 1px solid var(--pf-border);
-  border-radius: 10px;
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
-  font: inherit;
+  margin: var(--pf-space-2) 0 0;
   font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
 }
 
-.timeline-toggle:hover {
-  background-color: var(--pf-chip);
-  color: var(--pf-text);
+.panel-verify {
+  margin: var(--pf-space-2) 0 0;
+  font-size: 14px;
 }
 
-.timeline-toggle:focus-visible {
+/* The site's a:link rule outranks a plain class, so :link and :visited are matched too. */
+.verify-link,
+.verify-link:link,
+.verify-link:visited {
+  color: var(--pf-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.verify-link:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
-}
-
-.timeline-toggle[aria-expanded="true"] .toggle-chevron {
-  transform: rotate(180deg);
-}
-
-/* The opened full timeline brings its own column padding, so it steps out of this one. */
-.full-timeline {
-  margin: 0 calc(-1 * var(--pf-space-4));
-}
-
-.full-timeline[hidden] {
-  display: none;
-}
-
-.full-timeline:focus {
-  outline: none;
 }
 
 @media screen and (max-width: 767.98px) {
@@ -344,10 +393,6 @@
   .stack {
     display: block;
   }
-
-  .career-foot {
-    justify-content: flex-start;
-  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -355,8 +400,7 @@
     animation: career-in 200ms ease-out;
   }
 
-  .toggle-chevron,
-  .role-chevron {
+  .point-chevron {
     transition: transform 150ms ease;
   }
 }

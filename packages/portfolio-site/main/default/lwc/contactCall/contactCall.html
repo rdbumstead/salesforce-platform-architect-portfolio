@@ -6,6 +6,9 @@
           {heading}
         </h2>
         <p class="contact-call__text">{text}</p>
+        <template lwc:if={hasNote}>
+          <p class="contact-call__note" data-id="contact-note">{note}</p>
+        </template>
       </div>
       <a class="contact-call__button" href={href} data-id="contact-link"
         >{linkLabel}</a

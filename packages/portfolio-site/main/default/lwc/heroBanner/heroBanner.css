@@ -159,7 +159,31 @@
   text-decoration: underline;
 }
 
+/* The quiet second way in for a technical reviewer, under the buttons. The site's a:link rule
+   outranks a plain class, so :link and :visited are matched too. */
+.hero-tour {
+  margin: 0;
+  font-size: 14px;
+}
+
+.tour-link,
+.tour-link:link,
+.tour-link:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  color: var(--pf-body);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tour-link:hover {
+  color: var(--pf-text);
+}
+
 .btn:focus-visible,
+.tour-link:focus-visible,
 .profile-link:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;

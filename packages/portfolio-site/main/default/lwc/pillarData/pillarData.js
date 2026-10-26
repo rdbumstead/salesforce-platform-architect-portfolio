@@ -107,20 +107,44 @@ export const PILLARS = Object.freeze(
 );
 
 /**
- * The home hero's proof strip, in order. Static, so it paints at once. Each one was checked
- * against the owner's Trailhead profile and his word. The count of active certifications is
- * here once, so the hero and the credentials strip under the testimonials always agree.
+ * The year the owner started on Salesforce, used until ResumeController.getTimeline returns the
+ * Salesforce_Start_Year setting, so the hero's proof strip paints at once. Keep it equal to
+ * that record.
+ */
+export const SALESFORCE_START_YEAR = 2017;
+
+/**
+ * The proof strip's start line for a year: "On Salesforce since 2017".
+ * @param {number} year the start year, or anything else for the fallback year
+ * @returns {string} the line
+ */
+export function salesforceSince(year) {
+  const shown =
+    Number.isInteger(year) && year > 0 ? year : SALESFORCE_START_YEAR;
+  return `On Salesforce since ${shown}`;
+}
+
+/**
+ * The home hero's proof strip, in order, with the fallback year. Static, so it paints at once.
+ * Each one was checked against the owner's Trailhead profile and his word. The count of active
+ * certifications is here once, so every place that shows it agrees.
  */
 export const ACTIVE_CERTIFICATIONS = "7 active Salesforce certifications";
 export const PROOF_POINTS = Object.freeze([
-  "On Salesforce since 2017",
+  salesforceSince(SALESFORCE_START_YEAR),
   ACTIVE_CERTIFICATIONS
 ]);
+
+/** Minutes the 5 minute tour gives each live pillar. */
+export const TOUR_MINUTES_PER_STEP = 1;
 
 /** The pillars a visitor can open today, in tour order. */
 export const LIVE_PILLARS = Object.freeze(
   PILLARS.filter((pillar) => !pillar.inProgress)
 );
+
+/** How long the tour takes: one step per live pillar. */
+export const TOUR_MINUTES = LIVE_PILLARS.length * TOUR_MINUTES_PER_STEP;
 
 /** The pillars that are coming. */
 export const COMING_PILLARS = Object.freeze(

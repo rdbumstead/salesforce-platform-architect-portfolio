@@ -4,7 +4,7 @@
     <isExposed>true</isExposed>
     <masterLabel>Home Testimonials</masterLabel>
     <description
-  >Up to three approved testimonials on the home page, or a credentials strip while not enough are approved</description>
+  >Up to three approved testimonials on the home page, shown only once enough are approved</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>

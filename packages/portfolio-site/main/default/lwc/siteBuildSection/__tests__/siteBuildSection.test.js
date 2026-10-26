@@ -2,7 +2,9 @@
  * @description       : Unit tests for siteBuildSection: the live pillars in order with one
  *                      name each, Skills, the coming line, the stat line and case study
  *                      disclosure merged in by letter with case_study_opened, the counts line
- *                      only with numbers, the docs link, and the tour that opens and takes focus.
+ *                      only with numbers, the docs link, and the tour at the top that opens and
+ *                      takes focus, from its button, openTour or the #tour address, with its
+ *                      tour_opened event.
  *                      c/pillarData is a fixed stand in.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -45,6 +47,10 @@ jest.mock(
       get COMING_PILLARS() {
         return build().filter((pillar) => pillar.inProgress);
       },
+      TOUR_MINUTES_PER_STEP: 1,
+      get TOUR_MINUTES() {
+        return build().filter((pillar) => !pillar.inProgress).length;
+      },
       setComingLetters: (letters) => {
         coming = [...letters];
       },
@@ -64,7 +70,10 @@ jest.mock(
   () => ({
     __esModule: true,
     trackEvent: jest.fn(),
-    EVENTS: { CASE_STUDY_OPENED: "case_study_opened" }
+    EVENTS: {
+      CASE_STUDY_OPENED: "case_study_opened",
+      TOUR_OPENED: "tour_opened"
+    }
   }),
   { virtual: true }
 );
@@ -454,6 +463,79 @@ describe("c-site-build-section", () => {
           .querySelector(".build")
           .classList.contains("motion-reduced")
       ).toBe(false);
+    });
+
+    it("opens the section, before the pillar list, with the counts and docs left in the footer", () => {
+      const element = render();
+      const root = element.shadowRoot;
+      const button = byId(element, "tour-button");
+      const list = byId(element, "pillar-list");
+      expect(
+        button.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        byId(element, "tour").compareDocumentPosition(list) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(root.querySelector(".build-foot").contains(button)).toBe(false);
+      expect(
+        root.querySelector(".build-foot").contains(byId(element, "docs-link"))
+      ).toBe(true);
+    });
+
+    it("sends tour_opened from the section only when its button opens the tour", async () => {
+      const element = render();
+      byId(element, "tour-heading").scrollIntoView = jest.fn();
+      byId(element, "tour-button").click();
+      await flush();
+      byId(element, "tour-button").click();
+      await flush();
+      expect(trackEvent).toHaveBeenCalledTimes(1);
+      expect(trackEvent).toHaveBeenCalledWith("tour_opened", {
+        source: "section"
+      });
+    });
+
+    it("carries the tour id on its host and opens through openTour with the motion asked for", async () => {
+      systemReduces(false);
+      const element = render();
+      expect(element.getAttribute("id")).toBe("tour");
+      const heading = byId(element, "tour-heading");
+      heading.scrollIntoView = jest.fn();
+      element.openTour(true);
+      await flush();
+      expect(byId(element, "tour").hidden).toBe(false);
+      expect(heading.scrollIntoView).toHaveBeenCalledWith({
+        behavior: "auto",
+        block: "start"
+      });
+      expect(element.shadowRoot.activeElement).toBe(heading);
+      element.openTour(false);
+      expect(heading.scrollIntoView).toHaveBeenLastCalledWith({
+        behavior: "smooth",
+        block: "start"
+      });
+      element.openTour();
+      expect(heading.scrollIntoView).toHaveBeenCalledTimes(3);
+      expect(trackEvent).not.toHaveBeenCalled();
+    });
+
+    it("opens the tour when the address is #tour, on load or later", async () => {
+      window.location.hash = "tour";
+      const element = render();
+      await flush();
+      expect(byId(element, "tour").hidden).toBe(false);
+      window.location.hash = "";
+      document.body.removeChild(element);
+
+      const later = render();
+      await flush();
+      expect(byId(later, "tour").hidden).toBe(true);
+      window.location.hash = "tour";
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+      await flush();
+      expect(byId(later, "tour").hidden).toBe(false);
+      window.location.hash = "";
     });
   });
 });

@@ -11,7 +11,11 @@ import {
   PILLARS,
   LIVE_PILLARS,
   COMING_PILLARS,
-  pillarByLetter
+  pillarByLetter,
+  SALESFORCE_START_YEAR,
+  salesforceSince,
+  TOUR_MINUTES,
+  TOUR_MINUTES_PER_STEP
 } from "c/pillarData";
 
 jest.mock(
@@ -162,5 +166,18 @@ describe("c/pillarData", () => {
     ]);
     expect(PROOF_POINTS).toContain(ACTIVE_CERTIFICATIONS);
     expect(Object.isFrozen(PROOF_POINTS)).toBe(true);
+  });
+
+  it("builds the start line from a year, and from the fallback for anything else", () => {
+    expect(SALESFORCE_START_YEAR).toBe(2017);
+    expect(salesforceSince(2018)).toBe("On Salesforce since 2018");
+    expect(salesforceSince(undefined)).toBe("On Salesforce since 2017");
+    expect(salesforceSince("2018")).toBe("On Salesforce since 2017");
+    expect(salesforceSince(0)).toBe("On Salesforce since 2017");
+  });
+
+  it("counts the tour as one minute per live pillar", () => {
+    expect(TOUR_MINUTES_PER_STEP).toBe(1);
+    expect(TOUR_MINUTES).toBe(LIVE_PILLARS.length * TOUR_MINUTES_PER_STEP);
   });
 });
