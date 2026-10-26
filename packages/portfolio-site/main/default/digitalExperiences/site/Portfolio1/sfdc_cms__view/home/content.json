@@ -29,6 +29,11 @@
                       "type": "component"
                     },
                     {
+                      "definition": "c:careerLine",
+                      "id": "7b2e4c19-5d8a-4f36-9a01-c3e8d6f2b475",
+                      "type": "component"
+                    },
+                    {
                       "definition": "c:caseStudyGrid",
                       "id": "d5fb8841-6d0f-4e37-9185-b2bd99221e87",
                       "type": "component"

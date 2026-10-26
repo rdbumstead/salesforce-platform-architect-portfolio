@@ -12,6 +12,7 @@
 import { createElement } from "@lwc/engine-dom";
 import HeroBanner from "c/heroBanner";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
+import getHomeCaseStudies from "@salesforce/apex/ProjectCardController.getHomeCaseStudies";
 
 jest.mock(
   "@salesforce/community/basePath",
@@ -27,6 +28,17 @@ jest.mock(
   },
   { virtual: true }
 );
+
+jest.mock(
+  "@salesforce/apex/ProjectCardController.getHomeCaseStudies",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+const CASE = { key: "case-1", title: "Employer Hub" };
 
 const HEADER = {
   name: "Ryan Bumstead",
@@ -47,6 +59,14 @@ function render() {
 
 function flush() {
   return Promise.resolve();
+}
+
+// The hero with one case study back from the read, so "See the case studies" shows.
+async function renderWithCases() {
+  const element = render();
+  getHomeCaseStudies.emit([CASE]);
+  await flush();
+  return element;
 }
 
 function text(node) {
@@ -200,8 +220,8 @@ describe("c-hero-banner", () => {
   });
 
   describe("buttons and profile links", () => {
-    it("offers See the case studies first and View the resume second, with their classes", () => {
-      const element = render();
+    it("offers See the case studies first and View the resume second, with their classes", async () => {
+      const element = await renderWithCases();
       const actions = element.shadowRoot.querySelectorAll(".hero-actions a");
       expect(Array.from(actions).map((a) => text(a))).toEqual([
         "See the case studies ↓",
@@ -260,6 +280,116 @@ describe("c-hero-banner", () => {
         "https://www.linkedin.com/in/ryanbumstead"
       );
     });
+
+    it("adds Trailhead after LinkedIn from the stored profile URL, in a new tab", async () => {
+      const element = render();
+      getHeader.emit({
+        ...HEADER,
+        trailheadUrl: " https://www.salesforce.com/trailblazer/example "
+      });
+      await flush();
+      const links = Array.from(
+        element.shadowRoot.querySelectorAll(".profile-link")
+      );
+      expect(links.map((a) => a.dataset.key)).toEqual([
+        "github",
+        "linkedin",
+        "trailhead",
+        "resume",
+        "api-docs"
+      ]);
+      const trailhead = links[2];
+      expect(text(trailhead)).toBe("Trailhead");
+      expect(trailhead.getAttribute("href")).toBe(
+        "https://www.salesforce.com/trailblazer/example"
+      );
+      expect(trailhead.getAttribute("target")).toBe("_blank");
+      expect(trailhead.getAttribute("rel")).toBe("noopener noreferrer");
+      expect(trailhead.querySelector("svg").getAttribute("aria-hidden")).toBe(
+        "true"
+      );
+    });
+
+    it("shows no Trailhead link when the URL is missing or unsafe, and fixes a bare domain", async () => {
+      const element = render();
+      const keys = () =>
+        Array.from(element.shadowRoot.querySelectorAll(".profile-link")).map(
+          (a) => a.dataset.key
+        );
+      getHeader.emit(HEADER);
+      await flush();
+      expect(keys()).not.toContain("trailhead");
+      // The script URL is the input under test, proving it never renders as a link.
+      // eslint-disable-next-line no-script-url
+      getHeader.emit({ ...HEADER, trailheadUrl: "javascript:alert(1)" });
+      await flush();
+      expect(keys()).not.toContain("trailhead");
+      getHeader.emit({
+        ...HEADER,
+        trailheadUrl: "www.salesforce.com/trailblazer/example"
+      });
+      await flush();
+      expect(
+        element.shadowRoot
+          .querySelector('.profile-link[data-key="trailhead"]')
+          .getAttribute("href")
+      ).toBe("https://www.salesforce.com/trailblazer/example");
+    });
+  });
+
+  describe("case studies button shows only with a case study", () => {
+    function caseButton(element) {
+      return byId(element, "case-studies-button");
+    }
+
+    function actionKeys(element) {
+      return Array.from(
+        element.shadowRoot.querySelectorAll(".hero-actions a")
+      ).map((a) => a.dataset.id);
+    }
+
+    it("reads getHomeCaseStudies, which takes no parameters, so it shares the grid's cache", () => {
+      render();
+      expect(getHomeCaseStudies.getLastConfig()).toEqual({});
+    });
+
+    it("shows only View the resume before the read returns", () => {
+      const element = render();
+      expect(caseButton(element)).toBeNull();
+      expect(actionKeys(element)).toEqual(["resume-button"]);
+    });
+
+    it("shows only View the resume when there are no case studies", async () => {
+      const element = render();
+      getHomeCaseStudies.emit([]);
+      await flush();
+      expect(caseButton(element)).toBeNull();
+      expect(actionKeys(element)).toEqual(["resume-button"]);
+    });
+
+    it("shows only View the resume when the read fails or no card has a title", async () => {
+      const element = render();
+      getHomeCaseStudies.error();
+      await flush();
+      expect(caseButton(element)).toBeNull();
+      getHomeCaseStudies.emit([{ key: "a", title: "   " }, null]);
+      await flush();
+      expect(caseButton(element)).toBeNull();
+    });
+
+    it("shows See the case studies first once one card comes back", async () => {
+      const element = render();
+      getHomeCaseStudies.emit([CASE]);
+      await flush();
+      expect(caseButton(element)).not.toBeNull();
+      expect(actionKeys(element)).toEqual([
+        "case-studies-button",
+        "resume-button"
+      ]);
+      getHomeCaseStudies.emit([]);
+      await flush();
+      expect(caseButton(element)).toBeNull();
+    });
   });
 
   describe("case studies button", () => {
@@ -280,35 +410,35 @@ describe("c-hero-banner", () => {
       return event;
     }
 
-    it("asks the case study section to reveal its heading, smoothly by default", () => {
+    it("asks the case study section to reveal its heading, smoothly by default", async () => {
       systemReduces(false);
       const section = addSection(document.body);
-      const element = render();
+      const element = await renderWithCases();
       const event = click(element);
       expect(section.revealHeading).toHaveBeenCalledWith(false);
       expect(event.defaultPrevented).toBe(true);
     });
 
-    it("asks for no smooth scroll when the system reduces motion", () => {
+    it("asks for no smooth scroll when the system reduces motion", async () => {
       systemReduces(true);
       const section = addSection(document.body);
-      const element = render();
+      const element = await renderWithCases();
       click(element);
       expect(section.revealHeading).toHaveBeenCalledWith(true);
     });
 
-    it("finds the section inside another component's shadow root", () => {
+    it("finds the section inside another component's shadow root", async () => {
       systemReduces(false);
       const host = document.createElement("div");
       document.body.appendChild(host);
       const section = addSection(host.attachShadow({ mode: "open" }));
-      const element = render();
+      const element = await renderWithCases();
       click(element);
       expect(section.revealHeading).toHaveBeenCalledTimes(1);
     });
 
-    it("follows the home page #case-studies address when no section is on the page", () => {
-      const element = render();
+    it("follows the home page #case-studies address when no section is on the page", async () => {
+      const element = await renderWithCases();
       const event = click(element);
       expect(event.defaultPrevented).toBe(false);
     });

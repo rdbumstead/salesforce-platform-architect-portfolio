@@ -201,6 +201,8 @@
   display: flex;
   align-items: center;
   gap: var(--pf-space-2) var(--pf-space-4);
+  /* The arrow's width plus the gap after it: how far the links slide while it is hidden. */
+  --shell-arrow-room: 42px;
 }
 
 /* The site's link rule in dxp-slds-extensions.css (a:link:not(...), specificity 0,2,2)
@@ -247,11 +249,11 @@
   text-decoration: none;
 }
 
-/* Equal auto margins centre the links in the space between the brand and the actions. */
+/* The left auto margin pushes the links to the right, next to the divider and the controls. */
 .site-nav {
   display: flex;
   align-items: center;
-  margin: 0 auto;
+  margin: 0 0 0 auto;
 }
 
 .nav-list,
@@ -394,6 +396,28 @@
   gap: 2px;
 }
 
+/* The thin rule between the links and the controls. Decoration only, hidden from assistive
+   technology in the markup. */
+.nav-divider {
+  display: block;
+  flex: 0 0 1px;
+  width: 1px;
+  height: 20px;
+  margin-right: 6px;
+  background-color: var(--pf-muted);
+  opacity: 0.45;
+}
+
+/* While the arrow is hidden its place stays, so it appears in the same spot on every page.
+   The links and the divider slide over that place with a transform, which moves no layout
+   box, so the divider sits beside the theme toggle with no gap. */
+@media screen and (min-width: 768px) {
+  .site-header__bar:not(.site-header__bar_arrow-shown) .site-nav,
+  .site-header__bar:not(.site-header__bar_arrow-shown) .nav-divider {
+    transform: translateX(var(--shell-arrow-room));
+  }
+}
+
 .icon-button {
   width: 40px;
   height: 40px;
@@ -446,6 +470,11 @@
 
   .menu-toggle {
     display: inline-flex;
+  }
+
+  /* The links fold into the phone menu, so there is nothing to divide. */
+  .nav-divider {
+    display: none;
   }
 
   .site-nav {
@@ -508,6 +537,11 @@
 
   :host([data-motion="full"]) .site-header::after {
     transition: opacity 150ms ease;
+  }
+
+  :host([data-motion="full"]) .site-nav,
+  :host([data-motion="full"]) .nav-divider {
+    transition: transform 150ms ease;
   }
 
   :host([data-motion="full"]) .pillar-menu:not([hidden]),

@@ -108,6 +108,25 @@ describe("c-experience-timeline", () => {
     expect(element.shadowRoot.childNodes).toHaveLength(0);
   });
 
+  it("moves focus to its heading through focusHeading, at once when rendered", async () => {
+    const element = await render(TIMELINE);
+    const heading = query(element, '[data-id="timeline-heading"]');
+    expect(heading.tagName).toBe("H2");
+    expect(heading.getAttribute("tabindex")).toBe("-1");
+    element.focusHeading();
+    expect(element.shadowRoot.activeElement).toBe(heading);
+  });
+
+  it("moves focus to its heading once it renders when focusHeading came first", async () => {
+    const element = await render();
+    element.focusHeading();
+    getTimeline.emit(TIMELINE);
+    await flushPromises();
+    expect(element.shadowRoot.activeElement).toBe(
+      query(element, '[data-id="timeline-heading"]')
+    );
+  });
+
   it("renders nothing when both lists are empty", async () => {
     const element = await render({ work: [], education: [] });
     expect(query(element, "section")).toBeNull();

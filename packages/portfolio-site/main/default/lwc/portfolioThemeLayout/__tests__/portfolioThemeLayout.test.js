@@ -970,13 +970,14 @@ describe("c-portfolio-theme-layout", () => {
       ).map((node) => node.getAttribute("class"));
     }
 
-    it("has no motion button or divider in the header, and the theme button sits between Back to top and the menu button", () => {
+    it("has no motion button in the header, only the divider before the arrow, and the theme button sits between Back to top and the menu button", () => {
       const element = render();
       expect(element.shadowRoot.querySelector(".motion-toggle")).toBeNull();
       expect(
         element.shadowRoot.querySelector('[aria-label="Reduce motion"]')
       ).toBeNull();
       expect(actionClasses(element)).toEqual([
+        "nav-divider",
         "icon-button back-to-top",
         "icon-button theme-toggle",
         "icon-button menu-toggle"
@@ -1007,6 +1008,7 @@ describe("c-portfolio-theme-layout", () => {
       ).toBe("true");
       expect(element.shadowRoot.querySelector(".motion-toggle")).toBeNull();
       expect(actionClasses(element)).toEqual([
+        "nav-divider",
         "icon-button back-to-top",
         "icon-button theme-toggle",
         "icon-button menu-toggle"
@@ -1353,6 +1355,55 @@ describe("c-portfolio-theme-layout", () => {
       expect(
         element.shadowRoot.querySelector('[data-id="floating-back-to-top"]')
       ).toBeNull();
+    });
+
+    it("keeps the header order: brand, links, divider, arrow, theme toggle, menu button", () => {
+      const element = render();
+      const root = element.shadowRoot;
+      const bar = root.querySelector(".site-header__bar");
+      const brand = root.querySelector(".site-brand");
+      const nav = root.querySelector(".site-nav");
+      const divider = root.querySelector('[data-id="nav-divider"]');
+      const theme = root.querySelector(".theme-toggle");
+      const menu = root.querySelector(".menu-toggle");
+      expect(divider).not.toBeNull();
+      expect([...bar.children]).toEqual([
+        brand,
+        nav,
+        root.querySelector(".site-actions")
+      ]);
+      expect([...divider.parentElement.children]).toEqual([
+        divider,
+        button(element),
+        theme,
+        menu
+      ]);
+    });
+
+    it("draws the divider as decoration that assistive technology skips", () => {
+      const element = render();
+      const divider = element.shadowRoot.querySelector(
+        '[data-id="nav-divider"]'
+      );
+      expect(divider.tagName).toBe("SPAN");
+      expect(divider.getAttribute("aria-hidden")).toBe("true");
+      expect(divider.textContent).toBe("");
+      expect(divider.hasAttribute("tabindex")).toBe(false);
+    });
+
+    it("marks the bar while the arrow shows, so the links slide back beside it", async () => {
+      const element = render();
+      const bar = element.shadowRoot.querySelector(".site-header__bar");
+      expect(bar.classList.contains("site-header__bar_arrow-shown")).toBe(
+        false
+      );
+      await scrollTo(800, 800);
+      expect(shown(element)).toBe(true);
+      expect(bar.classList.contains("site-header__bar_arrow-shown")).toBe(true);
+      await scrollTo(0, 800);
+      expect(bar.classList.contains("site-header__bar_arrow-shown")).toBe(
+        false
+      );
     });
 
     it("is hidden, out of the tab order and the accessibility tree, at the top", () => {

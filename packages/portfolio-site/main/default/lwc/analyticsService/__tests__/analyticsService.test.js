@@ -69,6 +69,9 @@ const CASE_STUDY_GRAPH_NAMES = [
   "graph_layout_changed"
 ];
 
+// Appended for the home page career line.
+const CAREER_NAMES = ["career_role_opened", "career_timeline_toggled"];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
@@ -83,7 +86,8 @@ describe("c/analyticsService", () => {
         ...R7_NAMES,
         ...SITE_NAMES,
         ...MOTION_DOCS_LAB_NAMES,
-        ...CASE_STUDY_GRAPH_NAMES
+        ...CASE_STUDY_GRAPH_NAMES,
+        ...CAREER_NAMES
       ].sort()
     );
   });
@@ -92,9 +96,15 @@ describe("c/analyticsService", () => {
     const newest = [
       ...SITE_NAMES,
       ...MOTION_DOCS_LAB_NAMES,
-      ...CASE_STUDY_GRAPH_NAMES
+      ...CASE_STUDY_GRAPH_NAMES,
+      ...CAREER_NAMES
     ];
     expect(Object.values(EVENTS).slice(-newest.length)).toEqual(newest);
+  });
+
+  it("names the career line events under their keys", () => {
+    expect(EVENTS.CAREER_ROLE_OPENED).toBe("career_role_opened");
+    expect(EVENTS.CAREER_TIMELINE_TOGGLED).toBe("career_timeline_toggled");
   });
 
   it("names the motion, docs and API Lab section events under their keys", () => {
