@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <available>true</available>
+    <description
+  >Auto-response for the portfolio contact form (ADR-031), as custom HTML with a plain text version. It replaces the text template Portfolio Contact Auto Response once the rule entry points here, because a deploy cannot change an existing template's type. Sent by the Lead auto-response rule only on the first message from an address in 24 hours. The sender is set on the rule entry in the org, never here. The visitor's message is never repeated in it.</description>
+    <encodingKey>UTF-8</encodingKey>
+    <name>Portfolio Contact Auto Response HTML</name>
+    <style>none</style>
+    <subject>Thanks for reaching out</subject>
+    <textOnly>Thanks, {!Lead.FirstName}. Your message reached me.
+
+Thanks for getting in touch through my portfolio. I read every message myself, and I&apos;ll reply within two business days.
+
+If it&apos;s urgent, LinkedIn is the fastest way to reach me: https://www.linkedin.com/in/ryanbumstead
+
+View the resume: https://ryanbumstead.com/resume
+
+Ryan Bumstead
+Salesforce Platform Architect
+
+You&apos;re getting this one email because you sent a message through ryanbumstead.com. There&apos;s no mailing list, and you won&apos;t hear from this address again unless I&apos;m replying to you.</textOnly>
+    <type>custom</type>
+    <uiType>Aloha</uiType>
+</EmailTemplate>
