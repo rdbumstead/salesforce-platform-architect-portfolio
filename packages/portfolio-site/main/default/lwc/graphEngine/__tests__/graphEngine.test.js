@@ -5,7 +5,8 @@
  *                      layoutGraph on the real d3-force build: inside the box, anchors pull groups
  *                      apart, the same input gives the same output, inputs are not changed. Also
  *                      the seven builds added for pan, zoom and drag, and attachPanZoom and attachNodeDrag on
- *                      the real d3-zoom and d3-drag builds.
+ *                      the real d3-zoom and d3-drag builds, with the opt in fit, the eased button
+ *                      moves and the resting scale for one finger, and boundsOf and fitTransform.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -734,5 +735,121 @@ describe("c/graphEngine attachPanZoom and attachNodeDrag", () => {
     });
     expect(onGestureEnd).toHaveBeenCalledTimes(1);
     expect(onGestureEnd).toHaveBeenCalledWith("wheel");
+  });
+
+  it("moves to a fitted transform at once, inside the limits, and ignores a bad one", () => {
+    const svg = svgWithNodes([]);
+    const onZoom = jest.fn();
+    const controls = engine.attachPanZoom(d3, svg, {
+      onZoom,
+      extent: EXTENT,
+      translateExtent: PAN_EXTENT,
+      min: 0.5
+    });
+
+    controls.fitTo({ x: 100, y: 75, k: 0.75 });
+    let last = onZoom.mock.calls[onZoom.mock.calls.length - 1][0];
+    expect([last.k, last.x, last.y]).toEqual([0.75, 100, 75]);
+
+    controls.fitTo({ x: 0, y: 0, k: 0.1 });
+    expect(controls.scale()).toBe(0.5);
+
+    const calls = onZoom.mock.calls.length;
+    controls.fitTo({ x: NaN, y: 0, k: 1 });
+    controls.fitTo(undefined);
+    expect(onZoom.mock.calls.length).toBe(calls);
+  });
+
+  it("eases a button move over a duration and moves at once without one", async () => {
+    const svg = svgWithNodes([]);
+    const onZoom = jest.fn();
+    const controls = engine.attachPanZoom(d3, svg, { onZoom, extent: EXTENT });
+
+    controls.zoomIn(250);
+    // A transition starts on the next timer tick, so nothing has moved yet.
+    expect(controls.scale()).toBe(1);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 450);
+    });
+    expect(controls.scale()).toBeCloseTo(engine.ZOOM.step);
+    // Several frames were drawn on the way.
+    expect(onZoom.mock.calls.length).toBeGreaterThan(2);
+
+    controls.reset(0);
+    expect(controls.scale()).toBe(1);
+  });
+
+  it("leaves one finger to the page at a resting scale above the minimum", () => {
+    const svg = svgWithNodes([]);
+    svg.ontouchstart = null;
+    const onZoom = jest.fn();
+    const controls = engine.attachPanZoom(d3, svg, {
+      onZoom,
+      extent: EXTENT,
+      translateExtent: PAN_EXTENT,
+      min: 0.5,
+      rest: 0.8
+    });
+    controls.fitTo({ x: 80, y: 60, k: 0.8 });
+    const calls = onZoom.mock.calls.length;
+
+    const a = [1, 100, 100];
+    const a2 = [1, 140, 120];
+    svg.dispatchEvent(touch("touchstart", [a], [a]));
+    svg.dispatchEvent(touch("touchmove", [a2], [a2]));
+    svg.dispatchEvent(touch("touchend", [], [a2]));
+    expect(onZoom.mock.calls.length).toBe(calls);
+  });
+});
+
+describe("c/graphEngine boundsOf and fitTransform", () => {
+  let engine;
+
+  beforeAll(() => {
+    jest.isolateModules(() => {
+      engine = require("c/graphEngine");
+    });
+  });
+
+  it("joins boxes with a margin, skips bad ones and answers null for none", () => {
+    expect(
+      engine.boundsOf(
+        [
+          { left: 10, top: 20, right: 30, bottom: 40 },
+          { left: -5, top: 25, right: 15, bottom: 60 },
+          { left: NaN, top: 0, right: 1, bottom: 1 },
+          null
+        ],
+        5
+      )
+    ).toEqual({ left: -10, top: 15, right: 35, bottom: 65 });
+    expect(engine.boundsOf([])).toBeNull();
+    expect(engine.boundsOf(undefined)).toBeNull();
+  });
+
+  it("centres a box in the extent at the scale that shows it whole", () => {
+    const extent = [
+      [0, 0],
+      [800, 600]
+    ];
+    // 400 by 200 fits at 2 by width and 3 by height, so 2 wins.
+    const fit = engine.fitTransform(
+      { left: 100, top: 100, right: 500, bottom: 300 },
+      extent,
+      { min: 0.25, max: 4 }
+    );
+    expect(fit).toEqual({ x: 400 - 300 * 2, y: 300 - 200 * 2, k: 2 });
+
+    // A box larger than the extent scales down, and the limits hold.
+    const wide = engine.fitTransform(
+      { left: 0, top: 0, right: 1600, bottom: 600 },
+      extent,
+      { min: 0.25, max: 4 }
+    );
+    expect(wide.k).toBe(0.5);
+    expect(
+      engine.fitTransform({ left: 0, top: 0, right: 1, bottom: 1 }, extent).k
+    ).toBe(engine.ZOOM.max);
+    expect(engine.fitTransform(null, extent)).toEqual({ x: 0, y: 0, k: 1 });
   });
 });
