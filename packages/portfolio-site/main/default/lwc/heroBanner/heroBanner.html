@@ -1,30 +1,35 @@
 <template>
-  <div class={homeClass}>
+  <div class="home">
     <section class="hero" aria-labelledby="hero-name">
       <img
         class="hero-photo"
         src={headshotUrl}
         alt={name}
-        width="232"
-        height="232"
+        width="132"
+        height="132"
         fetchpriority="high"
       />
       <div class="hero-body">
-        <p class="hero-meta">{title} · {location}</p>
+        <p class="hero-meta" data-id="hero-meta">{title} · {location}</p>
         <h1 id="hero-name" class="hero-name">{name}</h1>
         <template lwc:if={heroLine}>
           <p class="hero-line" data-id="hero-line">{heroLine}</p>
         </template>
-        <template lwc:if={bio}>
-          <p class="hero-bio">{bio}</p>
+        <template lwc:if={valueSentence}>
+          <p class="hero-value" data-id="hero-value">{valueSentence}</p>
         </template>
+        <ul class="proof" aria-label="At a glance" data-id="proof-strip">
+          <template for:each={proofPoints} for:item="point">
+            <li key={point.key} class="proof-item">{point.text}</li>
+          </template>
+        </ul>
         <div class="hero-actions">
           <a
             class="btn btn-primary"
-            href="#tour"
-            data-id="tour-button"
-            onclick={handleTourClick}
-            >{tourButtonLabel} <span aria-hidden="true">↓</span></a
+            href={caseStudiesHref}
+            data-id="case-studies-button"
+            onclick={handleCaseStudiesClick}
+            >See the case studies <span aria-hidden="true">↓</span></a
           >
           <a class="btn btn-ghost" href={resumeHref} data-id="resume-button"
             >View the resume <span aria-hidden="true">→</span></a
@@ -115,170 +120,6 @@
           </template>
         </nav>
       </div>
-    </section>
-
-    <nav class="start" aria-labelledby="start-heading" data-id="start-paths">
-      <h2 id="start-heading" class="start-heading">Start here</h2>
-      <ul class="start-list">
-        <template for:each={startPaths} for:item="path">
-          <li key={path.key} class="start-item" data-key={path.key}>
-            <p class="start-audience">{path.audience}</p>
-            <a
-              class="start-link"
-              href={path.href}
-              data-target={path.target}
-              data-path={path.key}
-              onclick={handleStartClick}
-              >{path.title} <span aria-hidden="true">{path.arrow}</span></a
-            >
-            <p class="start-text">{path.text}</p>
-          </li>
-        </template>
-      </ul>
-    </nav>
-
-    <section class="section" aria-labelledby="pillars-heading">
-      <p class="section-label">01 / THE PILLARS</p>
-      <h2
-        id="pillars-heading"
-        class="section-heading"
-        data-id="pillars-heading"
-        tabindex="-1"
-      >
-        The pillars.
-      </h2>
-      <p class="section-intro">Pick a pillar, or take the tour below.</p>
-      <ul class="pillar-grid" data-id="pillar-nav">
-        <template for:each={pillars} for:item="pillar">
-          <li key={pillar.key} class="card pillar-card" data-key={pillar.key}>
-            <template lwc:if={pillar.hasImage}>
-              <img
-                class="pillar-image"
-                src={pillar.imageUrl}
-                alt={pillar.imageAlt}
-                width={cardImageWidth}
-                height={cardImageHeight}
-                loading="lazy"
-                decoding="async"
-              />
-            </template>
-            <template lwc:if={pillar.hasHeadline}>
-              <p class="pillar-headline" data-id="pillar-headline">
-                <span class="pillar-metric">{pillar.headlineMetric}</span>
-                <span class="pillar-metric-label">{pillar.headlineLabel}</span>
-              </p>
-            </template>
-            <div class="pillar-top">
-              <span class="pillar-letter" aria-hidden="true"
-                >{pillar.letter}</span
-              >
-              <span class="pillar-eyebrow">{pillar.eyebrow}</span>
-            </div>
-            <h3 class="pillar-name">{pillar.sasName}</h3>
-            <p class="pillar-summary">{pillar.summary}</p>
-            <template lwc:if={pillar.code}>
-              <code class="pillar-code">{pillar.code}</code>
-            </template>
-            <ul class="tag-list" aria-label="Topics">
-              <template for:each={pillar.tags} for:item="tag">
-                <li key={tag.key} class="tag">{tag.label}</li>
-              </template>
-            </ul>
-            <template lwc:if={pillar.hasCaseStudy}>
-              <div class="case-study" data-id="case-study">
-                <button
-                  type="button"
-                  class="case-toggle"
-                  aria-expanded={pillar.expandedText}
-                  aria-controls={pillar.caseId}
-                  data-key={pillar.key}
-                  onclick={handleCaseToggle}
-                >
-                  <span>{pillar.caseToggleLabel}</span>
-                  <span class="case-chevron" aria-hidden="true"
-                    >{pillar.caseChevron}</span
-                  >
-                </button>
-                <div
-                  id={pillar.caseId}
-                  class="case-body"
-                  data-id="case-body"
-                  hidden={pillar.caseHidden}
-                >
-                  <template for:each={pillar.caseBlocks} for:item="block">
-                    <div key={block.key} class="case-block">
-                      <h4 class="case-heading">{block.heading}</h4>
-                      <p class="case-text">{block.text}</p>
-                    </div>
-                  </template>
-                  <template lwc:if={pillar.hasCaseLinks}>
-                    <ul class="case-links" aria-label="Links">
-                      <template for:each={pillar.caseLinks} for:item="link">
-                        <li key={link.key}>
-                          <a
-                            class="case-link"
-                            href={link.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            data-key={link.key}
-                            >{link.label}<span class="assistive-text"
-                              >{newTabNote}</span
-                            ></a
-                          >
-                        </li>
-                      </template>
-                    </ul>
-                  </template>
-                </div>
-              </div>
-            </template>
-            <a class="pillar-link" href={pillar.href}
-              >{pillar.linkLabel} <span aria-hidden="true">→</span></a
-            >
-          </li>
-        </template>
-        <li class="card tour-card">
-          <a
-            class="tour-card-link"
-            href="#tour"
-            data-id="tour-card"
-            onclick={handleTourClick}
-          >
-            <span class="tour-card-kicker">Not sure where to start?</span>
-            <span class="tour-card-title"
-              >{tourButtonLabel} <span aria-hidden="true">↓</span></span
-            >
-          </a>
-        </li>
-      </ul>
-      <template lwc:if={hasComing}>
-        <p class="coming-note" data-id="coming-note">{comingText}</p>
-      </template>
-    </section>
-
-    <section class="section" aria-labelledby="tour-heading">
-      <p class="section-label">02 / HOW TO EVALUATE ME</p>
-      <h2
-        id="tour-heading"
-        class="section-heading"
-        data-id="tour-heading"
-        tabindex="-1"
-      >
-        {tourHeading}
-      </h2>
-      <p class="section-intro">One stop per pillar.</p>
-      <ol class="tour-list" data-id="tour">
-        <template for:each={tourSteps} for:item="step">
-          <li key={step.key} class="tour-step" data-key={step.key}>
-            <span class="tour-lead">
-              <span class="tour-number" aria-hidden="true">{step.number}</span>
-              <a class="tour-link" href={step.href}>{step.title}</a>
-            </span>
-            <span class="tour-text">{step.text}</span>
-            <span class="tour-duration">{step.duration}</span>
-          </li>
-        </template>
-      </ol>
     </section>
   </div>
 </template>
