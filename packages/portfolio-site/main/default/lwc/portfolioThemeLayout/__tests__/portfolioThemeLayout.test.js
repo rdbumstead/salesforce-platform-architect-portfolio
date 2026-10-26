@@ -17,6 +17,7 @@ import PortfolioThemeLayout, {
   BUILT_MENU_LABEL,
   CASE_STUDIES_ID,
   DOCS_URL,
+  HERO_LOOKUP_MS,
   HERO_SELECTOR,
   THEME_FADE_MS,
   currentRouteUrl,
@@ -1285,6 +1286,8 @@ describe("c-portfolio-theme-layout", () => {
       hero.getBoundingClientRect = () => ({
         bottom: heroBottom - (window.scrollY || 0)
       });
+      // Connected, as the hero is on the site, so the layout keeps the one it found.
+      document.body.appendChild(hero);
       return hero;
     }
 
@@ -1365,6 +1368,34 @@ describe("c-portfolio-theme-layout", () => {
       expect(shown(element)).toBe(false);
       await scrollTo(800, 800);
       expect(shown(element)).toBe(true);
+    });
+
+    it("looks for a missing hero at most once a second, and again on a new route", async () => {
+      expect(HERO_LOOKUP_MS).toBe(1000);
+      let now = 5000;
+      const clock = jest.spyOn(Date, "now").mockImplementation(() => now);
+      const content = [];
+      const element = render(content);
+      const slot = element.shadowRoot.querySelector(".region-content slot");
+      const assigned = jest.fn(() => content);
+      slot.assignedElements = assigned;
+
+      await scrollTo(100, 800);
+      await scrollTo(200, 800);
+      expect(assigned).toHaveBeenCalledTimes(1);
+
+      // The hero renders later. It is found on the next look, a second on.
+      content.push(heroAt(1400));
+      now += 1000;
+      await scrollTo(900, 800);
+      expect(assigned).toHaveBeenCalledTimes(2);
+      expect(shown(element)).toBe(false);
+
+      // Found and connected, it is kept with no new look.
+      await scrollTo(1500, 800);
+      expect(assigned).toHaveBeenCalledTimes(2);
+      expect(shown(element)).toBe(true);
+      clock.mockRestore();
     });
 
     it("stays hidden when the viewport has no height", async () => {

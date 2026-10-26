@@ -64,6 +64,9 @@ export const DOCS_URL = "docs";
 export const HERO_SELECTOR = "c-hero-banner";
 // On a page with no hero the arrow appears once the visitor has scrolled one screen height.
 export const BACK_TO_TOP_SCREENS = 1;
+// How often, at most, the layout looks for the hero again while none is on the page. The look
+// walks the page's shadow trees, so it is not repeated on every scroll frame.
+export const HERO_LOOKUP_MS = 1000;
 // The length of the theme crossfade.
 export const THEME_FADE_MS = 200;
 
@@ -257,6 +260,9 @@ export default class PortfolioThemeLayout extends LightningElement {
   _stopMotion = null;
 
   showBackToTop = false;
+  // The hero found on the page, and when the layout last looked for one.
+  _hero = null;
+  _heroLookedAt = -Infinity;
   // True once page content has scrolled under the sticky header.
   headerRaised = false;
   _scrollFrame = null;
@@ -268,6 +274,7 @@ export default class PortfolioThemeLayout extends LightningElement {
   @wire(CurrentPageReference)
   wiredPageReference() {
     this.routeUrl = currentRouteUrl();
+    this._heroLookedAt = -Infinity;
   }
 
   _onPopState = () => {
@@ -370,6 +377,26 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   /**
+   * The home hero, when it is on the page. A found hero is kept while it stays connected. With
+   * none found, the page is searched again at most once every HERO_LOOKUP_MS, because pages
+   * render after the layout and the search walks every shadow tree.
+   * @returns {Element|null} the hero
+   */
+  heroElement() {
+    if (this._hero && this._hero.isConnected) {
+      return this._hero;
+    }
+    this._hero = null;
+    const now = Date.now();
+    if (now - this._heroLookedAt < HERO_LOOKUP_MS) {
+      return null;
+    }
+    this._heroLookedAt = now;
+    this._hero = findInContent(this.contentRoots(), HERO_SELECTOR);
+    return this._hero;
+  }
+
+  /**
    * The scroll position past which Back to top appears: the bottom of the home hero under the
    * header when the hero is on the page, one screen height otherwise.
    * @param {number} viewport the window height
@@ -377,7 +404,7 @@ export default class PortfolioThemeLayout extends LightningElement {
    */
   backToTopThreshold(viewport) {
     const screen = viewport * BACK_TO_TOP_SCREENS;
-    const hero = findInContent(this.contentRoots(), HERO_SELECTOR);
+    const hero = this.heroElement();
     if (!hero) {
       return screen;
     }
