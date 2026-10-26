@@ -4,7 +4,11 @@
  * The document body is built in a manual DOM node, and the component's styles still reach
  * it because it sits inside this component's own template. Tables and code blocks scroll
  * inside their own box, so the page never scrolls sideways on a phone. Headings stop below
- * the sticky header when the page scrolls to them.
+ * the sticky header when the page scrolls to them. The shared SLDS reset removes list markers,
+ * so the document's lists set theirs back. The badge column has one width for every row, wide
+ * enough for the longest badge, so no title is pushed out of line. The Contents toggle and the
+ * Decisions group draw their own open marker, because they lose the browser's with the list
+ * style.
  */
 :host {
   display: block;
@@ -77,9 +81,78 @@
   text-decoration: underline;
 }
 
+/* A group of documents, and the closed group of decision records. */
+.doc-group {
+  margin: 0 0 var(--pf-space-5, 1.5rem);
+}
+
+.doc-group-title {
+  margin: 0 0 var(--pf-space-2, 0.5rem);
+  color: var(--pf-text);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.doc-group-details {
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  padding: 0 var(--pf-space-4, 1rem);
+}
+
+.doc-group-details[open] {
+  padding-bottom: var(--pf-space-4, 1rem);
+}
+
+.doc-group-summary,
+.toc-summary {
+  list-style: none;
+}
+
+.doc-group-summary::-webkit-details-marker,
+.toc-summary::-webkit-details-marker {
+  display: none;
+}
+
+.doc-group-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--pf-space-3, 0.75rem);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.doc-group-summary .doc-group-title {
+  margin: 0;
+}
+
+.doc-group-count {
+  color: var(--pf-muted);
+  font-size: 0.875rem;
+}
+
+.doc-group-summary::after,
+.toc-summary::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.45em;
+  height: 0.45em;
+  margin-left: auto;
+  border-right: 2px solid currentcolor;
+  border-bottom: 2px solid currentcolor;
+  transform: rotate(45deg);
+}
+
+.doc-group-details[open] > .doc-group-summary::after,
+.toc[open] > .toc-summary::after {
+  transform: rotate(225deg);
+}
+
 .doc-badge {
   flex: 0 0 auto;
-  min-width: 4.75rem;
+  width: 7rem;
+  box-sizing: border-box;
   font-family: var(--pf-font-mono);
   font-size: 0.875rem;
   font-weight: 700;
@@ -216,6 +289,18 @@ summary:focus-visible,
   padding-left: 1.5rem;
 }
 
+.doc-body ul {
+  list-style: disc;
+}
+
+.doc-body ol {
+  list-style: decimal;
+}
+
+.doc-body ul ul {
+  list-style: circle;
+}
+
 .doc-body li > p {
   margin: 0 0 0.5rem;
 }
@@ -247,11 +332,49 @@ summary:focus-visible,
   min-width: 0;
 }
 
-.doc-body .doc-code-caption {
+.doc-body .doc-diagram-source {
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  padding: 0 var(--pf-space-3, 0.75rem);
+}
+
+.doc-body .doc-diagram-source[open] {
+  padding-bottom: var(--pf-space-3, 0.75rem);
+}
+
+.doc-body .doc-diagram-summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
   font-size: 0.875rem;
   font-weight: 700;
-  color: var(--pf-muted);
-  margin-bottom: 0.25rem;
+  list-style: none;
+}
+
+.doc-body .doc-diagram-summary::-webkit-details-marker {
+  display: none;
+}
+
+.doc-body .doc-diagram-summary::after {
+  content: "";
+  width: 0.45em;
+  height: 0.45em;
+  margin-left: auto;
+  border-right: 2px solid currentcolor;
+  border-bottom: 2px solid currentcolor;
+  transform: rotate(45deg);
+}
+
+.doc-body .doc-diagram-source[open] > .doc-diagram-summary::after {
+  transform: rotate(225deg);
+}
+
+.doc-body .doc-diagram-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
 }
 
 .doc-body .doc-pre {
@@ -304,6 +427,18 @@ summary:focus-visible,
 
 .doc-body .align-right {
   text-align: right;
+}
+
+@media (max-width: 30em) {
+  .doc-list-link {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--pf-space-1, 0.25rem);
+  }
+
+  .doc-badge {
+    width: auto;
+  }
 }
 
 @media (max-width: 47.99em) {

@@ -1,6 +1,7 @@
 /**
  * @description       : The architecture docs page. Without a doc in the query string it lists
- *                      the documents SourceController.getDocs returns. With one, for example
+ *                      the documents SourceController.getDocs returns, in three groups: Start
+ *                      here, Specifications and Decisions, which is closed until opened. With one, for example
  *                      ?doc=sas, it shows that document from the daily source cache, never
  *                      from a live GitHub call: the title, where it came from, a table of
  *                      contents and the body, which c/docsViewer's docsRenderer builds from
@@ -82,6 +83,29 @@ const SHORT_BADGES = new Map([
 export function badgeFor(key) {
   const value = String(key || "");
   return SHORT_BADGES.get(value) || value.toUpperCase();
+}
+
+/** The three groups of the list, in the order shown. */
+export const DOC_GROUPS = Object.freeze([
+  { key: "start", label: "Start here", open: true },
+  { key: "specifications", label: "Specifications", open: true },
+  { key: "decisions", label: "Decisions", open: false }
+]);
+const START_KEYS = new Set(["executive-overview", "program-charter"]);
+
+/**
+ * The group a document belongs to: the architecture decision records are Decisions, the
+ * executive overview and the program charter are Start here, and every other document is a
+ * Specification, so a document added later is listed without a code change.
+ * @param {string} key the doc key, for example adr-027 or sas
+ * @returns {string} start, specifications or decisions
+ */
+export function groupFor(key) {
+  const value = String(key || "");
+  if (/^adr-/.test(value)) {
+    return "decisions";
+  }
+  return START_KEYS.has(value) ? "start" : "specifications";
 }
 
 function docsPath() {
@@ -216,6 +240,21 @@ export default class DocsViewer extends LightningElement {
       badge: badgeFor(d.key),
       href: docHref(d.key)
     }));
+  }
+
+  /** The list's groups. A group with no document is left out. */
+  get groups() {
+    const items = this.listItems;
+    return DOC_GROUPS.map((group) => {
+      const members = items.filter((i) => groupFor(i.key) === group.key);
+      return {
+        key: group.key,
+        label: group.label,
+        isOpenGroup: group.open,
+        items: members,
+        countLabel: `${members.length} ${members.length === 1 ? "record" : "records"}`
+      };
+    }).filter((group) => group.items.length > 0);
   }
 
   get hasDocs() {
