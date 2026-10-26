@@ -2,12 +2,10 @@
   <article class={cardClass}>
     <header class="reference-header">
       <template lwc:if={fullWidth}>
+        <p class="reference-eyebrow">Pillar C</p>
         <h1 class="reference-title reference-title_page">API reference</h1>
-        <p class="reference-intro">
-          Pillar C: the full contract for the system API (SAPI) and the process
-          API (PAPI). Switch between them below. To send a live request, go back
-          to the <a class="inline-link" href={apiLabHref}>API Lab</a>.
-        </p>
+        <!-- prettier-ignore -->
+        <p class="reference-intro">Every endpoint, parameter and response behind the <a class="inline-link" href={apiLabHref}>API Lab</a>.</p>
       </template>
       <template lwc:else>
         <h2 class="reference-title">
