@@ -159,3 +159,38 @@
 .message-error {
   color: var(--pf-error-text);
 }
+
+.field-error {
+  color: var(--pf-error-text);
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+}
+
+.field-input[aria-invalid="true"] {
+  border-color: var(--pf-error-text);
+}
+
+/* The thank you panel fades in. Opacity only, and not at all under reduced motion. */
+.message-success {
+  animation: thanks-in 0.3s ease-out;
+}
+
+.message-success:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+@keyframes thanks-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-success {
+    animation: none;
+  }
+}

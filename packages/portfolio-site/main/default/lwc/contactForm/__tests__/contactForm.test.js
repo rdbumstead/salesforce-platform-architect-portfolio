@@ -114,23 +114,60 @@ describe("c-contact-form", () => {
     expect(q(element, '[name="message"]').maxLength).toBe(MAX_MESSAGE);
   });
 
-  it("keeps send disabled until the required fields are valid", async () => {
+  it("keeps send enabled and answers an invalid send with a message and focus", async () => {
     const element = createComponent();
     await flushPromises();
     const button = q(element, '[data-id="submit"]');
-    expect(button.disabled).toBe(true);
-    await fillValid(element);
     expect(button.disabled).toBe(false);
-    await setField(element, "email", "not-an-email");
-    expect(button.disabled).toBe(true);
-    await setField(element, "email", "ada@example.com");
-    await setField(element, "firstName", " ");
-    expect(button.disabled).toBe(true);
-    await setField(element, "firstName", "Ada");
-    await setField(element, "message", "x".repeat(MAX_MESSAGE + 1));
-    expect(button.disabled).toBe(true);
+
     await submit(element);
     expect(submitContact).not.toHaveBeenCalled();
+    const text = (name) =>
+      q(element, `[data-id="${name}-error"]`).textContent.trim();
+    expect(text("firstName")).toBe("Enter your first name.");
+    expect(text("lastName")).toBe("Enter your last name.");
+    expect(text("email")).toBe("Enter your email address.");
+    expect(text("message")).toBe("Write a message.");
+    expect(q(element, '[data-id="company-error"]')).toBeNull();
+    expect(q(element, '[name="firstName"]').getAttribute("aria-invalid")).toBe(
+      "true"
+    );
+    expect(element.shadowRoot.activeElement).toBe(
+      q(element, '[name="firstName"]')
+    );
+
+    // A message goes as soon as its field is touched, and focus goes to the next one.
+    await setField(element, "firstName", "Ada");
+    expect(q(element, '[data-id="firstName-error"]')).toBeNull();
+    await submit(element);
+    expect(element.shadowRoot.activeElement).toBe(
+      q(element, '[name="lastName"]')
+    );
+
+    await fillValid(element);
+    await setField(element, "email", "not-an-email");
+    await submit(element);
+    expect(text("email")).toBe(
+      "Enter a valid email address, like name@example.com."
+    );
+    expect(element.shadowRoot.activeElement).toBe(q(element, '[name="email"]'));
+    await setField(element, "email", "ada@example.com");
+    await setField(element, "message", "x".repeat(MAX_MESSAGE + 1));
+    await submit(element);
+    expect(text("message")).toBe("Use 2000 characters or fewer.");
+    await setField(element, "message", "Hello");
+    await setField(element, "company", "c".repeat(MAX_COMPANY + 1));
+    await submit(element);
+    expect(text("company")).toBe("Use 255 characters or fewer.");
+    expect(submitContact).not.toHaveBeenCalled();
+  });
+
+  it("fades the thank you panel in and stops that under reduce motion", () => {
+    const css = readFileSync(join(__dirname, "..", "contactForm.css"), "utf8");
+    expect(css).toMatch(/animation: thanks-in/);
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.message-success\s*\{\s*animation: none/
+    );
   });
 
   it("sends trimmed values with the time and the honeypot, then thanks inline", async () => {
