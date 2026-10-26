@@ -25,6 +25,129 @@ private class JiraServiceTest {
     }
   }
 
+  /** Answers each call with the next body and records every request body. */
+  private class PagedMock implements HttpCalloutMock {
+    private final List<String> bodies;
+    public final List<String> requests = new List<String>();
+
+    PagedMock(List<String> bodies) {
+      this.bodies = bodies;
+    }
+
+    public HttpResponse respond(HttpRequest request) {
+      requests.add(request.getBody());
+      HttpResponse response = new HttpResponse();
+      response.setStatusCode(200);
+      response.setBody(bodies[Math.min(requests.size(), bodies.size()) - 1]);
+      return response;
+    }
+  }
+
+  private static String page(Integer first, Integer count, String token) {
+    List<Object> issues = new List<Object>();
+    for (Integer i = first; i < first + count; i++) {
+      issues.add(
+        new Map<String, Object>{
+          'key' => 'SPAP-' + i,
+          'fields' => new Map<String, Object>{ 'summary' => 'Issue ' + i }
+        }
+      );
+    }
+    Map<String, Object> body = new Map<String, Object>{ 'issues' => issues };
+    if (token != null) {
+      body.put('nextPageToken', token);
+    }
+    return JSON.serialize(body);
+  }
+
+  @IsTest
+  static void shouldAskForOneHundredIssuesWhenSearching() {
+    Assert.areEqual(100, JiraService.MAX_RESULTS, 'The roadmap cap');
+    PagedMock mock = new PagedMock(new List<String>{ page(1, 3, null) });
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    JiraService.fetchRoadmap('SPAP');
+    Test.stopTest();
+
+    Map<String, Object> sent = (Map<String, Object>) JSON.deserializeUntyped(
+      mock.requests[0]
+    );
+    Assert.areEqual(100, sent.get('maxResults'), 'maxResults');
+    Assert.isFalse(sent.containsKey('nextPageToken'), 'No token on page 1');
+  }
+
+  @IsTest
+  static void shouldReadOnePageWhenJiraSendsNoToken() {
+    PagedMock mock = new PagedMock(new List<String>{ page(1, 100, null) });
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    List<DeliveryController.RoadmapItem> items = JiraService.fetchRoadmap(
+      'SPAP'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(100, items.size(), 'One hundred issues');
+    Assert.areEqual(1, mock.requests.size(), 'One request');
+  }
+
+  @IsTest
+  static void shouldFollowTheTokenWhenJiraReturnsAShortPage() {
+    PagedMock mock = new PagedMock(
+      new List<String>{ page(1, 60, 'tok-2'), page(61, 40, null) }
+    );
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    List<DeliveryController.RoadmapItem> items = JiraService.fetchRoadmap(
+      'SPAP'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(100, items.size(), 'Both pages joined');
+    Assert.areEqual('SPAP-100', items[99].key, 'Order kept');
+    Assert.areEqual(2, mock.requests.size(), 'Two requests');
+    Map<String, Object> second = (Map<String, Object>) JSON.deserializeUntyped(
+      mock.requests[1]
+    );
+    Assert.areEqual('tok-2', second.get('nextPageToken'), 'Token sent back');
+    Assert.areEqual(40, second.get('maxResults'), 'Only what is left');
+  }
+
+  @IsTest
+  static void shouldStopAtTheCapWhenMoreIssuesExist() {
+    PagedMock mock = new PagedMock(
+      new List<String>{ page(1, 100, 'tok-2'), page(101, 100, 'tok-3') }
+    );
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    List<DeliveryController.RoadmapItem> items = JiraService.fetchRoadmap(
+      'SPAP'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(100, items.size(), 'Never more than the cap');
+    Assert.areEqual(1, mock.requests.size(), 'No request past the cap');
+  }
+
+  @IsTest
+  static void shouldStopAtTheMaxPagesWhenTheTokenNeverEnds() {
+    PagedMock mock = new PagedMock(new List<String>{ page(1, 1, 'again') });
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    JiraService.fetchRoadmap('SPAP');
+    Test.stopTest();
+
+    Assert.areEqual(
+      JiraService.MAX_PAGES,
+      mock.requests.size(),
+      'The page limit holds'
+    );
+  }
+
   @IsTest
   static void shouldBuildTheRoadmapJqlWhenGivenAKey() {
     Assert.areEqual(
