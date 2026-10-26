@@ -1,11 +1,16 @@
 /**
  * @description       : Recent commits for the Delivery page. Reads the newest GitHub cache row
  *                      through DeliveryController.getRecentCommits and shows its age. Guests never trigger a callout from here.
- *                      The "Simulate an outage" switch (ADR-022) re-reads the
- *                      feed with simulate=true, which returns the same cached commits marked
+ *                      The "Simulate an outage" switch (ADR-022) lives in the roadmap card,
+ *                      beside its "Last updated" label, and drives both panels through
+ *                      c/outageSimulation. This panel listens and re-reads the feed with
+ *                      simulate=true, which returns the same cached commits marked
  *                      SIMULATED. DEGRADED means the GitHub circuit breaker is open. A commit
- *                      link click sends changelog_commit_clicked with its sha, and turning
- *                      the switch on sends resilience_test_triggered.
+ *                      link click sends changelog_commit_clicked with its sha.
+ *                      Each row reads as a plain update. Merge commits are left out. A leading
+ *                      type such as "feat(lwc):" becomes a tag (Feature, Fix, Docs or Tests) and
+ *                      is taken off the sentence, which then starts with a capital. Other
+ *                      conventional types are taken off and carry no tag. No author is shown.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -14,8 +19,51 @@
 import { LightningElement, wire } from "lwc";
 import getRecentCommits from "@salesforce/apex/DeliveryController.getRecentCommits";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { isSimulating, onSimulatingChange } from "c/outageSimulation";
 
 const SHORT_SHA_LENGTH = 7;
+
+// The tag shown for a conventional commit type. A type that is not here carries no tag.
+export const TAGS = {
+  feat: "Feature",
+  fix: "Fix",
+  docs: "Docs",
+  test: "Tests",
+  tests: "Tests"
+};
+// Types that are taken off the sentence even though they carry no tag.
+const UNTAGGED_TYPES = ["ci", "build", "chore", "refactor", "perf", "style"];
+const PREFIX = /^([a-z]+)(\([^)]*\))?!?:\s*(\S.*)$/;
+const MERGE_START = /^Merge\b/;
+
+/**
+ * Whether a commit message is a merge. Merges are left out of the list.
+ * @param {string} message the first line of a commit message
+ * @returns {boolean} true for a merge commit
+ */
+export function isMerge(message) {
+  return MERGE_START.test(message || "");
+}
+
+/**
+ * Splits a message such as "feat(lwc): give the page an intro" into a tag and a sentence.
+ * @param {string} message the first line of a commit message
+ * @returns {{tag: string, text: string}} tag is empty when the type has none or there is no type
+ */
+export function parseMessage(message) {
+  const text = message || "";
+  const match = PREFIX.exec(text);
+  if (!match) {
+    return { tag: "", text };
+  }
+  const type = match[1];
+  const tag = TAGS[type] || "";
+  if (!tag && !UNTAGGED_TYPES.includes(type)) {
+    return { tag: "", text };
+  }
+  const rest = match[3];
+  return { tag, text: rest.charAt(0).toUpperCase() + rest.slice(1) };
+}
 
 const STATUS_BADGES = {
   SIMULATED: { label: "Simulated", className: "status-badge badge-simulated" },
@@ -59,6 +107,21 @@ export default class Changelog extends LightningElement {
   feed;
   hasError = false;
   simulate = false;
+  stopListening;
+
+  connectedCallback() {
+    this.simulate = isSimulating();
+    this.stopListening = onSimulatingChange((value) => {
+      this.simulate = value;
+    });
+  }
+
+  disconnectedCallback() {
+    if (this.stopListening) {
+      this.stopListening();
+      this.stopListening = undefined;
+    }
+  }
 
   @wire(getRecentCommits, { simulate: "$simulate" })
   wiredCommits({ data, error }) {
@@ -68,13 +131,6 @@ export default class Changelog extends LightningElement {
     } else if (error) {
       this.feed = undefined;
       this.hasError = true;
-    }
-  }
-
-  handleSimulateChange(event) {
-    this.simulate = event.target.checked;
-    if (this.simulate) {
-      trackEvent(EVENTS.RESILIENCE_TEST_TRIGGERED, { source: "changelog" });
     }
   }
 
@@ -96,15 +152,20 @@ export default class Changelog extends LightningElement {
     if (!this.feed || this.status === "EMPTY") {
       return [];
     }
-    return (this.feed.items || []).map((item) => ({
-      sha: item.sha,
-      shortSha: shortSha(item.sha),
-      message: item.message,
-      authorName: item.authorName,
-      url: item.url,
-      date: formatDate(item.committedAt),
-      linkLabel: `Open commit ${shortSha(item.sha)} on GitHub`
-    }));
+    return (this.feed.items || [])
+      .filter((item) => !isMerge(item.message))
+      .map((item) => {
+        const parsed = parseMessage(item.message);
+        return {
+          sha: item.sha,
+          shortSha: shortSha(item.sha),
+          tag: parsed.tag,
+          message: parsed.text,
+          url: item.url,
+          date: formatDate(item.committedAt),
+          linkLabel: `Open commit ${shortSha(item.sha)} on GitHub`
+        };
+      });
   }
 
   get hasCommits() {

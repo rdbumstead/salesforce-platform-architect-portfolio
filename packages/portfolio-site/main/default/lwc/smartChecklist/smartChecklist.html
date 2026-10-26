@@ -34,7 +34,10 @@
                   >{item.run.shortSha}</a
                 >
                 <template lwc:if={item.hasRunTime}>
-                  <time class="time" datetime={item.run.iso}
+                  <time
+                    class="time"
+                    datetime={item.run.iso}
+                    title={item.run.timeTitle}
                     >{item.run.time}</time
                   >
                 </template>
@@ -46,7 +49,10 @@
                   >{item.run.shortSha}</span
                 >
                 <template lwc:if={item.hasRunTime}>
-                  <time class="time" datetime={item.run.iso}
+                  <time
+                    class="time"
+                    datetime={item.run.iso}
+                    title={item.run.timeTitle}
                     >{item.run.time}</time
                   >
                 </template>
@@ -61,7 +67,9 @@
                 >
                   <span class="time">{cache.lead}</span>
                   <template lwc:if={cache.known}>
-                    <time class="time" datetime={cache.iso}>{cache.text}</time>
+                    <time class="time" datetime={cache.iso} title={cache.title}
+                      >{cache.text}</time
+                    >
                   </template>
                   <template lwc:else>
                     <span class="time">none</span>

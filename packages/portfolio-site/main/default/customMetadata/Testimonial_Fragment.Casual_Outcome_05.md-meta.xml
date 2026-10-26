@@ -16,7 +16,7 @@
     </values>
     <values>
         <field>Text__c</field>
-        <value xsi:type="xsd:string">We stan.</value>
+        <value xsi:type="xsd:string">Instant fan.</value>
     </values>
     <values>
         <field>Sort_Order__c</field>

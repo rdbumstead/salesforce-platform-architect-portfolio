@@ -3,20 +3,25 @@
  *                      through DeliveryController.getRoadmap.
  *                      Columns are keyed on Jira's statusCategory, never on status names,
  *                      so a renamed workflow status cannot empty a column. The "Simulate an
- *                      outage" switch (ADR-022) re-reads the feed with
+ *                      outage" switch (ADR-022) sits beside the "Last updated" label and is the
+ *                      one switch for this board and for Latest Updates, shared through
+ *                      c/outageSimulation. It re-reads the feed with
  *                      simulate=true, which returns the same cached board marked SIMULATED.
  *                      DEGRADED means the Jira circuit breaker is open. roadmap_viewed is sent
  *                      once when the board is first shown on the page, and turning the switch
  *                      on sends resilience_test_triggered. Epic
  *                      cards come first in each column, a story names its epic as
- *                      "Part of {name} | {key}" (the key alone when the name is missing), and an
+ *                      "Part of {name}" (the key when the name is missing), and an
  *                      empty feed says so instead of reading as an outage. The outage line is
  *                      kept for a real wire error. Every column
  *                      shows at most the feed's columnLimit cards (COLUMN_LIMIT when the feed
  *                      has none) with its own "Show all N" button and state. Done keeps its
  *                      newest cards by updatedAt and its "Show all N shipped" label. To Do and
- *                      In Progress keep the feed order and cut there.
- *                      The c-view-source control sits in the header.
+ *                      In Progress keep the feed order and cut there. Below 768 px the three
+ *                      columns become tabs (To Do, In Progress, Done) that open on In Progress,
+ *                      with the arrow keys, Home and End moving between them. On wider screens
+ *                      all three columns show and none of the tab roles apply.
+ *                      The c-view-source control is the last item of the title row, at the right.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -25,6 +30,17 @@
 import { LightningElement, wire } from "lwc";
 import getRoadmap from "@salesforce/apex/DeliveryController.getRoadmap";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import {
+  isSimulating,
+  setSimulating,
+  onSimulatingChange
+} from "c/outageSimulation";
+
+// The width below which the columns become tabs. The stylesheet stacks them at the same width.
+export const PHONE_QUERY = "(max-width: 767px)";
+export const DEFAULT_TAB = "indeterminate";
+export const SIMULATE_HINT =
+  "See how the roadmap and Latest Updates behave if Jira or GitHub is down.";
 
 export const COLUMNS = [
   { category: "new", label: "To Do" },
@@ -56,12 +72,12 @@ export function ageLabel(ageMinutes) {
   return `Last updated ${ageMinutes} min ago`;
 }
 
-// "Part of {name} | {key}", or "Part of {key}" for an old cache row or a parent with no name.
+// "Part of {name}", or "Part of {key}" for an old cache row or a parent with no name.
 export function parentLabel(epicName, epicKey) {
   if (!epicKey) {
     return "";
   }
-  return epicName ? `Part of ${epicName} | ${epicKey}` : `Part of ${epicKey}`;
+  return epicName ? `Part of ${epicName}` : `Part of ${epicKey}`;
 }
 
 function toCard(item) {
@@ -123,11 +139,53 @@ export default class RoadmapViewer extends LightningElement {
   viewTracked = false;
   // Which columns show every card, keyed by category. Each column has its own state.
   expanded = {};
+  // Whether the screen is phone width, and which tab is open there.
+  isPhone = false;
+  activeCategory = DEFAULT_TAB;
+  simulateHint = SIMULATE_HINT;
+  phoneQuery;
+  stopListening;
+
+  handlePhoneChange = (event) => {
+    this.isPhone = Boolean(event.matches);
+  };
 
   connectedCallback() {
     if (!this.viewTracked) {
       this.viewTracked = true;
       trackEvent(EVENTS.ROADMAP_VIEWED);
+    }
+    this.simulate = isSimulating();
+    this.stopListening = onSimulatingChange((value) => {
+      this.simulate = value;
+    });
+    this.watchPhoneWidth();
+  }
+
+  disconnectedCallback() {
+    if (this.stopListening) {
+      this.stopListening();
+      this.stopListening = undefined;
+    }
+    if (this.phoneQuery && this.phoneQuery.removeEventListener) {
+      this.phoneQuery.removeEventListener("change", this.handlePhoneChange);
+    }
+    this.phoneQuery = undefined;
+  }
+
+  // matchMedia is missing in some test and embedded settings. Then the board stays a board.
+  watchPhoneWidth() {
+    try {
+      if (typeof window === "undefined" || !window.matchMedia) {
+        return;
+      }
+      this.phoneQuery = window.matchMedia(PHONE_QUERY);
+      this.isPhone = Boolean(this.phoneQuery.matches);
+      if (this.phoneQuery.addEventListener) {
+        this.phoneQuery.addEventListener("change", this.handlePhoneChange);
+      }
+    } catch {
+      this.isPhone = false;
     }
   }
 
@@ -143,8 +201,9 @@ export default class RoadmapViewer extends LightningElement {
   }
 
   handleSimulateChange(event) {
-    this.simulate = event.target.checked;
-    if (this.simulate) {
+    // The shared state tells this board and Latest Updates, this board's own listener included.
+    setSimulating(event.target.checked);
+    if (event.target.checked) {
       trackEvent(EVENTS.RESILIENCE_TEST_TRIGGERED, { source: "roadmap" });
     }
   }
@@ -199,8 +258,23 @@ export default class RoadmapViewer extends LightningElement {
       const showAllLabel = isDone
         ? `Show all ${items.length} shipped`
         : `Show all ${items.length}`;
+      const isActive = column.category === this.activeCategory;
       return {
         ...column,
+        isActive,
+        panelId: `panel-${column.category}`,
+        // A column is a tab panel only where the tabs show.
+        columnClass:
+          this.isPhone && !isActive
+            ? "roadmap-column column-hidden"
+            : "roadmap-column",
+        panelRole: this.isPhone ? "tabpanel" : undefined,
+        panelLabelledBy: this.isPhone ? `tab-${column.category}` : undefined,
+        panelHidden: this.isPhone && !isActive,
+        tabId: `tab-${column.category}`,
+        tabText: `${column.label} (${items.length})`,
+        tabSelected: String(isActive),
+        tabIndex: isActive ? "0" : "-1",
         headingId: `roadmap-column-${column.category}`,
         moreId: `roadmap-${column.category}-more`,
         cards: epicsFirst(split.visible.map(toCard)),
@@ -221,6 +295,56 @@ export default class RoadmapViewer extends LightningElement {
       ...this.expanded,
       [category]: !this.expanded[category]
     };
+  }
+
+  handleTabClick(event) {
+    this.activeCategory = event.currentTarget.dataset.category;
+  }
+
+  // Arrow keys move between the tabs, Home and End jump to the first and last.
+  handleTabKeydown(event) {
+    const last = COLUMNS.length - 1;
+    const current = COLUMNS.findIndex(
+      (column) => column.category === this.activeCategory
+    );
+    let next = -1;
+    if (event.key === "ArrowRight") {
+      next = current >= last ? 0 : current + 1;
+    } else if (event.key === "ArrowLeft") {
+      next = current <= 0 ? last : current - 1;
+    } else if (event.key === "Home") {
+      next = 0;
+    } else if (event.key === "End") {
+      next = last;
+    }
+    if (next < 0) {
+      return;
+    }
+    event.preventDefault();
+    this.activeCategory = COLUMNS[next].category;
+    this.focusTab = COLUMNS[next].category;
+  }
+
+  renderedCallback() {
+    if (this.focusTab) {
+      const tab = this.template.querySelector(`[data-tab="${this.focusTab}"]`);
+      this.focusTab = "";
+      if (tab) {
+        tab.focus();
+      }
+    }
+  }
+
+  get tabs() {
+    return this.columns.map((column) => ({
+      category: column.category,
+      tabId: column.tabId,
+      tabText: column.tabText,
+      tabSelected: column.tabSelected,
+      tabIndex: column.tabIndex,
+      panelId: column.panelId,
+      className: column.isActive ? "tab tab-active" : "tab"
+    }));
   }
 
   get ageText() {

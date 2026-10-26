@@ -17,6 +17,14 @@
   overflow-wrap: anywhere;
 }
 
+.roadmap-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2);
+  margin-bottom: var(--pf-space-2);
+}
+
 .roadmap-header {
   display: flex;
   flex-wrap: wrap;
@@ -243,4 +251,50 @@
 .show-all:focus-visible {
   outline: 2px solid var(--pf-accent);
   outline-offset: 2px;
+}
+
+/* One sentence under the header says what the switch does. */
+.simulate-hint {
+  color: var(--pf-muted);
+  font-size: 0.875rem;
+  margin: 0 0 var(--pf-space-2);
+}
+
+/* The tabs show only below 768 px, where the three columns become one panel at a time. */
+.roadmap-tabs {
+  display: flex;
+  gap: var(--pf-space-1);
+  margin-top: var(--pf-space-2);
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--pf-space-2);
+  border: 1px solid var(--pf-border);
+  border-bottom: 0;
+  border-radius: var(--pf-radius-sm) var(--pf-radius-sm) 0 0;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.tab-active {
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-color: var(--pf-accent);
+  font-weight: 700;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+}
+
+.column-hidden {
+  display: none;
 }
