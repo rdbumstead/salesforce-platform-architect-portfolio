@@ -482,4 +482,105 @@ private class ApiLabControllerCoverLetterTest {
 
     Assert.areEqual(3, limiter.lastLimit, 'The AI tier setting is applied');
   }
+
+  private static Decimal lettersCounted() {
+    Decimal total = 0;
+    for (Usage_Counter__c row : [
+      SELECT Count__c
+      FROM Usage_Counter__c
+      WHERE Kind__c = 'Cover_Letter'
+    ]) {
+      total += row.Count__c;
+    }
+    return total;
+  }
+
+  @IsTest
+  static void aLetterFromGeminiCountsOnce() {
+    mockGemini(200);
+    User guest = SiteGuestTestSupport.preparedGuest();
+
+    Test.startTest();
+    System.runAs(guest) {
+      ApiLabController.generateCoverLetter('Acme', 'Architect', null);
+    }
+    Test.stopTest();
+
+    Assert.areEqual(1, lettersCounted(), 'One letter, one count');
+    Assert.areEqual(
+      0,
+      [SELECT COUNT() FROM Usage_Counter__c WHERE Kind__c = 'Api_Lab_Request'],
+      'The other kind is untouched'
+    );
+  }
+
+  @IsTest
+  static void aLetterFromTheLocalTemplateCountsToo() {
+    mockGemini(500);
+
+    Test.startTest();
+    ApiLabController.CoverLetterResult result = ApiLabController.generateCoverLetter(
+      'Acme',
+      'Architect',
+      null
+    );
+    Test.stopTest();
+
+    Assert.areEqual('Local', result.provider, 'The template served');
+    Assert.areEqual(1, lettersCounted(), 'A letter from any provider counts');
+  }
+
+  @IsTest
+  static void aRefusedOrFailedRequestIsNotCounted() {
+    ApiRequestContext.limiterOverride = new DenyingLimiter();
+    mockGemini(200);
+    refusalMessage('Acme', 'Architect');
+    ApiRequestContext.limiterOverride = null;
+    ContentGenerationController.mockGeminiService = new FailingProvider();
+    ContentGenerationController.mockLocalService = new FailingProvider();
+    refusalMessage('Acme', 'Architect');
+    refusalMessage('', 'Architect');
+
+    Assert.areEqual(0, lettersCounted(), 'No letter, no count');
+  }
+
+  @IsTest
+  static void aFailedCounterWriteLeavesTheLetterUnchanged() {
+    mockGemini(200);
+    UsageCounterWriter.failForTest = true;
+
+    Test.startTest();
+    ApiLabController.CoverLetterResult result = ApiLabController.generateCoverLetter(
+      'Acme',
+      'Architect',
+      null
+    );
+    Test.stopTest();
+
+    Assert.areEqual('Gemini', result.provider, 'Gemini still served');
+    Assert.areEqual(GEMINI_ANSWER, result.content, 'The letter is intact');
+    Assert.areEqual(0, lettersCounted(), 'Nothing was counted');
+  }
+
+  @IsTest
+  static void theCounterRowHoldsNoRequestContent() {
+    mockGemini(200);
+
+    Test.startTest();
+    ApiLabController.generateCoverLetter(
+      'Secret Company',
+      'Secret Title',
+      'Secret description'
+    );
+    Test.stopTest();
+
+    Usage_Counter__c row = [
+      SELECT Name, Kind__c, Day__c, Count__c, Key__c
+      FROM Usage_Counter__c
+      LIMIT 1
+    ];
+    String stored = JSON.serialize(row);
+    Assert.isFalse(stored.contains('Secret'), 'No request text is stored');
+    Assert.isFalse(stored.contains(GEMINI_ANSWER), 'No letter is stored');
+  }
 }

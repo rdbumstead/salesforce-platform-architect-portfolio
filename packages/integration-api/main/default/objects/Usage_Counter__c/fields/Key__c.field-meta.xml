@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Key__c</fullName>
+    <caseSensitive>true</caseSensitive>
+    <description
+  >The kind and the UTC day: Cover_Letter:2026-10-26. One row per kind per day.</description>
+    <externalId>true</externalId>
+    <label>Key</label>
+    <length>60</length>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>
