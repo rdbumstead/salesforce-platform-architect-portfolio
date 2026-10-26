@@ -556,6 +556,21 @@ describe("c-career-line", () => {
       expect(trackEvent).toHaveBeenCalledTimes(4);
     });
 
+    it("starts the line from its newest point again after the new points render", async () => {
+      const element = await renderWithData();
+      const line = element.shadowRoot.querySelector('[data-id="line"]');
+      const writes = [];
+      Object.defineProperty(line, "scrollLeft", {
+        configurable: true,
+        get: () => 120,
+        set: (value) => writes.push(value)
+      });
+      filter(element, "work").click();
+      expect(writes).toEqual([]);
+      await flush();
+      expect(writes).toEqual([0]);
+    });
+
     it("sends nothing when the kind already shown is pressed", async () => {
       const element = await renderWithData();
       filter(element, "all").click();

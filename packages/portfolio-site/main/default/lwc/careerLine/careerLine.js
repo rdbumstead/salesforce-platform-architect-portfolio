@@ -379,6 +379,7 @@ export default class CareerLine extends LightningElement {
   openList = null;
   revealKey = null;
   focusAfterRender = null;
+  scrollToStart = false;
   edgeStart = false;
   edgeEnd = false;
   resizeListener = () => this.updateEdges();
@@ -611,10 +612,9 @@ export default class CareerLine extends LightningElement {
       this.openList = null;
       this.revealKey = null;
     }
-    const line = this.template.querySelector('[data-id="line"]');
-    if (line) {
-      line.scrollLeft = 0;
-    }
+    // After the new points render, the line starts from its newest point again. Doing it after
+    // the render keeps a browser from snapping back to the point it last rested on.
+    this.scrollToStart = true;
     trackEvent(EVENTS.CAREER_TIMELINE_FILTERED, { kind });
   }
 
@@ -673,6 +673,13 @@ export default class CareerLine extends LightningElement {
   }
 
   renderedCallback() {
+    if (this.scrollToStart) {
+      this.scrollToStart = false;
+      const line = this.template.querySelector('[data-id="line"]');
+      if (line) {
+        line.scrollLeft = 0;
+      }
+    }
     this.updateEdges();
     if (!this.focusAfterRender) {
       return;
