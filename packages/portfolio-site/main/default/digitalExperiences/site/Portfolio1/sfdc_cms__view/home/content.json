@@ -29,8 +29,8 @@
                       "type": "component"
                     },
                     {
-                      "definition": "c:experienceTimeline",
-                      "id": "8553dc90-c92a-4a95-9d97-3a728367892e",
+                      "definition": "c:caseStudyGrid",
+                      "id": "d5fb8841-6d0f-4e37-9185-b2bd99221e87",
                       "type": "component"
                     },
                     {
@@ -40,12 +40,17 @@
                     },
                     {
                       "attributes": {
-                        "heading": "Get in touch",
+                        "heading": "Need an architect for a Salesforce program?",
                         "linkLabel": "Contact Ryan",
-                        "text": "Questions about a project, a role or this site?"
+                        "text": "I take on select freelance work for nonprofits and education."
                       },
                       "definition": "c:contactCall",
                       "id": "1c5521dd-ac63-427c-8a4c-4e4e58450ea6",
+                      "type": "component"
+                    },
+                    {
+                      "definition": "c:siteBuildSection",
+                      "id": "3cde9d1b-4357-426d-ad38-3fa1dede96a4",
                       "type": "component"
                     }
                   ],
@@ -70,8 +75,8 @@
             {
               "attributes": {
                 "customHeadTags": "",
-                "description": "Salesforce platform architecture portfolio by Ryan Bumstead: five pillars from business architecture to delivery, a live API lab and AI lab, and a short tour of each.",
-                "pageTitle": "Ryan Bumstead | Salesforce Platform Architect",
+                "description": "Ryan Bumstead designs and delivers Salesforce Education Cloud for universities and nonprofits. Case studies, resume and a live site built on Salesforce.",
+                "pageTitle": "Ryan Bumstead | Salesforce Platform Architect, Higher Education",
                 "recordId": "{!recordId}"
               },
               "definition": "community_builder:seoAssistant",
