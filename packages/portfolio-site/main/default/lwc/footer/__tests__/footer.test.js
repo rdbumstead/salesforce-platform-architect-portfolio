@@ -1,6 +1,7 @@
 /**
- * @description       : Unit tests for the Glass Box footer, its four metric groups and its
- *                      links. getLinks is a
+ * @description       : Unit tests for the Glass Box footer, its caption, its four metric groups
+ *                      in plain words with the quotas in a closed disclosure, and its links.
+ *                      getLinks is a
  *                      mocked wire adapter, getSystemSnapshot a mocked imperative call, and
  *                      requestIdleCallback is captured so a test decides when the page is idle.
  *                      lightning/uiGraphQLApi passes the universal mock through and replaces only
@@ -15,6 +16,7 @@ import { createElement } from "@lwc/engine-dom";
 import Footer, {
   ACTIONS_URL,
   BADGE_URL,
+  formatNumber,
   formatTime,
   integrationLabel,
   providerLabel,
@@ -316,7 +318,7 @@ describe("c-footer", () => {
     await runIdle();
 
     expect(q(element, '[data-id="provider"]').textContent).toBe(
-      `Gemini: circuit open until ${formatTime(until)}`
+      `Gemini: paused until ${formatTime(until)}`
     );
   });
 
@@ -326,9 +328,9 @@ describe("c-footer", () => {
 
     const rows = all(element, '[data-id="limit"]').map((n) => n.textContent);
     expect(rows).toEqual([
-      "cpu 12 of 10000 ms",
-      "heap 50 of 6144 KB",
-      "soql 3 of 100"
+      "CPU time: 12 of 10,000 ms",
+      "Memory: 50 of 6,144 KB",
+      "Database queries: 3 of 100"
     ]);
   });
 
@@ -498,8 +500,8 @@ describe("c-footer", () => {
       (n) => n.textContent
     );
     expect(rows).toEqual([
-      "GitHub: circuit closed",
-      `Jira: circuit open until ${formatTime(INTEGRATIONS[1].openUntil)}`
+      "GitHub: connected",
+      `Jira: paused until ${formatTime(INTEGRATIONS[1].openUntil)}`
     ]);
     const lastProvider = all(element, '[data-id="provider"]').pop();
     expect(lastProvider.nextElementSibling.dataset.id).toBe("integration");
@@ -512,8 +514,8 @@ describe("c-footer", () => {
 
     const rows = all(element, '[data-id="quota"]').map((n) => n.textContent);
     expect(rows).toEqual([
-      "API requests today 739 of 5000000",
-      "async Apex today 0 of 250000"
+      "API requests today: 739 of 5,000,000",
+      "async Apex today: 0 of 250,000"
     ]);
   });
 
@@ -531,7 +533,7 @@ describe("c-footer", () => {
     await runIdle();
 
     const rows = all(element, '[data-id="quota"]').map((n) => n.textContent);
-    expect(rows).toEqual(["API requests today 739 of 5000000"]);
+    expect(rows).toEqual(["API requests today: 739 of 5,000,000"]);
     expect(q(element, '[data-id="metrics"]').textContent).not.toMatch(/NaN/);
   });
 
@@ -654,6 +656,96 @@ describe("c-footer", () => {
     });
   });
 
+  it("says in one caption what the readings are", () => {
+    const element = createComponent();
+    const caption = q(element, '[data-id="metrics-caption"]');
+    expect(caption.textContent.trim()).toBe(
+      "Live readings from the Salesforce org serving this page"
+    );
+    expect(caption.nextElementSibling).toBe(q(element, '[data-id="metrics"]'));
+  });
+
+  it("drops the bare deploy word beside the badge", () => {
+    const element = createComponent();
+    const deploy = q(element, ".metric.deploy");
+    expect(deploy.textContent.trim()).toBe("");
+    expect(q(element, '[data-id="badge"]').getAttribute("alt")).toBe(
+      "Production deploy status"
+    );
+  });
+
+  it("groups numbers by thousands and shows 0 for a missing number", () => {
+    expect(formatNumber(5000000)).toBe("5,000,000");
+    expect(formatNumber(739)).toBe("739");
+    expect(formatNumber(undefined)).toBe("0");
+    expect(formatNumber(NaN)).toBe("0");
+  });
+
+  it("formats the AI requests count", async () => {
+    getSystemSnapshot.mockResolvedValue(snapshot({ aiRequestsToday: 12345 }));
+    const element = createComponent();
+    await runIdle();
+    expect(q(element, '[data-id="ai-requests"]').textContent).toBe(
+      "AI requests today: 12,345"
+    );
+  });
+
+  it("keeps the quotas in a disclosure that starts closed", async () => {
+    const element = createComponent();
+    await runIdle();
+    const details = q(element, 'details[data-group="quotas"]');
+    expect(details).not.toBeNull();
+    expect(details.open).toBe(false);
+    const summary = details.querySelector("summary");
+    expect(summary.textContent.trim()).toBe("Quotas and limits");
+    expect(details.querySelector('[data-id="ai-requests"]')).not.toBeNull();
+  });
+
+  it("tracks finops_quota_visibility once when the quotas are opened", async () => {
+    const element = createComponent();
+    await runIdle();
+    const details = q(element, 'details[data-group="quotas"]');
+    details.open = true;
+    details.dispatchEvent(new CustomEvent("toggle"));
+    q(element, '[data-id="ai-requests"]').dispatchEvent(
+      new CustomEvent("focus")
+    );
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("finops_quota_visibility");
+  });
+
+  it("sends nothing when the quotas are closed again", async () => {
+    const element = createComponent();
+    await runIdle();
+    const details = q(element, 'details[data-group="quotas"]');
+    details.open = false;
+    details.dispatchEvent(new CustomEvent("toggle"));
+    expect(trackEvent).not.toHaveBeenCalled();
+  });
+
+  it("links Skills and Testimonials first, before Contact", () => {
+    const element = createComponent();
+    const skills = q(element, '[data-id="skills"]');
+    const testimonials = q(element, '[data-id="testimonials"]');
+    expect(skills.textContent).toBe("Skills");
+    expect(skills.getAttribute("href")).toBe("/portfolio/skills");
+    expect(testimonials.textContent).toBe("Testimonials");
+    expect(testimonials.getAttribute("href")).toBe("/portfolio/testimonials");
+    expect(skills.parentElement.firstElementChild).toBe(skills);
+    expect(skills.nextElementSibling).toBe(testimonials);
+    expect(testimonials.nextElementSibling).toBe(
+      q(element, '[data-id="contact"]')
+    );
+  });
+
+  it("sits in the same 1024 px column as the header", () => {
+    const element = createComponent();
+    const inner = q(element, ".footer__inner");
+    expect(inner.parentElement).toBe(q(element, "footer"));
+    expect(inner.querySelector(".copyright")).not.toBeNull();
+    expect(inner.querySelector('[data-id="back-to-top"]')).not.toBeNull();
+  });
+
   it("links Docs to the /docs page, right after Contact", () => {
     const element = createComponent();
     const link = q(element, '[data-id="docs"]');
@@ -673,7 +765,10 @@ describe("c-footer", () => {
 
   it("labels breaker and quota rows from their own fields", () => {
     expect(integrationLabel({ label: "GitHub", open: true })).toBe(
-      "GitHub: circuit open"
+      "GitHub: paused"
+    );
+    expect(integrationLabel({ label: "Jira", open: false })).toBe(
+      "Jira: connected"
     );
     expect(quotaLabel(null)).toBeNull();
     expect(

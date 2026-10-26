@@ -1,16 +1,30 @@
 /* Glass Box footer. Only --pf- site token names, no literal colors. */
+/* The rule spans the page, the content sits in the header's 1024 px column. */
 .footer {
+  margin-top: var(--pf-space-6);
+  border-top: 1px solid var(--pf-border);
+  background: var(--pf-bg);
+  color: var(--pf-muted);
+  font-family: var(--pf-font-sans);
+  font-size: 13px;
+}
+
+.footer__inner {
   display: flex;
   flex-wrap: wrap;
   gap: var(--pf-space-4) var(--pf-space-6);
   justify-content: space-between;
   align-items: center;
-  margin-top: var(--pf-space-6);
+  max-width: 1024px;
+  margin: 0 auto;
   padding: var(--pf-space-5) var(--pf-space-4) var(--pf-space-6);
-  border-top: 1px solid var(--pf-border);
-  background: var(--pf-bg);
-  color: var(--pf-muted);
-  font-family: var(--pf-font-sans);
+}
+
+/* One caption over the readings, on its own row. */
+.metrics-caption {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--pf-body);
   font-size: 13px;
 }
 
@@ -54,6 +68,27 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+/* Quotas and limits is a closed disclosure. Its summary is the group label, with the
+   browser's own marker kept so it reads as something to open. */
+.quotas-summary {
+  min-height: 24px;
+  cursor: pointer;
+}
+
+.quotas-summary:hover {
+  color: var(--pf-accent);
+}
+
+.quotas-summary:focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 2px;
+  border-radius: var(--pf-radius-sm);
+}
+
+.quotas[open] .quotas-summary {
+  margin-bottom: var(--pf-space-1);
 }
 
 .group-list {
