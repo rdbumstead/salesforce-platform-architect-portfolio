@@ -12,7 +12,10 @@
  *                      document on this site. Headings get ids by the docs slug rule (lower
  *                      case, letters, digits and hyphens), and the slugs GitHub would give
  *                      them are kept as aliases so the documents' own links still land.
- *                      Mermaid blocks show their source in a labelled code block.
+ *                      A Mermaid block shows its source inside a closed details element, with a
+ *                      link to the document on GitHub, which draws the diagram. No diagram
+ *                      library is loaded. A document's own "Table of Contents" list is left out,
+ *                      because the page draws one contents box from the headings.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -32,6 +35,7 @@ const ENTITY_PATTERN = /&(amp|lt|gt|quot|#39|#x27|nbsp);/g;
 const TAG_PATTERN = /<[^>]*>/g;
 const BREAK_TAG = /^<br\s*\/?>$/i;
 const MERMAID = "mermaid";
+const OWN_CONTENTS = /^table of contents$/i;
 
 /** Decodes the few entities markdown text carries, for display as text. */
 export function decodeEntities(text) {
@@ -81,6 +85,33 @@ export function plainText(tokens) {
     }
   }
   return out;
+}
+
+/**
+ * Leaves out a document's own contents: a paragraph that says only "Table of Contents",
+ * together with the list that follows it. The reader's own contents box lists the same
+ * headings, so two boxes with the same links are never shown. A paragraph with that text and
+ * no list after it is kept.
+ * @param {Array} tokens the lexer's block tokens
+ * @returns {Array} the tokens without that paragraph and its list
+ */
+export function dropOwnContents(tokens) {
+  const list = tokens || [];
+  const at = list.findIndex(
+    (t) =>
+      t.type === "paragraph" && OWN_CONTENTS.test(plainText(t.tokens).trim())
+  );
+  if (at < 0) {
+    return list;
+  }
+  let next = at + 1;
+  while (next < list.length && list[next].type === "space") {
+    next++;
+  }
+  if (!list[next] || list[next].type !== "list") {
+    return list;
+  }
+  return [...list.slice(0, at), ...list.slice(next + 1)];
 }
 
 /** Visits every block token in document order, including those inside lists and quotes. */
@@ -176,6 +207,16 @@ function hasSpaceOrControl(text) {
   return false;
 }
 
+/** The GitHub page of the document, only when it is an https address. */
+function diagramLink(baseUrl) {
+  try {
+    const url = new URL(String(baseUrl || ""));
+    return url.protocol === "https:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 /** Builds DOM from tokens with a fixed set of tags. */
 class Builder {
   constructor(doc, ctx, aliases) {
@@ -267,11 +308,6 @@ class Builder {
       "figure",
       isDiagram ? "doc-code doc-diagram" : "doc-code"
     );
-    if (isDiagram) {
-      const caption = this.el("figcaption", "doc-code-caption");
-      caption.appendChild(this.text(label));
-      figure.appendChild(caption);
-    }
     const pre = this.el("pre", "doc-pre");
     pre.setAttribute("tabindex", "0");
     pre.setAttribute("role", "region");
@@ -279,7 +315,27 @@ class Builder {
     const code = this.el("code");
     code.appendChild(this.text(token.text || ""));
     pre.appendChild(code);
-    figure.appendChild(pre);
+    if (!isDiagram) {
+      figure.appendChild(pre);
+      return figure;
+    }
+    // The source stays one click away, closed. GitHub draws the diagram on the document's page.
+    const details = this.el("details", "doc-diagram-source");
+    const summary = this.el("summary", "doc-diagram-summary");
+    summary.appendChild(this.text(label));
+    details.appendChild(summary);
+    details.appendChild(pre);
+    figure.appendChild(details);
+    const rendered = diagramLink(this.ctx.baseUrl);
+    if (rendered) {
+      const note = this.el("p", "doc-diagram-note");
+      const a = this.el("a", "doc-link");
+      a.setAttribute("href", rendered);
+      a.setAttribute("rel", "noopener noreferrer");
+      a.appendChild(this.text("See the drawn diagram on GitHub"));
+      note.appendChild(a);
+      figure.appendChild(note);
+    }
     return figure;
   }
 
@@ -464,7 +520,9 @@ class Builder {
  * @returns {{ title: string, fragment: DocumentFragment, headings: Array, aliases: Map }}
  */
 export function renderMarkdown(marked, markdown, ctx) {
-  const tokens = marked.lexer(String(markdown ?? ""), { gfm: true });
+  const tokens = dropOwnContents(
+    marked.lexer(String(markdown ?? ""), { gfm: true })
+  );
   const { headings, aliases } = indexHeadings(tokens);
   const builder = new Builder(ctx.doc, ctx, aliases);
   builder.ids = new Set(headings.map((h) => h.id));

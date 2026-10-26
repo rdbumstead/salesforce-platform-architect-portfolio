@@ -60,6 +60,31 @@ describe("c-page-intro", () => {
     ]);
   });
 
+  it("draws the points as a bulleted list after the lead", () => {
+    const element = mount({
+      heading: "Pillar A",
+      lead: "The lead.",
+      points: "First point | Second point || Third point "
+    });
+    const items = element.shadowRoot.querySelectorAll("ul.intro-points > li");
+    expect(Array.from(items).map((li) => li.textContent)).toEqual([
+      "First point",
+      "Second point",
+      "Third point"
+    ]);
+    const lead = element.shadowRoot.querySelector(".intro-lead");
+    expect(
+      lead.compareDocumentPosition(
+        element.shadowRoot.querySelector(".intro-points")
+      ) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("draws no list when the points are blank", () => {
+    const element = mount({ heading: "Pillar A", points: " | " });
+    expect(element.shadowRoot.querySelector(".intro-points")).toBeNull();
+  });
+
   it("uses the design label when one is set", () => {
     const element = mount({ ...FULL, designLabel: "Read the SAS" });
     expect(element.shadowRoot.querySelector("a.intro-design").textContent).toBe(

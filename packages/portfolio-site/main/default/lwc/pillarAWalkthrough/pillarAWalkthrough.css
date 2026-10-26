@@ -1,0 +1,35 @@
+/*
+ * Colours, fonts, radii and spacing come only from the --pf- design tokens, so the walkthrough
+ * follows the light and dark themes. The heading matches the other section headings on the page.
+ * The shared SLDS reset removes list markers, so the numbered list sets its own back.
+ */
+:host {
+  display: block;
+}
+
+.walkthrough {
+  background-color: var(--pf-surface);
+  color: var(--pf-body);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  padding: var(--pf-space-4);
+  font-family: var(--pf-font-sans);
+  line-height: 1.6;
+}
+
+.walkthrough-heading {
+  margin: 0 0 var(--pf-space-3);
+  color: var(--pf-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.steps {
+  margin: 0;
+  padding-left: var(--pf-space-5);
+  list-style: decimal;
+}
+
+.step {
+  margin-bottom: var(--pf-space-2);
+}

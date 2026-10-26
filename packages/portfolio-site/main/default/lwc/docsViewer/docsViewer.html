@@ -3,21 +3,61 @@
     <template lwc:if={showList}>
       <h1 class="docs-title">Architecture docs</h1>
       <p class="docs-lead">
-        The executive overview, the Systems Architecture Specification, the
-        program charter, the guardrails and the architecture decision records
-        behind this site, read from the repository once a day.
+        How this site is designed and why. Start with the Executive Overview.
       </p>
       <template lwc:if={hasDocs}>
-        <ul class="doc-list" aria-label="Documents">
-          <template for:each={listItems} for:item="item">
-            <li key={item.key} class="doc-list-item">
-              <a class="doc-list-link" href={item.href}>
-                <span class="doc-badge">{item.badge}</span>
-                <span class="doc-name">{item.title}</span>
-              </a>
-            </li>
-          </template>
-        </ul>
+        <template for:each={groups} for:item="group">
+          <section key={group.key} class="doc-group" data-group={group.key}>
+            <template lwc:if={group.isOpenGroup}>
+              <h2 class="doc-group-title">{group.label}</h2>
+              <ul class="doc-list" aria-label={group.label}>
+                <template for:each={group.items} for:item="item">
+                  <li key={item.key} class="doc-list-item">
+                    <a
+                      class="doc-list-link"
+                      href={item.href}
+                      aria-label={item.label}
+                    >
+                      <span class="doc-badge">{item.badge}</span>
+                      <span class="doc-name">{item.title}</span>
+                    </a>
+                  </li>
+                </template>
+              </ul>
+            </template>
+            <template lwc:else>
+              <details
+                class="doc-group-details"
+                data-group={group.key}
+                open={group.isExpanded}
+                ontoggle={handleGroupToggle}
+              >
+                <summary class="doc-group-summary">
+                  <span class="doc-group-title">{group.label}</span>
+                  <span class="doc-group-count">{group.countLabel}</span>
+                </summary>
+                <ul
+                  lwc:if={group.isExpanded}
+                  class="doc-list"
+                  aria-label={group.label}
+                >
+                  <template for:each={group.items} for:item="item">
+                    <li key={item.key} class="doc-list-item">
+                      <a
+                        class="doc-list-link"
+                        href={item.href}
+                        aria-label={item.label}
+                      >
+                        <span class="doc-badge">{item.badge}</span>
+                        <span class="doc-name">{item.title}</span>
+                      </a>
+                    </li>
+                  </template>
+                </ul>
+              </details>
+            </template>
+          </section>
+        </template>
       </template>
       <template lwc:elseif={listEmpty}>
         <p class="docs-note">No documents are available yet.</p>

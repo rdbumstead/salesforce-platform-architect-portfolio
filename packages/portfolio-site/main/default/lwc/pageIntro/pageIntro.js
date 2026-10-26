@@ -1,6 +1,8 @@
 /**
  * @description       : The opening block of a pillar page: an eyebrow naming the pillar, the page's
- *                      one h1, a lead paragraph in a larger size and an optional "Read the design" link.
+ *                      one h1, a lead paragraph in a larger size, up to a few short bullet points and
+ *                      an optional "Read the design" link. The points property holds the bullets
+ *                      separated by a vertical bar, since a builder property is one line.
  *                      Every value is a builder property, so the copy lives in the page's view. The h1
  *                      is drawn larger than any section heading the page's components draw below it,
  *                      so the outline and the type scale agree. A design link is shown only when it is
@@ -43,10 +45,23 @@ export function toDesignHref(value) {
   return "";
 }
 
+/**
+ * Splits the points property into its bullets: trimmed, with empty ones dropped.
+ * @param {string} value the points property, bullets separated by a vertical bar
+ * @returns {string[]} the bullets in order
+ */
+export function toPoints(value) {
+  return clean(value)
+    .split("|")
+    .map((point) => point.trim())
+    .filter(Boolean);
+}
+
 export default class PageIntro extends LightningElement {
   @api eyebrow;
   @api heading;
   @api lead;
+  @api points;
   @api designLabel;
   @api designUrl;
 
@@ -60,6 +75,17 @@ export default class PageIntro extends LightningElement {
 
   get leadText() {
     return clean(this.lead);
+  }
+
+  get pointItems() {
+    return toPoints(this.points).map((text, index) => ({
+      key: `point-${index}`,
+      text
+    }));
+  }
+
+  get hasPoints() {
+    return this.pointItems.length > 0;
   }
 
   get designHref() {

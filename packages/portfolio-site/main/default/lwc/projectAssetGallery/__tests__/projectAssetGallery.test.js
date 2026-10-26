@@ -6,6 +6,8 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/22/2026
  **/
+import { readFileSync } from "fs";
+import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ProjectAssetGallery, { resolveAssetUrl } from "c/projectAssetGallery";
 // Same module as the component, which the site pins.
@@ -258,5 +260,23 @@ describe("c-project-asset-gallery", () => {
       "Process maps and dashboards"
     );
     expect(qa(element, "li.asset").length).toBeGreaterThan(0);
+  });
+
+  describe("styles", () => {
+    const css = readFileSync(
+      join(__dirname, "..", "projectAssetGallery.css"),
+      "utf8"
+    );
+
+    it("fits its columns to the items so no empty column is left", () => {
+      expect(css).toMatch(/repeat\(auto-fit, minmax\(260px, 1fr\)\)/);
+      expect(css).not.toMatch(/auto-fill/);
+    });
+
+    it("dims images with an overlay that multiplies the page background", () => {
+      const rule = css.match(/\.image-link::after \{[^}]*\}/)[0];
+      expect(rule).toMatch(/background-color:\s*var\(--pf-bg\)/);
+      expect(rule).toMatch(/mix-blend-mode:\s*multiply/);
+    });
   });
 });

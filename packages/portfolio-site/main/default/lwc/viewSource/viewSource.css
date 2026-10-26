@@ -2,9 +2,15 @@
  * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching pair.
  * Buttons and tabs are at least 44 px high. The dialog fills a phone screen.
+ * The View source button reads at body size and body weight, so it never outweighs the
+ * title of the card it sits in. The host is made to sit at the right end of a card's title
+ * row: it keeps its own width and pushes itself to the end of a flex row.
  */
 :host {
-  display: inline-block;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin-inline-start: auto;
 }
 
 .view-source-button,
@@ -19,10 +25,13 @@
 }
 
 .view-source-button {
-  background-color: var(--pf-surface);
+  background-color: transparent;
   color: var(--pf-text);
   border: 1px solid var(--pf-border);
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: nowrap;
 }
 
 .view-source-button:hover {

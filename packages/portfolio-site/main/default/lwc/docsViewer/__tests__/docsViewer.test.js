@@ -12,7 +12,7 @@
  * @Created           : 10/24/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import DocsViewer, { docKeyFrom, badgeFor } from "c/docsViewer";
+import DocsViewer, { docKeyFrom, badgeFor, groupFor } from "c/docsViewer";
 import getDocs from "@salesforce/apex/SourceController.getDocs";
 import getDoc from "@salesforce/apex/SourceController.getDoc";
 import { CurrentPageReference } from "lightning/navigation";
@@ -22,7 +22,8 @@ import {
   githubSlug,
   resolveHref,
   renderMarkdown,
-  indexHeadings
+  indexHeadings,
+  dropOwnContents
 } from "../docsRenderer";
 
 /**
@@ -225,17 +226,76 @@ afterEach(() => {
 describe("c-docs-viewer list", () => {
   it("lists every document with its badge and link when no doc is chosen", async () => {
     const el = await create({});
+    const closed = shadow(el).querySelector("details.doc-group-details");
+    closed.open = true;
+    closed.dispatchEvent(new CustomEvent("toggle"));
+    await flush();
     const links = shadow(el).querySelectorAll(".doc-list-link");
     expect(shadow(el).querySelector("h1").textContent).toBe(
       "Architecture docs"
     );
     expect(links.length).toBe(2);
+    expect(shadow(el).querySelector(".docs-lead").textContent.trim()).toBe(
+      "How this site is designed and why. Start with the Executive Overview."
+    );
     expect(links[0].getAttribute("href")).toBe("/portfolio/docs?doc=sas");
+    expect(links[1].getAttribute("aria-label")).toBe("ADR-027: Platform auth");
     expect(links[0].querySelector(".doc-badge").textContent).toBe("SAS");
     expect(links[1].querySelector(".doc-badge").textContent).toBe("ADR-027");
     expect(links[1].querySelector(".doc-name").textContent).toBe(
       "Platform auth"
     );
+  });
+
+  it("groups the list into Start here, Specifications and Decisions, with decisions closed", async () => {
+    const docs = [
+      { key: "executive-overview", title: "Executive Overview", path: "a" },
+      { key: "program-charter", title: "Program Charter", path: "b" },
+      { key: "sas", title: "Systems Architecture Specification", path: "c" },
+      { key: "guardrails", title: "Guardrails", path: "d" },
+      { key: "adr-004", title: "Four", path: "e" },
+      { key: "adr-005", title: "Five", path: "f" }
+    ];
+    const el = await create({}, docs);
+    const groups = [...shadow(el).querySelectorAll(".doc-group")];
+    expect(groups.map((g) => g.dataset.group)).toEqual([
+      "start",
+      "specifications",
+      "decisions"
+    ]);
+    const names = (g) =>
+      [...g.querySelectorAll(".doc-name")].map((n) => n.textContent);
+    expect(names(groups[0])).toEqual(["Executive Overview", "Program Charter"]);
+    expect(names(groups[1])).toEqual([
+      "Systems Architecture Specification",
+      "Guardrails"
+    ]);
+    expect(names(groups[2])).toEqual([]);
+    const decisions = groups[2].querySelector("details.doc-group-details");
+    expect(decisions).not.toBeNull();
+    expect(decisions.open).toBe(false);
+    // A closed group draws no rows, so no link in it can be reached or announced.
+    expect(groups[2].querySelectorAll(".doc-list-link")).toHaveLength(0);
+    decisions.open = true;
+    decisions.dispatchEvent(new CustomEvent("toggle"));
+    await flush();
+    expect(
+      shadow(el).querySelectorAll('[data-group="decisions"] .doc-list-link')
+    ).toHaveLength(2);
+    expect(groups[2].querySelector(".doc-group-count").textContent).toBe(
+      "2 records"
+    );
+    expect(groups[0].querySelector("details")).toBeNull();
+    // Every document still opens from its row.
+    expect(shadow(el).querySelectorAll(".doc-list-link")).toHaveLength(6);
+  });
+
+  it("leaves a group out when it has no document", async () => {
+    const el = await create({}, [
+      { key: "sas", title: "Systems Architecture Specification", path: "c" }
+    ]);
+    const groups = [...shadow(el).querySelectorAll(".doc-group")];
+    expect(groups.map((g) => g.dataset.group)).toEqual(["specifications"]);
   });
 
   it("says nothing is available when the cache is empty", async () => {
@@ -278,13 +338,20 @@ describe("c-docs-viewer document", () => {
     expect(table.querySelector("th").getAttribute("scope")).toBe("col");
 
     const diagram = root.querySelector(".doc-body .doc-diagram");
-    expect(diagram.querySelector("figcaption").textContent).toBe(
+    const source = diagram.querySelector("details.doc-diagram-source");
+    expect(source.open).toBe(false);
+    expect(source.querySelector("summary").textContent).toBe(
       "Diagram source (Mermaid)"
     );
     expect(diagram.querySelector("code").textContent).toContain(
       "A[Site<br/>LWR]"
     );
     expect(diagram.querySelector("br")).toBeNull();
+    const drawn = diagram.querySelector(".doc-diagram-note a");
+    expect(drawn.getAttribute("href")).toBe(
+      "https://github.com/o/r/blob/main/docs/guides/03-SAS.md"
+    );
+    expect(drawn.getAttribute("rel")).toBe("noopener noreferrer");
 
     const anchor = root.querySelector(".doc-body h3 .heading-anchor");
     expect(anchor.getAttribute("href")).toBe("#1-1-architectural-north-star");
@@ -377,7 +444,61 @@ describe("c-docs-viewer document", () => {
   });
 });
 
+describe("one table of contents", () => {
+  const WITH_OWN = [
+    "# Guide",
+    "",
+    "**Table of Contents**",
+    "",
+    "- [Alpha](#alpha)",
+    "  - [Beta](#beta)",
+    "",
+    "## Alpha",
+    "",
+    "Text.",
+    "",
+    "### Beta",
+    "",
+    "More."
+  ].join("\n");
+
+  it("drops the document's own list and keeps the reader's one Contents box", async () => {
+    const el = await openDoc("sas", WITH_OWN);
+    const root = shadow(el);
+    expect(root.querySelectorAll("details.toc")).toHaveLength(1);
+    expect(root.querySelector(".doc-body").textContent).not.toContain(
+      "Table of Contents"
+    );
+    expect(root.querySelector(".doc-body ul")).toBeNull();
+    expect(
+      [...root.querySelectorAll(".toc-link")].map((a) => a.dataset.id)
+    ).toEqual(["alpha", "beta"]);
+  });
+
+  it("keeps every heading and its anchor", () => {
+    const tokens = MARKED.lexer(WITH_OWN, { gfm: true });
+    const { headings } = indexHeadings(dropOwnContents(tokens));
+    expect(headings.map((h) => h.id)).toEqual(["guide", "alpha", "beta"]);
+  });
+
+  it("keeps a paragraph of that text when no list follows it", () => {
+    const tokens = MARKED.lexer("**Table of Contents**\n\nJust text.", {
+      gfm: true
+    });
+    expect(dropOwnContents(tokens)).toHaveLength(tokens.length);
+  });
+});
+
 describe("docsViewer helpers", () => {
+  it("puts the decision records in Decisions and the rest by name", () => {
+    expect(groupFor("adr-033")).toBe("decisions");
+    expect(groupFor("executive-overview")).toBe("start");
+    expect(groupFor("program-charter")).toBe("start");
+    expect(groupFor("sas")).toBe("specifications");
+    expect(groupFor("guardrails")).toBe("specifications");
+    expect(groupFor("something-new")).toBe("specifications");
+  });
+
   it("reads only a well formed doc key", () => {
     expect(docKeyFrom({ state: { doc: " SAS " } })).toBe("sas");
     expect(docKeyFrom({ state: {} }, "?doc=adr-027")).toBe("adr-027");

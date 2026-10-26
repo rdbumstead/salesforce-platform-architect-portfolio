@@ -29,7 +29,8 @@
                         "designUrl": "/docs?doc=sas#5-1-pillar-a-business-architecture-employer-hub",
                         "eyebrow": "Pillar A",
                         "heading": "Business Architecture",
-                        "lead": "An education provider had several departments working with the same employer partners, and none of them could see what the others had agreed. The provider's Salesforce org already existed, with custom objects linking training, funding, support services and employment outcomes. As a contractor from July 2021 I extended it with case management for the provider's students, tested it with the provider's team, wrote its reports, procedures and training documents, and trained its admins and users. In late 2021 and early 2022 I rolled it out to career coaches in short staff meeting sessions, moved two years of spreadsheet history into it and built the reports a funding program needed each month, quarter and year. The Employer Hub is a working demo of the next step on that org, for career coaches, business recruiters and career and technical education staff. It gives each partner relationship one home, routes every request to the right department automatically and reports on the results. The provider later asked about reusing the same pattern for a second workforce funding stream. This page shows the process maps, the live data model behind the hub and a walkthrough of how a partner inquiry moves through it."
+                        "lead": "Several departments at an education provider worked with the same employer partners, and none could see what the others had agreed. The Employer Hub gives each partner one home, routes every request to the right team and reports the results.",
+                        "points": "Process maps and dashboards for the partner inquiry | The live data model behind the hub | A walkthrough of how one inquiry moves through it"
                       },
                       "definition": "c:pageIntro",
                       "id": "24ec04dc-2325-4404-ae46-af574ef69199",
@@ -45,20 +46,16 @@
                       "type": "component"
                     },
                     {
+                      "definition": "c:pillarAWalkthrough",
+                      "id": "5440aed0-7822-46e8-a9f1-a644bffd62e7",
+                      "type": "component"
+                    },
+                    {
                       "attributes": {
                         "scope": "employerHub"
                       },
                       "definition": "c:schemaVisualizer",
                       "id": "e6bbf6c3-8053-4e55-af59-19de6891ee7d",
-                      "type": "component"
-                    },
-                    {
-                      "attributes": {
-                        "imageInfos": "",
-                        "richTextValue": "<h2>The walkthrough</h2><ol><li>An employer fills in the Employer Form on the education provider's website, or emails a staff member and the email is logged on the account automatically.</li><li>The form finds or creates the employer's account and the contact, and links them.</li><li>It creates one case for each kind of help the employer asked for.</li><li>Each case is routed to the queue for the account's academic focus area, and the queue's members are notified.</li><li>A queue member reviews the case. A service request, such as a job posting or a career event, is fulfilled from the case with a guided flow, and the case closes.</li><li>A monetary request, such as a sponsorship or corporate training, is converted to an opportunity, and the case closes.</li><li>When the opportunity is won, a task reminds its owner to create the contract, which is created from the opportunity with the signed file.</li><li>Every email, call, meeting, case, opportunity and contract sits on the partner's account, and dashboards report new inquiries by queue and the pipeline by stage.</li></ol>"
-                      },
-                      "definition": "community_builder:richTextEditor",
-                      "id": "1a5fbc98-8ae3-4d39-bd7c-7aec6c46ca20",
                       "type": "component"
                     }
                   ],

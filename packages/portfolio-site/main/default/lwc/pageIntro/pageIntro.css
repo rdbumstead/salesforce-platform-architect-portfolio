@@ -41,6 +41,19 @@
   line-height: 1.65;
 }
 
+.intro-points {
+  margin: var(--pf-space-3) 0 0;
+  padding-left: var(--pf-space-5);
+  max-width: 48rem;
+  color: var(--pf-body);
+  line-height: 1.65;
+  list-style: disc;
+}
+
+.intro-points li {
+  margin-bottom: var(--pf-space-1);
+}
+
 .intro-actions {
   margin: var(--pf-space-4) 0 0;
 }

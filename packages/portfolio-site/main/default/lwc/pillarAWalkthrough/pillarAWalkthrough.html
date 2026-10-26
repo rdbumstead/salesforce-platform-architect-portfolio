@@ -1,0 +1,12 @@
+<template>
+  <section class="walkthrough" aria-labelledby="walkthrough-heading">
+    <h2 id="walkthrough-heading" class="walkthrough-heading">
+      The walkthrough
+    </h2>
+    <ol class="steps">
+      <template for:each={steps} for:item="step">
+        <li key={step.key} class="step">{step.text}</li>
+      </template>
+    </ol>
+  </section>
+</template>
