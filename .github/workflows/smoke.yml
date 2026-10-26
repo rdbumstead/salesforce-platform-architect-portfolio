@@ -7,10 +7,20 @@ name: Live Smoke Test
 # failing cache job, a platform change), and it can be run by hand, for example after the
 # site is published. GitHub emails the repository owner when a scheduled run fails. A failure
 # writes a smoke Failure row through the governance event and undoes nothing.
+#
+# The check runs inside Playwright's own container image, which already holds both browsers
+# and the system libraries they need, so the job installs no operating system packages and
+# downloads no browser. The npm package version must match the image's version. A run that
+# hangs stops after 10 minutes and counts as a failure.
 
 on:
   workflow_call:
   workflow_dispatch:
+    inputs:
+      site_base:
+        description: Site root to check, for example a scratch org's site. Defaults to production.
+        required: false
+        default: https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio
   # 09:30 UTC, after the 08:00 Daily Org Heartbeat.
   schedule:
     - cron: "30 9 * * *"
@@ -21,21 +31,18 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
     env:
-      SITE_BASE: https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio
+      SITE_BASE: ${{ inputs.site_base || 'https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio' }}
       PLAYWRIGHT_VERSION: "1.64.0"
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      # Installed outside the project, so the job needs none of the repo's dev dependencies.
+      # Only the npm package. The browsers come with the image, in its PLAYWRIGHT_BROWSERS_PATH.
       - name: Install Playwright
-        run: |
-          npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
-          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium webkit
+        run: npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
 
       - name: Run Live Smoke Test
         run: |
@@ -55,11 +62,18 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ -s smoke.json ]; then
-            jq -r '.rows[]? | select(.pass | not)
-              | "- \(.browser) \(.route // "") \(.viewport // ""): status \(.status // "none")"
-                + (if .error then ", \(.error)" else "" end)
-                + ((.components // {}) | to_entries | map(select(.value != "visible" and .value != "empty")) | map(", \(.key) \(.value)") | join(""))
-                + ((.errors // []) | map(", console: \(.)") | join(""))' smoke.json >> "$GITHUB_STEP_SUMMARY"
+            node -e '
+              const rows = (JSON.parse(require("fs").readFileSync("smoke.json", "utf8")).rows || []).filter((r) => !r.pass);
+              for (const r of rows) {
+                const parts = [`- ${r.browser} ${r.route || ""} ${r.viewport || ""}: status ${r.status || "none"}`];
+                if (r.error) parts.push(r.error);
+                for (const [tag, state] of Object.entries(r.components || {})) {
+                  if (state !== "visible" && state !== "empty") parts.push(`${tag} ${state}`);
+                }
+                for (const e of r.errors || []) parts.push(`console: ${e}`);
+                console.log(parts.join(", "));
+              }
+            ' >> "$GITHUB_STEP_SUMMARY"
           fi
 
           exit $CODE
@@ -72,8 +86,13 @@ jobs:
           path: smoke.json
           if-no-files-found: ignore
 
+  # Outside the container, as before, so the Salesforce sign in runs where it always has.
+  report-failure:
+    needs: [smoke]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
       - name: Sign In For The Failure Event
-        if: failure()
         continue-on-error: true
         uses: rdbumstead/setup-salesforce-action@v2
         with:
@@ -87,7 +106,6 @@ jobs:
       # Called from Deploy to Production, github.run_id is that deploy's run, so the row's key
       # is smoke:<the deploy's run id>, beside the deploy's own row.
       - name: Publish Smoke Failure Event
-        if: failure()
         continue-on-error: true
         run: |
           sf data create record \
