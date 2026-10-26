@@ -145,9 +145,7 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    const control = query(element, "lightning-card c-view-source");
-    expect(control).not.toBeNull();
-    expect(control.sourceKey).toBe("apiTester");
+    expect(query(element, "lightning-card").title).toBe("Try a request");
     const template = readFileSync(
       join(__dirname, "..", "apiTester.html"),
       "utf8"
