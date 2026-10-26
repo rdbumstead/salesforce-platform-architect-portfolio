@@ -1,6 +1,5 @@
 /**
- * Generates every copy of the API specs from the one source, packages/integration-api/specs
- * (Round 7 audit G2, G1 and B4, contract P6).
+ * Generates every copy of the API specs from the one source, packages/integration-api/specs.
  *
  *   node scripts/sync-specs.js           writes the generated files
  *   node scripts/sync-specs.js --check   writes nothing, exits 1 when a file differs
@@ -238,7 +237,7 @@ function exampleFor(doc, schema, depth = 0) {
 }
 
 /**
- * A Postman v2.1 collection of every operation in both specs (audit B4). Authenticated
+ * A Postman v2.1 collection of every operation in both specs. Authenticated
  * calls go to {{instanceUrl}} with {{accessToken}}. The token request and /openapi.json go
  * to the site, {{siteUrl}}, with no auth, and the token request stores what it returns.
  */

@@ -3,15 +3,15 @@
 This repository ships the third-party libraries and fonts below inside Salesforce static resources. Each one
 keeps its own licence. The project's own code is under the licence in [LICENSE](LICENSE).
 
-| Library                   | Version          | Licence                                              | Ships in                                                                                              |
-| ------------------------- | ---------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Redoc (standalone bundle) | 2.5.4            | MIT                                                  | `packages/portfolio-site/main/default/staticresources/Redoc_Script.js`                                |
-| d3 modules (11)           | 3.0.0 to 3.1.0   | ISC, and BSD 3-Clause for d3-ease's easing equations | `packages/portfolio-site/main/default/staticresources/D3_Library.js`                                  |
-| jsPDF                     | 3.0.4            | MIT                                                  | `packages/portfolio-site/main/default/staticresources/jsPDF_Library.js`                               |
-| PrismJS                   | 1.30.0           | MIT                                                  | `packages/portfolio-site/main/default/staticresources/Prism_JS/prism.js` and `prism.css`              |
-| marked                    | 18.1.0           | MIT                                                  | `packages/portfolio-site/main/default/staticresources/Marked_Library.js`                              |
-| Inter (font)              | fontsource 5.3.0 | SIL OFL 1.1                                          | `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/inter-latin-*-normal.woff2`     |
-| Fira Code (font)          | fontsource 5.3.0 | SIL OFL 1.1                                          | `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/fira-code-latin-*-normal.woff2` |
+| Library                   | Version          | Licence                                              | Ships in                                                                                                                                                         |
+| ------------------------- | ---------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Redoc (standalone bundle) | 2.5.4            | MIT                                                  | `packages/portfolio-site/main/default/staticresources/Redoc_Script.js`                                                                                           |
+| d3 modules (11)           | 3.0.0 to 3.1.0   | ISC, and BSD 3-Clause for d3-ease's easing equations | `packages/portfolio-site/main/default/staticresources/D3_Library.js`                                                                                             |
+| jsPDF                     | 3.0.4            | MIT                                                  | `packages/portfolio-site/main/default/staticresources/jsPDF_Library.js`                                                                                          |
+| PrismJS                   | 1.30.0           | MIT                                                  | `packages/portfolio-site/main/default/staticresources/Prism_JS/prism.js` and `prism.css`                                                                         |
+| marked                    | 18.1.0           | MIT                                                  | `packages/portfolio-site/main/default/staticresources/Marked_Library.js`                                                                                         |
+| Inter (font)              | fontsource 5.3.0 | SIL OFL 1.1                                          | `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/inter-latin-*-normal.woff2` and `inter-latin-400-normal.ttf`, `inter-latin-700-normal.ttf` |
+| Fira Code (font)          | fontsource 5.3.0 | SIL OFL 1.1                                          | `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/fira-code-latin-*-normal.woff2`                                                            |
 
 ## Redoc 2.5.4
 
@@ -65,7 +65,10 @@ keeps its own licence. The project's own code is under the licence in [LICENSE](
 
 - Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
 - Licence: SIL Open Font License, Version 1.1. Packaged by Fontsource as `@fontsource/inter` 5.3.0.
-  The repository ships the Latin subset, weights 400, 500, 600 and 700, as woff2.
+  The repository ships the Latin subset, weights 400, 500, 600 and 700, as woff2. It also ships
+  weights 400 and 700 as TTF (`inter-latin-400-normal.ttf` and `inter-latin-700-normal.ttf`), which
+  the resume PDF embeds, because the PDF library reads TrueType files and not woff2. The same
+  licence covers the TTF files.
 - Licence text: shipped beside the fonts in
   `packages/portfolio-site/main/default/staticresources/Portfolio_Fonts/Inter-OFL.txt`, and at
   https://openfontlicense.org/open-font-license-official-text/

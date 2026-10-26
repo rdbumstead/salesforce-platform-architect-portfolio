@@ -122,7 +122,7 @@ graph LR
 
 Live MVP (Door 1)
 
-- `@AuraEnabled` Apex controllers, the main path for site components (resume, home cards and timeline, footer, Delivery page, ERD, decision matrix, API Lab and cover letter)
+- `@AuraEnabled` Apex controllers, the main path for site components (resume and timeline, home case studies and pillar cards, footer, Delivery page, ERD, decision matrix, API Lab and cover letter)
 - Native Salesforce GraphQL through the `lightning/uiGraphQLApi` wire adapter, used by three components only: `c-skill-network`, `c-project-asset-gallery` and the footer's `c-graphql-probe` ([ADR-021 amendment](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-23-scope))
 - Apex REST services (the SAPI and PAPI), for outside callers and the API Lab
 - Direct integrations (GitHub, Jira via Named Credentials)
@@ -343,7 +343,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 > **Live on the site.** The process flows and dashboards on the page are redrawn from the original demo deck with no names, and the dashboards carry sample values. The client is described as "an education provider" and never named (owner decision, reworded later so the page cannot be tied to the owner's employer).
 
 - **Objective:** Demonstrate Business Analysis and Process Mapping.
-- **Page:** `/business-architecture`. An introduction to the problem (departments of an education provider shared employer partners with no shared view) and the Employer Hub, a working demo built to extend the education provider's existing Salesforce org, that centralizes, routes and reports on the relationship, then the process map and dashboard gallery, then the live data model, then an eight step walkthrough of a partner inquiry.
+- **Page:** `/business-architecture`. An introduction to the problem (departments of an education provider shared employer partners with no shared view) and the Employer Hub, a working demo design that centralizes, routes and reports on the relationship, then the process map and dashboard gallery, then the live data model, then an eight step walkthrough of a partner inquiry.
 - **Artifacts:** Sanitized Process Flow Diagrams and Executive Dashboard mockups, rendered by `c-project-asset-gallery` from the `Project_Asset__c` rows of the Pillar A project. The images ship in the `EH_Assets` static resource and are addressed as `resource:EH_Assets/<file>` (Technical Guide section 2.10).
 - **Component:** `c-schema-visualizer`, fed by `SchemaService.getSchemaGraph(scope)`.
 - **Data Source:** Apex `Schema.getGlobalDescribe()` ensures the diagram never drifts from the actual deployment. A two-button toggle switches between the Employer Hub schema (the default on this page) and the portfolio's own schema. The internal objects `API_Rate_Window__c`, `API_Access_Request__c`, `Github_Cache__c` and `Jira_Cache__c` are hidden by `Schema_Visualizer_Object__mdt` records. There is no Platform Cache: the only cache is the browser's, through `cacheable=true` ([ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)).
@@ -464,7 +464,7 @@ Cloudflare Workers provides a fourth path for content generation. The Worker act
 - **What it claims:** the production deploy is green, the org heartbeat ran today (within 26 hours, the `Heartbeat_Stale_Hours` setting), and the integration caches are under 30 minutes old (`Governance_Cache_Minutes`).
 - **Why no browser subscription:** `lightning-emp-api` is unsupported in LWR sites, and each subscribed browser would count against the org's 20 concurrent streaming clients. The event-driven part is server-side: publish, an asynchronous subscriber and idempotent handling of a replayed event.
 - **Roadmap and changelog:** `c-roadmap-viewer` and `c-changelog` read cached Jira and GitHub data through `DeliveryController` (cacheable Apex). Scheduled Queueable jobs refresh the caches every 15 minutes, so a visitor never triggers a callout ([ADR-007 amendment of 2026-10-21](../adr/007-github-api-server-side-caching.md#amendment-2026-10-21-the-cache-objects-and-the-scheduled-refresh)). The roadmap shows only `SPAP` issues labelled `portfolio-roadmap`. The site's CDN caching of guest Apex stays off (owner decision), so every visit reads the org.
-- **By the numbers:** the page ends with counts read from records: the deploys recorded with the newest deploy's test result and coverage, the evaluator tokens issued, and the testimonials approved and waiting by vibe. Only counts reach the guest ([Technical Guide §2.19](./04-Technical-Guide.md#219-by-the-numbers-c-by-the-numbers)).
+- **By the numbers:** the panel after the page's intro, with counts read from records: the deploys recorded with the newest deploy's Apex and Jest test counts and coverage, the evaluator tokens issued, the cover letters written and the API Lab requests sent, and the testimonials approved by vibe once one is approved. Only counts reach the guest ([Technical Guide §2.19](./04-Technical-Guide.md#219-by-the-numbers-c-by-the-numbers)).
 - **Architectural Signal:** event-driven architecture with a server-side subscriber, and external system integration through Named Credentials.
 
 #### 5.5.1 The Governance Model
@@ -483,29 +483,31 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 
 - **Framework:** LWR.
 - **Domain Strategy:** `ryanbumstead.com` is a Cloudflare 301 redirect to https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio/ that keeps the path and the query string, so `ryanbumstead.com/skills` lands on `/portfolio/skills`. A Developer Edition org cannot have a Salesforce custom domain, so the redirect is the domain.
-- **Navigation Strategy:** "5-Minute Tour" section embedded in Hero Banner.
+- **Navigation Strategy:** a header with Work, Resume, a "How it's built" menu (the pillars, Docs and the API reference) and Contact, a Back to top arrow in the header, and a "5 minute tour" in the "How this site is built" section of the home page. Skills and Testimonials are footer links.
 
 ### 6.2 Lightning Web Components (LWC)
 
-- **`c-hero-banner`:** The hero, a line in the owner's voice under the name when one is set, three "start here" paths (recruiters to the resume, architects to the pillars, developers to the API Lab), the pillar cards with computed numbers and an optional case study, and the 5 minute tour ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
+- **`c-hero-banner`:** The hero: the name, the employer title and location, the title line, one value sentence, a proof strip and two buttons, "See the case studies" and "View the resume" ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page), [ADR-034](../adr/034-recruiter-first-home-page.md)).
+- **`c-case-study-grid`:** Up to three case study cards from `ProjectCardController.getHomeCaseStudies`, chosen by `Home_Sort__c` alone and never by the featured flag ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
+- **`c-site-build-section`:** "How this site is built", the last section of the home page: the live pillars with their case studies, Skills, the newest deploy's test counts, a link to the design docs and the 5 minute tour ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
 - **`c-testimonial-submit`:** The accessible "Mad Libs" sentence builder, gated by vibe ([ADR-005 amendment](../adr/005-gamified-testimonial-ui.md)).
 - **`c-testimonial-wall`:** Approved testimonials on `/testimonials` with a "Professional / All" filter. It renders nothing when there are none.
-- **`c-home-testimonials`:** Up to three approved testimonials on the home page, Professional ones first, hidden until the `Home_Testimonials_Min` setting's count is approved ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
-- **`c-experience-timeline`:** The home page timeline with Work, Certifications and Education tabs, each showing its first entries up to the `Timeline_Tab_Limit` setting and then a View all button ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page-cards-and-timeline)).
+- **`c-home-testimonials`:** Up to three approved testimonials on the home page, Professional ones first, until the `Home_Testimonials_Min` setting's count is approved, and a credentials strip in their place ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
+- **`c-experience-timeline`:** The timeline on the Resume page, with Work, Certifications and Education tabs, each showing its first entries up to the `Timeline_Tab_Limit` setting and then a View all button ([Technical Guide §2.2](./04-Technical-Guide.md#22-c-resume-builder-resume-generation)).
 - **`c-contact-form`:** The contact form on the `/contact` page, saved as a Lead ([ADR-031](../adr/031-native-contact-form.md)).
-- **`c-contact-call`:** The home page's one line "Get in touch" prompt with a link to `/contact`. It sends an old `/#contact` address on to `/contact`.
+- **`c-contact-call`:** The home page's contact call, "Need an architect for a Salesforce program?", with a link to `/contact`. It sends an old `/#contact` address on to `/contact`.
 - **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invoke`, which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3).
-- **`c-changelog`:** Displays recent commits from the GitHub cache (`DeliveryController.getRecentCommits`), with the cache's age.
-- **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with d3-force that loads only when opened on desktop or tablet ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-matrix-first-the-graph-on-open-d3-force-as-the-engine)).
+- **`c-changelog`:** "Latest Updates" on the Delivery page: recent commits from the GitHub cache (`DeliveryController.getRecentCommits`) as plain updates, merge commits left out and a leading type such as "feat(lwc):" shown as a tag, with the cache's age.
+- **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with d3-force that loads only when opened on desktop or tablet. Certifications are nodes beside roles and projects, and a skill backed by more kinds of evidence draws a heavier ring and heavier lines. The graph opens fitted to its content with no label on another label or node ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-matrix-first-the-graph-on-open-d3-force-as-the-engine)).
 - **`c-docs-viewer`:** Twenty nine documents at `/docs`, the Executive Overview, the SAS, the Program Charter, Guardrails and Executable Governance, then the 25 full ADRs, from the source cache that refreshes daily and after a push that changes the docs, rendered without parsing any HTML ([Technical Guide §2.17](./04-Technical-Guide.md#217-docs-page-c-docs-viewer)).
 - **`c-page-intro`:** The opening of each of the five pillar pages: the pillar, the page's one heading, a lead paragraph and a "Read the design" link to its section of this document ([Technical Guide §2.18](./04-Technical-Guide.md#218-page-intro-c-page-intro)).
 - **`c-code-viewer`:** Shows one source file highlighted by `c/prismHighlighter`. It fetches nothing itself.
 - **`c-view-source`:** The View source button and dialog on the showcase components. It reads cached GitHub source through `SourceController.getSourceFiles` and never calls GitHub ([Technical Guide §2.14](./04-Technical-Guide.md#214-view-source-c-view-source)).
-- **`c-resume-builder`:** Client-side PDF generation via jsPDF.
+- **`c-resume-builder`:** The resume preview and its one click PDF through jsPDF, both read from one layout spec so the download looks like the preview ([ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)).
 - **`c-roadmap-viewer`:** Displays the roadmap from the Jira cache (`DeliveryController.getRoadmap`), in To Do, In Progress and Done columns by Jira status category, each capped at 8 cards with its own "Show all N" button. It makes no callout.
 - **`c-footer`:** Contains the GitHub Actions deploy badge, the Glass Box telemetry in four labelled groups (section 9), a Docs link to `/docs` and a Contact link to the `/contact` page.
 - **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
-- **`c-by-the-numbers`:** The "By the numbers" panel at the end of the Delivery page: deploys recorded with the newest test result and coverage, evaluator tokens issued, and testimonials approved and waiting by vibe, as counts only ([Technical Guide §2.19](./04-Technical-Guide.md#219-by-the-numbers-c-by-the-numbers)).
+- **`c-by-the-numbers`:** The "By the numbers" panel on the Delivery page, after its intro: deploys recorded, the newest deploy's Apex and Jest test counts with what each proves, evaluator tokens issued, cover letters written and API Lab requests sent, a closed "What the tests cover" list, and approved testimonials by vibe once one is approved, as counts only ([Technical Guide §2.19](./04-Technical-Guide.md#219-by-the-numbers-c-by-the-numbers)).
 - **`c-schema-visualizer`:** The live ERD on the Pillar A page, drawn with the shared d3-force engine (section 5.1).
 - **`c-project-asset-gallery`:** The image, document, video and link gallery for any pillar's project, from `Project_Asset__c`.
 - **`c-decision-matrix`** and **`c-pillar-b-story`:** The Pillar B story and the reweightable matrix (section 5.2).
@@ -555,6 +557,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-031](../adr/031-native-contact-form.md)                                           | Native Contact Form                                             | Accepted (2026-10-23)    |
 | [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)                       | Operational Settings in Custom Metadata                         | Accepted (2026-10-23)    |
 | [ADR-033](../adr/033-queries-in-custom-metadata.md)                                    | Queries in Custom Metadata                                      | Accepted (2026-10-24)    |
+| [ADR-034](../adr/034-recruiter-first-home-page.md)                                     | A Recruiter First Home Page                                     | Accepted (2026-10-26)    |
 
 </details>
 
@@ -1115,7 +1118,7 @@ One prompt instruction per record. `Cover_Letter` holds the cover letter instruc
 ### Appendix G: Accessibility Strategy (A11y)
 
 - **G.1 The "Shadow Structure" Pattern:** every graph has a list beside it that holds the same content. On the skills page the graph's SVG is `aria-hidden` and a visually hidden list names every node and its connections, so its length equals the node count. On the Pillar A page the object list mirrors every node and edge, and on phones it is the visible view. The skills matrix itself is native buttons (`aria-pressed`) in rows by category.
-- **G.2 Motion Sensitivity:** the graphs do not animate: the d3-force layout runs to completion before anything is drawn. The site has no motion button: the smooth scrolls and the home hero's card transition follow the visitor's system "reduce motion" setting alone (`c/motionPreference`).
+- **G.2 Motion Sensitivity:** the graphs never move on their own: the d3-force layout runs to completion before anything is drawn. The view eases for about 250 ms only after the visitor presses Fit, Reset layout, Zoom in or Zoom out, and moves at once under "reduce motion". The site has no motion button: the smooth scrolls, the menus, the count up on the numbers panel, the case study and tour openings and the timeline's reveal follow the visitor's system "reduce motion" setting alone (`c/motionPreference`).
 - **G.3 Keyboard Navigation:** the "Matrix | Graph" switch is two 44 px buttons in a labelled group. Skill chips, the ERD's object list, the scope toggle and the gallery links are reachable by keyboard. Skip links function normally.
 - **G.4 Decision matrix:** a table with a caption, `scope` on every header, and a labelled range slider per criterion ("Weight for" and the criterion, 0 to 10). The ranking and the sensitivity line are text, not colour.
 - **G.5 Compliance Checklist:** (WCAG 2.1 AA compliant).
