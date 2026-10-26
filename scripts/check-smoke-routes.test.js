@@ -18,7 +18,8 @@ function write(root, file, text) {
 }
 
 // A tiny site: home places c:heroBanner, whose template places c-contact-call, and a custom
-// page "about" places c:aboutCard. A login route is not a page the smoke checks.
+// page "about" places c:aboutCard. A login route is not a page the smoke checks. Every placed
+// component has a bundle folder.
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "smoke-routes-"));
   const route = (name, type, prefix, view) =>
@@ -49,6 +50,8 @@ function fixture() {
     `${LWC}/heroBanner/heroBanner.html`,
     "<template><c-contact-call></c-contact-call></template>"
   );
+  write(root, `${LWC}/contactCall/contactCall.html`, "<template></template>");
+  write(root, `${LWC}/aboutCard/aboutCard.html`, "<template></template>");
   return root;
 }
 
@@ -67,12 +70,27 @@ test("a list that matches the site passes, nested components included", () => {
 
 test("a component the page no longer places fails", () => {
   const routes = [
-    { path: "/", components: ["c-hero-banner", "c-experience-timeline"] },
+    { path: "/", components: ["c-hero-banner", "c-old-timeline"] },
     { path: "/about", components: ["c-about-card"] }
   ];
   const problems = check(fixture(), routes);
   assert.strictEqual(problems.length, 1);
-  assert.match(problems[0], /^\/: .*c-experience-timeline/);
+  assert.match(problems[0], /^\/: .*c-old-timeline/);
+});
+
+test("a component a page still places after its bundle is deleted fails", () => {
+  const root = fixture();
+  fs.rmSync(path.join(root, LWC, "contactCall"), { recursive: true });
+  const routes = [
+    { path: "/", components: ["c-hero-banner"] },
+    { path: "/about", components: ["c-about-card"] }
+  ];
+  const problems = check(root, routes);
+  assert.strictEqual(problems.length, 1);
+  assert.match(
+    problems[0],
+    /^\/: the page places c-contact-call, which has no bundle/
+  );
 });
 
 test("a page the smoke skips and a route the site lacks both fail", () => {

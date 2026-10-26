@@ -44,6 +44,11 @@
                       "type": "component"
                     },
                     {
+                      "definition": "c:siteBuildSection",
+                      "id": "3cde9d1b-4357-426d-ad38-3fa1dede96a4",
+                      "type": "component"
+                    },
+                    {
                       "attributes": {
                         "heading": "Need an architect for a Salesforce program?",
                         "linkLabel": "Contact Ryan",
@@ -51,11 +56,6 @@
                       },
                       "definition": "c:contactCall",
                       "id": "1c5521dd-ac63-427c-8a4c-4e4e58450ea6",
-                      "type": "component"
-                    },
-                    {
-                      "definition": "c:siteBuildSection",
-                      "id": "3cde9d1b-4357-426d-ad38-3fa1dede96a4",
                       "type": "component"
                     }
                   ],
