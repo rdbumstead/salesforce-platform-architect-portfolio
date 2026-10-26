@@ -80,7 +80,7 @@ private class SkillGraphControllerTest {
   }
 
   @isTest
-  static void shouldReturnEachLinkedCertification_WhenTheGuestReads() {
+  static void guestGetsEachLinkedCertification() {
     User guest = SiteGuestTestSupport.preparedGuest();
     Map<String, Id> skills = skillIdsByName();
     List<SkillGraphController.CertificationLinks> links;
@@ -109,7 +109,7 @@ private class SkillGraphControllerTest {
   }
 
   @isTest
-  static void shouldSendNoContactDetailOrDate_WhenTheGuestReads() {
+  static void guestGetsNoContactDetailOrDate() {
     User guest = SiteGuestTestSupport.preparedGuest();
     String serialized;
 
@@ -133,7 +133,7 @@ private class SkillGraphControllerTest {
   }
 
   @isTest
-  static void shouldReadInSystemMode_WhenTheUserHasNoGrant() {
+  static void readsInSystemModeForAUserWithNoGrant() {
     User reader = readerWithNoGrant();
     List<SkillGraphController.CertificationLinks> links;
 
@@ -147,7 +147,7 @@ private class SkillGraphControllerTest {
   }
 
   @isTest
-  static void shouldReturnAnEmptyList_WhenNoLinkExists() {
+  static void returnsAnEmptyListWhenNoLinkExists() {
     delete [SELECT Id FROM Certification_Skill__c];
 
     Test.startTest();
@@ -158,7 +158,7 @@ private class SkillGraphControllerTest {
   }
 
   @isTest
-  static void shouldThrowAPlainMessage_WhenTheReadFails() {
+  static void throwsAPlainMessageWhenTheReadFails() {
     SkillGraphController.failRead = true;
 
     Test.startTest();
@@ -176,7 +176,7 @@ private class SkillGraphControllerTest {
   }
 
   @isTest
-  static void shouldShipItsRecordActiveAndEqualToTheDefault() {
+  static void shipsItsRecordActiveAndEqualToTheDefault() {
     Test.startTest();
     List<String> failures = QueryDefinitions.validateAll();
     Map<String, QueryDefinitions.QueryDefault> defaults = new SkillGraphController()
