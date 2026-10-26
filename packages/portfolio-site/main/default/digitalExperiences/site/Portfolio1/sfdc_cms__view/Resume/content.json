@@ -39,11 +39,6 @@
                       "definition": "c:resumeBuilder",
                       "id": "664d4eba-5a4d-4074-aafb-96166da86ed2",
                       "type": "component"
-                    },
-                    {
-                      "definition": "c:experienceTimeline",
-                      "id": "c3c762f7-5bf3-468b-bdf4-9b15f68fe1ac",
-                      "type": "component"
                     }
                   ],
                   "id": "14efa7e2-ea56-4df2-b2d3-78bad8bb0875",
