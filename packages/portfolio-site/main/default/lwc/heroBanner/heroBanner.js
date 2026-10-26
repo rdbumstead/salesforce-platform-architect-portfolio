@@ -8,10 +8,17 @@
  *                      sentence (valueSentence) come from ResumeController.getHeader, which
  *                      reads only the owner Contact, and each shows only when it is set: never
  *                      a placeholder, and nothing extra when the read fails.
- *                      "See the case studies" scrolls to c-case-study-grid's heading and moves
- *                      focus there, smoothly unless the system "reduce motion" setting is on
- *                      (c/motionPreference). With no case study section on the page the link
- *                      falls back to the home page address ending in #case-studies.
+ *                      "See the case studies" shows only once
+ *                      ProjectCardController.getHomeCaseStudies returns at least one card with a
+ *                      title, the same read and cache c-case-study-grid uses, so it never points
+ *                      at a section that is not there. With no card only "View the resume"
+ *                      shows. The button scrolls to c-case-study-grid's heading and moves focus
+ *                      there, smoothly unless the system "reduce motion" setting is on
+ *                      (c/motionPreference). If the section cannot be found the link falls back
+ *                      to the home page address ending in #case-studies.
+ *                      The profile links are GitHub, LinkedIn and Trailhead from the owner
+ *                      Contact's stored URLs (each only when set and safe, in a new tab), then
+ *                      Resume and API docs.
  *                      The pillars, their case studies and the tour live in c-site-build-section.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -21,6 +28,7 @@
 import { LightningElement, wire } from "lwc";
 import basePath from "@salesforce/community/basePath";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
+import getHomeCaseStudies from "@salesforce/apex/ProjectCardController.getHomeCaseStudies";
 import HEADSHOT from "@salesforce/resourceUrl/Portfolio_Headshot";
 import { PROOF_POINTS } from "c/pillarData";
 import { toExternalUrl } from "c/externalUrl";
@@ -83,6 +91,8 @@ export default class HeroBanner extends LightningElement {
   // reference inside this component.
   caseStudiesHref = `${basePath || ""}/#${CASE_STUDIES_ANCHOR}`;
   header;
+  // False until the case study read returns a card, so the button never shows with no target.
+  hasCaseStudies = false;
   motionReduced = isReduced();
   stopMotionListener;
 
@@ -106,6 +116,14 @@ export default class HeroBanner extends LightningElement {
     this.header = data || undefined;
   }
 
+  // The same cacheable read as c-case-study-grid with the same (empty) parameters, so the two
+  // share one cached result. A card counts only with a title, the rule the grid shows cards by.
+  @wire(getHomeCaseStudies)
+  wiredCaseStudies({ data }) {
+    this.hasCaseStudies =
+      Array.isArray(data) && data.some((row) => row && textOrNull(row.title));
+  }
+
   get heroLine() {
     return textOrNull(this.header && this.header.heroLine);
   }
@@ -126,6 +144,9 @@ export default class HeroBanner extends LightningElement {
     const links = [];
     const gitHubHref = toExternalUrl(this.header && this.header.gitHubUrl);
     const linkedInHref = toExternalUrl(this.header && this.header.linkedInUrl);
+    const trailheadHref = toExternalUrl(
+      this.header && this.header.trailheadUrl
+    );
     if (gitHubHref) {
       links.push({
         key: "github",
@@ -142,6 +163,15 @@ export default class HeroBanner extends LightningElement {
         href: linkedInHref,
         external: true,
         isLinkedIn: true
+      });
+    }
+    if (trailheadHref) {
+      links.push({
+        key: "trailhead",
+        label: "Trailhead",
+        href: trailheadHref,
+        external: true,
+        isTrailhead: true
       });
     }
     links.push({

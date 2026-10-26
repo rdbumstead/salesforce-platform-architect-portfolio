@@ -24,13 +24,15 @@
           </template>
         </ul>
         <div class="hero-actions">
-          <a
-            class="btn btn-primary"
-            href={caseStudiesHref}
-            data-id="case-studies-button"
-            onclick={handleCaseStudiesClick}
-            >See the case studies <span aria-hidden="true">↓</span></a
-          >
+          <template lwc:if={hasCaseStudies}>
+            <a
+              class="btn btn-primary"
+              href={caseStudiesHref}
+              data-id="case-studies-button"
+              onclick={handleCaseStudiesClick}
+              >See the case studies <span aria-hidden="true">↓</span></a
+            >
+          </template>
           <a class="btn btn-ghost" href={resumeHref} data-id="resume-button"
             >View the resume <span aria-hidden="true">→</span></a
           >
@@ -79,6 +81,21 @@
                   ></path>
                   <rect x="2" y="9" width="4" height="12"></rect>
                   <circle cx="4" cy="4" r="2"></circle>
+                </svg>
+              </template>
+              <template lwc:if={link.isTrailhead}>
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="3 20 9 10 13 16 16 12 21 20 3 20"></polyline>
                 </svg>
               </template>
               <template lwc:if={link.isResume}>
