@@ -1,9 +1,12 @@
 /**
  * @description       : Site theme layout. Renders the slim sticky header for every portfolio page,
  *                      the page content in the unnamed slot, and the footer region.
- *                      The header holds the name (a home link everywhere), then Work, Resume, a
- *                      "How it's built" menu and Contact, then the Back to top arrow, the theme
- *                      toggle and the phone menu button. Work scrolls to the case studies on the
+ *                      The header holds the name (a home link everywhere) at the left, and at the
+ *                      right Work, Resume, a "How it's built" menu and Contact, a thin divider
+ *                      drawn in CSS (aria-hidden), then the Back to top arrow, the theme toggle
+ *                      and the phone menu button. While the arrow is hidden the links and the
+ *                      divider slide over its place, so the divider always sits beside the next
+ *                      control, and they slide back as it appears. Work scrolls to the case studies on the
  *                      home page and links to the home page from every other page. The menu lists
  *                      the five pillars from c/pillarData, then Docs and each pillar's own pages
  *                      (the API reference) as items of their own. The link to the page on screen
@@ -443,6 +446,14 @@ export default class PortfolioThemeLayout extends LightningElement {
 
   get headerClass() {
     return this.headerRaised ? "site-header site-header_raised" : "site-header";
+  }
+
+  // The bar knows whether the arrow shows, so the links and the divider can close the arrow's
+  // place while it is hidden.
+  get barClass() {
+    return this.showBackToTop
+      ? "site-header__bar site-header__bar_arrow-shown"
+      : "site-header__bar";
   }
 
   get backToTopClass() {

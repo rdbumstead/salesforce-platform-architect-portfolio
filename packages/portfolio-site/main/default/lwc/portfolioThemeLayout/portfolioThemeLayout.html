@@ -1,7 +1,7 @@
 <template>
   <div class="portfolio-layout-wrapper">
     <header class={headerClass} onkeydown={handleKeydown}>
-      <div class="site-header__bar">
+      <div class={barClass}>
         <a class="site-brand" href={homeHref}>Ryan Bumstead</a>
         <nav id="site-navigation" class={navClass} aria-label="Primary">
           <ul class="nav-list">
@@ -138,6 +138,7 @@
           </ul>
         </nav>
         <div class="site-actions">
+          <span class="nav-divider" data-id="nav-divider" aria-hidden="true"></span>
           <button
             class={backToTopClass}
             type="button"
