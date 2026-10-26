@@ -1,5 +1,5 @@
 /**
- * @description       : Unit tests for portfolioThemeLayout LWC: header navigation (Work, Resume,
+ * @description       : Unit tests for portfolioThemeLayout LWC: header navigation (Home, Resume,
  *                      the "How it's built" menu with Docs and the API reference, Contact), the
  *                      phone menu, the theme toggle and its crossfade, motion following the
  *                      system setting with no motion button, the header shadow, and Back to top
@@ -15,7 +15,6 @@ import { createElement } from "@lwc/engine-dom";
 import PortfolioThemeLayout, {
   BACK_TO_TOP_SCREENS,
   BUILT_MENU_LABEL,
-  CASE_STUDIES_ID,
   DOCS_URL,
   HERO_LOOKUP_MS,
   HERO_SELECTOR,
@@ -155,8 +154,8 @@ jest.mock(
   { virtual: true }
 );
 
-// Every href the header links off the home page, in order: the brand, Work (the home page
-// here), Resume, the five pillars, Docs, the API reference, then Contact.
+// Every href the header links off the home page, in order: the brand, Home (the home
+// page here), Resume, the five pillars, Docs, the API reference, then Contact.
 const EXPECTED_HREFS = [
   "/portfolio/",
   "/portfolio/",
@@ -171,7 +170,7 @@ const EXPECTED_HREFS = [
   "/portfolio/contact"
 ];
 
-const NAV_LABELS = ["Work", "Resume", "How it's built", "Contact"];
+const NAV_LABELS = ["Home", "Resume", "How it's built", "Contact"];
 
 const STORAGE_KEY = "portfolio-theme";
 const realLocalStorage = window.localStorage;
@@ -315,42 +314,45 @@ describe("c-portfolio-theme-layout", () => {
       expect(hrefs).toEqual(EXPECTED_HREFS);
     });
 
-    it("lists Work, Resume, How it's built and Contact, with the name as the home link", () => {
+    it("lists Home, Resume, How it's built and Contact, with the name as the home link", () => {
       const element = render();
       const brand = element.shadowRoot.querySelector(".site-brand");
       expect(brand.textContent).toBe("Ryan Bumstead");
       expect(brand.getAttribute("href")).toBe("/portfolio/");
       expect(navLabels(element)).toEqual(NAV_LABELS);
-      const work = element.shadowRoot.querySelector(
-        '.nav-link[data-key="work"]'
+      const home = element.shadowRoot.querySelector(
+        '.nav-link[data-key="home"]'
       );
-      expect(work.getAttribute("href")).toBe("/portfolio/");
-      expect(work.getAttribute("aria-current")).toBeNull();
+      expect(home.getAttribute("href")).toBe("/portfolio/");
+      expect(home.getAttribute("aria-current")).toBeNull();
     });
 
-    it("has no Home, Skills or Testimonials link in the header", () => {
+    it("has no Work, Skills or Testimonials link in the header", () => {
       const element = render();
-      ["home", "skills", "testimonials"].forEach((key) => {
+      ["work", "skills", "testimonials"].forEach((key) => {
         expect(
           element.shadowRoot.querySelector(`[data-key="${key}"]`)
         ).toBeNull();
       });
     });
 
-    it("points Work at the case studies on the home page and keeps the name as a home link", () => {
+    it("links Home to the home page and marks it as the current page, and only it, on the home page", () => {
       goTo("/portfolio/");
       const element = render();
       expect(navLabels(element)).toEqual(NAV_LABELS);
-      expect(CASE_STUDIES_ID).toBe("case-studies");
-      const work = element.shadowRoot.querySelector(
-        '.nav-link[data-key="work"]'
+      const home = element.shadowRoot.querySelector(
+        '.nav-link[data-key="home"]'
       );
-      expect(work.getAttribute("href")).toBe("/portfolio/#case-studies");
+      expect(home.getAttribute("href")).toBe("/portfolio/");
+      expect(home.getAttribute("aria-current")).toBe("page");
       const brand = element.shadowRoot.querySelector(".site-brand");
       expect(brand.getAttribute("href")).toBe("/portfolio/");
-      expect(
-        element.shadowRoot.querySelectorAll('[aria-current="page"]')
-      ).toHaveLength(0);
+      expect(brand.getAttribute("aria-current")).toBeNull();
+      const current = element.shadowRoot.querySelectorAll(
+        '[aria-current="page"]'
+      );
+      expect(current).toHaveLength(1);
+      expect(current[0]).toBe(home);
     });
 
     it("reads the home page with or without the trailing slash", () => {
@@ -369,18 +371,23 @@ describe("c-portfolio-theme-layout", () => {
       await flush();
       const nav = element.shadowRoot.querySelector("nav");
       expect(nav.classList.contains("site-nav_open")).toBe(true);
-      expect(nav.querySelector(".nav-link").dataset.key).toBe("work");
+      expect(nav.querySelector(".nav-link").dataset.key).toBe("home");
       expect(navLabels(element)).toEqual(NAV_LABELS);
+      expect(
+        nav
+          .querySelector('.nav-link[data-key="home"]')
+          .getAttribute("aria-current")
+      ).toBe("page");
     });
 
-    it("repoints Work and moves aria-current when the route changes in place", async () => {
+    it("moves aria-current off Home and onto the route when the route changes in place", async () => {
       goTo("/portfolio/");
       const element = render();
-      const workHref = () =>
-        element.shadowRoot
-          .querySelector('.nav-link[data-key="work"]')
-          .getAttribute("href");
-      expect(workHref()).toBe("/portfolio/#case-studies");
+      const currentKeys = () =>
+        Array.from(
+          element.shadowRoot.querySelectorAll('[aria-current="page"]')
+        ).map((link) => link.dataset.key);
+      expect(currentKeys()).toEqual(["home"]);
 
       goTo("/portfolio/contact");
       // The test adapter's emit stands in for the router announcing the new route.
@@ -390,20 +397,17 @@ describe("c-portfolio-theme-layout", () => {
         attributes: { name: "Contact__c" }
       });
       await flush();
-      expect(workHref()).toBe("/portfolio/");
-      const current = element.shadowRoot.querySelectorAll(
-        '[aria-current="page"]'
-      );
-      expect(current).toHaveLength(1);
-      expect(current[0].dataset.key).toBe("contact");
+      expect(currentKeys()).toEqual(["contact"]);
+      expect(
+        element.shadowRoot
+          .querySelector('.nav-link[data-key="home"]')
+          .getAttribute("href")
+      ).toBe("/portfolio/");
 
       goTo("/portfolio/");
       window.dispatchEvent(new PopStateEvent("popstate"));
       await flush();
-      expect(workHref()).toBe("/portfolio/#case-studies");
-      expect(
-        element.shadowRoot.querySelectorAll('[aria-current="page"]')
-      ).toHaveLength(0);
+      expect(currentKeys()).toEqual(["home"]);
     });
 
     it("marks only the link to the page on screen with aria-current", () => {
@@ -724,7 +728,7 @@ describe("c-portfolio-theme-layout", () => {
       button.click();
       await flush();
       const first = element.shadowRoot.querySelector(".site-nav .nav-link");
-      expect(first.dataset.key).toBe("work");
+      expect(first.dataset.key).toBe("home");
       expect(element.shadowRoot.activeElement).toBe(first);
 
       pressEscape(element);
@@ -766,7 +770,7 @@ describe("c-portfolio-theme-layout", () => {
       await flush();
 
       const link = element.shadowRoot.querySelector(".nav-link");
-      expect(link.dataset.key).toBe("work");
+      expect(link.dataset.key).toBe("home");
       link.addEventListener("click", (event) => event.preventDefault());
       link.click();
       await flush();
@@ -1103,30 +1107,23 @@ describe("c-portfolio-theme-layout", () => {
     });
   });
 
-  describe("Work on the home page", () => {
-    beforeEach(() => {
-      window.scrollTo = jest.fn();
-      window.scrollY = 0;
-      goTo("/portfolio/");
-    });
-
-    // The case studies section sits inside a page component's shadow tree, and that component
-    // is in the layout's content slot, as on the site.
-    function caseStudies(top = 900) {
+  describe("content lookup", () => {
+    // A section sits inside a page component's shadow tree, and that component is in the
+    // layout's content slot, as on the site.
+    function section() {
       const page = document.createElement("div");
       const root = page.attachShadow({ mode: "open" });
       const grid = document.createElement("div");
       const gridRoot = grid.attachShadow({ mode: "open" });
       const target = document.createElement("section");
       target.id = "case-studies";
-      target.getBoundingClientRect = () => ({ top, bottom: top + 400 });
       gridRoot.appendChild(target);
       root.appendChild(grid);
       return { page, target };
     }
 
     it("finds the section through nested open shadow roots, by id or a suffixed id", () => {
-      const { page, target } = caseStudies();
+      const { page, target } = section();
       expect(findInContent([page], idSelector("case-studies"))).toBe(target);
       expect(findInContent([page], idSelector("missing"))).toBeNull();
       target.id = "case-studies-12";
@@ -1134,30 +1131,36 @@ describe("c-portfolio-theme-layout", () => {
       expect(findInContent([target], "section")).toBe(target);
       expect(findInContent(null, "section")).toBeNull();
     });
+  });
 
-    it("scrolls to the case studies under the header and moves focus there", async () => {
-      const { page, target } = caseStudies(900);
-      target.focus = jest.fn();
-      const element = render([page]);
-      element.shadowRoot.querySelector(".site-header").getBoundingClientRect =
-        () => ({ height: 61 });
-      const work = element.shadowRoot.querySelector(
-        '.nav-link[data-key="work"]'
-      );
+  describe("Home on the home page", () => {
+    beforeEach(() => {
+      window.scrollTo = jest.fn();
+      window.scrollY = 600;
+      goTo("/portfolio/");
+    });
+
+    function homeLink(element) {
+      return element.shadowRoot.querySelector('.nav-link[data-key="home"]');
+    }
+
+    it("stays on the page, scrolls to the top and moves focus to the page content", async () => {
+      const element = render();
+      const main = element.shadowRoot.querySelector(".region-content");
+      main.focus = jest.fn();
       const click = new MouseEvent("click", {
         bubbles: true,
         cancelable: true
       });
-      work.dispatchEvent(click);
+      homeLink(element).dispatchEvent(click);
       await flush();
       expect(click.defaultPrevented).toBe(true);
       expect(window.scrollTo).toHaveBeenCalledWith({
-        top: 839,
+        top: 0,
         left: 0,
         behavior: "smooth"
       });
-      expect(target.getAttribute("tabindex")).toBe("-1");
-      expect(target.focus).toHaveBeenCalledWith({ preventScroll: true });
+      expect(main.focus).toHaveBeenCalledWith({ preventScroll: true });
       expect(trackEvent).not.toHaveBeenCalled();
     });
 
@@ -1168,58 +1171,50 @@ describe("c-portfolio-theme-layout", () => {
         addEventListener: jest.fn(),
         removeEventListener: jest.fn()
       }));
-      const element = render([caseStudies(500).page]);
-      element.shadowRoot.querySelector('.nav-link[data-key="work"]').click();
+      const element = render();
+      homeLink(element).click();
       await flush();
       expect(window.scrollTo).toHaveBeenCalledWith(
-        expect.objectContaining({ behavior: "auto" })
+        expect.objectContaining({ top: 0, behavior: "auto" })
       );
     });
 
-    it("hands over to the grid's own reveal when it offers one", async () => {
-      const { page, target } = caseStudies(900);
+    it("does not scroll to the case studies even when the page has them", async () => {
+      const target = document.createElement("section");
+      target.id = "case-studies";
       target.revealHeading = jest.fn();
+      const page = document.createElement("div");
+      page.attachShadow({ mode: "open" }).appendChild(target);
       const element = render([page]);
-      element.shadowRoot.querySelector('.nav-link[data-key="work"]').click();
+      homeLink(element).click();
       await flush();
-      expect(target.revealHeading).toHaveBeenCalledWith(false);
-      expect(window.scrollTo).not.toHaveBeenCalled();
-    });
-
-    it("goes to the top when the page has no case studies", async () => {
-      const element = render();
-      element.shadowRoot.querySelector('.nav-link[data-key="work"]').click();
-      await flush();
-      expect(window.scrollTo).toHaveBeenCalledWith({
-        top: 0,
-        left: 0,
-        behavior: "smooth"
-      });
+      expect(target.revealHeading).not.toHaveBeenCalled();
+      expect(window.scrollTo).toHaveBeenCalledWith(
+        expect.objectContaining({ top: 0 })
+      );
     });
 
     it("is a plain link to the home page from another page", async () => {
       goTo("/portfolio/resume");
       const element = render();
-      const work = element.shadowRoot.querySelector(
-        '.nav-link[data-key="work"]'
-      );
-      work.addEventListener("click", (event) => {
+      const home = homeLink(element);
+      home.addEventListener("click", (event) => {
         // jsdom does not navigate. Record whether the layout stopped the link first.
-        work.dataset.prevented = String(event.defaultPrevented);
+        home.dataset.prevented = String(event.defaultPrevented);
         event.preventDefault();
       });
-      work.click();
+      home.click();
       await flush();
-      expect(work.dataset.prevented).toBe("false");
+      expect(home.dataset.prevented).toBe("false");
       expect(window.scrollTo).not.toHaveBeenCalled();
     });
 
     it("closes the phone menu when followed", async () => {
-      const element = render([caseStudies().page]);
+      const element = render();
       const menu = element.shadowRoot.querySelector(".menu-toggle");
       menu.click();
       await flush();
-      element.shadowRoot.querySelector('.nav-link[data-key="work"]').click();
+      homeLink(element).click();
       await flush();
       expect(menu.getAttribute("aria-expanded")).toBe("false");
     });
