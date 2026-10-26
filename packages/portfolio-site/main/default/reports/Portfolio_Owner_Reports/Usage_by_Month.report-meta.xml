@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>Usage by Month</name>
+    <description
+  >Cover letters written and API Lab requests sent, added up by month and kind. Counts only, no request content.</description>
+    <reportType>CustomEntity$Usage_Counter__c</reportType>
+    <format>Summary</format>
+    <scope>organization</scope>
+    <showDetails>false</showDetails>
+    <showGrandTotal>true</showGrandTotal>
+    <showSubTotals>true</showSubTotals>
+    <columns>
+        <aggregateTypes>Sum</aggregateTypes>
+        <field>Usage_Counter__c.Count__c</field>
+    </columns>
+    <groupingsDown>
+        <dateGranularity>Month</dateGranularity>
+        <field>Usage_Counter__c.Day__c</field>
+        <sortOrder>Desc</sortOrder>
+    </groupingsDown>
+    <groupingsDown>
+        <dateGranularity>None</dateGranularity>
+        <field>Usage_Counter__c.Kind__c</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <timeFrameFilter>
+        <dateColumn>Usage_Counter__c.Day__c</dateColumn>
+        <interval>INTERVAL_CUSTOM</interval>
+    </timeFrameFilter>
+</Report>

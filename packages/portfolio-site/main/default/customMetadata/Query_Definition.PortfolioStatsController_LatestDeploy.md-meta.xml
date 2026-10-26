@@ -14,7 +14,7 @@
         <field>Fields__c</field>
         <value
       xsi:type="xsd:string"
-    >Tests_Run__c, Tests_Passed__c, Org_Coverage__c</value>
+    >Tests_Run__c, Tests_Passed__c, Org_Coverage__c, Jest_Tests_Run__c, Jest_Tests_Passed__c</value>
     </values>
     <values>
         <field>Filter__c</field>
@@ -44,6 +44,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >Numbers panel: the newest deploy run with a test result.</value>
+    >Numbers panel: the newest deploy run with a test result, Apex and Jest.</value>
     </values>
 </CustomMetadata>
