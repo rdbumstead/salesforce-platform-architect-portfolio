@@ -718,6 +718,28 @@ describe("c-portfolio-theme-layout", () => {
       expect(element.shadowRoot.activeElement).toBe(button);
     });
 
+    it("moves focus to its first link when it opens, and back to its button on Escape", async () => {
+      const element = render();
+      const button = element.shadowRoot.querySelector(".menu-toggle");
+      button.click();
+      await flush();
+      const first = element.shadowRoot.querySelector(".site-nav .nav-link");
+      expect(first.dataset.key).toBe("work");
+      expect(element.shadowRoot.activeElement).toBe(first);
+
+      pressEscape(element);
+      await flush();
+      expect(element.shadowRoot.activeElement).toBe(button);
+
+      // Closing from the button leaves focus where it is.
+      button.click();
+      await flush();
+      button.focus();
+      button.click();
+      await flush();
+      expect(element.shadowRoot.activeElement).toBe(button);
+    });
+
     it("closes the Pillars menu first, then the phone menu, on two presses of Escape", async () => {
       const element = render();
       const menuButton = element.shadowRoot.querySelector(".menu-toggle");

@@ -258,6 +258,8 @@ export default class PortfolioThemeLayout extends LightningElement {
   _clickInPillars = false;
 
   _stopMotion = null;
+  // True from a press that opens the phone menu until its first link has focus.
+  _focusFirstLink = false;
 
   showBackToTop = false;
   // The hero found on the page, and when the layout last looked for one.
@@ -343,6 +345,10 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   renderedCallback() {
+    if (this._focusFirstLink) {
+      this._focusFirstLink = false;
+      this.focusControl(".site-nav_open .nav-link");
+    }
     // The router can update the address after it has told the page about the new route.
     const now = currentRouteUrl();
     if (now !== this.routeUrl) {
@@ -623,6 +629,9 @@ export default class PortfolioThemeLayout extends LightningElement {
     if (!this.menuOpen) {
       this.pillarsOpen = false;
     }
+    // The phone menu sits before its button in the page, so a Tab from the button would skip
+    // it. Focus moves to its first link once it shows, and Escape brings it back to the button.
+    this._focusFirstLink = this.menuOpen;
   }
 
   handlePillarsClick() {
