@@ -147,6 +147,22 @@
   color: var(--pf-muted);
 }
 
+/* The chevron says a role opens, and turns while it is open. */
+.years {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-1);
+}
+
+.role-chevron {
+  flex: 0 0 auto;
+  color: var(--pf-accent);
+}
+
+.point-button[aria-expanded="true"] .role-chevron {
+  transform: rotate(180deg);
+}
+
 /* The fade at an edge that has more roles beyond it. */
 .line-wrap::before,
 .line-wrap::after {
@@ -209,6 +225,7 @@
 .highlights {
   margin: 0;
   padding-left: 1.25em;
+  list-style: disc outside;
   color: var(--pf-body);
   font-size: 15px;
   line-height: 1.6;
@@ -328,7 +345,8 @@
     animation: career-in 200ms ease-out;
   }
 
-  .toggle-chevron {
+  .toggle-chevron,
+  .role-chevron {
     transition: transform 150ms ease;
   }
 }
