@@ -41,7 +41,6 @@ export const PHONE_ROLES = 3;
 const LINE = "line";
 const STACK = "stack";
 const LINE_PANEL_ID = "career-panel";
-const TIMELINE_ID = "career-timeline";
 const OPEN_TIMELINE_LABEL = "See the full timeline";
 const CLOSE_TIMELINE_LABEL = "Hide the full timeline";
 
