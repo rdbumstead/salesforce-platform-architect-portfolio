@@ -128,10 +128,7 @@ private class SkillGraphControllerTest {
       serialized.contains(SiteGuestTestSupport.OWNER_PHONE),
       'No phone number may reach a guest'
     );
-    Assert.isFalse(
-      serialized.contains('Test Issuer'),
-      'No issuer is sent'
-    );
+    Assert.isFalse(serialized.contains('Test Issuer'), 'No issuer is sent');
     Assert.isFalse(serialized.contains('2024-06-01'), 'No date is sent');
   }
 
