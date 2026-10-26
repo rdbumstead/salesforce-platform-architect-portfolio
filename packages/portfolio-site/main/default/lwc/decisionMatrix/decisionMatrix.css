@@ -2,7 +2,10 @@
  * Colours, fonts, radii and spacing come only from the --pf- design tokens,
  * so the matrix follows the light and dark themes. Every element that sets a background also
  * sets its text colour. Scores and totals are metrics, so they use the mono font. Controls are
- * at least 24 px and the reset button is 44 px high.
+ * at least 24 px and the reset button is 44 px high. The leading option is tinted from the chip
+ * pair and also tagged with the word Leading, so colour is never the only signal. The highlight
+ * on a changed total is an overlay that fades by opacity alone, and it is off under reduced
+ * motion. Below 600 px the table becomes one card per criterion.
  */
 :host {
   display: block;
@@ -116,11 +119,99 @@
 .score-summary {
   display: inline-flex;
   align-items: center;
+  gap: var(--pf-space-1);
   min-height: 24px;
   min-width: 24px;
   cursor: pointer;
   color: var(--pf-accent);
   font-weight: 600;
+  list-style: none;
+}
+
+/* display: inline-flex removes the browser's own open marker, so the marker is drawn here. */
+.score-summary::-webkit-details-marker {
+  display: none;
+}
+
+.score-summary::after {
+  content: "";
+  width: 0.4em;
+  height: 0.4em;
+  margin-left: 0.15em;
+  border-right: 2px solid currentcolor;
+  border-bottom: 2px solid currentcolor;
+  transform: rotate(45deg) translate(-0.1em, -0.1em);
+}
+
+.score-details[open] > .score-summary::after {
+  transform: rotate(225deg) translate(-0.1em, -0.1em);
+}
+
+.option-head.leading,
+.total-cell.leading {
+  background-color: color-mix(in srgb, var(--pf-accent) 16%, var(--pf-surface));
+  color: var(--pf-text);
+}
+
+.option-head.leading .option-summary {
+  color: var(--pf-body);
+}
+
+.leading-tag {
+  display: inline-block;
+  margin-top: var(--pf-space-1);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.total-cell {
+  position: relative;
+}
+
+.total-cell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--pf-accent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.total-flash-a::after {
+  animation: total-highlight-a 0.9s ease-out;
+}
+
+.total-flash-b::after {
+  animation: total-highlight-b 0.9s ease-out;
+}
+
+@keyframes total-highlight-a {
+  from {
+    opacity: 0.35;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes total-highlight-b {
+  from {
+    opacity: 0.35;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .total-flash-a::after,
+  .total-flash-b::after {
+    animation: none;
+  }
 }
 
 .rationale,
@@ -176,15 +267,111 @@
   white-space: nowrap;
 }
 
-/* View source, at the top right of the matrix on desktop and at the left on phones. */
-.card-tools {
+/* The card's title row: the title on the left, View source on the right. */
+.card-header {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--pf-space-2);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pf-space-3);
+  margin-bottom: var(--pf-space-3);
 }
 
-@media (max-width: 767.98px) {
-  .card-tools {
-    justify-content: flex-start;
+.card-title {
+  margin: 0;
+  color: var(--pf-text);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Phones: each criterion is a card. The option names sit beside their scores and totals. */
+@media (max-width: 599.98px) {
+  .matrix-table,
+  .matrix-table thead,
+  .matrix-table tbody,
+  .matrix-table tfoot,
+  .matrix-table tr,
+  .matrix-table th,
+  .matrix-table td {
+    display: block;
+  }
+
+  .matrix-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .criterion-row,
+  .total-row {
+    margin-bottom: var(--pf-space-3);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius-sm);
+    background-color: var(--pf-surface);
+  }
+
+  .matrix-table tbody th.criterion,
+  .matrix-table tfoot th {
+    border-bottom: 1px solid var(--pf-border);
+    background-color: var(--pf-subtle);
+    color: var(--pf-text);
+    padding: var(--pf-space-3);
+  }
+
+  .matrix-table .criterion-row td,
+  .matrix-table .total-row td {
+    padding: var(--pf-space-2) var(--pf-space-3);
+  }
+
+  .matrix-table .weight-cell,
+  .matrix-table .total-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pf-space-3);
+  }
+
+  .matrix-table .weight-cell::before,
+  .matrix-table .total-cell::before,
+  .matrix-table .score-summary::before {
+    content: attr(data-label);
+    flex: 1 1 auto;
+    font-family: var(--pf-font-sans);
+    font-weight: 600;
+  }
+
+  .matrix-table .weight-cell::before,
+  .matrix-table .score-summary::before {
+    color: var(--pf-body);
+  }
+
+  .matrix-table .weight-label {
+    flex: 1 1 8rem;
+  }
+
+  .matrix-table .score-summary {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .matrix-table .score-summary::after {
+    flex: 0 0 auto;
+    margin-right: 0.3em;
+  }
+
+  .matrix-table .total-spacer {
+    display: none;
+  }
+
+  .weight-cell {
+    white-space: normal;
+  }
+
+  .weight-slider {
+    min-width: 0;
+    width: 100%;
   }
 }

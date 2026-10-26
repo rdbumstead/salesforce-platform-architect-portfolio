@@ -13,10 +13,16 @@ import { createElement } from "@lwc/engine-dom";
 import DecisionMatrix, {
   computeTotals,
   findFlip,
+  leaderKey,
   PLACEHOLDER_BANNER
 } from "c/decisionMatrix";
 import getMatrix from "@salesforce/apex/DecisionMatrixController.getMatrix";
 import { trackEvent } from "c/analyticsService";
+import { isReduced } from "c/motionPreference";
+
+jest.mock("c/motionPreference", () => ({ isReduced: jest.fn(() => false) }), {
+  virtual: true
+});
 
 jest.mock(
   "@salesforce/apex/DecisionMatrixController.getMatrix",
@@ -128,12 +134,122 @@ describe("c-decision-matrix", () => {
     jest.clearAllMocks();
   });
 
-  it("places View source with the decisionMatrix key at the top", async () => {
+  it("places View source in the card's title row, after the title", async () => {
     const element = await createComponent();
 
-    const control = q(element, ".card-tools c-view-source");
+    const control = q(element, ".card-header c-view-source");
     expect(control).not.toBeNull();
     expect(control.sourceKey).toBe("decisionMatrix");
+    const title = q(element, ".card-header h3.card-title");
+    expect(title.textContent.trim()).toBe("Decision matrix");
+    expect(
+      title.compareDocumentPosition(control) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(q(element, ".card-tools")).toBeNull();
+  });
+
+  it("labels each score and total with its option for the phone cards", async () => {
+    const element = await createComponent();
+
+    const labels = qa(element, "td.score-cell summary").map(
+      (s) => s.dataset.label
+    );
+    expect(labels).toHaveLength(30);
+    expect(new Set(labels)).toEqual(
+      new Set(["NPSP and PMM", "Education Cloud", "Nonprofit Cloud"])
+    );
+    expect(qa(element, "td.total-cell").map((c) => c.dataset.label)).toEqual([
+      "NPSP and PMM",
+      "Education Cloud",
+      "Nonprofit Cloud"
+    ]);
+  });
+
+  it("draws its own open marker on the score summary", () => {
+    const css = readFileSync(
+      join(__dirname, "..", "decisionMatrix.css"),
+      "utf8"
+    );
+    expect(css).toMatch(/\.score-summary::after/);
+    expect(css).toMatch(/\.score-details\[open\] > \.score-summary::after/);
+    expect(css).toMatch(/max-width:\s*599\.98px/);
+  });
+
+  it("tints and tags the leading option, and moves the tint with the lead", async () => {
+    const element = await createComponent();
+    const leading = () =>
+      qa(element, "th.option-head.leading").map((th) =>
+        th.querySelector(".option-label").textContent.trim()
+      );
+    expect(leading()).toHaveLength(1);
+    expect(q(element, ".leading-tag").textContent.trim()).toBe("Leading");
+    expect(qa(element, "td.total-cell.leading")).toHaveLength(1);
+    const before = leading()[0];
+
+    // Nonprofit Cloud now scores highest, ahead of both other options.
+    await moveSlider(element, "Product_Direction", 10);
+    await moveSlider(element, "Outcome_Reporting", 10);
+    await moveSlider(element, "Class_Fit", 10);
+    await moveSlider(element, "Volunteer_Tutors", 10);
+    await moveSlider(element, "Licence_Cost", 0);
+    await moveSlider(element, "Admin_Capacity", 0);
+    await moveSlider(element, "Time_To_Value", 0);
+    expect(leading()).toHaveLength(1);
+    expect(leading()[0]).not.toBe(before);
+  });
+
+  it("tints no option when the top two are tied", () => {
+    const m = matrix();
+    const zero = {};
+    m.criteria.forEach((c) => {
+      zero[c.developerName] = 0;
+    });
+    expect(leaderKey(m, computeTotals(m, zero))).toBeNull();
+  });
+
+  it("highlights only the totals that change, and again on the next change", async () => {
+    const element = await createComponent();
+    const flashed = () =>
+      qa(element, "td.total-cell")
+        .filter((c) => /total-flash-/.test(c.className))
+        .map((c) => c.dataset.option);
+    expect(flashed()).toEqual([]);
+
+    // Licence_Cost scores 5, 2, 2, so all three totals move.
+    await moveSlider(element, "Licence_Cost", 8);
+    expect(flashed()).toHaveLength(3);
+    const first = q(element, "td.total-cell").className;
+
+    await moveSlider(element, "Licence_Cost", 9);
+    expect(q(element, "td.total-cell").className).not.toBe(first);
+
+    // Fundraising scores 3, 3, 3 and Person_Model the same, so a total moves by the same
+    // amount for each, and every one still changes.
+    await moveSlider(element, "Licence_Cost", 9);
+    expect(flashed()).toHaveLength(3);
+  });
+
+  it("shows no highlight under reduced motion", async () => {
+    isReduced.mockReturnValue(true);
+    const element = await createComponent();
+    await moveSlider(element, "Licence_Cost", 8);
+    expect(
+      qa(element, "td.total-cell").filter((c) =>
+        /total-flash-/.test(c.className)
+      )
+    ).toHaveLength(0);
+    isReduced.mockReturnValue(false);
+  });
+
+  it("keeps the highlight to opacity and switches it off by media query", () => {
+    const css = readFileSync(
+      join(__dirname, "..", "decisionMatrix.css"),
+      "utf8"
+    );
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
+    const frames = css.match(/@keyframes total-highlight-a \{[^]*?\n\}/)[0];
+    expect(frames).toMatch(/opacity/);
+    expect(frames).not.toMatch(/background|color|width|height|top|left/);
   });
 
   it("renders an accessible table with a caption, column and row headers", async () => {

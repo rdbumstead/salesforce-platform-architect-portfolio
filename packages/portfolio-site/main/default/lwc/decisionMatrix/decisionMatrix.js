@@ -4,6 +4,9 @@
  *                      computes every weighted total in the browser, so moving a weight never
  *                      calls the server. Shows the ranking, the single weight change that would
  *                      first swap the top two options, and a reset to the starting weights.
+ *                      The option that leads is tinted and tagged in words, and a total that
+ *                      changes shows a brief highlight, which is skipped when the visitor
+ *                      prefers reduced motion. Below 600 px each criterion becomes a card.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -12,6 +15,7 @@
 import { LightningElement, wire } from "lwc";
 import getMatrix from "@salesforce/apex/DecisionMatrixController.getMatrix";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { isReduced } from "c/motionPreference";
 
 export const MIN_WEIGHT = 0;
 export const MAX_WEIGHT = 10;
@@ -93,10 +97,28 @@ export function findFlip(matrix, weights) {
   return best ? { ...best, leader, runnerUp } : null;
 }
 
+/**
+ * The option that leads: the highest total, and only when it is strictly ahead of the next.
+ * A tie at the top has no leader, so nothing is tinted for a draw.
+ * @param {object} matrix The getMatrix payload.
+ * @param {object} totals From computeTotals.
+ * @returns {string|null} The leading option's developer name, or null.
+ */
+export function leaderKey(matrix, totals) {
+  const ranked = rankOptions(matrix, totals);
+  if (ranked.length < 2) {
+    return ranked.length === 1 ? ranked[0].developerName : null;
+  }
+  return ranked[0].total > ranked[1].total ? ranked[0].developerName : null;
+}
+
 export default class DecisionMatrix extends LightningElement {
   matrix;
   error;
   weights = {};
+  // Per option, how many times its total has changed. The odd or even count picks one of two
+  // identical highlight classes, so the highlight starts again on each change.
+  flashes = {};
 
   @wire(getMatrix)
   wiredMatrix({ data, error }) {
@@ -126,11 +148,19 @@ export default class DecisionMatrix extends LightningElement {
     return PLACEHOLDER_BANNER;
   }
 
+  get leader() {
+    return this.matrix ? leaderKey(this.matrix, this.totals) : null;
+  }
+
   get columns() {
+    const leader = this.leader;
     return (this.matrix?.options || []).map((o) => ({
       key: o.developerName,
       label: o.label,
-      summary: o.summary
+      summary: o.summary,
+      isLeading: o.developerName === leader,
+      className:
+        o.developerName === leader ? "option-head leading" : "option-head"
     }));
   }
 
@@ -159,6 +189,7 @@ export default class DecisionMatrix extends LightningElement {
           const s = byKey.get(scoreKey(o.developerName, c.developerName));
           return {
             key: `${c.developerName}-${o.developerName}`,
+            optionLabel: o.label,
             score: s ? s.score : "",
             scoreLabel: s
               ? `${o.label}, ${c.label}: ${s.score} of 5. Show why`
@@ -174,10 +205,22 @@ export default class DecisionMatrix extends LightningElement {
 
   get totalCells() {
     const totals = this.totals;
-    return this.columns.map((col) => ({
-      key: col.key,
-      total: totals[col.key] || 0
-    }));
+    return this.columns.map((col) => {
+      const flashes = this.flashes[col.key] || 0;
+      const classes = ["total-cell"];
+      if (col.isLeading) {
+        classes.push("leading");
+      }
+      if (flashes > 0) {
+        classes.push(flashes % 2 ? "total-flash-a" : "total-flash-b");
+      }
+      return {
+        key: col.key,
+        optionLabel: col.label,
+        total: totals[col.key] || 0,
+        className: classes.join(" ")
+      };
+    });
   }
 
   get rankingText() {
@@ -213,7 +256,24 @@ export default class DecisionMatrix extends LightningElement {
       MAX_WEIGHT,
       Math.max(MIN_WEIGHT, Number(target.value) || 0)
     );
-    this.weights = { ...this.weights, [target.dataset.criterion]: value };
+    this.setWeights({ ...this.weights, [target.dataset.criterion]: value });
+  }
+
+  /** Sets the weights and marks each option whose total moved, for the brief highlight. */
+  setWeights(next) {
+    const before = this.totals;
+    this.weights = next;
+    if (isReduced()) {
+      return;
+    }
+    const after = this.totals;
+    const flashes = { ...this.flashes };
+    Object.keys(after).forEach((key) => {
+      if (after[key] !== before[key]) {
+        flashes[key] = (flashes[key] || 0) + 1;
+      }
+    });
+    this.flashes = flashes;
   }
 
   handleWeightInput(event) {
@@ -228,7 +288,7 @@ export default class DecisionMatrix extends LightningElement {
   }
 
   handleReset() {
-    this.weights = this.defaultWeights();
+    this.setWeights(this.defaultWeights());
     this.template.querySelectorAll("input.weight-slider").forEach((input) => {
       input.value = String(this.weights[input.dataset.criterion]);
     });

@@ -1,6 +1,7 @@
 <template>
   <section class="matrix" aria-label="Decision matrix">
-    <div class="card-tools">
+    <div class="card-header">
+      <h3 class="card-title">Decision matrix</h3>
       <c-view-source source-key="decisionMatrix"></c-view-source>
     </div>
     <template lwc:if={isLoading}>
@@ -20,33 +21,41 @@
       <p class="matrix-help">
         Move a weight from 0 (ignored) to 10 (decisive). Open a score to read
         why it was given. A total is each weight times its score, added up per
-        option.
+        option. The leading option is tinted.
       </p>
       <div class="table-scroll">
-        <table class="matrix-table">
+        <table class="matrix-table" role="table">
           <caption>
             Weighted scores for three platform options, one row per criterion
           </caption>
-          <thead>
-            <tr>
-              <th scope="col">Criterion</th>
-              <th scope="col">Weight</th>
+          <thead role="rowgroup">
+            <tr role="row">
+              <th scope="col" role="columnheader">Criterion</th>
+              <th scope="col" role="columnheader">Weight</th>
               <template for:each={columns} for:item="col">
-                <th scope="col" key={col.key}>
+                <th
+                  scope="col"
+                  role="columnheader"
+                  key={col.key}
+                  class={col.className}
+                >
                   <span class="option-label">{col.label}</span>
                   <span class="option-summary">{col.summary}</span>
+                  <span lwc:if={col.isLeading} class="leading-tag"
+                    >Leading</span
+                  >
                 </th>
               </template>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             <template for:each={rows} for:item="row">
-              <tr key={row.key}>
-                <th scope="row" class="criterion">
+              <tr key={row.key} role="row" class="criterion-row">
+                <th scope="row" role="rowheader" class="criterion">
                   <span class="criterion-label">{row.label}</span>
                   <span class="criterion-description">{row.description}</span>
                 </th>
-                <td class="weight-cell">
+                <td class="weight-cell" role="cell" data-label="Weight">
                   <label class="weight-label">
                     <span class="assistive-text">{row.sliderLabel}</span>
                     <input
@@ -67,11 +76,17 @@
                   >
                 </td>
                 <template for:each={row.cells} for:item="cell">
-                  <td key={cell.key} class="score-cell">
+                  <td
+                    key={cell.key}
+                    class="score-cell"
+                    role="cell"
+                    data-label={cell.optionLabel}
+                  >
                     <template lwc:if={cell.hasScore}>
                       <details class="score-details">
                         <summary
                           class="score-summary"
+                          data-label={cell.optionLabel}
                           aria-label={cell.scoreLabel}
                         >
                           {cell.score}
@@ -85,12 +100,18 @@
               </tr>
             </template>
           </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row">Weighted total</th>
-              <td></td>
+          <tfoot role="rowgroup">
+            <tr role="row" class="total-row">
+              <th scope="row" role="rowheader">Weighted total</th>
+              <td role="cell" class="total-spacer"></td>
               <template for:each={totalCells} for:item="cell">
-                <td key={cell.key} class="total-cell" data-option={cell.key}>
+                <td
+                  key={cell.key}
+                  class={cell.className}
+                  role="cell"
+                  data-option={cell.key}
+                  data-label={cell.optionLabel}
+                >
                   {cell.total}
                 </td>
               </template>
