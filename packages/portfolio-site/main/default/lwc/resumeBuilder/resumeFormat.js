@@ -418,7 +418,7 @@ function wrapText(doc, text, firstWidth, restWidth) {
  * sizes, spacing, colours and section order from resumeLayout.js. A role, a skill group and the
  * header never split across pages, and a section or Retired title always has its first entry
  * under it. Links are clickable. When trace is an array, every drawn piece is pushed onto it as
- * { section, kind, text } in drawing order.
+ * { section, kind, text, page, y } in drawing order.
  * @param {object} doc a jsPDF document in points
  * @param {object} model the view model from buildViewModel
  * @param {object} options { family, trace }: the registered font family (the spec's fallback
