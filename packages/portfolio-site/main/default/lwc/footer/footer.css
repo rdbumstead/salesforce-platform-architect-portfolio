@@ -71,8 +71,10 @@
 }
 
 /* Quotas and limits is a closed disclosure. Its summary is the group label, with the
-   browser's own marker kept so it reads as something to open. */
+   browser's own marker kept so it reads as something to open. A flex parent would turn the
+   summary into a block and drop the marker, so it is a list item again here. */
 .quotas-summary {
+  display: list-item;
   min-height: 24px;
   cursor: pointer;
 }
