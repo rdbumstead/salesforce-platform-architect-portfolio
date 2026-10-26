@@ -1,7 +1,8 @@
 /**
  * @description       : Reads the GitHub API through the GitHub_API Named Credential. Recent
  *                      commits map to DeliveryController.CommitItem, the payload DTO of the
- *                      Delivery page. A file on main comes back
+ *                      Delivery page. A merge commit (two or more parents) is left out, and a
+ *                      message cut at MESSAGE_MAX_LENGTH ends in an ellipsis. A file on main comes back
  *                      as FileContent for the View source cache. Only
  *                      GitHubCacheRefreshJob and SourceCacheRefreshJob call it, as the
  *                      scheduling admin. Guests never reach it: pages read the caches. A
@@ -35,6 +36,11 @@ public with sharing class GitHubService {
   public static final Integer COMMIT_COUNT = 10;
   public static final Integer MESSAGE_MAX_LENGTH = 100;
   public static final Integer FILE_PATH_MAX_LENGTH = 255;
+  /** The horizontal ellipsis character, built from its code point. */
+  @TestVisible
+  private static final String ELLIPSIS = String.fromCharArray(
+    new List<Integer>{ 8230 }
+  );
 
   /** owner/repository, each one GitHub name segment. */
   private static final Pattern REPO_PATH = Pattern.compile(
@@ -199,11 +205,26 @@ public with sharing class GitHubService {
     }
     List<DeliveryController.CommitItem> items = new List<DeliveryController.CommitItem>();
     for (Object entry : (List<Object>) parsed) {
-      if (entry instanceof Map<String, Object>) {
+      if (
+        entry instanceof Map<String, Object> &&
+        !isMerge((Map<String, Object>) entry)
+      ) {
         items.add(toItem((Map<String, Object>) entry));
       }
     }
     return items;
+  }
+
+  /**
+   * @description A merge commit has two or more parents. A commit with no parents list is not
+   *              treated as a merge.
+   * @param root One commit object from the commits API.
+   * @return Boolean True when the commit has two or more parents.
+   */
+  @TestVisible
+  private static Boolean isMerge(Map<String, Object> root) {
+    Object parents = root.get('parents');
+    return parents instanceof List<Object> && ((List<Object>) parents).size() > 1;
   }
 
   private static DeliveryController.CommitItem toItem(
@@ -231,7 +252,9 @@ public with sharing class GitHubService {
   }
 
   /**
-   * @description The first line of a commit message, cut to MESSAGE_MAX_LENGTH.
+   * @description The first line of a commit message. A line longer than MESSAGE_MAX_LENGTH is
+   *              cut so that the result, with an ellipsis at the end, is MESSAGE_MAX_LENGTH
+   *              characters long.
    * @param message Full commit message.
    * @return String The first line, or null.
    */
@@ -241,9 +264,10 @@ public with sharing class GitHubService {
       return null;
     }
     String line = message.split('\n', 2)[0].trim();
-    return line.length() > MESSAGE_MAX_LENGTH
-      ? line.substring(0, MESSAGE_MAX_LENGTH)
-      : line;
+    if (line.length() <= MESSAGE_MAX_LENGTH) {
+      return line;
+    }
+    return line.substring(0, MESSAGE_MAX_LENGTH - 1) + ELLIPSIS;
   }
 
   private static Map<String, Object> mapOf(Object value) {
