@@ -40,9 +40,16 @@ const SMOKE_JSON = process.env.SMOKE_JSON || "";
 const ROUTES = [
   {
     path: "/",
-    components: ["c-hero-banner", "c-experience-timeline", "c-contact-call"]
+    components: [
+      "c-hero-banner",
+      "c-career-line",
+      { tag: "c-case-study-grid", mayBeEmpty: true },
+      "c-contact-call",
+      "c-site-build-section"
+    ]
   },
   { path: "/contact", components: ["c-contact-form"] },
+  { path: "/docs", components: ["c-docs-viewer"] },
   { path: "/resume", components: ["c-resume-builder"] },
   { path: "/skills", components: ["c-skill-network"] },
   { path: "/api-lab", components: ["c-api-tester"] },
@@ -50,7 +57,12 @@ const ROUTES = [
   { path: "/ai-lab", components: ["c-cover-letter-generator"] },
   {
     path: "/delivery",
-    components: ["c-roadmap-viewer", "c-changelog", "c-smart-checklist"]
+    components: [
+      "c-roadmap-viewer",
+      "c-changelog",
+      "c-smart-checklist",
+      "c-by-the-numbers"
+    ]
   },
   {
     path: "/testimonials",
@@ -61,7 +73,11 @@ const ROUTES = [
   },
   {
     path: "/business-architecture",
-    components: ["c-project-asset-gallery", "c-schema-visualizer"]
+    components: [
+      "c-project-asset-gallery",
+      "c-schema-visualizer",
+      "c-pillar-a-walkthrough"
+    ]
   },
   {
     path: "/nonprofit-solutions",
@@ -330,12 +346,18 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  finish(
-    {
-      ok: false,
-      summary: `live smoke: FAIL, ${String(error.message).split("\n")[0]}`
-    },
-    1
-  );
-});
+// The route list is shared with scripts/check-smoke-routes.js, which checks it against the
+// site's views without a browser. Requiring this file runs nothing.
+module.exports = { ROUTES };
+
+if (require.main === module) {
+  main().catch((error) => {
+    finish(
+      {
+        ok: false,
+        summary: `live smoke: FAIL, ${String(error.message).split("\n")[0]}`
+      },
+      1
+    );
+  });
+}
