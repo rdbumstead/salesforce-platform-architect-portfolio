@@ -12,20 +12,23 @@
         <template lwc:if={ageText}>
           <span class={ageClass} data-id="age-label">{ageText}</span>
         </template>
+        <label class="simulate-switch">
+          <input
+            type="checkbox"
+            role="switch"
+            class="simulate-input"
+            data-id="simulate-switch"
+            aria-describedby="simulate-hint"
+            checked={simulate}
+            onchange={handleSimulateChange}
+          />
+          <span class="simulate-label">Simulate an outage</span>
+        </label>
       </div>
     </header>
-
-    <label class="simulate-switch">
-      <input
-        type="checkbox"
-        role="switch"
-        class="simulate-input"
-        data-id="simulate-switch"
-        checked={simulate}
-        onchange={handleSimulateChange}
-      />
-      <span class="simulate-label">Simulate an outage</span>
-    </label>
+    <p id="simulate-hint" class="simulate-hint" data-id="simulate-hint">
+      {simulateHint}
+    </p>
 
     <p class="status-note" data-id="status-note" aria-live="polite">
       {statusNote}
@@ -36,11 +39,42 @@
     </template>
 
     <template lwc:if={showBoard}>
+      <template lwc:if={isPhone}>
+        <div
+          class="roadmap-tabs"
+          role="tablist"
+          aria-label="Roadmap status"
+          data-id="tablist"
+        >
+          <template for:each={tabs} for:item="tab">
+            <button
+              key={tab.category}
+              type="button"
+              id={tab.tabId}
+              class={tab.className}
+              role="tab"
+              aria-selected={tab.tabSelected}
+              aria-controls={tab.panelId}
+              tabindex={tab.tabIndex}
+              data-category={tab.category}
+              data-tab={tab.category}
+              onclick={handleTabClick}
+              onkeydown={handleTabKeydown}
+            >
+              {tab.tabText}
+            </button>
+          </template>
+        </div>
+      </template>
       <div class="roadmap-board">
         <template for:each={columns} for:item="column">
           <div
             key={column.category}
-            class="roadmap-column"
+            id={column.panelId}
+            class={column.columnClass}
+            role={column.panelRole}
+            aria-labelledby={column.panelLabelledBy}
+            hidden={column.panelHidden}
             data-category={column.category}
           >
             <h3 class="column-title">

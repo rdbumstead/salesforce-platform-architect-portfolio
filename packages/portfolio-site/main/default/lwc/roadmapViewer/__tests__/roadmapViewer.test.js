@@ -19,6 +19,7 @@ import RoadmapViewer, {
 } from "c/roadmapViewer";
 import getRoadmap from "@salesforce/apex/DeliveryController.getRoadmap";
 import { trackEvent } from "c/analyticsService";
+import { setSimulating } from "c/outageSimulation";
 
 jest.mock(
   "@salesforce/apex/DeliveryController.getRoadmap",
@@ -115,6 +116,7 @@ describe("c-roadmap-viewer", () => {
       document.body.removeChild(document.body.firstChild);
     }
     jest.clearAllMocks();
+    setSimulating(false);
   });
 
   it("shows a loading line until the wire emits", async () => {
@@ -230,7 +232,7 @@ describe("c-roadmap-viewer", () => {
     await flushPromises();
 
     const named = q(element, 'li[data-key="SPAP-901"] [data-id="epic-key"]');
-    expect(named.textContent.trim()).toBe("Part of Delivery pillar | SPAP-900");
+    expect(named.textContent.trim()).toBe("Part of Delivery pillar");
     const keyOnly = q(element, 'li[data-key="SPAP-902"] [data-id="epic-key"]');
     expect(keyOnly.textContent.trim()).toBe("Part of SPAP-900");
     expect(parentLabel("Name", null)).toBe("");
@@ -593,6 +595,154 @@ describe("c-roadmap-viewer", () => {
         ([name]) => name === "resilience_test_triggered"
       )
     ).toHaveLength(1);
+  });
+
+  it("puts the one outage switch beside the age label with its sentence", async () => {
+    const element = createComponent();
+    getRoadmap.emit(feed("FRESH"));
+    await flushPromises();
+    const meta = q(element, ".roadmap-meta");
+    expect(meta.querySelector('[data-id="age-label"]')).not.toBeNull();
+    expect(meta.querySelector('[data-id="simulate-switch"]')).not.toBeNull();
+    expect(element.shadowRoot.querySelectorAll('[role="switch"]')).toHaveLength(
+      1
+    );
+    expect(q(element, '[data-id="simulate-hint"]').textContent.trim()).toBe(
+      "See how the roadmap and Latest Updates behave if Jira or GitHub is down."
+    );
+  });
+
+  it("follows the shared outage state when another panel's switch changes it", async () => {
+    const element = createComponent();
+    getRoadmap.emit(feed("FRESH"));
+    await flushPromises();
+    setSimulating(true);
+    await flushPromises();
+    expect(getRoadmap.getLastConfig()).toEqual({ simulate: true });
+    expect(q(element, '[data-id="simulate-switch"]').checked).toBe(true);
+    // Removed, it stops listening.
+    document.body.removeChild(element);
+    setSimulating(false);
+    await flushPromises();
+    expect(getRoadmap.getLastConfig()).toEqual({ simulate: true });
+  });
+
+  describe("on a phone", () => {
+    let listeners;
+    let matches;
+
+    function mockPhone(value) {
+      matches = value;
+      listeners = [];
+      window.matchMedia = jest.fn(() => ({
+        get matches() {
+          return matches;
+        },
+        addEventListener: (type, fn) => listeners.push(fn),
+        removeEventListener: (type, fn) => {
+          listeners = listeners.filter((l) => l !== fn);
+        }
+      }));
+    }
+
+    afterEach(() => {
+      delete window.matchMedia;
+    });
+
+    const tabs = (element) => [
+      ...element.shadowRoot.querySelectorAll('[role="tab"]')
+    ];
+
+    it("shows no tabs and no tab roles on a wide screen", async () => {
+      mockPhone(false);
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+      expect(tabs(element)).toHaveLength(0);
+      expect(q(element, '[role="tabpanel"]')).toBeNull();
+      expect(
+        element.shadowRoot.querySelectorAll(".roadmap-column")
+      ).toHaveLength(3);
+      expect(q(element, ".column-hidden")).toBeNull();
+    });
+
+    it("turns the columns into tabs that open on In Progress", async () => {
+      mockPhone(true);
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+
+      expect(q(element, '[role="tablist"]')).not.toBeNull();
+      expect(tabs(element).map((t) => t.textContent.trim())).toEqual([
+        "To Do (2)",
+        "In Progress (1)",
+        "Done (1)"
+      ]);
+      expect(tabs(element).map((t) => t.getAttribute("aria-selected"))).toEqual(
+        ["false", "true", "false"]
+      );
+      expect(tabs(element).map((t) => t.getAttribute("tabindex"))).toEqual([
+        "-1",
+        "0",
+        "-1"
+      ]);
+      const panels = [
+        ...element.shadowRoot.querySelectorAll('[role="tabpanel"]')
+      ];
+      expect(panels.map((p) => p.hidden)).toEqual([true, false, true]);
+      expect(panels.every((p) => p.getAttribute("aria-labelledby"))).toBe(true);
+      // Every card is still in the page for the open tab.
+      expect(keysIn(element, "indeterminate")).toEqual(["SPAP-902"]);
+    });
+
+    it("opens another tab on a click and moves with the arrow keys, Home and End", async () => {
+      mockPhone(true);
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+
+      tabs(element)[2].click();
+      await flushPromises();
+      expect(tabs(element).map((t) => t.getAttribute("aria-selected"))).toEqual(
+        ["false", "false", "true"]
+      );
+      const press = async (key) => {
+        const event = new KeyboardEvent("keydown", { key, cancelable: true });
+        tabs(element)
+          .find((t) => t.getAttribute("aria-selected") === "true")
+          .dispatchEvent(event);
+        await flushPromises();
+        return event.defaultPrevented;
+      };
+      expect(await press("ArrowRight")).toBe(true);
+      expect(tabs(element)[0].getAttribute("aria-selected")).toBe("true");
+      expect(element.shadowRoot.activeElement).toBe(tabs(element)[0]);
+      await press("ArrowLeft");
+      expect(tabs(element)[2].getAttribute("aria-selected")).toBe("true");
+      await press("Home");
+      expect(tabs(element)[0].getAttribute("aria-selected")).toBe("true");
+      await press("End");
+      expect(tabs(element)[2].getAttribute("aria-selected")).toBe("true");
+      expect(await press("a")).toBe(false);
+    });
+
+    it("switches between tabs and columns when the screen width crosses 768px", async () => {
+      mockPhone(false);
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+      expect(tabs(element)).toHaveLength(0);
+      matches = true;
+      listeners.forEach((fn) => fn({ matches: true }));
+      await flushPromises();
+      expect(tabs(element)).toHaveLength(3);
+      matches = false;
+      listeners.forEach((fn) => fn({ matches: false }));
+      await flushPromises();
+      expect(tabs(element)).toHaveLength(0);
+      document.body.removeChild(element);
+      expect(listeners).toHaveLength(0);
+    });
   });
 
   it("DEGRADED explains itself in a live region, FRESH says nothing", async () => {
