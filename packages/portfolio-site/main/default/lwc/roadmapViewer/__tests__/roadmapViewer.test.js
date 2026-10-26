@@ -774,10 +774,13 @@ describe("c-roadmap-viewer", () => {
     expect(ageLabel(0)).toBe("Last updated 0 min ago");
     expect(ageLabel(undefined)).toBe("");
   });
-  it("places the View source control for its key next to the heading", () => {
+  it("places the View source control for its key at the right of the title row", () => {
     const element = createComponent();
-    const control = q(element, ".roadmap-header c-view-source");
+    const row = q(element, ".roadmap-title-row");
+    const control = row.querySelector("c-view-source");
     expect(control).not.toBeNull();
+    expect(row.lastElementChild).toBe(control);
+    expect(row.firstElementChild.tagName).toBe("H2");
     expect(control.sourceKey).toBe("roadmapViewer");
   });
 });

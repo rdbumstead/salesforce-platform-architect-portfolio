@@ -391,5 +391,43 @@ private class GitHubCacheRefreshJobTest {
       cut.length(),
       'Cut to 100 characters'
     );
+    Assert.isTrue(
+      cut.endsWith(GitHubService.ELLIPSIS),
+      'The cut ends in an ellipsis'
+    );
+  }
+
+  @IsTest
+  static void shouldCacheNoMergeCommitsAndMarkACutMessageWhenGitHubAnswers() {
+    useRepo('rdbumstead/salesforce-platform-architect-portfolio');
+    String longMessage = 'x'.repeat(150);
+    String body =
+      '[{"sha":"merge111","commit":{"message":"Merge pull request #1 from a/b","author":{"name":"G","date":"2026-10-21T09:00:00Z"}},' +
+      '"parents":[{"sha":"p1"},{"sha":"p2"}]},' +
+      '{"sha":"long2222","commit":{"message":"' +
+      longMessage +
+      '","author":{"name":"G","date":"2026-10-21T08:00:00Z"}},' +
+      '"parents":[{"sha":"p1"}]}]';
+    Test.setMock(HttpCalloutMock.class, new CountingMock(200, body));
+
+    Test.startTest();
+    GitHubCacheRefreshJob.refresh();
+    Test.stopTest();
+
+    DeliveryController.CommitPayload payload = (DeliveryController.CommitPayload) JSON.deserialize(
+      newestRow().JSON_Payload__c,
+      DeliveryController.CommitPayload.class
+    );
+    Assert.areEqual(1, payload.items.size(), 'The merge is not cached');
+    Assert.areEqual('long2222', payload.items[0].sha, 'The other commit is');
+    Assert.areEqual(
+      GitHubService.MESSAGE_MAX_LENGTH,
+      payload.items[0].message.length(),
+      'Cut inside the limit'
+    );
+    Assert.isTrue(
+      payload.items[0].message.endsWith(GitHubService.ELLIPSIS),
+      'Ends in an ellipsis'
+    );
   }
 }

@@ -17,6 +17,14 @@
   overflow-wrap: anywhere;
 }
 
+.roadmap-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2);
+  margin-bottom: var(--pf-space-2);
+}
+
 .roadmap-header {
   display: flex;
   flex-wrap: wrap;

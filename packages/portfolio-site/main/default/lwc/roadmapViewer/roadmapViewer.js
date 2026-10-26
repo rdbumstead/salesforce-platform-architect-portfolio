@@ -21,7 +21,7 @@
  *                      columns become tabs (To Do, In Progress, Done) that open on In Progress,
  *                      with the arrow keys, Home and End moving between them. On wider screens
  *                      all three columns show and none of the tab roles apply.
- *                      The c-view-source control sits in the header.
+ *                      The c-view-source control is the last item of the title row, at the right.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
