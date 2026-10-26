@@ -1,148 +1,168 @@
 <template>
   <footer class="footer">
-    <span class="copyright"
-      >&copy; {currentYear} Ryan Bumstead. Built on Salesforce LWR.</span
-    >
+    <div class="footer__inner">
+      <span class="copyright"
+        >&copy; {currentYear} Ryan Bumstead. Built on Salesforce LWR.</span
+      >
 
-    <div class="metrics" data-id="metrics">
-      <div class="metric-group" data-group="deploy">
-        <span class="group-label" id="footer-group-deploy">Deploy</span>
-        <ul class="group-list" aria-labelledby="footer-group-deploy">
-          <li class="metric deploy">
-            <span class="status-dot" aria-hidden="true"></span>
-            <span>deploy</span>
-            <template lwc:if={badgeFailed}>
-              <a
-                class="target badge-fallback"
-                data-id="badge-fallback"
-                href={actionsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                >Production deploy status</a
-              >
-            </template>
-            <template lwc:else>
-              <a
-                class="target badge-link"
-                href={actionsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  class="badge"
-                  data-id="badge"
-                  src={badgeUrl}
-                  alt="Production deploy status"
-                  height="20"
-                  onerror={handleBadgeError}
-                />
-              </a>
-            </template>
-          </li>
-        </ul>
-      </div>
-
-      <template lwc:if={showPlatform}>
-        <div class="metric-group" data-group="platform">
-          <span class="group-label" id="footer-group-platform">Platform</span>
-          <ul class="group-list" aria-labelledby="footer-group-platform">
-            <template lwc:if={graphqlLabel}>
-              <li class="metric" data-id="graphql">{graphqlLabel}</li>
-            </template>
-            <template lwc:if={snapshotFailed}>
-              <li class="metric" data-id="snapshot-error">
-                status unavailable
-              </li>
-            </template>
+      <p class="metrics-caption" data-id="metrics-caption">
+        Live readings from the Salesforce org serving this page
+      </p>
+      <div class="metrics" data-id="metrics">
+        <div class="metric-group" data-group="deploy">
+          <span class="group-label" id="footer-group-deploy">Deploy</span>
+          <ul class="group-list" aria-labelledby="footer-group-deploy">
+            <li class="metric deploy">
+              <span class="status-dot" aria-hidden="true"></span>
+              <template lwc:if={badgeFailed}>
+                <a
+                  class="target badge-fallback"
+                  data-id="badge-fallback"
+                  href={actionsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Production deploy status</a
+                >
+              </template>
+              <template lwc:else>
+                <a
+                  class="target badge-link"
+                  href={actionsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img
+                    class="badge"
+                    data-id="badge"
+                    src={badgeUrl}
+                    alt="Production deploy status"
+                    height="20"
+                    onerror={handleBadgeError}
+                  />
+                </a>
+              </template>
+            </li>
           </ul>
         </div>
-      </template>
-      <template lwc:if={probeConstructor}>
-        <lwc:component
-          lwc:is={probeConstructor}
-          class="graphql-probe"
-          data-id="graphql-probe"
-          onprobe={handleProbe}
-        ></lwc:component>
-      </template>
 
-      <template lwc:if={snapshotLoaded}>
-        <template lwc:if={showIntegrations}>
-          <div class="metric-group" data-group="integrations">
-            <span class="group-label" id="footer-group-integrations"
-              >Integrations</span
-            >
-            <ul class="group-list" aria-labelledby="footer-group-integrations">
-              <template for:each={providerRows} for:item="row">
-                <li key={row.key} class="metric" data-id="provider">
-                  {row.label}
-                </li>
+        <template lwc:if={showPlatform}>
+          <div class="metric-group" data-group="platform">
+            <span class="group-label" id="footer-group-platform">Platform</span>
+            <ul class="group-list" aria-labelledby="footer-group-platform">
+              <template lwc:if={graphqlLabel}>
+                <li class="metric" data-id="graphql">{graphqlLabel}</li>
               </template>
-              <template for:each={integrationRows} for:item="row">
-                <li key={row.key} class="metric" data-id="integration">
-                  {row.label}
+              <template lwc:if={snapshotFailed}>
+                <li class="metric" data-id="snapshot-error">
+                  status unavailable
                 </li>
               </template>
             </ul>
           </div>
         </template>
-        <div class="metric-group" data-group="quotas">
-          <span class="group-label" id="footer-group-quotas"
-            >Quotas and limits</span
-          >
-          <ul class="group-list" aria-labelledby="footer-group-quotas">
-            <li class="metric">
-              <span
-                class="target ai-requests"
-                data-id="ai-requests"
-                tabindex="0"
-                onmouseenter={handleQuotaVisibility}
-                onfocus={handleQuotaVisibility}
-                >AI requests today: {aiRequestsToday}</span
-              >
-            </li>
-            <template for:each={quotaRows} for:item="row">
-              <li key={row.key} class="metric" data-id="quota">{row.label}</li>
-            </template>
-            <template for:each={limitRows} for:item="row">
-              <li key={row.key} class="metric" data-id="limit">{row.label}</li>
-            </template>
-          </ul>
-        </div>
-      </template>
-    </div>
+        <template lwc:if={probeConstructor}>
+          <lwc:component
+            lwc:is={probeConstructor}
+            class="graphql-probe"
+            data-id="graphql-probe"
+            onprobe={handleProbe}
+          ></lwc:component>
+        </template>
 
-    <span class="links">
-      <a class="target" data-id="contact" href={contactUrl}>Contact</a>
-      <a class="target" data-id="docs" href={docsUrl}>Docs</a>
-      <template lwc:if={gitHubUrl}>
-        <a
-          class="target"
-          data-id="github"
-          href={gitHubUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          >GitHub</a
+        <template lwc:if={snapshotLoaded}>
+          <template lwc:if={showIntegrations}>
+            <div class="metric-group" data-group="integrations">
+              <span class="group-label" id="footer-group-integrations"
+                >Integrations</span
+              >
+              <ul
+                class="group-list"
+                aria-labelledby="footer-group-integrations"
+              >
+                <template for:each={providerRows} for:item="row">
+                  <li key={row.key} class="metric" data-id="provider">
+                    {row.label}
+                  </li>
+                </template>
+                <template for:each={integrationRows} for:item="row">
+                  <li key={row.key} class="metric" data-id="integration">
+                    {row.label}
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </template>
+          <details
+            class="metric-group quotas"
+            data-group="quotas"
+            ontoggle={handleQuotaToggle}
+          >
+            <summary
+              class="group-label quotas-summary"
+              id="footer-group-quotas"
+            >
+              Quotas and limits
+            </summary>
+            <ul class="group-list" aria-labelledby="footer-group-quotas">
+              <li class="metric">
+                <span
+                  class="target ai-requests"
+                  data-id="ai-requests"
+                  onmouseenter={handleQuotaVisibility}
+                  >AI requests today: {aiRequestsToday}</span
+                >
+              </li>
+              <template for:each={quotaRows} for:item="row">
+                <li key={row.key} class="metric" data-id="quota">
+                  {row.label}
+                </li>
+              </template>
+              <template for:each={limitRows} for:item="row">
+                <li key={row.key} class="metric" data-id="limit">
+                  {row.label}
+                </li>
+              </template>
+            </ul>
+          </details>
+        </template>
+      </div>
+
+      <span class="links">
+        <a class="target" data-id="skills" href={skillsUrl}>Skills</a>
+        <a class="target" data-id="testimonials" href={testimonialsUrl}
+          >Testimonials</a
         >
-      </template>
-      <template lwc:if={linkedInUrl}>
-        <a
-          class="target"
-          data-id="linkedin"
-          href={linkedInUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          >LinkedIn</a
+        <a class="target" data-id="contact" href={contactUrl}>Contact</a>
+        <a class="target" data-id="docs" href={docsUrl}>Docs</a>
+        <template lwc:if={gitHubUrl}>
+          <a
+            class="target"
+            data-id="github"
+            href={gitHubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            >GitHub</a
+          >
+        </template>
+        <template lwc:if={linkedInUrl}>
+          <a
+            class="target"
+            data-id="linkedin"
+            href={linkedInUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            >LinkedIn</a
+          >
+        </template>
+        <button
+          type="button"
+          class="target back-to-top"
+          data-id="back-to-top"
+          onclick={handleBackToTop}
         >
-      </template>
-      <button
-        type="button"
-        class="target back-to-top"
-        data-id="back-to-top"
-        onclick={handleBackToTop}
-      >
-        Back to top <span aria-hidden="true">&uarr;</span>
-      </button>
-    </span>
+          Back to top <span aria-hidden="true">&uarr;</span>
+        </button>
+      </span>
+    </div>
   </footer>
 </template>
