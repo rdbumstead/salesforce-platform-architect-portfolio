@@ -63,6 +63,12 @@ const MOTION_DOCS_LAB_NAMES = [
   "api_lab_section_toggled"
 ];
 
+// Appended for the home page case study links and the skills graph layout controls.
+const CASE_STUDY_GRAPH_NAMES = [
+  "case_study_link_followed",
+  "graph_layout_changed"
+];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
@@ -76,13 +82,18 @@ describe("c/analyticsService", () => {
         ...N6_NAMES,
         ...R7_NAMES,
         ...SITE_NAMES,
-        ...MOTION_DOCS_LAB_NAMES
+        ...MOTION_DOCS_LAB_NAMES,
+        ...CASE_STUDY_GRAPH_NAMES
       ].sort()
     );
   });
 
   it("keeps the newest names last, in the order they were appended", () => {
-    const newest = [...SITE_NAMES, ...MOTION_DOCS_LAB_NAMES];
+    const newest = [
+      ...SITE_NAMES,
+      ...MOTION_DOCS_LAB_NAMES,
+      ...CASE_STUDY_GRAPH_NAMES
+    ];
     expect(Object.values(EVENTS).slice(-newest.length)).toEqual(newest);
   });
 
@@ -90,6 +101,11 @@ describe("c/analyticsService", () => {
     expect(EVENTS.MOTION_TOGGLED).toBe("motion_toggled");
     expect(EVENTS.DOCS_OPENED).toBe("docs_opened");
     expect(EVENTS.API_LAB_SECTION_TOGGLED).toBe("api_lab_section_toggled");
+  });
+
+  it("names the case study link and graph layout events under their keys", () => {
+    expect(EVENTS.CASE_STUDY_LINK_FOLLOWED).toBe("case_study_link_followed");
+    expect(EVENTS.GRAPH_LAYOUT_CHANGED).toBe("graph_layout_changed");
   });
 
   it("cannot be changed at runtime", () => {

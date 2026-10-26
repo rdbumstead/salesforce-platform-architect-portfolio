@@ -48,7 +48,9 @@ export const EVENTS = Object.freeze({
   TIMELINE_EXPANDED: "timeline_expanded", // tab, expanded
   MOTION_TOGGLED: "motion_toggled", // motion: reduce or full
   DOCS_OPENED: "docs_opened", // doc_key
-  API_LAB_SECTION_TOGGLED: "api_lab_section_toggled" // section, expanded
+  API_LAB_SECTION_TOGGLED: "api_lab_section_toggled", // section, expanded
+  CASE_STUDY_LINK_FOLLOWED: "case_study_link_followed", // name
+  GRAPH_LAYOUT_CHANGED: "graph_layout_changed" // action: drag, fit or reset_layout
 });
 
 /** The document event the site's head script listens for and passes to gtag. */
