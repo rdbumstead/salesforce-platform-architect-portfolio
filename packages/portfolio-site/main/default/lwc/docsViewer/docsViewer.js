@@ -20,6 +20,7 @@ import { CurrentPageReference } from "lightning/navigation";
 import { loadScript } from "lightning/platformResourceLoader";
 import basePath from "@salesforce/community/basePath";
 import MARKED_LIBRARY from "@salesforce/resourceUrl/Marked_Library";
+import MERMAID_DIAGRAMS from "@salesforce/resourceUrl/Mermaid_Diagrams";
 import getDocs from "@salesforce/apex/SourceController.getDocs";
 import getDoc from "@salesforce/apex/SourceController.getDoc";
 import { trackEvent, EVENTS } from "c/analyticsService";
@@ -30,6 +31,51 @@ const PHONE_QUERY = "(max-width: 47.99em)";
 const SETTLE_MS = 600;
 
 let markedPromise;
+let diagramsPromise;
+
+/**
+ * Reads the list of drawn diagrams from the Mermaid_Diagrams static resource once per page.
+ * The list maps a source hash to its text alternative. Any failure, including a resource with
+ * no list, resolves to no drawings, so every Mermaid block shows its source.
+ * @returns {Promise<object>} the hash to { alt } map
+ */
+export function loadDiagrams() {
+  if (!diagramsPromise) {
+    diagramsPromise = (
+      typeof fetch === "function"
+        ? fetch(`${MERMAID_DIAGRAMS}/manifest.json`, {
+            credentials: "same-origin"
+          })
+        : Promise.reject(new Error("no fetch"))
+    )
+      .then((response) => {
+        if (!response || !response.ok) {
+          throw new Error("no diagram list");
+        }
+        return response.json();
+      })
+      .then((body) => {
+        return body && typeof body.diagrams === "object" ? body.diagrams : {};
+      })
+      .catch(() => ({}));
+  }
+  return diagramsPromise;
+}
+
+/** "dark" or "light": the site's data-theme on the page, else the visitor's system setting. */
+export function activeTheme() {
+  try {
+    const set = document.documentElement.getAttribute("data-theme");
+    if (set === "dark" || set === "light") {
+      return set;
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  } catch {
+    return "light";
+  }
+}
 
 /**
  * Loads Marked_Library once per page. A failed load is not cached, so a later call can try
@@ -136,6 +182,7 @@ export default class DocsViewer extends LightningElement {
   headings = [];
   aliases = new Map();
   marked;
+  diagrams;
   tocOpen = true;
   // Which closed-by-default groups the visitor has opened. A closed group draws no rows, so
   // a link nobody can reach is never in the page.
@@ -145,6 +192,9 @@ export default class DocsViewer extends LightningElement {
   _pendingHash = null;
   _trackedKey = null;
   _onPopState;
+  _themeObserver;
+  _themeQuery;
+  _onThemeChange;
 
   @wire(CurrentPageReference)
   wiredPageRef(pageRef) {
@@ -187,6 +237,23 @@ export default class DocsViewer extends LightningElement {
     if (!this.docKey) {
       this.setDocKey(docKeyFrom(null, window.location.search));
     }
+    this._onThemeChange = () => this.syncTheme();
+    try {
+      this._themeObserver = new MutationObserver(this._onThemeChange);
+      this._themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme"]
+      });
+      this._themeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      this._themeQuery.addEventListener("change", this._onThemeChange);
+    } catch {
+      // Without the observer the drawing keeps the theme it had when the page was built.
+    }
+    loadDiagrams().then((entries) => {
+      this.diagrams = entries;
+      this._painted = null;
+      this.paint();
+    });
     loadMarked(this)
       .then((marked) => {
         this.marked = marked;
@@ -201,6 +268,20 @@ export default class DocsViewer extends LightningElement {
 
   disconnectedCallback() {
     window.removeEventListener("popstate", this._onPopState);
+    if (this._themeObserver) {
+      this._themeObserver.disconnect();
+    }
+    if (this._themeQuery) {
+      this._themeQuery.removeEventListener("change", this._onThemeChange);
+    }
+  }
+
+  /** Marks the body with the theme whose drawings show. The CSS hides the other set. */
+  syncTheme() {
+    const target = this.template.querySelector(".doc-body");
+    if (target) {
+      target.setAttribute("data-diagram-theme", activeTheme());
+    }
   }
 
   setDocKey(key) {
@@ -330,7 +411,7 @@ export default class DocsViewer extends LightningElement {
 
   /** Fills the manual DOM body once per document, then scrolls to a pending hash. */
   paint() {
-    if (!this.showDoc || !this.doc || !this.marked) {
+    if (!this.showDoc || !this.doc || !this.marked || !this.diagrams) {
       return;
     }
     const target = this.template.querySelector(".doc-body");
@@ -344,6 +425,7 @@ export default class DocsViewer extends LightningElement {
         const result = renderMarkdown(this.marked, this.doc.content, {
           doc: document,
           baseUrl: this.githubUrl,
+          diagrams: { base: MERMAID_DIAGRAMS, entries: this.diagrams },
           docHrefForPath: (path, hash) => {
             return known.has(path) ? docHref(known.get(path), hash) : null;
           }
@@ -352,6 +434,7 @@ export default class DocsViewer extends LightningElement {
           target.removeChild(target.firstChild);
         }
         target.appendChild(result.fragment);
+        this.syncTheme();
         this.aliases = result.aliases;
         this.headings = result.headings;
         this.title = result.title || this.doc.title || this.docKey;

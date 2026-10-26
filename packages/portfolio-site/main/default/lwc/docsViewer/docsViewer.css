@@ -332,6 +332,30 @@ summary:focus-visible,
   min-width: 0;
 }
 
+.doc-body .doc-drawing {
+  max-width: 100%;
+  margin: 0 0 0.75rem;
+  overflow-x: auto;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+}
+
+.doc-body .doc-drawing-img {
+  display: block;
+  width: 100%;
+  min-width: 36rem;
+  height: auto;
+}
+
+.doc-body .doc-drawing-dark,
+.doc-body[data-diagram-theme="dark"] .doc-drawing-light {
+  display: none;
+}
+
+.doc-body[data-diagram-theme="dark"] .doc-drawing-dark {
+  display: block;
+}
+
 .doc-body .doc-diagram-source {
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);

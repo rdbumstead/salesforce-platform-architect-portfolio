@@ -220,3 +220,6 @@ git_status_fix.txt
 # Agentic / Dev Artifacts
 git_status_*.txt
 git_status_fix.txt
+
+# Mermaid diagrams drawn by scripts/render-mermaid.js before a deploy
+packages/portfolio-site/main/default/staticresources/Mermaid_Diagrams/
