@@ -4,7 +4,7 @@
     <isExposed>true</isExposed>
     <masterLabel>Experience Timeline</masterLabel>
     <description
-  >Work and Education timeline for the home page, read from ResumeController.getTimeline</description>
+  >Work, certifications and education timeline for the Resume page, read from ResumeController.getTimeline</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
