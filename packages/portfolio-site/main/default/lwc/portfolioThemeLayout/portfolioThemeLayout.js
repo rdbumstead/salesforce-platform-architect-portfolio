@@ -659,6 +659,15 @@ export default class PortfolioThemeLayout extends LightningElement {
       return;
     }
     event.preventDefault();
+    // The scroll waits until the closed phone menu has left the header, because a header that
+    // shrinks mid scroll stops a smooth scroll short in WebKit.
+    Promise.resolve().then(() => this.revealWork());
+  }
+
+  /**
+   * Scrolls to the case studies and focuses them, or to the top when the page has none.
+   */
+  revealWork() {
     const target = findInContent(
       this.contentRoots(),
       idSelector(CASE_STUDIES_ID)
