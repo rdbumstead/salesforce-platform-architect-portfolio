@@ -32,7 +32,11 @@ jest.mock(
 
 jest.mock(
   "c/graphEngine",
-  () => ({ loadGraphEngine: jest.fn(), layoutGraph: jest.fn() }),
+  () => ({
+    loadGraphEngine: jest.fn(),
+    layoutGraph: jest.fn(),
+    boundsOf: jest.requireActual("c/graphEngine").boundsOf
+  }),
   { virtual: true }
 );
 
@@ -233,11 +237,12 @@ describe("c-schema-visualizer diagram spacing on the production scopes", () => {
   // Before the spacing was tuned (960 by 600, round nodes of radius 84, charge -600, link distance 180):
   // Employer Hub gap 15.9, 4 lines through boxes, 4 on the clamp. Portfolio gap 11.6, 3 lines
   // through boxes, 6 on the clamp. No box overlapped in either.
+  // The view box fitted to the drawn boxes changed only the view: it was "0 0 960 720" on both.
   it("measures the Employer Hub diagram", async () => {
     expect(await measure("employerHub")).toEqual({
       nodes: 9,
       lines: 17,
-      view: "0 0 960 720",
+      view: "167.7 66.4 768 523.6",
       boxOverlaps: 0,
       smallestGap: 36,
       linesThroughBoxes: 1,
@@ -249,7 +254,7 @@ describe("c-schema-visualizer diagram spacing on the production scopes", () => {
     expect(await measure("portfolio")).toEqual({
       nodes: 14,
       lines: 17,
-      view: "0 0 960 720",
+      view: "6.8 111.1 961.1 616.1",
       boxOverlaps: 0,
       smallestGap: 42.3,
       linesThroughBoxes: 2,
