@@ -6,6 +6,8 @@
  * @Created           : 10/21/2026
  **/
 import {
+  ACTIVE_CERTIFICATIONS,
+  PROOF_POINTS,
   PILLARS,
   LIVE_PILLARS,
   COMING_PILLARS,
@@ -127,7 +129,7 @@ describe("c/pillarData", () => {
       "How an employer hub for an education provider models a business process and its data."
     );
     expect(pillarByLetter("B").tour).toBe(
-      "Follow the pre-sales reasoning behind a platform choice for a literacy program."
+      "Follow the reasoning behind a platform choice for a literacy program."
     );
     expect(pillarByLetter("B").summary).toBe(
       "A solution design, decision matrix and cost comparison for a regional adult literacy nonprofit."
@@ -151,5 +153,14 @@ describe("c/pillarData", () => {
       }
     ]);
     expect(Object.isFrozen(withLinks[0].subLinks[0])).toBe(true);
+  });
+
+  it("holds the hero proof strip once, frozen, with the certification count in it", () => {
+    expect(PROOF_POINTS).toEqual([
+      "On Salesforce since 2017",
+      "7 active Salesforce certifications"
+    ]);
+    expect(PROOF_POINTS).toContain(ACTIVE_CERTIFICATIONS);
+    expect(Object.isFrozen(PROOF_POINTS)).toBe(true);
   });
 });

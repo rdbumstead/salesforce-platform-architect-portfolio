@@ -1,0 +1,64 @@
+<template>
+  <template lwc:if={hasCards}>
+    <div class="case-studies">
+      <section class="section" aria-labelledby="case-studies-heading">
+        <h2
+          id="case-studies-heading"
+          class="section-heading"
+          data-id="case-heading"
+          tabindex="-1"
+        >
+          Case studies
+        </h2>
+        <p class="section-intro">
+          Client names are left out. Each one shows the problem, the call I made
+          and what happened.
+        </p>
+        <ul class="cards" data-id="cards">
+          <template for:each={cards} for:item="card">
+            <li key={card.key} class="card" data-id="card">
+              <article class="card-body">
+                <template lwc:if={card.hasHeadline}>
+                  <p class="metric" data-id="metric">
+                    <span class="metric-number">{card.headlineMetric}</span>
+                    <span class="metric-label">{card.headlineLabel}</span>
+                  </p>
+                </template>
+                <h3 class="card-title">{card.title}</h3>
+                <template lwc:if={card.clientLine}>
+                  <p class="client" data-id="client">{card.clientLine}</p>
+                </template>
+                <dl class="blocks">
+                  <template for:each={card.blocks} for:item="block">
+                    <div key={block.key} class="block" data-key={block.key}>
+                      <dt class="block-heading">{block.heading}</dt>
+                      <dd class="block-text">{block.text}</dd>
+                    </div>
+                  </template>
+                </dl>
+                <template lwc:if={card.hasTags}>
+                  <ul class="tags" aria-label="Topics">
+                    <template for:each={card.tags} for:item="tag">
+                      <li key={tag.key} class="tag">{tag.label}</li>
+                    </template>
+                  </ul>
+                </template>
+                <template lwc:if={card.href}>
+                  <a
+                    class="card-link"
+                    href={card.href}
+                    aria-label={card.linkAriaLabel}
+                    data-id="card-link"
+                    data-name={card.title}
+                    onclick={handleLinkClick}
+                    >{card.linkLabel} <span aria-hidden="true">→</span></a
+                  >
+                </template>
+              </article>
+            </li>
+          </template>
+        </ul>
+      </section>
+    </div>
+  </template>
+</template>

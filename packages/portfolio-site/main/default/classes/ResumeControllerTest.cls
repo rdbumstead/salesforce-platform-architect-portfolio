@@ -311,6 +311,51 @@ private class ResumeControllerTest {
   }
 
   @isTest
+  static void getHeaderAsGuestReturnsTheTrimmedValueSentence() {
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    owner.Value_Sentence__c = '  I design Salesforce solutions and build them end to end.  ';
+    update owner;
+    User guest = SiteGuestTestSupport.preparedGuest();
+    ResumeController.Header header;
+    ResumeController.ResumeData resume;
+
+    Test.startTest();
+    System.runAs(guest) {
+      header = ResumeController.getHeader();
+      resume = ResumeController.getResume(null);
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      'I design Salesforce solutions and build them end to end.',
+      header.valueSentence,
+      'The value sentence comes back trimmed'
+    );
+    Assert.isNull(
+      resume.header.valueSentence,
+      'The resume header does not carry the value sentence'
+    );
+    Assert.areEqual('Test Owner', header.name, 'The rest of the header stays');
+  }
+
+  @isTest
+  static void getHeaderBlankValueSentenceReturnsNull() {
+    Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
+    owner.Value_Sentence__c = '   ';
+    update owner;
+
+    Test.startTest();
+    ResumeController.Header header = ResumeController.getHeader();
+    Test.stopTest();
+
+    Assert.isNotNull(header, 'The header is still returned');
+    Assert.isNull(
+      header.valueSentence,
+      'A blank value sentence comes back null'
+    );
+  }
+
+  @isTest
   static void getHeaderNoOwnerContactReturnsNull() {
     Contact owner = [SELECT Id FROM Contact WHERE Is_Portfolio_Owner__c = TRUE];
     owner.Is_Portfolio_Owner__c = false;

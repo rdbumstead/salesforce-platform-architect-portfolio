@@ -12,7 +12,9 @@
     </values>
     <values>
         <field>Fields__c</field>
-        <value xsi:type="xsd:string">Tests_Passed__c, Org_Coverage__c</value>
+        <value
+      xsi:type="xsd:string"
+    >Tests_Passed__c, Org_Coverage__c, Jest_Tests_Passed__c</value>
     </values>
     <values>
         <field>Filter__c</field>
@@ -42,6 +44,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >Home pillar card E: the newest successful test run.</value>
+    >Home pillar card E and the build section: the newest successful test run.</value>
     </values>
 </CustomMetadata>

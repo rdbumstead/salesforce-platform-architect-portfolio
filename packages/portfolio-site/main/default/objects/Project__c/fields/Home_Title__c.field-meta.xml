@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Home_Title__c</fullName>
+    <description
+  >The title a home page case study card shows in place of the project Name, so the card can read as a story while the pillar pages keep the Name. Read by ProjectCardController.getHomeCaseStudies. Blank shows the Name.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >The case study card's title on the home page, 120 characters at most. Leave blank to show the project Name.</inlineHelpText>
+    <label>Home Title</label>
+    <length>120</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

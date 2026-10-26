@@ -3,7 +3,8 @@
     <apiVersion>62.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Hero Banner</masterLabel>
-    <description>Welcome banner with navigation guidance</description>
+    <description
+  >Home page hero: name, titles, value sentence, proof strip and the two calls to action</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
