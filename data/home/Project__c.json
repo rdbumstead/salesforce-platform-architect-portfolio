@@ -14,7 +14,7 @@
       "Headline_Metric__c": "$0",
       "Headline_Metric_Label__c": "software licence cost for 10 staff users",
       "Challenge__c": "A small staff with no full time admin needed one system for students, volunteers and training partners, inside a tight grant budget.",
-      "Solution__c": "Advised against Education Cloud, which is built and priced for large institutions. Chose donated Sales and Service licences with free NPSP and Program Management over Nonprofit Cloud, for a cheaper path past ten seats. Left donations and accounting where they already ran.",
+      "Solution__c": "Advised against Education Cloud, which is built and priced for large institutions. Chose donated Sales and Service licences with free NPSP and Program Management over Nonprofit Cloud, for a cheaper path past ten seats. Left donations where they already ran.",
       "Business_Value__c": "Ten staff users on donated licences, with staff testing the build in user acceptance before production.",
       "Case_Tags__c": "NPSP, Platform selection, Cost",
       "Live_URL__c": "/nonprofit-solutions",
