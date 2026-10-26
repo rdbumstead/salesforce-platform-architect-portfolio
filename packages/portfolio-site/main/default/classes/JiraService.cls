@@ -23,7 +23,9 @@ public with sharing class JiraService {
 
   public static final String DEFAULT_PROJECT_KEY = 'SPAP';
   public static final String ROADMAP_LABEL = 'portfolio-roadmap';
-  public static final Integer MAX_RESULTS = 50;
+  public static final Integer MAX_RESULTS = 100;
+  /** A safety stop on pages, so a token that never ends cannot loop the callouts. */
+  public static final Integer MAX_PAGES = 5;
   public static final List<String> FIELDS = new List<String>{
     'summary',
     'status',
@@ -65,6 +67,9 @@ public with sharing class JiraService {
   /**
    * @description Runs the roadmap search and maps the issues.
    * @param projectKey A Jira project key, for example SPAP.
+   *              Atlassian documents a page of up to 5000 issues but may return fewer
+   *              when fields are requested, so the search follows nextPageToken until
+   *              MAX_RESULTS issues are read, the last page arrives or MAX_PAGES is hit.
    * @return List<DeliveryController.RoadmapItem> At most MAX_RESULTS issues.
    * @throws JiraServiceException When the key is invalid, the status is not 200 or the body
    *                              holds no issue list.
@@ -77,19 +82,42 @@ public with sharing class JiraService {
     ) {
       throw new JiraServiceException('Invalid Jira project key.');
     }
-    HttpResponse response = new Http().send(searchRequest(projectKey));
-    if (response.getStatusCode() != 200) {
-      throw new JiraServiceException('HTTP ' + response.getStatusCode());
+    List<DeliveryController.RoadmapItem> items = new List<DeliveryController.RoadmapItem>();
+    String pageToken = null;
+    Integer pages = 0;
+    do {
+      HttpResponse response = new Http()
+        .send(searchRequest(projectKey, MAX_RESULTS - items.size(), pageToken));
+      if (response.getStatusCode() != 200) {
+        throw new JiraServiceException('HTTP ' + response.getStatusCode());
+      }
+      items.addAll(parseIssues(response.getBody()));
+      pageToken = nextPageToken(response.getBody());
+      pages++;
+    } while (
+      pageToken != null &&
+      items.size() < MAX_RESULTS &&
+      pages < MAX_PAGES
+    );
+    while (items.size() > MAX_RESULTS) {
+      items.remove(items.size() - 1);
     }
-    return parseIssues(response.getBody());
+    return items;
   }
 
-  private static HttpRequest searchRequest(String projectKey) {
+  private static HttpRequest searchRequest(
+    String projectKey,
+    Integer maxResults,
+    String pageToken
+  ) {
     Map<String, Object> body = new Map<String, Object>{
       'jql' => roadmapJql(projectKey),
       'fields' => FIELDS,
-      'maxResults' => MAX_RESULTS
+      'maxResults' => maxResults
     };
+    if (pageToken != null) {
+      body.put('nextPageToken', pageToken);
+    }
     HttpRequest request = new HttpRequest();
     request.setEndpoint('callout:Jira_API/rest/api/3/search/jql');
     request.setMethod('POST');
@@ -97,6 +125,15 @@ public with sharing class JiraService {
     request.setHeader('Accept', 'application/json');
     request.setBody(JSON.serialize(body));
     return request;
+  }
+
+  /** The token for the next page, or null on the last page (Atlassian omits it there). */
+  private static String nextPageToken(String body) {
+    Object parsed = JSON.deserializeUntyped(body);
+    String token = stringOf(
+      ((Map<String, Object>) parsed).get('nextPageToken')
+    );
+    return String.isBlank(token) ? null : token;
   }
 
   @TestVisible
