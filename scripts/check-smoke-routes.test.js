@@ -5,7 +5,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { check, tagOf, bundleOf } = require("./check-smoke-routes.js");
-const { ROUTES } = require("./live-smoke.js");
+const { ROUTES, isUnderBase } = require("./live-smoke.js");
 
 const SITE =
   "packages/portfolio-site/main/default/digitalExperiences/site/Portfolio1";
@@ -105,4 +105,15 @@ test("a page the smoke skips and a route the site lacks both fail", () => {
 
 test("the smoke's own list matches this repository's site", () => {
   assert.deepStrictEqual(check(path.join(__dirname, ".."), ROUTES), []);
+});
+
+test("the smoke treats only the base and pages under it as the site", () => {
+  const base = "https://example.my.site.com/portfolio";
+  assert.strictEqual(isUnderBase(`${base}/`, base), true);
+  assert.strictEqual(isUnderBase(`${base}/docs?doc=sas#top`, base), true);
+  assert.strictEqual(
+    isUnderBase("https://example.my.site.com/portfolio/", `${base}vforcesite`),
+    false
+  );
+  assert.strictEqual(isUnderBase(`${base}2/`, base), false);
 });

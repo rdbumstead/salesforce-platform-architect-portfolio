@@ -260,8 +260,22 @@ function finishCheck(result, knownSeen) {
   return result;
 }
 
-// Loads the home page once. Returns null when it answers 200 with the site layout, or the
-// reason it did not.
+/**
+ * Whether an address is the base or a page under it.
+ * @param {string} url the address a page landed on
+ * @param {string} base the site's path prefix
+ * @returns {boolean} true when the address is under the base
+ */
+function isUnderBase(url, base) {
+  const landed = String(url || "")
+    .split(/[?#]/)[0]
+    .replace(/\/+$/, "");
+  return landed === base || landed.startsWith(base + "/");
+}
+
+// Loads the home page once. Returns null when it answers 200 with the site layout at an
+// address under the base, or the reason it did not. A base that only redirects to the site
+// (the .../portfoliovforcesite address) lands somewhere else, so every other route would 404.
 async function homeProblem(browser) {
   const context = await browser.newContext();
   try {
@@ -273,6 +287,9 @@ async function homeProblem(browser) {
     const status = response ? response.status() : null;
     if (status !== 200) {
       return `it answered ${status === null ? "nothing" : status}`;
+    }
+    if (!isUnderBase(page.url(), BASE)) {
+      return `it redirected to ${page.url()}`;
     }
     return (await hasLayout(page)) ? null : "it has no site layout";
   } catch (error) {
@@ -416,7 +433,7 @@ async function main() {
 
 // The route list is shared with scripts/check-smoke-routes.js, which checks it against the
 // site's views without a browser. Requiring this file runs nothing.
-module.exports = { ROUTES };
+module.exports = { ROUTES, isUnderBase };
 
 if (require.main === module) {
   main().catch((error) => {
