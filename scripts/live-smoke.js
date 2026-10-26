@@ -42,6 +42,7 @@ const ROUTES = [
     path: "/",
     components: [
       "c-hero-banner",
+      "c-career-line",
       { tag: "c-case-study-grid", mayBeEmpty: true },
       "c-contact-call",
       "c-site-build-section"
@@ -49,10 +50,7 @@ const ROUTES = [
   },
   { path: "/contact", components: ["c-contact-form"] },
   { path: "/docs", components: ["c-docs-viewer"] },
-  {
-    path: "/resume",
-    components: ["c-resume-builder", "c-experience-timeline"]
-  },
+  { path: "/resume", components: ["c-resume-builder"] },
   { path: "/skills", components: ["c-skill-network"] },
   { path: "/api-lab", components: ["c-api-tester"] },
   { path: "/api-lab/reference", components: ["c-api-reference"] },
