@@ -36,7 +36,18 @@
 .actions {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: var(--pf-space-2);
+}
+
+/* The secondary button takes the theme's text colour, so it reads in dark mode too. */
+.copy-ats {
+  --slds-c-button-text-color: var(--pf-text);
+  --slds-c-button-text-color-hover: var(--pf-text);
+  --slds-c-button-neutral-color-background: var(--pf-bg);
+  --slds-c-button-neutral-color-background-hover: var(--pf-surface);
+  --slds-c-button-neutral-color-border: var(--pf-border);
+  --slds-c-icon-color-foreground-default: var(--pf-text);
 }
 
 .text-success {
