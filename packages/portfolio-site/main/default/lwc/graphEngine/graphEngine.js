@@ -431,10 +431,15 @@ export function attachPanZoom(d3, svg, options = {}) {
   // A double click selects a node twice, so it never zooms.
   selection.call(behaviour).on("dblclick.zoom", null);
   // A button move eases over the duration when one is given and d3-transition is loaded.
-  const mover = (duration) =>
-    numberOr(duration, 0) > 0 && typeof selection.transition === "function"
-      ? selection.interrupt().transition().duration(duration)
-      : selection;
+  const mover = (duration) => {
+    if (
+      numberOr(duration, 0) > 0 &&
+      typeof selection.transition === "function"
+    ) {
+      return selection.interrupt().transition().duration(duration);
+    }
+    return selection;
+  };
   return {
     zoomIn: (duration) => mover(duration).call(behaviour.scaleBy, step),
     zoomOut: (duration) => mover(duration).call(behaviour.scaleBy, 1 / step),
