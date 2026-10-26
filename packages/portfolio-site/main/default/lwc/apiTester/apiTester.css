@@ -140,10 +140,24 @@
   overflow-wrap: anywhere;
 }
 
-.card-tools {
+/* The title and View source share one row, View source at the right end. */
+.title-row {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--pf-space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2);
+}
+
+.card-title {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--pf-text);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.title-row {
+  margin-bottom: var(--pf-space-3);
 }
 
 /* Query parameter controls. Pills and buttons are 44 px high. */
@@ -369,13 +383,75 @@
 }
 
 @media (max-width: 767.98px) {
-  /* View source starts at the left on a phone instead of the far right. */
-  .card-tools {
-    justify-content: flex-start;
-  }
-
   .param-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--pf-space-4);
+  }
+}
+
+/* The empty response area, shown before the first call. */
+.response-empty {
+  padding: var(--pf-space-4);
+  background-color: var(--pf-subtle);
+  color: var(--pf-body);
+  border: 1px dashed var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+}
+
+.response-empty-text {
+  margin: 0;
+  color: var(--pf-body);
+}
+
+/* A call in flight: the word and a thin bar. The bar moves by transform alone. */
+.sending-text {
+  margin: 0 0 var(--pf-space-2);
+  color: var(--pf-text);
+  font-weight: 700;
+}
+
+.progress {
+  height: 3px;
+  overflow: hidden;
+  background-color: var(--pf-chip);
+  border-radius: 999px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 100%;
+  background-color: var(--pf-accent);
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .progress-bar {
+    width: 40%;
+    opacity: 1;
+    animation: apiTesterSlide 1.2s ease-in-out infinite;
+  }
+
+  .result-fade {
+    animation: apiTesterFadeIn 250ms ease-out;
+  }
+}
+
+@keyframes apiTesterSlide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@keyframes apiTesterFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }

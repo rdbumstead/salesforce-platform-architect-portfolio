@@ -141,11 +141,11 @@ describe("c-api-tester", () => {
     expect(query(element, "button.execute-button").disabled).toBe(true);
   });
 
-  it("places View source with the apiTester key under the card heading", async () => {
+  it("places View source with the apiTester key in the title row, after the heading", async () => {
     const element = createComponent();
     await flushPromises();
 
-    const control = query(element, ".card-tools c-view-source");
+    const control = query(element, ".title-row c-view-source");
     expect(control).not.toBeNull();
     expect(control.sourceKey).toBe("apiTester");
   });
