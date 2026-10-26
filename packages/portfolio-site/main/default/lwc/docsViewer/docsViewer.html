@@ -26,12 +26,21 @@
               </ul>
             </template>
             <template lwc:else>
-              <details class="doc-group-details">
+              <details
+                class="doc-group-details"
+                data-group={group.key}
+                open={group.isExpanded}
+                ontoggle={handleGroupToggle}
+              >
                 <summary class="doc-group-summary">
                   <span class="doc-group-title">{group.label}</span>
                   <span class="doc-group-count">{group.countLabel}</span>
                 </summary>
-                <ul class="doc-list" aria-label={group.label}>
+                <ul
+                  lwc:if={group.isExpanded}
+                  class="doc-list"
+                  aria-label={group.label}
+                >
                   <template for:each={group.items} for:item="item">
                     <li key={item.key} class="doc-list-item">
                       <a

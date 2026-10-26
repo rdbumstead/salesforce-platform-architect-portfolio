@@ -137,6 +137,9 @@ export default class DocsViewer extends LightningElement {
   aliases = new Map();
   marked;
   tocOpen = true;
+  // Which closed-by-default groups the visitor has opened. A closed group draws no rows, so
+  // a link nobody can reach is never in the page.
+  openedGroups = {};
 
   _painted = null;
   _pendingHash = null;
@@ -253,6 +256,7 @@ export default class DocsViewer extends LightningElement {
         key: group.key,
         label: group.label,
         isOpenGroup: group.open,
+        isExpanded: Boolean(this.openedGroups[group.key]),
         items: members,
         countLabel: `${members.length} ${members.length === 1 ? "record" : "records"}`
       };
@@ -463,6 +467,14 @@ export default class DocsViewer extends LightningElement {
       );
     } catch {
       // The address stays as it was. The page still scrolls.
+    }
+  }
+
+  handleGroupToggle(event) {
+    const key = event.currentTarget.dataset.group;
+    const open = event.currentTarget.open;
+    if (key && Boolean(this.openedGroups[key]) !== open) {
+      this.openedGroups = { ...this.openedGroups, [key]: open };
     }
   }
 

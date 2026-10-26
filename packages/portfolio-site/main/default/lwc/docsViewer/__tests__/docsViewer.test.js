@@ -226,6 +226,10 @@ afterEach(() => {
 describe("c-docs-viewer list", () => {
   it("lists every document with its badge and link when no doc is chosen", async () => {
     const el = await create({});
+    const closed = shadow(el).querySelector("details.doc-group-details");
+    closed.open = true;
+    closed.dispatchEvent(new CustomEvent("toggle"));
+    await flush();
     const links = shadow(el).querySelectorAll(".doc-list-link");
     expect(shadow(el).querySelector("h1").textContent).toBe(
       "Architecture docs"
@@ -266,10 +270,18 @@ describe("c-docs-viewer list", () => {
       "Systems Architecture Specification",
       "Guardrails"
     ]);
-    expect(names(groups[2])).toEqual(["Four", "Five"]);
+    expect(names(groups[2])).toEqual([]);
     const decisions = groups[2].querySelector("details.doc-group-details");
     expect(decisions).not.toBeNull();
     expect(decisions.open).toBe(false);
+    // A closed group draws no rows, so no link in it can be reached or announced.
+    expect(groups[2].querySelectorAll(".doc-list-link")).toHaveLength(0);
+    decisions.open = true;
+    decisions.dispatchEvent(new CustomEvent("toggle"));
+    await flush();
+    expect(
+      shadow(el).querySelectorAll('[data-group="decisions"] .doc-list-link')
+    ).toHaveLength(2);
     expect(groups[2].querySelector(".doc-group-count").textContent).toBe(
       "2 records"
     );
