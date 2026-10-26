@@ -238,6 +238,8 @@ export default class DocsViewer extends LightningElement {
       key: d.key,
       title: d.title,
       badge: badgeFor(d.key),
+      // Said whole, so a row inside the closed Decisions group still has a name.
+      label: `${badgeFor(d.key)}: ${d.title}`,
       href: docHref(d.key)
     }));
   }

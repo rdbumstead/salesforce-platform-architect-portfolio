@@ -235,6 +235,7 @@ describe("c-docs-viewer list", () => {
       "How this site is designed and why. Start with the Executive Overview."
     );
     expect(links[0].getAttribute("href")).toBe("/portfolio/docs?doc=sas");
+    expect(links[1].getAttribute("aria-label")).toBe("ADR-027: Platform auth");
     expect(links[0].querySelector(".doc-badge").textContent).toBe("SAS");
     expect(links[1].querySelector(".doc-badge").textContent).toBe("ADR-027");
     expect(links[1].querySelector(".doc-name").textContent).toBe(
