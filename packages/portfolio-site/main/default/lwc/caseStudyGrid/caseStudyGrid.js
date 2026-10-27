@@ -1,15 +1,17 @@
 /**
- * @description       : The home page case studies: up to three cards from
+ * @description       : The home page case studies: up to three compact cards from
  *                      ProjectCardController.getHomeCaseStudies, each with its headline number
- *                      and label (only when both are set), the title, the client line, the
- *                      three blocks "The problem", "My call" and "The result" (each only when
- *                      set), the topic chips and a link to the full write up. The link shows
- *                      only for an http or https address or a path on this site, and following
- *                      it sends case_study_link_followed with the card's title.
- *                      Renders nothing at all before the read returns, when it is empty or when
- *                      it fails, so there is never an empty heading.
+ *                      and label (only when both are set), the title and the client line. The
+ *                      full story lives on the page each card links to. The title is the card's
+ *                      one link, stretched over the whole card, so a screen reader hears one link
+ *                      per card. A card shows only with a title and a link, and a link is an http
+ *                      or https address or a path on this site (isShownCase, which the hero's
+ *                      "See the case studies" button uses too). Following a link sends
+ *                      case_study_link_followed with the card's title.
+ *                      Renders nothing at all before the read returns, when no card can show or
+ *                      when it fails, so there is never an empty heading.
  *                      While it shows cards its host element carries the id "case-studies", so
- *                      the hero button and the header's Work link can reach it. revealHeading
+ *                      the hero button can reach it. revealHeading
  *                      scrolls to the heading and moves focus to it, and an address ending in
  *                      #case-studies does the same, on load or later. Scrolling is smooth
  *                      unless the system "reduce motion" setting is on (c/motionPreference).
@@ -28,13 +30,6 @@ import { isReduced } from "c/motionPreference";
 export const ANCHOR_ID = "case-studies";
 const ANCHOR_HASH = `#${ANCHOR_ID}`;
 const MAX_CARDS = 3;
-const LINK_LABEL = "See the full design";
-
-const BLOCKS = [
-  ["challenge", "The problem"],
-  ["solution", "My call"],
-  ["businessValue", "The result"]
-];
 
 /**
  * Trimmed text, or null when the value is not a non blank string.
@@ -62,6 +57,15 @@ export function toCaseHref(value) {
   return /^https?:\/\//i.test(text) ? toExternalUrl(text) : null;
 }
 
+/**
+ * Whether a case study row can show as a card: it has a title and a usable link.
+ * @param {object} row a ProjectCardController.CaseStudy
+ * @returns {boolean} true when the card shows
+ */
+export function isShownCase(row) {
+  return Boolean(row && textOrNull(row.title) && toCaseHref(row.liveUrl));
+}
+
 export default class CaseStudyGrid extends LightningElement {
   rows = [];
   hashListener = () => this.revealFromHash();
@@ -86,7 +90,7 @@ export default class CaseStudyGrid extends LightningElement {
   @wire(getHomeCaseStudies)
   wiredCaseStudies({ data, error }) {
     if (Array.isArray(data)) {
-      this.rows = data.filter((row) => row && textOrNull(row.title));
+      this.rows = data.filter(isShownCase);
     } else if (error || data === null) {
       // An extra on the home page: on an error it stays hidden.
       this.rows = [];
@@ -104,12 +108,6 @@ export default class CaseStudyGrid extends LightningElement {
       const label = textOrNull(row.headlineLabel);
       const title = textOrNull(row.title);
       const href = toCaseHref(row.liveUrl);
-      const tags = Array.isArray(row.tags)
-        ? row.tags
-            .map((tag) => textOrNull(tag))
-            .filter(Boolean)
-            .map((tag) => ({ key: tag, label: tag }))
-        : [];
       return {
         key: row.key || `case-${index}`,
         title,
@@ -118,16 +116,7 @@ export default class CaseStudyGrid extends LightningElement {
         headlineMetric: metric,
         // The leading space keeps "$0 software licence cost" apart when read as one line.
         headlineLabel: label ? ` ${label}` : null,
-        blocks: BLOCKS.map(([field, heading]) => ({
-          key: field,
-          heading,
-          text: textOrNull(row[field])
-        })).filter((block) => block.text),
-        tags,
-        hasTags: tags.length > 0,
-        href,
-        linkLabel: LINK_LABEL,
-        linkAriaLabel: `${LINK_LABEL}: ${title}`
+        href
       };
     });
   }

@@ -29,6 +29,12 @@
         label="Link label"
         default="Contact Ryan"
       />
+            <property
+        name="note"
+        type="String"
+        label="Note"
+        default="References available on request."
+      />
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>

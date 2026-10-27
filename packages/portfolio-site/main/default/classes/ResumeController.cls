@@ -3,7 +3,9 @@
  *                      roles with persona highlights, skill groups, certifications and education
  *                      in one fixed shape, plus the certification verification link.
  *                      getTimeline serves the home page timeline: work, education and the
- *                      current certifications, with how many entries each tab shows at first.
+ *                      current certifications, with how many entries each tab shows at first
+ *                      and the year the owner started on Salesforce (the Salesforce_Start_Year
+ *                      setting), which the career line folds earlier roles by and the hero shows.
  *                      Skills follow the persona: a chosen persona gets the skills tagged for
  *                      it plus every untagged skill, and no persona gets them all.
  *                      getHeader also returns heroLine (the hero's title line) and valueSentence
@@ -39,6 +41,11 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   // setting is missing or out of its range.
   @TestVisible
   private static final Integer DEFAULT_TIMELINE_TAB_LIMIT = 5;
+
+  // The year the owner started on Salesforce, when the Salesforce_Start_Year setting is missing
+  // or out of its range.
+  @TestVisible
+  private static final Integer DEFAULT_SALESFORCE_START_YEAR = 2017;
 
   /**
    * @description Builds the resume for a persona. Highlights and skills both follow it: a
@@ -84,7 +91,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
    *              newest first. Every list is empty, never null, when there are no rows.
    *              tabLimit is how many entries each tab shows before "View all", and
    *              verificationUrl is the one certification verification link or null.
-   * @return Timeline The three lists, the verification link and the tab limit.
+   *              salesforceStartYear is the year the owner started on Salesforce.
+   * @return Timeline The three lists, the verification link, the tab limit and the start year.
    * @example
    * ResumeController.Timeline timeline = ResumeController.getTimeline();
    */
@@ -99,7 +107,15 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     );
     timeline.verificationUrl = credentialVerificationUrl();
     timeline.tabLimit = timelineTabLimit();
+    timeline.salesforceStartYear = salesforceStartYear();
     return timeline;
+  }
+
+  private static Integer salesforceStartYear() {
+    return PortfolioSettings.getInteger(
+      'Salesforce_Start_Year',
+      DEFAULT_SALESFORCE_START_YEAR
+    );
   }
 
   private static Integer timelineTabLimit() {
@@ -710,7 +726,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
 
   /**
    * @description The home page timeline: roles, schools and current certifications, newest
-   *              first, with the verification link and how many entries a tab shows at first.
+   *              first, with the verification link, how many entries a tab shows at first
+   *              and the year the owner started on Salesforce.
    */
   public class Timeline {
     @AuraEnabled
@@ -723,6 +740,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     public String verificationUrl;
     @AuraEnabled
     public Integer tabLimit;
+    @AuraEnabled
+    public Integer salesforceStartYear;
   }
 
   /**

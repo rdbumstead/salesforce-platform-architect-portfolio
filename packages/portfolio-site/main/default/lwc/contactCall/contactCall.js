@@ -1,6 +1,9 @@
 /**
- * @description       : The home page's "Get in touch" line. One sentence and a link styled
- *                      as a button that opens the /contact page, where the contact form lives.
+ * @description       : The home page's "Get in touch" line, the last section before the
+ *                      footer. A heading, one sentence, an optional short note under it
+ *                      ("References available on request." by default, blank hides it) and a
+ *                      link styled as a button that opens the /contact page, where the contact
+ *                      form lives.
  *                      Older links pointed at the form on the home page with #contact, so when
  *                      the address ends in #contact, on load or later, this sends the visitor
  *                      on to /contact. The redirect replaces the history entry, so Back does
@@ -28,6 +31,11 @@ export default class ContactCall extends LightningElement {
   @api heading = "Get in touch";
   @api text = "Questions about a project, a role or this site?";
   @api linkLabel = "Contact Ryan";
+  @api note = "References available on request.";
+
+  get hasNote() {
+    return typeof this.note === "string" && this.note.trim().length > 0;
+  }
 
   boundHashChange = () => this.redirectIfOldLink();
 

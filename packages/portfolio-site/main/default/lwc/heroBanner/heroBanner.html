@@ -37,6 +37,15 @@
             >View the resume <span aria-hidden="true">→</span></a
           >
         </div>
+        <p class="hero-tour">
+          <a
+            class="tour-link"
+            href={tourHref}
+            data-id="tour-link"
+            onclick={handleTourClick}
+            >{tourLabel} <span aria-hidden="true">↓</span></a
+          >
+        </p>
         <nav class="profile-links" aria-label="Profiles">
           <template for:each={profileLinks} for:item="link">
             <a

@@ -608,10 +608,11 @@ private class ResumeControllerTest {
         'education',
         'certifications',
         'verificationUrl',
-        'tabLimit'
+        'tabLimit',
+        'salesforceStartYear'
       },
       payload.keySet(),
-      'Only the three lists, the verification link and the tab limit'
+      'Only the three lists, the verification link, the tab limit and the start year'
     );
     for (Object entry : (List<Object>) payload.get('certifications')) {
       Assert.areEqual(
@@ -788,6 +789,55 @@ private class ResumeControllerTest {
       ResumeController.DEFAULT_TIMELINE_TAB_LIMIT,
       timeline.tabLimit,
       'A value below its minimum falls back to five'
+    );
+  }
+
+  @isTest
+  static void getTimelineStartYearIsTheDefaultWhenTheSettingIsMissing() {
+    PortfolioSettings.overrides.put('Salesforce_Start_Year', null);
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(
+      ResumeController.DEFAULT_SALESFORCE_START_YEAR,
+      timeline.salesforceStartYear,
+      'The code default when no setting is there'
+    );
+  }
+
+  @isTest
+  static void getTimelineStartYearReadsTheSetting() {
+    PortfolioSettings.overrideNumber('Salesforce_Start_Year', 2018);
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(2018, timeline.salesforceStartYear, 'The configured year');
+  }
+
+  @isTest
+  static void getTimelineStartYearIgnoresAValueOutsideItsRange() {
+    PortfolioSettings.overrides.put(
+      'Salesforce_Start_Year',
+      new Portfolio_Setting__mdt(
+        DeveloperName = 'Salesforce_Start_Year',
+        Number_Value__c = 1900,
+        Min_Value__c = 1999,
+        Max_Value__c = 2100
+      )
+    );
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(
+      ResumeController.DEFAULT_SALESFORCE_START_YEAR,
+      timeline.salesforceStartYear,
+      'A year below its minimum falls back to the code default'
     );
   }
 

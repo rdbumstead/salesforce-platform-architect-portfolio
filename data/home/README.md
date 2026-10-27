@@ -1,14 +1,16 @@
 # Home case study seed data
 
-Three `Project__c` rows for walking the home page's case study cards in a scratch org. Each row has `Home_Sort__c` set (1, 2 and 3) and no `Pillar__c`, so `ProjectCardController.getHomeCaseStudies` shows them and `getPillarCards` never picks them up. None is featured, because the home cards are chosen by `Home_Sort__c` alone.
+Three `Project__c` rows for walking the home page's case study cards in a scratch org. Each row has `Home_Sort__c` set and no `Pillar__c`, so `ProjectCardController.getHomeCaseStudies` shows them and `getPillarCards` never picks them up. None is featured, because the home cards are chosen by `Home_Sort__c` alone. The order is A, B, E, the same as production since Round 12.
 
-| Row               | Card title                                           | Number                                                  |
-| ----------------- | ---------------------------------------------------- | ------------------------------------------------------- |
-| Home case study B | Choosing the right platform for a literacy nonprofit | `$0`, stored                                            |
-| Home case study A | Designing an employer hub for an education provider  | the Employer Hub object count, computed from the ERD    |
-| Home case study E | Building this site as a production org               | the newest successful run's passed Apex tests, computed |
+| Order | Row               | Card title                                           | Number                                                  |
+| ----- | ----------------- | ---------------------------------------------------- | ------------------------------------------------------- |
+| 1     | Home case study A | Designing an employer hub for an education provider  | the Employer Hub object count, computed from the ERD    |
+| 2     | Home case study B | Choosing the right platform for a literacy nonprofit | `$0`, stored                                            |
+| 3     | Home case study E | Building this site as a production org               | the newest successful run's passed Apex tests, computed |
 
-The links are paths on the site (`/nonprofit-solutions`, `/business-architecture`, `/docs`), so they work in any scratch org. In production the same cards are the Pillar B, A and E rows, changed by the owner's script, and their links are the full `https://ryanbumstead.com/...` addresses the pillar cards already use.
+A card shows only with a link, and the home page shows the number, the title and the client line. These rows still carry the problem, the call and the outcome, which the home cards no longer show. In production the same fields are on the pillar rows, which the build section's case studies read.
+
+The links are paths on the site (`/business-architecture`, `/nonprofit-solutions`, `/delivery`), so they work in any scratch org. In production the same cards are the Pillar B, A and E rows, changed by the owner's script, and their links are the full `https://ryanbumstead.com/...` addresses the pillar cards already use.
 
 ## Copy for the owner's review
 
