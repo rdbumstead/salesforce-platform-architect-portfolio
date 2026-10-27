@@ -1,0 +1,126 @@
+/*
+ * The site's one look for native form controls and buttons, shared through a CSS import
+ * (@import "c/nativeControls" at the top of a component's CSS). It replaces Salesforce's
+ * 32 px base components with 44 px native controls, so every field and button that sits in one
+ * row lines up. Colours come from the --pf- tokens the theme layout sets, so light and dark
+ * follow the visitor's theme. Field edges use --pf-muted for a 3:1 edge against the surface.
+ */
+
+.nc-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nc-label {
+  display: block;
+  color: var(--pf-text);
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+/* The visible required mark. The control itself carries required, so it is aria-hidden. */
+.nc-required {
+  color: var(--pf-error-text);
+  margin-left: 0.125rem;
+}
+
+.nc-hint,
+.nc-error {
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+}
+
+.nc-hint {
+  color: var(--pf-muted);
+}
+
+.nc-error {
+  color: var(--pf-error-text);
+}
+
+.nc-control {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem;
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-muted);
+  border-radius: var(--pf-radius-sm);
+  font: inherit;
+  color-scheme: var(--pf-color-scheme, normal);
+}
+
+textarea.nc-control {
+  resize: vertical;
+}
+
+.nc-control:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 1px;
+}
+
+.nc-control[aria-invalid="true"] {
+  border-color: var(--pf-error-text);
+}
+
+.nc-control:disabled {
+  background-color: var(--pf-subtle);
+  cursor: not-allowed;
+}
+
+.nc-button {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--pf-space-4);
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+  border: 1px solid var(--pf-btn);
+  border-radius: var(--pf-radius-sm);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nc-button:hover:not(:disabled) {
+  background-color: var(--pf-btn-hover);
+  border-color: var(--pf-btn-hover);
+}
+
+.nc-button_secondary {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border-color: var(--pf-muted);
+}
+
+.nc-button_secondary:hover:not(:disabled) {
+  background-color: var(--pf-subtle);
+  border-color: var(--pf-muted);
+}
+
+.nc-button:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+.nc-button:disabled {
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border-color: var(--pf-chip);
+  cursor: not-allowed;
+}
+
+/* A label kept for screen readers where the design shows none. */
+.nc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
