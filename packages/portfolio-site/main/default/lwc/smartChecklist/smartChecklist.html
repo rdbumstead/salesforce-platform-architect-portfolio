@@ -4,7 +4,9 @@
     <h2 class="heading" id="governance-heading">Governance checklist</h2>
 
     <template lwc:if={isLoading}>
-      <p class="note" role="status">Loading the latest pipeline runs.</p>
+      <p class="visually-hidden" role="status" data-id="loading">
+        Loading the latest pipeline runs.
+      </p>
     </template>
     <template lwc:elseif={hasError}>
       <p class="note" role="status">
