@@ -186,12 +186,15 @@ describe("c-changelog", () => {
     expect(qa(element, "li.commit-item")).toHaveLength(2);
   });
 
-  it("a wire error shows the empty message, never a stack", async () => {
+  it("a wire error says the fetch failed, never a stack and never an empty week", async () => {
     const element = createComponent();
     getRecentCommits.error({ message: "No access" });
     await flushPromises();
 
-    expect(q(element, '[data-id="empty"]')).not.toBeNull();
+    expect(q(element, '[data-id="failed"]').textContent.trim()).toBe(
+      "The latest updates could not be loaded right now."
+    );
+    expect(q(element, '[data-id="empty"]')).toBeNull();
     expect(q(element, '[data-id="loading"]')).toBeNull();
     expect(element.shadowRoot.textContent).not.toContain("No access");
   });

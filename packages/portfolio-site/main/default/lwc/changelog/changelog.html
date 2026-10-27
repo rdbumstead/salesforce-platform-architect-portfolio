@@ -54,5 +54,11 @@
     <template lwc:if={showEmpty}>
       <p class="changelog-message" data-id="empty">No recent updates found.</p>
     </template>
+
+    <template lwc:if={showFailed}>
+      <p class="changelog-message" data-id="failed">
+        The latest updates could not be loaded right now.
+      </p>
+    </template>
   </section>
 </template>
