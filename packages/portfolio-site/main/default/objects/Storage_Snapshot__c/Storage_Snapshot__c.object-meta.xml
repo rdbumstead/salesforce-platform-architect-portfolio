@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>SYSTEM</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The Storage Snapshot object holds the one record the footer's storage panel reads. StorageSnapshotJob overwrites it on its schedule with org storage totals and aggregate figures grouped by area. Admin only. Guests read it through FooterController.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableReports>false</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>Storage Snapshot</label>
+    <nameField>
+        <displayFormat>STO-{0000}</displayFormat>
+        <label>Storage Snapshot Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Storage Snapshots</pluralLabel>
+    <searchLayouts />
+    <sharingModel>ReadWrite</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

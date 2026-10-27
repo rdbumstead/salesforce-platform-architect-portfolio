@@ -94,13 +94,42 @@ private class IntegrationCacheRefreshSchedulerTest {
     Integer queued = Limits.getQueueableJobs();
     Test.stopTest();
 
-    Assert.areEqual(3, queued, 'GitHub, Jira and source jobs enqueued');
+    Assert.areEqual(
+      4,
+      queued,
+      'GitHub, Jira, source and storage snapshot jobs enqueued'
+    );
+  }
+
+  @IsTest
+  static void shouldEnqueueTheStorageSnapshotWhenNoneIsStored() {
+    isolateRefreshJobs();
+
+    Test.startTest();
+    new IntegrationCacheRefreshScheduler().execute(null);
+    Test.stopTest();
+
+    Assert.areEqual(
+      1,
+      [
+        SELECT COUNT()
+        FROM AsyncApexJob
+        WHERE JobType = 'Queueable' AND ApexClass.Name = 'StorageSnapshotJob'
+      ],
+      'The storage snapshot job ran'
+    );
+    Assert.areEqual(
+      1,
+      [SELECT COUNT() FROM Storage_Snapshot__c],
+      'It stored the snapshot'
+    );
   }
 
   @IsTest
   static void shouldEnqueueBothRefreshJobsWhenExecuted() {
-    // No source file configured, so nothing is due and only the two jobs run.
+    // No source file configured, so no source refresh, and a fresh snapshot is stored.
     isolateRefreshJobs();
+    StorageSnapshot.save(StorageSnapshotJob.build());
 
     Test.startTest();
     new IntegrationCacheRefreshScheduler().execute(null);

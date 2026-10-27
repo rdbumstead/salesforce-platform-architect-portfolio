@@ -3,7 +3,9 @@
  *                      :15, :30 and :45. Each run enqueues
  *                      GitHubCacheRefreshJob and JiraCacheRefreshJob, which make the callouts,
  *                      and SourceCacheRefreshJob when a source file is due, which is at most
- *                      once a day per file. Schedule it once, as the admin who holds the GitHub and Jira principal
+ *                      once a day per file. It also enqueues StorageSnapshotJob when the
+ *                      stored storage snapshot is older than the Storage_Snapshot_Hours
+ *                      setting. Schedule it once, as the admin who holds the GitHub and Jira principal
  *                      access, with IntegrationCacheRefreshScheduler.scheduleAll(). That takes 4
  *                      of the 100 scheduled job slots.
  * @author            : Ryan Bumstead
@@ -29,7 +31,8 @@ public with sharing class IntegrationCacheRefreshScheduler implements Schedulabl
   };
 
   /**
-   * @description Enqueues both refresh jobs, and the source refresh when a file is due.
+   * @description Enqueues both refresh jobs, the source refresh when a file is due, and the
+   *              storage snapshot when it is due.
    * @param context Schedulable context.
    */
   public void execute(SchedulableContext context) {
@@ -37,6 +40,9 @@ public with sharing class IntegrationCacheRefreshScheduler implements Schedulabl
     System.enqueueJob(new JiraCacheRefreshJob());
     if (SourceCacheRefreshJob.isDue()) {
       System.enqueueJob(new SourceCacheRefreshJob());
+    }
+    if (StorageSnapshot.isDue()) {
+      System.enqueueJob(new StorageSnapshotJob());
     }
   }
 

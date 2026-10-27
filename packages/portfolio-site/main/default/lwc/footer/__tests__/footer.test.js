@@ -17,6 +17,7 @@ import Footer, {
   ACTIONS_URL,
   BADGE_URL,
   formatNumber,
+  formatSize,
   formatTime,
   integrationLabel,
   providerLabel,
@@ -71,7 +72,8 @@ jest.mock(
   () => ({
     EVENTS: {
       FINOPS_QUOTA_VISIBILITY: "finops_quota_visibility",
-      BACK_TO_TOP_USED: "back_to_top_used"
+      BACK_TO_TOP_USED: "back_to_top_used",
+      STORAGE_PANEL_OPENED: "storage_panel_opened"
     },
     trackEvent: jest.fn()
   }),
@@ -140,6 +142,33 @@ const ORG_QUOTAS = [
     max: 250000
   }
 ];
+
+function pad(n) {
+  return String(n).padStart(2, "0");
+}
+
+function todayIso() {
+  const now = new Date();
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+const STORAGE = {
+  capturedAt: "2026-10-27T14:05:00.000Z",
+  dataUsedMb: 1,
+  dataMaxMb: 5,
+  fileUsedMb: 5,
+  fileMaxMb: 20,
+  dataAreas: [
+    { label: "Site content", records: 120, kb: 240 },
+    { label: "Delivery telemetry", records: 1, kb: 2 },
+    { label: "API and rate limiting", records: 600, kb: 1200 }
+  ],
+  fileGroups: [
+    { label: "Images", kb: 2048 },
+    { label: "PDFs and text", kb: 30 }
+  ],
+  traffic: []
+};
 
 const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
 
@@ -763,6 +792,174 @@ describe("c-footer", () => {
     expect(link.textContent).toBe("Contact");
     expect(link.getAttribute("href")).toBe("/portfolio/contact");
     expect(link.getAttribute("target")).toBeNull();
+  });
+
+  it("shows no storage group before the first snapshot is stored", async () => {
+    const element = createComponent();
+    await runIdle();
+
+    expect(q(element, '[data-group="storage"]')).toBeNull();
+  });
+
+  it("shows the compact storage line once the snapshot holds figures", async () => {
+    getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
+    const element = createComponent();
+    await runIdle();
+
+    const toggle = q(element, '[data-id="storage-toggle"]');
+    expect(toggle.textContent.trim()).toBe("Data 1 of 5 MB, Files 5 of 20 MB");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.getAttribute("aria-controls")).toBe(
+      q(element, '[data-id="storage-panel"]').id
+    );
+    expect(q(element, '[data-id="storage-panel"]').hidden).toBe(true);
+  });
+
+  it("leaves out a total that was not stored", async () => {
+    getSystemSnapshot.mockResolvedValue(
+      snapshot({
+        storage: { ...STORAGE, fileUsedMb: null, fileMaxMb: null }
+      })
+    );
+    const element = createComponent();
+    await runIdle();
+
+    expect(q(element, '[data-id="storage-toggle"]').textContent.trim()).toBe(
+      "Data 1 of 5 MB"
+    );
+  });
+
+  it("opens the panel grouped by area and tracks it once", async () => {
+    getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
+    const element = createComponent();
+    await runIdle();
+    const toggle = q(element, '[data-id="storage-toggle"]');
+
+    toggle.click();
+    await flushPromises();
+
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(q(element, '[data-id="storage-panel"]').hidden).toBe(false);
+    expect(
+      all(element, '[data-id="storage-data"]').map((n) => n.textContent)
+    ).toEqual([
+      "Site content: 120 records, about 240 KB",
+      "Delivery telemetry: 1 record, about 2 KB",
+      "API and rate limiting: 600 records, about 1.2 MB"
+    ]);
+    expect(
+      all(element, '[data-id="storage-file"]').map((n) => n.textContent)
+    ).toEqual(["Images: 2 MB", "PDFs and text: 30 KB"]);
+    expect(q(element, '[data-id="storage-note"]').textContent).toContain(
+      "estimate"
+    );
+    expect(q(element, '[data-id="storage-note"]').textContent).toContain(
+      "Updated"
+    );
+
+    toggle.click();
+    await flushPromises();
+    toggle.click();
+    await flushPromises();
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith("storage_panel_opened");
+  });
+
+  it("closes on Escape and keeps focus on the button", async () => {
+    getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
+    const element = createComponent();
+    await runIdle();
+    const toggle = q(element, '[data-id="storage-toggle"]');
+    toggle.click();
+    await flushPromises();
+
+    q(element, '[data-group="storage"]').dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+    );
+    await flushPromises();
+
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(q(element, '[data-id="storage-panel"]').hidden).toBe(true);
+  });
+
+  it("shows no file section when there are no files", async () => {
+    getSystemSnapshot.mockResolvedValue(
+      snapshot({ storage: { ...STORAGE, fileGroups: [] } })
+    );
+    const element = createComponent();
+    await runIdle();
+    q(element, '[data-id="storage-toggle"]').click();
+    await flushPromises();
+
+    expect(all(element, '[data-id="storage-file"]')).toHaveLength(0);
+  });
+
+  it("shows no traffic rows unless the server returned traffic", async () => {
+    getSystemSnapshot.mockResolvedValue(snapshot({ storage: STORAGE }));
+    const element = createComponent();
+    await runIdle();
+    q(element, '[data-id="storage-toggle"]').click();
+    await flushPromises();
+
+    expect(all(element, '[data-id="storage-traffic"]')).toHaveLength(0);
+    expect(q(element, ".storage-panel").textContent).not.toMatch(/traffic/i);
+  });
+
+  it("shows today's and the week's page views when the server returned them", async () => {
+    getSystemSnapshot.mockResolvedValue(
+      snapshot({
+        storage: {
+          ...STORAGE,
+          traffic: [
+            { day: todayIso(), originPageViews: 10, cachePageViews: 32 },
+            { day: "2000-01-01", originPageViews: 8, cachePageViews: 0 }
+          ]
+        }
+      })
+    );
+    const element = createComponent();
+    await runIdle();
+    q(element, '[data-id="storage-toggle"]').click();
+    await flushPromises();
+
+    expect(
+      all(element, '[data-id="storage-traffic"]').map((n) =>
+        n.textContent.trim()
+      )
+    ).toEqual([
+      "Site traffic today: 42 page views",
+      "Site traffic, last 7 days: 50 page views"
+    ]);
+  });
+
+  it("leaves out today's row when the latest reading is an older day", async () => {
+    getSystemSnapshot.mockResolvedValue(
+      snapshot({
+        storage: {
+          ...STORAGE,
+          traffic: [
+            { day: "2000-01-01", originPageViews: 8, cachePageViews: 1 }
+          ]
+        }
+      })
+    );
+    const element = createComponent();
+    await runIdle();
+    q(element, '[data-id="storage-toggle"]').click();
+    await flushPromises();
+
+    expect(
+      all(element, '[data-id="storage-traffic"]').map((n) =>
+        n.textContent.trim()
+      )
+    ).toEqual(["Site traffic, last 7 days: 9 page views"]);
+  });
+
+  it("formats sizes in KB below 1,024 and MB above", () => {
+    expect(formatSize(0)).toBe("0 KB");
+    expect(formatSize(1023)).toBe("1,023 KB");
+    expect(formatSize(1536)).toBe("1.5 MB");
+    expect(formatSize(NaN)).toBe("0 KB");
   });
 
   it("labels breaker and quota rows from their own fields", () => {
