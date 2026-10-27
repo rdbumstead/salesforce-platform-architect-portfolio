@@ -18,7 +18,7 @@
       "Business_Value__c": "Ten staff users on donated licences, with staff testing the build in user acceptance before production.",
       "Case_Tags__c": "NPSP, Platform selection, Cost",
       "Live_URL__c": "/nonprofit-solutions",
-      "Home_Sort__c": 1
+      "Home_Sort__c": 2
     },
     {
       "attributes": {
@@ -39,7 +39,7 @@
       "Business_Value__c": "Designed so that employer partners get one front door and a faster answer, departments stop duplicating outreach and see each other's work with a partner, and leadership can report on the employer relationship as a whole.",
       "Case_Tags__c": "Data model, Case routing, Dashboards",
       "Live_URL__c": "/business-architecture",
-      "Home_Sort__c": 2
+      "Home_Sort__c": 1
     },
     {
       "attributes": {
@@ -59,7 +59,7 @@
       "Solution__c": "This site is its own delivery evidence. Every pull request is validated in a fresh scratch org with the local Apex tests and static analysis, and every merge that changes the app deploys to production through GitHub Actions and runs the local tests. Each run publishes a governance event that is stored as a pipeline run record. The Delivery page shows the latest run per workflow, the Jira roadmap and the recent commits, read from caches that scheduled jobs refresh.",
       "Business_Value__c": "The test count on this card and the checklist on the Delivery page come from those stored runs, so they change when the pipeline does. A reviewer sees the roadmap, the commits and the latest pipeline results on one page.",
       "Case_Tags__c": "Experience Cloud, Apex REST, CI/CD",
-      "Live_URL__c": "/docs",
+      "Live_URL__c": "/delivery",
       "Home_Sort__c": 3
     }
   ]

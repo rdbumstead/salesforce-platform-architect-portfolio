@@ -1,0 +1,9 @@
+{
+  "0842676a906482": "Sequence diagram. A recruiter lands on the home page, takes the five minute tour, and visits five showcase areas: business architecture, solution architecture, the API Lab, the AI Lab and delivery. Each area shows real work, and View source shows the real code.",
+  "00e3a42f888240": "Flow diagram of the system. A visitor reaches the Experience Cloud LWR site, which reads custom objects through GraphQL and calls Apex. Apex talks to the AI dispatch, the Jira API and the GitHub API. A planned AWS Lambda sits beside Apex.",
+  "129cb0dc3a232a": "Layer diagram. The browser calls the LWR site, which calls Apex. Apex reads the custom objects, the AI dispatch, Jira and GitHub.",
+  "16bc31341d9ad5": "Entity relationship diagram of the portfolio data model. Projects link to skills and assets, skills link to experience records, and experience records link to their highlights. Testimonials stand on their own.",
+  "0dbd401079181c": "Sequence diagram of a cover letter request. The page calls the lab controller, which checks the rate limit, gathers grounding data and asks Agentforce through the API. When Agentforce gives no letter, the lab controller runs the dispatcher, which tries Gemini and falls back to a local template on any failure.",
+  "1bb8aca852d86b": "Sequence diagram of API access. The page and an outside reviewer each reach the API through a Named Credential and a token exchange, then receive the payload with request and rate limit headers.",
+  "1a77f58257b91b": "Sequence diagram of three guardrail layers. A page request passes a performance budget, a guest security gate and Apex governor limits before the data answers with a fixed response shape."
+}

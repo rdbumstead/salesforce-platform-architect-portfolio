@@ -12,7 +12,12 @@
  * @Created           : 10/24/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import DocsViewer, { docKeyFrom, badgeFor, groupFor } from "c/docsViewer";
+import DocsViewer, {
+  docKeyFrom,
+  badgeFor,
+  groupFor,
+  activeTheme
+} from "c/docsViewer";
 import getDocs from "@salesforce/apex/SourceController.getDocs";
 import getDoc from "@salesforce/apex/SourceController.getDoc";
 import { CurrentPageReference } from "lightning/navigation";
@@ -25,6 +30,7 @@ import {
   indexHeadings,
   dropOwnContents
 } from "../docsRenderer";
+import { diagramHash } from "../diagramHash";
 
 /**
  * Runs the vendored file as it is, outside the component compiler, the way the browser does.
@@ -70,8 +76,6 @@ jest.mock(
   { virtual: true }
 );
 
-// Every lightning/* module maps to one universal mock file in this project, so one factory
-// serves both the page reference wire and the script loader.
 jest.mock(
   "lightning/navigation",
   () => {
@@ -80,14 +84,23 @@ jest.mock(
     } = require("@salesforce/wire-service-jest-util");
     return {
       __esModule: true,
-      CurrentPageReference: createTestWireAdapter(jest.fn()),
-      loadScript: jest.fn(() => {
-        globalThis.marked = mockLoadMarked();
-        return Promise.resolve();
-      }),
-      loadStyle: jest.fn(() => Promise.resolve())
+      CurrentPageReference: createTestWireAdapter(jest.fn())
     };
   },
+  { virtual: true }
+);
+
+// The loader puts the bundled marked build on globalThis, as the static resource does.
+jest.mock(
+  "lightning/platformResourceLoader",
+  () => ({
+    __esModule: true,
+    loadScript: jest.fn(() => {
+      globalThis.marked = mockLoadMarked();
+      return Promise.resolve();
+    }),
+    loadStyle: jest.fn(() => Promise.resolve())
+  }),
   { virtual: true }
 );
 
@@ -580,5 +593,74 @@ describe("docsRenderer", () => {
     holder.appendChild(result.fragment);
     expect(holder.querySelector("h1")).toBeNull();
     expect(holder.querySelector("h2").id).toBe("one");
+  });
+});
+
+describe("Mermaid drawings", () => {
+  const SOURCE = "graph TD\n  A-->B";
+  const DOC = "## Flow\n\n```mermaid\n" + SOURCE + "\n```\n";
+  const build = (diagrams) => {
+    const result = renderMarkdown(MARKED, DOC, {
+      doc: document,
+      baseUrl: "https://github.com/o/r/blob/main/docs/guides/03-SAS.md",
+      docHrefForPath: () => null,
+      diagrams
+    });
+    const holder = document.createElement("div");
+    holder.appendChild(result.fragment);
+    return holder;
+  };
+
+  it("hashes the same text to the same name whatever the line endings", () => {
+    expect(diagramHash("a\r\nb\n")).toBe(diagramHash("a\nb"));
+    expect(diagramHash("a")).not.toBe(diagramHash("b"));
+    expect(diagramHash("a")).toMatch(/^[0-9a-f]{14}$/);
+  });
+
+  it("shows a light and a dark drawing with the alt, and keeps the source under them", () => {
+    const hash = diagramHash(SOURCE);
+    const holder = build({
+      base: "/res/Mermaid_Diagrams",
+      entries: { [hash]: { alt: "A flows to B." } }
+    });
+    const imgs = [...holder.querySelectorAll("img.doc-drawing-img")];
+    expect(imgs.map((i) => i.getAttribute("src"))).toEqual([
+      `/res/Mermaid_Diagrams/${hash}-light.svg`,
+      `/res/Mermaid_Diagrams/${hash}-dark.svg`
+    ]);
+    expect(imgs.map((i) => i.getAttribute("alt"))).toEqual([
+      "A flows to B.",
+      "A flows to B."
+    ]);
+    expect(holder.querySelector(".doc-drawing").getAttribute("tabindex")).toBe(
+      "0"
+    );
+    expect(
+      holder.querySelector("details.doc-diagram-source code").textContent
+    ).toContain("A-->B");
+    expect(holder.querySelector(".doc-diagram-note")).toBeNull();
+  });
+
+  it("falls back to the source block when no drawing matches the source", () => {
+    const holder = build({
+      base: "/res/Mermaid_Diagrams",
+      entries: { [diagramHash("graph TD\n  X-->Y")]: { alt: "Other." } }
+    });
+    expect(holder.querySelector("img")).toBeNull();
+    expect(holder.querySelector("details.doc-diagram-source")).not.toBeNull();
+    expect(holder.querySelector(".doc-diagram-note a")).not.toBeNull();
+  });
+
+  it("falls back when the list of drawings is missing", () => {
+    expect(build(undefined).querySelector("img")).toBeNull();
+    expect(build({ base: "/r", entries: {} }).querySelector("img")).toBeNull();
+  });
+
+  it("reads the theme from data-theme, else from the system setting", () => {
+    document.documentElement.setAttribute("data-theme", "dark");
+    expect(activeTheme()).toBe("dark");
+    document.documentElement.setAttribute("data-theme", "light");
+    expect(activeTheme()).toBe("light");
+    document.documentElement.removeAttribute("data-theme");
   });
 });

@@ -1,6 +1,7 @@
 /**
- * @description       : Unit tests for AgentforceService: the switch, the guest rule and the
- *                      throwing generateContent. The switch is set in memory.
+ * @description       : Unit tests for AgentforceService: the switch, the guest rule, the
+ *                      template call through a stubbed PromptTemplateClient, the template name
+ *                      and the timeout. The switch is set in memory.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -22,6 +23,28 @@ private class AgentforceServiceTest {
     );
   }
 
+  /** Records what it was asked and answers with fixed text, or throws. */
+  private class ClientStub implements PromptTemplateClient {
+    private final String text;
+    private final Boolean fails;
+    public String templateName;
+    public Map<String, String> inputs;
+
+    ClientStub(String text, Boolean fails) {
+      this.text = text;
+      this.fails = fails;
+    }
+
+    public String generate(String templateName, Map<String, String> inputs) {
+      this.templateName = templateName;
+      this.inputs = inputs;
+      if (fails) {
+        throw new CalloutException('Stubbed template failure');
+      }
+      return text;
+    }
+  }
+
   private static void useRecord(AI_Provider_Config__mdt config) {
     AgentforceService.configOverridden = true;
     AgentforceService.configOverride = config;
@@ -29,21 +52,114 @@ private class AgentforceServiceTest {
   }
 
   @IsTest
-  static void generateContentAlwaysThrowsNotImplemented() {
+  static void generateContentRunsTheTemplateWithTheWholePrompt() {
+    useRecord(record(true, null));
+    ClientStub stub = new ClientStub('A letter', false);
+    AgentforceService.clientOverride = stub;
+
+    Test.startTest();
+    String text = new AgentforceService()
+      .generateContent('the whole prompt', null);
+    Test.stopTest();
+
+    Assert.areEqual('A letter', text, 'The template text comes back');
+    Assert.areEqual(
+      AgentforceService.TEMPLATE_NAME,
+      stub.templateName,
+      'Default template'
+    );
+    Assert.areEqual(
+      new Map<String, String>{ 'Input:Prompt' => 'the whole prompt' },
+      stub.inputs,
+      'One input, the prompt'
+    );
+  }
+
+  @IsTest
+  static void generateContentRunsTheTemplateNamedOnTheRecord() {
+    useRecord(record(true, 'Other_Template'));
+    ClientStub stub = new ClientStub('A letter', false);
+    AgentforceService.clientOverride = stub;
+
+    Test.startTest();
+    new AgentforceService().generateContent('prompt', null);
+    Test.stopTest();
+
+    Assert.areEqual('Other_Template', stub.templateName, 'Configured');
+  }
+
+  @IsTest
+  static void generateContentPassesATemplateFailureOn() {
+    useRecord(record(true, null));
+    AgentforceService.clientOverride = new ClientStub(null, true);
+
+    Test.startTest();
+    try {
+      new AgentforceService().generateContent('prompt', null);
+      Assert.fail('Expected the stub failure');
+    } catch (CalloutException e) {
+      Assert.areEqual('Stubbed template failure', e.getMessage(), 'Message');
+    }
+    Test.stopTest();
+  }
+
+  @IsTest
+  static void generateContentWithNoStubNeverReachesTheModelInATest() {
     useRecord(record(true, null));
 
     Test.startTest();
     try {
       new AgentforceService().generateContent('prompt', null);
-      Assert.fail('Expected AgentforceNotImplementedException');
-    } catch (AgentforceService.AgentforceNotImplementedException e) {
-      Assert.areEqual(
-        'Agentforce generation is not implemented.',
-        e.getMessage(),
-        'Message'
-      );
+      Assert.fail('Expected the real client to refuse in a test');
+    } catch (EinsteinPromptTemplateClient.PromptTemplateException e) {
+      Assert.isTrue(e.getMessage().contains('stub'), e.getMessage());
     }
     Test.stopTest();
+  }
+
+  @IsTest
+  static void hourlyBudgetComesFromTheRecordOrTheDefault() {
+    useRecord(
+      (AI_Provider_Config__mdt) JSON.deserialize(
+        '{"DeveloperName":"Agentforce","Hourly_Budget__c":40}',
+        AI_Provider_Config__mdt.class
+      )
+    );
+    Integer configured = AgentforceService.hourlyBudget();
+    useRecord(record(true, null));
+    Integer fallback = AgentforceService.hourlyBudget();
+
+    Assert.areEqual(40, configured, 'Configured budget');
+    Assert.areEqual(
+      AgentforceService.DEFAULT_HOURLY_BUDGET,
+      fallback,
+      'Default budget'
+    );
+  }
+
+  @IsTest
+  static void theShippedBudgetIs120() {
+    Assert.areEqual(120, AgentforceService.hourlyBudget(), 'Under 150');
+  }
+
+  @IsTest
+  static void timeoutComesFromTheRecordOrTheDefault() {
+    useRecord(
+      (AI_Provider_Config__mdt) JSON.deserialize(
+        '{"DeveloperName":"Agentforce","Timeout_Ms__c":45000}',
+        AI_Provider_Config__mdt.class
+      )
+    );
+    Integer configured = AgentforceService.timeoutMs();
+    useRecord(record(true, null));
+    Integer fallback = AgentforceService.timeoutMs();
+
+    Assert.areEqual(45000, configured, 'Configured timeout');
+    Assert.areEqual(
+      AgentforceService.DEFAULT_TIMEOUT_MS,
+      fallback,
+      'Default timeout'
+    );
   }
 
   @IsTest
@@ -105,13 +221,18 @@ private class AgentforceServiceTest {
   }
 
   @IsTest
-  static void shippedRecordKeepsAgentforceSwitchedOff() {
-    // Reads the record deployed from source. It must ship disabled.
+  static void shippedRecordSwitchesAgentforceOnForTheCoverLetterTemplate() {
+    // Reads the record deployed from source. It ships switched on.
     AI_Provider_Config__mdt shipped = AgentforceService.config();
 
     Assert.isNotNull(shipped, 'The Agentforce record is in source');
-    Assert.isFalse(shipped.Enabled__c, 'Shipped switched off');
-    Assert.isFalse(AgentforceService.IMPLEMENTED, 'Not built yet');
+    Assert.isTrue(shipped.Enabled__c, 'Shipped switched on');
+    Assert.isTrue(AgentforceService.IMPLEMENTED, 'Built');
+    Assert.areEqual(
+      AgentforceService.TEMPLATE_NAME,
+      AgentforceService.templateName(),
+      'The shipped record names the cover letter template'
+    );
   }
 
   @IsTest

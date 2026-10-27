@@ -1185,7 +1185,8 @@ const inputBody = '{
     "experienceSummary": "Nearly a decade on the Salesforce platform"
   },
   "tone": "Professional",
-  "maxLength": 500
+  "maxLength": 500,
+  "provider": "Agentforce"
 }';
 const headers = {
   'Content-Type':'application/json',
@@ -1218,8 +1219,9 @@ Generates content through `PAPIAiGenerate.generate`, which calls the one provide
 
 **Provider chain**:
 1. Agentforce, only when its switch (`AI_Provider_Config__mdt` record `Agentforce`) is on.
-   It ships off, and the provider is not built yet: a switched-on call fails and the chain
-   moves on, so `provider` is never `Agentforce` today.
+   It ships on and runs a Prompt Builder template as the caller. It has a 20 second
+   timeout and an hourly budget (`Hourly_Budget__c`, 120 calls per UTC hour). Past the
+   budget its attempt is `budget_exhausted` and the chain moves on.
 2. Gemini 2.5 Flash (`gemini-2.5-flash`, the model set on the `Gemini` record) through the Gemini API (`Gemini_API` Named Credential),
    with a 60 second timeout. The code default model is `gemma-4-31b-it`, used only when the
    record names none.
@@ -1227,17 +1229,24 @@ Generates content through `PAPIAiGenerate.generate`, which calls the one provide
 
 A CoverLetter prompt also carries facts from featured projects and experience highlights,
 chosen by keywords from `role` and `jobDescription`. No email address, phone number or
-owner field is ever included. The site's cover letter page does not call this endpoint: a
-request that arrives as a callout from the same org may not call out again, so
-`ApiLabController.generateCoverLetter` runs the same dispatch in process (ADR-015). This
-endpoint is for outside callers with a Bearer token.
+owner field is ever included. The site's cover letter page calls this endpoint with
+`provider` set to `Agentforce` through the `Portfolio_API` Named Credential, and runs
+Gemini and the template in process when it gets no letter, because a request that arrives
+as a callout from the same org may not call out again (ADR-015). Outside callers use it
+with a Bearer token.
+
+**Asking for Agentforce only**: send `provider` set to `Agentforce`. Only Agentforce is
+tried, with no Gemini and no template. A failure is 503 `ALL_PROVIDERS_UNAVAILABLE` with
+the message "Agentforce currently unavailable", or "Agentforce hourly budget used" when
+the budget is spent. A CoverLetter asked of Agentforce uses the site's cover letter prompt
+and comes back whole unless `maxLength` is sent.
 
 **Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allowed Gemini 2.5 Flash
 5 requests per minute and 20 requests per day when it was read on 2026-10-20, a recorded reading and not a live one. When the Gemini API
 refuses or fails, CoverLetter falls back to the local template and the other types answer
 503 `ALL_PROVIDERS_UNAVAILABLE`.
 
-**Validation**: `type` and `tone` must be enum values, `maxLength` an integer 100 to 1000;
+**Validation**: `type` and `tone` must be enum values, `provider` only `Agentforce`, `maxLength` an integer 100 to 1000;
 CoverLetter requires `context.companyName` and `context.role`. Content longer than `maxLength` is cut.
 
 > Body parameter
@@ -1257,7 +1266,8 @@ CoverLetter requires `context.companyName` and `context.role`. Content longer th
     "experienceSummary": "Nearly a decade on the Salesforce platform"
   },
   "tone": "Professional",
-  "maxLength": 500
+  "maxLength": 500,
+  "provider": "Agentforce"
 }
 ```
 
@@ -1277,6 +1287,12 @@ CoverLetter requires `context.companyName` and `context.role`. Content longer th
 |»» experienceSummary|body|string|false|Brief professional summary|
 |» tone|body|string|false|Desired tone of generated content|
 |» maxLength|body|integer|false|Maximum character count|
+|» provider|body|string|false|Optional. When sent, only Agentforce is tried: no Gemini and no template, and a|
+
+#### Detailed descriptions
+
+**» provider**: Optional. When sent, only Agentforce is tried: no Gemini and no template, and a
+failure is 503 `ALL_PROVIDERS_UNAVAILABLE`.
 
 #### Enumerated Values
 
@@ -1289,6 +1305,7 @@ CoverLetter requires `context.companyName` and `context.role`. Content longer th
 |» tone|Enthusiastic|
 |» tone|Technical|
 |» tone|Casual|
+|» provider|Agentforce|
 
 > Example responses
 
@@ -1415,7 +1432,7 @@ Status Code **200**
 |» latencyMs|integer(int64)|true|none|Time the provider chain took, in milliseconds|
 |» attempts|[object]|true|none|Every provider the chain considered, in order, with what happened|
 |»» provider|string|true|none|none|
-|»» outcome|string|true|none|`served` wrote the content, `skipped_off` was switched off or unavailable,<br>`failed` threw or returned no usable text.|
+|»» outcome|string|true|none|`served` wrote the content, `skipped_off` was switched off or unavailable,<br>`skipped_open_circuit` was passed over because its circuit breaker is open,<br>`budget_exhausted` is Agentforce past its hourly budget,<br>`failed` threw or returned no usable text.|
 |»» ms|integer(int64)|true|none|Time spent on this provider, in milliseconds|
 |» promptShown|string¦null|true|none|The prompt sent to the provider that served, as built by Apex, including the<br>portfolio facts for a CoverLetter. Null when the local template served, because<br>it uses no prompt.|
 
@@ -1423,6 +1440,7 @@ Status Code **200**
 
 |Property|Value|
 |---|---|
+|provider|Agentforce|
 |provider|Gemini|
 |provider|Local|
 |provider|Agentforce|
@@ -1430,6 +1448,8 @@ Status Code **200**
 |provider|Local|
 |outcome|served|
 |outcome|skipped_off|
+|outcome|skipped_open_circuit|
+|outcome|budget_exhausted|
 |outcome|failed|
 
 ### Response Headers

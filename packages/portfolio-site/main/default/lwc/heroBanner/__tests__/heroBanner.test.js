@@ -1,9 +1,10 @@
 /**
  * @description       : Unit tests for heroBanner LWC: the static hero (photo, name, meta line,
  *                      proof strip), the title line and the value sentence from the
- *                      ResumeController header wire, the two buttons, the profile links, the
- *                      case studies button's scroll and focus, and that the pillars, Start here
- *                      and the tour are no longer in the hero.
+ *                      ResumeController header wire, the start year from the timeline wire, the
+ *                      two buttons, the profile links, the case studies button's scroll and
+ *                      focus, the tour link and its event, and that the pillars, Start here and
+ *                      the tour list are not in the hero.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -13,6 +14,8 @@ import { createElement } from "@lwc/engine-dom";
 import HeroBanner from "c/heroBanner";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import getHomeCaseStudies from "@salesforce/apex/ProjectCardController.getHomeCaseStudies";
+import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
+import { trackEvent } from "c/analyticsService";
 
 jest.mock(
   "@salesforce/community/basePath",
@@ -38,7 +41,30 @@ jest.mock(
   { virtual: true }
 );
 
-const CASE = { key: "case-1", title: "Employer Hub" };
+jest.mock(
+  "@salesforce/apex/ResumeController.getTimeline",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+jest.mock(
+  "c/analyticsService",
+  () => ({
+    __esModule: true,
+    trackEvent: jest.fn(),
+    EVENTS: { TOUR_OPENED: "tour_opened" }
+  }),
+  { virtual: true }
+);
+
+const CASE = {
+  key: "case-1",
+  title: "Employer Hub",
+  liveUrl: "/business-architecture"
+};
 
 const HEADER = {
   name: "Ryan Bumstead",
@@ -125,6 +151,26 @@ describe("c-hero-banner", () => {
       ]);
     });
 
+    it("takes the start year from the timeline read, and keeps the fallback on an error", async () => {
+      const element = render();
+      getTimeline.emit({ work: [], salesforceStartYear: 2018 });
+      await flush();
+      const items = () =>
+        Array.from(byId(element, "proof-strip").querySelectorAll("li")).map(
+          (item) => text(item)
+        );
+      expect(items()).toEqual([
+        "On Salesforce since 2018",
+        "7 active Salesforce certifications"
+      ]);
+      getTimeline.error();
+      await flush();
+      expect(items()[0]).toBe("On Salesforce since 2017");
+      getTimeline.emit({ work: [] });
+      await flush();
+      expect(items()[0]).toBe("On Salesforce since 2017");
+    });
+
     it("never says Multi-Cloud Strategist or Technical Architect", async () => {
       const element = render();
       getHeader.emit(HEADER);
@@ -134,7 +180,7 @@ describe("c-hero-banner", () => {
       expect(all).not.toMatch(/Technical Architect/i);
     });
 
-    it("no longer holds Start here, the pillars, the tour or numbered eyebrows", () => {
+    it("no longer holds Start here, the pillars, the tour list or numbered eyebrows", () => {
       const element = render();
       const root = element.shadowRoot;
       expect(byId(element, "start-paths")).toBeNull();
@@ -377,6 +423,17 @@ describe("c-hero-banner", () => {
       expect(caseButton(element)).toBeNull();
     });
 
+    it("shows only View the resume when no card has a link the grid would show", async () => {
+      const element = render();
+      getHomeCaseStudies.emit([
+        { key: "a", title: "No link" },
+        // eslint-disable-next-line no-script-url
+        { key: "b", title: "Unsafe", liveUrl: "javascript:alert(1)" }
+      ]);
+      await flush();
+      expect(caseButton(element)).toBeNull();
+    });
+
     it("shows See the case studies first once one card comes back", async () => {
       const element = render();
       getHomeCaseStudies.emit([CASE]);
@@ -441,6 +498,68 @@ describe("c-hero-banner", () => {
       const element = await renderWithCases();
       const event = click(element);
       expect(event.defaultPrevented).toBe(false);
+    });
+  });
+
+  describe("tour link", () => {
+    function addSection(parent) {
+      const section = document.createElement("div");
+      section.id = "tour";
+      section.openTour = jest.fn();
+      parent.appendChild(section);
+      return section;
+    }
+
+    function click(element) {
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true
+      });
+      byId(element, "tour-link").dispatchEvent(event);
+      return event;
+    }
+
+    it("is a quiet link under the buttons with the tour's minutes, before any wire returns", () => {
+      const element = render();
+      const link = byId(element, "tour-link");
+      expect(link.tagName).toBe("A");
+      expect(link.getAttribute("href")).toBe("/portfolio/#tour");
+      expect(text(link)).toBe("Short on time? Take the 5 minute tour ↓");
+      expect(link.querySelector('[aria-hidden="true"]').textContent).toBe("↓");
+      const actions = element.shadowRoot.querySelector(".hero-actions");
+      expect(actions.contains(link)).toBe(false);
+      expect(
+        actions.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    });
+
+    it("asks the build section to open the tour and sends tour_opened from the hero", async () => {
+      systemReduces(false);
+      const section = addSection(document.body);
+      const element = render();
+      const event = click(element);
+      expect(section.openTour).toHaveBeenCalledWith(false);
+      expect(event.defaultPrevented).toBe(true);
+      expect(trackEvent).toHaveBeenCalledWith("tour_opened", {
+        source: "hero"
+      });
+    });
+
+    it("passes reduced motion and finds the section inside a shadow root", async () => {
+      systemReduces(true);
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      const section = addSection(host.attachShadow({ mode: "open" }));
+      const element = render();
+      click(element);
+      expect(section.openTour).toHaveBeenCalledWith(true);
+    });
+
+    it("follows the home page #tour address when no section is on the page", () => {
+      const element = render();
+      const event = click(element);
+      expect(event.defaultPrevented).toBe(false);
+      expect(trackEvent).toHaveBeenCalledTimes(1);
     });
   });
 });

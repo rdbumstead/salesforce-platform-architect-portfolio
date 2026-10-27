@@ -52,7 +52,9 @@ export const EVENTS = Object.freeze({
   CASE_STUDY_LINK_FOLLOWED: "case_study_link_followed", // name
   GRAPH_LAYOUT_CHANGED: "graph_layout_changed", // action: drag, fit or reset_layout
   CAREER_ROLE_OPENED: "career_role_opened", // position: 1 is the newest role
-  CAREER_TIMELINE_TOGGLED: "career_timeline_toggled" // expanded
+  CAREER_TIMELINE_TOGGLED: "career_timeline_toggled", // expanded
+  CAREER_TIMELINE_FILTERED: "career_timeline_filtered", // kind: all, work, education or certifications
+  TOUR_OPENED: "tour_opened" // source: hero or section
 });
 
 /** The document event the site's head script listens for and passes to gtag. */

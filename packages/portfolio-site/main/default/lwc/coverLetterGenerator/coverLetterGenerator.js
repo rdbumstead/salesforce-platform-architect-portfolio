@@ -11,14 +11,21 @@
  *                      Sends ai_generation_completed on a
  *                      result and ai_complete_failure on an error. The whole letter is shown
  *                      with its word count, in a box that wraps long words and keeps a
- *                      readable line length on wide screens.
+ *                      readable line length on wide screens. Above every letter, whichever
+ *                      provider wrote it, the page draws the owner's header from
+ *                      ResumeController.getHeader: name, title and the same links as the resume
+ *                      (c/profileLinks), Contact last. The header is the page's, never part of
+ *                      the letter text, so no provider can change it, and a failed read leaves it
+ *                      out.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/26/2025
  **/
-import { LightningElement } from "lwc";
+import { LightningElement, wire } from "lwc";
 import generateCoverLetter from "@salesforce/apex/ApiLabController.generateCoverLetter";
+import getHeader from "@salesforce/apex/ResumeController.getHeader";
+import { headerLinks } from "c/profileLinks";
 import { trackEvent, EVENTS } from "c/analyticsService";
 
 export const MAX_COMPANY_LENGTH = 120;
@@ -124,6 +131,30 @@ export default class CoverLetterGenerator extends LightningElement {
   showWork = false;
   elapsedSeconds = 0;
   timerId;
+  header = null;
+
+  @wire(getHeader)
+  wiredHeader({ data }) {
+    // A failed read leaves the header out. The letter never depends on it.
+    this.header = data || null;
+  }
+
+  /** The owner's header over the letter, or null when the read gave nothing to show. */
+  get letterHeader() {
+    if (!this.header) {
+      return null;
+    }
+    const name = (this.header.name || "").trim();
+    const title = (this.header.title || "").trim();
+    const links = headerLinks(this.header).map((link) => ({
+      ...link,
+      key: link.label
+    }));
+    if (!name && !title && links.length === 0) {
+      return null;
+    }
+    return { name, title, links, hasLinks: links.length > 0 };
+  }
 
   maxCompanyLength = MAX_COMPANY_LENGTH;
   maxTitleLength = MAX_TITLE_LENGTH;

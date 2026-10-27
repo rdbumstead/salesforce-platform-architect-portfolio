@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-10-26). Checked against the merged home page: the view's component order, `ProjectCardController.getHomeCaseStudies`, the `Project__c` and `Contact` fields, the proof strip list, the credentials strip, the header and footer, and the head markup. The case study text, the title line and the value sentence are records the owner loads with scripts after the deploy, so until then the cards and the value sentence stay hidden by design.
+Accepted (2026-10-26), amended the same day (see the last section). Checked against the merged home page: the view's component order, `ProjectCardController.getHomeCaseStudies`, the `Project__c` and `Contact` fields, the proof strip list, the credentials strip, the header and footer, and the head markup. The case study text, the title line and the value sentence are records the owner loads with scripts after the deploy, so until then the cards and the value sentence stay hidden by design.
 
 ## Context
 
@@ -49,3 +49,13 @@ The site also has two audiences who read it differently. A recruiter or hiring m
 - **Adding, reordering or retiring a case study** is a sort number change on a `Project__c` row, covered in the [Maintenance Guide](../guides/05-Maintenance-Guide.md).
 - **When every sort number is cleared,** the page shows no case study section and no empty heading.
 - **Related decisions.** [ADR-033](033-queries-in-custom-metadata.md) governs the case study read. [ADR-032](032-operational-settings-in-custom-metadata.md) governs the testimonial minimum. [ADR-007](007-github-api-server-side-caching.md) governs the docs the build section links to.
+
+## Amendment (2026-10-26): the order, the career line, compact cards and a Home link
+
+This changes items 1, 3, 6 and 10 above. The other items stand.
+
+- **Item 1, the order.** The page now reads: the hero, the career line (`c-career-line`), the case studies, the testimonials, "How this site is built" (which opens with the 5 minute tour), then the contact call. The contact call moved to the end, where a reader who has read everything decides to write.
+- **Item 3, compact cards.** A card shows the headline number with its label, the title and the client line. The problem, the call and the result are no longer on the card. The full story lives on the page the card links to, and a card with no link is hidden. Case study E links to the Delivery page.
+- **Item 6, no credentials strip.** Until three testimonials are approved the section renders nothing. The certifications and their verify link moved to the career line, and "References available on request" is in the contact call.
+- **Item 10, the first link reads Home.** The header reads Home, Resume, How it's built and Contact. Home links to the home page from every page. On the home page it carries `aria-current="page"`, scrolls to the top and moves focus to the page content, the same landing as the Back to top arrow. The case studies scroll is the hero's button alone.
+- **What was built.** The home view holds `c-hero-banner`, `c-career-line`, `c-case-study-grid`, `c-home-testimonials`, `c-site-build-section` and `c-contact-call`, in that order. The hero's "Short on time? Take the 5 minute tour" link opens the tour in the build section and sends `tour_opened`. `c-experience-timeline` is removed, and its three tabs became the career line's selector (All, Work, Education, Certifications), which sends `career_timeline_filtered`.

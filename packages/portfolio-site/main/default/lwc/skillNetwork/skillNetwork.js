@@ -1004,6 +1004,7 @@ export default class SkillNetwork extends LightningElement {
         key: group.name,
         name: group.name,
         headingId: `skill-category-${index}`,
+        selectionTitleId: `skill-selection-${index}`,
         chips: [...group.skills]
           .sort((a, b) => b.proficiency - a.proficiency || byName(a, b))
           .map((skill) => this.chipFor(skill))

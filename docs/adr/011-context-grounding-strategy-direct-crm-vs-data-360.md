@@ -35,3 +35,7 @@ The owner deferred this decision on 2026-10-22 (in the Pillar D design). The dec
 - Index builds and queries are metered, and a Developer Edition caps Data 360 at 1,000 queries a day. Whether the edition carries any credit allowance is not documented.
 
 **What would reopen it.** A real Agentforce provider (deferred, see [ADR-015](015-strategy-pattern-for-generative-ai.md)) and a reason to search text that keyword ranking cannot reach. Until then no document in this repository claims Data 360 grounding.
+
+## Amendment (2026-10-26): the Agentforce provider now exists
+
+The first reason above no longer holds. Agentforce is built as a Prompt Builder template and ships on ([ADR-015 amendment of 2026-10-26](015-strategy-pattern-for-generative-ai.md#amendment-2026-10-26-agentforce-is-built-and-the-deferral-is-lifted)). Data 360 grounding stays deferred for the other two reasons: the data set is small, and index builds and queries are metered. What would reopen it is now a reason to search text that keyword ranking cannot reach, and nothing else.

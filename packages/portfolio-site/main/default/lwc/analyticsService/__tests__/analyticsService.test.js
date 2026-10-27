@@ -72,6 +72,9 @@ const CASE_STUDY_GRAPH_NAMES = [
 // Appended for the home page career line.
 const CAREER_NAMES = ["career_role_opened", "career_timeline_toggled"];
 
+// Appended for the one career timeline's selector and the tour's two entry points.
+const TIMELINE_TOUR_NAMES = ["career_timeline_filtered", "tour_opened"];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
@@ -87,7 +90,8 @@ describe("c/analyticsService", () => {
         ...SITE_NAMES,
         ...MOTION_DOCS_LAB_NAMES,
         ...CASE_STUDY_GRAPH_NAMES,
-        ...CAREER_NAMES
+        ...CAREER_NAMES,
+        ...TIMELINE_TOUR_NAMES
       ].sort()
     );
   });
@@ -97,7 +101,8 @@ describe("c/analyticsService", () => {
       ...SITE_NAMES,
       ...MOTION_DOCS_LAB_NAMES,
       ...CASE_STUDY_GRAPH_NAMES,
-      ...CAREER_NAMES
+      ...CAREER_NAMES,
+      ...TIMELINE_TOUR_NAMES
     ];
     expect(Object.values(EVENTS).slice(-newest.length)).toEqual(newest);
   });
@@ -105,6 +110,11 @@ describe("c/analyticsService", () => {
   it("names the career line events under their keys", () => {
     expect(EVENTS.CAREER_ROLE_OPENED).toBe("career_role_opened");
     expect(EVENTS.CAREER_TIMELINE_TOGGLED).toBe("career_timeline_toggled");
+  });
+
+  it("names the timeline selector and tour events under their keys", () => {
+    expect(EVENTS.CAREER_TIMELINE_FILTERED).toBe("career_timeline_filtered");
+    expect(EVENTS.TOUR_OPENED).toBe("tour_opened");
   });
 
   it("names the motion, docs and API Lab section events under their keys", () => {

@@ -52,9 +52,12 @@ describe("c-contact-call", () => {
     const element = render();
     const root = element.shadowRoot;
     expect(root.querySelector("h2").textContent).toBe("Get in touch");
-    expect(root.querySelectorAll("p")).toHaveLength(1);
+    expect(root.querySelectorAll("p")).toHaveLength(2);
     expect(root.querySelector("p").textContent).toBe(
       "Questions about a project, a role or this site?"
+    );
+    expect(root.querySelector('[data-id="contact-note"]').textContent).toBe(
+      "References available on request."
     );
     const link = root.querySelector('[data-id="contact-link"]');
     expect(link.tagName).toBe("A");
@@ -62,6 +65,21 @@ describe("c-contact-call", () => {
     expect(link.textContent).toBe("Contact Ryan");
     expect(link.getAttribute("target")).toBeNull();
     expect(root.querySelector("form")).toBeNull();
+  });
+
+  it("hides the note when the page builder leaves it blank", async () => {
+    const element = createElement("c-contact-call", { is: ContactCall });
+    element.note = "  ";
+    document.body.appendChild(element);
+    await Promise.resolve();
+    expect(
+      element.shadowRoot.querySelector('[data-id="contact-note"]')
+    ).toBeNull();
+    element.note = "Write any time.";
+    await Promise.resolve();
+    expect(
+      element.shadowRoot.querySelector('[data-id="contact-note"]').textContent
+    ).toBe("Write any time.");
   });
 
   it("names its section by the heading", () => {

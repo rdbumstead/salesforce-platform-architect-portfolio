@@ -7,8 +7,11 @@
 // collects the components the view places, then every component those components place in
 // their own templates. It fails when:
 //   - the smoke names a route the site does not have,
-//   - the smoke expects a component its route no longer places, or
-//   - the site has a page route the smoke does not check.
+//   - the smoke expects a component its route no longer places,
+//   - the site has a page route the smoke does not check, or
+//   - a page places a component that has no bundle in the repository (a deleted component
+//     still named in a view or a template).
+// The order of the components in a route's list does not matter.
 // No browser and no org: it reads files only, so it runs in the quality check on every PR.
 //
 // Run: node scripts/check-smoke-routes.js [repository root]
@@ -88,6 +91,11 @@ function placedTags(root, direct) {
   return placed;
 }
 
+/** Whether a component's bundle folder is in the repository. */
+function hasBundle(root, tag) {
+  return fs.existsSync(path.join(root, LWC, bundleOf(tag)));
+}
+
 /** Page routes of the site, keyed by path ("/" for home), each with its placed components. */
 function sitePages(root) {
   const routesDir = path.join(root, SITE, "sfdc_cms__route");
@@ -130,6 +138,13 @@ function check(root, routes) {
         `${route.path}: the smoke checks a route the site does not have`
       );
       continue;
+    }
+    for (const tag of [...placed].sort()) {
+      if (!hasBundle(root, tag)) {
+        problems.push(
+          `${route.path}: the page places ${tag}, which has no bundle in the repository`
+        );
+      }
     }
     for (const entry of route.components) {
       const tag = typeof entry === "string" ? entry : entry.tag;

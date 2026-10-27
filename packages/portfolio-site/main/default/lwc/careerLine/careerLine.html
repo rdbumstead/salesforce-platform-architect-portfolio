@@ -1,5 +1,5 @@
 <template>
-  <template lwc:if={hasRoles}>
+  <template lwc:if={hasPoints}>
     <div class="career">
       <section
         class="section"
@@ -11,8 +11,30 @@
           class="visually-hidden"
           data-id="career-heading"
         >
-          Career, newest role first
+          Career, newest first
         </h2>
+
+        <template lwc:if={showFilters}>
+          <div
+            class="filters"
+            role="group"
+            aria-label="Show on the timeline"
+            data-id="filters"
+          >
+            <template for:each={filters} for:item="option">
+              <button
+                key={option.key}
+                type="button"
+                class={option.className}
+                aria-pressed={option.pressed}
+                data-kind={option.key}
+                onclick={handleFilterClick}
+              >
+                {option.label}
+              </button>
+            </template>
+          </div>
+        </template>
 
         <div class={lineWrapClass} data-id="line-wrap">
           <ol
@@ -22,40 +44,48 @@
             aria-labelledby="career-heading"
             onscroll={handleLineScroll}
           >
-            <template for:each={lineRoles} for:item="role">
-              <li key={role.key} class={role.pointClass} data-id="line-role">
+            <template for:each={linePoints} for:item="point">
+              <li
+                key={point.key}
+                class={point.pointClass}
+                data-id="line-point"
+                data-key={point.key}
+                data-type={point.type}
+              >
                 <span class="dot" aria-hidden="true"></span>
-                <template lwc:if={role.hasHighlights}>
+                <template lwc:if={point.hasPanel}>
                   <button
                     type="button"
                     class="point-body point-button"
-                    aria-expanded={role.expanded}
-                    aria-controls={role.controls}
-                    data-role-button="true"
+                    aria-expanded={point.expanded}
+                    aria-controls={point.controls}
+                    data-point-button="true"
                     data-list="line"
-                    data-key={role.key}
-                    onclick={handleRoleClick}
+                    data-key={point.key}
+                    onclick={handlePointClick}
                   >
-                    <span class="employer"
-                      >{role.employer}<span class="visually-hidden"
+                    <span class="point-first"
+                      >{point.first}<span class="visually-hidden"
                         >{comma}</span
                       ></span
                     >
-                    <span class="role-title"
-                      >{role.title}<span class="visually-hidden"
-                        >{comma}</span
-                      ></span
-                    >
+                    <template lwc:if={point.hasSecond}>
+                      <span class="point-second"
+                        >{point.second}<span class="visually-hidden"
+                          >{comma}</span
+                        ></span
+                      >
+                    </template>
                     <span class="years"
-                      ><span aria-hidden="true">{role.years}</span
-                      ><span class="visually-hidden">{role.yearsSpoken}</span
-                      ><template lwc:if={role.isCurrent}
+                      ><span aria-hidden="true">{point.years}</span
+                      ><span class="visually-hidden">{point.yearsSpoken}</span
+                      ><template lwc:if={point.isCurrent}
                         ><span class="active-tag" aria-hidden="true"
                           >Active</span
                         ></template
                       >
                       <svg
-                        class="role-chevron"
+                        class="point-chevron"
                         aria-hidden="true"
                         width="12"
                         height="12"
@@ -72,20 +102,22 @@
                 </template>
                 <template lwc:else>
                   <div class="point-body">
-                    <span class="employer"
-                      >{role.employer}<span class="visually-hidden"
+                    <span class="point-first"
+                      >{point.first}<span class="visually-hidden"
                         >{comma}</span
                       ></span
                     >
-                    <span class="role-title"
-                      >{role.title}<span class="visually-hidden"
-                        >{comma}</span
-                      ></span
-                    >
+                    <template lwc:if={point.hasSecond}>
+                      <span class="point-second"
+                        >{point.second}<span class="visually-hidden"
+                          >{comma}</span
+                        ></span
+                      >
+                    </template>
                     <span class="years"
-                      ><span aria-hidden="true">{role.years}</span
-                      ><span class="visually-hidden">{role.yearsSpoken}</span
-                      ><template lwc:if={role.isCurrent}
+                      ><span aria-hidden="true">{point.years}</span
+                      ><span class="visually-hidden">{point.yearsSpoken}</span
+                      ><template lwc:if={point.isCurrent}
                         ><span class="active-tag" aria-hidden="true"
                           >Active</span
                         ></template
@@ -104,54 +136,78 @@
           data-id="line-panel"
           hidden={linePanelHidden}
         >
-          <template lwc:if={openRole}>
+          <template lwc:if={openPoint}>
             <p class="panel-head">
-              <span class="panel-title">{openRole.title}</span>
-              <span class="panel-meta">{openRole.meta}</span>
+              <span class="panel-title">{openPoint.panelTitle}</span>
+              <template lwc:if={openPoint.meta}>
+                <span class="panel-meta">{openPoint.meta}</span>
+              </template>
             </p>
             <ul class="highlights">
-              <template for:each={openRole.highlights} for:item="item">
+              <template for:each={openPoint.items} for:item="item">
                 <li key={item.key}>{item.text}</li>
               </template>
             </ul>
+            <template lwc:if={openPoint.hasVerify}>
+              <p class="panel-verify">
+                <a
+                  class="verify-link"
+                  href={openPoint.verifyHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-id="panel-verify-link"
+                  >Verify on Trailhead<span class="visually-hidden"
+                    >{newTabNote}</span
+                  ></a
+                >
+              </p>
+            </template>
           </template>
         </div>
 
         <ol class="stack" data-id="stack" aria-labelledby="career-heading">
-          <template for:each={stackRoles} for:item="role">
-            <li key={role.key} class={role.pointClass} data-id="stack-role">
+          <template for:each={stackPoints} for:item="point">
+            <li
+              key={point.key}
+              class={point.pointClass}
+              data-id="stack-point"
+              data-key={point.key}
+              data-type={point.type}
+            >
               <span class="dot" aria-hidden="true"></span>
-              <template lwc:if={role.hasHighlights}>
+              <template lwc:if={point.hasPanel}>
                 <button
                   type="button"
                   class="point-body point-button"
-                  aria-expanded={role.expanded}
-                  aria-controls={role.controls}
-                  data-role-button="true"
+                  aria-expanded={point.expanded}
+                  aria-controls={point.controls}
+                  data-point-button="true"
                   data-list="stack"
-                  data-key={role.key}
-                  onclick={handleRoleClick}
+                  data-key={point.key}
+                  onclick={handlePointClick}
                 >
-                  <span class="employer"
-                    >{role.employer}<span class="visually-hidden"
+                  <span class="point-first"
+                    >{point.first}<span class="visually-hidden"
                       >{comma}</span
                     ></span
                   >
-                  <span class="role-title"
-                    >{role.title}<span class="visually-hidden"
-                      >{comma}</span
-                    ></span
-                  >
+                  <template lwc:if={point.hasSecond}>
+                    <span class="point-second"
+                      >{point.second}<span class="visually-hidden"
+                        >{comma}</span
+                      ></span
+                    >
+                  </template>
                   <span class="years"
-                    ><span aria-hidden="true">{role.years}</span
-                    ><span class="visually-hidden">{role.yearsSpoken}</span
-                    ><template lwc:if={role.isCurrent}
+                    ><span aria-hidden="true">{point.years}</span
+                    ><span class="visually-hidden">{point.yearsSpoken}</span
+                    ><template lwc:if={point.isCurrent}
                       ><span class="active-tag" aria-hidden="true"
                         >Active</span
                       ></template
                     >
                     <svg
-                      class="role-chevron"
+                      class="point-chevron"
                       aria-hidden="true"
                       width="12"
                       height="12"
@@ -166,34 +222,50 @@
                   ></span>
                 </button>
                 <div
-                  id={role.stackPanelId}
-                  class={role.stackPanelClass}
+                  id={point.stackPanelId}
+                  class={point.stackPanelClass}
                   data-id="stack-panel"
-                  hidden={role.stackPanelHidden}
+                  hidden={point.stackPanelHidden}
                 >
                   <ul class="highlights">
-                    <template for:each={role.highlights} for:item="item">
+                    <template for:each={point.items} for:item="item">
                       <li key={item.key}>{item.text}</li>
                     </template>
                   </ul>
+                  <template lwc:if={point.hasVerify}>
+                    <p class="panel-verify">
+                      <a
+                        class="verify-link"
+                        href={point.verifyHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-id="panel-verify-link"
+                        >Verify on Trailhead<span class="visually-hidden"
+                          >{newTabNote}</span
+                        ></a
+                      >
+                    </p>
+                  </template>
                 </div>
               </template>
               <template lwc:else>
                 <div class="point-body">
-                  <span class="employer"
-                    >{role.employer}<span class="visually-hidden"
+                  <span class="point-first"
+                    >{point.first}<span class="visually-hidden"
                       >{comma}</span
                     ></span
                   >
-                  <span class="role-title"
-                    >{role.title}<span class="visually-hidden"
-                      >{comma}</span
-                    ></span
-                  >
+                  <template lwc:if={point.hasSecond}>
+                    <span class="point-second"
+                      >{point.second}<span class="visually-hidden"
+                        >{comma}</span
+                      ></span
+                    >
+                  </template>
                   <span class="years"
-                    ><span aria-hidden="true">{role.years}</span
-                    ><span class="visually-hidden">{role.yearsSpoken}</span
-                    ><template lwc:if={role.isCurrent}
+                    ><span aria-hidden="true">{point.years}</span
+                    ><span class="visually-hidden">{point.yearsSpoken}</span
+                    ><template lwc:if={point.isCurrent}
                       ><span class="active-tag" aria-hidden="true"
                         >Active</span
                       ></template
@@ -205,46 +277,20 @@
           </template>
         </ol>
 
-        <div class="career-foot">
-          <button
-            type="button"
-            class="timeline-toggle"
-            data-id="timeline-toggle"
-            aria-expanded={timelineExpanded}
-            aria-controls="career-timeline"
-            onclick={handleTimelineToggle}
-          >
-            {timelineLabel}
-            <svg
-              class="toggle-chevron"
-              aria-hidden="true"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+        <template lwc:if={showVerify}>
+          <p class="career-foot">
+            <a
+              class="verify-link"
+              href={verificationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-id="verify-link"
+              >Verify on Trailhead<span class="visually-hidden"
+                >{newTabNote}</span
+              ></a
             >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-        </div>
-
-        <div
-          id="career-timeline"
-          class={timelineClass}
-          data-id="full-timeline"
-          role="region"
-          aria-label="Full timeline"
-          tabindex="-1"
-          hidden={timelineHidden}
-        >
-          <template lwc:if={timelineOpen}>
-            <c-experience-timeline></c-experience-timeline>
-          </template>
-        </div>
+          </p>
+        </template>
       </section>
     </div>
   </template>

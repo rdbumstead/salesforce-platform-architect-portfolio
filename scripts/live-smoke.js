@@ -17,9 +17,16 @@
 // Output: one summary line, then the JSON body on the next line. Exit 0 when every row
 // passes, 1 when any row fails or the run cannot start.
 //
-// A row that fails is loaded once more in a fresh context before it counts as failed,
-// because a WebKit page load now and then logs one transient error that a second load does
-// not repeat. A real defect fails both loads.
+// A row that fails on a component or a console error is loaded once more in a fresh context
+// before it counts as failed, because a WebKit page load now and then logs one transient error
+// that a second load does not repeat. A real defect fails both loads.
+//
+// It fails fast on a page that is not there. A row whose page does not answer 200, or whose
+// page has no site layout, fails at once, with no component waits and no second load. Before
+// any row, the home page is loaded once, and when it does not answer 200 with the site layout
+// the whole run fails at once, naming the base it tried. SITE_BASE is the site's path prefix
+// (for example https://example.my.site.com/portfolio), not the .../portfoliovforcesite address
+// a publish result names, which only redirects there.
 //
 // Run: node scripts/live-smoke.js (Playwright must resolve, through NODE_PATH or a local
 // install, with its browsers installed).
@@ -44,8 +51,9 @@ const ROUTES = [
       "c-hero-banner",
       "c-career-line",
       { tag: "c-case-study-grid", mayBeEmpty: true },
-      "c-contact-call",
-      "c-site-build-section"
+      { tag: "c-home-testimonials", mayBeEmpty: true },
+      "c-site-build-section",
+      "c-contact-call"
     ]
   },
   { path: "/contact", components: ["c-contact-form"] },
@@ -204,12 +212,16 @@ async function checkOnce(browser, route, viewport) {
       timeout: NAVIGATION_TIMEOUT_MS
     });
     result.status = response ? response.status() : null;
-    result.layout = await page
-      .locator(LAYOUT)
-      .first()
-      .waitFor({ state: "attached", timeout: LAYOUT_TIMEOUT_MS })
-      .then(() => true)
-      .catch(() => false);
+    if (result.status !== 200) {
+      // The page is not there: no component wait can pass, so the row fails now.
+      result.missingPage = true;
+      return finishCheck(result, knownSeen);
+    }
+    result.layout = await hasLayout(page);
+    if (!result.layout) {
+      result.missingPage = true;
+      return finishCheck(result, knownSeen);
+    }
     for (const entry of route.components) {
       const { tag, mayBeEmpty } =
         typeof entry === "string" ? { tag: entry, mayBeEmpty: false } : entry;
@@ -221,6 +233,19 @@ async function checkOnce(browser, route, viewport) {
   } finally {
     await context.close();
   }
+  return finishCheck(result, knownSeen);
+}
+
+function hasLayout(page) {
+  return page
+    .locator(LAYOUT)
+    .first()
+    .waitFor({ state: "attached", timeout: LAYOUT_TIMEOUT_MS })
+    .then(() => true)
+    .catch(() => false);
+}
+
+function finishCheck(result, knownSeen) {
   if (knownSeen.length) {
     result.knownErrors = knownSeen.length;
   }
@@ -231,14 +256,54 @@ async function checkOnce(browser, route, viewport) {
     Object.values(result.components).every(
       (state) => state === "visible" || state === "empty"
     ) &&
-    errors.length === 0;
+    result.errors.length === 0;
   return result;
+}
+
+/**
+ * Whether an address is the base or a page under it.
+ * @param {string} url the address a page landed on
+ * @param {string} base the site's path prefix
+ * @returns {boolean} true when the address is under the base
+ */
+function isUnderBase(url, base) {
+  const landed = String(url || "")
+    .split(/[?#]/)[0]
+    .replace(/\/+$/, "");
+  return landed === base || landed.startsWith(base + "/");
+}
+
+// Loads the home page once. Returns null when it answers 200 with the site layout at an
+// address under the base, or the reason it did not. A base that only redirects to the site
+// (the .../portfoliovforcesite address) lands somewhere else, so every other route would 404.
+async function homeProblem(browser) {
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    const response = await page.goto(BASE + "/", {
+      waitUntil: "domcontentloaded",
+      timeout: NAVIGATION_TIMEOUT_MS
+    });
+    const status = response ? response.status() : null;
+    if (status !== 200) {
+      return `it answered ${status === null ? "nothing" : status}`;
+    }
+    if (!isUnderBase(page.url(), BASE)) {
+      return `it redirected to ${page.url()}`;
+    }
+    return (await hasLayout(page)) ? null : "it has no site layout";
+  } catch (error) {
+    return `it did not load (${String(error.message).split("\n")[0]})`;
+  } finally {
+    await context.close();
+  }
 }
 
 async function checkRow(browser, engine, route, viewport) {
   let attempt = await checkOnce(browser, route, viewport);
   let attempts = 1;
-  if (!attempt.pass) {
+  // A missing page fails at once. Only a component or console failure is loaded again.
+  if (!attempt.pass && !attempt.missingPage) {
     attempt = await checkOnce(browser, route, viewport);
     attempts = 2;
   }
@@ -291,6 +356,7 @@ async function main() {
   }
 
   const rows = [];
+  let homeChecked = false;
   for (const engine of BROWSERS) {
     if (!playwright[engine]) {
       rows.push({ browser: engine, pass: false, error: "unknown engine" });
@@ -308,6 +374,25 @@ async function main() {
       continue;
     }
     try {
+      if (!homeChecked) {
+        homeChecked = true;
+        const problem = await homeProblem(browser);
+        if (problem) {
+          finish(
+            {
+              ok: false,
+              summary:
+                `live smoke: FAIL, the home page at ${BASE}/ did not load: ${problem}. ` +
+                "SITE_BASE must be the site's path prefix, such as " +
+                "https://example.my.site.com/portfolio",
+              base: BASE,
+              checkedAt: new Date().toISOString()
+            },
+            1
+          );
+          return;
+        }
+      }
       const tasks = [];
       for (const route of ROUTES) {
         for (const viewport of VIEWPORTS) {
@@ -348,7 +433,7 @@ async function main() {
 
 // The route list is shared with scripts/check-smoke-routes.js, which checks it against the
 // site's views without a browser. Requiring this file runs nothing.
-module.exports = { ROUTES };
+module.exports = { ROUTES, isUnderBase };
 
 if (require.main === module) {
   main().catch((error) => {

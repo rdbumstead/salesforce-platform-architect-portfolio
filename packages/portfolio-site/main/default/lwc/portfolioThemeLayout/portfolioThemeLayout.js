@@ -2,12 +2,13 @@
  * @description       : Site theme layout. Renders the slim sticky header for every portfolio page,
  *                      the page content in the unnamed slot, and the footer region.
  *                      The header holds the name (a home link everywhere) at the left, and at the
- *                      right Work, Resume, a "How it's built" menu and Contact, a thin divider
+ *                      right Home, Resume, a "How it's built" menu and Contact, a thin divider
  *                      drawn in CSS (aria-hidden), then the Back to top arrow, the theme toggle
  *                      and the phone menu button. While the arrow is hidden the links and the
  *                      divider slide over its place, so the divider always sits beside the next
- *                      control, and they slide back as it appears. Work scrolls to the case studies on the
- *                      home page and links to the home page from every other page. The menu lists
+ *                      control, and they slide back as it appears. Home links to the home page from
+ *                      every page and, already on the home page, scrolls to the top and moves focus
+ *                      to the page content, as the Back to top arrow does. The menu lists
  *                      the five pillars from c/pillarData, then Docs and each pillar's own pages
  *                      (the API reference) as items of their own. The link to the page on screen
  *                      carries aria-current="page". Skills and Testimonials live in the footer.
@@ -43,14 +44,11 @@ import {
   MOTION_REDUCE
 } from "c/motionPreference";
 
-// The id the home page gives its case studies section. Work scrolls to it on the home page.
-export const CASE_STUDIES_ID = "case-studies";
-
-// The header links in order, with the "How it's built" menu between Resume and Contact. Work is
-// built per route, the rest are plain route links. URLs match the urlPrefix of each route in
-// the Portfolio1 site bundle.
+// The header links in order, with the "How it's built" menu between Resume and Contact. All are
+// plain route links. URLs match the urlPrefix of each route in the Portfolio1 site bundle. Home
+// is the route with an empty URL, so it carries aria-current="page" on the home page only.
 const PAGES = [
-  { key: "work", label: "Work" },
+  { key: "home", label: "Home", url: "" },
   { key: "resume", label: "Resume", url: "resume" },
   { key: "contact", label: "Contact", url: "contact", afterMenu: true }
 ];
@@ -472,11 +470,7 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   handleBackToTop() {
-    window.scrollTo({ top: 0, left: 0, behavior: scrollBehavior() });
-    const main = this.template.querySelector(".region-content");
-    if (main) {
-      main.focus({ preventScroll: true });
-    }
+    this.goToTop();
     this.showBackToTop = false;
     trackEvent(EVENTS.BACK_TO_TOP_USED);
   }
@@ -541,16 +535,6 @@ export default class PortfolioThemeLayout extends LightningElement {
 
   get pages() {
     return PAGES.map((page) => {
-      if (page.key === "work") {
-        return {
-          ...page,
-          // A full path, not a bare fragment, so the template keeps the href as written.
-          href: this.isHomePage
-            ? `${toHref("")}#${CASE_STUDIES_ID}`
-            : toHref(""),
-          current: null
-        };
-      }
       const href = toHref(page.url);
       return { ...page, href, current: this.currentFor(href) };
     });
@@ -659,12 +643,12 @@ export default class PortfolioThemeLayout extends LightningElement {
   }
 
   /**
-   * Work on the home page scrolls to the case studies and moves focus there. Elsewhere it is a
-   * plain link to the home page. The case study grid's own revealHeading() is used when it has
-   * one. With no case studies on the page it goes to the top.
+   * Home on the home page scrolls to the top and moves focus to the page content, the same
+   * landing as the Back to top arrow, and sends no event. Elsewhere it is a plain link to the
+   * home page.
    * @param {Event} event the click
    */
-  handleWorkClick(event) {
+  handleHomeClick(event) {
     this.handleNavClick();
     if (!this.isHomePage) {
       return;
@@ -672,45 +656,21 @@ export default class PortfolioThemeLayout extends LightningElement {
     event.preventDefault();
     // The scroll waits until the closed phone menu has left the header, because a header that
     // shrinks mid scroll stops a smooth scroll short in WebKit.
-    Promise.resolve().then(() => this.revealWork());
+    Promise.resolve().then(() => this.goToTop());
   }
 
-  /**
-   * Scrolls to the case studies and focuses them, or to the top when the page has none.
-   */
-  revealWork() {
-    const target = findInContent(
-      this.contentRoots(),
-      idSelector(CASE_STUDIES_ID)
-    );
-    if (!target) {
-      window.scrollTo({ top: 0, left: 0, behavior: scrollBehavior() });
-      return;
+  /** Scrolls to the top and puts focus on the page content without scrolling again. */
+  goToTop() {
+    window.scrollTo({ top: 0, left: 0, behavior: scrollBehavior() });
+    const main = this.template.querySelector(".region-content");
+    if (main) {
+      main.focus({ preventScroll: true });
     }
-    // The case study grid offers its own reveal, which scrolls to its heading and focuses it.
-    if (typeof target.revealHeading === "function") {
-      target.revealHeading(isReduced());
-      return;
-    }
-    // The sticky header covers the top of the window, so the section stops just under it.
-    const header = this.template.querySelector(".site-header");
-    const headerHeight = header ? header.getBoundingClientRect().height : 0;
-    const top =
-      target.getBoundingClientRect().top + (window.scrollY || 0) - headerHeight;
-    window.scrollTo({
-      top: Math.max(0, Math.round(top)),
-      left: 0,
-      behavior: scrollBehavior()
-    });
-    if (!target.hasAttribute("tabindex")) {
-      target.setAttribute("tabindex", "-1");
-    }
-    target.focus({ preventScroll: true });
   }
 
   handleNavLinkClick(event) {
-    if (event.currentTarget.dataset.key === "work") {
-      this.handleWorkClick(event);
+    if (event.currentTarget.dataset.key === "home") {
+      this.handleHomeClick(event);
     } else {
       this.handleNavClick();
     }

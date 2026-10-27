@@ -111,7 +111,7 @@ private class JiraCacheRefreshJobTest {
       body.get('jql'),
       'The roadmap JQL'
     );
-    Assert.areEqual(50, body.get('maxResults'), 'maxResults');
+    Assert.areEqual(100, body.get('maxResults'), 'maxResults');
     Assert.areEqual(
       new List<Object>{ 'summary', 'status', 'issuetype', 'parent', 'updated' },
       (List<Object>) body.get('fields'),

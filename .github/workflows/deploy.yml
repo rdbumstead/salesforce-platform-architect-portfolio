@@ -68,6 +68,16 @@ jobs:
             --generate-delta \
             --ignore .forceignore
 
+      # Draws the Mermaid blocks into the Mermaid_Diagrams static resource folder, which is never
+      # committed. A failed render leaves only the committed placeholder, so the site shows each
+      # diagram's source and the deploy goes on.
+      - name: Render Mermaid Diagrams
+        if: inputs.deployment_mode != 'destructive'
+        continue-on-error: true
+        run: |
+          PUPPETEER_SKIP_DOWNLOAD=1 npm install --prefix "$RUNNER_TEMP/mmd" --no-save --no-audit --no-fund @mermaid-js/mermaid-cli@12.0.0 puppeteer@25.16.0
+          MERMAID_CLI_DIR="$RUNNER_TEMP/mmd" PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome)" node scripts/render-mermaid.js
+
       # Writes deployed=true only when metadata was actually deployed, so a skipped deploy
       # publishes no Success event and runs no tests.
       - name: Execute Deployment
@@ -143,6 +153,15 @@ jobs:
           else
              echo "No metadata changes detected. Skipping deployment."
           fi
+
+      # A delta carries only files git changed, and the drawings are never committed, so the drawn
+      # resource is deployed on its own after every run, a docs only push included. It runs only
+      # when the render wrote its manifest, and a failure warns without stopping the tests.
+      - name: Deploy Mermaid Drawings
+        if: inputs.deployment_mode != 'destructive' && hashFiles('packages/portfolio-site/main/default/staticresources/Mermaid_Diagrams/manifest.json') != ''
+        continue-on-error: true
+        run: |
+          sf project deploy start --target-org portfolio --source-dir packages/portfolio-site/main/default/staticresources/Mermaid_Diagrams.resource-meta.xml --source-dir packages/portfolio-site/main/default/staticresources/Mermaid_Diagrams --wait 30 || { echo "::warning::The Mermaid drawings did not deploy. The site shows each diagram's source until the next run."; exit 1; }
 
       # Runs the local tests in production after a real deploy, for the Pillar E card. A
       # failed test is reported here and on the run record, and does not undo the deploy.

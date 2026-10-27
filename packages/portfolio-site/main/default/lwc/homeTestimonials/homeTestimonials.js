@@ -6,12 +6,10 @@
  *                      rule. So the quotes ship hidden and turn on by themselves. Each quote
  *                      keeps its tone, as on the wall, and a link leads to every testimonial on
  *                      /testimonials.
- *                      While there are no quotes to show (the read is empty or fails), a small
- *                      credentials strip answers "who vouches for him" instead: the count of
- *                      active certifications (the same constant as the hero's proof strip), a
- *                      link to verify them on Trailhead when the owner Contact has a safe
- *                      Trailhead URL (ResumeController.getHeader), and "References available on
- *                      request". Nothing renders before the testimonial read returns.
+ *                      While there are no quotes to show (before the read, when it is empty or
+ *                      when it fails) nothing renders. The certifications and their verify link
+ *                      live on the career timeline, and "References available on request" in
+ *                      the contact call.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -20,9 +18,6 @@
 import { LightningElement, wire } from "lwc";
 import basePath from "@salesforce/community/basePath";
 import getHomeTestimonials from "@salesforce/apex/TestimonialController.getHomeTestimonials";
-import getHeader from "@salesforce/apex/ResumeController.getHeader";
-import { ACTIVE_CERTIFICATIONS } from "c/pillarData";
-import { toExternalUrl } from "c/externalUrl";
 
 // The server sends at most three. This keeps the section to three if that ever changes.
 const MAX_SHOWN = 3;
@@ -37,9 +32,6 @@ const RELATIONSHIP_LABELS = {
 
 export default class HomeTestimonials extends LightningElement {
   items = [];
-  loaded = false;
-  header;
-  certificationsText = ACTIVE_CERTIFICATIONS;
 
   @wire(getHomeTestimonials)
   wiredTestimonials({ data, error }) {
@@ -48,30 +40,14 @@ export default class HomeTestimonials extends LightningElement {
         (item) =>
           item && typeof item.sentence === "string" && item.sentence.trim()
       );
-      this.loaded = true;
     } else if (error || data === null) {
-      // On an error the quotes stay hidden and the credentials strip shows instead.
+      // On an error the quotes stay hidden.
       this.items = [];
-      this.loaded = true;
     }
-  }
-
-  @wire(getHeader)
-  wiredHeader({ data }) {
-    // No header or a failed read only drops the Trailhead link.
-    this.header = data || undefined;
   }
 
   get hasItems() {
     return this.items.length > 0;
-  }
-
-  get showCredentials() {
-    return this.loaded && !this.hasItems;
-  }
-
-  get trailheadHref() {
-    return toExternalUrl(this.header && this.header.trailheadUrl);
   }
 
   get quotes() {

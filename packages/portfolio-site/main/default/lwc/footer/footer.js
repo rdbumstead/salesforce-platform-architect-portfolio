@@ -5,7 +5,9 @@
  *                      links from getLinks()), and Back to top.
  *                      Each group is a list named by its visible label (Deploy, Platform,
  *                      Integrations, Quotas and limits), set apart by vertical rules on wide
- *                      screens and stacked on phones. Deploy holds the production deploy badge
+ *                      screens and stacked on phones. Inside a group the metrics are split by thin
+ *                      bars drawn in CSS only, clipped away at the start of every line so none
+ *                      dangles when a row wraps, and absent from the markup and the text. Deploy holds the production deploy badge
  *                      with a text link fallback. Platform holds the GraphQL timing, or the
  *                      snapshot error. Integrations holds the AI providers and the GitHub and
  *                      Jira connections, in plain words: "connected", or "paused" while a

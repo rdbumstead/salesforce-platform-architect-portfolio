@@ -4,7 +4,7 @@
     <isExposed>true</isExposed>
     <masterLabel>Career Line</masterLabel>
     <description
-  >The work roles newest first under the home hero, each opening its highlights, with the full timeline opening in place</description>
+  >The career timeline under the home hero: roles, certifications and the school on one line with a selector, earlier roles folded</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>

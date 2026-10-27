@@ -47,6 +47,12 @@
   color: var(--pf-body);
 }
 
+.contact-call__note {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--pf-muted);
+}
+
 /* The site's a:link rule outranks a plain class and empties the fill, so :link and
    :visited are matched too. */
 .contact-call__button,

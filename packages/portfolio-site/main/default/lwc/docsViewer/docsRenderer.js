@@ -12,15 +12,21 @@
  *                      document on this site. Headings get ids by the docs slug rule (lower
  *                      case, letters, digits and hyphens), and the slugs GitHub would give
  *                      them are kept as aliases so the documents' own links still land.
- *                      A Mermaid block shows its source inside a closed details element, with a
- *                      link to the document on GitHub, which draws the diagram. No diagram
- *                      library is loaded. A document's own "Table of Contents" list is left out,
+ *                      A Mermaid block is drawn ahead of time into two SVG files, one per theme,
+ *                      named by a hash of its source (see diagramHash). When the context lists
+ *                      a drawing for the block, the block shows both as images, with a text
+ *                      alternative, and the source stays in a closed details element under
+ *                      them. A block with no listed drawing shows its source in that element,
+ *                      with a link to the document on GitHub, which draws the diagram. No
+ *                      diagram library is loaded. A document's own "Table of Contents" list is left out,
  *                      because the page draws one contents box from the headings.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/24/2026
  **/
+
+import { diagramHash } from "./diagramHash";
 
 const ENTITIES = Object.freeze({
   "&amp;": "&",
@@ -35,6 +41,7 @@ const ENTITY_PATTERN = /&(amp|lt|gt|quot|#39|#x27|nbsp);/g;
 const TAG_PATTERN = /<[^>]*>/g;
 const BREAK_TAG = /^<br\s*\/?>$/i;
 const MERMAID = "mermaid";
+const DEFAULT_ALT = "A diagram. Its Mermaid source follows the picture.";
 const OWN_CONTENTS = /^table of contents$/i;
 
 /** Decodes the few entities markdown text carries, for display as text. */
@@ -319,6 +326,10 @@ class Builder {
       figure.appendChild(pre);
       return figure;
     }
+    const drawing = this.drawing(token.text || "");
+    if (drawing) {
+      figure.appendChild(drawing);
+    }
     // The source stays one click away, closed. GitHub draws the diagram on the document's page.
     const details = this.el("details", "doc-diagram-source");
     const summary = this.el("summary", "doc-diagram-summary");
@@ -326,7 +337,7 @@ class Builder {
     details.appendChild(summary);
     details.appendChild(pre);
     figure.appendChild(details);
-    const rendered = diagramLink(this.ctx.baseUrl);
+    const rendered = drawing ? null : diagramLink(this.ctx.baseUrl);
     if (rendered) {
       const note = this.el("p", "doc-diagram-note");
       const a = this.el("a", "doc-link");
@@ -337,6 +348,39 @@ class Builder {
       figure.appendChild(note);
     }
     return figure;
+  }
+
+  /**
+   * The two drawings of a Mermaid block, or null when the context does not list one for the
+   * block's source. ctx.diagrams is { base, entries } where entries maps a hash to { alt }.
+   */
+  drawing(source) {
+    const diagrams = this.ctx.diagrams;
+    if (!diagrams || !diagrams.base || !diagrams.entries) {
+      return null;
+    }
+    const hash = diagramHash(source);
+    const entry = diagrams.entries[hash];
+    if (!entry) {
+      return null;
+    }
+    const alt = String(entry.alt || "").trim() || DEFAULT_ALT;
+    const wrap = this.el("div", "doc-drawing");
+    wrap.setAttribute("tabindex", "0");
+    wrap.setAttribute("role", "group");
+    wrap.setAttribute(
+      "aria-label",
+      `Diagram ${this.codeCount}, scrolls sideways`
+    );
+    for (const theme of ["light", "dark"]) {
+      const img = this.el("img", `doc-drawing-img doc-drawing-${theme}`);
+      img.setAttribute("src", `${diagrams.base}/${hash}-${theme}.svg`);
+      img.setAttribute("alt", alt);
+      img.setAttribute("loading", "lazy");
+      img.setAttribute("decoding", "async");
+      wrap.appendChild(img);
+    }
+    return wrap;
   }
 
   list(token) {

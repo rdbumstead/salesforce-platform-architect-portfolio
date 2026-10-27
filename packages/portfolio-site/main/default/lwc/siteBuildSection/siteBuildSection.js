@@ -1,11 +1,15 @@
 /**
- * @description       : "How this site is built", the last section of the home page, for a
- *                      technical reviewer. A compact list of the live pillars from c/pillarData
- *                      (letter, page name, summary, a link to the page), then Skills, then a
- *                      footer row: the newest successful deploy's test counts linking to
- *                      /delivery, a link to the design docs and "Take the 5 minute tour", which
- *                      opens the tour list and moves focus to its heading. Pillars that are
- *                      coming are named once in a plain line.
+ * @description       : "How this site is built", above the contact call on the home page, for
+ *                      a technical reviewer. It opens with "Take the 5 minute tour", which opens
+ *                      the tour list right under it and moves focus to its heading, and sends
+ *                      tour_opened with source section when it opens the list. Then a compact
+ *                      list of the live pillars from c/pillarData (letter, page name, summary, a
+ *                      link to the page), then Skills, then a footer row: the newest successful
+ *                      deploy's test counts linking to /delivery and a link to the design docs.
+ *                      Pillars that are coming are named once in a plain line.
+ *                      Its host element carries the id "tour". openTour opens the tour and moves
+ *                      to its heading, which the hero's tour link calls, and an address ending
+ *                      in #tour does the same, on load or later.
  *                      Each pillar can gain a small stat line and a case study from
  *                      ProjectCardController.getPillarCards, merged in by letter. The stat shows
  *                      only with its label. A pillar with Challenge, Solution or Business Value
@@ -23,16 +27,23 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/26/2026
  **/
-import { LightningElement, wire } from "lwc";
+import { LightningElement, api, wire } from "lwc";
 import basePath from "@salesforce/community/basePath";
 import getPillarCards from "@salesforce/apex/ProjectCardController.getPillarCards";
 import getBuildCounts from "@salesforce/apex/ProjectCardController.getBuildCounts";
-import { LIVE_PILLARS, COMING_PILLARS } from "c/pillarData";
+import {
+  LIVE_PILLARS,
+  COMING_PILLARS,
+  TOUR_MINUTES,
+  TOUR_MINUTES_PER_STEP
+} from "c/pillarData";
 import { toExternalUrl } from "c/externalUrl";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { isReduced, onMotionChange } from "c/motionPreference";
 
-const MINUTES_PER_STEP = 1;
+/** The id this section's host element carries, and the address that opens the tour. */
+export const TOUR_ANCHOR = "tour";
+const TOUR_HASH = `#${TOUR_ANCHOR}`;
 
 /**
  * Trimmed text, or null when the value is not a non blank string.
@@ -137,13 +148,18 @@ export default class SiteBuildSection extends LightningElement {
   focusTourOnRender = false;
   newTabNote = ", opens in a new tab";
   motionReduced = isReduced();
+  focusReduced = null;
   stopMotionListener;
+  hashListener = () => this.openFromHash();
 
   connectedCallback() {
     this.motionReduced = isReduced();
     this.stopMotionListener = onMotionChange((reduced) => {
       this.motionReduced = reduced;
     });
+    this.setAttribute("id", TOUR_ANCHOR);
+    window.addEventListener("hashchange", this.hashListener);
+    this.openFromHash();
   }
 
   disconnectedCallback() {
@@ -151,15 +167,46 @@ export default class SiteBuildSection extends LightningElement {
       this.stopMotionListener();
     }
     this.stopMotionListener = undefined;
+    window.removeEventListener("hashchange", this.hashListener);
   }
 
   renderedCallback() {
     if (this.focusTourOnRender) {
       this.focusTourOnRender = false;
-      moveTo(
-        this.template.querySelector('[data-id="tour-heading"]'),
-        this.motionReduced
-      );
+      const reduced =
+        this.focusReduced === null ? this.motionReduced : this.focusReduced;
+      this.focusReduced = null;
+      moveTo(this.template.querySelector('[data-id="tour-heading"]'), reduced);
+    }
+  }
+
+  /**
+   * Opens the tour and moves to its heading, smoothly unless reduced. The hero's tour link
+   * calls this.
+   * @param {boolean} reduced true when the system asks for less motion
+   */
+  @api
+  openTour(reduced) {
+    const less = typeof reduced === "boolean" ? reduced : this.motionReduced;
+    if (this.tourOpen) {
+      moveTo(this.template.querySelector('[data-id="tour-heading"]'), less);
+      return;
+    }
+    this.tourOpen = true;
+    this.focusReduced = less;
+    // The heading is in the DOM but hidden until this render, so focus moves after it.
+    this.focusTourOnRender = true;
+  }
+
+  openFromHash() {
+    let matches = false;
+    try {
+      matches = window.location.hash === TOUR_HASH;
+    } catch {
+      matches = false;
+    }
+    if (matches) {
+      this.openTour(this.motionReduced);
     }
   }
 
@@ -255,12 +302,12 @@ export default class SiteBuildSection extends LightningElement {
       href: pillar.href,
       title: pillar.pageLabel,
       text: pillar.tour,
-      duration: `${MINUTES_PER_STEP} minute`
+      duration: `${TOUR_MINUTES_PER_STEP} minute`
     }));
   }
 
   get tourMinutes() {
-    return LIVE_PILLARS.length * MINUTES_PER_STEP;
+    return TOUR_MINUTES;
   }
 
   get tourButtonLabel() {
@@ -280,16 +327,10 @@ export default class SiteBuildSection extends LightningElement {
   }
 
   handleTourClick() {
-    if (this.tourOpen) {
-      moveTo(
-        this.template.querySelector('[data-id="tour-heading"]'),
-        this.motionReduced
-      );
-      return;
+    if (!this.tourOpen) {
+      trackEvent(EVENTS.TOUR_OPENED, { source: "section" });
     }
-    this.tourOpen = true;
-    // The heading is in the DOM but hidden until this render, so focus moves after it.
-    this.focusTourOnRender = true;
+    this.openTour(this.motionReduced);
   }
 
   handleCaseToggle(event) {

@@ -12,7 +12,7 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/21/2026
  **/
-import { toExternalUrl } from "c/externalUrl";
+import { headerLinks } from "c/profileLinks";
 import { RESUME_LAYOUT } from "./resumeLayout";
 
 const MONTHS = [
@@ -74,15 +74,6 @@ export function formatYearRange(role) {
 
 function clean(value) {
   return value === null || value === undefined ? "" : String(value).trim();
-}
-
-function headerLinks(header) {
-  return [
-    { label: "LinkedIn", url: toExternalUrl(header.linkedInUrl) },
-    { label: "GitHub", url: toExternalUrl(header.gitHubUrl) },
-    { label: "Trailhead", url: toExternalUrl(header.trailheadUrl) },
-    { label: "Portfolio", url: toExternalUrl(header.portfolioUrl) }
-  ].filter((link) => link.url);
 }
 
 function credentialLine(credential) {

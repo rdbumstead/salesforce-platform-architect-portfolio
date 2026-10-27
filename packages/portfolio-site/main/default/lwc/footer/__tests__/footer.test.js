@@ -622,6 +622,17 @@ describe("c-footer", () => {
       });
     });
 
+    it("draws the separators in CSS, so no group carries a separator in its text or as an extra list child", async () => {
+      const element = await loadEverything();
+      all(element, ".group-list").forEach((list) => {
+        expect(list.textContent).not.toMatch(/[|·•]/);
+        Array.from(list.children).forEach((li) => {
+          expect(li.tagName).toBe("LI");
+          expect(li.classList.contains("metric")).toBe(true);
+        });
+      });
+    });
+
     it("shows only Deploy before the page is idle", () => {
       const element = createComponent();
       expect(groups(element).map((g) => g.label)).toEqual(["Deploy"]);

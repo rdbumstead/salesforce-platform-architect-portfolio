@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<BotVersion xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>v1</fullName>
+    <articleAnswersGPTEnabled>false</articleAnswersGPTEnabled>
+    <botDialogs>
+        <botSteps>
+            <botMessages>
+                <message
+        >Hi, I&apos;m an AI assistant. How can I help you?</message>
+                <messageIdentifier
+        >1028e7d0-e078-461c-af2a-3ed4dc31c3ee</messageIdentifier>
+            </botMessages>
+            <stepIdentifier
+      >f2132c16-0471-4729-bca1-8c9949b0fa46</stepIdentifier>
+            <type>Message</type>
+        </botSteps>
+        <botSteps>
+            <stepIdentifier
+      >11ef7311-caf5-4582-bbab-4d3b2019c8e9</stepIdentifier>
+            <type>Wait</type>
+        </botSteps>
+        <developerName>Welcome</developerName>
+        <isPlaceholderDialog>false</isPlaceholderDialog>
+        <label>Hi! I&apos;m your helpful bot.</label>
+        <showInFooterMenu>false</showInFooterMenu>
+    </botDialogs>
+    <botDialogs>
+        <botSteps>
+            <botMessages>
+                <message
+        >Sorry, it looks like something has gone wrong.</message>
+                <messageIdentifier
+        >cfaff86e-1f95-419d-80a9-c25df06a99a4</messageIdentifier>
+            </botMessages>
+            <stepIdentifier
+      >aadc9f69-7b71-4cb7-9d79-dbf228794c6b</stepIdentifier>
+            <type>Message</type>
+        </botSteps>
+        <botSteps>
+            <stepIdentifier
+      >a1c4192d-9e02-4fbf-bd28-fdec60bc0865</stepIdentifier>
+            <type>Wait</type>
+        </botSteps>
+        <developerName>Error_Handling</developerName>
+        <isPlaceholderDialog>false</isPlaceholderDialog>
+        <label
+    >Unfortunately, a system error occurred. Let us start again.</label>
+        <showInFooterMenu>false</showInFooterMenu>
+    </botDialogs>
+    <botDialogs>
+        <botSteps>
+            <botMessages>
+                <message
+        >One moment while I connect you to the next available service representative.</message>
+                <messageIdentifier
+        >1f3816e1-40a3-40c1-9a1d-c88470b80c98</messageIdentifier>
+            </botMessages>
+            <stepIdentifier
+      >5f492bed-818f-48b1-bfc7-6e6df2982ea9</stepIdentifier>
+            <type>Message</type>
+        </botSteps>
+        <botSteps>
+            <conversationSystemMessage>
+                <type>Transfer</type>
+            </conversationSystemMessage>
+            <stepIdentifier
+      >978729a7-7492-4a6a-9b97-b10f4d8079d8</stepIdentifier>
+            <type>SystemMessage</type>
+        </botSteps>
+        <developerName>Transfer_To_Agent</developerName>
+        <isPlaceholderDialog>false</isPlaceholderDialog>
+        <label>Transfer To Agent</label>
+        <showInFooterMenu>false</showInFooterMenu>
+    </botDialogs>
+    <citationsEnabled>false</citationsEnabled>
+    <company>Ryan Bumstead | Salesforce Platform Architect</company>
+    <conversationDefinitionPlanners>
+        <genAiPlannerName>Portfolio_Guide_Agent</genAiPlannerName>
+    </conversationDefinitionPlanners>
+    <conversationVariables>
+        <dataType>Text</dataType>
+        <description
+    >This variable may also be referred to as VerifiedCustomerId</description>
+        <developerName>VerifiedCustomerId</developerName>
+        <includeInPrompt>false</includeInPrompt>
+        <label>VerifiedCustomerId</label>
+        <visibility>Internal</visibility>
+    </conversationVariables>
+    <entryDialog>Welcome</entryDialog>
+    <intentDisambiguationEnabled>false</intentDisambiguationEnabled>
+    <intentV3Enabled>false</intentV3Enabled>
+    <knowledgeActionEnabled>false</knowledgeActionEnabled>
+    <knowledgeFallbackEnabled>false</knowledgeFallbackEnabled>
+    <role
+  >You are the guide to Ryan Bumstead&apos;s portfolio site. You answer recruiters&apos; and hiring managers&apos; questions about his work history, projects, skills and certifications, using only what the portfolio actions return. Be professional, concise and accurate.</role>
+    <smallTalkEnabled>false</smallTalkEnabled>
+    <staticPromptsEnabled>false</staticPromptsEnabled>
+    <stopRecPrompts>false</stopRecPrompts>
+    <stopWelcomePrompts>false</stopWelcomePrompts>
+    <surfacesEnabled>false</surfacesEnabled>
+    <toneType>Casual</toneType>
+</BotVersion>

@@ -62,9 +62,8 @@
         </button>
       </div>
       <p class="wait-note" data-id="wait-note">
-        Letters are written by Gemma 4, which reasons before it answers, so a
-        letter can take about a minute. If the model is busy, you get a template
-        letter instead, and the panel below says which.
+        A letter can take about a minute. If the models are busy, you get a
+        template letter instead, and the panel below says which.
       </p>
 
       <div class="loading-state slds-m-top_medium">
@@ -115,6 +114,31 @@
             >
               {fallbackReason}
             </p>
+            <div
+              lwc:if={letterHeader}
+              class="letter-header"
+              data-id="letter-header"
+            >
+              <p lwc:if={letterHeader.name} class="letter-header-name">
+                {letterHeader.name}
+              </p>
+              <p lwc:if={letterHeader.title} class="letter-header-title">
+                {letterHeader.title}
+              </p>
+              <ul
+                lwc:if={letterHeader.hasLinks}
+                class="letter-header-links"
+                aria-label="Profile links"
+              >
+                <template for:each={letterHeader.links} for:item="link">
+                  <li key={link.key} class="letter-header-link">
+                    <a href={link.url} target="_blank" rel="noopener noreferrer"
+                      >{link.label}</a
+                    >
+                  </li>
+                </template>
+              </ul>
+            </div>
             <div class="letter" data-id="letter">{result.content}</div>
 
             <div class="slds-m-top_small">

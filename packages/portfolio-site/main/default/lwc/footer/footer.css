@@ -93,20 +93,43 @@
   margin-bottom: var(--pf-space-1);
 }
 
+/*
+ * The metrics in a group read as separate items, split by thin vertical bars drawn here and
+ * nowhere in the markup, so a screen reader hears the list's own items and no separator. Every
+ * item after the first carries its bar on its left edge, and each item sits 1 px further left.
+ * The list starts one item padding to the left with its overflow clipped, so the item that
+ * starts any line, the first or one that wrapped, has its bar clipped away and lines up with the
+ * group label. A bar never dangles at either end of a line, so no dot fallback is needed.
+ */
 .group-list {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--pf-space-1) var(--pf-space-3);
-  margin: 0;
-  padding: 0;
+  gap: var(--pf-space-1) 0;
+  margin: -3px 0 -3px calc(1px - var(--pf-space-2));
+  padding: 3px 0;
+  overflow: hidden;
   list-style: none;
 }
 
 .metric {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 24px;
+  margin-left: -1px;
+  padding: 0 var(--pf-space-2);
+}
+
+.metric::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1px;
+  height: 14px;
+  background: var(--pf-border);
+  transform: translateY(-50%);
 }
 
 .status-dot {

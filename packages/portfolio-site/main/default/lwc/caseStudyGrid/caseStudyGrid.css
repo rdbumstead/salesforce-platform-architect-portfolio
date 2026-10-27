@@ -63,6 +63,7 @@
 }
 
 .card {
+  position: relative;
   min-width: 0;
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-lg);
@@ -70,12 +71,23 @@
   color: var(--pf-text);
 }
 
+.card:hover {
+  border-color: var(--pf-accent);
+}
+
+/* The title link is the card's one link. Its focus ring goes around the whole card. */
+.card:has(.card-link:focus-visible) {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
 .card-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   height: 100%;
   padding: 18px;
+  box-sizing: border-box;
 }
 
 .metric {
@@ -106,75 +118,43 @@
   color: var(--pf-text);
 }
 
-.client {
-  margin: -6px 0 0;
-  font-size: 12px;
-  color: var(--pf-muted);
-}
-
-.blocks {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.block-heading {
-  font-family: var(--pf-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--pf-muted);
-}
-
-.block-text {
-  margin: 2px 0 0;
-  font-size: 14px;
-  color: var(--pf-body);
-  white-space: pre-line;
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.tag {
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: var(--pf-chip);
-  color: var(--pf-chip-text);
-  font-size: 12px;
-}
-
 /* The site's a:link rule outranks a plain class, so :link and :visited are matched too. */
 .card-link,
 .card-link:link,
 .card-link:visited {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  margin-top: auto;
-  color: var(--pf-accent);
-  font-size: 14px;
-  font-weight: 600;
+  color: var(--pf-text);
   text-decoration: none;
 }
 
-.card-link:hover,
-.card-link:link:hover,
-.card-link:visited:hover {
-  text-decoration: underline;
+/* The link stretched over the card, so a press anywhere on the card follows it. */
+.card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--pf-radius-lg);
 }
 
+.card:hover .card-link,
 .card-link:focus-visible {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 2px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.card-link:focus {
+  outline: none;
+}
+
+.client {
+  margin: 0;
+  font-size: 12px;
+  color: var(--pf-muted);
+}
+
+.card-go {
+  margin-top: auto;
+  color: var(--pf-accent);
+  font-size: 16px;
+  font-weight: 600;
 }
 
 @media (max-width: 767.98px) {
