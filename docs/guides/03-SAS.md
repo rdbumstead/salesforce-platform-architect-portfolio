@@ -569,6 +569,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-033](../adr/033-queries-in-custom-metadata.md)                                    | Queries in Custom Metadata                                      | Accepted (2026-10-24)    |
 | [ADR-034](../adr/034-recruiter-first-home-page.md)                                     | A Recruiter First Home Page                                     | Accepted (2026-10-26)    |
 | [ADR-035](../adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams Rendered in CI                                         | Accepted (2026-10-26)    |
+| [ADR-036](../adr/036-portfolio-guide-agent.md)                                         | The Portfolio Guide Agent                                       | Accepted (2026-10-27)    |
 
 </details>
 
@@ -587,7 +588,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 ### 8.2 Agentforce Unavailable
 
 > [!NOTE]
-> The Agentforce provider is a Prompt Builder template and its switch ships on ([ADR-015 amendment of 2026-10-26](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-26-agentforce-is-built-and-the-deferral-is-lifted)). When it fails, is skipped or its hourly budget is used, the dispatch records the attempt and Gemini serves, so the visitor still gets a letter. The scenario below is the target design for an Agentforce Service Agent, which is not built.
+> The Agentforce provider is a Prompt Builder template and its switch ships on ([ADR-015 amendment of 2026-10-26](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-26-agentforce-is-built-and-the-deferral-is-lifted)). When it fails, is skipped or its hourly budget is used, the dispatch records the attempt and Gemini serves, so the visitor still gets a letter. The scenario below is the target design for an Agentforce Service Agent. One is in source and inactive (ADR-036), and it is not on the site.
 
 - **Symptom:** Agentforce Service Agent fails to load or returns generic errors (common in some **Developer Edition** regions).
 - **Detection:** `<agentforce-service-agent>` LWC fails to render during manual testing.
@@ -635,7 +636,7 @@ The footer (`c-footer`) shows its telemetry in four labelled groups, Deploy, Pla
 - **A.3 Code Reusability:** One shared Prism module, `c/prismHighlighter`, which loads `Prism_JS` once per page. Logging goes through one seam, `PortfolioLog`, which writes to Nebula Logger when the owner has installed it and to debug logs otherwise ([ADR-013 amendment of 2026-10-21](../adr/013-structured-logging-framework-nebula-logger.md#amendment-2026-10-21-an-optional-install-behind-a-seam)).
 - **A.4 GitHub API Integration:** Uses Named Credential `GitHub_API`. Caches commits to the `Github_Cache__c` custom object, and the source files that View source shows to `Source_Cache__c` (one row per path, each read at most once a day by `SourceCacheRefreshJob`, and the docs again after a push that changes them). Refreshed every 15 minutes by `GitHubCacheRefreshJob` (Queueable, enqueued by `IntegrationCacheRefreshScheduler`).
 - **A.5 Hero Banner Navigation:** (Refer to UI specs).
-- **A.6 Agentforce Configuration:** the Service Agent and its topic grounding are not built. The provider that is built runs a Prompt Builder template, not an agent (section 5.4). The "Show your work" panel (section 5.4) replaces the Mirror Mode system instruction, so no instruction asks a model to reveal its prompt.
+- **A.6 Agentforce Configuration:** the Portfolio Guide Agent is in source with four topics and three read only actions, ships to production inactive and is not on the site ([ADR-036](../adr/036-portfolio-guide-agent.md)). It reads through `QueryDefinitions` and has no search index behind it. The cover letter provider runs a Prompt Builder template, not this agent (section 5.4). The "Show your work" panel (section 5.4) replaces the Mirror Mode system instruction, so no instruction asks a model to reveal its prompt.
 - **A.7 Architecture Diagram Hosting:** not built. No C4 diagram is exported or uploaded as a static resource. The architecture diagrams are the Mermaid blocks in these guides, and the live data model is drawn by `c-schema-visualizer` (section 5.1).
 - **A.8 Jira Integration:** Endpoint: ryanbumstead.atlassian.net. Auth: Basic Auth with Named Credential.
 - **A.9 Advanced Visualization Strategy:**
