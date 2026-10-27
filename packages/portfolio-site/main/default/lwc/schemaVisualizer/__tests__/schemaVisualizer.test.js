@@ -263,7 +263,22 @@ describe("c-schema-visualizer", () => {
     );
     await flushPromises();
 
-    expect(q(element, ".panel-title").textContent).toBe("Account (Account)");
+    expect(q(element, ".panel-title").textContent).toBe("Account");
+  });
+
+  it("shows the API name beside a label that differs from it", async () => {
+    const element = mount();
+    getSchemaGraph.emit(PAYLOAD);
+    await flushPromises();
+
+    q(element, 'g.node[data-api="EH_Job_Posting__c"]').dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter" })
+    );
+    await flushPromises();
+
+    expect(q(element, ".panel-title").textContent).toBe(
+      "Job Posting (EH_Job_Posting__c)"
+    );
   });
 
   it("selects a node from the list", async () => {
