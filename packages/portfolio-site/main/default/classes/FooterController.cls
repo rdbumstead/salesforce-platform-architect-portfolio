@@ -6,7 +6,8 @@
  *                      footer after first paint (ADR-014) and returns this transaction's CPU,
  *                      heap and SOQL use against their limits (SAS 9, Guardrails guide), the
  *                      provider rows from ContentGenerationController.providerStatus() as they
- *                      are, and today's AI tier request count. It also returns the
+ *                      are, and today's AI tier request count, in which a cover letter that went
+ *                      through the API counts once. It also returns the
  *                      org's own quotas from OrgLimits (daily API requests and daily async
  *                      Apex runs) and the GitHub and Jira circuit breaker state.
  * @author            : Ryan Bumstead
@@ -19,6 +20,13 @@ public with sharing class FooterController {
   /** Key__c prefix RateWindowLimiter writes for /papi/v1/ai/ and the site AI path. */
   @TestVisible
   private static final String AI_TIER_KEY_PREFIX = 'papi-ai:';
+
+  /**
+   * Key__c of the marker ApiLabController adds for each site letter the API also counted on
+   * its own papi-ai key. Taken off the total, so that letter counts once.
+   */
+  @TestVisible
+  private static final String PROXIED_KEY = ApiLabController.PROXIED_RATE_KEY;
 
   /**
    * The OrgLimits names the footer shows, in this order, with their footer labels. Each one is
@@ -262,7 +270,12 @@ public with sharing class FooterController {
    */
   private without sharing class AiRequestCounter {
     public Integer countToday() {
-      String keyPattern = AI_TIER_KEY_PREFIX + '%';
+      Integer requests = sumToday(AI_TIER_KEY_PREFIX + '%');
+      Integer counted = sumToday(PROXIED_KEY + '|%');
+      return Math.max(0, requests - counted);
+    }
+
+    private Integer sumToday(String keyPattern) {
       AggregateResult total = [
         SELECT SUM(Count__c) requests
         FROM API_Rate_Window__c
