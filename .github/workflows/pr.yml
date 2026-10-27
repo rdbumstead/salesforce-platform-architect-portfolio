@@ -130,7 +130,10 @@ jobs:
       - name: Deploy & Test (Scratch Mode - FULL)
         if: env.ORG_TYPE == 'scratch'
         run: |
-          sf project deploy start --source-dir packages --target-org ci-org --wait 30
+          # An org from the AI definition creates its own sfdc_aiplanner_service_permset at signup,
+          # which source tracking reports as a conflict with ours. The org is thrown away after this
+          # run, so the source version simply wins.
+          sf project deploy start --source-dir packages --target-org ci-org --ignore-conflicts --wait 30
 
           # Production's site guest already holds Portfolio_Guest. Give the scratch guest the same,
           # so guest test classes running in parallel never race to assign it themselves.
