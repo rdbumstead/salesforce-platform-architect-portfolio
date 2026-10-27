@@ -392,9 +392,12 @@ public with sharing class ApiLabController {
   /**
    * @description Posts the letter to POST /papi/v1/ai/generate with provider Agentforce, when
    *              the Agentforce switch is on and its breaker is closed. The API runs as the
-   *              integration user and records its own breaker result whenever it answers, so
-   *              only a call it never answered (a callout failure, or a status other than
-   *              200 or 503) is left for this transaction to record.
+   *              integration user and records its own breaker result whenever it reached
+   *              Agentforce. Any other HTTP answer (the rate limiter's 429, a refused session,
+   *              a bad request) is not Agentforce failing, so it is never a breaker failure.
+   *              Only a call that got no answer (a timeout or a callout failure) or a 200 with
+   *              no letter is recorded here. A 503 that says the hourly budget is used is shown
+   *              as budget_exhausted.
    * @param company Company name, trimmed.
    * @param title Job title, trimmed.
    * @param description Job description, or null.
@@ -435,9 +438,29 @@ public with sharing class ApiLabController {
         return outcome;
       }
     }
+    if (status == 503 && isBudgetAnswer(res.getBody())) {
+      outcome.attempt = new ContentGenerationController.Attempt(
+        ContentGenerationController.PROVIDER_AGENTFORCE,
+        ContentGenerationController.OUTCOME_BUDGET_EXHAUSTED,
+        System.currentTimeMillis() - started
+      );
+      return outcome;
+    }
     outcome.attempt = failedAgentforce(started, 'HTTP ' + status);
-    outcome.recordFailure = status != 503;
+    outcome.recordFailure = status == 200;
     return outcome;
+  }
+
+  private static Boolean isBudgetAnswer(String body) {
+    try {
+      Object parsed = JSON.deserializeUntyped(body);
+      return parsed instanceof Map<String, Object> &&
+        ((Map<String, Object>) parsed).get('message') ==
+        PAPIAiGenerate.MESSAGE_AGENTFORCE_BUDGET;
+    } catch (Exception e) {
+      // Recovered on purpose: an unreadable 503 is an ordinary failed attempt.
+      return false;
+    }
   }
 
   private static ContentGenerationController.Attempt failedAgentforce(

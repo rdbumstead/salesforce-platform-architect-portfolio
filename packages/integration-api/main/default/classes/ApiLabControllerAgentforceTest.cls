@@ -281,16 +281,60 @@ private class ApiLabControllerAgentforceTest {
   }
 
   @IsTest
-  static void anUnansweredStatusRecordsAnAgentforceFailureHere() {
+  static void aRefusedSessionIsNotABreakerFailure() {
     mockApi(401, '{"message":"Session expired or invalid"}');
 
     ApiLabController.CoverLetterResult result = letterAsGuest(null);
 
     Assert.areEqual('Gemini', result.provider, 'Gemini served');
     Assert.areEqual('HTTP 401', result.attempts[0].detail, 'Detail');
+    Assert.isNull(agentforceBreaker(), 'Not Agentforce failing');
+  }
+
+  @IsTest
+  static void aRateLimitedLetterNeverTipsTheBreakerOpen() {
+    // Each letter is its own transaction, so a burst is shown as the state two earlier
+    // failures left: a 429 now must not be the third that opens the circuit.
+    insert new Circuit_Breaker_State__c(
+      Name = CircuitBreaker.KEY_AGENTFORCE,
+      Consecutive_Failures__c = 2
+    );
+    mockApi(
+      429,
+      '{"errorCode":"RATE_LIMITED","message":"Rate limit exceeded"}'
+    );
+
+    ApiLabController.CoverLetterResult result = letterAsGuest(null);
+
+    Assert.areEqual('Gemini', result.provider, 'Gemini served');
+    Assert.areEqual('HTTP 429', result.attempts[0].detail, 'Shown');
     Circuit_Breaker_State__c breaker = agentforceBreaker();
-    Assert.isNotNull(breaker, 'Failure recorded here');
-    Assert.areEqual(1, breaker.Consecutive_Failures__c, 'One failure');
+    Assert.areEqual(2, breaker.Consecutive_Failures__c, 'Not counted');
+    Assert.isNull(breaker.Open_Until__c, 'The breaker stays closed');
+  }
+
+  @IsTest
+  static void aUsedHourlyBudgetIsShownAsBudgetExhausted() {
+    mockApi(
+      503,
+      JSON.serialize(
+        new Map<String, Object>{
+          'errorCode' => 'ALL_PROVIDERS_UNAVAILABLE',
+          'message' => PAPIAiGenerate.MESSAGE_AGENTFORCE_BUDGET
+        }
+      )
+    );
+
+    ApiLabController.CoverLetterResult result = letterAsGuest(null);
+
+    Assert.areEqual('Gemini', result.provider, 'Gemini served');
+    Assert.areEqual(
+      'budget_exhausted',
+      result.attempts[0].outcome,
+      'Its own outcome'
+    );
+    Assert.isFalse(result.fallbackOccurred, 'A skip is not a failure');
+    Assert.isNull(agentforceBreaker(), 'Not a breaker failure');
   }
 
   @IsTest
