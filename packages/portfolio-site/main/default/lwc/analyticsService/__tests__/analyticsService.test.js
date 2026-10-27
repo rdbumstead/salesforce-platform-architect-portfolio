@@ -75,8 +75,8 @@ const CAREER_NAMES = ["career_role_opened", "career_timeline_toggled"];
 // Appended for the one career timeline's selector and the tour's two entry points.
 const TIMELINE_TOUR_NAMES = ["career_timeline_filtered", "tour_opened"];
 
-// Appended for Round 13: the tour journey, the cover letter page, the phone timeline, the
-// API Lab's Postman and curl, and the footer's storage panel.
+// Appended for the tour journey, the cover letter page, the phone timeline, the API Lab's
+// Postman and curl, and the footer's storage panel.
 const PRE_LAUNCH_NAMES = [
   "tour_step_viewed",
   "tour_exited",
