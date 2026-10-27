@@ -104,12 +104,14 @@ jobs:
           sf org login jwt --client-id "$SFDX_CLIENT_ID" --jwt-key-file "$KEY_FILE" --username "$SFDX_USERNAME" --instance-url https://login.salesforce.com --alias portfolio --set-default-dev-hub --json \
             | jq '{status, orgId: .result.orgId, message}'
 
+      # The AI definition, because the Agentforce cover letter code and its prompt template do not
+      # deploy to an org without the generative AI features.
       - name: Create Scratch Org
         id: create_org
         run: |
           echo "CREATE_STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
           set +e
-          sf org create scratch --target-dev-hub portfolio --definition-file config/project-scratch-def.json --alias ci-org --duration-days 1 --set-default --no-ancestors --wait 30 --json > scratch_info.json
+          sf org create scratch --target-dev-hub portfolio --definition-file config/project-scratch-def-ai.json --alias ci-org --duration-days 1 --set-default --no-ancestors --wait 30 --json > scratch_info.json
           EXIT_CODE=$?
           set -e
           echo "CREATE_FINISHED=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
