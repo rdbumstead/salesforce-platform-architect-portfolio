@@ -404,6 +404,55 @@ private class FooterControllerTest {
   }
 
   @isTest
+  static void getSystemSnapshotReturnsNoStorageBeforeTheFirstSnapshot() {
+    Test.startTest();
+    FooterController.SystemSnapshot snapshot = FooterController.getSystemSnapshot();
+    Test.stopTest();
+
+    Assert.isNull(snapshot.storage, 'Nothing stored, nothing made up');
+  }
+
+  @isTest
+  static void getSystemSnapshotGuestReadsTheStoredStorage() {
+    StorageSnapshot.save(StorageSnapshotJob.build());
+    User guest = SiteGuestTestSupport.preparedGuest();
+
+    FooterController.SystemSnapshot snapshot;
+    Test.startTest();
+    System.runAs(guest) {
+      snapshot = FooterController.getSystemSnapshot();
+    }
+    Test.stopTest();
+
+    Assert.isNotNull(snapshot.storage, 'The guest reads the stored snapshot');
+    Assert.areEqual(
+      StorageSnapshotJob.AREA_DEFINITIONS.size(),
+      snapshot.storage.dataAreas.size(),
+      'The areas come through'
+    );
+    Assert.areEqual(
+      0,
+      snapshot.storage.traffic.size(),
+      'Traffic stays behind the switch'
+    );
+  }
+
+  @isTest
+  static void getSystemSnapshotKeepsTheRestWhenTheStorageReadFails() {
+    FooterController.throwOnStorage = true;
+
+    Test.startTest();
+    FooterController.SystemSnapshot snapshot = FooterController.getSystemSnapshot();
+    Test.stopTest();
+
+    Assert.isNull(snapshot.storage, 'A failed storage read is left out');
+    Assert.isNotNull(
+      snapshot.integrations,
+      'The rest of the snapshot is intact'
+    );
+  }
+
+  @isTest
   static void orgQuotasLeavesOutAQuotaTheOrgDoesNotReport() {
     FooterController.orgLimitsOverride = new Map<String, System.OrgLimit>();
 

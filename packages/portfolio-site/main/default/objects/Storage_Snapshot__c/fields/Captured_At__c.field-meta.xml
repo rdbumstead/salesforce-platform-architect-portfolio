@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Captured_At__c</fullName>
+    <description
+  >When the job last wrote a complete snapshot. The job runs again once this is older than the Storage_Snapshot_Hours setting.</description>
+    <inlineHelpText>Set by the storage snapshot job.</inlineHelpText>
+    <label>Captured At</label>
+    <required>false</required>
+    <type>DateTime</type>
+</CustomField>
