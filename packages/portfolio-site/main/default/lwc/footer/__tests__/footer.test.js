@@ -160,6 +160,7 @@ const STORAGE = {
   fileMaxMb: 20,
   dataAreas: [
     { label: "Site content", records: 120, kb: 240 },
+    { label: "Delivery telemetry", records: 1, kb: 2 },
     { label: "API and rate limiting", records: 600, kb: 1200 }
   ],
   fileGroups: [
@@ -843,6 +844,7 @@ describe("c-footer", () => {
       all(element, '[data-id="storage-data"]').map((n) => n.textContent)
     ).toEqual([
       "Site content: 120 records, about 240 KB",
+      "Delivery telemetry: 1 record, about 2 KB",
       "API and rate limiting: 600 records, about 1.2 MB"
     ]);
     expect(

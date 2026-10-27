@@ -375,7 +375,7 @@ export default class Footer extends LightningElement {
       : [];
     return rows.map((row) => ({
       key: row.label,
-      label: `${row.label}: ${formatNumber(row.records)} records, about ${formatSize(row.kb)}`
+      label: `${row.label}: ${formatNumber(row.records)} ${row.records === 1 ? "record" : "records"}, about ${formatSize(row.kb)}`
     }));
   }
 
