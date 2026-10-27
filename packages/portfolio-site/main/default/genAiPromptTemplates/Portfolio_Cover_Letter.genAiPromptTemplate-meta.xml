@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier
+  >+2dHF4XkBX40CQ6SAzmgSiHjT0SaFg/1iFvhjRHX9Hc=_1</activeVersionIdentifier>
+    <description
+  >The AI Lab cover letter. The whole prompt, built by ContentGenerationController.coverLetterPrompt, arrives as Input:Prompt. The template adds only a line that holds the letter to the word range the prompt asks for.</description>
+    <developerName>Portfolio_Cover_Letter</developerName>
+    <masterLabel>Portfolio Cover Letter</masterLabel>
+    <templateVersions>
+        <content>{!$Input:Prompt}
+
+If the text above has a Length line, write toward its upper number and treat its lower number as a hard floor. For a letter that means an opening paragraph of two or three sentences, three body paragraphs of five sentences each, and a closing of two sentences, every sentence drawn from the facts above.</content>
+        <inputs>
+            <apiName>Prompt</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Prompt</masterLabel>
+            <referenceName>Input:Prompt</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>sfdc_ai__DefaultGPT41</primaryModel>
+        <status>Published</status>
+        <versionIdentifier
+    >+2dHF4XkBX40CQ6SAzmgSiHjT0SaFg/1iFvhjRHX9Hc=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

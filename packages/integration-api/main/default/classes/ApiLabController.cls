@@ -4,11 +4,17 @@
  *                      Credential and returns status, latency, tracing and paging headers and
  *                      the body. requestEvaluatorToken() vends a token through the same
  *                      TokenExchangeService path as POST /papi/v1/auth/token.
- *                      generateCoverLetter() is the site's cover letter path. It runs
- *                      ContentGenerationController.dispatch in process as the site
- *                      guest, under the AI tier limit on the papi-ai key prefix. It makes no
- *                      call into this org's own API, because a request that arrives as a callout
- *                      from the same org cannot call out to Gemini ("Callout loop not allowed").
+ *                      generateCoverLetter() is the site's cover letter path, under the AI
+ *                      tier limit on the papi-ai key prefix. While the Agentforce switch is on
+ *                      and its breaker is closed, it first posts the letter to
+ *                      POST /papi/v1/ai/generate with provider Agentforce through
+ *                      Portfolio_API, so Agentforce runs as the integration user (a guest may
+ *                      not run generative AI). A 200 is the letter. Anything else runs
+ *                      ContentGenerationController.dispatch in process as the site guest from
+ *                      Gemini on, then the template, with the Agentforce attempt first in the
+ *                      attempts list. Gemini is never asked through the API, because a request
+ *                      that arrives as a callout from the same org cannot call out again
+ *                      ("Callout loop not allowed").
  *                      invoke() and generateCoverLetter() each add one to a daily counter
  *                      (UsageCounterWriter) as their last step. A counter failure is swallowed
  *                      and never reaches the visitor.
@@ -52,8 +58,30 @@ public with sharing class ApiLabController {
    */
   public static final String AI_RATE_KEY = 'papi-ai:site-cover-letter';
 
+  /**
+   * Rate key that marks a letter the API counted on its own papi-ai key. One is added for each
+   * Agentforce call the API answered with its rate headers, so FooterController can take them
+   * off its AI requests today and a letter that went through the API counts once. It is not a
+   * papi-ai key, so it limits nothing and is not counted itself.
+   */
+  public static final String PROXIED_RATE_KEY = 'site-ai-proxied:cover-letter';
+  private static final Integer PROXIED_MARKER_LIMIT = 1000000;
+
   /** Where the request log line says the cover letter came from. */
   public static final String COVER_LETTER_LOG_PATH = 'aura:ApiLabController.generateCoverLetter';
+
+  /** The API path the Agentforce letter is posted to. */
+  public static final String AI_GENERATE_PATH = '/papi/v1/ai/generate';
+
+  /**
+   * Apex allows 120 s of callouts in one transaction. The Agentforce call gets what Gemini's
+   * timeout leaves of it, less this margin.
+   */
+  public static final Integer CALLOUT_BUDGET_MS = 120000;
+  public static final Integer CALLOUT_MARGIN_MS = 2000;
+  public static final Integer GEMINI_DEFAULT_TIMEOUT_MS = 60000;
+  private static final Integer MIN_PROXY_TIMEOUT_MS = 1000;
+  private static final String PAPI_COVER_LETTER = 'CoverLetter';
 
   public static final Integer MAX_COMPANY_LENGTH = 120;
   public static final Integer MAX_TITLE_LENGTH = 120;
@@ -267,11 +295,15 @@ public with sharing class ApiLabController {
   }
 
   /**
-   * @description Writes a cover letter in process as the caller (the site guest on the page).
-   *              Order, so no DML comes before a callout: validate, check the AI tier limit (a read, no
-   *              DML), dispatch (Agentforce only when it may serve, never for a guest, then
-   *              Gemini, then the local template), then write the rate count. A refused or
-   *              failed request throws, and the thrown error rolls back its count.
+   * @description Writes a cover letter for the caller (the site guest on the page).
+   *              Order, so no DML comes before a callout: validate, check the AI tier limit (a
+   *              read, no DML), read the Agentforce breaker (a read), post to the API for
+   *              Agentforce when its switch is on and its breaker closed, and when that does
+   *              not return a letter dispatch in process from Gemini on (then the local
+   *              template). Then the writes: the Agentforce breaker failure the API could not
+   *              record, the rate counts (with the PROXIED_RATE_KEY marker when the API
+   *              counted the call), the request log line and the usage counter. A refused
+   *              or failed request throws, and the thrown error rolls back its count.
    * @param companyName Company the letter is for, at most 120 characters.
    * @param jobTitle Job title, at most 120 characters.
    * @param jobDescription Job description, optional, at most 4000 characters.
@@ -312,32 +344,294 @@ public with sharing class ApiLabController {
       );
     }
 
-    ContentGenerationController.GenerationResult generated;
-    try {
-      generated = ContentGenerationController.dispatch(
-        new ContentGenerationController.GenerationRequest(
-          coverLetterPrompt(company, title, description),
-          providerContext(company, title, description),
-          true
-        )
-      );
-    } catch (ContentGenerationController.ContentGenerationException e) {
-      ApiRequestContext.commitRateCounts();
-      logCoverLetter(503, requestId, started);
-      throw auraError(
-        'No AI provider is available right now. Try again later.'
-      );
+    AgentforceOutcome agentforce = tryAgentforce(company, title, description);
+    CoverLetterResult result = agentforce.result;
+    if (result == null) {
+      ContentGenerationController.GenerationResult generated;
+      try {
+        generated = ContentGenerationController.dispatch(
+          inProcessRequest(company, title, description, agentforce)
+        );
+      } catch (ContentGenerationController.ContentGenerationException e) {
+        recordAgentforceBreaker(agentforce);
+        ApiRequestContext.commitRateCounts();
+        logCoverLetter(503, requestId, started);
+        throw auraError(
+          'No AI provider is available right now. Try again later.'
+        );
+      }
+      result = toCoverLetterResult(generated);
+      addAgentforceAttempt(result, agentforce);
     }
-    // The count is written after the provider callouts, so no DML comes before a callout.
+    // Every write comes after the provider callouts, so no DML comes before a callout.
+    recordAgentforceBreaker(agentforce);
     ApiRequestContext.commitRateCounts();
 
-    CoverLetterResult result = toCoverLetterResult(generated);
     result.latencyMs = System.currentTimeMillis() - started;
     result.requestId = requestId;
     logCoverLetter(200, requestId, started);
     // Last of all: the letter, from any provider, is in hand. Never throws.
     UsageCounterWriter.record(UsageCounterWriter.KIND_COVER_LETTER);
     return result;
+  }
+
+  /**
+   * @description What the Agentforce step of a site letter produced: the letter when the API
+   *              served one, else the attempt to show (null when the switch is off), and
+   *              whether this transaction must record a breaker failure itself.
+   */
+  @TestVisible
+  private class AgentforceOutcome {
+    public CoverLetterResult result;
+    public ContentGenerationController.Attempt attempt;
+    public Boolean recordFailure = false;
+    /** True when the API's answer carried its rate headers, so it counted the request. */
+    public Boolean countedByApi = false;
+  }
+
+  /**
+   * @description Posts the letter to POST /papi/v1/ai/generate with provider Agentforce, when
+   *              the Agentforce switch is on and its breaker is closed. The API runs as the
+   *              integration user and records its own breaker result whenever it reached
+   *              Agentforce. Any other HTTP answer (the rate limiter's 429, a refused session,
+   *              a bad request) is not Agentforce failing, so it is never a breaker failure.
+   *              Only a call that got no answer (a timeout or a callout failure) or a 200 with
+   *              no letter is recorded here. A 503 that says the hourly budget is used is shown
+   *              as budget_exhausted.
+   * @param company Company name, trimmed.
+   * @param title Job title, trimmed.
+   * @param description Job description, or null.
+   * @return AgentforceOutcome The letter, or the attempt to show.
+   */
+  @TestVisible
+  private static AgentforceOutcome tryAgentforce(
+    String company,
+    String title,
+    String description
+  ) {
+    AgentforceOutcome outcome = new AgentforceOutcome();
+    if (!AgentforceService.isEnabled()) {
+      return outcome;
+    }
+    if (CircuitBreaker.isOpen(CircuitBreaker.KEY_AGENTFORCE)) {
+      outcome.attempt = new ContentGenerationController.Attempt(
+        ContentGenerationController.PROVIDER_AGENTFORCE,
+        ContentGenerationController.OUTCOME_SKIPPED_OPEN_CIRCUIT,
+        0L
+      );
+      return outcome;
+    }
+    Long started = System.currentTimeMillis();
+    HttpResponse res;
+    try {
+      res = new Http().send(agentforceRequest(company, title, description));
+    } catch (Exception e) {
+      outcome.attempt = failedAgentforce(started, e.getTypeName());
+      outcome.recordFailure = true;
+      return outcome;
+    }
+    outcome.countedByApi = res.getHeader('X-RateLimit-Limit') != null;
+    Integer status = res.getStatusCode();
+    if (status == 200) {
+      outcome.result = fromApiBody(res.getBody());
+      if (outcome.result != null) {
+        return outcome;
+      }
+    }
+    if (status == 503 && isBudgetAnswer(res.getBody())) {
+      outcome.attempt = new ContentGenerationController.Attempt(
+        ContentGenerationController.PROVIDER_AGENTFORCE,
+        ContentGenerationController.OUTCOME_BUDGET_EXHAUSTED,
+        System.currentTimeMillis() - started
+      );
+      return outcome;
+    }
+    outcome.attempt = failedAgentforce(started, 'HTTP ' + status);
+    outcome.recordFailure = status == 200;
+    return outcome;
+  }
+
+  private static Boolean isBudgetAnswer(String body) {
+    try {
+      Object parsed = JSON.deserializeUntyped(body);
+      return parsed instanceof Map<String, Object> &&
+        ((Map<String, Object>) parsed).get('message') ==
+        PAPIAiGenerate.MESSAGE_AGENTFORCE_BUDGET;
+    } catch (Exception e) {
+      // Recovered on purpose: an unreadable 503 is an ordinary failed attempt.
+      return false;
+    }
+  }
+
+  private static ContentGenerationController.Attempt failedAgentforce(
+    Long started,
+    String detail
+  ) {
+    return new ContentGenerationController.Attempt(
+      ContentGenerationController.PROVIDER_AGENTFORCE,
+      ContentGenerationController.OUTCOME_FAILED,
+      System.currentTimeMillis() - started,
+      detail
+    );
+  }
+
+  private static HttpRequest agentforceRequest(
+    String company,
+    String title,
+    String description
+  ) {
+    Map<String, Object> context = new Map<String, Object>{
+      'companyName' => company,
+      'role' => title
+    };
+    if (description != null) {
+      context.put('jobDescription', description);
+    }
+    HttpRequest req = new HttpRequest();
+    req.setEndpoint(
+      'callout:' + NAMED_CREDENTIAL + APEX_REST_PATH + AI_GENERATE_PATH
+    );
+    req.setMethod('POST');
+    req.setTimeout(agentforceTimeoutMs());
+    req.setHeader('X-Request-Id', UUID.randomUUID().toString());
+    req.setHeader('X-API-Version', API_VERSION);
+    req.setHeader('Content-Type', 'application/json');
+    req.setHeader('Accept', 'application/json');
+    req.setBody(
+      JSON.serialize(
+        new Map<String, Object>{
+          'type' => PAPI_COVER_LETTER,
+          'provider' => ContentGenerationController.PROVIDER_AGENTFORCE,
+          'context' => context
+        }
+      )
+    );
+    return req;
+  }
+
+  /**
+   * @description The Agentforce call's timeout: the Agentforce record's, capped so that it and
+   *              Gemini's timeout fit in the 120 s a transaction may spend on callouts.
+   * @return Integer Milliseconds, at least 1000.
+   */
+  @TestVisible
+  private static Integer agentforceTimeoutMs() {
+    Decimal gemini = AI_Provider_Config__mdt.getInstance('Gemini')
+      ?.Timeout_Ms__c;
+    Integer geminiMs = gemini == null ||
+      gemini <= 0
+      ? GEMINI_DEFAULT_TIMEOUT_MS
+      : gemini.intValue();
+    Integer budget = CALLOUT_BUDGET_MS - geminiMs - CALLOUT_MARGIN_MS;
+    return Math.max(
+      MIN_PROXY_TIMEOUT_MS,
+      Math.min(AgentforceService.timeoutMs(), budget)
+    );
+  }
+
+  /**
+   * @description The site's view of a 200 from the API. Null when the body holds no
+   *              content, which then counts as a failed attempt.
+   * @param body The response body.
+   * @return CoverLetterResult The letter, or null.
+   */
+  @TestVisible
+  private static CoverLetterResult fromApiBody(String body) {
+    Object parsed;
+    try {
+      parsed = JSON.deserializeUntyped(body);
+    } catch (Exception e) {
+      // Recovered on purpose: an unreadable 200 is a failed Agentforce attempt.
+      return null;
+    }
+    Map<String, Object> root = parsed instanceof Map<String, Object>
+      ? (Map<String, Object>) parsed
+      : new Map<String, Object>();
+    String content = textOf(root.get('content'));
+    if (String.isBlank(content)) {
+      return null;
+    }
+    CoverLetterResult result = new CoverLetterResult();
+    result.content = content;
+    result.provider = textOf(root.get('provider'));
+    result.model = textOf(root.get('model'));
+    result.fallbackOccurred = root.get('fallbackOccurred') == true;
+    result.generationMs = longOf(root.get('latencyMs'));
+    result.promptShown = textOf(root.get('promptShown'));
+    result.attempts = new List<AttemptView>();
+    Object attempts = root.get('attempts');
+    if (attempts instanceof List<Object>) {
+      for (Object item : (List<Object>) attempts) {
+        if (item instanceof Map<String, Object>) {
+          result.attempts.add(attemptFromApi((Map<String, Object>) item));
+        }
+      }
+    }
+    return result;
+  }
+
+  private static AttemptView attemptFromApi(Map<String, Object> item) {
+    AttemptView view = new AttemptView();
+    view.provider = textOf(item.get('provider'));
+    view.outcome = textOf(item.get('outcome'));
+    view.ms = longOf(item.get('ms'));
+    return view;
+  }
+
+  private static String textOf(Object value) {
+    return value instanceof String ? (String) value : null;
+  }
+
+  private static Long longOf(Object value) {
+    return value instanceof Integer || value instanceof Long
+      ? Long.valueOf(String.valueOf(value))
+      : null;
+  }
+
+  private static ContentGenerationController.GenerationRequest inProcessRequest(
+    String company,
+    String title,
+    String description,
+    AgentforceOutcome agentforce
+  ) {
+    ContentGenerationController.GenerationRequest request = new ContentGenerationController.GenerationRequest(
+      coverLetterPrompt(company, title, description),
+      providerContext(company, title, description),
+      true
+    );
+    // The API already tried Agentforce, so the guest's own chain starts at Gemini and the
+    // Agentforce attempt is shown from agentforce.attempt. With the switch off there is no
+    // attempt, and the chain records Agentforce as skipped_off as before.
+    request.skipAgentforce = agentforce.attempt != null;
+    return request;
+  }
+
+  private static void addAgentforceAttempt(
+    CoverLetterResult result,
+    AgentforceOutcome agentforce
+  ) {
+    if (agentforce.attempt == null) {
+      return;
+    }
+    result.attempts.add(0, toAttemptView(agentforce.attempt));
+    if (
+      agentforce.attempt.outcome == ContentGenerationController.OUTCOME_FAILED
+    ) {
+      result.fallbackOccurred = true;
+    }
+  }
+
+  private static void recordAgentforceBreaker(AgentforceOutcome agentforce) {
+    if (agentforce.recordFailure) {
+      CircuitBreaker.recordFailure(CircuitBreaker.KEY_AGENTFORCE);
+      agentforce.recordFailure = false;
+    }
+    if (agentforce.countedByApi) {
+      // A read and a pending count, written by commitRateCounts with the visitor's own.
+      ApiRequestContext.rateLimiter()
+        .checkKey(PROXIED_RATE_KEY, PROXIED_MARKER_LIMIT);
+      agentforce.countedByApi = false;
+    }
   }
 
   /**

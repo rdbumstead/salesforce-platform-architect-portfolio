@@ -15,6 +15,7 @@ import CoverLetterGenerator, {
   statusLineFor
 } from "c/coverLetterGenerator";
 import generateCoverLetter from "@salesforce/apex/ApiLabController.generateCoverLetter";
+import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import { trackEvent } from "c/analyticsService";
 
 jest.mock(
@@ -22,6 +23,24 @@ jest.mock(
   () => ({ default: jest.fn() }),
   { virtual: true }
 );
+
+jest.mock(
+  "@salesforce/apex/ResumeController.getHeader",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+const HEADER = {
+  name: "Ryan Bumstead",
+  title: "Salesforce Platform Architect",
+  linkedInUrl: "https://www.linkedin.com/in/example",
+  gitHubUrl: "https://github.com/rdbumstead",
+  trailheadUrl: null,
+  portfolioUrl: "https://ryanbumstead.com"
+};
 
 jest.mock(
   "c/analyticsService",
@@ -600,6 +619,113 @@ describe("c-cover-letter-generator", () => {
       "invalid_input"
     );
     expect(messageKind(undefined)).toBe("other");
+  });
+
+  describe("the owner's header over the letter", () => {
+    async function letterWith(result, header) {
+      generateCoverLetter.mockResolvedValue(result);
+      const element = createComponent();
+      if (header !== undefined) {
+        getHeader.emit(header);
+      }
+      await flushPromises();
+      await fillAndGenerate(element);
+      return element;
+    }
+
+    function links(element) {
+      return [
+        ...element.shadowRoot.querySelectorAll(".letter-header-link a")
+      ].map((a) => [a.textContent, a.href, a.target, a.rel]);
+    }
+
+    it("shows the name, title and the resume's links with Contact last", async () => {
+      const element = await letterWith(GEMINI_RESULT, HEADER);
+
+      expect(query(element, ".letter-header-name").textContent.trim()).toBe(
+        "Ryan Bumstead"
+      );
+      expect(query(element, ".letter-header-title").textContent.trim()).toBe(
+        "Salesforce Platform Architect"
+      );
+      expect(links(element)).toEqual([
+        [
+          "LinkedIn",
+          "https://www.linkedin.com/in/example",
+          "_blank",
+          "noopener noreferrer"
+        ],
+        [
+          "GitHub",
+          "https://github.com/rdbumstead",
+          "_blank",
+          "noopener noreferrer"
+        ],
+        [
+          "Portfolio",
+          "https://ryanbumstead.com/",
+          "_blank",
+          "noopener noreferrer"
+        ],
+        [
+          "Contact",
+          "https://ryanbumstead.com/contact",
+          "_blank",
+          "noopener noreferrer"
+        ]
+      ]);
+    });
+
+    it("draws the same header over the template letter", async () => {
+      const element = await letterWith(LOCAL_RESULT, HEADER);
+
+      expect(query(element, '[data-id="letter-header"]')).not.toBeNull();
+    });
+
+    it("keeps the header out of the letter text and its word count", async () => {
+      const element = await letterWith(GEMINI_RESULT, HEADER);
+
+      const letter = query(element, '[data-id="letter"]').textContent;
+      expect(letter).toBe(GEMINI_RESULT.content);
+      expect(letter).not.toContain("Contact");
+      const header = query(element, '[data-id="letter-header"]');
+      expect(
+        header.compareDocumentPosition(query(element, '[data-id="letter"]'))
+      ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+
+    it("shows no header when the read gives nothing", async () => {
+      const element = await letterWith(GEMINI_RESULT, undefined);
+
+      expect(query(element, '[data-id="letter-header"]')).toBeNull();
+      expect(query(element, '[data-id="letter"]')).not.toBeNull();
+    });
+
+    it("shows no header for an empty owner record", async () => {
+      const element = await letterWith(GEMINI_RESULT, { name: " " });
+
+      expect(query(element, '[data-id="letter-header"]')).toBeNull();
+    });
+
+    it("shows the links alone when the record has no name or title", async () => {
+      const element = await letterWith(GEMINI_RESULT, {
+        portfolioUrl: "https://ryanbumstead.com"
+      });
+
+      expect(query(element, ".letter-header-name")).toBeNull();
+      expect(links(element).map((link) => link[0])).toEqual([
+        "Portfolio",
+        "Contact"
+      ]);
+    });
+
+    it("names the link list for screen readers", async () => {
+      const element = await letterWith(GEMINI_RESULT, HEADER);
+
+      expect(
+        query(element, ".letter-header-links").getAttribute("aria-label")
+      ).toBe("Profile links");
+    });
   });
 
   it("gives the Generate button a 44 px minimum height", () => {

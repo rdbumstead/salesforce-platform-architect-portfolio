@@ -193,6 +193,55 @@ private class FooterControllerTest {
   }
 
   @isTest
+  static void aLetterTheApiAlsoCountedCountsOnce() {
+    // One site letter through the API: the visitor's own count, the API's count on its
+    // session key, and the marker ApiLabController adds when the API counted it.
+    Datetime now = Datetime.now();
+    insert new List<API_Rate_Window__c>{
+      window(ApiLabController.AI_RATE_KEY, now, 1),
+      window('papi-ai:integration-session', now, 1),
+      window(ApiLabController.PROXIED_RATE_KEY, now, 1)
+    };
+
+    Test.startTest();
+    FooterController.SystemSnapshot snapshot = FooterController.getSystemSnapshot();
+    Test.stopTest();
+
+    Assert.areEqual(1, snapshot.aiRequestsToday, 'One letter, one request');
+  }
+
+  @isTest
+  static void aMarkerFromYesterdayIsNotTakenOffToday() {
+    insertWindows();
+    insert window(
+      ApiLabController.PROXIED_RATE_KEY,
+      Datetime.now().addDays(-1),
+      5
+    );
+
+    Test.startTest();
+    FooterController.SystemSnapshot snapshot = FooterController.getSystemSnapshot();
+    Test.stopTest();
+
+    Assert.areEqual(
+      AI_TODAY_FIRST + AI_TODAY_SECOND,
+      snapshot.aiRequestsToday,
+      'Only markers from today count'
+    );
+  }
+
+  @isTest
+  static void theCountNeverGoesBelowZero() {
+    insert window(ApiLabController.PROXIED_RATE_KEY, Datetime.now(), 3);
+
+    Test.startTest();
+    FooterController.SystemSnapshot snapshot = FooterController.getSystemSnapshot();
+    Test.stopTest();
+
+    Assert.areEqual(0, snapshot.aiRequestsToday, 'Never negative');
+  }
+
+  @isTest
   static void getSystemSnapshotReturnsZeroWhenNoWindowsExist() {
     Test.startTest();
     FooterController.SystemSnapshot snapshot = FooterController.getSystemSnapshot();

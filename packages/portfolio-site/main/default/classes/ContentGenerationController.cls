@@ -2,8 +2,13 @@
  * @description       : Content generation. dispatch() is the one provider chain: Agentforce,
  *                      then Gemini, then the local template. Agentforce
  *                      is consulted only when AgentforceService.isAvailable() says its switch is
- *                      on, and while that class throws it can never serve, so no result names
- *                      Agentforce unless a real Agentforce call produced the content (3.1).
+ *                      on and the caller is not a site guest. A request can ask for Agentforce
+ *                      only (agentforceOnly, used by the API's provider Agentforce) or start at
+ *                      Gemini because the caller already tried Agentforce (skipAgentforce, used
+ *                      by ApiLabController). No result names Agentforce unless a real Agentforce
+ *                      call produced the content (3.1). Agentforce is held to its record's
+ *                      Hourly_Budget__c per clock hour (AgentforceServiceBudget). Past it the
+ *                      attempt is budget_exhausted and the chain moves on.
  *                      Every attempt is recorded with its outcome and elapsed time.
  *                      PAPIAiGenerate (POST /papi/v1/ai/generate) and generateCoverLetter both
  *                      call it. The site page reaches it in process through
@@ -28,6 +33,8 @@ public with sharing class ContentGenerationController {
    * @description Thrown when no provider produced usable content.
    */
   public class ContentGenerationException extends Exception {
+    /** Every attempt of the dispatch that threw, when the dispatch threw it. */
+    public List<Attempt> attempts = new List<Attempt>();
   }
 
   public static final String PROVIDER_AGENTFORCE = 'Agentforce';
@@ -37,11 +44,13 @@ public with sharing class ContentGenerationController {
   public static final String MODEL_GEMINI = GeminiService.MODEL;
   public static final String MODEL_LOCAL = 'local-template';
 
-  /** Attempt outcomes. The real provider adds budget_exhausted. */
+  /** Attempt outcomes. */
   public static final String OUTCOME_SERVED = 'served';
   public static final String OUTCOME_SKIPPED_OFF = 'skipped_off';
   public static final String OUTCOME_SKIPPED_OPEN_CIRCUIT = 'skipped_open_circuit';
   public static final String OUTCOME_FAILED = 'failed';
+  /** Agentforce has used its Hourly_Budget__c for this clock hour. */
+  public static final String OUTCOME_BUDGET_EXHAUSTED = 'budget_exhausted';
 
   private static final String DETAIL_NO_CONTENT = 'No usable content';
   private static final Integer DETAIL_MAX_LENGTH = 120;
@@ -107,6 +116,16 @@ public with sharing class ContentGenerationController {
     public String prompt;
     public Map<String, Object> context;
     public Boolean localAllowed;
+    /**
+     * True when only Agentforce may serve: no Gemini, no local template, and a failure throws.
+     * POST /papi/v1/ai/generate sets it for provider Agentforce.
+     */
+    public Boolean agentforceOnly = false;
+    /**
+     * True when the caller has already tried Agentforce another way and records that attempt
+     * itself, so the chain starts at Gemini. ApiLabController sets it after its call to the API.
+     */
+    public Boolean skipAgentforce = false;
 
     /**
      * @description Creates a request.
@@ -233,26 +252,37 @@ public with sharing class ContentGenerationController {
     List<String> errors = new List<String>();
     pendingBreakerResults = new Map<String, Boolean>();
 
-    IAIGenerationService agentforce = (mockAgentforceService != null)
-      ? mockAgentforceService
-      : new AgentforceService();
-    String text = tryProvider(
-      PROVIDER_AGENTFORCE,
-      agentforce,
-      request.prompt,
-      context,
-      attempts,
-      errors
-    );
-    if (text != null) {
-      return result(
-        text,
+    String text;
+    if (request.skipAgentforce != true) {
+      IAIGenerationService agentforce = (mockAgentforceService != null)
+        ? mockAgentforceService
+        : new AgentforceService();
+      text = tryProvider(
         PROVIDER_AGENTFORCE,
-        AgentforceService.model(),
+        agentforce,
         request.prompt,
+        context,
         attempts,
-        started
+        errors
       );
+      if (text != null) {
+        return result(
+          text,
+          PROVIDER_AGENTFORCE,
+          AgentforceService.model(),
+          request.prompt,
+          attempts,
+          started
+        );
+      }
+    }
+    if (request.agentforceOnly == true) {
+      recordBreakerResults();
+      ContentGenerationException failure = new ContentGenerationException(
+        'Agentforce did not serve. Errors: ' + String.join(errors, '; ')
+      );
+      failure.attempts = attempts;
+      throw failure;
     }
 
     IAIGenerationService gemini = (mockGeminiService != null)
@@ -303,11 +333,12 @@ public with sharing class ContentGenerationController {
     }
 
     recordBreakerResults();
-    throw new ContentGenerationException(
+    ContentGenerationException failure = new ContentGenerationException(
       'Content generation failed. Errors: ' + String.join(errors, '; ')
     );
+    failure.attempts = attempts;
+    throw failure;
   }
-
   /**
    * @description Generates a cover letter through dispatch(), grounded on portfolio records.
    *              The site page does not call this method. It reaches the same dispatch
@@ -557,6 +588,11 @@ public with sharing class ContentGenerationController {
       errors.add(provider + ': circuit open');
       return null;
     }
+    if (provider == PROVIDER_AGENTFORCE && !reserveAgentforceCall()) {
+      attempts.add(new Attempt(provider, OUTCOME_BUDGET_EXHAUSTED, 0L));
+      errors.add(provider + ': hourly budget used');
+      return null;
+    }
     String detail;
     try {
       String text = service.generateContent(prompt, context);
@@ -603,7 +639,14 @@ public with sharing class ContentGenerationController {
     }
   }
 
+  // Agentforce's hourly budget, counted where the template runs. The count is written with
+  // the breaker results, after the last provider call.
+  private static Boolean reserveAgentforceCall() {
+    return AgentforceServiceBudget.tryReserve(AgentforceService.hourlyBudget());
+  }
+
   private static void recordBreakerResults() {
+    AgentforceServiceBudget.commitPending();
     for (String key : pendingBreakerResults.keySet()) {
       if (pendingBreakerResults.get(key)) {
         CircuitBreaker.recordSuccess(key);
