@@ -2,8 +2,11 @@
  * @description       : Content generation. dispatch() is the one provider chain: Agentforce,
  *                      then Gemini, then the local template. Agentforce
  *                      is consulted only when AgentforceService.isAvailable() says its switch is
- *                      on, and while that class throws it can never serve, so no result names
- *                      Agentforce unless a real Agentforce call produced the content (3.1).
+ *                      on and the caller is not a site guest. A request can ask for Agentforce
+ *                      only (agentforceOnly, used by the API's provider Agentforce) or start at
+ *                      Gemini because the caller already tried Agentforce (skipAgentforce, used
+ *                      by ApiLabController). No result names Agentforce unless a real Agentforce
+ *                      call produced the content (3.1).
  *                      Every attempt is recorded with its outcome and elapsed time.
  *                      PAPIAiGenerate (POST /papi/v1/ai/generate) and generateCoverLetter both
  *                      call it. The site page reaches it in process through
@@ -107,6 +110,16 @@ public with sharing class ContentGenerationController {
     public String prompt;
     public Map<String, Object> context;
     public Boolean localAllowed;
+    /**
+     * True when only Agentforce may serve: no Gemini, no local template, and a failure throws.
+     * POST /papi/v1/ai/generate sets it for provider Agentforce.
+     */
+    public Boolean agentforceOnly = false;
+    /**
+     * True when the caller has already tried Agentforce another way and records that attempt
+     * itself, so the chain starts at Gemini. ApiLabController sets it after its call to the API.
+     */
+    public Boolean skipAgentforce = false;
 
     /**
      * @description Creates a request.
@@ -233,25 +246,34 @@ public with sharing class ContentGenerationController {
     List<String> errors = new List<String>();
     pendingBreakerResults = new Map<String, Boolean>();
 
-    IAIGenerationService agentforce = (mockAgentforceService != null)
-      ? mockAgentforceService
-      : new AgentforceService();
-    String text = tryProvider(
-      PROVIDER_AGENTFORCE,
-      agentforce,
-      request.prompt,
-      context,
-      attempts,
-      errors
-    );
-    if (text != null) {
-      return result(
-        text,
+    String text;
+    if (request.skipAgentforce != true) {
+      IAIGenerationService agentforce = (mockAgentforceService != null)
+        ? mockAgentforceService
+        : new AgentforceService();
+      text = tryProvider(
         PROVIDER_AGENTFORCE,
-        AgentforceService.model(),
+        agentforce,
         request.prompt,
+        context,
         attempts,
-        started
+        errors
+      );
+      if (text != null) {
+        return result(
+          text,
+          PROVIDER_AGENTFORCE,
+          AgentforceService.model(),
+          request.prompt,
+          attempts,
+          started
+        );
+      }
+    }
+    if (request.agentforceOnly == true) {
+      recordBreakerResults();
+      throw new ContentGenerationException(
+        'Agentforce did not serve. Errors: ' + String.join(errors, '; ')
       );
     }
 
@@ -307,7 +329,6 @@ public with sharing class ContentGenerationController {
       'Content generation failed. Errors: ' + String.join(errors, '; ')
     );
   }
-
   /**
    * @description Generates a cover letter through dispatch(), grounded on portfolio records.
    *              The site page does not call this method. It reaches the same dispatch

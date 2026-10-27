@@ -147,10 +147,12 @@ private class ContentGenerationControllerTest {
     Assert.isNotNull(result.latencyMs, 'Latency measured');
   }
 
-  // --- The mock can never be served ---
+  // --- A failing Agentforce falls to Gemini ---
 
   @IsTest
-  static void switchedOnUnbuiltAgentforceFailsAndGeminiServes() {
+  static void switchedOnAgentforceThatFailsFallsToGemini() {
+    // No PromptTemplateClient stub: the real client refuses inside a test, so the real
+    // AgentforceService fails here as a broken template would in the org.
     switchAgentforce(true);
     ContentGenerationController.mockGeminiService = new MockService(
       true,
@@ -168,7 +170,7 @@ private class ContentGenerationControllerTest {
     Assert.areEqual(
       'failed',
       attemptFor(result, 'Agentforce').outcome,
-      'The throwing class is a failed attempt'
+      'The failing template is a failed attempt'
     );
     Assert.areEqual(
       'served',
@@ -361,7 +363,8 @@ private class ContentGenerationControllerTest {
       Assert.fail('Expected ContentGenerationException');
     } catch (ContentGenerationController.ContentGenerationException e) {
       Assert.isTrue(
-        e.getMessage().contains('Agentforce: Agentforce generation is not'),
+        e.getMessage()
+          .contains('Agentforce: A test must stub PromptTemplateClient'),
         e.getMessage()
       );
       Assert.isTrue(
@@ -551,14 +554,15 @@ private class ContentGenerationControllerTest {
   }
 
   @IsTest
-  static void providerStatusSaysNotBuiltWhenSwitchedOnBeforeTheProviderExists() {
+  static void providerStatusSaysOnWhenSwitchedOnNowTheProviderIsBuilt() {
     switchAgentforce(true);
 
     Test.startTest();
     List<ContentGenerationController.ProviderStatus> rows = ContentGenerationController.providerStatus();
     Test.stopTest();
 
-    Assert.areEqual('not built', rows[0].state, 'Never "on" while a mock');
+    Assert.isTrue(AgentforceService.IMPLEMENTED, 'The provider is built');
+    Assert.areEqual('on', rows[0].state, 'Switched on and built');
     Assert.isTrue(rows[0].enabled, 'Flag value');
   }
 

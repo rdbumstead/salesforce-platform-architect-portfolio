@@ -8,15 +8,19 @@
     <protected>false</protected>
     <values>
         <field>Enabled__c</field>
-        <value xsi:type="xsd:boolean">false</value>
+        <value xsi:type="xsd:boolean">true</value>
     </values>
     <values>
         <field>Timeout_Ms__c</field>
-        <value xsi:type="xsd:double">8000</value>
+        <value xsi:type="xsd:double">20000</value>
     </values>
     <values>
         <field>Hourly_Budget__c</field>
         <value xsi:type="xsd:double">120</value>
+    </values>
+    <values>
+        <field>Model_Or_Template__c</field>
+        <value xsi:type="xsd:string">Portfolio_Cover_Letter</value>
     </values>
     <values>
         <field>Sort_Order__c</field>

@@ -1,9 +1,14 @@
 /**
- * @description       : Agentforce provider for the content generation dispatch. Not built yet:
- *                      isAvailable() is the switch in AI_Provider_Config__mdt (record
- *                      Agentforce, Enabled__c, shipped false) and generateContent() throws, so
- *                      no response can ever carry text from this class. The dispatch records
- *                      the throw as a failed attempt and moves on to Gemini.
+ * @description       : Agentforce provider for the content generation dispatch. generateContent()
+ *                      runs the Prompt Builder template named on the AI_Provider_Config__mdt
+ *                      record Agentforce (Model_Or_Template__c, else Portfolio_Cover_Letter),
+ *                      passing the whole prompt as its one input, Input:Prompt. The template adds
+ *                      nothing of its own, so the prompt the dispatch builds is the prompt the
+ *                      model reads. The call goes through PromptTemplateClient, which tests stub.
+ *                      It runs as the context user, who needs Prompt Template User.
+ *                      isAvailable() is the switch (Enabled__c) and is false for a site guest,
+ *                      who reaches Agentforce only through ApiLabController's call to
+ *                      POST /papi/v1/ai/generate, which runs as the integration user.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -17,17 +22,20 @@ public with sharing class AgentforceService implements IAIGenerationService {
   /** Model reported when the record names no model or template. */
   public static final String DEFAULT_MODEL = 'agentforce';
 
-  /**
-   * False until a real provider replaces generateContent(). providerStatus() reports
-   * "not built" while it is false and the switch is on.
-   */
-  public static final Boolean IMPLEMENTED = false;
+  /** The prompt template run when the record names none. */
+  public static final String TEMPLATE_NAME = 'Portfolio_Cover_Letter';
+
+  /** The template's one input, which carries the whole prompt. */
+  public static final String PROMPT_INPUT = 'Input:Prompt';
 
   /**
-   * @description Thrown by generateContent() until the real provider exists.
+   * True now that generateContent() calls a real template. providerStatus() reports "on"
+   * while this is true and the switch is on.
    */
-  public class AgentforceNotImplementedException extends Exception {
-  }
+  public static final Boolean IMPLEMENTED = true;
+
+  @TestVisible
+  private static PromptTemplateClient clientOverride;
 
   @TestVisible
   private static Boolean configOverridden = false;
@@ -37,16 +45,47 @@ public with sharing class AgentforceService implements IAIGenerationService {
   private static Boolean guestOverride;
 
   /**
-   * @description Always throws. A switched-on flag can never serve mock text.
+   * @description Runs the prompt template with the whole prompt as Input:Prompt. A failure
+   *              throws, and the dispatch records it as a failed attempt.
    * @param prompt The prompt to send.
-   * @param context Additional context map.
-   * @return String Never returns.
-   * @throws AgentforceNotImplementedException Always.
+   * @param context Additional context map. The template reads only the prompt.
+   * @return String The generated text.
+   * @throws Exception When the template call fails or returns no text.
    */
   public String generateContent(String prompt, Map<String, Object> context) {
-    throw new AgentforceNotImplementedException(
-      'Agentforce generation is not implemented.'
-    );
+    return client()
+      .generate(
+        templateName(),
+        new Map<String, String>{ PROMPT_INPUT => prompt }
+      );
+  }
+
+  /**
+   * @description The prompt template to run.
+   * @return String Model_Or_Template__c of the record, or TEMPLATE_NAME when blank.
+   */
+  public static String templateName() {
+    String configured = config()?.Model_Or_Template__c;
+    return String.isBlank(configured) ? TEMPLATE_NAME : configured;
+  }
+
+  /**
+   * @description How long a caller should wait for this provider.
+   * @return Integer Timeout_Ms__c of the record, or DEFAULT_TIMEOUT_MS when blank.
+   */
+  public static Integer timeoutMs() {
+    Decimal configured = config()?.Timeout_Ms__c;
+    return configured == null ||
+      configured <= 0
+      ? DEFAULT_TIMEOUT_MS
+      : configured.intValue();
+  }
+
+  /** Timeout used when the record sets none. */
+  public static final Integer DEFAULT_TIMEOUT_MS = 30000;
+
+  private static PromptTemplateClient client() {
+    return clientOverride ?? new EinsteinPromptTemplateClient();
   }
 
   /**
