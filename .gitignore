@@ -162,7 +162,11 @@ deploy/deploy-packages/
 *.ppt
 *.xlsx
 *.xls
+
+# Claude Code settings and project instructions stay local
 .claude/
+CLAUDE.md
+CLAUDE.local.md
 
 # Temporary lock files
 ~$*.doc*
