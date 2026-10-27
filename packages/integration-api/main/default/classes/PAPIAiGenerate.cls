@@ -6,6 +6,12 @@
  *                      cover letter prompt carries portfolio facts from
  *                      PortfolioGroundingService. The response names the
  *                      provider that served it and adds latencyMs, attempts and promptShown.
+ *                      An optional body field provider, with the one value Agentforce, runs
+ *                      Agentforce only: no Gemini and no template, and a failure is 503. A
+ *                      CoverLetter asked of Agentforce gets the site's prompt
+ *                      (ContentGenerationController.coverLetterPrompt) and comes back whole
+ *                      unless maxLength is sent. ApiLabController calls it this way for the site
+ *                      guest, so the letter runs as the integration user.
  *                      Performs no DML, so the provider callout is never preceded by
  *                      uncommitted work. The "ai" rate-limit tier applies by
  *                      path in ApiRequestContext.
@@ -30,6 +36,11 @@ global with sharing class PAPIAiGenerate {
     'Casual'
   };
   public static final String DEFAULT_TONE = 'Professional';
+  /** The one value of the optional provider field. */
+  public static final String PROVIDER_AGENTFORCE = ContentGenerationController.PROVIDER_AGENTFORCE;
+  public static final Set<String> VALID_PROVIDERS = new Set<String>{
+    PROVIDER_AGENTFORCE
+  };
   // Code defaults for maxLength. The values in force come from the Ai_Min_Length,
   // Ai_Max_Length and Ai_Default_Length settings.
   public static final Integer MIN_LENGTH = 100;
@@ -72,14 +83,17 @@ global with sharing class PAPIAiGenerate {
       }
 
       GenerationRequest request = parse(RestContext.request?.requestBody);
+      agentforceOnlyRequested = request.isAgentforceOnly();
 
       Long startedAt = System.currentTimeMillis();
+      ContentGenerationController.GenerationRequest generation = new ContentGenerationController.GenerationRequest(
+        request.prompt(),
+        request.providerContext(),
+        request.type == TYPE_COVER_LETTER
+      );
+      generation.agentforceOnly = request.isAgentforceOnly();
       ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
-        new ContentGenerationController.GenerationRequest(
-          request.prompt(),
-          request.providerContext(),
-          request.type == TYPE_COVER_LETTER
-        )
+        generation
       );
       Long elapsedMs = System.currentTimeMillis() - startedAt;
 
@@ -87,7 +101,7 @@ global with sharing class PAPIAiGenerate {
       ctx.header('X-Generation-Time-Ms', String.valueOf(elapsedMs));
       ctx.ok(
         new Map<String, Object>{
-          'content' => result.content.left(request.maxLength),
+          'content' => request.cut(result.content),
           'provider' => result.provider,
           'model' => result.model,
           'type' => request.type,
@@ -106,7 +120,9 @@ global with sharing class PAPIAiGenerate {
       ctx.error(
         503,
         'ALL_PROVIDERS_UNAVAILABLE',
-        'All AI providers currently unavailable'
+        agentforceOnlyRequested
+          ? 'Agentforce currently unavailable'
+          : 'All AI providers currently unavailable'
       );
     } catch (Exception e) {
       ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
@@ -143,6 +159,10 @@ global with sharing class PAPIAiGenerate {
     request.type = requireEnum(root, 'type', VALID_TYPES, null);
     request.tone = requireEnum(root, 'tone', VALID_TONES, DEFAULT_TONE);
     request.maxLength = readMaxLength(root);
+    request.maxLengthSent = root.get('maxLength') != null;
+    if (root.containsKey('provider')) {
+      request.provider = requireEnum(root, 'provider', VALID_PROVIDERS, null);
+    }
 
     Object context = root.get('context');
     if (!(context instanceof Map<String, Object>)) {
@@ -250,13 +270,51 @@ global with sharing class PAPIAiGenerate {
     public String type;
     public String tone;
     public Integer maxLength;
+    public Boolean maxLengthSent = false;
     public Map<String, Object> context;
+    /** Agentforce, or null for the whole chain. */
+    public String provider;
 
     /**
-     * @description Prompt text built from the type, tone, length and context.
+     * @description Whether only Agentforce may serve.
+     * @return Boolean True for provider Agentforce.
+     */
+    public Boolean isAgentforceOnly() {
+      return provider == PROVIDER_AGENTFORCE;
+    }
+
+    /**
+     * @description The content as returned: cut to maxLength, except an Agentforce cover
+     *              letter with no maxLength sent, which comes back whole because its prompt
+     *              asks for a word range.
+     * @param content The generated content.
+     * @return String The content to return.
+     */
+    public String cut(String content) {
+      if (isSiteCoverLetter() && !maxLengthSent) {
+        return content;
+      }
+      return content.left(maxLength);
+    }
+
+    private Boolean isSiteCoverLetter() {
+      return isAgentforceOnly() && type == TYPE_COVER_LETTER;
+    }
+
+    /**
+     * @description Prompt text built from the type, tone, length and context. An Agentforce
+     *              cover letter uses ContentGenerationController.coverLetterPrompt, the one
+     *              builder the site's letter uses.
      * @return String The prompt.
      */
     public String prompt() {
+      if (isSiteCoverLetter()) {
+        return ContentGenerationController.coverLetterPrompt(
+          textOf(context.get('companyName')),
+          textOf(context.get('role')),
+          textOf(context.get('jobDescription'))
+        );
+      }
       List<String> lines = new List<String>{
         'Write a ' +
         TYPE_LABELS.get(type) +
@@ -310,4 +368,7 @@ global with sharing class PAPIAiGenerate {
 
   @TestVisible
   private static Boolean throwException = false;
+
+  // Set once the body parses, so the 503 message can name Agentforce.
+  private static Boolean agentforceOnlyRequested = false;
 }
