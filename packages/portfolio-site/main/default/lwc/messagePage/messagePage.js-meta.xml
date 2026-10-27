@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>64.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Message Page</masterLabel>
+    <description
+  >A short message for a page the site cannot show as it is, with an optional link back to the home page.</description>
+    <targets>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightningCommunity__Default">
+            <property
+        name="eyebrow"
+        type="String"
+        label="Eyebrow"
+        description="Short line above the heading. None when blank."
+      />
+            <property
+        name="heading"
+        type="String"
+        label="Heading"
+        description="The page's one top level heading."
+      />
+            <property
+        name="body"
+        type="String"
+        label="Message"
+        description="One plain sentence under the heading. None when blank."
+      />
+            <property
+        name="homeLabel"
+        type="String"
+        label="Home link text"
+        description="Text of the home link. Go to the home page when blank."
+      />
+            <property
+        name="showHome"
+        type="Boolean"
+        label="Show the home link"
+        description="Shows a link back to the home page."
+        default="false"
+      />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

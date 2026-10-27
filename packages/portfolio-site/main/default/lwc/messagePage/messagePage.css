@@ -1,0 +1,85 @@
+/*
+ * Built on the --pf- site tokens, with a plain fallback beside each one because this component also
+ * draws on the busy and unavailable pages, which have no site header. It follows the light and dark
+ * themes wherever the tokens exist.
+ */
+:host {
+  display: block;
+}
+
+.message {
+  display: block;
+  box-sizing: border-box;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 4rem var(--pf-space-4, 1rem);
+  color: var(--pf-text, #1b2230);
+  font-family: var(--pf-font-sans, system-ui, sans-serif);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.message-eyebrow {
+  margin: 0 0 var(--pf-space-2, 0.5rem);
+  color: var(--pf-muted, #4b5563);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.message-heading {
+  margin: 0;
+  color: var(--pf-text, #1b2230);
+  font-size: 2.5rem;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.message-body {
+  margin: var(--pf-space-4, 1rem) 0 0;
+  color: var(--pf-body, #374151);
+  font-size: 1.125rem;
+  line-height: 1.65;
+}
+
+.message-actions {
+  margin: var(--pf-space-5, 1.5rem) 0 0;
+}
+
+.message-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--pf-space-4, 1rem);
+  color: var(--pf-accent, #0b5cab);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.message-home:hover {
+  text-decoration-thickness: 2px;
+}
+
+.message-home:focus-visible {
+  outline: 2px solid var(--pf-focus, #0b5cab);
+  outline-offset: 2px;
+  border-radius: var(--pf-radius-sm, 4px);
+}
+
+@media (max-width: 767.98px) {
+  .message {
+    padding: var(--pf-space-6, 2rem) var(--pf-space-4, 1rem);
+  }
+
+  .message-heading {
+    font-size: 2rem;
+  }
+
+  .message-body {
+    font-size: 1.0625rem;
+  }
+}

@@ -25,10 +25,13 @@
                   "children": [
                     {
                       "attributes": {
-                        "imageInfos": "",
-                        "richTextValue": "<h1 style=\"text-align: center;\">Invalid Page</h1>"
+                        "body": "The link may be old or mistyped. Start from the home page and you can reach every section.",
+                        "eyebrow": "Error 404",
+                        "heading": "That page is not here",
+                        "homeLabel": "Go to the home page",
+                        "showHome": true
                       },
-                      "definition": "community_builder:richTextEditor",
+                      "definition": "c:messagePage",
                       "id": "e44b5bf4-275a-4f91-a614-f33d3185de95",
                       "type": "component"
                     }
@@ -55,7 +58,7 @@
               "attributes": {
                 "customHeadTags": "",
                 "description": "",
-                "pageTitle": "Error",
+                "pageTitle": "Page not found | Ryan Bumstead",
                 "recordId": "{!recordId}"
               },
               "definition": "community_builder:seoAssistant",
@@ -74,7 +77,7 @@
       "type": "component"
     },
     "dataProviders": [],
-    "themeLayoutType": "Inner",
+    "themeLayoutType": "MTKkiMoYojf79mPK59EBOir53DGAQ9",
     "viewType": "error"
   },
   "urlName": "error"

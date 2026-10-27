@@ -1,0 +1,16 @@
+<template>
+  <div class="message">
+    <template lwc:if={eyebrowText}>
+      <p class="message-eyebrow">{eyebrowText}</p>
+    </template>
+    <h1 class="message-heading">{headingText}</h1>
+    <template lwc:if={bodyText}>
+      <p class="message-body">{bodyText}</p>
+    </template>
+    <template lwc:if={hasHome}>
+      <p class="message-actions">
+        <a class="message-home" href={homeHref}>{homeText}</a>
+      </p>
+    </template>
+  </div>
+</template>
