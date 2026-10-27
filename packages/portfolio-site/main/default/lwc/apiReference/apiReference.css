@@ -1,3 +1,5 @@
+@import "c/nativeControls";
+
 /*
  * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching token
@@ -247,4 +249,20 @@
 
 .redoc-target li:not([class]) {
   margin: 0.25em 0;
+}
+
+/* The Postman collection download and the Run in Postman link, from c/nativeControls. */
+.postman-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+  margin: var(--pf-space-3) 0 var(--pf-space-2);
+}
+
+.collection-download,
+.postman-run {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }

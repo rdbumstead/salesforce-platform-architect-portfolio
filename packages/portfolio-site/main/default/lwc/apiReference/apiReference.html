@@ -21,6 +21,25 @@
           API. The interactive reference loads only when you open it.
         </p>
       </template>
+      <div class="postman-actions">
+        <a
+          class="nc-button nc-button_secondary collection-download"
+          href={collectionUrl}
+          download={collectionFileName}
+          onclick={handleCollectionDownload}
+          >Download the PAPI Postman collection</a
+        >
+        <template lwc:if={hasPostmanRun}>
+          <a
+            class="nc-button nc-button_secondary postman-run"
+            href={postmanRunUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onclick={handlePostmanRun}
+            >Run in Postman</a
+          >
+        </template>
+      </div>
     </header>
     <div class={bodyClass}>
       <div
