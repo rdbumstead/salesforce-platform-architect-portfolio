@@ -67,7 +67,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Public-facing Experience Cloud (LWR)** site with "5-Minute Tour" guided navigation.
 - **Custom LWC component framework** including a custom API Testing Harness.
 - **Apex REST API implementation** in MuleSoft's API led layers (a System API and a Process API), matching the OpenAPI specifications in the repository (15 SAPI and 8 PAPI paths, version 1.3.0).
-- **Generative AI** grounding and prompt engineering in Apex (`PortfolioGroundingService`, `ContentGenerationController.dispatch`). Agentforce is built as a switch in the dispatch and ships off.
+- **Generative AI** grounding and prompt engineering in Apex (`PortfolioGroundingService`, `ContentGenerationController.dispatch`). Agentforce, a Prompt Builder template, is the first provider and ships on.
 - **Client-side document generation** (Resume).
 - **Generative AI Utility:** A "Dynamic Cover Letter Engine" that uses Gemini 2.5 Flash through the Gemini API, with a local template as the last resort, to write personalized application letters based on the visitor's job description and the architect's matching project history (featured projects and experience highlights).
 - **Gamified Social Proof engine** with "Vibe-Gated" submission logic.
@@ -123,7 +123,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 **Engagement:**
 
 - Average Session Duration > 2 minutes (verified via GA4).
-- **ai_live_model_rate:** % of generations served by a live model, Agentforce or Gemini (Target > 80%). Agentforce ships switched off, so today this is the Gemini share.
+- **ai_live_model_rate:** % of generations served by a live model, Agentforce or Gemini (Target > 80%). Agentforce ships on, so a letter is served by a live model unless both providers fail.
 - **ai_fallback_usage:** % of generations served by the Local Template (the fallback share).
 - **ai_complete_failure_rate:** % of requests that end with no content at all, a 503 or an error message (Target < 1%).
 - **finops_quota_visibility:** visitors who hover over or focus the footer's "AI requests today" line.
@@ -158,7 +158,7 @@ The delivery is organized into four parallel tracks:
 - **Milestone 1 (Foundation):** Schema deployed, Baseline API contracts (OAS) defined. (Completed)
 - **Milestone 2 (Core Interactions):** LWR Site active, Navigation functional, Resume logic validated. (Completed)
 - **Milestone 3 (Integration):** External services (Jira/GitHub) connected, Security scanning active. (Completed)
-- **Milestone 4 (Intelligence):** Grounded generation in Apex with a visible fallback chain, "Vibe-Gate" logic tested. Data 360 grounding and Agentforce are deferred ([ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md), 2026-10-22). (Completed)
+- **Milestone 4 (Intelligence):** Grounded generation in Apex with a visible fallback chain, "Vibe-Gate" logic tested. Agentforce is built as a Prompt Builder template ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md), 2026-10-26). Data 360 grounding is deferred ([ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md), 2026-10-22). (Completed)
 - **Milestone 5 (Go-Live):** Planned for Q1 2027: the public launch and a telemetry review. The `ryanbumstead.com` domain already redirects to the site.
 
 ### 3.3 Detailed Phasing
@@ -191,7 +191,7 @@ The delivery is organized into four parallel tracks:
 - **Data 360 streams:** the CRM connector ingests the portfolio objects. No search index or retriever is built, and grounding on Data 360 is deferred ([ADR-011 amendment, 2026-10-22](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md#amendment-2026-10-22-deferred)).
 - **Grounding:** in Apex, reading the CRM directly (`PortfolioGroundingService.build`, SAS section 5.4.1).
 - **Prompt Engineering:** and the "Show your work" panel (provider, model, latency, attempts and the prompt that was sent, filled by Apex, not by the model)
-- **AI Generation Service:** one dispatch: Agentforce only when switched on (it ships off), then Gemini 2.5 Flash through the Gemini API, then the Local Template
+- **AI Generation Service:** one dispatch: Agentforce (a Prompt Builder template, on by default), then Gemini 2.5 Flash through the Gemini API, then the Local Template
 
 **Phase 6: Observability & Launch**
 
@@ -268,7 +268,7 @@ _The design is in the SAS. Apart from the GraphQL check, which confirms what run
 
 **Phase 4: Innovation**
 
-- **A.6:** Agentforce Service Agent and topic grounding. Not built: Agentforce is a switch in the dispatch that ships off (SAS Appendix A.6).
+- **A.6:** Agentforce Service Agent and topic grounding. Not built. The provider that is built runs a Prompt Builder template (SAS Appendix A.6).
 - **Security:** Enable "Lightning Web Security" in Session Settings.
 - **Asset:** the `D3_Library` static resource (`d3-force` and its dependencies, plus `d3-zoom` and `d3-drag`, Public cache). It replaced `G6_Library`.
 - **Dev:** `c-skill-network` shows the matrix and draws the graph view through `c/graphEngine`.
