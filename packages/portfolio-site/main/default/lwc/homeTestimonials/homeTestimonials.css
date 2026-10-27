@@ -8,6 +8,10 @@
 }
 
 .home-testimonials {
+  /* Below the fold, so the browser skips its layout and paint until it nears the screen. The
+     size is a first guess that the browser replaces with the real one after the first render. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
   max-width: 1024px;
   margin: 0 auto;
   padding: 0 var(--pf-space-4);
