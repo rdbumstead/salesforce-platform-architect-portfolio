@@ -8,6 +8,7 @@
  *                      provider that served it and adds latencyMs, attempts and promptShown.
  *                      An optional body field provider, with the one value Agentforce, runs
  *                      Agentforce only: no Gemini and no template, and a failure is 503. A
+ *                      503 says so when Agentforce's hourly budget is used. A
  *                      CoverLetter asked of Agentforce gets the site's prompt
  *                      (ContentGenerationController.coverLetterPrompt) and comes back whole
  *                      unless maxLength is sent. ApiLabController calls it this way for the site
@@ -117,16 +118,29 @@ global with sharing class PAPIAiGenerate {
     } catch (InvalidRequestException e) {
       ctx.error(400, 'BAD_REQUEST', e.getMessage());
     } catch (ContentGenerationController.ContentGenerationException e) {
-      ctx.error(
-        503,
-        'ALL_PROVIDERS_UNAVAILABLE',
-        agentforceOnlyRequested
-          ? 'Agentforce currently unavailable'
-          : 'All AI providers currently unavailable'
-      );
+      ctx.error(503, 'ALL_PROVIDERS_UNAVAILABLE', unavailableMessage(e));
     } catch (Exception e) {
       ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
     }
+  }
+
+  /** The 503 message when Agentforce only was asked and its hourly budget is used. */
+  public static final String MESSAGE_AGENTFORCE_BUDGET = 'Agentforce hourly budget used';
+
+  private static String unavailableMessage(
+    ContentGenerationController.ContentGenerationException e
+  ) {
+    if (!agentforceOnlyRequested) {
+      return 'All AI providers currently unavailable';
+    }
+    for (ContentGenerationController.Attempt attempt : e.attempts) {
+      if (
+        attempt.outcome == ContentGenerationController.OUTCOME_BUDGET_EXHAUSTED
+      ) {
+        return MESSAGE_AGENTFORCE_BUDGET;
+      }
+    }
+    return 'Agentforce currently unavailable';
   }
 
   private static List<Map<String, Object>> attemptsBody(

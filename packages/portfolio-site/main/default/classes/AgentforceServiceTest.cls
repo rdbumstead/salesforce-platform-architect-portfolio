@@ -118,6 +118,31 @@ private class AgentforceServiceTest {
   }
 
   @IsTest
+  static void hourlyBudgetComesFromTheRecordOrTheDefault() {
+    useRecord(
+      (AI_Provider_Config__mdt) JSON.deserialize(
+        '{"DeveloperName":"Agentforce","Hourly_Budget__c":40}',
+        AI_Provider_Config__mdt.class
+      )
+    );
+    Integer configured = AgentforceService.hourlyBudget();
+    useRecord(record(true, null));
+    Integer fallback = AgentforceService.hourlyBudget();
+
+    Assert.areEqual(40, configured, 'Configured budget');
+    Assert.areEqual(
+      AgentforceService.DEFAULT_HOURLY_BUDGET,
+      fallback,
+      'Default budget'
+    );
+  }
+
+  @IsTest
+  static void theShippedBudgetIs120() {
+    Assert.areEqual(120, AgentforceService.hourlyBudget(), 'Under 150');
+  }
+
+  @IsTest
   static void timeoutComesFromTheRecordOrTheDefault() {
     useRecord(
       (AI_Provider_Config__mdt) JSON.deserialize(

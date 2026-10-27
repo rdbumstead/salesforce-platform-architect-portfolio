@@ -84,6 +84,21 @@ public with sharing class AgentforceService implements IAIGenerationService {
   /** Timeout used when the record sets none. */
   public static final Integer DEFAULT_TIMEOUT_MS = 30000;
 
+  /** Calls per clock hour when the record sets none, under the Developer Edition's 150. */
+  public static final Integer DEFAULT_HOURLY_BUDGET = 120;
+
+  /**
+   * @description Agentforce calls allowed per clock hour.
+   * @return Integer Hourly_Budget__c of the record, or DEFAULT_HOURLY_BUDGET when blank.
+   */
+  public static Integer hourlyBudget() {
+    Decimal configured = config()?.Hourly_Budget__c;
+    return configured == null ||
+      configured < 0
+      ? DEFAULT_HOURLY_BUDGET
+      : configured.intValue();
+  }
+
   private static PromptTemplateClient client() {
     return clientOverride ?? new EinsteinPromptTemplateClient();
   }

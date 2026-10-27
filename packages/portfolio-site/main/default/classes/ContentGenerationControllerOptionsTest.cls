@@ -162,6 +162,96 @@ private class ContentGenerationControllerOptionsTest {
     Assert.areEqual('Gemini', result.attempts[0].provider, 'Gemini');
   }
 
+  private static void setHourlyBudget(Integer budget) {
+    AgentforceService.configOverridden = true;
+    AgentforceService.configOverride = (AI_Provider_Config__mdt) JSON.deserialize(
+      '{"DeveloperName":"Agentforce","Enabled__c":true,"Hourly_Budget__c":' +
+        budget +
+        '}',
+      AI_Provider_Config__mdt.class
+    );
+    AgentforceService.guestOverride = false;
+  }
+
+  private static Decimal agentforceCallsThisHour() {
+    AggregateResult total = [
+      SELECT SUM(Count__c) calls
+      FROM API_Rate_Window__c
+      WHERE Key__c LIKE :(AgentforceServiceBudget.KEY_PREFIX + '|%')
+    ];
+    return (Decimal) total.get('calls') ?? 0;
+  }
+
+  @IsTest
+  static void aUsedHourlyBudgetSkipsAgentforceForGemini() {
+    useProviders(new MockService(true, false, 'Agentforce text'));
+    setHourlyBudget(0);
+
+    Test.startTest();
+    ContentGenerationController.GenerationResult result = ContentGenerationController.dispatch(
+      request()
+    );
+    Test.stopTest();
+
+    Assert.areEqual('Gemini', result.provider, 'Gemini served');
+    Assert.areEqual(
+      'budget_exhausted',
+      result.attempts[0].outcome,
+      'Its own outcome'
+    );
+    Assert.areEqual(0, agentforce.generateCalls, 'The template never ran');
+    Assert.isFalse(result.fallbackOccurred, 'A skip is not a failure');
+  }
+
+  @IsTest
+  static void aUsedHourlyBudgetWithAgentforceOnlyThrowsWithTheAttempt() {
+    useProviders(new MockService(true, false, 'Agentforce text'));
+    setHourlyBudget(0);
+    ContentGenerationController.GenerationRequest only = request();
+    only.agentforceOnly = true;
+    ContentGenerationController.ContentGenerationException thrown;
+
+    Test.startTest();
+    try {
+      ContentGenerationController.dispatch(only);
+    } catch (ContentGenerationController.ContentGenerationException e) {
+      thrown = e;
+    }
+    Test.stopTest();
+
+    Assert.isNotNull(thrown, 'Thrown');
+    Assert.areEqual(
+      'budget_exhausted',
+      thrown.attempts[0].outcome,
+      'The attempt travels with the exception'
+    );
+    Assert.areEqual(0, gemini.generateCalls, 'Gemini never asked');
+  }
+
+  @IsTest
+  static void anAgentforceCallIsCountedAfterTheDispatch() {
+    useProviders(new MockService(true, false, 'Agentforce text'));
+    setHourlyBudget(120);
+
+    Test.startTest();
+    ContentGenerationController.dispatch(request());
+    Test.stopTest();
+
+    Assert.areEqual(1, agentforceCallsThisHour(), 'One call this hour');
+  }
+
+  @IsTest
+  static void aFailedAgentforceCallStillCounts() {
+    useProviders(new MockService(true, true, null));
+    setHourlyBudget(120);
+
+    Test.startTest();
+    ContentGenerationController.dispatch(request());
+    Test.stopTest();
+
+    Assert.areEqual(1, agentforceCallsThisHour(), 'A failed call is a call');
+  }
+
   @IsTest
   static void skipAgentforceStillFallsToTheTemplate() {
     useProviders(new MockService(true, false, 'Agentforce text'));

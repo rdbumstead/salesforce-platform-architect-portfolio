@@ -181,6 +181,27 @@ private class PAPIAiGenerateAgentforceTest {
   }
 
   @IsTest
+  static void aUsedHourlyBudgetIs503ThatSaysSo() {
+    useProviders('An Agentforce letter', false);
+    AgentforceService.configOverride = (AI_Provider_Config__mdt) JSON.deserialize(
+      '{"DeveloperName":"Agentforce","Enabled__c":true,"Hourly_Budget__c":0}',
+      AI_Provider_Config__mdt.class
+    );
+
+    RestResponse res = post(agentforceLetter());
+
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+    Assert.areEqual(503, res.statusCode, res.responseBody.toString());
+    Assert.areEqual(
+      PAPIAiGenerate.MESSAGE_AGENTFORCE_BUDGET,
+      body.get('message'),
+      'Says the budget is used'
+    );
+    Assert.areEqual(0, agentforce.calls, 'The template never ran');
+    Assert.areEqual(0, gemini.calls, 'Gemini never asked');
+  }
+
+  @IsTest
   static void anUnknownProviderIs400() {
     useProviders('text', false);
     Map<String, Object> request = agentforceLetter();
