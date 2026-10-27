@@ -57,6 +57,15 @@ jobs:
           node --test scripts/check-smoke-routes.test.js
           node scripts/check-smoke-routes.js
 
+      # Draws every Mermaid block in the docs as a light and a dark SVG, the same way the deploy
+      # does, so a diagram that will not render fails the PR. Its tests fail the PR when a block
+      # has no alt sentence. The CLI is installed outside package.json and uses the runner's Chrome.
+      - name: Render Mermaid Diagrams
+        run: |
+          node --test scripts/render-mermaid.test.js
+          PUPPETEER_SKIP_DOWNLOAD=1 npm install --prefix "$RUNNER_TEMP/mmd" --no-save --no-audit --no-fund @mermaid-js/mermaid-cli@12.0.0 puppeteer@25.16.0
+          MERMAID_CLI_DIR="$RUNNER_TEMP/mmd" PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome)" node scripts/render-mermaid.js
+
       - name: Run Salesforce Code Analyzer
         run: |
           npm run scan
