@@ -1,0 +1,1 @@
+This folder is the Mermaid_Diagrams static resource. scripts/render-mermaid.js writes the drawings and manifest.json here before a deploy, and they are never committed. Without them every Mermaid block on /docs shows its source.
