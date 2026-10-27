@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Returns Ryan Bumstead's skills by category and his current certifications with issuer and year. Read only.</description>
+    <invocationTarget>PortfolioAgentCredentials</invocationTarget>
+    <invocationTargetType>apex</invocationTargetType>
+    <isConfirmationRequired>false</isConfirmationRequired>
+    <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+    <masterLabel>Get Skills and Certifications</masterLabel>
+    <progressIndicatorMessage
+  >Reading the skills and certifications</progressIndicatorMessage>
+</GenAiFunction>

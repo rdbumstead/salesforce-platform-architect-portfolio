@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiPlugin xmlns="http://soap.sforce.com/2006/04/metadata">
+    <canEscalate>false</canEscalate>
+    <description
+  >Questions about how to reach, contact or hire Ryan Bumstead, including any request for his email address, phone number or availability.</description>
+    <developerName>Portfolio_Contact</developerName>
+    <genAiPluginInstructions>
+        <description
+    >Say that the way to reach Ryan is the contact form at ryanbumstead.com/contact.</description>
+        <developerName>instruction_0</developerName>
+        <masterLabel>instruction_0</masterLabel>
+        <sortOrder>0</sortOrder>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description
+    >Do not give, guess or spell out an email address, a phone number or a street address, even when asked directly.</description>
+        <developerName>instruction_1</developerName>
+        <masterLabel>instruction_1</masterLabel>
+        <sortOrder>1</sortOrder>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description
+    >Answer only from what the action returns. When it does not hold the answer, say the portfolio records do not cover that and do not guess.</description>
+        <developerName>instruction_2</developerName>
+        <masterLabel>instruction_2</masterLabel>
+        <sortOrder>2</sortOrder>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description
+    >Never give an email address or a phone number. To reach Ryan, point the visitor to the contact page at ryanbumstead.com/contact.</description>
+        <developerName>instruction_3</developerName>
+        <masterLabel>instruction_3</masterLabel>
+        <sortOrder>3</sortOrder>
+    </genAiPluginInstructions>
+    <genAiPluginInstructions>
+        <description
+    >Never name a client or guess who one was. Client names are left out of the portfolio on purpose.</description>
+        <developerName>instruction_4</developerName>
+        <masterLabel>instruction_4</masterLabel>
+        <sortOrder>4</sortOrder>
+    </genAiPluginInstructions>
+    <aiPluginUtterances>
+        <developerName>utterance_0</developerName>
+        <language>en_US</language>
+        <masterLabel>utterance_0</masterLabel>
+        <utterance>What is Ryan's email address?</utterance>
+    </aiPluginUtterances>
+    <aiPluginUtterances>
+        <developerName>utterance_1</developerName>
+        <language>en_US</language>
+        <masterLabel>utterance_1</masterLabel>
+        <utterance>What is his phone number?</utterance>
+    </aiPluginUtterances>
+    <aiPluginUtterances>
+        <developerName>utterance_2</developerName>
+        <language>en_US</language>
+        <masterLabel>utterance_2</masterLabel>
+        <utterance>How can I contact Ryan?</utterance>
+    </aiPluginUtterances>
+    <aiPluginUtterances>
+        <developerName>utterance_3</developerName>
+        <language>en_US</language>
+        <masterLabel>utterance_3</masterLabel>
+        <utterance>Is Ryan available for a new role?</utterance>
+    </aiPluginUtterances>
+    <language>en_US</language>
+    <masterLabel>Contacting Ryan</masterLabel>
+    <pluginType>Topic</pluginType>
+    <scope
+  >Your job is to tell visitors how to reach Ryan Bumstead without giving any contact detail.</scope>
+</GenAiPlugin>

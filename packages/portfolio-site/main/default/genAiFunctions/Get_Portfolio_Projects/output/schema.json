@@ -1,0 +1,14 @@
+{
+  "unevaluatedProperties": false,
+  "properties": {
+    "projectsJson": {
+      "title": "Projects (JSON)",
+      "description": "The projects with name, problem, solution, business value, headline metric, status and year.",
+      "lightning:type": "lightning__textType",
+      "lightning:isPII": false,
+      "copilotAction:isDisplayable": false,
+      "copilotAction:isUsedByPlanner": true
+    }
+  },
+  "lightning:type": "lightning__objectType"
+}

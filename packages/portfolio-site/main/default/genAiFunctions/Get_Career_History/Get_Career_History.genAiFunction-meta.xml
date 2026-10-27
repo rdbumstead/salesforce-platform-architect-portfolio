@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<GenAiFunction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Returns Ryan Bumstead's roles, newest first, with employer, years, whether the role is current, and up to three highlights per role. Read only.</description>
+    <invocationTarget>PortfolioAgentCareer</invocationTarget>
+    <invocationTargetType>apex</invocationTargetType>
+    <isConfirmationRequired>false</isConfirmationRequired>
+    <isIncludeInProgressIndicator>true</isIncludeInProgressIndicator>
+    <masterLabel>Get Career History</masterLabel>
+    <progressIndicatorMessage
+  >Reading the career history</progressIndicatorMessage>
+</GenAiFunction>
