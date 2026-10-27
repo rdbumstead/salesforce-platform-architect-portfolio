@@ -28,6 +28,7 @@
   --pf-error: #fee4e2;
   --pf-error-text: #b42318;
   --pf-focus: #2563eb;
+  --pf-color-scheme: light;
   --pf-glass: rgba(255, 255, 255, 0.9);
   --pf-shadow: 0 12px 32px rgba(16, 24, 40, 0.14);
   /* The layout's own: the soft shadow under the header once content scrolls under it. */
@@ -98,6 +99,7 @@
     --pf-error: #3b1219;
     --pf-error-text: #fda29b;
     --pf-focus: #60a5fa;
+    --pf-color-scheme: dark;
     --pf-glass: rgba(11, 15, 23, 0.9);
     --pf-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
     --shell-raise-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7);
@@ -126,6 +128,7 @@
   --pf-error: #3b1219;
   --pf-error-text: #fda29b;
   --pf-focus: #60a5fa;
+  --pf-color-scheme: dark;
   --pf-glass: rgba(11, 15, 23, 0.9);
   --pf-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
   --shell-raise-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7);

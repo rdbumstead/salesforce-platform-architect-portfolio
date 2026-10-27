@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ReportType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <baseObject>Site</baseObject>
+    <category>admin</category>
+    <deployed>true</deployed>
+    <description
+  >Each site's daily usage history: origin and cache bandwidth, page views and request time, one row per limit type and day.</description>
+    <join>
+        <outerJoin>true</outerJoin>
+        <relationship>UsageHistory</relationship>
+    </join>
+    <label>Site Usage History</label>
+    <sections>
+        <columns>
+            <checkedByDefault>true</checkedByDefault>
+            <field>Name</field>
+            <table>Site</table>
+        </columns>
+        <columns>
+            <checkedByDefault>false</checkedByDefault>
+            <field>Status</field>
+            <table>Site</table>
+        </columns>
+        <columns>
+            <checkedByDefault>false</checkedByDefault>
+            <field>SiteType</field>
+            <table>Site</table>
+        </columns>
+        <columns>
+            <checkedByDefault>false</checkedByDefault>
+            <field>DailyBandwidthLimit</field>
+            <table>Site</table>
+        </columns>
+        <columns>
+            <checkedByDefault>false</checkedByDefault>
+            <field>DailyRequestTimeLimit</field>
+            <table>Site</table>
+        </columns>
+        <masterLabel>Sites</masterLabel>
+    </sections>
+    <sections>
+        <columns>
+            <checkedByDefault>true</checkedByDefault>
+            <field>UsageDate</field>
+            <table>Site.UsageHistory</table>
+        </columns>
+        <columns>
+            <checkedByDefault>true</checkedByDefault>
+            <field>LimitType</field>
+            <table>Site.UsageHistory</table>
+        </columns>
+        <columns>
+            <checkedByDefault>true</checkedByDefault>
+            <field>Usage</field>
+            <table>Site.UsageHistory</table>
+        </columns>
+        <masterLabel>Usage History</masterLabel>
+    </sections>
+</ReportType>

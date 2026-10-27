@@ -75,6 +75,21 @@ const CAREER_NAMES = ["career_role_opened", "career_timeline_toggled"];
 // Appended for the one career timeline's selector and the tour's two entry points.
 const TIMELINE_TOUR_NAMES = ["career_timeline_filtered", "tour_opened"];
 
+// Appended for the tour journey, the cover letter page, the phone timeline, the API Lab's
+// Postman and curl, and the footer's storage panel.
+const PRE_LAUNCH_NAMES = [
+  "tour_step_viewed",
+  "tour_exited",
+  "tour_finished",
+  "cover_letter_downloaded",
+  "cover_letter_copied",
+  "career_timeline_show_all",
+  "postman_run_clicked",
+  "postman_collection_downloaded",
+  "curl_copied",
+  "storage_panel_opened"
+];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
@@ -91,7 +106,8 @@ describe("c/analyticsService", () => {
         ...MOTION_DOCS_LAB_NAMES,
         ...CASE_STUDY_GRAPH_NAMES,
         ...CAREER_NAMES,
-        ...TIMELINE_TOUR_NAMES
+        ...TIMELINE_TOUR_NAMES,
+        ...PRE_LAUNCH_NAMES
       ].sort()
     );
   });
@@ -102,7 +118,8 @@ describe("c/analyticsService", () => {
       ...MOTION_DOCS_LAB_NAMES,
       ...CASE_STUDY_GRAPH_NAMES,
       ...CAREER_NAMES,
-      ...TIMELINE_TOUR_NAMES
+      ...TIMELINE_TOUR_NAMES,
+      ...PRE_LAUNCH_NAMES
     ];
     expect(Object.values(EVENTS).slice(-newest.length)).toEqual(newest);
   });

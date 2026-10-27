@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>Site usage, last 30 days</name>
+    <description
+  >Daily site usage for the last 30 days, by site, limit type and day: origin and cache bandwidth, page views and request time.</description>
+    <reportType>Site_Usage_History__c</reportType>
+    <format>Summary</format>
+    <scope>organization</scope>
+    <showDetails>false</showDetails>
+    <showGrandTotal>true</showGrandTotal>
+    <showSubTotals>true</showSubTotals>
+    <columns>
+        <aggregateTypes>Sum</aggregateTypes>
+        <field>Site.UsageHistory$Usage</field>
+    </columns>
+    <groupingsDown>
+        <dateGranularity>None</dateGranularity>
+        <field>Site$Name</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <groupingsDown>
+        <dateGranularity>None</dateGranularity>
+        <field>Site.UsageHistory$LimitType</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <groupingsDown>
+        <dateGranularity>Day</dateGranularity>
+        <field>Site.UsageHistory$UsageDate</field>
+        <sortOrder>Desc</sortOrder>
+    </groupingsDown>
+    <params>
+        <name>co</name>
+        <value>1</value>
+    </params>
+    <timeFrameFilter>
+        <dateColumn>Site.UsageHistory$UsageDate</dateColumn>
+        <interval>INTERVAL_LAST30</interval>
+    </timeFrameFilter>
+</Report>
