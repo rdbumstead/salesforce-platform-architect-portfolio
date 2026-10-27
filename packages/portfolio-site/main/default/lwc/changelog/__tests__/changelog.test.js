@@ -48,7 +48,7 @@ const ITEMS = [
     message: "seed: delivery walk",
     authorName: "Ryan Bumstead",
     authorAvatarUrl: "https://avatars.githubusercontent.com/u/1",
-    url: "https://github.com/rdbumstead/salesforce-architect-portfolio/commit/a1b2c3d",
+    url: "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/commit/a1b2c3d",
     committedAt: "2026-10-21T08:00:00.000Z"
   },
   {
@@ -56,7 +56,7 @@ const ITEMS = [
     message: "fix(api): second commit",
     authorName: "Ada Lovelace",
     authorAvatarUrl: null,
-    url: "https://github.com/rdbumstead/salesforce-architect-portfolio/commit/ffffeee",
+    url: "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/commit/ffffeee",
     committedAt: "2026-10-20T23:59:00.000Z"
   }
 ];

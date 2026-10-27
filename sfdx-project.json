@@ -59,7 +59,7 @@
       ]
     }
   ],
-  "name": "salesforce-architect-portfolio",
+  "name": "salesforce-platform-architect-portfolio",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "65.0"
