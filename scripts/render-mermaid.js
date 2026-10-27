@@ -5,7 +5,7 @@
 //
 //   node scripts/render-mermaid.js [--out <folder>] [--docs <folder>]
 //
-// The files go into the Mermaid_Diagrams static resource folder, which is never committed
+// The files go into the Mermaid_Diagrams static resource folder, whose drawings are never committed
 // (.gitignore). Each is named <hash>-light.svg or <hash>-dark.svg, where the hash comes from
 // lwc/docsViewer/diagramHash.js, the same function the viewer uses, over the text of the block
 // as the vendored Marked_Library lexes it. A manifest.json beside them lists each hash with its
@@ -201,8 +201,14 @@ function main() {
   }
   const mmdc = mmdcPath();
   const alt = readAlt();
-  fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
+  // Clear the earlier drawings but keep the committed placeholder.txt, so a checkout that
+  // never rendered still deploys a resource with a file in it.
+  for (const name of fs.readdirSync(out)) {
+    if (name.endsWith(".svg") || name === "manifest.json") {
+      fs.rmSync(path.join(out, name));
+    }
+  }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "mermaid-"));
   const manifest = { diagrams: {} };
   try {

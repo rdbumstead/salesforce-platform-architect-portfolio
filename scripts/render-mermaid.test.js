@@ -94,3 +94,11 @@ test("the dark drawing drops a pinned theme directive and keeps the rest", () =>
   assert.ok(dark.includes("nodeSpacing"));
   assert.ok(dark.includes("A->>B: hi"));
 });
+
+test("the committed placeholder keeps the static resource deployable before a render", () => {
+  const dir = path.join(
+    __dirname,
+    "../packages/portfolio-site/main/default/staticresources/Mermaid_Diagrams"
+  );
+  assert.ok(fs.existsSync(path.join(dir, "placeholder.txt")));
+});
