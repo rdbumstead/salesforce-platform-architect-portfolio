@@ -29,6 +29,13 @@
  *                      put it in the layout's preloads. Opening the quotas, or hovering over
  *                      the AI requests line, sends finops_quota_visibility once.
  *                      Back to top sends back_to_top_used, as the header's arrow does.
+ *                      Storage sits between Integrations and Quotas and limits once the snapshot
+ *                      holds stored figures. It is one line, "Data 1 of 5 MB, Files 5 of 20 MB",
+ *                      and a button that opens a small panel grouped by area, not by object:
+ *                      the data estimate by area, the files by kind and, only when the server
+ *                      returns them, the site's page views. The button carries aria-expanded
+ *                      and keeps focus, and Escape closes the panel. Opening it sends
+ *                      storage_panel_opened once.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -45,6 +52,8 @@ const REPO_URL =
 export const BADGE_URL = `${REPO_URL}/actions/workflows/deploy.yml/badge.svg?branch=main`;
 export const ACTIONS_URL = `${REPO_URL}/actions/workflows/deploy.yml`;
 export const CACHED_GRAPHQL_LABEL = "GraphQL: cached, no request made";
+export const STORAGE_NOTE =
+  "Data is an estimate, counted at about 2 KB a record. Salesforce shows exact figures per object only in Setup.";
 
 const NUMBER_FORMAT = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0
@@ -113,6 +122,51 @@ export function quotaLabel(row) {
 }
 
 /**
+ * A size in kilobytes as KB below 1,024 and MB above.
+ * @param {number} kb Kilobytes.
+ * @returns {string} For example "24 KB" or "1.5 MB".
+ */
+export function formatSize(kb) {
+  const value = Number.isFinite(kb) ? kb : 0;
+  if (value < 1024) {
+    return `${formatNumber(value)} KB`;
+  }
+  return `${(Math.round((value / 1024) * 10) / 10).toLocaleString("en-US")} MB`;
+}
+
+/**
+ * "1 of 5 MB" from a used and a maximum, or null when either is not a finite number.
+ * @param {number} used Megabytes used.
+ * @param {number} max Megabytes available.
+ * @returns {string|null} The pair, or null.
+ */
+function storagePair(used, max) {
+  if (!Number.isFinite(used) || !Number.isFinite(max)) {
+    return null;
+  }
+  return `${formatNumber(used)} of ${formatNumber(max)} MB`;
+}
+
+/**
+ * Today's date as the server writes a Date, for example 2026-10-27, in the visitor's time.
+ * @returns {string} The date.
+ */
+function todayKey() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/**
+ * Page views in a day entry, origin and cache together.
+ * @param {object} day A StorageSnapshot.TrafficDay.
+ * @returns {number} The page views.
+ */
+function pageViews(day) {
+  return (day?.originPageViews || 0) + (day?.cachePageViews || 0);
+}
+
+/**
  * Runs the callback once the page has loaded and the browser is idle. Safari has no
  * requestIdleCallback, so it falls back to a single zero delay timeout.
  * @param {Function} callback Work to defer.
@@ -162,6 +216,8 @@ export default class Footer extends LightningElement {
 
   _cancelDeferred;
   _quotaTracked = false;
+  _storageTracked = false;
+  storageOpen = false;
 
   @wire(getLinks)
   wiredLinks({ data }) {
@@ -280,6 +336,96 @@ export default class Footer extends LightningElement {
     return formatNumber(this.snapshot?.aiRequestsToday ?? 0);
   }
 
+  get storage() {
+    return this.snapshot?.storage || null;
+  }
+
+  /** The compact line, or null when neither total was stored. */
+  get storageLine() {
+    const data = storagePair(this.storage?.dataUsedMb, this.storage?.dataMaxMb);
+    const files = storagePair(
+      this.storage?.fileUsedMb,
+      this.storage?.fileMaxMb
+    );
+    const parts = [];
+    if (data) {
+      parts.push(`Data ${data}`);
+    }
+    if (files) {
+      parts.push(`Files ${files}`);
+    }
+    return parts.length ? parts.join(", ") : null;
+  }
+
+  get storageExpanded() {
+    return this.storageOpen ? "true" : "false";
+  }
+
+  get storagePanelHidden() {
+    return !this.storageOpen;
+  }
+
+  get storageNote() {
+    return STORAGE_NOTE;
+  }
+
+  get storageDataRows() {
+    const rows = Array.isArray(this.storage?.dataAreas)
+      ? this.storage.dataAreas
+      : [];
+    return rows.map((row) => ({
+      key: row.label,
+      label: `${row.label}: ${formatNumber(row.records)} records, about ${formatSize(row.kb)}`
+    }));
+  }
+
+  get storageFileRows() {
+    const rows = Array.isArray(this.storage?.fileGroups)
+      ? this.storage.fileGroups
+      : [];
+    return rows.map((row) => ({
+      key: row.label,
+      label: `${row.label}: ${formatSize(row.kb)}`
+    }));
+  }
+
+  get hasStorageFiles() {
+    return this.storageFileRows.length > 0;
+  }
+
+  /** Page view rows, only when the server returned traffic. */
+  get storageTrafficRows() {
+    const days = Array.isArray(this.storage?.traffic)
+      ? this.storage.traffic
+      : [];
+    if (!days.length) {
+      return [];
+    }
+    const today = days.find((day) => day.day === todayKey());
+    const week = days.reduce((total, day) => total + pageViews(day), 0);
+    const rows = [];
+    if (today) {
+      rows.push({
+        key: "today",
+        label: `Site traffic today: ${formatNumber(pageViews(today))} page views`
+      });
+    }
+    rows.push({
+      key: "week",
+      label: `Site traffic, last 7 days: ${formatNumber(week)} page views`
+    });
+    return rows;
+  }
+
+  get hasStorageTraffic() {
+    return this.storageTrafficRows.length > 0;
+  }
+
+  get storageUpdated() {
+    const time = formatTime(this.storage?.capturedAt);
+    return time ? `Updated ${time}` : "";
+  }
+
   get limitRows() {
     const s = this.snapshot || {};
     const kb = (bytes) => Math.round((bytes || 0) / 1024);
@@ -317,6 +463,22 @@ export default class Footer extends LightningElement {
     if (event.currentTarget.open) {
       this.handleQuotaVisibility();
     }
+  }
+
+  handleStorageToggle() {
+    this.storageOpen = !this.storageOpen;
+    if (this.storageOpen && !this._storageTracked) {
+      this._storageTracked = true;
+      trackEvent(EVENTS.STORAGE_PANEL_OPENED);
+    }
+  }
+
+  handleStorageKeydown(event) {
+    if (event.key !== "Escape" || !this.storageOpen) {
+      return;
+    }
+    this.storageOpen = false;
+    this.template.querySelector('[data-id="storage-toggle"]')?.focus();
   }
 
   handleBackToTop() {
