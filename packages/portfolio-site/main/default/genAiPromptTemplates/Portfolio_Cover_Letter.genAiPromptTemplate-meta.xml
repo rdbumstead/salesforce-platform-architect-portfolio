@@ -3,11 +3,13 @@
     <activeVersionIdentifier
   >+2dHF4XkBX40CQ6SAzmgSiHjT0SaFg/1iFvhjRHX9Hc=_1</activeVersionIdentifier>
     <description
-  >Cover letter for the site's AI Lab. The prompt arrives whole from ContentGenerationController.coverLetterPrompt, with the instruction, the job and the grounding facts in it. The template adds no facts of its own.</description>
+  >The AI Lab cover letter. The whole prompt, built by ContentGenerationController.coverLetterPrompt, arrives as Input:Prompt. The template adds only a line that holds the letter to the word range the prompt asks for.</description>
     <developerName>Portfolio_Cover_Letter</developerName>
     <masterLabel>Portfolio Cover Letter</masterLabel>
     <templateVersions>
-        <content>{!$Input:Prompt}</content>
+        <content>{!$Input:Prompt}
+
+If the text above has a Length line, write toward its upper number and treat its lower number as a hard floor. For a letter that means an opening paragraph of two or three sentences, three body paragraphs of five sentences each, and a closing of two sentences, every sentence drawn from the facts above.</content>
         <inputs>
             <apiName>Prompt</apiName>
             <definition>primitive://String</definition>
@@ -15,7 +17,7 @@
             <referenceName>Input:Prompt</referenceName>
             <required>true</required>
         </inputs>
-        <primaryModel>sfdc_ai__DefaultGPT41Mini</primaryModel>
+        <primaryModel>sfdc_ai__DefaultGPT41</primaryModel>
         <status>Published</status>
         <versionIdentifier
     >+2dHF4XkBX40CQ6SAzmgSiHjT0SaFg/1iFvhjRHX9Hc=_1</versionIdentifier>
