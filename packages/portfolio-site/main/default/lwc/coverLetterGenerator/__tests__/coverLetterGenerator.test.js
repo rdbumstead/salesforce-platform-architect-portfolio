@@ -902,6 +902,7 @@ describe("c-cover-letter-generator", () => {
       expect(rule).toContain("max-width: 8.5in");
       expect(rule).toContain("margin: var(--pf-space-2) auto 0");
       expect(css).toMatch(/^@import "c\/nativeControls";/);
+      expect(css).toContain('content: "\\2022"');
     });
 
     it("offers Download PDF and Copy text only once a letter is shown", async () => {

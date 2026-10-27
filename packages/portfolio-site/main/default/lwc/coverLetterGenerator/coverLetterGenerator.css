@@ -142,7 +142,13 @@
   font-weight: 700;
 }
 
-/* Download PDF and Copy text sit together above the sheet, both 44 px. */
+/* Download PDF and Copy text sit together above the sheet, both 44 px, lined up with its edge. */
+.letter-actions,
+.export-status {
+  max-width: 8.5in;
+  margin-inline: auto;
+}
+
 .letter-actions {
   display: flex;
   flex-wrap: wrap;
@@ -181,8 +187,7 @@
 
 .letter-sheet p,
 .letter-sheet ul,
-.letter-sheet li,
-.letter-sheet header {
+.letter-sheet li {
   margin: 0;
   color: var(--resume-ink);
   background-color: transparent;
@@ -225,7 +230,7 @@
 }
 
 .letter-header-link + .letter-header-link::before {
-  content: "2";
+  content: "\2022";
   margin: 0 var(--resume-link-gap);
   color: var(--resume-ink);
 }
