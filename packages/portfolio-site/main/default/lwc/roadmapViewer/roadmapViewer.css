@@ -287,12 +287,21 @@
   background-color: var(--pf-chip);
   color: var(--pf-chip-text);
   border-color: var(--pf-accent);
-  font-weight: 700;
+  box-shadow: inset 0 -3px 0 var(--pf-accent);
 }
 
 .tab:focus-visible {
   outline: 2px solid var(--pf-accent);
   outline-offset: 2px;
+}
+
+.column-title[data-tour-anchor]:focus {
+  outline: none;
+}
+
+.column-title[data-tour-anchor]:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 4px;
 }
 
 .column-hidden {

@@ -60,6 +60,7 @@
               tabindex={tab.tabIndex}
               data-category={tab.category}
               data-tab={tab.category}
+              data-tour-anchor={tab.tourAnchor}
               onclick={handleTabClick}
               onkeydown={handleTabKeydown}
             >
@@ -79,7 +80,11 @@
             hidden={column.panelHidden}
             data-category={column.category}
           >
-            <h3 class="column-title">
+            <h3
+              class="column-title"
+              tabindex={column.titleTabIndex}
+              data-tour-anchor={column.columnTourAnchor}
+            >
               {column.label}
               <span class="column-count">({column.count})</span>
             </h3>
