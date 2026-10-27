@@ -268,6 +268,19 @@ describe("c-resume-builder", () => {
     expect(getResume.getLastConfig()).toEqual({ persona: "Architect" });
   });
 
+  it("leaves Contact out of the header links when there is no portfolio URL", async () => {
+    const element = createComponent();
+    getResume.emit({
+      ...RESUME,
+      header: { ...RESUME.header, portfolioUrl: null }
+    });
+    await flushPromises();
+
+    expect(
+      queryAll(element, ".resume-links a").map((a) => a.textContent)
+    ).toEqual(["LinkedIn", "GitHub"]);
+  });
+
   it("renders the header, roles, skills, certifications and education", async () => {
     const element = createComponent();
     getResume.emit(RESUME);
@@ -281,7 +294,8 @@ describe("c-resume-builder", () => {
     expect(queryAll(element, ".resume-links a").map((a) => a.href)).toEqual([
       "https://www.linkedin.com/in/example",
       "https://github.com/rdbumstead",
-      "https://ryanbumstead.com/"
+      "https://ryanbumstead.com/",
+      "https://ryanbumstead.com/contact"
     ]);
     expect(query(element, ".resume-objective").textContent.trim()).toBe(
       "Design platforms that last."
@@ -582,6 +596,7 @@ describe("c-resume-builder", () => {
         "LinkedIn: https://www.linkedin.com/in/example",
         "GitHub: https://github.com/rdbumstead",
         "Portfolio: https://ryanbumstead.com",
+        "Contact: https://ryanbumstead.com/contact",
         "",
         "SUMMARY",
         "Design platforms that last.",
@@ -823,10 +838,11 @@ describe("c-resume-builder", () => {
         ["LinkedIn", "https://www.linkedin.com/in/example"],
         ["GitHub", "https://github.com/rdbumstead"],
         ["Portfolio", "https://ryanbumstead.com"],
+        ["Contact", "https://ryanbumstead.com/contact"],
         ["Verify on Trailhead", VERIFY_URL]
       ]);
       // Side by side on one centred row.
-      const ys = new Set(links.slice(0, 3).map((piece) => piece.y));
+      const ys = new Set(links.slice(0, 4).map((piece) => piece.y));
       expect(ys.size).toBe(1);
     });
   });
