@@ -5,7 +5,7 @@
 - [1. Integration Service Implementation](#1-integration-service-implementation)
   - [1.1 GitHub Integration (Live Feed)](#11-github-integration-live-feed)
   - [1.2 Jira Integration (Roadmap)](#12-jira-integration-roadmap)
-  - [1.3 AI Content Generation (Agentforce switch off)](#13-ai-content-generation-agentforce-switch-off)
+  - [1.3 AI Content Generation (Agentforce on)](#13-ai-content-generation-agentforce-on)
   - [1.4 System API Security (The "Twin" Pattern)](#14-system-api-security-the-twin-pattern)
   - [1.5 Logging (Nebula Logger, optional)](#15-logging-nebula-logger-optional)
   - [1.6 Operational Settings (`Portfolio_Setting__mdt`)](#16-operational-settings-portfolio_setting__mdt)
@@ -72,7 +72,7 @@ All external API calls originate from a secure **Named Credential** accessed via
   - With no usable cache row, the user sees a plain empty line ("Nothing on the roadmap yet"), and only a failed read shows "Roadmap temporarily unavailable".
 - **Logging.** `JiraCacheRefreshJob.refresh` logs the same two cases (no config record, a failed refresh) through `PortfolioLog.info`, the failure by exception type only.
 
-### 1.3 AI Content Generation (Agentforce switch off)
+### 1.3 AI Content Generation (Agentforce on)
 
 > [!NOTE]
 > **Agentforce is built and its switch ships on** ([ADR-015 amendment of 2026-10-26](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-26-agentforce-is-built-and-the-deferral-is-lifted)). `AgentforceService` runs a Prompt Builder template. The decision of 2026-10-02 to defer it is lifted.
@@ -99,7 +99,13 @@ All external API calls originate from a secure **Named Credential** accessed via
 - **Show your work.** The page shows the whole letter with its word count beside the provider badge. The badge shows the provider and model from the response. A panel the visitor opens shows the fallback flag, the round trip and generation time, the attempts (each with its `detail` when the dispatch reports one) and the prompt that was sent. The panel is built in Apex and the component, not by asking the model to reveal its prompt.
 - **Fallback message.** When the template letter is used, the page says "The AI model could not be reached" if the Gemini attempt failed in under 1 second (`coverLetterGenerator.UNREACHABLE_MS`), and "The AI model was busy or too slow" otherwise. Each letter sends the GA4 event `ai_generation_completed`, and a request with no letter sends `ai_complete_failure`, both through the head script (section 2.8).
 - **Footer.** `ContentGenerationController.providerStatus()` returns each provider's switch and state (`on`, `off`, `not built`) and `circuitOpenUntil` while its breaker is open, for the footer (section 2.6).
-- **An unshipped agent prototype lives only in the production org** (a pillar D decision, 2026-10-22). It holds the `Portfolio_Guide_Agent` Service Agent (version 1, inactive), its six custom topics (Data Integration Strategies, Zero Cost Architecture, Experience Object Queries, Skill Object Utilization, Real Time Data Validation, Technical Role Evaluation), two custom actions ("Get Portfolio Context", which calls the invocable `PortfolioAgentService.getPortfolioContext`, and "Contact Record Summary", the prompt template `0hffj000009W6ijAAC`), and the platform's default `Copilot_for_Salesforce` agent, also inactive. None of the agent, topic, action or template metadata is in source, and neither the site nor the API uses any of it. `PortfolioAgentService` is in source only as the action's Apex. It no longer reads or returns `Owner_Email__c` or `Owner_Phone__c`, and its Contact select no longer reads the owner's `Email` or `Phone`, so reviving the agent cannot expose the owner's email or phone. The stray permission set `Contact_Information_Agent_Permissions`, which named another org's agent user, was removed from source. The prototype is separate from the Prompt Builder template that `AgentforceService` runs, and the site uses none of it.
+- **The Portfolio Guide Agent is in source and not live** ([ADR-036](../adr/036-portfolio-guide-agent.md)). It is a classic Bot (`Portfolio_Guide_Agent`, `EinsteinServiceAgent`) with a `GenAiPlannerBundle` on the ReAct planner and four topics: Career and Experience, Projects and Case Studies, Skills and Certifications, and Contacting Ryan, which has no action and points to the site's contact page. Three read only invocable actions serve the first three: `PortfolioAgentCareer`, `PortfolioAgentProjects` and `PortfolioAgentCredentials`. Each reads through `QueryDefinitions` in system mode (the five `PortfolioAgent*` records, section 1.7), returns JSON, and passes every text through `PortfolioAgentText.clean`, which removes email and phone shapes. No Contact is read and the client line is never read, so no email, phone or client name reaches the agent. No agent user is in source. The `Portfolio_Guide_Agent_Actions` permission set grants class access to the three actions and nothing else, for the agent's user.
+  - The agent metadata needs API 65.0, so `sourceApiVersion` is 65.0.
+  - It deploys to production inactive, at the owner's word. No page embeds it and no Messaging channel is built.
+  - A deploy over an active agent fails ("Can't edit an active bot version"), so it must be deactivated before any deploy that holds it. Production's agent is inactive today.
+  - Tested in a scratch org on 2026-10-27: `sf agent test run`, four cases, 12 of 12 checks. Not run in production.
+  - It replaces the January prototype's six topics, one of which told the agent to give `Owner_Email__c`. The January prompt templates (`Portfolio_Architect_Response`, `Contact_Record_Summary`) are not in source and nothing uses them. The owner deactivates them in Setup.
+  - `PortfolioAgentService` is unused by the new agent and stays in source with its reads in code (section 1.7). The agent is separate from the Prompt Builder template `AgentforceService` runs.
 
 ### 1.4 System API Security (The "Twin" Pattern)
 

@@ -268,7 +268,7 @@ _The design is in the SAS. Apart from the GraphQL check, which confirms what run
 
 **Phase 4: Innovation**
 
-- **A.6:** Agentforce Service Agent and topic grounding. Not built. The provider that is built runs a Prompt Builder template (SAS Appendix A.6).
+- **A.6:** Agentforce Service Agent and topic grounding. In source with four topics and three read only actions, shipped inactive and not on the site (ADR-036, SAS Appendix A.6). The cover letter provider runs a Prompt Builder template.
 - **Security:** Enable "Lightning Web Security" in Session Settings.
 - **Asset:** the `D3_Library` static resource (`d3-force` and its dependencies, plus `d3-zoom` and `d3-drag`, Public cache). It replaced `G6_Library`.
 - **Dev:** `c-skill-network` shows the matrix and draws the graph view through `c/graphEngine`.

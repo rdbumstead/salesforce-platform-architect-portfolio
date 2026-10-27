@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green?logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 > [!IMPORTANT]
-> **Project Status:** Live since October 2026. 6 enterprise docs and 35 ADRs. This README describes what runs in production.
+> **Project Status:** Live since October 2026. 6 enterprise docs and 36 ADRs. This README describes what runs in production.
 
 **Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 
@@ -37,7 +37,7 @@ Salesforce platform architecture, including:
 **By The Numbers:**
 
 - **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
-- **35 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
+- **36 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
 - **15 Core Competencies**: mapped to verifiable artifacts and validation methods.
 - **7 CI/CD Workflows**: delta deploys that also refresh the docs cache after a push that changes the docs, PR gates (including a check only validation against production), an internal reference check for pull requests that change only the docs, a read only live smoke test after each deploy and once a day, the daily heartbeat, the cache warmer worker deploy, and a Lighthouse audit run on demand.
 
@@ -96,7 +96,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 
 **Available Now:**
 
-- [Architecture decisions documented with rationale](docs/adr/): 35 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) says whether it is built, superseded, or a design only
+- [Architecture decisions documented with rationale](docs/adr/): 36 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) says whether it is built, superseded, or a design only
 - [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 7 workflows (deploy, PR validation, the docs internal reference check, the live smoke test, the heartbeat, the cache warmer worker deploy, plus a Lighthouse audit run on demand)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml): Twin API pattern with SAPI + PAPI specifications
 - [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, October 2026) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
@@ -128,7 +128,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 ## Architectural Decision Records
 
 <details>
-<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 35 documented decisions)</summary>
+<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 36 documented decisions)</summary>
 
 | ID                                                                                       | Subject                                  | Strategic Driver                | Status                            |
 | :--------------------------------------------------------------------------------------- | :--------------------------------------- | :------------------------------ | :-------------------------------- |
@@ -167,6 +167,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 | [ADR-033](docs/adr/033-queries-in-custom-metadata.md)                                    | Queries in custom metadata               | Operability                     | Built                             |
 | [ADR-034](docs/adr/034-recruiter-first-home-page.md)                                     | Recruiter first home page                | Audience / Information Design   | Built                             |
 | [ADR-035](docs/adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams rendered in CI                  | Docs / Delivery                 | Built                             |
+| [ADR-036](docs/adr/036-portfolio-guide-agent.md)                                         | Portfolio Guide Agent                    | AI / Agentforce                 | In source, inactive               |
 
 </details>
 
@@ -178,7 +179,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 | Term          | Meaning                                                                                                                   | Status                          |
 | :------------ | :------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |
 | **LWR**       | Lightning Web Runtime: Modern Salesforce frontend framework                                                               | Live                            |
-| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (35 records). |
+| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (36 records). |
 | **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live                            |
 | **RAG**       | Retrieval-Augmented Generation, an AI grounding technique                                                                 | Apex grounding on cover letters |
 | **SAPI**      | System API: Direct data access layer (API-led connectivity)                                                               | Live                            |
