@@ -136,8 +136,16 @@ export default class ResumeBuilder extends LightningElement {
     return this.isGenerating ? "Creating PDF..." : "Download PDF";
   }
 
+  /** The persona options with the chosen one marked, for the native select. */
+  get personaChoices() {
+    return this.personaOptions.map((option) => ({
+      ...option,
+      selected: option.value === this.selectedPersona
+    }));
+  }
+
   handlePersonaChange(event) {
-    const value = event.detail.value;
+    const value = event.target.value;
     if (!value || value === this.selectedPersona) {
       return;
     }

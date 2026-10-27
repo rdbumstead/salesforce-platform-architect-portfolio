@@ -1,9 +1,11 @@
+@import "c/nativeControls";
+
 /*
  * Colours come only from the --pf- site tokens, which hold the light and dark values,
  * so this file carries no colour of its own. Every element that sets a background also sets
  * its text colour from the matching token pair. Buttons are at least 44 px high.
- * Company and title draw their own label and required marker, because the base component's
- * asterisk has no confirmed styling hook.
+ * The fields are native controls from c/nativeControls. Company and title show a visible
+ * label with its own marker, and a hidden label names each control for screen readers.
  */
 .generator {
   background-color: var(--pf-surface);

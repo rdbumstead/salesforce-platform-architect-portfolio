@@ -27,10 +27,13 @@ import generateCoverLetter from "@salesforce/apex/ApiLabController.generateCover
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import { headerLinks } from "c/profileLinks";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { onShowMe, revealAnchor } from "c/tourShowMe";
 
 export const MAX_COMPANY_LENGTH = 120;
 export const MAX_TITLE_LENGTH = 120;
 export const MAX_DESCRIPTION_LENGTH = 4000;
+/** The tour stop whose task line points at this page's job description field. */
+export const TOUR_STOP = "D";
 /** Provider value the API returns when the local template wrote the letter. */
 const LOCAL_PROVIDER = "Local";
 /** An attempt that failed faster than this never reached the model. */
@@ -171,8 +174,17 @@ export default class CoverLetterGenerator extends LightningElement {
     );
   }
 
+  connectedCallback() {
+    // The tour's stop D points at the job description field.
+    this.stopShowMe = onShowMe(TOUR_STOP, () => revealAnchor(this.template));
+  }
+
   disconnectedCallback() {
     this.stopTimer();
+    if (this.stopShowMe) {
+      this.stopShowMe();
+      this.stopShowMe = undefined;
+    }
   }
 
   startTimer() {

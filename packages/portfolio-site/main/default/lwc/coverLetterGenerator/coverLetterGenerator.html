@@ -5,50 +5,68 @@
 
       <div class="slds-grid slds-wrap slds-gutters">
         <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-          <p class="field-label" aria-hidden="true">
-            Company Name<span
-              class="required-marker"
-              data-id="required-companyName"
-              >*</span
+          <div class="nc-field">
+            <p class="field-label" aria-hidden="true">
+              Company Name<span
+                class="required-marker"
+                data-id="required-companyName"
+                >*</span
+              >
+            </p>
+            <label class="nc-label nc-visually-hidden" for="company-name"
+              >Company Name</label
             >
-          </p>
-          <lightning-input
-            label="Company Name (required)"
-            variant="label-hidden"
-            value={companyName}
-            max-length={maxCompanyLength}
-            onchange={handleInputChange}
-            data-field="companyName"
-            class="company-input"
-          ></lightning-input>
+            <input
+              id="company-name"
+              type="text"
+              class="nc-control company-input"
+              value={companyName}
+              maxlength={maxCompanyLength}
+              required
+              autocomplete="organization"
+              oninput={handleInputChange}
+              data-field="companyName"
+            />
+          </div>
         </div>
         <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-          <p class="field-label" aria-hidden="true">
-            Job Title<span class="required-marker" data-id="required-jobTitle"
-              >*</span
+          <div class="nc-field">
+            <p class="field-label" aria-hidden="true">
+              Job Title<span class="required-marker" data-id="required-jobTitle"
+                >*</span
+              >
+            </p>
+            <label class="nc-label nc-visually-hidden" for="job-title"
+              >Job Title</label
             >
-          </p>
-          <lightning-input
-            label="Job Title (required)"
-            variant="label-hidden"
-            value={jobTitle}
-            max-length={maxTitleLength}
-            onchange={handleInputChange}
-            data-field="jobTitle"
-            class="title-input"
-          ></lightning-input>
+            <input
+              id="job-title"
+              type="text"
+              class="nc-control title-input"
+              value={jobTitle}
+              maxlength={maxTitleLength}
+              required
+              autocomplete="organization-title"
+              oninput={handleInputChange}
+              data-field="jobTitle"
+            />
+          </div>
         </div>
       </div>
 
-      <div class="slds-m-top_medium">
-        <lightning-textarea
-          label="Job Description / Key Requirements"
-          value={jobDescription}
-          max-length={maxDescriptionLength}
-          onchange={handleInputChange}
+      <div class="nc-field slds-m-top_medium">
+        <label class="nc-label description-label" for="job-description"
+          >Job Description / Key Requirements</label
+        >
+        <textarea
+          id="job-description"
+          class="nc-control description-input"
+          rows="6"
+          maxlength={maxDescriptionLength}
+          oninput={handleInputChange}
           data-field="jobDescription"
-          class="description-input"
-        ></lightning-textarea>
+          data-tour-anchor
+        ></textarea>
       </div>
 
       <div class="slds-m-top_medium slds-text-align_right">

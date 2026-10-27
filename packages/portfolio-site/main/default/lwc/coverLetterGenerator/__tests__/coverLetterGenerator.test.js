@@ -129,13 +129,13 @@ function query(element, selector) {
 function setInput(element, selector, value) {
   const input = query(element, selector);
   input.value = value;
-  input.dispatchEvent(new CustomEvent("change"));
+  input.dispatchEvent(new CustomEvent("input"));
 }
 
 async function fillAndGenerate(element) {
-  setInput(element, "lightning-input.company-input", "Acme");
-  setInput(element, "lightning-input.title-input", "Architect");
-  setInput(element, "lightning-textarea.description-input", "Apex and APIs");
+  setInput(element, "input.company-input", "Acme");
+  setInput(element, "input.title-input", "Architect");
+  setInput(element, "textarea.description-input", "Apex and APIs");
   await flushPromises();
   query(element, "button.generate-button").click();
   await flushPromises();
@@ -155,15 +155,17 @@ describe("c-cover-letter-generator", () => {
     await flushPromises();
 
     for (const [selector, label, field] of [
-      ["lightning-input.company-input", "Company Name", "companyName"],
-      ["lightning-input.title-input", "Job Title", "jobTitle"]
+      ["input.company-input", "Company Name", "companyName"],
+      ["input.title-input", "Job Title", "jobTitle"]
     ]) {
       const input = query(element, selector);
-      // The base asterisk fails contrast on the dark branding, so the base fields
-      // are not flagged required. Their accessible name says it instead.
-      expect(input.label).toBe(`${label} (required)`);
-      expect(input.variant).toBe("label-hidden");
-      expect(input.required).toBeFalsy();
+      // A native control carries required itself, and its hidden label names it for
+      // screen readers. The visible label and marker are drawn beside it, hidden from them.
+      const hidden = query(element, `label[for="${input.id}"]`);
+      expect(hidden.textContent.trim()).toBe(label);
+      expect(hidden.classList.contains("nc-visually-hidden")).toBe(true);
+      expect(input.required).toBe(true);
+      expect(input.classList.contains("nc-control")).toBe(true);
       expect(query(element, `[data-id="required-${field}"]`).textContent).toBe(
         "*"
       );
@@ -224,11 +226,11 @@ describe("c-cover-letter-generator", () => {
     const button = query(element, "button.generate-button");
     expect(button.disabled).toBe(true);
 
-    setInput(element, "lightning-input.company-input", "Acme");
+    setInput(element, "input.company-input", "Acme");
     await flushPromises();
     expect(button.disabled).toBe(true);
 
-    setInput(element, "lightning-input.title-input", "Architect");
+    setInput(element, "input.title-input", "Architect");
     await flushPromises();
     expect(button.disabled).toBe(false);
   });
@@ -246,8 +248,8 @@ describe("c-cover-letter-generator", () => {
   it("sends the trimmed inputs to the Apex proxy", async () => {
     generateCoverLetter.mockResolvedValue(GEMINI_RESULT);
     const element = createComponent();
-    setInput(element, "lightning-input.company-input", "  Acme ");
-    setInput(element, "lightning-input.title-input", " Architect");
+    setInput(element, "input.company-input", "  Acme ");
+    setInput(element, "input.title-input", " Architect");
     await flushPromises();
 
     query(element, "button.generate-button").click();
@@ -420,8 +422,8 @@ describe("c-cover-letter-generator", () => {
       generateCoverLetter.mockReturnValue(new Promise(() => {}));
       const element = createComponent();
       await flushPromises();
-      setInput(element, "lightning-input.company-input", "Acme");
-      setInput(element, "lightning-input.title-input", "Architect");
+      setInput(element, "input.company-input", "Acme");
+      setInput(element, "input.title-input", "Architect");
       await flushPromises();
       query(element, "button.generate-button").click();
       await Promise.resolve();
@@ -494,8 +496,8 @@ describe("c-cover-letter-generator", () => {
       generateCoverLetter.mockReturnValue(new Promise(() => {}));
       const element = createComponent();
       await flushPromises();
-      setInput(element, "lightning-input.company-input", "Acme");
-      setInput(element, "lightning-input.title-input", "Architect");
+      setInput(element, "input.company-input", "Acme");
+      setInput(element, "input.title-input", "Architect");
       await flushPromises();
       query(element, "button.generate-button").click();
       await Promise.resolve();

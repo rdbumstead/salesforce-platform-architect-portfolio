@@ -174,7 +174,7 @@ function queryAll(element, selector) {
 }
 
 function button(element, cssClass) {
-  return query(element, `lightning-button.${cssClass}`);
+  return query(element, `button.${cssClass}`);
 }
 
 /**
@@ -339,13 +339,14 @@ describe("c-resume-builder", () => {
     getResume.emit(RESUME);
     await flushPromises();
 
-    const picker = query(element, "lightning-combobox.persona-picker");
-    expect(picker.label).toBe("Tailor for");
-    expect(picker.options.map((option) => option.label)).toEqual([
-      "Platform Architect",
-      "Salesforce Developer",
-      "System Admin"
-    ]);
+    const picker = query(element, "select.persona-picker");
+    const label = query(element, `label[for="${picker.id}"]`);
+    expect(label.textContent.trim()).toBe("Tailor for");
+    expect(
+      Array.from(picker.options).map((option) => option.textContent.trim())
+    ).toEqual(["Platform Architect", "Salesforce Developer", "System Admin"]);
+    expect(picker.value).toBe("Architect");
+    expect(picker.classList.contains("nc-control")).toBe(true);
   });
 
   it("re-wires with the new persona when the picker changes", async () => {
@@ -353,10 +354,9 @@ describe("c-resume-builder", () => {
     getResume.emit(RESUME);
     await flushPromises();
 
-    const picker = query(element, "lightning-combobox.persona-picker");
-    picker.dispatchEvent(
-      new CustomEvent("change", { detail: { value: "Developer" } })
-    );
+    const picker = query(element, "select.persona-picker");
+    picker.value = "Developer";
+    picker.dispatchEvent(new CustomEvent("change"));
     await flushPromises();
 
     expect(getResume.getLastConfig()).toEqual({ persona: "Developer" });
@@ -373,13 +373,19 @@ describe("c-resume-builder", () => {
     getResume.emit(RESUME);
     await flushPromises();
 
-    expect(button(element, "download-pdf").variant).toBe("brand");
-    expect(button(element, "copy-ats").variant).toBe("neutral");
+    expect(button(element, "download-pdf").className).toBe(
+      "nc-button download-pdf"
+    );
     expect(
-      queryAll(element, "lightning-button").filter(
-        (control) => control.variant === "brand"
+      button(element, "copy-ats").classList.contains("nc-button_secondary")
+    ).toBe(true);
+    expect(
+      queryAll(element, "button.nc-button").filter(
+        (control) => !control.classList.contains("nc-button_secondary")
       )
     ).toHaveLength(1);
+    expect(query(element, "lightning-button")).toBeNull();
+    expect(query(element, "lightning-combobox")).toBeNull();
     expect(query(element, ".config-panel")).not.toBeNull();
     expect(query(element, '[class*="slds-theme_"]')).toBeNull();
     expect(query(element, '[class*="slds-text-color_"]')).toBeNull();
