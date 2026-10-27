@@ -5,7 +5,8 @@
     <description
   >Names the one record the job keeps. Always "current", so each run overwrites the same row.</description>
     <externalId>true</externalId>
-    <inlineHelpText>Set by the storage snapshot job. Always current.</inlineHelpText>
+    <inlineHelpText
+  >Set by the storage snapshot job. Always current.</inlineHelpText>
     <label>Key</label>
     <length>40</length>
     <required>true</required>
