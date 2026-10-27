@@ -3,6 +3,9 @@
  *                      letter path in process. The real
  *                      GeminiService runs against an HTTP mock that answers Gemini and records
  *                      every endpoint, so a call to the org's own Portfolio_API would show.
+ *                      Every test here switches Agentforce off in memory unless it says
+ *                      otherwise, so the in process chain is what runs. The Agentforce call
+ *                      through the API is tested in ApiLabControllerAgentforceTest.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -98,19 +101,21 @@ private class ApiLabControllerCoverLetterTest {
     }
   }
 
-  private static RoutingMock mockGemini(Integer status) {
-    RoutingMock mock = new RoutingMock(status);
-    Test.setMock(HttpCalloutMock.class, mock);
-    return mock;
-  }
-
-  private static void switchAgentforceOn() {
+  private static void switchAgentforce(Boolean enabled) {
     AgentforceService.configOverridden = true;
     AgentforceService.configOverride = (AI_Provider_Config__mdt) JSON.deserialize(
-      '{"DeveloperName":"Agentforce","Enabled__c":true}',
+      '{"DeveloperName":"Agentforce","Enabled__c":' + enabled + '}',
       AI_Provider_Config__mdt.class
     );
     AgentforceService.guestOverride = null;
+  }
+
+  private static RoutingMock mockGemini(Integer status) {
+    // The in process chain, with no Agentforce call through the API.
+    switchAgentforce(false);
+    RoutingMock mock = new RoutingMock(status);
+    Test.setMock(HttpCalloutMock.class, mock);
+    return mock;
   }
 
   private static void insertGroundingFacts() {
@@ -157,7 +162,6 @@ private class ApiLabControllerCoverLetterTest {
 
   @IsTest
   static void guestReachesGeminiInProcessWithNoCallToPortfolioApi() {
-    switchAgentforceOn();
     insertGroundingFacts();
     User guest = SiteGuestTestSupport.preparedGuest();
     RoutingMock mock = mockGemini(200);
@@ -179,7 +183,7 @@ private class ApiLabControllerCoverLetterTest {
     Assert.areEqual(
       'skipped_off',
       attemptFor(result, 'Agentforce').outcome,
-      'Agentforce is never consulted for a guest, even switched on'
+      'Agentforce switched off is skipped and nothing calls the API'
     );
     Assert.areEqual('served', attemptFor(result, 'Gemini').outcome, 'Served');
     Assert.areEqual(1, mock.callsTo('callout:Gemini_API/'), 'One Gemini call');
@@ -273,6 +277,7 @@ private class ApiLabControllerCoverLetterTest {
 
   @IsTest
   static void noProviderIsExplained() {
+    switchAgentforce(false);
     ContentGenerationController.mockGeminiService = new FailingProvider();
     ContentGenerationController.mockLocalService = new FailingProvider();
 
