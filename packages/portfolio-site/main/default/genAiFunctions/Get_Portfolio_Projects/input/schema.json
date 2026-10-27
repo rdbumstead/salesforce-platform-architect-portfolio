@@ -1,0 +1,14 @@
+{
+  "required": [],
+  "unevaluatedProperties": false,
+  "properties": {
+    "keyword": {
+      "title": "Keyword",
+      "description": "Optional. Words from the question, such as integration or nonprofit, to pick the projects that mention them.",
+      "lightning:type": "lightning__textType",
+      "lightning:isPII": false,
+      "copilotAction:isUserInput": false
+    }
+  },
+  "lightning:type": "lightning__objectType"
+}

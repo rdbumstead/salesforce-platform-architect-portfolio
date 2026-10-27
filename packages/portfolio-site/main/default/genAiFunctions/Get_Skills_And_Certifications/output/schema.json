@@ -1,0 +1,14 @@
+{
+  "unevaluatedProperties": false,
+  "properties": {
+    "credentialsJson": {
+      "title": "Skills and certifications (JSON)",
+      "description": "Skills by category and the current certifications with issuer and year.",
+      "lightning:type": "lightning__textType",
+      "lightning:isPII": false,
+      "copilotAction:isDisplayable": false,
+      "copilotAction:isUsedByPlanner": true
+    }
+  },
+  "lightning:type": "lightning__objectType"
+}
