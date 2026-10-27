@@ -54,7 +54,17 @@ export const EVENTS = Object.freeze({
   CAREER_ROLE_OPENED: "career_role_opened", // position: 1 is the newest role
   CAREER_TIMELINE_TOGGLED: "career_timeline_toggled", // expanded
   CAREER_TIMELINE_FILTERED: "career_timeline_filtered", // kind: all, work, education or certifications
-  TOUR_OPENED: "tour_opened" // source: hero or section
+  TOUR_OPENED: "tour_opened", // source: hero or section. No longer sent from Round 13
+  TOUR_STEP_VIEWED: "tour_step_viewed", // stop: A to E, pillar: the pillar key
+  TOUR_EXITED: "tour_exited", // stop: A to E, the stop the visitor left from
+  TOUR_FINISHED: "tour_finished", // none
+  COVER_LETTER_DOWNLOADED: "cover_letter_downloaded", // provider
+  COVER_LETTER_COPIED: "cover_letter_copied", // provider
+  CAREER_TIMELINE_SHOW_ALL: "career_timeline_show_all", // kind: all, work, education or certifications
+  POSTMAN_RUN_CLICKED: "postman_run_clicked", // source: api_lab or reference
+  POSTMAN_COLLECTION_DOWNLOADED: "postman_collection_downloaded", // source: api_lab or reference
+  CURL_COPIED: "curl_copied", // example: token, health or data
+  STORAGE_PANEL_OPENED: "storage_panel_opened" // none
 });
 
 /** The document event the site's head script listens for and passes to gtag. */
