@@ -118,12 +118,14 @@ const CERTIFICATIONS = [
     id: "a01C1",
     name: "Salesforce Certified Platform Developer",
     isRetired: false,
+    earnedYear: 2021,
     skillIds: ["a01S1", "a01S4", "a01MISSING"]
   },
   {
     id: "a01C2",
     name: "Salesforce Certified AI Associate",
     isRetired: true,
+    earnedYear: 2023,
     skillIds: ["a01S5"]
   }
 ];
@@ -230,6 +232,17 @@ describe("c-skill-network (Large form factor)", () => {
     expect(error.textContent).toContain("No access");
   });
 
+  it("says the error sentence once when the query gives no reason of its own", async () => {
+    const element = mount();
+    graphql.emit({ errors: [{}] });
+    await flushPromises();
+
+    const error = element.shadowRoot.querySelector(".state-error");
+    const sentence = "The skills could not be loaded.";
+    expect(error.textContent.split(sentence)).toHaveLength(2);
+    expect(error.querySelectorAll("p")).toHaveLength(1);
+  });
+
   it("shows the empty state when there are no skills", async () => {
     const element = mount();
     graphql.emit({ data: buildPayload({ empty: true }), errors: undefined });
@@ -285,7 +298,7 @@ describe("c-skill-network (Large form factor)", () => {
     // Linked to a project only, so no years.
     expect(years("Agentforce")).toBeNull();
     expect(chipByName(element, "Agentforce").getAttribute("aria-label")).toBe(
-      "Agentforce, proficiency 3 of 5"
+      "Agentforce, proficiency 3 of 5, used on a project"
     );
   });
 
@@ -318,6 +331,50 @@ describe("c-skill-network (Large form factor)", () => {
     await flushPromises();
     expect(element.shadowRoot.querySelector(".selection-panel")).toBeNull();
     expect(trackEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows Project in place of years for a skill only a project links", async () => {
+    const element = await mountWithData();
+    const chip = chipByName(element, "Agentforce");
+
+    expect(chip.querySelector(".chip-evidence").textContent).toBe("Project");
+    expect(chip.querySelector(".chip-years")).toBeNull();
+    expect(
+      chipByName(element, "Apex").querySelector(".chip-evidence")
+    ).toBeNull();
+  });
+
+  it("shows the earliest certified year for a skill with no role, and never gives it years", async () => {
+    const element = await mountWithData();
+    getCertificationLinks.emit(JSON.parse(JSON.stringify(CERTIFICATIONS)));
+    await flushPromises();
+    const chip = chipByName(element, "Agentforce");
+
+    expect(chip.querySelector(".chip-evidence").textContent).toBe(
+      "Certified 2023"
+    );
+    expect(chip.querySelector(".chip-years")).toBeNull();
+    expect(chip.getAttribute("aria-label")).toBe(
+      "Agentforce, proficiency 3 of 5, certified in 2023"
+    );
+    chip.click();
+    await flushPromises();
+    expect(
+      element.shadowRoot.querySelector(".selection-summary").textContent
+    ).toBe("Proficiency 3 of 5, certified in 2023.");
+  });
+
+  it("keeps years for a skill with roles even when a certification backs it", async () => {
+    const element = await mountWithData();
+    getCertificationLinks.emit(JSON.parse(JSON.stringify(CERTIFICATIONS)));
+    await flushPromises();
+
+    expect(
+      chipByName(element, "Apex").querySelector(".chip-years").textContent
+    ).toBe("8.0 yrs");
+    expect(
+      chipByName(element, "Apex").querySelector(".chip-evidence")
+    ).toBeNull();
   });
 
   it("sends null years for a skill with no role", async () => {
