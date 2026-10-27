@@ -6,7 +6,8 @@
  *                      (resumeLayout.js). jsPDF and the two Inter TTF files load only on the first
  *                      download, through c/documentPdf, which the cover letter shares. When the
  *                      fonts cannot be fetched the PDF is still written, in the spec's fallback
- *                      font.
+ *                      font. A failed load says what happened in a plain sentence and never
+ *                      shows the empty state, which is kept for a persona with no content.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -35,20 +36,44 @@ const PERSONA_OPTIONS = [
 
 const PAPER_STYLE = previewStyle(RESUME_LAYOUT);
 
-function reduceError(error) {
+/** Shown when a failed request carries no message a visitor can use. */
+export const NO_ANSWER_MESSAGE =
+  "The server did not send an answer. Check your connection and try again.";
+
+/** Shown when the call returned without a resume, which only a failed request does. */
+export const NO_RESUME_MESSAGE =
+  "The server sent back no resume. Try again in a moment.";
+
+// The platform's own text when a request fails before a reply can be read.
+const RAW_PLATFORM_MESSAGE = /failed to get error from response/i;
+
+/**
+ * A plain sentence for an error: the controller's message when it sent one, otherwise a
+ * sentence that says what happened in place of the platform's raw text.
+ * @param {object} error the wire or call error
+ * @param {string} fallback the sentence for an error with no usable message
+ * @returns {string} the message to show
+ */
+export function reduceError(error, fallback = NO_ANSWER_MESSAGE) {
   if (!error) {
     return "";
   }
+  let message = "";
   if (Array.isArray(error.body)) {
-    return error.body.map((entry) => entry.message).join(", ");
+    message = error.body
+      .map((entry) => entry && entry.message)
+      .filter((text) => text)
+      .join(", ");
+  } else if (error.body && typeof error.body.message === "string") {
+    message = error.body.message;
+  } else if (typeof error.message === "string") {
+    message = error.message;
   }
-  if (error.body && typeof error.body.message === "string") {
-    return error.body.message;
+  message = message.trim();
+  if (!message || RAW_PLATFORM_MESSAGE.test(message)) {
+    return fallback;
   }
-  if (typeof error.message === "string") {
-    return error.message;
-  }
-  return "Unknown error";
+  return message;
 }
 
 export default class ResumeBuilder extends LightningElement {
@@ -70,7 +95,13 @@ export default class ResumeBuilder extends LightningElement {
 
   @wire(getResume, { persona: "$selectedPersona" })
   wiredResume({ data, error }) {
-    if (data !== undefined) {
+    if (data === null) {
+      // getResume always answers with a resume, so no resume means the request failed. Say
+      // so, rather than show the empty state as if the persona had no content.
+      this.resume = undefined;
+      this.errorMessage = NO_RESUME_MESSAGE;
+      this.isLoading = false;
+    } else if (data !== undefined) {
       this.resume = data;
       this.errorMessage = "";
       this.isLoading = false;
@@ -160,7 +191,10 @@ export default class ResumeBuilder extends LightningElement {
         format: "pdf"
       });
     } catch (error) {
-      this.exportError = `The PDF could not be created. ${reduceError(error)}`;
+      this.exportError = `The PDF could not be created. ${reduceError(
+        error,
+        "Try again."
+      )}`;
     } finally {
       this.isGenerating = false;
     }
@@ -184,7 +218,10 @@ export default class ResumeBuilder extends LightningElement {
         format: "ats"
       });
     } catch (error) {
-      this.exportError = `The text could not be copied. ${reduceError(error)}`;
+      this.exportError = `The text could not be copied. ${reduceError(
+        error,
+        "Try again."
+      )}`;
     }
   }
 }

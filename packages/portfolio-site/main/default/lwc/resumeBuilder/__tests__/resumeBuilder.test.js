@@ -9,7 +9,11 @@
  * @Created           : 01/03/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import ResumeBuilder from "c/resumeBuilder";
+import ResumeBuilder, {
+  reduceError,
+  NO_ANSWER_MESSAGE,
+  NO_RESUME_MESSAGE
+} from "c/resumeBuilder";
 import getResume from "@salesforce/apex/ResumeController.getResume";
 import { loadScript } from "lightning/platformResourceLoader";
 import { trackEvent } from "c/analyticsService";
@@ -419,6 +423,46 @@ describe("c-resume-builder", () => {
       "Invalid persona. Valid values: Admin, Developer, Architect"
     );
     expect(button(element, "download-pdf").disabled).toBe(true);
+  });
+
+  it("says what happened in place of the platform's raw failure text", async () => {
+    const element = createComponent();
+    getResume.error({ message: "Failed to get error from response" });
+    await flushPromises();
+
+    const errorState = query(element, ".error-state");
+    expect(errorState.textContent).toContain("The resume could not be loaded.");
+    expect(errorState.textContent).toContain(NO_ANSWER_MESSAGE);
+    expect(errorState.textContent).not.toContain("Failed to get error");
+    expect(query(element, ".empty-state")).toBeNull();
+  });
+
+  it("never shows the empty state when the call answers with no resume", async () => {
+    const element = createComponent();
+    getResume.emit(null);
+    await flushPromises();
+
+    expect(query(element, ".empty-state")).toBeNull();
+    expect(query(element, ".error-state").textContent).toContain(
+      NO_RESUME_MESSAGE
+    );
+    expect(button(element, "download-pdf").disabled).toBe(true);
+  });
+
+  it("reduces errors to the controller's message or a plain sentence", () => {
+    expect(reduceError(null)).toBe("");
+    expect(reduceError({ body: { message: "Invalid persona." } })).toBe(
+      "Invalid persona."
+    );
+    expect(
+      reduceError({ body: [{ message: "One" }, {}, { message: "Two" }] })
+    ).toBe("One, Two");
+    expect(reduceError({ body: [] })).toBe(NO_ANSWER_MESSAGE);
+    expect(reduceError({})).toBe(NO_ANSWER_MESSAGE);
+    expect(reduceError({ message: "  " }, "Try again.")).toBe("Try again.");
+    expect(
+      reduceError({ body: { message: "Failed to get error from response" } })
+    ).toBe(NO_ANSWER_MESSAGE);
   });
 
   it("shows the empty state when the resume has no content", async () => {
