@@ -14,6 +14,7 @@ import ProjectAssetGallery, { resolveAssetUrl } from "c/projectAssetGallery";
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { graphql } from "lightning/uiGraphQLApi";
 import { trackEvent } from "c/analyticsService";
+import { showMe } from "c/tourShowMe";
 
 // config/jest.config.js maps every lightning/* import to one universal mock, so the
 // factory keeps it as the default export and adds a test wire adapter for graphql.
@@ -202,6 +203,37 @@ describe("c-project-asset-gallery", () => {
     expect(unavailable).toHaveLength(1);
     expect(unavailable[0].textContent).toContain("Employer Hub demo deck");
     expect(unavailable[0].textContent).toContain("Not available yet");
+  });
+
+  it("marks only the first image link as the tour anchor and answers stop A only", async () => {
+    const element = mount();
+    graphql.emit({ data: PAYLOAD, errors: undefined });
+    await flushPromises();
+
+    const anchors = qa(element, "[data-tour-anchor]");
+    expect(anchors).toHaveLength(1);
+    expect(anchors[0].classList.contains("image-link")).toBe(true);
+    expect(anchors[0]).toBe(q(element, ".image-link"));
+    anchors[0].focus = jest.fn();
+    anchors[0].scrollIntoView = jest.fn();
+
+    showMe("B");
+    expect(anchors[0].focus).not.toHaveBeenCalled();
+    showMe("A");
+    expect(anchors[0].scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(anchors[0].focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("stops listening for the tour when it leaves the page", async () => {
+    const element = mount();
+    graphql.emit({ data: PAYLOAD, errors: undefined });
+    await flushPromises();
+    const anchor = q(element, "[data-tour-anchor]");
+    anchor.focus = jest.fn();
+    document.body.removeChild(element);
+
+    showMe("A");
+    expect(anchor.focus).not.toHaveBeenCalled();
   });
 
   it("tracks gallery_asset_opened with the type and pillar", async () => {
