@@ -4,19 +4,18 @@
  *                      both themes, and exports the same content as a text PDF or as plain ATS
  *                      text copied to the clipboard. The preview and the PDF read one layout spec
  *                      (resumeLayout.js). jsPDF and the two Inter TTF files load only on the first
- *                      download. When the fonts cannot be fetched the PDF is still written, in
- *                      the spec's fallback font.
+ *                      download, through c/documentPdf, which the cover letter shares. When the
+ *                      fonts cannot be fetched the PDF is still written, in the spec's fallback
+ *                      font.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/26/2025
  **/
 import { LightningElement, wire } from "lwc";
-import { loadScript } from "lightning/platformResourceLoader";
 import getResume from "@salesforce/apex/ResumeController.getResume";
-import JSPDF_LIBRARY from "@salesforce/resourceUrl/jsPDF_Library";
-import PORTFOLIO_FONTS from "@salesforce/resourceUrl/Portfolio_Fonts";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { createPdfLoader } from "c/documentPdf";
 import {
   buildViewModel,
   buildLines,
@@ -52,24 +51,6 @@ function reduceError(error) {
   return "Unknown error";
 }
 
-/**
- * Base64 of an ArrayBuffer, in chunks so a large file does not overflow the argument list.
- * @param {ArrayBuffer} buffer the font file
- * @returns {string} base64 text for jsPDF's virtual file system
- */
-export function toBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const chunk = 0x8000;
-  let binary = "";
-  for (let index = 0; index < bytes.length; index += chunk) {
-    binary += String.fromCharCode.apply(
-      null,
-      bytes.subarray(index, index + chunk)
-    );
-  }
-  return btoa(binary);
-}
-
 export default class ResumeBuilder extends LightningElement {
   selectedPersona = DEFAULT_PERSONA;
   includeHeader = true;
@@ -82,8 +63,7 @@ export default class ResumeBuilder extends LightningElement {
   exportMessage = "";
   exportError = "";
 
-  jsPdfPromise;
-  fontPromise;
+  pdfLoader = createPdfLoader(this, RESUME_LAYOUT);
 
   personaOptions = PERSONA_OPTIONS;
   paperStyle = PAPER_STYLE;
@@ -163,71 +143,6 @@ export default class ResumeBuilder extends LightningElement {
     }
   }
 
-  ensureJsPdf() {
-    if (!this.jsPdfPromise) {
-      this.jsPdfPromise = loadScript(this, JSPDF_LIBRARY).catch((error) => {
-        // Let the next click try again after a failed load.
-        this.jsPdfPromise = undefined;
-        throw error;
-      });
-    }
-    return this.jsPdfPromise;
-  }
-
-  /**
-   * The Inter files as base64 by style, or null when they cannot be fetched. A failed fetch is
-   * tried again on the next click.
-   */
-  ensureFonts() {
-    if (!this.fontPromise) {
-      const files = RESUME_LAYOUT.font.files;
-      const styles = Object.keys(files);
-      this.fontPromise = Promise.all(
-        styles.map((style) =>
-          fetch(`${PORTFOLIO_FONTS}/${files[style]}`).then((response) => {
-            if (!response.ok) {
-              throw new Error(
-                `Font ${files[style]} returned ${response.status}`
-              );
-            }
-            return response.arrayBuffer();
-          })
-        )
-      )
-        .then((buffers) =>
-          styles.map((style, index) => ({
-            style,
-            file: files[style],
-            data: toBase64(buffers[index])
-          }))
-        )
-        .catch(() => {
-          this.fontPromise = undefined;
-          return null;
-        });
-    }
-    return this.fontPromise;
-  }
-
-  /**
-   * Registers the fonts on the document and returns the family to write with, or the
-   * fallback family when there are no fonts or jsPDF refuses them.
-   */
-  registerFonts(doc, fonts) {
-    if (!fonts) {
-      return RESUME_LAYOUT.font.fallback;
-    }
-    try {
-      fonts.forEach((font) => {
-        doc.addFileToVFS(font.file, font.data);
-        doc.addFont(font.file, RESUME_LAYOUT.font.family, font.style);
-      });
-      return RESUME_LAYOUT.font.family;
-    } catch {
-      return RESUME_LAYOUT.font.fallback;
-    }
-  }
-
   async handleDownload() {
     if (this.exportDisabled) {
       return;
@@ -236,21 +151,7 @@ export default class ResumeBuilder extends LightningElement {
     this.exportMessage = "";
     this.exportError = "";
     try {
-      const [, fonts] = await Promise.all([
-        this.ensureJsPdf(),
-        this.ensureFonts()
-      ]);
-      // jsPDF 3.x UMD build registers its exports on the jspdf global.
-      const jsPdfNamespace = window.jspdf;
-      if (!jsPdfNamespace || typeof jsPdfNamespace.jsPDF !== "function") {
-        throw new Error("jsPDF did not load.");
-      }
-      const doc = new jsPdfNamespace.jsPDF({
-        unit: RESUME_LAYOUT.page.unit,
-        format: RESUME_LAYOUT.page.format,
-        compress: true
-      });
-      const family = this.registerFonts(doc, fonts);
+      const { doc, family } = await this.pdfLoader.createDocument();
       writePdf(doc, this.model, { family });
       doc.save(pdfFileName(this.model, this.selectedPersona));
       this.exportMessage = "PDF downloaded.";

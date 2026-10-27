@@ -2,8 +2,8 @@
  * @description       : Pure helpers for resumeBuilder. They turn the ResumeController.getResume
  *                      payload into one view model. The preview renders that model, the ATS text
  *                      export reads it as typed lines (buildLines), and the PDF writer (writePdf)
- *                      draws it with the sizes, spacing, colours and section order in
- *                      resumeLayout.js, which the preview reads too. So the preview, the PDF and
+ *                      draws it through c/documentPdf's block writer with the sizes, spacing,
+ *                      colours and section order in resumeLayout.js, which the preview reads too. So the preview, the PDF and
  *                      the ATS text carry the same sections, roles and certification groups.
  *                      Past roles with no highlights for the persona fold into one "Earlier roles"
  *                      line at the end of Experience.
@@ -13,6 +13,7 @@
  * @Created           : 10/21/2026
  **/
 import { headerLinks } from "c/profileLinks";
+import { createPdfWriter, fileNamePart, wrapText } from "c/documentPdf";
 import { RESUME_LAYOUT } from "./resumeLayout";
 
 const MONTHS = [
@@ -379,37 +380,12 @@ export function toAtsText(lines) {
 }
 
 /**
- * Breaks text into lines no wider than the widths given, measured with the document's current
- * font. The first line can be narrower, for a bold label or a date in the same row.
- */
-function wrapText(doc, text, firstWidth, restWidth) {
-  const words = String(text)
-    .split(/\s+/)
-    .filter((word) => word);
-  const lines = [];
-  let current = "";
-  words.forEach((word) => {
-    const candidate = current ? `${current} ${word}` : word;
-    const limit = lines.length === 0 ? firstWidth : restWidth;
-    if (current && doc.getTextWidth(candidate) > limit) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = candidate;
-    }
-  });
-  if (current || lines.length === 0) {
-    lines.push(current);
-  }
-  return lines;
-}
-
-/**
  * Draws the model into a jsPDF document as real text (selectable, in reading order), with the
- * sizes, spacing, colours and section order from resumeLayout.js. A role, a skill group and the
- * header never split across pages, and a section or Retired title always has its first entry
- * under it. Links are clickable. When trace is an array, every drawn piece is pushed onto it as
- * { section, kind, text, page, y } in drawing order.
+ * sizes, spacing, colours and section order from resumeLayout.js, through the shared block
+ * writer in c/documentPdf. A role, a skill group and the header never split across pages, and
+ * a section or Retired title always has its first entry under it. Links are clickable. When
+ * trace is an array, every drawn piece is pushed onto it as { section, kind, text, page, y } in
+ * drawing order.
  * @param {object} doc a jsPDF document in points
  * @param {object} model the view model from buildViewModel
  * @param {object} options { family, trace }: the registered font family (the spec's fallback
@@ -418,122 +394,22 @@ function wrapText(doc, text, firstWidth, restWidth) {
  */
 export function writePdf(doc, model, options = {}) {
   const layout = RESUME_LAYOUT;
-  const family = options.family || layout.font.fallback;
-  const trace = Array.isArray(options.trace) ? options.trace : null;
-  const { type, space, colors, marks } = layout;
-  const margin = layout.page.margin;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const width = pageWidth - margin * 2;
-  const bottom = pageHeight - margin;
-  const blocks = [];
-  let section = "header";
-
-  const setType = (style) => {
-    doc.setFont(family, style.bold ? "bold" : "normal");
-    doc.setFontSize(style.size);
-  };
-  const lineOf = (style) => style.size * layout.lineHeight;
-  const measure = (text, style) => {
-    setType(style);
-    return doc.getTextWidth(text);
-  };
-  const shown = (text, style) => (style.upper ? text.toUpperCase() : text);
-
-  // A row is one line box: its height and the pieces drawn in it, x absolute, y from its top.
-  const textRow = (pieces, style, extra = 0) => ({
-    height: lineOf(style) + extra,
-    pieces: pieces.map((piece) => ({ ...piece, style: piece.style || style }))
+  const writer = createPdfWriter(doc, {
+    family: options.family,
+    trace: options.trace,
+    layout
   });
-  const block = (rows, after, keepWithNext = false) => {
-    blocks.push({ rows, after, keepWithNext, section });
-  };
-
-  const paragraph = (kind, text, style, indent = 0) => {
-    setType(style);
-    return wrapText(doc, text, width - indent, width - indent).map((part) =>
-      textRow([{ kind, text: part, x: margin + indent }], style)
-    );
-  };
-
-  const labelled = (kind, label, text, style, labelStyle) => {
-    const labelText = `${label}:`;
-    const labelWidth = measure(`${labelText} `, labelStyle);
-    setType(style);
-    return wrapText(doc, text, width - labelWidth, width).map((part, index) =>
-      textRow(
-        index === 0
-          ? [
-              {
-                kind: `${kind}-label`,
-                text: labelText,
-                x: margin,
-                style: labelStyle
-              },
-              { kind, text: part, x: margin + labelWidth }
-            ]
-          : [{ kind, text: part, x: margin }],
-        style
-      )
-    );
-  };
+  const { type, space, marks } = layout;
+  const { margin, width, textRow, block, paragraph, labelled, measure, shown } =
+    writer;
 
   // Header: centred name, title and links side by side, then the summary with no heading.
-  if (model.header) {
-    const rows = [];
-    const centred = (kind, text, style) => {
-      const textWidth = measure(text, style);
-      return textRow(
-        [{ kind, text, x: margin + (width - textWidth) / 2 }],
-        style,
-        space.headerGap
-      );
-    };
-    if (model.header.name) {
-      rows.push(centred("name", model.header.name, type.name));
-    }
-    if (model.header.title) {
-      rows.push(centred("title", model.header.title, type.title));
-    }
-    if (model.header.links.length) {
-      const separator = marks.linkSeparator;
-      const gap = space.linkGap;
-      const separatorWidth = measure(separator, type.links);
-      const widths = model.header.links.map((link) =>
-        measure(link.label, type.links)
-      );
-      const total =
-        widths.reduce((sum, value) => sum + value, 0) +
-        (widths.length - 1) * (separatorWidth + gap * 2);
-      let x = margin + (width - total) / 2;
-      const pieces = [];
-      model.header.links.forEach((link, index) => {
-        if (index > 0) {
-          pieces.push({ kind: "separator", text: separator, x: x + gap });
-          x += separatorWidth + gap * 2;
-        }
-        pieces.push({ kind: "link", text: link.label, x, url: link.url });
-        x += widths[index];
-      });
-      rows.push(textRow(pieces, type.links, space.headerGap));
-    }
-    if (model.header.careerObjective) {
-      const summary = paragraph(
-        "summary",
-        model.header.careerObjective,
-        type.summary
-      );
-      summary[0].height += space.summaryBefore;
-      summary[0].offset = space.summaryBefore;
-      rows.push(...summary);
-    }
-    block(rows, space.headerAfter);
-  }
+  writer.header(model.header);
 
   model.sections.forEach((entry) => {
-    section = entry.title;
-    if (blocks.length > 0) {
-      blocks.push({ spacer: space.sectionBefore });
+    writer.setSection(entry.title);
+    if (writer.blockCount > 0) {
+      writer.spacer(space.sectionBefore);
     }
     const titleRow = textRow(
       [
@@ -552,7 +428,7 @@ export function writePdf(doc, model, options = {}) {
     if (entry.isExperience) {
       model.roles.forEach((role) => {
         const datesWidth = measure(role.datesText, type.roleDates);
-        setType(type.roleHeading);
+        writer.setType(type.roleHeading);
         const rows = wrapText(
           doc,
           role.heading,
@@ -642,7 +518,7 @@ export function writePdf(doc, model, options = {}) {
         );
       }
       if (model.hasRetiredCertifications) {
-        blocks.push({ spacer: space.subheadingBefore });
+        writer.spacer(space.subheadingBefore);
         block(
           [
             textRow(
@@ -670,82 +546,12 @@ export function writePdf(doc, model, options = {}) {
     }
   });
 
-  // Pagination and drawing, one block at a time.
-  const heightOf = (item) =>
-    item.rows.reduce((sum, row) => sum + row.height, 0);
-  let y = margin;
-  let page = 1;
-  let onPage = false;
-  const newPage = () => {
-    doc.addPage();
-    page += 1;
-    y = margin;
-    onPage = false;
-  };
-  const drawRow = (row, label) => {
-    const top = y + (row.offset || 0);
-    row.pieces.forEach((piece) => {
-      const style = piece.style;
-      setType(style);
-      const baseline = top + lineOf(style) / 2 + style.size * 0.35;
-      if (piece.url) {
-        doc.setTextColor(colors.link);
-        doc.textWithLink(piece.text, piece.x, baseline, { url: piece.url });
-      } else {
-        doc.setTextColor(colors.ink);
-        doc.text(piece.text, piece.x, baseline);
-      }
-      if (trace) {
-        trace.push({
-          section: label,
-          kind: piece.kind,
-          text: piece.text,
-          page,
-          y: Math.round(baseline)
-        });
-      }
-    });
-    if (row.rule) {
-      const ruleY = top + row.height - space.ruleWidth / 2;
-      doc.setDrawColor(colors.rule);
-      doc.setLineWidth(space.ruleWidth);
-      doc.line(margin, ruleY, margin + width, ruleY);
-    }
-    y += row.height;
-    onPage = true;
-  };
-
-  blocks.forEach((item, index) => {
-    if (item.spacer) {
-      if (onPage) {
-        y += item.spacer;
-      }
-      return;
-    }
-    let needed = heightOf(item);
-    if (item.keepWithNext) {
-      const next = blocks.slice(index + 1).find((candidate) => candidate.rows);
-      if (next) {
-        needed += item.after + heightOf(next);
-      }
-    }
-    if (onPage && y + needed > bottom) {
-      newPage();
-    }
-    item.rows.forEach((row) => {
-      if (onPage && y + row.height > bottom) {
-        newPage();
-      }
-      drawRow(row, item.section);
-    });
-    y += item.after;
-  });
-  return doc;
+  return writer.draw();
 }
 
 export function pdfFileName(model, persona) {
   const name = model && model.header && model.header.name;
-  const base = (name || "Resume").replace(/[^A-Za-z0-9]+/g, "_");
+  const base = fileNamePart(name || "Resume", "_");
   const suffix = persona ? `_${persona}` : "";
   return name ? `${base}_Resume${suffix}.pdf` : `${base}${suffix}.pdf`;
 }
