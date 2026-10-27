@@ -26,6 +26,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >The Run in Postman link for the public Postman workspace that holds the Portfolio API collection. The API Lab token section and the API reference page show the Run in Postman button only while this holds an https link to postman.com. Empty hides the button, and the collection download stays.</value>
+    >The Run in Postman link on the API Lab and the API reference page. The button shows only while this holds an https postman.com link. Empty hides it, and the collection download stays.</value>
     </values>
 </CustomMetadata>

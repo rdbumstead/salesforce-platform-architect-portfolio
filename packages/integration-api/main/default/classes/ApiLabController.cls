@@ -188,6 +188,25 @@ public with sharing class ApiLabController {
     return body;
   }
 
+  /** The Portfolio_Setting__mdt record that holds the Run in Postman link. */
+  public static final String POSTMAN_RUN_URL_SETTING = 'Postman_Run_Url';
+
+  /**
+   * @description The Run in Postman link the API Lab and the API reference page show, from
+   *              Portfolio_Setting.Postman_Run_Url. Blank when the record is missing or
+   *              empty, which keeps the button hidden. It never throws to the page: a failed
+   *              read also gives blank.
+   * @return String The link, or an empty string.
+   */
+  @AuraEnabled(cacheable=true)
+  public static String getPostmanRunUrl() {
+    try {
+      return PortfolioSettings.getText(POSTMAN_RUN_URL_SETTING, '');
+    } catch (Exception e) {
+      return '';
+    }
+  }
+
   /**
    * @description The paths invoke() accepts: every path in the catalog, lower case. Empty
    *              when the catalog is missing or unreadable, so the Lab then refuses every
