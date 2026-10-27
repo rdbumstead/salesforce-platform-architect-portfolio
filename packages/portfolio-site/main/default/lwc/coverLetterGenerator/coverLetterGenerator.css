@@ -142,58 +142,105 @@
   font-weight: 700;
 }
 
-.letter {
-  background-color: var(--pf-subtle);
-  color: var(--pf-text);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-sm);
-  padding: var(--pf-space-4);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  line-height: 1.6;
-  /* A letter of 350 words reads best at about 70 characters a line. */
-  max-width: 72ch;
+/* Download PDF and Copy text sit together above the sheet, both 44 px. */
+.letter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+  margin-bottom: var(--pf-space-2);
 }
 
-/* The owner's header over the letter, drawn by the page like the resume's. */
-.letter-header {
-  max-width: 72ch;
-  margin-bottom: var(--pf-space-2);
-  padding: var(--pf-space-3) var(--pf-space-4);
+.export-message {
+  color: var(--pf-ok);
+}
+
+.export-error {
+  color: var(--pf-error-text);
+}
+
+/*
+ * The letter as one sheet of paper, white in both themes like the resume preview, at a
+ * printed page's width and centred in the column. Its paper, ink, type and spacing come from
+ * the layout the PDF reads, as --resume- custom properties in the style attribute.
+ */
+.letter-sheet {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 8.5in;
+  margin: var(--pf-space-2) auto 0;
+  padding: 0.75in;
+  background-color: var(--resume-paper);
+  color: var(--resume-ink);
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-sm);
-  background-color: var(--pf-subtle);
-  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  font-size: var(--resume-text-size);
+  font-weight: var(--resume-text-weight);
+  line-height: var(--resume-line-height);
+}
+
+.letter-sheet p,
+.letter-sheet ul,
+.letter-sheet li,
+.letter-sheet header {
+  margin: 0;
+  color: var(--resume-ink);
+  background-color: transparent;
+}
+
+.letter {
+  color: var(--resume-ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* A letter of 350 words reads best at about 70 characters a line. */
+  max-width: 72ch;
+  margin-inline: auto;
+}
+
+/* The owner's header over the letter, centred like the resume's: name, title, then links. */
+.letter-header {
+  margin-bottom: var(--resume-header-after);
+  text-align: center;
 }
 
 .letter-header-name {
-  font-size: 1.125rem;
-  font-weight: 700;
+  font-size: var(--resume-name-size);
+  font-weight: var(--resume-name-weight);
 }
 
 .letter-header-title {
-  color: var(--pf-muted);
+  margin-top: var(--resume-header-gap);
+  font-size: var(--resume-title-size);
+  font-weight: var(--resume-title-weight);
 }
 
 .letter-header-links {
   display: flex;
   flex-wrap: wrap;
-  /* Space, not a separator mark, so nothing dangles where a row wraps on a phone. */
-  gap: var(--pf-space-1) var(--pf-space-4);
-  margin: var(--pf-space-1) 0 0;
+  justify-content: center;
+  margin-top: var(--resume-header-gap);
   padding: 0;
   list-style: none;
+  font-size: var(--resume-links-size);
 }
 
-.letter-header-link a {
+.letter-header-link + .letter-header-link::before {
+  content: "2";
+  margin: 0 var(--resume-link-gap);
+  color: var(--resume-ink);
+}
+
+.letter-header-link a,
+.letter-header-link a:link,
+.letter-header-link a:visited {
   display: inline-block;
   min-height: 24px;
-  color: var(--pf-accent);
+  color: var(--resume-link);
   text-decoration: underline;
 }
 
 .letter-header-link a:focus-visible {
-  outline: 2px solid var(--pf-accent);
+  outline: 2px solid var(--resume-link);
   outline-offset: 2px;
 }
 
@@ -233,8 +280,8 @@
 
 /* Phones: more of the width for the letter, and the note under Generate reads from the left. */
 @media (max-width: 767.98px) {
-  .letter {
-    padding: var(--pf-space-3);
+  .letter-sheet {
+    padding: var(--pf-space-4);
   }
 
   .wait-note {

@@ -8,15 +8,19 @@
  *                      timer drives the count, and no line names a provider or says a step is
  *                      done), over a skeleton letter. The letter fades in when it arrives, and
  *                      only the fade is animation, so it is off under reduced motion in CSS.
- *                      Sends ai_generation_completed on a
- *                      result and ai_complete_failure on an error. The whole letter is shown
- *                      with its word count, in a box that wraps long words and keeps a
- *                      readable line length on wide screens. Above every letter, whichever
- *                      provider wrote it, the page draws the owner's header from
- *                      ResumeController.getHeader: name, title and the same links as the resume
- *                      (c/profileLinks), Contact last. The header is the page's, never part of
- *                      the letter text, so no provider can change it, and a failed read leaves it
- *                      out.
+ *                      Sends ai_generation_completed on a result and ai_complete_failure on
+ *                      an error. The letter shows with its word count on one sheet of paper,
+ *                      white in both themes, at a printed page's width and centred, with the
+ *                      paper, ink and type the PDF reads (c/documentPdf), so it matches the
+ *                      resume preview. Above every letter, whichever provider wrote it, the sheet
+ *                      carries the owner's header from ResumeController.getHeader: name, title
+ *                      and the same links as the resume (c/profileLinks), Contact last. The
+ *                      header is the page's, never part of the letter text, so no provider can
+ *                      change it, and a failed read leaves it out. Download PDF writes the same
+ *                      header and the letter as selectable text, and Copy text copies the letter
+ *                      alone. Each sends its event with the provider and nothing else. The
+ *                      fields are native controls, and the job description field is the tour's
+ *                      stop D anchor.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -28,6 +32,11 @@ import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import { headerLinks } from "c/profileLinks";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { onShowMe, revealAnchor } from "c/tourShowMe";
+import { createPdfLoader, previewStyle } from "c/documentPdf";
+import { LETTER_LAYOUT, letterFileName, writeLetterPdf } from "./letterFormat";
+
+/** The sheet's paper, ink and type, from the layout the PDF reads. */
+const SHEET_STYLE = previewStyle(LETTER_LAYOUT);
 
 export const MAX_COMPANY_LENGTH = 120;
 export const MAX_TITLE_LENGTH = 120;
@@ -135,6 +144,13 @@ export default class CoverLetterGenerator extends LightningElement {
   elapsedSeconds = 0;
   timerId;
   header = null;
+  /** The company the shown letter was written for, kept for the PDF's file name. */
+  letterCompany = "";
+  isExporting = false;
+  exportMessage = "";
+  exportError = "";
+  sheetStyle = SHEET_STYLE;
+  pdfLoader = createPdfLoader(this, LETTER_LAYOUT);
 
   @wire(getHeader)
   wiredHeader({ data }) {
@@ -229,6 +245,73 @@ export default class CoverLetterGenerator extends LightningElement {
     return words === 1 ? "1 word" : `${words} words`;
   }
 
+  get exportDisabled() {
+    return !this.result?.content || this.isExporting;
+  }
+
+  get downloadLabel() {
+    return this.isExporting ? "Creating PDF..." : "Download PDF";
+  }
+
+  /** The header the PDF writes, the same name, title and links the sheet shows. */
+  get pdfHeader() {
+    const header = this.letterHeader;
+    return header
+      ? { name: header.name, title: header.title, links: header.links }
+      : null;
+  }
+
+  clearExportStatus() {
+    this.exportMessage = "";
+    this.exportError = "";
+  }
+
+  async handleDownload() {
+    if (this.exportDisabled) {
+      return;
+    }
+    this.isExporting = true;
+    this.clearExportStatus();
+    try {
+      const { doc, family } = await this.pdfLoader.createDocument();
+      writeLetterPdf(
+        doc,
+        { header: this.pdfHeader, content: this.result.content },
+        { family }
+      );
+      doc.save(letterFileName(this.letterHeader?.name, this.letterCompany));
+      this.exportMessage = "PDF downloaded.";
+      trackEvent(EVENTS.COVER_LETTER_DOWNLOADED, {
+        provider: this.result?.provider
+      });
+    } catch {
+      this.exportError =
+        "The PDF could not be created. Copy the text instead, or try again.";
+    } finally {
+      this.isExporting = false;
+    }
+  }
+
+  async handleCopyText() {
+    if (this.exportDisabled) {
+      return;
+    }
+    this.clearExportStatus();
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        throw new Error("No clipboard");
+      }
+      await navigator.clipboard.writeText(this.result.content);
+      this.exportMessage = "Letter text copied to the clipboard.";
+      trackEvent(EVENTS.COVER_LETTER_COPIED, {
+        provider: this.result?.provider
+      });
+    } catch {
+      this.exportError =
+        "The text could not be copied. Select the letter and copy it instead.";
+    }
+  }
+
   get isLocalTemplate() {
     return this.result?.provider === LOCAL_PROVIDER;
   }
@@ -312,6 +395,8 @@ export default class CoverLetterGenerator extends LightningElement {
     this.error = null;
     this.result = null;
     this.showWork = false;
+    this.clearExportStatus();
+    this.letterCompany = this.companyName.trim();
     this.startTimer();
     try {
       this.result = await generateCoverLetter({

@@ -132,32 +132,70 @@
             >
               {fallbackReason}
             </p>
-            <div
-              lwc:if={letterHeader}
-              class="letter-header"
-              data-id="letter-header"
-            >
-              <p lwc:if={letterHeader.name} class="letter-header-name">
-                {letterHeader.name}
-              </p>
-              <p lwc:if={letterHeader.title} class="letter-header-title">
-                {letterHeader.title}
-              </p>
-              <ul
-                lwc:if={letterHeader.hasLinks}
-                class="letter-header-links"
-                aria-label="Profile links"
+            <div class="letter-actions" data-id="letter-actions">
+              <button
+                type="button"
+                class="nc-button download-letter"
+                onclick={handleDownload}
+                disabled={exportDisabled}
               >
-                <template for:each={letterHeader.links} for:item="link">
-                  <li key={link.key} class="letter-header-link">
-                    <a href={link.url} target="_blank" rel="noopener noreferrer"
-                      >{link.label}</a
-                    >
-                  </li>
-                </template>
-              </ul>
+                {downloadLabel}
+              </button>
+              <button
+                type="button"
+                class="nc-button nc-button_secondary copy-letter"
+                onclick={handleCopyText}
+                disabled={exportDisabled}
+              >
+                Copy text
+              </button>
             </div>
-            <div class="letter" data-id="letter">{result.content}</div>
+            <div
+              class="export-status"
+              aria-live="polite"
+              data-id="export-status"
+            >
+              <p lwc:if={exportMessage} class="export-message">
+                {exportMessage}
+              </p>
+              <p lwc:if={exportError} class="export-error">{exportError}</p>
+            </div>
+            <article
+              class="letter-sheet"
+              style={sheetStyle}
+              data-id="letter-sheet"
+              aria-label="Cover letter"
+            >
+              <header
+                lwc:if={letterHeader}
+                class="letter-header"
+                data-id="letter-header"
+              >
+                <p lwc:if={letterHeader.name} class="letter-header-name">
+                  {letterHeader.name}
+                </p>
+                <p lwc:if={letterHeader.title} class="letter-header-title">
+                  {letterHeader.title}
+                </p>
+                <ul
+                  lwc:if={letterHeader.hasLinks}
+                  class="letter-header-links"
+                  aria-label="Profile links"
+                >
+                  <template for:each={letterHeader.links} for:item="link">
+                    <li key={link.key} class="letter-header-link">
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >{link.label}</a
+                      >
+                    </li>
+                  </template>
+                </ul>
+              </header>
+              <div class="letter" data-id="letter">{result.content}</div>
+            </article>
 
             <div class="slds-m-top_small">
               <button
