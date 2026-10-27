@@ -62,7 +62,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/contact\" />\n<meta property=\"og:title\" content=\"Contact | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Send Ryan Bumstead a message about a Salesforce project, a role or this portfolio.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/contact\" />\n<meta name=\"twitter:title\" content=\"Contact | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Send Ryan Bumstead a message about a Salesforce project, a role or this portfolio.\" />",
                 "description": "Send Ryan Bumstead a message about a Salesforce project, a role or this portfolio.",
                 "pageTitle": "Contact | Ryan Bumstead",
                 "recordId": "{!recordId}"

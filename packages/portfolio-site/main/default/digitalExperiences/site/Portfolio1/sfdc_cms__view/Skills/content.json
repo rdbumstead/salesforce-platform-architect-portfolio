@@ -58,7 +58,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/skills\" />\n<meta property=\"og:title\" content=\"Skills | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"An interactive map of Ryan Bumstead&#x27;s Salesforce skills and the projects and roles where each one was used.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/skills\" />\n<meta name=\"twitter:title\" content=\"Skills | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"An interactive map of Ryan Bumstead&#x27;s Salesforce skills and the projects and roles where each one was used.\" />",
                 "description": "An interactive map of Ryan Bumstead's Salesforce skills and the projects and roles where each one was used.",
                 "pageTitle": "Skills | Ryan Bumstead",
                 "recordId": "{!recordId}"

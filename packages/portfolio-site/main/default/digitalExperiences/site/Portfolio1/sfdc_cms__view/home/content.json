@@ -79,7 +79,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/\" />\n<meta property=\"og:title\" content=\"Ryan Bumstead | Salesforce Platform Architect, Higher Education\" />\n<meta property=\"og:description\" content=\"Ryan Bumstead designs and delivers Salesforce Education Cloud for universities and nonprofits. Case studies, resume and a live site built on Salesforce.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/\" />\n<meta name=\"twitter:title\" content=\"Ryan Bumstead | Salesforce Platform Architect, Higher Education\" />\n<meta name=\"twitter:description\" content=\"Ryan Bumstead designs and delivers Salesforce Education Cloud for universities and nonprofits. Case studies, resume and a live site built on Salesforce.\" />",
                 "description": "Ryan Bumstead designs and delivers Salesforce Education Cloud for universities and nonprofits. Case studies, resume and a live site built on Salesforce.",
                 "pageTitle": "Ryan Bumstead | Salesforce Platform Architect, Higher Education",
                 "recordId": "{!recordId}"

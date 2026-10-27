@@ -76,7 +76,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/delivery\" />\n<meta property=\"og:title\" content=\"Delivery | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Pillar E. The Jira roadmap and recent GitHub commits behind this Salesforce portfolio.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/delivery\" />\n<meta name=\"twitter:title\" content=\"Delivery | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Pillar E. The Jira roadmap and recent GitHub commits behind this Salesforce portfolio.\" />",
                 "description": "Pillar E. The Jira roadmap and recent GitHub commits behind this Salesforce portfolio.",
                 "pageTitle": "Delivery | Ryan Bumstead",
                 "recordId": "{!recordId}"
