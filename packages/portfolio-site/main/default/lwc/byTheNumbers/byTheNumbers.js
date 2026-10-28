@@ -285,16 +285,17 @@ export default class ByTheNumbers extends LightningElement {
         "No deploy has a Jest result yet.",
         JEST_LINE
       ),
-      this.tile(
-        "tokens",
-        stats.tokensIssued,
-        "API Lab evaluator tokens issued"
-      ),
+      // Cover letters come before the two API Lab counts, so those two sit side by side.
       this.tile(
         "letters",
         stats.coverLettersWritten,
         "Cover letters written",
         sinceText
+      ),
+      this.tile(
+        "tokens",
+        stats.tokensIssued,
+        "API Lab evaluator tokens issued"
       ),
       this.tile(
         "requests",

@@ -116,6 +116,23 @@ describe("c-by-the-numbers", () => {
     expect(element.shadowRoot.querySelector("details")).toBeNull();
   });
 
+  it("puts cover letters before the two API Lab counts, so those sit together", async () => {
+    const element = mount();
+    getStats.emit(stats());
+    await flush();
+    const order = Array.from(
+      element.shadowRoot.querySelectorAll("[data-stat]")
+    ).map((tile) => tile.dataset.stat);
+    expect(order).toEqual([
+      "deploys",
+      "apex",
+      "jest",
+      "letters",
+      "tokens",
+      "requests"
+    ]);
+  });
+
   it("shows every count as text", async () => {
     const element = mount();
     getStats.emit(stats());
