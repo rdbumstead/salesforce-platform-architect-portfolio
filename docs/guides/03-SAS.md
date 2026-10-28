@@ -532,7 +532,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-footer`:** Contains the GitHub Actions deploy badge, the Glass Box telemetry in four labelled groups and a storage line that opens a panel by area (section 9), a Docs link to `/docs` and a Contact link to the `/contact` page.
 - **`c-smart-checklist`:** Executable governance on the Delivery page (section 5.5).
 - **`c-by-the-numbers`:** The "By the numbers" panel on the Delivery page, after its intro: deploys recorded, the newest deploy's Apex and Jest test counts with what each proves, evaluator tokens issued, cover letters written and API Lab requests sent, a closed "What the tests cover" list, and approved testimonials by vibe once one is approved, as counts only ([Technical Guide §2.19](./04-Technical-Guide.md#219-by-the-numbers-c-by-the-numbers)).
-- **`c-schema-visualizer`:** The live ERD on the Pillar A page, drawn with the shared d3-force engine (section 5.1).
+- **`c-schema-visualizer`:** The live ERD on the Pillar A page, drawn with the shared d3-force engine (section 5.1). Given an object list it draws just those objects, which is how the live data marker shows a section's data model.
 - **`c-project-asset-gallery`:** The image, document, video and link gallery for any pillar's project, from `Project_Asset__c`.
 - **`c-decision-matrix`** and **`c-pillar-b-story`:** The Pillar B story and the reweightable matrix (section 5.2).
 
