@@ -1,5 +1,6 @@
 /**
- * @description       : Serves the schema visualizer. Discovers
+ * @description       : Serves the schema visualizer. getObjectGraph draws just the objects a section
+ *                      reads, from the same allowed set. Discovers
  *                      the objects of one ERD scope from the global describe, describes only those,
  *                      and returns nodes with their fields and edges drawn from reference fields whose
  *                      target is in the same scope. Reads no records. Overrides and hidden objects
@@ -15,11 +16,18 @@
 public with sharing class SchemaService {
   public static final String SCOPE_PORTFOLIO = 'portfolio';
   public static final String SCOPE_EMPLOYER_HUB = 'employerHub';
+  public static final String SCOPE_OBJECTS = 'objects';
   public static final String KIND_MASTER_DETAIL = 'masterDetail';
   public static final String KIND_LOOKUP = 'lookup';
+  public static final Integer MAX_OBJECTS = 12;
 
   @TestVisible
   private static final String UNKNOWN_SCOPE_MESSAGE = 'Unknown scope. Valid values: portfolio, employerHub';
+  @TestVisible
+  private static final String TOO_MANY_OBJECTS_MESSAGE =
+    'Too many objects. Ask for ' +
+    MAX_OBJECTS +
+    ' or fewer.';
 
   private static final String CUSTOM_SUFFIX = '__c';
   private static final String NAME_SEPARATOR = '__';
@@ -68,24 +76,62 @@ public with sharing class SchemaService {
       throw auraError(UNKNOWN_SCOPE_MESSAGE);
     }
 
-    List<Schema.DescribeSObjectResult> objects = describeScope(scope);
-    Map<String, String> namesInScope = new Map<String, String>();
-    for (Schema.DescribeSObjectResult result : objects) {
-      namesInScope.put(result.getName().toLowerCase(), result.getName());
+    return buildGraph(scope, describeScope(scope), cpuStart);
+  }
+
+  /**
+   * @description Builds the ERD for just the named objects, for a section that shows the
+   *              objects it reads. Only objects either scope already draws are allowed, so any
+   *              other name is dropped without a word. Names match without regard to case. An
+   *              allowed object that holds a reference to two or more of the requested ones is
+   *              added too, so a junction object shows how the requested objects connect. Edges
+   *              join only objects in the result.
+   * @param objectNames API names to draw, at most 12.
+   * @return SchemaGraph Scope objects, nodes sorted by API name, edges sorted by object and
+   *         field, and the server CPU the call took. Empty when nothing allowed was asked for.
+   * @throws AuraHandledException When more than 12 names are requested.
+   * @example
+   * SchemaService.SchemaGraph graph = SchemaService.getObjectGraph(
+   *   new List<String>{ 'Experience__c', 'Skill__c' }
+   * );
+   */
+  @AuraEnabled(cacheable=true)
+  public static SchemaGraph getObjectGraph(List<String> objectNames) {
+    Integer cpuStart = Limits.getCpuTime();
+    if (objectNames != null && objectNames.size() > MAX_OBJECTS) {
+      throw auraError(TOO_MANY_OBJECTS_MESSAGE);
     }
 
-    SchemaGraph graph = new SchemaGraph();
-    graph.scope = scope;
-    graph.nodes = new List<SchemaNode>();
-    graph.edges = new List<SchemaEdge>();
-    for (Schema.DescribeSObjectResult result : objects) {
-      graph.nodes.add(toNode(result, namesInScope, graph.edges));
+    Map<String, Schema.DescribeSObjectResult> modelByName = describeModel();
+    Set<String> requestedKeys = requestedModelKeys(objectNames, modelByName);
+    List<Schema.DescribeSObjectResult> objects = new List<Schema.DescribeSObjectResult>();
+    if (!requestedKeys.isEmpty()) {
+      for (String key : modelByName.keySet()) {
+        Schema.DescribeSObjectResult result = modelByName.get(key);
+        if (
+          requestedKeys.contains(key) || joinsRequested(result, requestedKeys)
+        ) {
+          objects.add(result);
+        }
+      }
     }
-    graph.nodes.sort();
-    graph.edges.sort();
-    graph.objectCount = graph.nodes.size();
-    graph.cpuMs = Limits.getCpuTime() - cpuStart;
-    return graph;
+    return buildGraph(SCOPE_OBJECTS, objects, cpuStart);
+  }
+
+  /**
+   * @description The API names, in their real case, of every object either ERD scope draws.
+   *              Custom settings and hidden objects are left out, as in the ERD. A section can
+   *              show a diagram only when one of its objects is in this set.
+   * @return Set<String> The API names, never null.
+   * @example
+   * Boolean drawn = SchemaService.modelObjectNames().contains('Skill__c');
+   */
+  public static Set<String> modelObjectNames() {
+    Set<String> names = new Set<String>();
+    for (Schema.DescribeSObjectResult result : describeModel().values()) {
+      names.add(result.getName());
+    }
+    return names;
   }
 
   /**
@@ -115,12 +161,46 @@ public with sharing class SchemaService {
   private static List<Schema.DescribeSObjectResult> describeScope(
     String scope
   ) {
-    List<Schema.DescribeSObjectResult> objects = new List<Schema.DescribeSObjectResult>();
-    List<String> objectNames = objectNamesInScope(
-      scope,
-      Schema.getGlobalDescribe().keySet(),
-      overridesByObjectName()
+    return describeNames(
+      objectNamesInScope(
+        scope,
+        Schema.getGlobalDescribe().keySet(),
+        overridesByObjectName()
+      )
     );
+  }
+
+  /**
+   * @description Describes every object either scope draws, keyed by lower case name.
+   * @return Map<String, Schema.DescribeSObjectResult> The objects, never null.
+   */
+  private static Map<String, Schema.DescribeSObjectResult> describeModel() {
+    Map<String, Schema_Visualizer_Object__mdt> overrides = overridesByObjectName();
+    Set<String> globalKeys = Schema.getGlobalDescribe().keySet();
+    Set<String> names = new Set<String>();
+    names.addAll(objectNamesInScope(SCOPE_PORTFOLIO, globalKeys, overrides));
+    names.addAll(objectNamesInScope(SCOPE_EMPLOYER_HUB, globalKeys, overrides));
+    Map<String, Schema.DescribeSObjectResult> modelByName = new Map<String, Schema.DescribeSObjectResult>();
+    for (
+      Schema.DescribeSObjectResult result : describeNames(
+        new List<String>(names)
+      )
+    ) {
+      modelByName.put(result.getName().toLowerCase(), result);
+    }
+    return modelByName;
+  }
+
+  /**
+   * @description Describes the named objects with deferred describes, so no field is read,
+   *              and drops custom settings.
+   * @param objectNames Lower case object names that exist in the org.
+   * @return List<Schema.DescribeSObjectResult> The objects, never null.
+   */
+  private static List<Schema.DescribeSObjectResult> describeNames(
+    List<String> objectNames
+  ) {
+    List<Schema.DescribeSObjectResult> objects = new List<Schema.DescribeSObjectResult>();
     if (objectNames.isEmpty()) {
       return objects;
     }
@@ -135,6 +215,89 @@ public with sharing class SchemaService {
       }
     }
     return objects;
+  }
+
+  /**
+   * @description Turns the requested names into the lower case keys of allowed objects.
+   * @param objectNames The names a caller asked for, may be null or hold blanks.
+   * @param modelByName The allowed objects keyed by lower case name.
+   * @return Set<String> The allowed keys that were asked for, never null.
+   */
+  private static Set<String> requestedModelKeys(
+    List<String> objectNames,
+    Map<String, Schema.DescribeSObjectResult> modelByName
+  ) {
+    Set<String> keys = new Set<String>();
+    if (objectNames == null) {
+      return keys;
+    }
+    for (String requested : objectNames) {
+      if (String.isBlank(requested)) {
+        continue;
+      }
+      String key = requested.trim().toLowerCase();
+      if (modelByName.containsKey(key)) {
+        keys.add(key);
+      }
+    }
+    return keys;
+  }
+
+  /**
+   * @description True when the object holds reference fields to two or more different
+   *              requested objects, which makes it a junction between them.
+   * @param result The object to check.
+   * @param requestedKeys Lower case keys of the requested objects.
+   * @return Boolean True for a junction.
+   */
+  private static Boolean joinsRequested(
+    Schema.DescribeSObjectResult result,
+    Set<String> requestedKeys
+  ) {
+    Set<String> joinedKeys = new Set<String>();
+    for (Schema.SObjectField token : result.fields.getMap().values()) {
+      for (
+        Schema.SObjectType referenced : token.getDescribe().getReferenceTo()
+      ) {
+        String referencedKey = String.valueOf(referenced).toLowerCase();
+        if (requestedKeys.contains(referencedKey)) {
+          joinedKeys.add(referencedKey);
+        }
+      }
+    }
+    return joinedKeys.size() >= 2;
+  }
+
+  /**
+   * @description Builds the nodes and edges for a set of described objects. Edges join only
+   *              objects in the set.
+   * @param scope The scope name to echo back.
+   * @param objects The described objects.
+   * @param cpuStart The CPU time when the public call began.
+   * @return SchemaGraph The sorted graph.
+   */
+  private static SchemaGraph buildGraph(
+    String scope,
+    List<Schema.DescribeSObjectResult> objects,
+    Integer cpuStart
+  ) {
+    Map<String, String> namesInScope = new Map<String, String>();
+    for (Schema.DescribeSObjectResult result : objects) {
+      namesInScope.put(result.getName().toLowerCase(), result.getName());
+    }
+
+    SchemaGraph graph = new SchemaGraph();
+    graph.scope = scope;
+    graph.nodes = new List<SchemaNode>();
+    graph.edges = new List<SchemaEdge>();
+    for (Schema.DescribeSObjectResult result : objects) {
+      graph.nodes.add(toNode(result, namesInScope, graph.edges));
+    }
+    graph.nodes.sort();
+    graph.edges.sort();
+    graph.objectCount = graph.nodes.size();
+    graph.cpuMs = Limits.getCpuTime() - cpuStart;
+    return graph;
   }
 
   /**
