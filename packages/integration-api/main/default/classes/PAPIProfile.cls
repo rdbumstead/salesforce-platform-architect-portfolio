@@ -1,5 +1,8 @@
 /**
- * @description       : PAPI Profile orchestration endpoint that aggregates multiple SAPI calls.
+ * @description       : PAPI Profile orchestration endpoint. It combines the owner, roles,
+ *                      highlights, skills, projects, certifications, education and testimonials
+ *                      into one response by reading them in process through QueryDefinitions,
+ *                      never by calling SAPI over HTTP.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -61,7 +64,8 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
 
   /**
    * @description Gets the complete portfolio payload (hydration endpoint). Cache-Control is
-   *              the strictest policy of every upstream resource read.
+   *              the strictest policy of every section read, each section taking the policy
+   *              its SAPI endpoint sends for the same data.
    */
   private static void getFullPortfolio(ApiRequestContext ctx) {
     PAPITransformer.Aggregation agg = new PAPITransformer.Aggregation();

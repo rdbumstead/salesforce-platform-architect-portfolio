@@ -735,7 +735,7 @@ Responses are camelCase JSON built field by field in Apex (for example `SAPIExpe
 
 #### B.2 Process API (PAPI) - portfolio-papi.yaml
 
-**Purpose:** Process layer that combines several portfolio objects into one response shaped for a client. The PAPI classes run their own SOQL. They make no call to a SAPI path, and the only PAPI callout is `PAPIHealth`'s credential check. The site does not load through the PAPI either: its components call `@AuraEnabled` controllers or GraphQL (section 1.1).
+**Purpose:** Process layer that combines several portfolio objects into one response shaped for a client. PAPI and SAPI remain distinct logical API layers. PAPI composes the shared data access engine (`QueryDefinitions`) and request framework (`ApiRequestContext`) in process, with its own query definitions and transformer, so its reads are SOQL in one Apex transaction and never HTTP requests to a SAPI path. HTTP loopback was rejected because of the same org callout constraint, the added latency and the shared API capacity it would spend ([ADR-025 amendment of 2026-10-28](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-28-papi-composes-in-process-and-http-fan-out-was-rejected)). The deliberate exception is `PAPIHealth`, which calls `/sapi/v1/health` through `Portfolio_API` once to prove the credential works. The site does not load through the PAPI either: its components call `@AuraEnabled` controllers or GraphQL (section 1.1).
 
 **Base URL:** `https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/apexrest/papi/v1` (My Domain). `POST /auth/token` alone is served on the site domain: `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.
 
