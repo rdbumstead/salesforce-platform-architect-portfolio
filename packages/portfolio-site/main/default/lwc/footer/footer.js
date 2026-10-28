@@ -4,10 +4,10 @@
  *                      links from getLinks()) with Back to top. Skills and Testimonials are in the
  *                      header, not here.
  *                      Row one is CI, one labelled group of workflow badges: the production deploy
- *                      badge and the Live Smoke Test badge, each linking to its Actions page with a
- *                      text link fallback when the image fails. The badges come from the CI_BADGES
- *                      array, so a third is one more entry. GitHub issues a badge per workflow, so
- *                      the Postman sync, which is a job inside deploy.yml, has none.
+ *                      badge, the Live Smoke Test badge and the Postman Sync badge, each linking to
+ *                      its Actions page with a text link fallback when the image fails. The badges
+ *                      come from the CI_BADGES array, so another is one more entry. GitHub issues a
+ *                      badge per workflow, which is why the Postman sync is its own workflow.
  *                      Row two is the live readings. One caption sits over it, with View source
  *                      beside the caption (source key footer: this component and
  *                      FooterController). The readings are labelled groups, each a list named by
@@ -61,6 +61,8 @@ export const BADGE_URL = `${REPO_URL}/actions/workflows/deploy.yml/badge.svg?bra
 export const ACTIONS_URL = `${REPO_URL}/actions/workflows/deploy.yml`;
 export const SMOKE_BADGE_URL = `${REPO_URL}/actions/workflows/smoke.yml/badge.svg`;
 export const SMOKE_ACTIONS_URL = `${REPO_URL}/actions/workflows/smoke.yml`;
+export const POSTMAN_BADGE_URL = `${REPO_URL}/actions/workflows/postman-sync.yml/badge.svg`;
+export const POSTMAN_ACTIONS_URL = `${REPO_URL}/actions/workflows/postman-sync.yml`;
 
 /**
  * The CI badges, in the order they show. To add another workflow badge, add one entry here.
@@ -82,6 +84,14 @@ export const CI_BADGES = [
     href: SMOKE_ACTIONS_URL,
     imageId: "badge-smoke",
     fallbackId: "badge-fallback-smoke"
+  },
+  {
+    key: "postman",
+    label: "Postman collection sync status",
+    src: POSTMAN_BADGE_URL,
+    href: POSTMAN_ACTIONS_URL,
+    imageId: "badge-postman",
+    fallbackId: "badge-fallback-postman"
   }
 ];
 export const CACHED_GRAPHQL_LABEL = "GraphQL: cached, no request made";

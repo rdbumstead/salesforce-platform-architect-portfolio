@@ -20,6 +20,8 @@ import Footer, {
   ACTIONS_URL,
   BADGE_URL,
   CI_BADGES,
+  POSTMAN_ACTIONS_URL,
+  POSTMAN_BADGE_URL,
   SMOKE_ACTIONS_URL,
   SMOKE_BADGE_URL,
   formatNumber,
@@ -284,6 +286,24 @@ describe("c-footer", () => {
     expect(link.getAttribute("href")).toBe(SMOKE_ACTIONS_URL);
     expect(SMOKE_ACTIONS_URL).toBe(
       "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/smoke.yml"
+    );
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it("shows the Postman Sync badge with its link", () => {
+    const element = createComponent();
+    const badge = q(element, '[data-id="badge-postman"]');
+    expect(POSTMAN_BADGE_URL).toBe(
+      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/postman-sync.yml/badge.svg"
+    );
+    expect(badge.getAttribute("src")).toBe(POSTMAN_BADGE_URL);
+    expect(badge.getAttribute("alt")).toBe("Postman collection sync status");
+    expect(badge.getAttribute("height")).toBe("20");
+    const link = badge.closest("a");
+    expect(link.getAttribute("href")).toBe(POSTMAN_ACTIONS_URL);
+    expect(POSTMAN_ACTIONS_URL).toBe(
+      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/postman-sync.yml"
     );
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
@@ -684,7 +704,10 @@ describe("c-footer", () => {
       const [ci, platform, integrations, quotas] = groups(element);
       expect(ci.group.querySelector('[data-id="badge"]')).not.toBeNull();
       expect(ci.group.querySelector('[data-id="badge-smoke"]')).not.toBeNull();
-      expect(ci.ids).toEqual(["ci-badge", "ci-badge"]);
+      expect(
+        ci.group.querySelector('[data-id="badge-postman"]')
+      ).not.toBeNull();
+      expect(ci.ids).toEqual(["ci-badge", "ci-badge", "ci-badge"]);
       expect(platform.ids).toEqual(["graphql"]);
       expect(integrations.ids).toEqual([
         "provider",
