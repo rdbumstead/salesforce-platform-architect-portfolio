@@ -1,4 +1,4 @@
-<h1 id="portfolio-process-api-papi-">Portfolio Process API (PAPI) v1.3.0</h1>
+<h1 id="portfolio-process-api-papi-">Portfolio Process API (PAPI) v1.4.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -32,7 +32,10 @@ reads them in process, not through SAPI over HTTP (section 3).
   2. If *any* section's resource is `private` → PAPI response is `private`.
   3. Otherwise → PAPI response is `public` with the minimum `max-age`.
 
-### 5. Field Mapping (Transformation Layer)
+### 5. Identifiers (ADR-038)
+Each record in a response carries a stable public `key`, for example `prj_8f3k2m9qtz`, beside `id`. Use `key`. The `id` field is the Salesforce Id, kept in v1 and **deprecated**. PAPI takes no Id parameters. SAPI takes the key wherever it takes an Id.
+
+### 6. Field Mapping (Transformation Layer)
 | Object | SAPI Field | PAPI Field | Logic |
 | :--- | :--- | :--- | :--- |
 | Contact | `name` | `fullName` | Rename |
@@ -418,6 +421,7 @@ strictest-policy-wins.
 {
   "contactInfo": {
     "id": "0035e00000B2O3DAAV",
+    "key": "con_7c5j3w9sfa",
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
@@ -430,6 +434,7 @@ strictest-policy-wins.
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",
+      "key": "skl_3m9x5b2rkt",
       "name": "Apex",
       "displayName": "Salesforce Apex",
       "category": "Backend",
@@ -442,6 +447,7 @@ strictest-policy-wins.
   "experience": [
     {
       "id": "a025e00000B2O3DAAV",
+      "key": "exp_4h7n2c8wpd",
       "employer": "Salesforce",
       "role": "Senior Technical Architect",
       "dateRange": "Jan 2023 - Present",
@@ -458,6 +464,7 @@ strictest-policy-wins.
   "certifications": [
     {
       "id": "a105e00000B2O3DAAV",
+      "key": "crt_6q2v8d4nhz",
       "name": "Certified Application Architect",
       "issuer": "Salesforce",
       "dateEarned": "2024-05-15",
@@ -469,6 +476,7 @@ strictest-policy-wins.
   "education": [
     {
       "id": "a115e00000B2O3DAAV",
+      "key": "edu_6b4c8j2rvq",
       "school": "Creighton University",
       "degree": "B.S. Computer Science",
       "fieldOfStudy": "Computer Science",
@@ -619,6 +627,7 @@ and their assets, each in one query for every project at once.
 [
   {
     "id": "a015e00000B2O3DAAV",
+    "key": "prj_8f3k2m9qtz",
     "title": "Portfolio Site",
     "challenge": "Display skills dynamically to recruiters",
     "solution": "Built on LWR with SAPI/PAPI architecture",
@@ -716,7 +725,8 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[EnrichedProject](#schemaenrichedproject)]|false|none|[Project enriched with Skills and Assets]|
-|» id|string|true|none|none|
+|» id|string|true|none|Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» title|string¦null|false|none|none|
 |» challenge|string|false|none|none|
 |» solution|string|false|none|none|
@@ -1027,6 +1037,7 @@ any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest firs
 [
   {
     "id": "a055e00000B2O3DAAV",
+    "key": "tst_2y7a5d9wmh",
     "author": "Jane Doe",
     "title": "VP of Engineering",
     "relationship": "Manager",
@@ -1110,7 +1121,8 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[EnrichedTestimonial](#schemaenrichedtestimonial)]|false|none|none|
-|» id|string|true|none|none|
+|» id|string|true|none|Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» author|string|true|none|none|
 |» title|string|false|none|none|
 |» relationship|string|false|none|none|
@@ -1814,6 +1826,7 @@ This operation does not require authentication
   },
   "contactInfo": {
     "id": "0035e00000B2O3DAAV",
+    "key": "con_7c5j3w9sfa",
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
@@ -1826,6 +1839,7 @@ This operation does not require authentication
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",
+      "key": "skl_3m9x5b2rkt",
       "name": "Apex",
       "displayName": "Salesforce Apex",
       "category": "Backend",
@@ -1838,6 +1852,7 @@ This operation does not require authentication
   "experience": [
     {
       "id": "a025e00000B2O3DAAV",
+      "key": "exp_4h7n2c8wpd",
       "employer": "Salesforce",
       "role": "Senior Technical Architect",
       "dateRange": "Jan 2023 - Present",
@@ -1854,6 +1869,7 @@ This operation does not require authentication
   "projects": [
     {
       "id": "a015e00000B2O3DAAV",
+      "key": "prj_8f3k2m9qtz",
       "title": "Portfolio Site",
       "challenge": "Display skills dynamically to recruiters",
       "solution": "Built on LWR with SAPI/PAPI architecture",
@@ -1879,6 +1895,7 @@ This operation does not require authentication
   "certifications": [
     {
       "id": "a105e00000B2O3DAAV",
+      "key": "crt_6q2v8d4nhz",
       "name": "Certified Application Architect",
       "issuer": "Salesforce",
       "dateEarned": "2024-05-15",
@@ -1890,6 +1907,7 @@ This operation does not require authentication
   "education": [
     {
       "id": "a115e00000B2O3DAAV",
+      "key": "edu_6b4c8j2rvq",
       "school": "Creighton University",
       "degree": "B.S. Computer Science",
       "fieldOfStudy": "Computer Science",
@@ -1900,6 +1918,7 @@ This operation does not require authentication
   "testimonials": [
     {
       "id": "a055e00000B2O3DAAV",
+      "key": "tst_2y7a5d9wmh",
       "author": "Jane Doe",
       "title": "VP of Engineering",
       "relationship": "Manager",
@@ -1941,6 +1960,7 @@ The master payload for initial app load
 {
   "contactInfo": {
     "id": "0035e00000B2O3DAAV",
+    "key": "con_7c5j3w9sfa",
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
@@ -1953,6 +1973,7 @@ The master payload for initial app load
   "skills": [
     {
       "id": "a075e00000B2O3DAAV",
+      "key": "skl_3m9x5b2rkt",
       "name": "Apex",
       "displayName": "Salesforce Apex",
       "category": "Backend",
@@ -1965,6 +1986,7 @@ The master payload for initial app load
   "experience": [
     {
       "id": "a025e00000B2O3DAAV",
+      "key": "exp_4h7n2c8wpd",
       "employer": "Salesforce",
       "role": "Senior Technical Architect",
       "dateRange": "Jan 2023 - Present",
@@ -1981,6 +2003,7 @@ The master payload for initial app load
   "certifications": [
     {
       "id": "a105e00000B2O3DAAV",
+      "key": "crt_6q2v8d4nhz",
       "name": "Certified Application Architect",
       "issuer": "Salesforce",
       "dateEarned": "2024-05-15",
@@ -1992,6 +2015,7 @@ The master payload for initial app load
   "education": [
     {
       "id": "a115e00000B2O3DAAV",
+      "key": "edu_6b4c8j2rvq",
       "school": "Creighton University",
       "degree": "B.S. Computer Science",
       "fieldOfStudy": "Computer Science",
@@ -2026,6 +2050,7 @@ The master payload for initial app load
 ```json
 {
   "id": "a025e00000B2O3DAAV",
+  "key": "exp_4h7n2c8wpd",
   "employer": "Salesforce",
   "role": "Senior Technical Architect",
   "dateRange": "Jan 2023 - Present",
@@ -2047,7 +2072,8 @@ Work Experience enriched with related Skills and Highlights
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|true|none|Salesforce Record ID (18-char)|
+|id|string|true|none|Salesforce Record ID (18-char). Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |employer|string|true|none|none|
 |role|string¦null|false|none|none|
 |dateRange|string|true|none|Formatted as "MMM YYYY - MMM YYYY" or "MMM YYYY - Present"|
@@ -2066,6 +2092,7 @@ Work Experience enriched with related Skills and Highlights
 ```json
 {
   "id": "a015e00000B2O3DAAV",
+  "key": "prj_8f3k2m9qtz",
   "title": "Portfolio Site",
   "challenge": "Display skills dynamically to recruiters",
   "solution": "Built on LWR with SAPI/PAPI architecture",
@@ -2096,7 +2123,8 @@ Project enriched with Skills and Assets
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|true|none|none|
+|id|string|true|none|Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |title|string¦null|false|none|none|
 |challenge|string|false|none|none|
 |solution|string|false|none|none|
@@ -2132,6 +2160,7 @@ Project enriched with Skills and Assets
 ```json
 {
   "id": "a055e00000B2O3DAAV",
+  "key": "tst_2y7a5d9wmh",
   "author": "Jane Doe",
   "title": "VP of Engineering",
   "relationship": "Manager",
@@ -2146,7 +2175,8 @@ Project enriched with Skills and Assets
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|true|none|none|
+|id|string|true|none|Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |author|string|true|none|none|
 |title|string|false|none|none|
 |relationship|string|false|none|none|
@@ -2212,6 +2242,7 @@ Public configuration. The owner's email and phone are never returned.
 ```json
 {
   "id": "0035e00000B2O3DAAV",
+  "key": "con_7c5j3w9sfa",
   "fullName": "Ryan Bumstead",
   "title": "Platform Architect",
   "linkedIn": "https://linkedin.com/in/ryanbumstead",
@@ -2229,7 +2260,8 @@ Simplified contact information for the header. No email or phone is returned.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|none|none|
+|id|string|false|none|Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |fullName|string|true|none|none|
 |title|string¦null|false|none|none|
 |linkedIn|string(uri)|false|none|none|
@@ -2248,6 +2280,7 @@ Simplified contact information for the header. No email or phone is returned.
 ```json
 {
   "id": "a075e00000B2O3DAAV",
+  "key": "skl_3m9x5b2rkt",
   "name": "Apex",
   "displayName": "Salesforce Apex",
   "category": "Backend",
@@ -2265,7 +2298,8 @@ Lightweight skill object for list views
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|true|none|none|
+|id|string|true|none|Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |name|string|true|none|none|
 |displayName|string|false|none|Prefer this over 'name' for UI rendering if present|
 |category|string|true|none|none|
@@ -2284,6 +2318,7 @@ Lightweight skill object for list views
 ```json
 {
   "id": "a105e00000B2O3DAAV",
+  "key": "crt_6q2v8d4nhz",
   "name": "Certified Application Architect",
   "issuer": "Salesforce",
   "dateEarned": "2024-05-15",
@@ -2300,7 +2335,8 @@ Certification with associated skills
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|true|none|none|
+|id|string|true|none|Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |name|string|true|none|none|
 |issuer|string|true|none|none|
 |dateEarned|string(date)|true|none|none|
@@ -2316,6 +2352,7 @@ Certification with associated skills
 ```json
 {
   "id": "a115e00000B2O3DAAV",
+  "key": "edu_6b4c8j2rvq",
   "school": "Creighton University",
   "degree": "B.S. Computer Science",
   "fieldOfStudy": "Computer Science",
@@ -2331,7 +2368,8 @@ Educational background
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|true|none|none|
+|id|string|true|none|Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |school|string|true|none|none|
 |degree|string|true|none|none|
 |fieldOfStudy|string|false|none|none|

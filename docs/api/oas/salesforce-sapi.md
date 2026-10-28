@@ -1,4 +1,4 @@
-<h1 id="salesforce-system-api-sapi-">Salesforce System API (SAPI) v1.3.0</h1>
+<h1 id="salesforce-system-api-sapi-">Salesforce System API (SAPI) v1.4.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -13,7 +13,7 @@ System API exposing core Salesforce objects for the Portfolio.
 
 ### Architecture & Governance
 - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
-- **ID Strategy**: All `id` fields utilize strictly **18-character Salesforce Case-Insensitive IDs**.
+- **ID Strategy** (ADR-038): Every record carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the identifier to use. The `id` field is the 18-character Salesforce Id, kept in v1 so existing clients keep working, and it is **deprecated**. Each reference has the same pair (`projectId` and `projectKey`). Every parameter that takes an Id (`projectId`, `experienceId`, `certificationId`, and the `/projects` path segment) also takes the key. A key is set once, never changes, and never carries a name. Removing `id` would be a v2 change.
 - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
 ### Non-Functional Requirements (NFRs)
@@ -206,6 +206,7 @@ Retrieves the primary contact details for the portfolio owner. Returns only the 
 [
   {
     "id": "0035e00000B2O3DAAV",
+    "key": "con_7c5j3w9sfa",
     "name": "Ryan Bumstead",
     "title": "Platform Architect",
     "trailhead": "https://trailblazer.me/id/rbumstead",
@@ -246,7 +247,8 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[Contact](#schemacontact)]|false|none|[Contact Information Schema. The contact's email and phone are never returned.]|
-|» id|string|false|read-only|Salesforce Record ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» name|string|false|none|Full Name|
 |» title|string|false|none|Job Title|
 |» trailhead|string(uri)¦null|false|none|Trailhead Profile URL|
@@ -329,8 +331,10 @@ Retrieves professional experience history.
 [
   {
     "id": "a025e00000B2O3DAAV",
+    "key": "exp_4h7n2c8wpd",
     "employerName": "Salesforce",
     "employerId": "0015e00000A1O3DAAV",
+    "employerKey": "acc_2t8e6y4mgb",
     "name": "Technical Architect",
     "startDate": "2023-01-01",
     "endDate": "2025-01-01",
@@ -338,6 +342,7 @@ Retrieves professional experience history.
     "isRemote": true,
     "accomplishments": "<ul><li>Led 5 successful deployments</li></ul>",
     "contactId": "0035e00000B2O3DAAV",
+    "contactKey": "con_7c5j3w9sfa",
     "contactName": "Ryan Bumstead",
     "sortOrder": 10
   }
@@ -374,16 +379,19 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[Experience](#schemaexperience)]|false|none|[Professional Experience Schema.]|
-|» id|string|false|read-only|Salesforce Record ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» employerName|string|false|none|Employer Name|
-|» employerId|string|false|none|Employer Account ID|
+|» employerId|string|false|none|Employer Account ID. Deprecated, use employerKey.|
+|» employerKey|string|false|none|Public key of the employer. Use it in place of employerId.|
 |» name|string|false|none|Role Title|
 |» startDate|string(date)|false|none|Start Date|
 |» endDate|string(date)¦null|false|none|End Date (null if current)|
 |» isCurrentRole|boolean|false|read-only|Is Current Role Flag|
 |» isRemote|boolean|false|none|Remote Work Flag|
 |» accomplishments|string¦null|false|none|DEPRECATED: Use /experience-highlights endpoint instead. This field will be removed in SAPI v2.0.0.|
-|» contactId|string|false|none|Contact ID|
+|» contactId|string|false|none|Contact ID. Deprecated, use contactKey.|
+|» contactKey|string|false|none|Public key of the contact. Use it in place of contactId.|
 |» contactName|string|false|none|Contact Name|
 |» sortOrder|number¦null|false|none|Sort Order|
 
@@ -448,7 +456,7 @@ Fetches resume bullets. Supports Persona filtering for PAPI optimization. A malf
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|experienceId|query|string|false|Filter by Experience Salesforce ID.|
+|experienceId|query|string|false|Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated.|
 |persona|query|string|false|Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
@@ -470,7 +478,9 @@ Examples:
 [
   {
     "id": "a035e00000B2O3DAAV",
+    "key": "hlt_9d3p7k5vxn",
     "experienceId": "a025e00000B2O3DAAV",
+    "experienceKey": "exp_4h7n2c8wpd",
     "experienceName": "Technical Architect",
     "name": "DevOps Transformation",
     "description": "Implemented CI/CD pipelines reducing deployment time by 80%.",
@@ -510,8 +520,10 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[ExperienceHighlight](#schemaexperiencehighlight)]|false|none|[Experience Bullet Point Schema.]|
-|» id|string|false|read-only|Salesforce Record ID|
-|» experienceId|string|false|none|Parent Experience ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
+|» experienceId|string|false|none|Parent Experience ID. Deprecated, use experienceKey.|
+|» experienceKey|string|false|none|Public key of the experience. Use it in place of experienceId.|
 |» experienceName|string|false|none|Parent Experience Name|
 |» name|string|false|none|Highlight Title|
 |» description|string|false|none|Detailed Description|
@@ -609,6 +621,7 @@ Example Usage: `/projects?isFeatured=true`
 [
   {
     "id": "a015e00000B2O3DAAV",
+    "key": "prj_8f3k2m9qtz",
     "name": "Global CRM Migration",
     "challenge": "Legacy system had 5M duplicate records.",
     "solution": "Implemented MDM strategy using Data Cloud.",
@@ -623,6 +636,7 @@ Example Usage: `/projects?isFeatured=true`
     "isFeatured": true,
     "contactName": "Ryan Bumstead",
     "contactId": "0035e00000B2O3DAAV",
+    "contactKey": "con_7c5j3w9sfa",
     "sortOrder": 10
   }
 ]
@@ -658,7 +672,8 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[Project](#schemaproject)]|false|none|[Portfolio Project Schema.]|
-|» id|string|false|read-only|Salesforce Record ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» name|string|false|none|Project Name|
 |» challenge|string¦null|false|none|STAR Method: Situation/Task|
 |» solution|string¦null|false|none|STAR Method: Action|
@@ -672,7 +687,8 @@ Status Code **200**
 |» pillarLabel|string¦null|false|none|Architectural Pillar Label|
 |» isFeatured|boolean|false|none|Featured Flag for Home Page|
 |» contactName|string|false|none|Owner Name|
-|» contactId|string|false|none|Owner ID|
+|» contactId|string|false|none|Owner ID. Deprecated, use contactKey.|
+|» contactKey|string|false|none|Public key of the contact. Use it in place of contactId.|
 |» sortOrder|number¦null|false|none|Display Sort Order|
 
 #### Enumerated Values
@@ -746,7 +762,7 @@ Retrieves assets (images, links) associated with a project. A malformed Salesfor
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|projectId|query|string|false|Filter by Project Salesforce ID.|
+|projectId|query|string|false|Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 
@@ -758,8 +774,10 @@ Retrieves assets (images, links) associated with a project. A malformed Salesfor
 [
   {
     "id": "a045e00000B2O3DAAV",
+    "key": "pas_4n7s3f9tdk",
     "name": "Architecture Diagram",
     "projectId": "a015e00000B2O3DAAV",
+    "projectKey": "prj_8f3k2m9qtz",
     "projectName": "Global CRM Migration",
     "type": "Image",
     "externalUrl": "https://example.com/images/diagram.png",
@@ -799,9 +817,11 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[ProjectAsset](#schemaprojectasset)]|false|none|[Project Asset (Image/Video) Schema.]|
-|» id|string|false|read-only|Salesforce Record ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» name|string|false|none|Asset Name|
-|» projectId|string|false|none|Parent Project ID|
+|» projectId|string|false|none|Parent Project ID. Deprecated, use projectKey.|
+|» projectKey|string|false|none|Public key of the project. Use it in place of projectId.|
 |» projectName|string|false|none|Parent Project Name|
 |» type|[AssetType](#schemaassettype)|false|none|Asset Type|
 |» externalUrl|string(uri)|false|none|Asset URL|
@@ -889,6 +909,7 @@ Retrieves received testimonials. Returns only records where Approved__c = true.
 [
   {
     "id": "a055e00000B2O3DAAV",
+    "key": "tst_2y7a5d9wmh",
     "name": "Testimonial from Jane Doe",
     "authorName": "Jane Doe",
     "authorTitle": "CTO, Tech Corp",
@@ -930,7 +951,8 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[Testimonial](#schematestimonial)]|false|none|[Social Proof Schema.]|
-|» id|string|false|read-only|Salesforce Record ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» name|string|false|none|Testimonial Name|
 |» authorName|string|false|none|Author Name|
 |» authorTitle|string¦null|false|none|Author Title|
@@ -1024,6 +1046,7 @@ Retrieves related account/employer records.
 [
   {
     "id": "0015e00000A1O3DAAV",
+    "key": "acc_2t8e6y4mgb",
     "name": "Salesforce",
     "industry": "Technology",
     "abbreviation": "SFDC"
@@ -1061,7 +1084,8 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[Account](#schemaaccount)]|false|none|[Account/Employer Schema.]|
-|» id|string|false|read-only|Salesforce Record ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» name|string|false|none|Account Name|
 |» industry|string¦null|false|none|Industry|
 |» abbreviation|string¦null|false|none|Abbreviation|
@@ -1139,6 +1163,7 @@ Retrieves technical skills and proficiency scores.
 [
   {
     "id": "a075e00000B2O3DAAV",
+    "key": "skl_3m9x5b2rkt",
     "name": "Apex",
     "displayName": "Salesforce Apex",
     "category": "Development",
@@ -1181,7 +1206,8 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[Skill](#schemaskill)]|false|none|[Skill Schema.]|
-|» id|string|false|read-only|Salesforce Record ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» name|string|false|none|Skill Name|
 |» displayName|string¦null|false|none|Display Name|
 |» category|string|false|none|Skill Category|
@@ -1266,10 +1292,13 @@ Retrieves professional certifications.
 [
   {
     "id": "a105e00000B2O3DAAV",
+    "key": "crt_6q2v8d4nhz",
     "name": "Application Architect",
     "contactId": "0035e00000B2O3DAAV",
+    "contactKey": "con_7c5j3w9sfa",
     "contactName": "Ryan Bumstead",
     "issuerId": "0015e00000A1O3DAAV",
+    "issuerKey": "acc_2t8e6y4mgb",
     "issuerName": "Salesforce",
     "earnedDate": "2024-05-15"
   }
@@ -1306,11 +1335,14 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[Certification](#schemacertification)]|false|none|[Certification Schema.]|
-|» id|string|false|read-only|Salesforce Record ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» name|string|false|none|Certification Name|
-|» contactId|string|false|none|Contact ID|
+|» contactId|string|false|none|Contact ID. Deprecated, use contactKey.|
+|» contactKey|string|false|none|Public key of the contact. Use it in place of contactId.|
 |» contactName|string|false|none|Contact Name|
-|» issuerId|string|false|none|Issuer Account ID|
+|» issuerId|string|false|none|Issuer Account ID. Deprecated, use issuerKey.|
+|» issuerKey|string|false|none|Public key of the issuer. Use it in place of issuerId.|
 |» issuerName|string|false|none|Issuer Name|
 |» earnedDate|string(date)|false|none|Date Earned|
 
@@ -1388,10 +1420,13 @@ Retrieves educational background.
 [
   {
     "id": "a115e00000B2O3DAAV",
+    "key": "edu_6b4c8j2rvq",
     "name": "Bachelor of Science",
     "contactId": "0035e00000B2O3DAAV",
+    "contactKey": "con_7c5j3w9sfa",
     "contactName": "Ryan Bumstead",
     "issuerId": "0015e00000A1O3DAAV",
+    "issuerKey": "acc_2t8e6y4mgb",
     "issuerName": "University of Technology",
     "fieldOfStudy": "Computer Science",
     "graduationDate": "2018-05-01",
@@ -1430,11 +1465,14 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[Education](#schemaeducation)]|false|none|[Education Schema.]|
-|» id|string|false|read-only|Salesforce Record ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |» name|string|false|none|Degree Name|
-|» contactId|string|false|none|Contact ID|
+|» contactId|string|false|none|Contact ID. Deprecated, use contactKey.|
+|» contactKey|string|false|none|Public key of the contact. Use it in place of contactId.|
 |» contactName|string|false|none|Contact Name|
-|» issuerId|string|false|none|University Account ID|
+|» issuerId|string|false|none|University Account ID. Deprecated, use issuerKey.|
+|» issuerKey|string|false|none|Public key of the issuer. Use it in place of issuerId.|
 |» issuerName|string|false|none|University Name|
 |» fieldOfStudy|string|false|none|Field of Study|
 |» graduationDate|string(date)|false|none|Graduation Date|
@@ -1505,7 +1543,7 @@ Retrieves junction records linking Projects to Skills. A malformed Salesforce Id
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|projectId|query|string|false|Filter by Project Salesforce ID.|
+|projectId|query|string|false|Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 
@@ -1517,9 +1555,12 @@ Retrieves junction records linking Projects to Skills. A malformed Salesforce Id
 [
   {
     "id": "a065e00000B2O3DAAV",
+    "key": "prs_8w2m6g4bha",
     "projectId": "a015e00000B2O3DAAV",
+    "projectKey": "prj_8f3k2m9qtz",
     "projectName": "Global CRM Migration",
     "skillId": "a075e00000B2O3DAAV",
+    "skillKey": "skl_3m9x5b2rkt",
     "skillName": "Apex",
     "skillCategory": "Backend Development",
     "skillProficiencyScore": 5
@@ -1557,10 +1598,13 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[ProjectSkill](#schemaprojectskill)]|false|none|[Junction Object: Project <-> Skill.]|
-|» id|string|false|read-only|Salesforce Record ID|
-|» projectId|string|false|none|Project ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
+|» projectId|string|false|none|Project ID. Deprecated, use projectKey.|
+|» projectKey|string|false|none|Public key of the project. Use it in place of projectId.|
 |» projectName|string|false|none|Project Name|
-|» skillId|string|false|none|Skill ID|
+|» skillId|string|false|none|Skill ID. Deprecated, use skillKey.|
+|» skillKey|string|false|none|Public key of the skill. Use it in place of skillId.|
 |» skillName|string|false|none|Skill Name|
 |» skillCategory|string|false|none|Skill Category|
 |» skillProficiencyScore|number|false|none|Proficiency Score|
@@ -1626,7 +1670,7 @@ Retrieves junction records linking Experiences to Skills. A malformed Salesforce
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|experienceId|query|string|false|Filter by Experience Salesforce ID.|
+|experienceId|query|string|false|Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 
@@ -1638,9 +1682,12 @@ Retrieves junction records linking Experiences to Skills. A malformed Salesforce
 [
   {
     "id": "a085e00000B2O3DAAV",
+    "key": "exs_5r8h2q6cjw",
     "experienceId": "a025e00000B2O3DAAV",
+    "experienceKey": "exp_4h7n2c8wpd",
     "experienceName": "Technical Architect",
     "skillId": "a075e00000B2O3DAAV",
+    "skillKey": "skl_3m9x5b2rkt",
     "skillName": "LWC",
     "skillCategory": "Frontend Development",
     "skillProficiencyScore": 4
@@ -1678,10 +1725,13 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[ExperienceSkill](#schemaexperienceskill)]|false|none|[Junction Object: Experience <-> Skill.]|
-|» id|string|false|read-only|Salesforce Record ID|
-|» experienceId|string|false|none|Experience ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
+|» experienceId|string|false|none|Experience ID. Deprecated, use experienceKey.|
+|» experienceKey|string|false|none|Public key of the experience. Use it in place of experienceId.|
 |» experienceName|string|false|none|Experience Name|
-|» skillId|string|false|none|Skill ID|
+|» skillId|string|false|none|Skill ID. Deprecated, use skillKey.|
+|» skillKey|string|false|none|Public key of the skill. Use it in place of skillId.|
 |» skillName|string|false|none|Skill Name|
 |» skillCategory|string|false|none|Skill Category|
 |» skillProficiencyScore|number|false|none|Proficiency Score|
@@ -1747,7 +1797,7 @@ Retrieves junction records linking Certifications to Skills. A malformed Salesfo
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|certificationId|query|string|false|Filter by Certification Salesforce ID.|
+|certificationId|query|string|false|Filter by Certification public key (for example `crt_6q2v8d4nhz`) or Salesforce ID. The Salesforce ID is deprecated.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 
@@ -1759,9 +1809,12 @@ Retrieves junction records linking Certifications to Skills. A malformed Salesfo
 [
   {
     "id": "a095e00000B2O3DAAV",
+    "key": "cks_3k9z5x7pne",
     "certificationId": "a105e00000B2O3DAAV",
+    "certificationKey": "crt_6q2v8d4nhz",
     "certificationName": "Salesforce Certified Application Architect",
     "skillId": "a075e00000B2O3DAAV",
+    "skillKey": "skl_3m9x5b2rkt",
     "skillName": "Security",
     "skillCategory": "Architecture",
     "skillProficiencyScore": 5
@@ -1799,10 +1852,13 @@ Status Code **200**
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |*anonymous*|[[CertificationSkill](#schemacertificationskill)]|false|none|[Junction Object: Certification <-> Skill.]|
-|» id|string|false|read-only|Salesforce Record ID|
-|» certificationId|string|false|none|Certification ID|
+|» id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|» key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
+|» certificationId|string|false|none|Certification ID. Deprecated, use certificationKey.|
+|» certificationKey|string|false|none|Public key of the certification. Use it in place of certificationId.|
 |» certificationName|string|false|none|Certification Name|
-|» skillId|string|false|none|Skill ID|
+|» skillId|string|false|none|Skill ID. Deprecated, use skillKey.|
+|» skillKey|string|false|none|Public key of the skill. Use it in place of skillId.|
 |» skillName|string|false|none|Skill Name|
 |» skillCategory|string|false|none|Skill Category|
 |» skillProficiencyScore|number|false|none|Proficiency Score|
@@ -2221,6 +2277,7 @@ API Health Status Schema.
 ```json
 {
   "id": "0035e00000B2O3DAAV",
+  "key": "con_7c5j3w9sfa",
   "name": "Ryan Bumstead",
   "title": "Platform Architect",
   "trailhead": "https://trailblazer.me/id/rbumstead",
@@ -2237,7 +2294,8 @@ Contact Information Schema. The contact's email and phone are never returned.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |name|string|false|none|Full Name|
 |title|string|false|none|Job Title|
 |trailhead|string(uri)¦null|false|none|Trailhead Profile URL|
@@ -2255,6 +2313,7 @@ Contact Information Schema. The contact's email and phone are never returned.
 ```json
 {
   "id": "a015e00000B2O3DAAV",
+  "key": "prj_8f3k2m9qtz",
   "name": "Global CRM Migration",
   "challenge": "Legacy system had 5M duplicate records.",
   "solution": "Implemented MDM strategy using Data Cloud.",
@@ -2269,6 +2328,7 @@ Contact Information Schema. The contact's email and phone are never returned.
   "isFeatured": true,
   "contactName": "Ryan Bumstead",
   "contactId": "0035e00000B2O3DAAV",
+  "contactKey": "con_7c5j3w9sfa",
   "sortOrder": 10
 }
 
@@ -2280,7 +2340,8 @@ Portfolio Project Schema.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |name|string|false|none|Project Name|
 |challenge|string¦null|false|none|STAR Method: Situation/Task|
 |solution|string¦null|false|none|STAR Method: Action|
@@ -2294,7 +2355,8 @@ Portfolio Project Schema.
 |pillarLabel|string¦null|false|none|Architectural Pillar Label|
 |isFeatured|boolean|false|none|Featured Flag for Home Page|
 |contactName|string|false|none|Owner Name|
-|contactId|string|false|none|Owner ID|
+|contactId|string|false|none|Owner ID. Deprecated, use contactKey.|
+|contactKey|string|false|none|Public key of the contact. Use it in place of contactId.|
 |sortOrder|number¦null|false|none|Display Sort Order|
 
 <h2 id="tocS_Experience">Experience</h2>
@@ -2307,8 +2369,10 @@ Portfolio Project Schema.
 ```json
 {
   "id": "a025e00000B2O3DAAV",
+  "key": "exp_4h7n2c8wpd",
   "employerName": "Salesforce",
   "employerId": "0015e00000A1O3DAAV",
+  "employerKey": "acc_2t8e6y4mgb",
   "name": "Technical Architect",
   "startDate": "2023-01-01",
   "endDate": "2025-01-01",
@@ -2316,6 +2380,7 @@ Portfolio Project Schema.
   "isRemote": true,
   "accomplishments": "<ul><li>Led 5 successful deployments</li></ul>",
   "contactId": "0035e00000B2O3DAAV",
+  "contactKey": "con_7c5j3w9sfa",
   "contactName": "Ryan Bumstead",
   "sortOrder": 10
 }
@@ -2328,16 +2393,19 @@ Professional Experience Schema.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |employerName|string|false|none|Employer Name|
-|employerId|string|false|none|Employer Account ID|
+|employerId|string|false|none|Employer Account ID. Deprecated, use employerKey.|
+|employerKey|string|false|none|Public key of the employer. Use it in place of employerId.|
 |name|string|false|none|Role Title|
 |startDate|string(date)|false|none|Start Date|
 |endDate|string(date)¦null|false|none|End Date (null if current)|
 |isCurrentRole|boolean|false|read-only|Is Current Role Flag|
 |isRemote|boolean|false|none|Remote Work Flag|
 |accomplishments|string¦null|false|none|DEPRECATED: Use /experience-highlights endpoint instead. This field will be removed in SAPI v2.0.0.|
-|contactId|string|false|none|Contact ID|
+|contactId|string|false|none|Contact ID. Deprecated, use contactKey.|
+|contactKey|string|false|none|Public key of the contact. Use it in place of contactId.|
 |contactName|string|false|none|Contact Name|
 |sortOrder|number¦null|false|none|Sort Order|
 
@@ -2351,7 +2419,9 @@ Professional Experience Schema.
 ```json
 {
   "id": "a035e00000B2O3DAAV",
+  "key": "hlt_9d3p7k5vxn",
   "experienceId": "a025e00000B2O3DAAV",
+  "experienceKey": "exp_4h7n2c8wpd",
   "experienceName": "Technical Architect",
   "name": "DevOps Transformation",
   "description": "Implemented CI/CD pipelines reducing deployment time by 80%.",
@@ -2367,8 +2437,10 @@ Experience Bullet Point Schema.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
-|experienceId|string|false|none|Parent Experience ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
+|experienceId|string|false|none|Parent Experience ID. Deprecated, use experienceKey.|
+|experienceKey|string|false|none|Public key of the experience. Use it in place of experienceId.|
 |experienceName|string|false|none|Parent Experience Name|
 |name|string|false|none|Highlight Title|
 |description|string|false|none|Detailed Description|
@@ -2385,8 +2457,10 @@ Experience Bullet Point Schema.
 ```json
 {
   "id": "a045e00000B2O3DAAV",
+  "key": "pas_4n7s3f9tdk",
   "name": "Architecture Diagram",
   "projectId": "a015e00000B2O3DAAV",
+  "projectKey": "prj_8f3k2m9qtz",
   "projectName": "Global CRM Migration",
   "type": "Image",
   "externalUrl": "https://example.com/images/diagram.png",
@@ -2402,9 +2476,11 @@ Project Asset (Image/Video) Schema.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |name|string|false|none|Asset Name|
-|projectId|string|false|none|Parent Project ID|
+|projectId|string|false|none|Parent Project ID. Deprecated, use projectKey.|
+|projectKey|string|false|none|Public key of the project. Use it in place of projectId.|
 |projectName|string|false|none|Parent Project Name|
 |type|[AssetType](#schemaassettype)|false|none|Asset Type|
 |externalUrl|string(uri)|false|none|Asset URL|
@@ -2421,6 +2497,7 @@ Project Asset (Image/Video) Schema.
 ```json
 {
   "id": "a055e00000B2O3DAAV",
+  "key": "tst_2y7a5d9wmh",
   "name": "Testimonial from Jane Doe",
   "authorName": "Jane Doe",
   "authorTitle": "CTO, Tech Corp",
@@ -2438,7 +2515,8 @@ Social Proof Schema.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |name|string|false|none|Testimonial Name|
 |authorName|string|false|none|Author Name|
 |authorTitle|string¦null|false|none|Author Title|
@@ -2457,9 +2535,12 @@ Social Proof Schema.
 ```json
 {
   "id": "a065e00000B2O3DAAV",
+  "key": "prs_8w2m6g4bha",
   "projectId": "a015e00000B2O3DAAV",
+  "projectKey": "prj_8f3k2m9qtz",
   "projectName": "Global CRM Migration",
   "skillId": "a075e00000B2O3DAAV",
+  "skillKey": "skl_3m9x5b2rkt",
   "skillName": "Apex",
   "skillCategory": "Backend Development",
   "skillProficiencyScore": 5
@@ -2473,10 +2554,13 @@ Junction Object: Project <-> Skill.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
-|projectId|string|false|none|Project ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
+|projectId|string|false|none|Project ID. Deprecated, use projectKey.|
+|projectKey|string|false|none|Public key of the project. Use it in place of projectId.|
 |projectName|string|false|none|Project Name|
-|skillId|string|false|none|Skill ID|
+|skillId|string|false|none|Skill ID. Deprecated, use skillKey.|
+|skillKey|string|false|none|Public key of the skill. Use it in place of skillId.|
 |skillName|string|false|none|Skill Name|
 |skillCategory|string|false|none|Skill Category|
 |skillProficiencyScore|number|false|none|Proficiency Score|
@@ -2491,9 +2575,12 @@ Junction Object: Project <-> Skill.
 ```json
 {
   "id": "a085e00000B2O3DAAV",
+  "key": "exs_5r8h2q6cjw",
   "experienceId": "a025e00000B2O3DAAV",
+  "experienceKey": "exp_4h7n2c8wpd",
   "experienceName": "Technical Architect",
   "skillId": "a075e00000B2O3DAAV",
+  "skillKey": "skl_3m9x5b2rkt",
   "skillName": "LWC",
   "skillCategory": "Frontend Development",
   "skillProficiencyScore": 4
@@ -2507,10 +2594,13 @@ Junction Object: Experience <-> Skill.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
-|experienceId|string|false|none|Experience ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
+|experienceId|string|false|none|Experience ID. Deprecated, use experienceKey.|
+|experienceKey|string|false|none|Public key of the experience. Use it in place of experienceId.|
 |experienceName|string|false|none|Experience Name|
-|skillId|string|false|none|Skill ID|
+|skillId|string|false|none|Skill ID. Deprecated, use skillKey.|
+|skillKey|string|false|none|Public key of the skill. Use it in place of skillId.|
 |skillName|string|false|none|Skill Name|
 |skillCategory|string|false|none|Skill Category|
 |skillProficiencyScore|number|false|none|Proficiency Score|
@@ -2525,9 +2615,12 @@ Junction Object: Experience <-> Skill.
 ```json
 {
   "id": "a095e00000B2O3DAAV",
+  "key": "cks_3k9z5x7pne",
   "certificationId": "a105e00000B2O3DAAV",
+  "certificationKey": "crt_6q2v8d4nhz",
   "certificationName": "Salesforce Certified Application Architect",
   "skillId": "a075e00000B2O3DAAV",
+  "skillKey": "skl_3m9x5b2rkt",
   "skillName": "Security",
   "skillCategory": "Architecture",
   "skillProficiencyScore": 5
@@ -2541,10 +2634,13 @@ Junction Object: Certification <-> Skill.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
-|certificationId|string|false|none|Certification ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
+|certificationId|string|false|none|Certification ID. Deprecated, use certificationKey.|
+|certificationKey|string|false|none|Public key of the certification. Use it in place of certificationId.|
 |certificationName|string|false|none|Certification Name|
-|skillId|string|false|none|Skill ID|
+|skillId|string|false|none|Skill ID. Deprecated, use skillKey.|
+|skillKey|string|false|none|Public key of the skill. Use it in place of skillId.|
 |skillName|string|false|none|Skill Name|
 |skillCategory|string|false|none|Skill Category|
 |skillProficiencyScore|number|false|none|Proficiency Score|
@@ -2595,6 +2691,7 @@ Global Config Schema (Custom Metadata). The owner's email and phone are never re
 ```json
 {
   "id": "0015e00000A1O3DAAV",
+  "key": "acc_2t8e6y4mgb",
   "name": "Salesforce",
   "industry": "Technology",
   "abbreviation": "SFDC"
@@ -2608,7 +2705,8 @@ Account/Employer Schema.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |name|string|false|none|Account Name|
 |industry|string¦null|false|none|Industry|
 |abbreviation|string¦null|false|none|Abbreviation|
@@ -2623,6 +2721,7 @@ Account/Employer Schema.
 ```json
 {
   "id": "a075e00000B2O3DAAV",
+  "key": "skl_3m9x5b2rkt",
   "name": "Apex",
   "displayName": "Salesforce Apex",
   "category": "Development",
@@ -2641,7 +2740,8 @@ Skill Schema.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |name|string|false|none|Skill Name|
 |displayName|string¦null|false|none|Display Name|
 |category|string|false|none|Skill Category|
@@ -2661,10 +2761,13 @@ Skill Schema.
 ```json
 {
   "id": "a105e00000B2O3DAAV",
+  "key": "crt_6q2v8d4nhz",
   "name": "Application Architect",
   "contactId": "0035e00000B2O3DAAV",
+  "contactKey": "con_7c5j3w9sfa",
   "contactName": "Ryan Bumstead",
   "issuerId": "0015e00000A1O3DAAV",
+  "issuerKey": "acc_2t8e6y4mgb",
   "issuerName": "Salesforce",
   "earnedDate": "2024-05-15"
 }
@@ -2677,11 +2780,14 @@ Certification Schema.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |name|string|false|none|Certification Name|
-|contactId|string|false|none|Contact ID|
+|contactId|string|false|none|Contact ID. Deprecated, use contactKey.|
+|contactKey|string|false|none|Public key of the contact. Use it in place of contactId.|
 |contactName|string|false|none|Contact Name|
-|issuerId|string|false|none|Issuer Account ID|
+|issuerId|string|false|none|Issuer Account ID. Deprecated, use issuerKey.|
+|issuerKey|string|false|none|Public key of the issuer. Use it in place of issuerId.|
 |issuerName|string|false|none|Issuer Name|
 |earnedDate|string(date)|false|none|Date Earned|
 
@@ -2695,10 +2801,13 @@ Certification Schema.
 ```json
 {
   "id": "a115e00000B2O3DAAV",
+  "key": "edu_6b4c8j2rvq",
   "name": "Bachelor of Science",
   "contactId": "0035e00000B2O3DAAV",
+  "contactKey": "con_7c5j3w9sfa",
   "contactName": "Ryan Bumstead",
   "issuerId": "0015e00000A1O3DAAV",
+  "issuerKey": "acc_2t8e6y4mgb",
   "issuerName": "University of Technology",
   "fieldOfStudy": "Computer Science",
   "graduationDate": "2018-05-01",
@@ -2713,11 +2822,14 @@ Education Schema.
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|id|string|false|read-only|Salesforce Record ID|
+|id|string|false|read-only|Salesforce Record ID. Deprecated, use key.|
+|key|string|false|read-only|Stable public key of the record. Use it in place of id. It is set once and never changes.|
 |name|string|false|none|Degree Name|
-|contactId|string|false|none|Contact ID|
+|contactId|string|false|none|Contact ID. Deprecated, use contactKey.|
+|contactKey|string|false|none|Public key of the contact. Use it in place of contactId.|
 |contactName|string|false|none|Contact Name|
-|issuerId|string|false|none|University Account ID|
+|issuerId|string|false|none|University Account ID. Deprecated, use issuerKey.|
+|issuerKey|string|false|none|Public key of the issuer. Use it in place of issuerId.|
 |issuerName|string|false|none|University Name|
 |fieldOfStudy|string|false|none|Field of Study|
 |graduationDate|string(date)|false|none|Graduation Date|

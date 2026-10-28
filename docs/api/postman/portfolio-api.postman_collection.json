@@ -196,7 +196,7 @@
                 {
                   "key": "experienceId",
                   "value": "",
-                  "description": "Filter by Experience Salesforce ID.",
+                  "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated.",
                   "disabled": true
                 },
                 {
@@ -312,7 +312,7 @@
                 {
                   "key": "projectId",
                   "value": "",
-                  "description": "Filter by Project Salesforce ID.",
+                  "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated.",
                   "disabled": true
                 },
                 {
@@ -633,7 +633,7 @@
                 {
                   "key": "projectId",
                   "value": "",
-                  "description": "Filter by Project Salesforce ID.",
+                  "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated.",
                   "disabled": true
                 },
                 {
@@ -685,7 +685,7 @@
                 {
                   "key": "experienceId",
                   "value": "",
-                  "description": "Filter by Experience Salesforce ID.",
+                  "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated.",
                   "disabled": true
                 },
                 {
@@ -737,7 +737,7 @@
                 {
                   "key": "certificationId",
                   "value": "",
-                  "description": "Filter by Certification Salesforce ID.",
+                  "description": "Filter by Certification public key (for example `crt_6q2v8d4nhz`) or Salesforce ID. The Salesforce ID is deprecated.",
                   "disabled": true
                 },
                 {
