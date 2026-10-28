@@ -147,13 +147,15 @@ describe("c-code-viewer", () => {
     );
   });
 
-  it("uses a brand copy button", async () => {
+  it("uses a primary native copy button", async () => {
     const element = createComponent({ code: SOURCE });
     await flushPromises();
 
-    expect(
-      element.shadowRoot.querySelector("lightning-button.copy-code").variant
-    ).toBe("brand");
+    const copy = element.shadowRoot.querySelector("button.copy-code");
+    expect(copy.type).toBe("button");
+    expect(copy.className).toBe("nc-button copy-code");
+    expect(copy.textContent.trim()).toBe("Copy to clipboard");
+    expect(element.shadowRoot.querySelector("lightning-button")).toBeNull();
   });
 
   it("copies the raw code to the clipboard", async () => {
@@ -165,7 +167,7 @@ describe("c-code-viewer", () => {
     const element = createComponent({ code: SOURCE });
     await flushPromises();
 
-    element.shadowRoot.querySelector("lightning-button.copy-code").click();
+    element.shadowRoot.querySelector("button.copy-code").click();
     await flushPromises();
 
     expect(writeText).toHaveBeenCalledWith(SOURCE);

@@ -19,13 +19,9 @@
           ></code></pre>
       </div>
       <div class="slds-m-top_small">
-        <lightning-button
-          variant="brand"
-          label="Copy to clipboard"
-          icon-name="utility:copy"
-          onclick={handleCopy}
-          class="copy-code"
-        ></lightning-button>
+        <button type="button" class="nc-button copy-code" onclick={handleCopy}>
+          Copy to clipboard
+        </button>
         <p aria-live="polite" class="copy-message slds-m-top_x-small">
           {copyMessage}
         </p>

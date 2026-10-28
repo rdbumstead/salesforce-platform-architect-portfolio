@@ -4,19 +4,19 @@
  *                      both themes, and exports the same content as a text PDF or as plain ATS
  *                      text copied to the clipboard. The preview and the PDF read one layout spec
  *                      (resumeLayout.js). jsPDF and the two Inter TTF files load only on the first
- *                      download. When the fonts cannot be fetched the PDF is still written, in
- *                      the spec's fallback font.
+ *                      download, through c/documentPdf, which the cover letter shares. When the
+ *                      fonts cannot be fetched the PDF is still written, in the spec's fallback
+ *                      font. A failed load says what happened in a plain sentence and never
+ *                      shows the empty state, which is kept for a persona with no content.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 12/26/2025
  **/
 import { LightningElement, wire } from "lwc";
-import { loadScript } from "lightning/platformResourceLoader";
 import getResume from "@salesforce/apex/ResumeController.getResume";
-import JSPDF_LIBRARY from "@salesforce/resourceUrl/jsPDF_Library";
-import PORTFOLIO_FONTS from "@salesforce/resourceUrl/Portfolio_Fonts";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { createPdfLoader } from "c/documentPdf";
 import {
   buildViewModel,
   buildLines,
@@ -36,38 +36,44 @@ const PERSONA_OPTIONS = [
 
 const PAPER_STYLE = previewStyle(RESUME_LAYOUT);
 
-function reduceError(error) {
+/** Shown when a failed request carries no message a visitor can use. */
+export const NO_ANSWER_MESSAGE =
+  "The server did not send an answer. Check your connection and try again.";
+
+/** Shown when the call returned without a resume, which only a failed request does. */
+export const NO_RESUME_MESSAGE =
+  "The server sent back no resume. Try again in a moment.";
+
+// The platform's own text when a request fails before a reply can be read.
+const RAW_PLATFORM_MESSAGE = /failed to get error from response/i;
+
+/**
+ * A plain sentence for an error: the controller's message when it sent one, otherwise a
+ * sentence that says what happened in place of the platform's raw text.
+ * @param {object} error the wire or call error
+ * @param {string} fallback the sentence for an error with no usable message
+ * @returns {string} the message to show
+ */
+export function reduceError(error, fallback = NO_ANSWER_MESSAGE) {
   if (!error) {
     return "";
   }
+  let message = "";
   if (Array.isArray(error.body)) {
-    return error.body.map((entry) => entry.message).join(", ");
+    message = error.body
+      .map((entry) => entry && entry.message)
+      .filter((text) => text)
+      .join(", ");
+  } else if (error.body && typeof error.body.message === "string") {
+    message = error.body.message;
+  } else if (typeof error.message === "string") {
+    message = error.message;
   }
-  if (error.body && typeof error.body.message === "string") {
-    return error.body.message;
+  message = message.trim();
+  if (!message || RAW_PLATFORM_MESSAGE.test(message)) {
+    return fallback;
   }
-  if (typeof error.message === "string") {
-    return error.message;
-  }
-  return "Unknown error";
-}
-
-/**
- * Base64 of an ArrayBuffer, in chunks so a large file does not overflow the argument list.
- * @param {ArrayBuffer} buffer the font file
- * @returns {string} base64 text for jsPDF's virtual file system
- */
-export function toBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const chunk = 0x8000;
-  let binary = "";
-  for (let index = 0; index < bytes.length; index += chunk) {
-    binary += String.fromCharCode.apply(
-      null,
-      bytes.subarray(index, index + chunk)
-    );
-  }
-  return btoa(binary);
+  return message;
 }
 
 export default class ResumeBuilder extends LightningElement {
@@ -82,15 +88,20 @@ export default class ResumeBuilder extends LightningElement {
   exportMessage = "";
   exportError = "";
 
-  jsPdfPromise;
-  fontPromise;
+  pdfLoader = createPdfLoader(this, RESUME_LAYOUT);
 
   personaOptions = PERSONA_OPTIONS;
   paperStyle = PAPER_STYLE;
 
   @wire(getResume, { persona: "$selectedPersona" })
   wiredResume({ data, error }) {
-    if (data !== undefined) {
+    if (data === null) {
+      // getResume always answers with a resume, so no resume means the request failed. Say
+      // so, rather than show the empty state as if the persona had no content.
+      this.resume = undefined;
+      this.errorMessage = NO_RESUME_MESSAGE;
+      this.isLoading = false;
+    } else if (data !== undefined) {
       this.resume = data;
       this.errorMessage = "";
       this.isLoading = false;
@@ -136,8 +147,16 @@ export default class ResumeBuilder extends LightningElement {
     return this.isGenerating ? "Creating PDF..." : "Download PDF";
   }
 
+  /** The persona options with the chosen one marked, for the native select. */
+  get personaChoices() {
+    return this.personaOptions.map((option) => ({
+      ...option,
+      selected: option.value === this.selectedPersona
+    }));
+  }
+
   handlePersonaChange(event) {
-    const value = event.detail.value;
+    const value = event.target.value;
     if (!value || value === this.selectedPersona) {
       return;
     }
@@ -155,71 +174,6 @@ export default class ResumeBuilder extends LightningElement {
     }
   }
 
-  ensureJsPdf() {
-    if (!this.jsPdfPromise) {
-      this.jsPdfPromise = loadScript(this, JSPDF_LIBRARY).catch((error) => {
-        // Let the next click try again after a failed load.
-        this.jsPdfPromise = undefined;
-        throw error;
-      });
-    }
-    return this.jsPdfPromise;
-  }
-
-  /**
-   * The Inter files as base64 by style, or null when they cannot be fetched. A failed fetch is
-   * tried again on the next click.
-   */
-  ensureFonts() {
-    if (!this.fontPromise) {
-      const files = RESUME_LAYOUT.font.files;
-      const styles = Object.keys(files);
-      this.fontPromise = Promise.all(
-        styles.map((style) =>
-          fetch(`${PORTFOLIO_FONTS}/${files[style]}`).then((response) => {
-            if (!response.ok) {
-              throw new Error(
-                `Font ${files[style]} returned ${response.status}`
-              );
-            }
-            return response.arrayBuffer();
-          })
-        )
-      )
-        .then((buffers) =>
-          styles.map((style, index) => ({
-            style,
-            file: files[style],
-            data: toBase64(buffers[index])
-          }))
-        )
-        .catch(() => {
-          this.fontPromise = undefined;
-          return null;
-        });
-    }
-    return this.fontPromise;
-  }
-
-  /**
-   * Registers the fonts on the document and returns the family to write with, or the
-   * fallback family when there are no fonts or jsPDF refuses them.
-   */
-  registerFonts(doc, fonts) {
-    if (!fonts) {
-      return RESUME_LAYOUT.font.fallback;
-    }
-    try {
-      fonts.forEach((font) => {
-        doc.addFileToVFS(font.file, font.data);
-        doc.addFont(font.file, RESUME_LAYOUT.font.family, font.style);
-      });
-      return RESUME_LAYOUT.font.family;
-    } catch {
-      return RESUME_LAYOUT.font.fallback;
-    }
-  }
-
   async handleDownload() {
     if (this.exportDisabled) {
       return;
@@ -228,21 +182,7 @@ export default class ResumeBuilder extends LightningElement {
     this.exportMessage = "";
     this.exportError = "";
     try {
-      const [, fonts] = await Promise.all([
-        this.ensureJsPdf(),
-        this.ensureFonts()
-      ]);
-      // jsPDF 3.x UMD build registers its exports on the jspdf global.
-      const jsPdfNamespace = window.jspdf;
-      if (!jsPdfNamespace || typeof jsPdfNamespace.jsPDF !== "function") {
-        throw new Error("jsPDF did not load.");
-      }
-      const doc = new jsPdfNamespace.jsPDF({
-        unit: RESUME_LAYOUT.page.unit,
-        format: RESUME_LAYOUT.page.format,
-        compress: true
-      });
-      const family = this.registerFonts(doc, fonts);
+      const { doc, family } = await this.pdfLoader.createDocument();
       writePdf(doc, this.model, { family });
       doc.save(pdfFileName(this.model, this.selectedPersona));
       this.exportMessage = "PDF downloaded.";
@@ -251,7 +191,10 @@ export default class ResumeBuilder extends LightningElement {
         format: "pdf"
       });
     } catch (error) {
-      this.exportError = `The PDF could not be created. ${reduceError(error)}`;
+      this.exportError = `The PDF could not be created. ${reduceError(
+        error,
+        "Try again."
+      )}`;
     } finally {
       this.isGenerating = false;
     }
@@ -275,7 +218,10 @@ export default class ResumeBuilder extends LightningElement {
         format: "ats"
       });
     } catch (error) {
-      this.exportError = `The text could not be copied. ${reduceError(error)}`;
+      this.exportError = `The text could not be copied. ${reduceError(
+        error,
+        "Try again."
+      )}`;
     }
   }
 }

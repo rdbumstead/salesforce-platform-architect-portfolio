@@ -1,8 +1,11 @@
+@import "c/nativeControls";
+
 /*
  * The builder sits on the --pf- site tokens, so its panel follows the light and dark theme.
  * The preview is white paper in both themes. Its type, spacing and colours come from
  * resumeLayout.js as --resume- custom properties on .preview-paper, the same values the PDF
- * writer reads. Every element that sets a background also sets its text colour.
+ * writer reads. Every element that sets a background also sets its text colour. The persona
+ * picker and the two export buttons are native controls with the c/nativeControls look.
  */
 .builder-body,
 .config-panel {
@@ -38,16 +41,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--pf-space-2);
-}
-
-/* The secondary button takes the theme's text colour, so it reads in dark mode too. */
-.copy-ats {
-  --slds-c-button-text-color: var(--pf-text);
-  --slds-c-button-text-color-hover: var(--pf-text);
-  --slds-c-button-neutral-color-background: var(--pf-bg);
-  --slds-c-button-neutral-color-background-hover: var(--pf-surface);
-  --slds-c-button-neutral-color-border: var(--pf-border);
-  --slds-c-icon-color-foreground-default: var(--pf-text);
 }
 
 .text-success {

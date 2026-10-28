@@ -53,9 +53,28 @@ private class ContentGenerationControllerPromptTest {
     String prompt = promptFor('Acme', 'Architect', null);
 
     Assert.isTrue(
-      prompt.contains('\nLength: 300 to 400 words.\n'),
-      'The range the settings hold'
+      prompt.contains('\nWord limit: 300 to 400 words, never more than 400. '),
+      'The range the settings hold, the maximum as the limit'
     );
+    Assert.isFalse(
+      prompt.contains('\nLength: '),
+      'No Length line, so the template adds no length push of its own'
+    );
+  }
+
+  @IsTest
+  static void lengthLineSetsTheShapeThatKeepsALetterUnderTheMaximum() {
+    String line = ContentGenerationController.coverLetterLengthLine(
+      new List<Integer>{ 250, 350 }
+    );
+
+    Assert.isTrue(line.startsWith('Word limit: 250 to 350 words'), line);
+    Assert.isTrue(line.contains('never more than 350.'), line);
+    Assert.isTrue(
+      line.contains('three body paragraphs of three sentences each'),
+      line
+    );
+    Assert.isFalse(line.contains('\n'), 'One line');
   }
 
   @IsTest
@@ -68,11 +87,13 @@ private class ContentGenerationControllerPromptTest {
 
     Assert.isTrue(
       prompt.contains(
-        'Length: ' +
+        ContentGenerationController.WORD_LIMIT_PREFIX +
           ContentGenerationController.COVER_LETTER_MIN_WORDS +
           ' to ' +
           ContentGenerationController.COVER_LETTER_MAX_WORDS +
-          ' words.'
+          ' words, never more than ' +
+          ContentGenerationController.COVER_LETTER_MAX_WORDS +
+          '.'
       ),
       prompt
     );
@@ -152,7 +173,10 @@ private class ContentGenerationControllerPromptTest {
       prompt.contains('Two or three body paragraphs'),
       'The fallback is not added'
     );
-    Assert.isTrue(prompt.contains('\nLength: '), 'The range is still added');
+    Assert.isTrue(
+      prompt.contains('\n' + ContentGenerationController.WORD_LIMIT_PREFIX),
+      'The range is still added'
+    );
   }
 
   @IsTest

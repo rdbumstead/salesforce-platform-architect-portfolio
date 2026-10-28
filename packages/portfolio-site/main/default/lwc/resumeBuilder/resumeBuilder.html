@@ -15,15 +15,25 @@
           <div class="config-panel">
             <h2 class="config-title">Configuration</h2>
 
-            <lightning-combobox
-              name="persona"
-              label="Tailor for"
-              value={selectedPersona}
-              options={personaOptions}
-              onchange={handlePersonaChange}
-              class="persona-picker slds-m-bottom_medium"
-            >
-            </lightning-combobox>
+            <div class="nc-field persona-field slds-m-bottom_medium">
+              <label class="nc-label" for="persona-picker">Tailor for</label>
+              <select
+                id="persona-picker"
+                name="persona"
+                class="nc-control persona-picker"
+                onchange={handlePersonaChange}
+              >
+                <template for:each={personaChoices} for:item="option">
+                  <option
+                    key={option.value}
+                    value={option.value}
+                    selected={option.selected}
+                  >
+                    {option.label}
+                  </option>
+                </template>
+              </select>
+            </div>
 
             <div class="slds-form-element slds-m-bottom_medium">
               <lightning-input
@@ -43,24 +53,22 @@
             </div>
 
             <div class="actions">
-              <lightning-button
-                variant="brand"
-                label={downloadLabel}
-                icon-name="utility:download"
+              <button
+                type="button"
+                class="nc-button download-pdf"
                 onclick={handleDownload}
                 disabled={exportDisabled}
-                class="download-pdf"
               >
-              </lightning-button>
-              <lightning-button
-                variant="neutral"
-                label="Copy ATS text"
-                icon-name="utility:copy"
+                {downloadLabel}
+              </button>
+              <button
+                type="button"
+                class="nc-button nc-button_secondary copy-ats"
                 onclick={handleCopyText}
                 disabled={exportDisabled}
-                class="copy-ats"
               >
-              </lightning-button>
+                Copy ATS text
+              </button>
             </div>
 
             <div aria-live="polite" class="slds-m-top_small">
