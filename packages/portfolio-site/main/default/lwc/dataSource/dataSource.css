@@ -1,0 +1,139 @@
+/*
+ * Colours come only from the --pf- site tokens, which hold the light and dark values.
+ * Every element that sets a background also sets its text colour from the matching pair.
+ * The button and the close button are at least 44 px high. The marker reads at body size and
+ * body weight, like View source, so it never outweighs the title it sits beside.
+ */
+:host {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.marker {
+  position: relative;
+  display: inline-block;
+}
+
+.marker-button,
+.close-button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--pf-space-4);
+  border-radius: var(--pf-radius-sm);
+  font: inherit;
+  cursor: pointer;
+}
+
+.marker-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  background-color: transparent;
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.marker-button:hover {
+  border-color: var(--pf-accent);
+}
+
+.marker-button:focus-visible,
+.close-button:focus-visible,
+.model-link:focus-visible {
+  outline: 2px solid var(--pf-focus, var(--pf-accent));
+  outline-offset: 2px;
+}
+
+.dot {
+  flex: 0 0 auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: var(--pf-accent);
+}
+
+.marker-counts {
+  color: var(--pf-body);
+}
+
+.panel {
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(100% + var(--pf-space-2));
+  z-index: 10;
+  box-sizing: border-box;
+  width: 22rem;
+  max-width: calc(100vw - 2rem);
+  padding: var(--pf-space-4);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  box-shadow: var(--pf-shadow);
+  font-family: var(--pf-font-sans);
+  text-align: left;
+}
+
+.panel-heading {
+  margin: 0 0 var(--pf-space-2);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--pf-text);
+}
+
+.sources-heading {
+  margin: var(--pf-space-3) 0 var(--pf-space-2);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--pf-text);
+}
+
+.panel-text,
+.source-description {
+  margin: 0;
+  color: var(--pf-body);
+  background-color: var(--pf-surface);
+}
+
+.sources {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source {
+  display: flex;
+  flex-direction: column;
+  padding: var(--pf-space-1) 0;
+  color: var(--pf-text);
+}
+
+.source-text {
+  font-weight: 700;
+}
+
+.panel-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pf-space-3);
+  margin: var(--pf-space-3) 0 0;
+}
+
+.model-link {
+  color: var(--pf-accent);
+  text-decoration: underline;
+}
+
+.close-button {
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+  border: 0;
+  font-weight: 700;
+}
