@@ -1,20 +1,27 @@
 /**
  * @description       : Glass Box footer, in the same 1024 px column as the header: copyright,
- *                      one caption over the live readings, the readings in labelled groups,
- *                      the footer links (Contact, Docs, then the profile links from getLinks()),
- *                      and Back to top. Skills and Testimonials are in the header, not here.
- *                      Each group is a list named by its visible label (Deploy, Platform,
- *                      Integrations, Quotas and limits), set apart by vertical rules on wide
- *                      screens and stacked on phones. Inside a group the metrics are split by thin
- *                      bars drawn in CSS only, clipped away at the start of every line so none
- *                      dangles when a row wraps, and absent from the markup and the text. Deploy holds the production deploy badge
- *                      with a text link fallback. Platform holds the GraphQL timing, or the
+ *                      two rows of status, and the footer links (Contact, Docs, then the profile
+ *                      links from getLinks()) with Back to top. Skills and Testimonials are in the
+ *                      header, not here.
+ *                      Row one is CI, one labelled group of workflow badges: the production deploy
+ *                      badge and the Live Smoke Test badge, each linking to its Actions page with a
+ *                      text link fallback when the image fails. The badges come from the CI_BADGES
+ *                      array, so a third is one more entry. GitHub issues a badge per workflow, so
+ *                      the Postman sync, which is a job inside deploy.yml, has none.
+ *                      Row two is the live readings. One caption sits over it, with View source
+ *                      beside the caption (source key footer: this component and
+ *                      FooterController). The readings are labelled groups, each a list named by
+ *                      its visible label (Platform, Integrations, Storage, Quotas and limits),
+ *                      set apart by vertical rules on wide screens and stacked on phones. Inside
+ *                      a group the metrics are split by thin bars drawn in CSS only, clipped away
+ *                      at the start of every line so none dangles when a row wraps, and absent
+ *                      from the markup and the text. Platform holds the GraphQL timing, or the
  *                      snapshot error. Integrations holds the AI providers and the GitHub and
  *                      Jira connections, in plain words: "connected", or "paused" while a
  *                      circuit breaker holds calls back. Quotas and limits is always open, like
  *                      the other groups, and holds AI requests today, the org quotas and the
- *                      governor limits, every number grouped by thousands. Platform shows once it has a
- *                      line, the last two once the telemetry from
+ *                      governor limits, every number grouped by thousands. Platform shows once it
+ *                      has a line, the last groups once the telemetry from
  *                      FooterController.getSystemSnapshot() has loaded. The snapshot is requested
  *                      only once the page has loaded and the browser is idle, so it never delays
  *                      first paint (ADR-014). Every provider word on screen comes from the
@@ -52,6 +59,31 @@ const REPO_URL =
   "https://github.com/rdbumstead/salesforce-platform-architect-portfolio";
 export const BADGE_URL = `${REPO_URL}/actions/workflows/deploy.yml/badge.svg?branch=main`;
 export const ACTIONS_URL = `${REPO_URL}/actions/workflows/deploy.yml`;
+export const SMOKE_BADGE_URL = `${REPO_URL}/actions/workflows/smoke.yml/badge.svg`;
+export const SMOKE_ACTIONS_URL = `${REPO_URL}/actions/workflows/smoke.yml`;
+
+/**
+ * The CI badges, in the order they show. To add another workflow badge, add one entry here.
+ * Each needs its own data-id pair so a test or a fallback can find it.
+ */
+export const CI_BADGES = [
+  {
+    key: "deploy",
+    label: "Production deploy status",
+    src: BADGE_URL,
+    href: ACTIONS_URL,
+    imageId: "badge",
+    fallbackId: "badge-fallback"
+  },
+  {
+    key: "smoke",
+    label: "Live smoke test status",
+    src: SMOKE_BADGE_URL,
+    href: SMOKE_ACTIONS_URL,
+    imageId: "badge-smoke",
+    fallbackId: "badge-fallback-smoke"
+  }
+];
 export const CACHED_GRAPHQL_LABEL = "GraphQL: cached, no request made";
 export const STORAGE_NOTE =
   "Data is an estimate, counted at about 2 KB a record. Salesforce shows exact figures per object only in Setup.";
@@ -199,12 +231,10 @@ function whenIdleAfterLoad(callback) {
 export default class Footer extends LightningElement {
   gitHubUrl;
   linkedInUrl;
-  badgeFailed = false;
+  failedBadges = [];
   snapshot;
   snapshotFailed = false;
 
-  badgeUrl = BADGE_URL;
-  actionsUrl = ACTIONS_URL;
   contactUrl = `${basePath || ""}/contact`;
   docsUrl = `${basePath || ""}/docs`;
 
@@ -274,6 +304,13 @@ export default class Footer extends LightningElement {
 
   get currentYear() {
     return new Date().getFullYear();
+  }
+
+  get badgeRows() {
+    return CI_BADGES.map((badge) => ({
+      ...badge,
+      failed: this.failedBadges.includes(badge.key)
+    }));
   }
 
   get graphqlLabel() {
@@ -446,8 +483,11 @@ export default class Footer extends LightningElement {
     ];
   }
 
-  handleBadgeError() {
-    this.badgeFailed = true;
+  handleBadgeError(event) {
+    const key = event.target?.dataset?.key;
+    if (key && !this.failedBadges.includes(key)) {
+      this.failedBadges = [...this.failedBadges, key];
+    }
   }
 
   handleQuotaVisibility() {
