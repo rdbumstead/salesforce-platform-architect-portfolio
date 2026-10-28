@@ -1,0 +1,47 @@
+name: Postman Sync
+
+# Keeps the public Postman workspace's collection equal to the one the site offers. It runs
+# after each successful Deploy to Production that a push to main started, so its badge on the
+# site footer reads the result of the last sync. It can also be run by hand. The key lives only
+# in the POSTMAN_API_KEY secret, and the collection to update is the POSTMAN_COLLECTION_UID
+# repository variable. The generator's own ids are removed first, so Postman keeps its ids for
+# the collection and its requests.
+
+on:
+  workflow_run:
+    workflows: ["Deploy to Production"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postman-sync:
+    if: >-
+      vars.POSTMAN_COLLECTION_UID != '' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-latest
+    steps:
+      # A workflow_run checks out the default branch head by default. The deployed commit is
+      # the one to sync, so a later push cannot slip in between.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check the collection is current
+        run: |
+          npm install --prefix "$RUNNER_TEMP/o2p" --no-save --no-audit --no-fund openapi-to-postmanv2@6.4.0
+          OPENAPI_TO_POSTMAN_DIR="$RUNNER_TEMP/o2p/node_modules/openapi-to-postmanv2" node scripts/build-postman-collection.js --check
+
+      - name: Push the collection to the public Postman workspace
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+          POSTMAN_COLLECTION_UID: ${{ vars.POSTMAN_COLLECTION_UID }}
+        run: node scripts/postman-sync.js push
