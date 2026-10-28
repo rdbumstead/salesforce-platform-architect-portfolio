@@ -1,6 +1,11 @@
 /**
- * Builds the Postman collection the API Lab and the API reference offer for download, from the
- * PAPI OpenAPI JSON, so the collection cannot drift from the spec.
+ * Builds the one Postman collection the API Lab and the API reference offer for download, and
+ * that CI pushes to the public Postman workspace, from the PAPI and SAPI OpenAPI JSON, so the
+ * collection cannot drift from the specs. It holds three folders in this order: "Start here"
+ * with the token request, "Process API (PAPI)" and "System API (SAPI)", each API grouped by its
+ * spec tags. A collection pre-request script fetches a token on the first send once
+ * evaluatorEmail is set, and a collection test clears the token on a 401 so the next send
+ * fetches a fresh one.
  *
  *   node scripts/build-postman-collection.js           writes the collection
  *   node scripts/build-postman-collection.js --check   writes nothing, exits 1 when it differs
@@ -14,11 +19,11 @@
  * The converter's output changes on every run (random ids and faked UUID examples), so a post
  * step makes it the same bytes for the same spec: every id is a hash of its place in the
  * collection, every UUID in an example is one fixed value, and keys are sorted. The post step
- * also sets what an evaluator needs: the collection variables baseUrl and accessToken, bearer
- * auth on the collection from {{accessToken}}, and a first request "Get an evaluator token"
- * whose test script saves access_token and instance_url into those variables. The file never
- * holds a token. X-Request-Id takes Postman's {{$guid}}, so a request that sends it sends a
- * fresh UUID.
+ * also sets what an evaluator needs: the collection variables baseUrl, accessToken and
+ * evaluatorEmail, bearer auth on the collection from {{accessToken}}, and the request "Get an
+ * evaluator token" whose test script saves access_token and instance_url into those variables.
+ * The file never holds a token or an address. X-Request-Id takes Postman's {{$guid}}, so a
+ * request that sends it sends a fresh UUID, and every SAPI request sends it with X-API-Version.
  */
 const fs = require("fs");
 const path = require("path");
@@ -30,6 +35,7 @@ const RESOURCE_DIR = path.join(
   "packages/portfolio-site/main/default/staticresources"
 );
 const SPEC_FILE = path.join(RESOURCE_DIR, "PAPI_OpenAPI.json");
+const SAPI_SPEC_FILE = path.join(RESOURCE_DIR, "SAPI_OpenAPI.json");
 const OUTPUT_FILE = path.join(RESOURCE_DIR, "PAPI_Postman_Collection.json");
 
 /** The converter version the output was proven deterministic on. */
@@ -46,6 +52,89 @@ const TOKEN_PATH = "/auth/token";
 const RANDOM_SEED = 20261027;
 const FIXED_NOW = Date.UTC(2026, 0, 1);
 const TOKEN_REQUEST_NAME = "Get an evaluator token";
+const COLLECTION_NAME = "Ryan Bumstead Portfolio API";
+const START_FOLDER = "Start here";
+const PAPI_FOLDER = "Process API (PAPI)";
+const SAPI_FOLDER = "System API (SAPI)";
+const TOKEN_PURPOSE = "Evaluate the Portfolio API from Postman";
+const REFERENCE_URL = "https://ryanbumstead.com/api-lab/reference";
+const AI_REQUEST_NAME = "Generate AI Content";
+const MISSING_EMAIL_MESSAGE =
+  "Set evaluatorEmail in the collection variables to an address you can be reached at, then send again.";
+
+/** The collection's description, a short readme shown on the collection's overview. */
+const COLLECTION_README = [
+  "Every request here calls the live API behind ryanbumstead.com.",
+  "",
+  "To start, open the collection's Variables tab and set evaluatorEmail to an address you can be reached at. Then press Send on any request. The first send fetches an evaluator token for you and keeps it in accessToken, so there is nothing else to set up. You can also run Start here, Get an evaluator token, yourself.",
+  "",
+  "The token is shared by every evaluator, shown once, and ends after 30 minutes without use. When it ends the next request answers 401, the collection clears the token, and the send after that fetches a new one.",
+  "",
+  `For a full tour, run the whole collection with the Collection Runner. Untick ${AI_REQUEST_NAME} there, because it spends the site's AI budget.`,
+  "",
+  `Every endpoint is described at ${REFERENCE_URL}.`
+].join("\n");
+
+/**
+ * The collection pre-request script. Every request but the token request gets a token first
+ * when accessToken is empty, using evaluatorEmail, and stops with a plain message when no
+ * address is set.
+ * @param {string} tokenUrl the token endpoint on the site domain
+ * @returns {string[]} the script's lines
+ */
+function prerequestScript(tokenUrl) {
+  return [
+    `const TOKEN_URL = ${JSON.stringify(tokenUrl)};`,
+    'const isTokenRequest = pm.request.url.toString().indexOf("/auth/token") !== -1;',
+    'if (!isTokenRequest && !pm.collectionVariables.get("accessToken")) {',
+    '  const email = pm.collectionVariables.get("evaluatorEmail");',
+    "  if (!email) {",
+    `    throw new Error(${JSON.stringify(MISSING_EMAIL_MESSAGE)});`,
+    "  }",
+    "  pm.sendRequest(",
+    "    {",
+    "      url: TOKEN_URL,",
+    '      method: "POST",',
+    "      header: [",
+    '        { key: "Content-Type", value: "application/json" },',
+    '        { key: "Accept", value: "application/json" }',
+    "      ],",
+    "      body: {",
+    '        mode: "raw",',
+    `        raw: JSON.stringify({ email: email, purpose: ${JSON.stringify(TOKEN_PURPOSE)} })`,
+    "      }",
+    "    },",
+    "    function (error, response) {",
+    "      if (error) {",
+    '        throw new Error("The token request did not reach the server. " + error.message);',
+    "      }",
+    "      let body = {};",
+    "      try {",
+    "        body = response.json();",
+    "      } catch (parseError) {",
+    "        body = {};",
+    "      }",
+    "      if (response.code !== 200) {",
+    '        throw new Error("The token request answered " + response.code + ". " + (body.message || ""));',
+    "      }",
+    '      pm.collectionVariables.set("accessToken", body.access_token);',
+    '      pm.collectionVariables.set("baseUrl", body.instance_url);',
+    "    }",
+    "  );",
+    "}"
+  ];
+}
+
+/** The collection test script: a 401 clears the token, so the next send fetches a new one. */
+const COLLECTION_TEST_SCRIPT = [
+  "if (pm.response.code === 401) {",
+  '  pm.collectionVariables.unset("accessToken");',
+  '  pm.test("The token had ended, so it was cleared. Send again to fetch a new one.", function () {',
+  '    pm.expect(pm.collectionVariables.get("accessToken")).to.equal(undefined);',
+  "  });",
+  "}"
+];
+
 const FIXED_UUID = "00000000-0000-4000-8000-000000000000";
 const UUID_PATTERN =
   /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
@@ -167,12 +256,46 @@ function guidHeaders(headers) {
   );
 }
 
-/** A request with its url on {{baseUrl}}, its X-Request-Id a fresh UUID, and no auth of its own. */
-function normalizeRequest(request, apiPath) {
+/**
+ * The SAPI headers, sent on every SAPI request: SAPI refuses a missing X-Request-Id, and
+ * X-API-Version says which version the caller expects.
+ */
+function sapiHeaders(headers) {
+  const others = (headers || []).filter(
+    (header) => header.key !== "X-Request-Id" && header.key !== "X-API-Version"
+  );
+  return [
+    { key: "X-Request-Id", value: "{{$guid}}" },
+    { key: "X-API-Version", value: "v1" },
+    ...others
+  ];
+}
+
+/**
+ * A request with its url on {{baseUrl}}, its X-Request-Id a fresh UUID, and no auth of its
+ * own. A SAPI request always sends X-Request-Id and X-API-Version.
+ */
+function normalizeRequest(request, apiPath, isSapi) {
   const copy = { ...request, url: apiUrl(request.url, apiPath) };
-  copy.header = guidHeaders(request.header);
+  copy.header = isSapi
+    ? sapiHeaders(request.header)
+    : guidHeaders(request.header);
   delete copy.auth;
   return copy;
+}
+
+/** Points every request and response example of one API at {{baseUrl}} plus its path. */
+function normalizeApiItems(items, apiPath, isSapi) {
+  walkItems(items, (item) => {
+    item.request = normalizeRequest(item.request, apiPath, isSapi);
+    item.response = (item.response || []).map((example) => ({
+      ...example,
+      originalRequest: example.originalRequest
+        ? normalizeRequest(example.originalRequest, apiPath, isSapi)
+        : example.originalRequest
+    }));
+  });
+  return items;
 }
 
 /** The first request: the token, on the site domain, with no auth and the saving script. */
@@ -197,7 +320,7 @@ function tokenItem(converted, tokenUrl) {
   request.body = {
     mode: "raw",
     raw: JSON.stringify(
-      { email: "you@example.com", purpose: "Evaluate the Portfolio API" },
+      { email: "{{evaluatorEmail}}", purpose: TOKEN_PURPOSE },
       null,
       2
     ),
@@ -249,13 +372,18 @@ function assignIds(items, trail = []) {
 }
 
 /**
- * Turns the converter's collection into the published one. Pure: the same converter output
- * and spec give the same object.
- * @param {object} converted the collection openapi-to-postmanv2 returned
- * @param {object} spec the OpenAPI document it was built from
+ * Turns the converter's PAPI and SAPI collections into the published one. Pure: the same
+ * converter output and specs give the same object.
+ * @param {object} converted the PAPI collection openapi-to-postmanv2 returned
+ * @param {object} spec the PAPI OpenAPI document it was built from
+ * @param {object} sapiConverted the SAPI collection openapi-to-postmanv2 returned
+ * @param {object} sapiSpec the SAPI OpenAPI document it was built from
  * @returns {object} the collection to write
  */
-function normalizeCollection(converted, spec) {
+function normalizeCollection(converted, spec, sapiConverted, sapiSpec) {
+  if (!sapiConverted || !sapiSpec) {
+    throw new Error("Both the PAPI and the SAPI conversions are needed.");
+  }
   const apiServer = serverUrl(spec.servers[0]);
   const myDomain = originOf(apiServer);
   const apiPath = pathOf(apiServer);
@@ -285,19 +413,25 @@ function normalizeCollection(converted, spec) {
   if (!converterToken) {
     throw new Error(`The spec has no POST ${TOKEN_PATH} operation.`);
   }
-  walkItems(rest, (item) => {
-    item.request = normalizeRequest(item.request, apiPath);
-    item.response = (item.response || []).map((example) => ({
-      ...example,
-      originalRequest: example.originalRequest
-        ? normalizeRequest(example.originalRequest, apiPath)
-        : example.originalRequest
-    }));
-  });
+  normalizeApiItems(rest, apiPath, false);
+  const sapiPath = pathOf(serverUrl(sapiSpec.servers[0]));
+  const sapiItems = normalizeApiItems(
+    pruneEmpty(JSON.parse(JSON.stringify(sapiConverted.item || []))),
+    sapiPath,
+    true
+  );
 
-  const items = [tokenItem(converterToken, tokenUrl), ...rest];
-  const info = { ...converted.info };
-  info._postman_id = stableId(`collection:${info.name}`);
+  const items = [
+    { name: START_FOLDER, item: [tokenItem(converterToken, tokenUrl)] },
+    { name: PAPI_FOLDER, item: rest },
+    { name: SAPI_FOLDER, item: sapiItems }
+  ];
+  const info = {
+    name: COLLECTION_NAME,
+    schema: converted.info.schema,
+    description: { content: COLLECTION_README, type: "text/markdown" },
+    _postman_id: stableId(`collection:${COLLECTION_NAME}`)
+  };
 
   const collection = {
     info,
@@ -305,6 +439,16 @@ function normalizeCollection(converted, spec) {
       type: "bearer",
       bearer: [{ key: "token", value: "{{accessToken}}", type: "string" }]
     },
+    event: [
+      {
+        listen: "prerequest",
+        script: { type: "text/javascript", exec: prerequestScript(tokenUrl) }
+      },
+      {
+        listen: "test",
+        script: { type: "text/javascript", exec: COLLECTION_TEST_SCRIPT }
+      }
+    ],
     variable: [
       {
         key: "baseUrl",
@@ -316,7 +460,14 @@ function normalizeCollection(converted, spec) {
         key: "accessToken",
         value: "",
         type: "string",
-        description: `Filled by "${TOKEN_REQUEST_NAME}", or paste a token from the API Lab. Never saved in this file.`
+        description: `Filled on the first send, or by "${TOKEN_REQUEST_NAME}", or paste a token from the API Lab. Never saved in this file.`
+      },
+      {
+        key: "evaluatorEmail",
+        value: "",
+        type: "string",
+        description:
+          "The token request needs a real address you can be reached at. Set it here before the first send. The published collection never holds one."
       }
     ],
     item: assignIds(fixUuids(items))
@@ -390,16 +541,22 @@ function loadConverter() {
   return require(dir ? path.resolve(dir) : "openapi-to-postmanv2");
 }
 
-async function build(converter, specText) {
+async function build(converter, specText, sapiSpecText) {
   const spec = JSON.parse(specText);
+  const sapiSpec = JSON.parse(sapiSpecText);
+  // One after the other, PAPI first, so the seeded values come in the same order every run.
   const converted = await convert(converter, specText);
-  return serialize(normalizeCollection(converted, spec));
+  const sapiConverted = await convert(converter, sapiSpecText);
+  return serialize(
+    normalizeCollection(converted, spec, sapiConverted, sapiSpec)
+  );
 }
 
 async function main(argv) {
   const check = argv.includes("--check");
   const specText = fs.readFileSync(SPEC_FILE, "utf8");
-  const text = await build(loadConverter(), specText);
+  const sapiSpecText = fs.readFileSync(SAPI_SPEC_FILE, "utf8");
+  const text = await build(loadConverter(), specText, sapiSpecText);
   const relative = path.relative(ROOT, OUTPUT_FILE).split(path.sep).join("/");
   if (check) {
     const current = fs.existsSync(OUTPUT_FILE)
@@ -430,12 +587,24 @@ if (require.main === module) {
 }
 
 module.exports = {
+  AI_REQUEST_NAME,
+  COLLECTION_NAME,
+  COLLECTION_README,
+  COLLECTION_TEST_SCRIPT,
   CONVERTER_OPTIONS,
   CONVERTER_VERSION,
   FIXED_UUID,
+  MISSING_EMAIL_MESSAGE,
   OUTPUT_FILE,
+  PAPI_FOLDER,
+  REFERENCE_URL,
+  SAPI_FOLDER,
+  SAPI_SPEC_FILE,
   SPEC_FILE,
+  START_FOLDER,
+  TOKEN_PURPOSE,
   TOKEN_REQUEST_NAME,
+  prerequestScript,
   build,
   normalizeCollection,
   serialize,
