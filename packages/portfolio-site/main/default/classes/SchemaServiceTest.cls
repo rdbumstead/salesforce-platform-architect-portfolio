@@ -394,6 +394,158 @@ private class SchemaServiceTest {
     }
   }
 
+  @isTest
+  static void objectGraphDropsNamesOutsideTheAllowList() {
+    Test.startTest();
+    SchemaService.SchemaGraph graph = SchemaService.getObjectGraph(
+      new List<String>{
+        'User',
+        'Skill__c',
+        'API_Rate_Window__c',
+        'Circuit_Breaker_State__c',
+        'No_Such_Object__c'
+      }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      new Set<String>{ 'Skill__c' },
+      nodeNames(graph),
+      'Only the allowed object is drawn'
+    );
+    Assert.areEqual(SchemaService.SCOPE_OBJECTS, graph.scope, 'Scope');
+    Assert.areEqual(1, graph.objectCount, 'Object count');
+  }
+
+  @isTest
+  static void objectGraphMatchesCaseInsensitivelyAndReturnsTheRealName() {
+    Test.startTest();
+    SchemaService.SchemaGraph graph = SchemaService.getObjectGraph(
+      new List<String>{ ' skill__C ', 'ACCOUNT', null, ' ' }
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      new Set<String>{ 'Skill__c', 'Account' },
+      nodeNames(graph),
+      'Names come back in their real case'
+    );
+  }
+
+  @isTest
+  static void objectGraphThrowsWhenMoreThanTwelveNamesAreRequested() {
+    List<String> names = new List<String>();
+    for (Integer i = 0; i < SchemaService.MAX_OBJECTS + 1; i++) {
+      names.add('Skill__c');
+    }
+
+    try {
+      SchemaService.getObjectGraph(names);
+      Assert.fail('Thirteen names should throw');
+    } catch (AuraHandledException error) {
+      Assert.areEqual(
+        SchemaService.TOO_MANY_OBJECTS_MESSAGE,
+        error.getMessage(),
+        'Error message'
+      );
+    }
+  }
+
+  @isTest
+  static void objectGraphAcceptsExactlyTwelveNames() {
+    List<String> names = new List<String>();
+    for (Integer i = 0; i < SchemaService.MAX_OBJECTS; i++) {
+      names.add('Skill__c');
+    }
+
+    SchemaService.SchemaGraph graph = SchemaService.getObjectGraph(names);
+
+    Assert.areEqual(1, graph.objectCount, 'Twelve names are within the cap');
+  }
+
+  @isTest
+  static void objectGraphAddsAJunctionThatJoinsTwoRequestedObjects() {
+    SchemaService.SchemaGraph both = SchemaService.getObjectGraph(
+      new List<String>{ 'Experience__c', 'Skill__c' }
+    );
+    SchemaService.SchemaGraph one = SchemaService.getObjectGraph(
+      new List<String>{ 'Skill__c' }
+    );
+
+    Assert.areEqual(
+      new Set<String>{ 'Experience__c', 'Experience_Skill__c', 'Skill__c' },
+      nodeNames(both),
+      'The junction joins the two requested objects'
+    );
+    Assert.isFalse(
+      nodeNames(one).contains('Experience_Skill__c'),
+      'A junction to only one requested object is not added'
+    );
+  }
+
+  @isTest
+  static void objectGraphEdgesStayInsideTheResultingSet() {
+    SchemaService.SchemaGraph graph = SchemaService.getObjectGraph(
+      new List<String>{ 'Experience__c', 'Skill__c', 'Project__c' }
+    );
+
+    Set<String> names = nodeNames(graph);
+    Assert.isFalse(graph.edges.isEmpty(), 'The junction makes edges');
+    for (SchemaService.SchemaEdge edge : graph.edges) {
+      Assert.isTrue(
+        names.contains(edge.fromObject) && names.contains(edge.toObject),
+        'Edge ' + edge.fromObject + '.' + edge.field + ' leaves the set'
+      );
+    }
+    Assert.areEqual(
+      'Skill__c',
+      findEdge(graph, 'Experience_Skill__c', 'Skill__c').toObject,
+      'The junction points at Skill__c'
+    );
+    Assert.areEqual(
+      'Experience__c',
+      findEdge(graph, 'Experience_Skill__c', 'Experience__c').toObject,
+      'The junction points at Experience__c'
+    );
+    Assert.areEqual(graph.nodes.size(), graph.objectCount, 'Object count');
+  }
+
+  @isTest
+  static void objectGraphIsEmptyForNullEmptyOrNothingAllowed() {
+    List<List<String>> requests = new List<List<String>>{
+      null,
+      new List<String>(),
+      new List<String>{ 'User', 'Github_Cache__c' }
+    };
+
+    for (List<String> request : requests) {
+      SchemaService.SchemaGraph graph = SchemaService.getObjectGraph(request);
+
+      Assert.areEqual(SchemaService.SCOPE_OBJECTS, graph.scope, 'Scope');
+      Assert.isTrue(graph.nodes.isEmpty(), 'No nodes');
+      Assert.isTrue(graph.edges.isEmpty(), 'No edges');
+      Assert.areEqual(0, graph.objectCount, 'Object count');
+    }
+  }
+
+  @isTest
+  static void modelObjectNamesIsTheUnionOfBothScopes() {
+    Set<String> expected = nodeNames(graphFor(SchemaService.SCOPE_PORTFOLIO));
+    expected.addAll(nodeNames(graphFor(SchemaService.SCOPE_EMPLOYER_HUB)));
+
+    Set<String> names = SchemaService.modelObjectNames();
+
+    Assert.areEqual(expected, names, 'Every object either scope draws');
+    Assert.isTrue(names.contains('Project__c'), 'Real case, portfolio');
+    Assert.isTrue(names.contains('EH_Job_Posting__c'), 'Real case, hub');
+    Assert.isFalse(names.contains('User'), 'User is not in the model');
+    Assert.isFalse(names.contains('Github_Cache__c'), 'Hidden is left out');
+    Assert.isFalse(
+      names.contains('Circuit_Breaker_State__c'),
+      'A custom setting is left out'
+    );
+  }
+
   // The gallery stores static resource paths as resource:<Name>/<path>
   // in the Url field. This proves the field accepts that form.
   @isTest
