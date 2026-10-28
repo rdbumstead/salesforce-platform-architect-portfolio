@@ -111,7 +111,7 @@ describe("c-api-tester feedback", () => {
     await flush();
 
     expect($(element, "lightning-card").title).toBe("Try a request");
-    expect($(element, "lightning-input.query-input").placeholder).toBe(
+    expect($(element, "input.query-input").placeholder).toBe(
       "limit=10&offset=0"
     );
   });

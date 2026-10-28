@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>Postman run URL</label>
+    <protected>false</protected>
+    <values>
+        <field>Number_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Text_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Min_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Max_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >The Run in Postman link on the API Lab and the API reference page. The button shows only while this holds an https postman.com link. Empty hides it, and the collection download stays.</value>
+    </values>
+</CustomMetadata>

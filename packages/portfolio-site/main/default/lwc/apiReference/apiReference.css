@@ -1,3 +1,5 @@
+@import "c/nativeControls";
+
 /*
  * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching token
@@ -247,4 +249,47 @@
 
 .redoc-target li:not([class]) {
   margin: 0.25em 0;
+}
+
+/* The Postman collection download and the Run in Postman link, from c/nativeControls. */
+.postman-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+  margin: var(--pf-space-3) 0 var(--pf-space-2);
+}
+
+.collection-download,
+.postman-run {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+/*
+ * The site's own link rule (a:link and a:visited, outside this component) outranks
+ * .nc-button on an anchor and paints it as a text link. These restate the shared look's
+ * own tokens for a link styled as a button, and add nothing of their own.
+ */
+.postman-actions a.nc-button:link,
+.postman-actions a.nc-button:visited {
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+}
+
+.postman-actions a.nc-button_secondary:link,
+.postman-actions a.nc-button_secondary:visited {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+}
+
+.postman-actions a.nc-button:link:hover,
+.postman-actions a.nc-button:visited:hover {
+  background-color: var(--pf-btn-hover);
+}
+
+.postman-actions a.nc-button_secondary:link:hover,
+.postman-actions a.nc-button_secondary:visited:hover {
+  background-color: var(--pf-subtle);
 }

@@ -27,7 +27,20 @@
  *                      reads "Sending…" over a thin bar that moves by transform alone, and when
  *                      the answer arrives on a phone it is scrolled into view, smoothly unless
  *                      the visitor asks for reduced motion (c/motionPreference).
- * @author            : Ryan Bumstead
+ *                      The endpoint, the Advanced text and the token Email and Purpose are
+ *                      native controls with the site's one look (c/nativeControls). Each
+ *                      control row lines up by its controls, and every parameter control sits
+ *                      at the bottom of its grid cell so a row of them lines up. The email is
+ *                      checked on leaving the field and on Request token. Under the token
+ *                      form come three setup steps, a download of the PAPI Postman collection
+ *                      (the PAPI_Postman_Collection resource), a Run in Postman link shown
+ *                      only while one is set, and three copyable curl examples filled with the
+ *                      issued token and built in the page. The download, the link and each
+ *                      copy send postman_collection_downloaded, postman_run_clicked and
+ *                      curl_copied, never with the token. A failed call reads as a plain
+ *                      sentence (reduceError). The Execute button is the tour's stop C
+ *                      anchor (c/tourShowMe).
+ * @author           : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 01/03/2026
@@ -37,9 +50,159 @@ import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
 import getOptions from "@salesforce/apex/ApiLabOptionsController.getOptions";
 import invoke from "@salesforce/apex/ApiLabController.invoke";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
+import getPostmanRunUrl from "@salesforce/apex/ApiLabController.getPostmanRunUrl";
+import POSTMAN_COLLECTION from "@salesforce/resourceUrl/PAPI_Postman_Collection";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { loadPrism, highlight } from "c/prismHighlighter";
 import { isReduced } from "c/motionPreference";
+import { onShowMe, revealAnchor } from "c/tourShowMe";
+
+/** The tour stop whose control is this component's Execute button. */
+export const TOUR_STOP = "C";
+
+/** The file name the Postman collection downloads as. */
+export const COLLECTION_FILE_NAME =
+  "ryan-bumstead-portfolio-api.postman_collection.json";
+
+/** The source param of the Postman events from this component. */
+export const ANALYTICS_SOURCE = "api_lab";
+
+/** The token endpoint on the site's own host, the only path served to a caller with no token. */
+export const TOKEN_ENDPOINT_PATH =
+  "/portfoliovforcesite/services/apexrest/papi/v1/auth/token";
+export const API_PATH = "/services/apexrest/papi/v1";
+export const PLACEHOLDER_INSTANCE_URL = "<instance_url>";
+export const PLACEHOLDER_TOKEN = "<access_token>";
+
+export const MAX_EMAIL = 254;
+export const MAX_PURPOSE = 280;
+export const EMAIL_PATTERN =
+  /^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/;
+export const EMAIL_ERROR = "Enter an email address like name@example.com.";
+
+export const COPY_DONE = "Copied.";
+export const COPY_FAILED =
+  "Copy did not work in this browser. Select the text and copy it.";
+
+export const CURL_NOTE =
+  "Every evaluator token is one shared session. It is shown once and ends after 30 minutes without use. These lines are built in your browser and sent nowhere.";
+
+export const STATUS_NOTES = [
+  {
+    code: "401",
+    text: "The token has ended. Request a new one."
+  },
+  {
+    code: "429",
+    text: "Too many requests in one minute. Wait for the seconds in Retry-After."
+  },
+  {
+    code: "503",
+    text: "Today's token limit is reached. Try again tomorrow."
+  }
+];
+
+/** What a failed call says when the platform gave no message a visitor can use. */
+export const UNREACHABLE_MESSAGE =
+  "The request did not reach the server. Check your connection and try again.";
+
+/** The plain sentence for each status a failed call can carry. */
+export const STATUS_MESSAGES = {
+  401: "Your visit's session ended. Reload the page and try again.",
+  429: "Too many requests in the last minute. Wait a minute, then try again.",
+  503: "The service is not taking requests right now. Try again later."
+};
+
+/** The platform's own wording when it could not read the server's answer. */
+const RAW_ERROR = /failed to get error from response|^unknown error$/i;
+
+/**
+ * A plain sentence for a failed Apex call: the meaning of a 401, 429 or 503, else the
+ * server's own message, else a sentence that says the request did not get through. Never the
+ * platform's "Failed to get error from response".
+ */
+export function reduceError(error) {
+  if (!error) {
+    return UNREACHABLE_MESSAGE;
+  }
+  const status = Number(error.status);
+  if (STATUS_MESSAGES[status]) {
+    return STATUS_MESSAGES[status];
+  }
+  let messages = [];
+  if (Array.isArray(error.body)) {
+    messages = error.body.map((entry) => entry && entry.message);
+  } else if (error.body && typeof error.body.message === "string") {
+    messages = [error.body.message];
+  } else if (typeof error.message === "string") {
+    messages = [error.message];
+  }
+  const useful = messages.filter(
+    (message) =>
+      typeof message === "string" &&
+      message.trim().length > 0 &&
+      !RAW_ERROR.test(message.trim())
+  );
+  return useful.length ? useful.join(", ") : UNREACHABLE_MESSAGE;
+}
+
+/** True for an https link on postman.com or getpostman.com, the only Run in Postman links shown. */
+export function isPostmanRunUrl(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return false;
+  }
+  try {
+    const url = new URL(value.trim());
+    return (
+      url.protocol === "https:" &&
+      /(^|\.)(getpostman|postman)\.com$/.test(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The three curl examples: the token request on the site's own host, a health call and a data
+ * call. With a token they carry the visitor's instance_url and token, before one placeholders.
+ * The email in the token request is always a placeholder.
+ * @param {string} origin the site's origin, such as https://example.my.site.com
+ * @param {object} [token] the issued token body, with access_token and instance_url
+ * @returns {Array<{key: string, title: string, copyLabel: string, text: string}>}
+ */
+export function buildCurlExamples(origin, token) {
+  const instanceUrl = (token && token.instance_url) || PLACEHOLDER_INSTANCE_URL;
+  const accessToken = (token && token.access_token) || PLACEHOLDER_TOKEN;
+  const call = (path) =>
+    [
+      `curl "${instanceUrl}${API_PATH}${path}" \\`,
+      `  -H "Authorization: Bearer ${accessToken}"`
+    ].join("\n");
+  return [
+    {
+      key: "token",
+      title: "Get a token",
+      copyLabel: "Copy the token request",
+      text: [
+        `curl -X POST "${origin || ""}${TOKEN_ENDPOINT_PATH}" \\`,
+        '  -H "Content-Type: application/json" \\',
+        `  -d '{"email":"you@example.com","purpose":"Evaluate the Portfolio API"}'`
+      ].join("\n")
+    },
+    {
+      key: "health",
+      title: "Check the API's health",
+      copyLabel: "Copy the health call",
+      text: call("/health")
+    },
+    {
+      key: "data",
+      title: "Read the profile summary",
+      copyLabel: "Copy the profile summary call",
+      text: call("/profile/summary")
+    }
+  ];
+}
 
 /** api_test_executed status when the call itself failed and no HTTP status came back. */
 export const STATUS_CALL_FAILED = "error";
@@ -93,22 +256,6 @@ function withKeys(rows) {
     labelKey: `${row.name}-label`,
     valueKey: `${row.name}-value`
   }));
-}
-
-function reduceError(error) {
-  if (!error) {
-    return "Unknown error";
-  }
-  if (Array.isArray(error.body)) {
-    return error.body.map((entry) => entry.message).join(", ");
-  }
-  if (error.body && typeof error.body.message === "string") {
-    return error.body.message;
-  }
-  if (typeof error.message === "string") {
-    return error.message;
-  }
-  return "Unknown error";
 }
 
 /**
@@ -328,9 +475,21 @@ export default class ApiTester extends LightningElement {
 
   email = "";
   purpose = "";
+  emailError = "";
   isRequestingToken = false;
   tokenResult;
   tokenError = "";
+  maxEmail = MAX_EMAIL;
+  maxPurpose = MAX_PURPOSE;
+
+  collectionUrl = POSTMAN_COLLECTION;
+  collectionFileName = COLLECTION_FILE_NAME;
+  /** The Run in Postman link from Portfolio_Setting.Postman_Run_Url, "" while it is not set. */
+  postmanRunUrl = "";
+  copyStatus = "";
+  curlNote = CURL_NOTE;
+  statusNotes = STATUS_NOTES;
+  stopShowMe;
 
   /** Option lists by parameter name, from the org. Empty until they load or when they fail. */
   options = {};
@@ -350,6 +509,12 @@ export default class ApiTester extends LightningElement {
     } else if (error) {
       this.options = {};
     }
+  }
+
+  /** The Run in Postman link. Anything but a postman.com https link keeps the button hidden. */
+  @wire(getPostmanRunUrl)
+  wiredPostmanRunUrl({ data }) {
+    this.postmanRunUrl = isPostmanRunUrl(data) ? data.trim() : "";
   }
 
   @wire(getCatalog)
@@ -374,9 +539,14 @@ export default class ApiTester extends LightningElement {
       this.paintBody();
     });
     this.watchPhoneWidth();
+    this.stopShowMe = onShowMe(TOUR_STOP, () => revealAnchor(this.template));
   }
 
   disconnectedCallback() {
+    if (this.stopShowMe) {
+      this.stopShowMe();
+      this.stopShowMe = undefined;
+    }
     if (this.phoneQuery && this.phoneListener) {
       if (typeof this.phoneQuery.removeEventListener === "function") {
         this.phoneQuery.removeEventListener("change", this.phoneListener);
@@ -466,7 +636,8 @@ export default class ApiTester extends LightningElement {
   get endpointOptions() {
     return this.catalogPaths.map((entry) => ({
       label: `GET ${entry.path}`,
-      value: entry.path
+      value: entry.path,
+      selected: entry.path === this.selectedPath
     }));
   }
 
@@ -812,7 +983,7 @@ export default class ApiTester extends LightningElement {
   }
 
   handleEndpointChange(event) {
-    this.selectedPath = event.detail.value;
+    this.selectedPath = event.target.value;
     // The controls belong to a path. The Advanced text stays, as it always has.
     this.paramValues = {};
   }
@@ -849,6 +1020,85 @@ export default class ApiTester extends LightningElement {
     const field = event.target.dataset.field;
     if (field === "email" || field === "purpose") {
       this[field] = event.target.value;
+    }
+    // A shown email error clears as soon as the address reads right.
+    if (field === "email" && this.emailError && !this.emailProblem()) {
+      this.emailError = "";
+    }
+  }
+
+  /** Leaving the email field checks it, as the platform's email field did. */
+  handleEmailCommit(event) {
+    this.email = event.target.value;
+    this.emailError = this.emailProblem();
+  }
+
+  /** The email error, or "" when the field is empty or reads as an address. */
+  emailProblem() {
+    const email = (this.email || "").trim();
+    if (!email) {
+      return "";
+    }
+    return email.length > MAX_EMAIL || !EMAIL_PATTERN.test(email)
+      ? EMAIL_ERROR
+      : "";
+  }
+
+  get emailInvalid() {
+    return this.emailError ? "true" : undefined;
+  }
+
+  get hasPostmanRun() {
+    return isPostmanRunUrl(this.postmanRunUrl);
+  }
+
+  /** The curl examples, filled with the issued token once there is one. */
+  get curlExamples() {
+    const origin =
+      typeof window !== "undefined" && window.location
+        ? window.location.origin
+        : "";
+    const token = this.tokenIssued ? this.tokenResult.token : undefined;
+    return buildCurlExamples(origin, token);
+  }
+
+  handleCollectionDownload() {
+    trackEvent(EVENTS.POSTMAN_COLLECTION_DOWNLOADED, {
+      source: ANALYTICS_SOURCE
+    });
+  }
+
+  handlePostmanRun() {
+    trackEvent(EVENTS.POSTMAN_RUN_CLICKED, { source: ANALYTICS_SOURCE });
+  }
+
+  /**
+   * Copies one curl example. Sends curl_copied with only which example, never its text. The
+   * result is read out through the status line.
+   */
+  async handleCopyCurl(event) {
+    const key = event.currentTarget.dataset.example;
+    const example = this.curlExamples.find((entry) => entry.key === key);
+    if (!example) {
+      return;
+    }
+    this.copyStatus = "";
+    let copied = false;
+    try {
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.clipboard &&
+        typeof navigator.clipboard.writeText === "function"
+      ) {
+        await navigator.clipboard.writeText(example.text);
+        copied = true;
+      }
+    } catch {
+      copied = false;
+    }
+    this.copyStatus = copied ? COPY_DONE : COPY_FAILED;
+    if (copied) {
+      trackEvent(EVENTS.CURL_COPIED, { example: key });
     }
   }
 
@@ -905,6 +1155,18 @@ export default class ApiTester extends LightningElement {
 
   async handleRequestToken() {
     if (this.isTokenDisabled) {
+      return;
+    }
+    // A mistyped address is answered here, with focus on the field so its message is read.
+    this.emailError = this.emailProblem();
+    if (this.emailError) {
+      // After the render that adds the message, so the field is read with it.
+      Promise.resolve().then(() => {
+        const field = this.template.querySelector("input.token-email");
+        if (field) {
+          field.focus();
+        }
+      });
       return;
     }
     this.isRequestingToken = true;
