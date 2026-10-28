@@ -266,3 +266,30 @@
   justify-content: center;
   text-decoration: none;
 }
+
+/*
+ * The site's own link rule (a:link and a:visited, outside this component) outranks
+ * .nc-button on an anchor and paints it as a text link. These restate the shared look's
+ * own tokens for a link styled as a button, and add nothing of their own.
+ */
+.postman-actions a.nc-button:link,
+.postman-actions a.nc-button:visited {
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+}
+
+.postman-actions a.nc-button_secondary:link,
+.postman-actions a.nc-button_secondary:visited {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+}
+
+.postman-actions a.nc-button:link:hover,
+.postman-actions a.nc-button:visited:hover {
+  background-color: var(--pf-btn-hover);
+}
+
+.postman-actions a.nc-button_secondary:link:hover,
+.postman-actions a.nc-button_secondary:visited:hover {
+  background-color: var(--pf-subtle);
+}
