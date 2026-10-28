@@ -44,4 +44,8 @@
       xsi:type="xsd:string"
     >Cover letter grounding: experience highlights.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">highlights</value>
+    </values>
 </CustomMetadata>

@@ -46,4 +46,8 @@
       xsi:type="xsd:string"
     >Numbers panel: the newest deploy run with a test result, Apex and Jest.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">latest deploy</value>
+    </values>
 </CustomMetadata>

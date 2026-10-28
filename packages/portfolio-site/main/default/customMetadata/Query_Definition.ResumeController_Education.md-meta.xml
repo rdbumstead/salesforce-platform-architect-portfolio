@@ -42,4 +42,8 @@
         <field>Description__c</field>
         <value xsi:type="xsd:string">Resume and home timeline education.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">degrees</value>
+    </values>
 </CustomMetadata>

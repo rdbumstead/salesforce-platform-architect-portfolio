@@ -40,4 +40,8 @@
       xsi:type="xsd:string"
     >Numbers panel: recorded deploy runs, counted.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">deploy runs</value>
+    </values>
 </CustomMetadata>

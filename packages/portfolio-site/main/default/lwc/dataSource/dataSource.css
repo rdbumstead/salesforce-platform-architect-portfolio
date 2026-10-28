@@ -104,8 +104,7 @@
   color: var(--pf-text);
 }
 
-.panel-text,
-.source-description {
+.panel-text {
   margin: 0;
   color: var(--pf-body);
   background-color: var(--pf-surface);

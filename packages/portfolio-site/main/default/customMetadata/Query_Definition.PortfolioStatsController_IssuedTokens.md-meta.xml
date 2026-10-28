@@ -40,4 +40,8 @@
       xsi:type="xsd:string"
     >Numbers panel: evaluator tokens issued, counted.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">issued tokens</value>
+    </values>
 </CustomMetadata>

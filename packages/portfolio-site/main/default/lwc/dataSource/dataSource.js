@@ -68,7 +68,7 @@ export default class DataSource extends LightningElement {
   @api sourceKeys;
   /** Comma separated plain object API names, for sections with no definition. */
   @api objects;
-  /** True for caches where a row count would mislead. Labels and descriptions still show. */
+  /** True for caches where a row count would mislead. Labels still show. */
   @api hideCounts = false;
 
   definitionRows = [];
@@ -112,7 +112,7 @@ export default class DataSource extends LightningElement {
       rows.push({
         key: row.name || row.label,
         label: row.label,
-        description: row.description || "",
+        objectName: row.objectName || "",
         counted,
         text: counted ? countText(row.label, row.count) : row.label
       });
