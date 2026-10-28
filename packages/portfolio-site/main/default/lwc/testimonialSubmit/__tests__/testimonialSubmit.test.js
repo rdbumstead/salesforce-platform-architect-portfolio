@@ -15,6 +15,7 @@ import { createElement } from "@lwc/engine-dom";
 import TestimonialSubmit, {
   MAX_NAME_LENGTH,
   MAX_NOTE_LENGTH,
+  MAX_OWN_WORDS_LENGTH,
   RELATIONSHIPS,
   RATE_LIMITED_TEXT,
   errorMessage,
@@ -22,7 +23,13 @@ import TestimonialSubmit, {
 } from "c/testimonialSubmit";
 import getFragments from "@salesforce/apex/TestimonialController.getFragments";
 import submitTestimonial from "@salesforce/apex/TestimonialController.submitTestimonial";
+import submitOwnTestimonial from "@salesforce/apex/TestimonialController.submitOwnTestimonial";
 
+jest.mock(
+  "@salesforce/apex/TestimonialController.submitOwnTestimonial",
+  () => ({ default: jest.fn() }),
+  { virtual: true }
+);
 jest.mock(
   "@salesforce/apex/TestimonialController.getFragments",
   () => {
@@ -246,11 +253,13 @@ describe("c-testimonial-submit", () => {
     expect(q(element, '[name="authorName"]').getAttribute("aria-invalid")).toBe(
       "true"
     );
+    // The box is described by its count and its error, ids rewritten by the engine.
     expect(
       q(element, '[name="authorName"]')
         .getAttribute("aria-describedby")
-        .replace(/-\d+$/, "")
-    ).toBe("authorName-error");
+        .split(" ")
+        .map((id) => id.replace(/-\d+$/, ""))
+    ).toEqual(["authorName-count", "authorName-error"]);
     expect(element.shadowRoot.activeElement).toBe(
       q(element, '[name="authorName"]')
     );
@@ -591,5 +600,121 @@ describe("c-testimonial-submit", () => {
       expect(submitTestimonial).not.toHaveBeenCalled();
       expect(sentParams()).toEqual([]);
     });
+  });
+});
+
+describe("c-testimonial-submit, written in the reviewer's own words", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    jest.clearAllMocks();
+  });
+
+  async function ownWordsForm() {
+    const element = await ready();
+    q(element, '[data-id="mode-own"]').click();
+    await flushPromises();
+    return element;
+  }
+
+  it("starts on the sentence builder and switches to one review box", async () => {
+    const element = await ready();
+    expect(
+      q(element, '[data-id="mode-builder"]').getAttribute("aria-pressed")
+    ).toBe("true");
+    expect(q(element, '[data-id="sentence"]')).not.toBeNull();
+    expect(q(element, '[name="ownWords"]')).toBeNull();
+
+    q(element, '[data-id="mode-own"]').click();
+    await flushPromises();
+    expect(
+      q(element, '[data-id="mode-own"]').getAttribute("aria-pressed")
+    ).toBe("true");
+    expect(
+      q(element, '[data-id="mode-builder"]').getAttribute("aria-pressed")
+    ).toBe("false");
+    expect(q(element, '[data-id="sentence"]')).toBeNull();
+    expect(q(element, '[name="note"]')).toBeNull();
+    expect(q(element, '[name="relationship"]')).not.toBeNull();
+    expect(q(element, '[name="ownWords"]').getAttribute("maxlength")).toBe(
+      String(MAX_OWN_WORDS_LENGTH)
+    );
+  });
+
+  it("asks for the review and focuses it when it is blank", async () => {
+    const element = await ownWordsForm();
+    await setField(element, "authorName", "Ada Lovelace");
+    await setField(element, "relationship", "Client");
+    await submit(element);
+
+    expect(q(element, '[data-id="ownWords-error"]').textContent.trim()).toBe(
+      "Write your review."
+    );
+    expect(element.shadowRoot.activeElement).toBe(
+      q(element, '[name="ownWords"]')
+    );
+    expect(submitOwnTestimonial).not.toHaveBeenCalled();
+  });
+
+  it("refuses a review over the limit", async () => {
+    const element = await ownWordsForm();
+    await setField(element, "authorName", "Ada Lovelace");
+    await setField(element, "relationship", "Client");
+    await setField(element, "ownWords", "x".repeat(MAX_OWN_WORDS_LENGTH + 1));
+    await submit(element);
+    expect(q(element, '[data-id="ownWords-error"]').textContent.trim()).toBe(
+      `Use ${MAX_OWN_WORDS_LENGTH} characters or fewer.`
+    );
+  });
+
+  it("sends the review to submitOwnTestimonial with no phrases and no note", async () => {
+    submitOwnTestimonial.mockResolvedValue("a0B000000000009AAA");
+    const element = await ownWordsForm();
+    await setField(element, "authorName", "  Ada Lovelace  ");
+    await setField(element, "relationship", "Client");
+    await setField(
+      element,
+      "ownWords",
+      "  Ryan rebuilt our release process.  "
+    );
+    await submit(element);
+    await flushPromises();
+
+    expect(submitTestimonial).not.toHaveBeenCalled();
+    expect(submitOwnTestimonial.mock.calls[0][0]).toEqual({
+      authorName: "Ada Lovelace",
+      authorTitle: null,
+      relationship: "Client",
+      vibeMode: "Professional",
+      ownWords: "Ryan rebuilt our release process.",
+      website: null,
+      elapsedMs: expect.any(Number)
+    });
+    expect(q(element, '[data-id="success"]')).not.toBeNull();
+  });
+
+  it("counts the review against its limit and warns near it", async () => {
+    const element = await ownWordsForm();
+    const count = () => q(element, '[data-id="ownWords-count"]');
+    expect(count().textContent.trim()).toBe(
+      `0 of ${MAX_OWN_WORDS_LENGTH} characters`
+    );
+    await setField(element, "ownWords", "x".repeat(MAX_OWN_WORDS_LENGTH - 5));
+    expect(count().textContent.trim()).toBe(
+      `${MAX_OWN_WORDS_LENGTH - 5} of ${MAX_OWN_WORDS_LENGTH} characters, 5 left`
+    );
+    expect(count().classList.contains("field-limit_near")).toBe(true);
+  });
+
+  it("holds the same review limit as the controller", () => {
+    const source = readFileSync(
+      join(DEFAULT_DIR, "classes", "TestimonialController.cls"),
+      "utf8"
+    );
+    expect(source).toMatch(/MAX_OWN_WORDS_LENGTH = MAX_CONTEXT_LENGTH;/);
+    expect(source).toMatch(
+      new RegExp(`MAX_CONTEXT_LENGTH = ${MAX_OWN_WORDS_LENGTH};`)
+    );
   });
 });

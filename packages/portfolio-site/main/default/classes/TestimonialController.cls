@@ -1,7 +1,8 @@
 /**
  * @description       : The public testimonial form and wall
  *                      (ADR-005, ADR-012). The form is a sentence builder: "I'm a [relationship],
- *                      and Ryan [strength]. The result? [outcome]" plus an optional note. The
+ *                      and Ryan [strength]. The result? [outcome]" plus an optional note, or,
+ *                      through submitOwnTestimonial, a review in the reviewer's own words. The
  *                      strengths and outcomes are Testimonial_Fragment__mdt records, and only a
  *                      known fragment of the chosen vibe is accepted. The finished sentence is
  *                      stored in Context__c, so it stays exactly as the reviewer approved it even
@@ -60,6 +61,9 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
   private static final Integer MAX_CONTEXT_LENGTH = 255;
   @TestVisible
   private static final Integer MAX_NOTE_LENGTH = 255;
+  /** A review in the reviewer's own words is stored in Context__c, so it has that field's room. */
+  @TestVisible
+  private static final Integer MAX_OWN_WORDS_LENGTH = MAX_CONTEXT_LENGTH;
   @TestVisible
   private static final String RATE_LIMITED_MESSAGE = 'Too many submissions. Try again in a minute.';
   @TestVisible
@@ -314,13 +318,100 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
       );
     }
 
+    Testimonial__c testimonial = new Testimonial__c(
+      Author_Name__c = authorName.trim(),
+      Author_Title__c = String.isBlank(authorTitle) ? null : authorTitle.trim(),
+      Relationship_Type__c = relationship,
+      Vibe_Mode__c = vibeMode,
+      Context__c = sentence,
+      Strength_Fragment__c = strength.DeveloperName,
+      Outcome_Fragment__c = outcome.DeveloperName,
+      Note__c = String.isBlank(note) ? null : note.trim()
+    );
+    return save(testimonial, note, website, elapsedMs);
+  }
+
+  /**
+   * @description Saves a testimonial in the reviewer's own words, for those who would rather
+   *              write than build the sentence. The words become Context__c, so the wall, the
+   *              feed and the approval email read them as they read a built sentence. No
+   *              fragment is set. The same checks, spam guard and approval apply.
+   * @param authorName Required, at most 80 characters.
+   * @param authorTitle Optional, at most the length of Author_Title__c.
+   * @param relationship One of Manager, Peer, Client, Recruiter, Fan.
+   * @param vibeMode Professional or Casual, which the wall's filter reads.
+   * @param ownWords Required, at most MAX_OWN_WORDS_LENGTH characters.
+   * @param website The honeypot. A person leaves it empty.
+   * @param elapsedMs Milliseconds between the form appearing and the submit.
+   * @return Id The new Testimonial__c Id, or null when the submission was dropped silently.
+   * @throws AuraHandledException With a readable message when the input is invalid, the
+   *         submission rate is exceeded, or the record cannot be saved.
+   * @example
+   * Id saved = TestimonialController.submitOwnTestimonial('Ada', 'CTO', 'Peer',
+   *   'Professional', 'Ryan rebuilt our release process in a month.', null, 9000);
+   */
+  @AuraEnabled
+  public static Id submitOwnTestimonial(
+    String authorName,
+    String authorTitle,
+    String relationship,
+    String vibeMode,
+    String ownWords,
+    String website,
+    Integer elapsedMs
+  ) {
+    String validationError = validate(
+      authorName,
+      authorTitle,
+      relationship,
+      vibeMode,
+      null
+    );
+    if (validationError == null && String.isBlank(ownWords)) {
+      validationError = 'Write your review.';
+    }
+    if (
+      validationError == null &&
+      ownWords.trim().length() > MAX_OWN_WORDS_LENGTH
+    ) {
+      validationError =
+        'Your review can be at most ' +
+        MAX_OWN_WORDS_LENGTH +
+        ' characters.';
+    }
+    if (validationError != null) {
+      throw auraError(validationError);
+    }
+    Testimonial__c testimonial = new Testimonial__c(
+      Author_Name__c = authorName.trim(),
+      Author_Title__c = String.isBlank(authorTitle) ? null : authorTitle.trim(),
+      Relationship_Type__c = relationship,
+      Vibe_Mode__c = vibeMode,
+      Context__c = ownWords.trim()
+    );
+    return save(testimonial, ownWords, website, elapsedMs);
+  }
+
+  /**
+   * @description The shared end of both forms: the spam guard over the name, title and free
+   *              text, the insert as the user, and the hand off for approval.
+   * @return Id The saved Id, or null when the guard dropped the submission silently.
+   */
+  private static Id save(
+    Testimonial__c testimonial,
+    String freeText,
+    String website,
+    Integer elapsedMs
+  ) {
     SubmissionGuard.Request request = new SubmissionGuard.Request();
     request.formKey = SubmissionGuard.FORM_TESTIMONIAL;
     request.message = String.join(
       new List<String>{
-        authorName,
-        String.isBlank(authorTitle) ? '' : authorTitle,
-        String.isBlank(note) ? '' : note
+        testimonial.Author_Name__c,
+        String.isBlank(testimonial.Author_Title__c)
+          ? ''
+          : testimonial.Author_Title__c,
+        String.isBlank(freeText) ? '' : freeText
       },
       ' '
     );
@@ -336,16 +427,6 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
       throw auraError(RATE_LIMITED_MESSAGE);
     }
 
-    Testimonial__c testimonial = new Testimonial__c(
-      Author_Name__c = authorName.trim(),
-      Author_Title__c = String.isBlank(authorTitle) ? null : authorTitle.trim(),
-      Relationship_Type__c = relationship,
-      Vibe_Mode__c = vibeMode,
-      Context__c = sentence,
-      Strength_Fragment__c = strength.DeveloperName,
-      Outcome_Fragment__c = outcome.DeveloperName,
-      Note__c = String.isBlank(note) ? null : note.trim()
-    );
     try {
       if (forceSaveFailure) {
         throw new DmlException('Forced save failure for tests.');

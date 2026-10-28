@@ -72,10 +72,47 @@
   resize: vertical;
 }
 
-.field-hint {
+.field-hint,
+.field-limit {
   color: var(--form-muted);
   font-size: 0.875rem;
   margin: 0.25rem 0 0;
+}
+
+/* A box's count turns to the warning colour once it nears its limit (c/fieldLimit). */
+.field-limit_near {
+  color: var(--pf-warn-text);
+  font-weight: 600;
+}
+
+/* Build a sentence or write my own: two buttons, the pressed one filled. Each is 44 px high. */
+.mode-options {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mode-option {
+  min-height: 44px;
+  padding: 0 1rem;
+  background-color: var(--form-surface);
+  color: var(--form-text);
+  border: 1px solid var(--form-border);
+  border-radius: 0.25rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mode-option[aria-pressed="true"] {
+  background-color: var(--form-brand);
+  color: var(--form-brand-text);
+  border-color: var(--form-brand);
+  font-weight: 700;
+}
+
+.mode-option:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
 }
 
 .vibe-toggle {

@@ -26,10 +26,17 @@
             autocomplete="name"
             maxlength={maxNameLength}
             aria-invalid={authorNameInvalid}
-            aria-describedby="authorName-error"
+            aria-describedby="authorName-count authorName-error"
             value={form.authorName}
             oninput={handleInput}
           />
+          <p
+            id="authorName-count"
+            class={nameLimit.className}
+            data-id="authorName-count"
+          >
+            {nameLimit.text}
+          </p>
           <template lwc:if={authorNameError}>
             <p
               id="authorName-error"
@@ -53,10 +60,17 @@
             autocomplete="organization-title"
             maxlength={maxTitleLength}
             aria-invalid={authorTitleInvalid}
-            aria-describedby="authorTitle-error"
+            aria-describedby="authorTitle-count authorTitle-error"
             value={form.authorTitle}
             oninput={handleInput}
           />
+          <p
+            id="authorTitle-count"
+            class={titleLimit.className}
+            data-id="authorTitle-count"
+          >
+            {titleLimit.text}
+          </p>
           <template lwc:if={authorTitleError}>
             <p
               id="authorTitle-error"
@@ -91,26 +105,46 @@
           </p>
         </div>
 
-        <template lwc:if={loadError}>
-          <p class="message message-error" role="alert" data-id="load-error">
-            {loadError}
-          </p>
-        </template>
+        <div class="field mode-field" role="group" aria-labelledby="mode-label">
+          <span class="field-label" id="mode-label"
+            >How would you like to write it?</span
+          >
+          <div class="mode-options">
+            <button
+              type="button"
+              class="mode-option"
+              data-mode="builder"
+              data-id="mode-builder"
+              aria-pressed={builderPressed}
+              onclick={handleModeChange}
+            >
+              Build a sentence
+            </button>
+            <button
+              type="button"
+              class="mode-option"
+              data-mode="own"
+              data-id="mode-own"
+              aria-pressed={ownPressed}
+              onclick={handleModeChange}
+            >
+              Write my own
+            </button>
+          </div>
+        </div>
 
-        <fieldset class="sentence" data-id="sentence">
-          <legend class="field-label sentence-legend">
-            Your sentence: I'm a [relationship], and Ryan [strength]. The
-            result? [outcome]
-          </legend>
-          <div class="blank">
-            <label class="blank-label" for="relationship">I'm a</label>
+        <template lwc:if={isOwnWords}>
+          <div class="field" data-id="own-words">
+            <label class="field-label" for="relationship-own"
+              >How do you know Ryan?</label
+            >
             <select
-              id="relationship"
-              class="field-input blank-input"
+              id="relationship-own"
+              class="field-input"
               name="relationship"
               required
               aria-invalid={relationshipInvalid}
-              aria-describedby="relationship-error"
+              aria-describedby="relationship-own-error"
               onchange={handleInput}
             >
               <option value="" selected={noRelationship}>
@@ -128,104 +162,187 @@
             </select>
             <template lwc:if={relationshipError}>
               <p
-                id="relationship-error"
-                class="field-error blank-error"
+                id="relationship-own-error"
+                class="field-error"
                 data-id="relationship-error"
               >
                 {relationshipError}
               </p>
             </template>
           </div>
-          <div class="blank">
-            <label class="blank-label" for="strength">and Ryan</label>
-            <select
-              id="strength"
-              class="field-input blank-input"
-              name="strength"
+          <div class="field">
+            <label class="field-label" for="ownWords">Your review</label>
+            <textarea
+              id="ownWords"
+              class="field-input field-textarea"
+              name="ownWords"
+              rows="4"
               required
-              aria-invalid={strengthInvalid}
-              aria-describedby="strength-error"
-              onchange={handleInput}
+              maxlength={maxOwnWordsLength}
+              aria-invalid={ownWordsInvalid}
+              aria-describedby="ownWords-count ownWords-error"
+              oninput={handleInput}
+            ></textarea>
+            <p
+              id="ownWords-count"
+              class={ownWordsLimit.className}
+              data-id="ownWords-count"
             >
-              <option value="" selected={noStrength}>Choose a strength</option>
-              <template for:each={strengthOptions} for:item="option">
-                <option
-                  key={option.value}
-                  value={option.value}
-                  selected={option.selected}
-                >
-                  {option.label}
-                </option>
-              </template>
-            </select>
-            <template lwc:if={strengthError}>
+              {ownWordsLimit.text}
+            </p>
+            <template lwc:if={ownWordsError}>
               <p
-                id="strength-error"
-                class="field-error blank-error"
-                data-id="strength-error"
+                id="ownWords-error"
+                class="field-error"
+                data-id="ownWords-error"
               >
-                {strengthError}
+                {ownWordsError}
               </p>
             </template>
           </div>
-          <div class="blank">
-            <label class="blank-label" for="outcome">The result?</label>
-            <select
-              id="outcome"
-              class="field-input blank-input"
-              name="outcome"
-              required
-              aria-invalid={outcomeInvalid}
-              aria-describedby="outcome-error"
-              onchange={handleInput}
-            >
-              <option value="" selected={noOutcome}>Choose a result</option>
-              <template for:each={outcomeOptions} for:item="option">
-                <option
-                  key={option.value}
-                  value={option.value}
-                  selected={option.selected}
-                >
-                  {option.label}
-                </option>
-              </template>
-            </select>
-            <template lwc:if={outcomeError}>
-              <p
-                id="outcome-error"
-                class="field-error blank-error"
-                data-id="outcome-error"
-              >
-                {outcomeError}
-              </p>
-            </template>
-          </div>
-          <p class="preview" aria-live="polite" data-id="preview">
-            {previewText}
-          </p>
-        </fieldset>
+        </template>
 
-        <div class="field">
-          <label class="field-label" for="note"
-            >Anything to add? (optional)</label
-          >
-          <textarea
-            id="note"
-            class="field-input field-textarea"
-            name="note"
-            rows="3"
-            maxlength={maxNoteLength}
-            aria-invalid={noteInvalid}
-            aria-describedby="note-count note-error"
-            oninput={handleInput}
-          ></textarea>
-          <p id="note-count" class="field-hint">{noteCount}</p>
-          <template lwc:if={noteError}>
-            <p id="note-error" class="field-error" data-id="note-error">
-              {noteError}
+        <template lwc:else>
+          <template lwc:if={loadError}>
+            <p class="message message-error" role="alert" data-id="load-error">
+              {loadError}
             </p>
           </template>
-        </div>
+
+          <fieldset class="sentence" data-id="sentence">
+            <legend class="field-label sentence-legend">
+              Your sentence: I'm a [relationship], and Ryan [strength]. The
+              result? [outcome]
+            </legend>
+            <div class="blank">
+              <label class="blank-label" for="relationship">I'm a</label>
+              <select
+                id="relationship"
+                class="field-input blank-input"
+                name="relationship"
+                required
+                aria-invalid={relationshipInvalid}
+                aria-describedby="relationship-error"
+                onchange={handleInput}
+              >
+                <option value="" selected={noRelationship}>
+                  Choose a relationship
+                </option>
+                <template for:each={relationshipOptions} for:item="option">
+                  <option
+                    key={option.value}
+                    value={option.value}
+                    selected={option.selected}
+                  >
+                    {option.label}
+                  </option>
+                </template>
+              </select>
+              <template lwc:if={relationshipError}>
+                <p
+                  id="relationship-error"
+                  class="field-error blank-error"
+                  data-id="relationship-error"
+                >
+                  {relationshipError}
+                </p>
+              </template>
+            </div>
+            <div class="blank">
+              <label class="blank-label" for="strength">and Ryan</label>
+              <select
+                id="strength"
+                class="field-input blank-input"
+                name="strength"
+                required
+                aria-invalid={strengthInvalid}
+                aria-describedby="strength-error"
+                onchange={handleInput}
+              >
+                <option value="" selected={noStrength}>
+                  Choose a strength
+                </option>
+                <template for:each={strengthOptions} for:item="option">
+                  <option
+                    key={option.value}
+                    value={option.value}
+                    selected={option.selected}
+                  >
+                    {option.label}
+                  </option>
+                </template>
+              </select>
+              <template lwc:if={strengthError}>
+                <p
+                  id="strength-error"
+                  class="field-error blank-error"
+                  data-id="strength-error"
+                >
+                  {strengthError}
+                </p>
+              </template>
+            </div>
+            <div class="blank">
+              <label class="blank-label" for="outcome">The result?</label>
+              <select
+                id="outcome"
+                class="field-input blank-input"
+                name="outcome"
+                required
+                aria-invalid={outcomeInvalid}
+                aria-describedby="outcome-error"
+                onchange={handleInput}
+              >
+                <option value="" selected={noOutcome}>Choose a result</option>
+                <template for:each={outcomeOptions} for:item="option">
+                  <option
+                    key={option.value}
+                    value={option.value}
+                    selected={option.selected}
+                  >
+                    {option.label}
+                  </option>
+                </template>
+              </select>
+              <template lwc:if={outcomeError}>
+                <p
+                  id="outcome-error"
+                  class="field-error blank-error"
+                  data-id="outcome-error"
+                >
+                  {outcomeError}
+                </p>
+              </template>
+            </div>
+            <p class="preview" aria-live="polite" data-id="preview">
+              {previewText}
+            </p>
+          </fieldset>
+
+          <div class="field">
+            <label class="field-label" for="note"
+              >Anything to add? (optional)</label
+            >
+            <textarea
+              id="note"
+              class="field-input field-textarea"
+              name="note"
+              rows="3"
+              maxlength={maxNoteLength}
+              aria-invalid={noteInvalid}
+              aria-describedby="note-count note-error"
+              oninput={handleInput}
+            ></textarea>
+            <p id="note-count" class={noteLimit.className} data-id="note-count">
+              {noteLimit.text}
+            </p>
+            <template lwc:if={noteError}>
+              <p id="note-error" class="field-error" data-id="note-error">
+                {noteError}
+              </p>
+            </template>
+          </div>
+        </template>
 
         <div class="trap" aria-hidden="true">
           <label for="website">Leave this field empty</label>
