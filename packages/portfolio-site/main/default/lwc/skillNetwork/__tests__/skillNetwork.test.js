@@ -1544,3 +1544,19 @@ describe("c-skill-network evidence words and label placement", () => {
     expect(placed.box.bottom - placed.box.top).toBe(12 + 14);
   });
 });
+
+describe("c-skill-network live data marker", () => {
+  it("places the live data marker with the sources the section reads", () => {
+    const { readFileSync } = require("fs");
+    const { join } = require("path");
+    const html = readFileSync(
+      join(__dirname, "..", "skillNetwork.html"),
+      "utf8"
+    );
+    const marker = html.match(/<c-data-source\s([^>]*)>\s*<\/c-data-source>/);
+    expect(marker).not.toBeNull();
+    expect(marker[1]).not.toMatch(/source-keys/);
+    expect(marker[1]).toMatch(/objects="Skill__c"/);
+    expect(marker[1]).not.toMatch(/hide-counts/);
+  });
+});
