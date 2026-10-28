@@ -383,14 +383,14 @@ private class GitHubCacheRefreshJobTest {
 
   @IsTest
   static void shouldCutMessageWhenLongerThanLimit() {
-    String longLine = 'x'.repeat(150);
+    String longLine = 'x'.repeat(GitHubService.MESSAGE_MAX_LENGTH + 50);
 
     String cut = GitHubService.firstLine(longLine + '\nsecond line');
 
     Assert.areEqual(
       GitHubService.MESSAGE_MAX_LENGTH,
       cut.length(),
-      'Cut to 100 characters'
+      'Cut to the limit'
     );
     Assert.isTrue(
       cut.endsWith(GitHubService.ELLIPSIS),
@@ -401,7 +401,7 @@ private class GitHubCacheRefreshJobTest {
   @IsTest
   static void shouldCacheNoMergeCommitsAndMarkACutMessageWhenGitHubAnswers() {
     useRepo('rdbumstead/salesforce-platform-architect-portfolio');
-    String longMessage = 'x'.repeat(150);
+    String longMessage = 'x'.repeat(GitHubService.MESSAGE_MAX_LENGTH + 50);
     String body =
       '[{"sha":"merge111","commit":{"message":"Merge pull request #1 from a/b","author":{"name":"G","date":"2026-10-21T09:00:00Z"}},' +
       '"parents":[{"sha":"p1"},{"sha":"p2"}]},' +

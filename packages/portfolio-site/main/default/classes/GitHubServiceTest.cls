@@ -98,7 +98,7 @@ private class GitHubServiceTest {
 
   @IsTest
   static void shouldEndACutMessageWithAnEllipsisWithinTheLimit() {
-    String longLine = 'word '.repeat(40);
+    String longLine = 'word '.repeat(GitHubService.MESSAGE_MAX_LENGTH / 5 + 10);
 
     String cut = GitHubService.firstLine(longLine + '\nsecond line');
 

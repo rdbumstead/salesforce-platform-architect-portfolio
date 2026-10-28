@@ -35,7 +35,9 @@ public with sharing class GitHubService {
 
   public static final String BRANCH = 'main';
   public static final Integer COMMIT_COUNT = 10;
-  public static final Integer MESSAGE_MAX_LENGTH = 100;
+  // A guard against a runaway first line, not a display width. The Delivery page wraps a
+  // message to the row, so a real subject is never cut.
+  public static final Integer MESSAGE_MAX_LENGTH = 200;
   public static final Integer FILE_PATH_MAX_LENGTH = 255;
   /** The horizontal ellipsis character, built from its code point. */
   @TestVisible
