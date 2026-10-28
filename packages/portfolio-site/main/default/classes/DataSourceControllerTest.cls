@@ -60,7 +60,63 @@ private class DataSourceControllerTest {
     );
     Assert.isTrue(sources[0].hasCount, 'A filterless definition is counted.');
     Assert.areEqual(4, sources[0].count, 'The count matches the rows.');
-    Assert.isNotNull(sources[0].description, 'The description is returned.');
+    Assert.areEqual(
+      'Skill__c',
+      sources[0].objectName,
+      'The object API name is returned.'
+    );
+    Assert.isFalse(
+      JSON.serialize(sources).containsIgnoreCase('description'),
+      'No description is returned.'
+    );
+  }
+
+  @isTest
+  static void visitorLabelWinsOverObjectPluralLabel() {
+    Query_Definition__mdt withLabel = definition(null, true);
+    withLabel.Visitor_Label__c = 'abilities';
+    DataSourceController.overrides.put('Test_With_Label', withLabel);
+    DataSourceController.overrides.put(
+      'Test_Blank_Label',
+      definition(null, true)
+    );
+
+    List<DataSourceController.DataSource> sources = DataSourceController.getSources(
+      new List<String>{ 'Test_With_Label', 'Test_Blank_Label' }
+    );
+
+    Assert.areEqual(2, sources.size());
+    Assert.areEqual('abilities', sources[0].label, 'The visitor label wins.');
+    Assert.areEqual(
+      Skill__c.SObjectType.getDescribe().getLabelPlural(),
+      sources[1].label,
+      'A blank visitor label falls back to the plural label.'
+    );
+  }
+
+  @isTest
+  static void objectSourceTakesVisitorLabelOfFirstDefinitionThatHasOne() {
+    Query_Definition__mdt second = definition(null, true);
+    second.Visitor_Label__c = 'second label';
+    Query_Definition__mdt first = definition(null, true);
+    first.Visitor_Label__c = 'first label';
+    DataSourceController.overrides.put('AAA_Test_Second', second);
+    DataSourceController.overrides.put('AAA_Test_First', first);
+    Query_Definition__mdt inactive = definition(null, false);
+    inactive.Visitor_Label__c = 'inactive label';
+    DataSourceController.overrides.put('AAA_A_Inactive', inactive);
+
+    List<DataSourceController.DataSource> sources = DataSourceController.getObjectSources(
+      new List<String>{ 'Skill__c' }
+    );
+
+    Assert.areEqual(1, sources.size());
+    Assert.areEqual('Skill__c', sources[0].objectName);
+    Assert.areEqual(
+      'first label',
+      sources[0].label,
+      'The first active definition by developer name with a label wins.'
+    );
   }
 
   @isTest

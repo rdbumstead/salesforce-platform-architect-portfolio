@@ -1,8 +1,10 @@
 /**
  * @description       : Serves the live data marker. getSources(names) takes Query_Definition__mdt
  *                      developer names and returns, for each active one, the plural label of
- *                      the object it reads, the definition's Description__c and a live count of
+ *                      the visitor label of the definition (Visitor_Label__c, else the plural
+ *                      label of the object it reads), the object API name and a live count of
  *                      the rows its filter matches, counted in the definition's own access mode.
+ *                      The developer facing Description__c is never returned.
  *                      Unknown, inactive or unreadable names are skipped. At most MAX_NAMES
  *                      names are read per call. A definition whose filter takes bind values, or
  *                      whose filter the metadata read cut short, is returned with no count
@@ -11,8 +13,10 @@
  *                      input, and a request supplies names only, which are matched against the
  *                      records and never added to a query. getObjectSources(objectNames) does
  *                      the same for sections that read through GraphQL and have no definition.
- *                      It serves only an object that an active definition reads, and counts it
- *                      in user mode, which is what the GraphQL read itself sees.
+ *                      It serves only an object that an active definition reads, labels it with
+ *                      the Visitor_Label__c of the first such definition by developer name that
+ *                      has one, and counts it in user mode, which is what the GraphQL read
+ *                      itself sees.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -35,7 +39,7 @@ public with sharing class DataSourceController {
     @AuraEnabled
     public String label;
     @AuraEnabled
-    public String description;
+    public String objectName;
     @AuraEnabled
     public Boolean hasCount;
     @AuraEnabled
@@ -89,7 +93,7 @@ public with sharing class DataSourceController {
     if (objectNames == null) {
       return result;
     }
-    Set<String> served = servedObjects();
+    Map<String, String> served = servedObjects();
     Set<String> seen = new Set<String>();
     Integer read = 0;
     for (String raw : objectNames) {
@@ -104,16 +108,17 @@ public with sharing class DataSourceController {
       if (read > MAX_NAMES) {
         break;
       }
-      if (!served.contains(name.toLowerCase())) {
+      if (!served.containsKey(name.toLowerCase())) {
         continue;
       }
-      String label = pluralLabelOf(name);
+      String label = labelOf(served.get(name.toLowerCase()), name);
       if (label == null) {
         continue;
       }
       DataSource source = new DataSource();
       source.name = name;
       source.label = label;
+      source.objectName = name;
       source.hasCount = false;
       try {
         source.count = Database.countQueryWithBinds(
@@ -130,19 +135,39 @@ public with sharing class DataSourceController {
     return result;
   }
 
-  /** The lower case API names of every object an active definition reads. */
-  private static Set<String> servedObjects() {
+  /**
+   * The lower case API name of every object an active definition reads, each with the
+   * Visitor_Label__c of the first such definition by developer name that has one, or null.
+   */
+  private static Map<String, String> servedObjects() {
     Map<String, Query_Definition__mdt> all = new Map<String, Query_Definition__mdt>(
       Query_Definition__mdt.getAll()
     );
     all.putAll(overrides);
-    Set<String> names = new Set<String>();
-    for (Query_Definition__mdt record : all.values()) {
+    List<String> keys = new List<String>(all.keySet());
+    keys.sort();
+    Map<String, String> names = new Map<String, String>();
+    for (String key : keys) {
+      Query_Definition__mdt record = all.get(key);
       if (record.Active__c == true && String.isNotBlank(record.Object__c)) {
-        names.add(record.Object__c.trim().toLowerCase());
+        String objectKey = record.Object__c.trim().toLowerCase();
+        if (!names.containsKey(objectKey) || names.get(objectKey) == null) {
+          names.put(objectKey, blankToNull(record.Visitor_Label__c));
+        }
       }
     }
     return names;
+  }
+
+  private static String blankToNull(String text) {
+    return String.isBlank(text) ? null : text.trim();
+  }
+
+  /** The visitor label when there is one, else the plural label of the object. */
+  private static String labelOf(String visitorLabel, String objectName) {
+    return String.isNotBlank(visitorLabel)
+      ? visitorLabel
+      : pluralLabelOf(objectName);
   }
 
   private static DataSource sourceOf(String name) {
@@ -150,14 +175,17 @@ public with sharing class DataSourceController {
     if (record == null || record.Active__c != true) {
       return null;
     }
-    String label = pluralLabelOf(record.Object__c);
+    String label = labelOf(
+      blankToNull(record.Visitor_Label__c),
+      record.Object__c
+    );
     if (label == null) {
       return null;
     }
     DataSource source = new DataSource();
     source.name = name;
     source.label = label;
-    source.description = record.Description__c;
+    source.objectName = record.Object__c;
     source.hasCount = false;
     if (isCountable(record)) {
       try {
