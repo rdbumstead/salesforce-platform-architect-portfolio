@@ -85,11 +85,17 @@
   margin-inline: auto;
 }
 
-.description-count,
+/* Each box's count against its limit. Near the limit it takes the warning colour. */
+.field-limit,
 .description-cut {
   margin: var(--pf-space-1) 0 0;
   color: var(--pf-muted);
   font-size: 0.875rem;
+}
+
+.field-limit_near {
+  color: var(--pf-warn-text);
+  font-weight: 600;
 }
 
 .description-cut:empty {

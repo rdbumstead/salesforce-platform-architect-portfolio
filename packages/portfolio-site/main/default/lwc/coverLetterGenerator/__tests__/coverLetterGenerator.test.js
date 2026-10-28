@@ -555,6 +555,21 @@ describe("c-cover-letter-generator", () => {
     );
   });
 
+  it("warns on a short box once it nears its limit", async () => {
+    const element = createComponent();
+    await flushPromises();
+    const company = query(element, "input.company-input");
+    const count = () => query(element, '[data-id="company-count"]');
+    expect(count().textContent.trim()).toBe("0 of 120 characters");
+    expect(count().classList.contains("field-limit_near")).toBe(false);
+
+    company.value = "x".repeat(115);
+    company.dispatchEvent(new CustomEvent("input"));
+    await flushPromises();
+    expect(count().textContent.trim()).toBe("115 of 120 characters, 5 left");
+    expect(count().classList.contains("field-limit_near")).toBe(true);
+  });
+
   it("says so when a paste runs past the limit, and clears it once the text fits", async () => {
     const element = createComponent();
     await flushPromises();

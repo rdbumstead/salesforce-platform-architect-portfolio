@@ -30,7 +30,15 @@
               autocomplete="organization"
               oninput={handleInputChange}
               data-field="companyName"
+              aria-describedby="company-count"
             />
+            <p
+              id="company-count"
+              class={companyLimit.className}
+              data-id="company-count"
+            >
+              {companyLimit.text}
+            </p>
           </div>
         </div>
         <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
@@ -53,7 +61,15 @@
               autocomplete="organization-title"
               oninput={handleInputChange}
               data-field="jobTitle"
+              aria-describedby="title-count"
             />
+            <p
+              id="title-count"
+              class={titleLimit.className}
+              data-id="title-count"
+            >
+              {titleLimit.text}
+            </p>
           </div>
         </div>
       </div>
@@ -75,10 +91,10 @@
         ></textarea>
         <p
           id="description-count"
-          class="description-count"
+          class={descriptionLimit.className}
           data-id="description-count"
         >
-          {descriptionCountText}
+          {descriptionLimit.text}
         </p>
         <p class="description-cut" aria-live="polite" data-id="description-cut">
           {descriptionCutText}

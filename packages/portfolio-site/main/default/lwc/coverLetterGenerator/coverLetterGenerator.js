@@ -19,8 +19,9 @@
  *                      change it, and a failed read leaves it out. Download PDF writes the same
  *                      header and the letter as selectable text, and Copy text copies the letter
  *                      alone. Each sends its event with the provider and nothing else. The
- *                      fields are native controls, and the job description field is the tour's
- *                      stop D anchor.
+ *                      fields are native controls, each with a count against its limit that
+ *                      warns near it, and the job description field is the tour's stop D
+ *                      anchor.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -34,6 +35,7 @@ import { headerLinks } from "c/profileLinks";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { onShowMe, revealAnchor } from "c/tourShowMe";
 import { createPdfLoader, previewStyle } from "c/documentPdf";
+import { limitState } from "c/fieldLimit";
 import { LETTER_LAYOUT, letterFileName, writeLetterPdf } from "./letterFormat";
 
 /** The sheet's paper, ink and type, from the layout the PDF reads. */
@@ -204,9 +206,17 @@ export default class CoverLetterGenerator extends LightningElement {
     this.descriptionCut = after > MAX_DESCRIPTION_LENGTH;
   }
 
-  get descriptionCountText() {
-    const used = (this.jobDescription || "").length.toLocaleString("en-US");
-    return `${used} of ${MAX_DESCRIPTION_LENGTH.toLocaleString("en-US")} characters`;
+  // Each box says how much of its limit is used, and warns once it is close (c/fieldLimit).
+  get companyLimit() {
+    return limitState(this.companyName, MAX_COMPANY_LENGTH);
+  }
+
+  get titleLimit() {
+    return limitState(this.jobTitle, MAX_TITLE_LENGTH);
+  }
+
+  get descriptionLimit() {
+    return limitState(this.jobDescription, MAX_DESCRIPTION_LENGTH);
   }
 
   get descriptionCutText() {
