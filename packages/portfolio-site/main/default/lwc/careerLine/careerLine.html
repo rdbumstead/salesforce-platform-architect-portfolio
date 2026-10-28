@@ -14,6 +14,13 @@
           Career, newest first
         </h2>
 
+        <div class="source-row">
+          <c-data-source
+            source-keys="ResumeController_TimelineRoles,ResumeController_Education,ResumeController_Certifications,ResumeController_Highlights"
+            class="card-source"
+          ></c-data-source>
+        </div>
+
         <template lwc:if={showFilters}>
           <div
             class="filters"
