@@ -7,10 +7,13 @@
 // collects the components the view places, then every component those components place in
 // their own templates. It fails when:
 //   - the smoke names a route the site does not have,
-//   - the smoke expects a component its route no longer places,
+//   - the smoke expects a component its route no longer places, or a part inside one,
 //   - the site has a page route the smoke does not check, or
 //   - a page places a component that has no bundle in the repository (a deleted component
 //     still named in a view or a template).
+// It also checks the smoke's tour walk (TOUR in scripts/live-smoke.js) against the live pillars
+// in c/pillarData, read from its source: the same stops in the same order, each a page the site
+// has, and the start page too.
 // The order of the components in a route's list does not matter.
 // No browser and no org: it reads files only, so it runs in the quality check on every PR.
 //
@@ -146,6 +149,14 @@ function check(root, routes) {
         );
       }
     }
+    for (const part of route.parts || []) {
+      const tag = String(part.selector || "").split(" ")[0];
+      if (!placed.has(tag)) {
+        problems.push(
+          `${route.path}: the smoke looks inside ${tag || "nothing"}, which the page does not place`
+        );
+      }
+    }
     for (const entry of route.components) {
       const tag = typeof entry === "string" ? entry : entry.tag;
       if (!placed.has(tag)) {
@@ -165,12 +176,55 @@ function check(root, routes) {
   return problems;
 }
 
-module.exports = { check, sitePages, tagOf, bundleOf };
+/**
+ * The live pillars in tour order, read from the pillarData source: each SOURCE entry's letter,
+ * url and inProgress flag, in file order, keeping those that are not in progress.
+ * @param {string} root the repository root
+ * @returns {{letter: string, path: string}[]} the live stops
+ */
+function liveStops(root) {
+  const file = path.join(root, LWC, "pillarData", "pillarData.js");
+  const source = fs.readFileSync(file, "utf8");
+  const stops = [];
+  const entry =
+    /letter:\s*"([A-Z])"[\s\S]*?url:\s*"([^"]*)"[\s\S]*?inProgress:\s*(true|false)/g;
+  for (const match of source.matchAll(entry)) {
+    if (match[3] === "false") {
+      stops.push({ letter: match[1], path: "/" + match[2] });
+    }
+  }
+  return stops;
+}
+
+/** Problems between the smoke's tour walk, the live pillars and the site's pages. */
+function checkTour(root, tour) {
+  const problems = [];
+  if (!tour) {
+    return ["tour: the smoke has no tour walk"];
+  }
+  const pages = sitePages(root);
+  const expected = liveStops(root);
+  const shown = (stops) =>
+    stops.map((stop) => `${stop.letter} ${stop.path}`).join(", ");
+  if (shown(tour.stops) !== shown(expected)) {
+    problems.push(
+      `tour: the smoke walks ${shown(tour.stops) || "no stops"}, the live pillars are ${shown(expected) || "none"}`
+    );
+  }
+  [tour.start, ...tour.stops.map((stop) => stop.path)].forEach((page) => {
+    if (!pages.has(page)) {
+      problems.push(`tour: ${page} is not a page the site has`);
+    }
+  });
+  return problems;
+}
+
+module.exports = { check, checkTour, liveStops, sitePages, tagOf, bundleOf };
 
 if (require.main === module) {
   const root = path.resolve(process.argv[2] || path.join(__dirname, ".."));
-  const { ROUTES } = require(path.join(root, "scripts", "live-smoke.js"));
-  const problems = check(root, ROUTES);
+  const { ROUTES, TOUR } = require(path.join(root, "scripts", "live-smoke.js"));
+  const problems = [...check(root, ROUTES), ...checkTour(root, TOUR)];
   if (problems.length) {
     console.log(
       `Smoke routes: ${problems.length} problem(s). Update ROUTES in scripts/live-smoke.js:`
@@ -178,5 +232,7 @@ if (require.main === module) {
     problems.forEach((line) => console.log(`- ${line}`));
     process.exit(1);
   }
-  console.log(`Smoke routes match the site: ${ROUTES.length} routes checked.`);
+  console.log(
+    `Smoke routes match the site: ${ROUTES.length} routes and the ${TOUR.stops.length} tour stops checked.`
+  );
 }

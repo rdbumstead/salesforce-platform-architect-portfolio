@@ -3,7 +3,8 @@
  *                      the "How it's built" menu with Docs and the API reference, Contact), the
  *                      phone menu, the theme toggle and its crossfade, motion following the
  *                      system setting with no motion button, the header shadow, and Back to top
- *                      in the header.
+ *                      in the header, and the tour: the menu row that starts it, the bar under the
+ *                      header, the page padding for the pinned bar and focus on arrival.
  *                      c/motionPreference is the real module.
  *                      c/pillarData is a fixed stand in.
  * @author            : Ryan Bumstead
@@ -19,6 +20,8 @@ import PortfolioThemeLayout, {
   HERO_LOOKUP_MS,
   HERO_SELECTOR,
   THEME_FADE_MS,
+  TOUR_HEADING_POLL_MS,
+  TOUR_HEADING_WAIT_MS,
   currentRouteUrl,
   findInContent,
   idSelector
@@ -96,6 +99,7 @@ jest.mock(
         href: `/portfolio/${key}`,
         summary: `${pageLabel} summary.`,
         tour: `${pageLabel} tour stop.`,
+        tourMinutes: 2,
         code: letter === "C" ? "GET /sapi/v1/health  200" : undefined,
         inProgress: coming.includes(letter),
         subLinks:
@@ -120,6 +124,11 @@ jest.mock(
       },
       get COMING_PILLARS() {
         return build().filter((pillar) => pillar.inProgress);
+      },
+      get TOUR_MINUTES() {
+        return build()
+          .filter((pillar) => !pillar.inProgress)
+          .reduce((total, pillar) => total + pillar.tourMinutes, 0);
       },
       pillarByLetter: (letter) => build().find((p) => p.letter === letter),
       setComingLetters: (letters) => {
@@ -155,11 +164,13 @@ jest.mock(
 );
 
 // Every href the header links off the home page, in order: the brand, Home (the home
-// page here), Resume, the five pillars, Docs, the API reference, then Contact.
+// page here), Resume, the tour row (to the first stop), the five pillars, Docs, the API
+// reference, then Contact.
 const EXPECTED_HREFS = [
   "/portfolio/",
   "/portfolio/",
   "/portfolio/resume",
+  "/portfolio/business-architecture",
   "/portfolio/business-architecture",
   "/portfolio/nonprofit-solutions",
   "/portfolio/api-lab",
@@ -914,9 +925,9 @@ describe("c-portfolio-theme-layout", () => {
       expect(link.querySelector(".pillar-label").textContent).toBe("Docs");
       expect(link.getAttribute("href")).toBe("/portfolio/docs");
       const items = element.shadowRoot.querySelectorAll(".pillar-menu > li");
-      expect(items).toHaveLength(7);
-      expect(items[5].contains(link)).toBe(true);
-      expect(items[5].classList.contains("built-item")).toBe(true);
+      expect(items).toHaveLength(8);
+      expect(items[6].contains(link)).toBe(true);
+      expect(items[6].classList.contains("built-item")).toBe(true);
       expect(link.getAttribute("aria-current")).toBeNull();
     });
 
@@ -1634,6 +1645,181 @@ describe("c-portfolio-theme-layout", () => {
       window.dispatchEvent(new CustomEvent("scroll"));
       window.dispatchEvent(new CustomEvent("resize"));
       expect(window.requestAnimationFrame).toHaveBeenCalledTimes(1);
+    });
+  });
+  describe("the tour", () => {
+    afterEach(() => {
+      window.sessionStorage.clear();
+      jest.useRealTimers();
+    });
+
+    function tourRow(element) {
+      return element.shadowRoot.querySelector('.tour-start[data-key="tour"]');
+    }
+
+    function bar(element) {
+      return element.shadowRoot.querySelector("c-tour-bar");
+    }
+
+    function pageWithHeading(text) {
+      const page = document.createElement("div");
+      const heading = document.createElement("h1");
+      heading.textContent = text;
+      page.appendChild(heading);
+      document.body.appendChild(page);
+      return { page, heading };
+    }
+
+    it("opens the How it's built menu with a tour row to the first stop, before the pillars", () => {
+      const element = render();
+      const row = tourRow(element);
+      expect(row.getAttribute("href")).toBe("/portfolio/business-architecture");
+      expect(row.querySelector(".pillar-label").textContent).toBe(
+        "Take the 10 minute tour"
+      );
+      expect(row.querySelector(".pillar-sas").textContent).toBe(
+        "Five stops, with one task on each"
+      );
+      const items = element.shadowRoot.querySelectorAll(".pillar-menu > li");
+      expect(items[0].contains(row)).toBe(true);
+      expect(items[0].classList.contains("tour-item")).toBe(true);
+      expect(items[1].querySelector(".pillar-link").dataset.key).toBe(
+        "business-architecture"
+      );
+    });
+
+    it("starts the tour from the menu row, closes the menus and lets the link go", async () => {
+      const element = render();
+      element.shadowRoot.querySelector(".pillars-toggle").click();
+      await flush();
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true
+      });
+      tourRow(element).dispatchEvent(event);
+      await flush();
+      expect(window.sessionStorage.getItem("portfolio-tour")).toBe("1");
+      expect(event.defaultPrevented).toBe(false);
+      expect(element.shadowRoot.querySelector(".pillar-menu").hidden).toBe(
+        true
+      );
+    });
+
+    it("places the tour bar right after the header and before the page content", () => {
+      goTo("/portfolio/api-lab");
+      const element = render();
+      const tourBar = bar(element);
+      const header = element.shadowRoot.querySelector(".site-header");
+      const content = element.shadowRoot.querySelector(".region-content");
+      expect(tourBar).not.toBeNull();
+      expect(header.nextElementSibling).toBe(tourBar);
+      expect(tourBar.nextElementSibling).toBe(content);
+      expect(tourBar.routeUrl).toBe("api-lab");
+    });
+
+    it("pads the page by the height the pinned bar reports, and drops it at 0", async () => {
+      const element = render();
+      const wrapper = element.shadowRoot.querySelector(
+        ".portfolio-layout-wrapper"
+      );
+      bar(element).dispatchEvent(
+        new CustomEvent("tourspace", { detail: { height: 120 } })
+      );
+      await flush();
+      expect(wrapper.style.paddingBottom).toBe("120px");
+      bar(element).dispatchEvent(
+        new CustomEvent("tourspace", { detail: { height: 0 } })
+      );
+      await flush();
+      expect(wrapper.style.paddingBottom).toBe("");
+    });
+
+    it("sticks the bar under the header on a wide screen, at the header's height", async () => {
+      const element = render();
+      const header = element.shadowRoot.querySelector(".site-header");
+      header.getBoundingClientRect = () => ({ height: 61.2 });
+      bar(element).dispatchEvent(
+        new CustomEvent("tourspace", { detail: { height: 0 } })
+      );
+      await flush();
+      expect(bar(element).style.top).toBe("61px");
+    });
+
+    it("moves focus to the new page's heading once it shows, and clears the tabindex it added", async () => {
+      jest.useFakeTimers();
+      const old = pageWithHeading("Home");
+      const content = [old.page];
+      const element = render(content);
+      bar(element).dispatchEvent(new CustomEvent("tournavigate"));
+      goTo("/portfolio/business-architecture");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      element.shadowRoot.querySelector(
+        ".region-content slot"
+      ).assignedElements = () => content;
+      bar(element).dispatchEvent(new CustomEvent("tourarrive"));
+      // The old heading is still on screen, so nothing moves yet.
+      expect(document.activeElement).not.toBe(old.heading);
+      content.splice(0, 1);
+      old.page.remove();
+      const next = pageWithHeading("Business Architecture");
+      content.push(next.page);
+      jest.advanceTimersByTime(100);
+      expect(document.activeElement).toBe(next.heading);
+      expect(next.heading.getAttribute("tabindex")).toBe("-1");
+      next.heading.blur();
+      expect(next.heading.hasAttribute("tabindex")).toBe(false);
+    });
+
+    it("focuses the heading on screen when the tour starts on the page it opens on", () => {
+      goTo("/portfolio/business-architecture");
+      const here = pageWithHeading("Business Architecture");
+      const element = render([here.page]);
+      bar(element).dispatchEvent(new CustomEvent("tournavigate"));
+      bar(element).dispatchEvent(new CustomEvent("tourarrive"));
+      expect(document.activeElement).toBe(here.heading);
+    });
+
+    it("keeps a heading's own tabindex", () => {
+      goTo("/portfolio/business-architecture");
+      const here = pageWithHeading("Business Architecture");
+      here.heading.setAttribute("tabindex", "-1");
+      const element = render([here.page]);
+      bar(element).dispatchEvent(new CustomEvent("tournavigate"));
+      bar(element).dispatchEvent(new CustomEvent("tourarrive"));
+      here.heading.blur();
+      expect(here.heading.getAttribute("tabindex")).toBe("-1");
+    });
+
+    it("focuses the page content when no new heading shows in time", () => {
+      jest.useFakeTimers();
+      const element = render([]);
+      bar(element).dispatchEvent(new CustomEvent("tournavigate"));
+      goTo("/portfolio/api-lab");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      bar(element).dispatchEvent(new CustomEvent("tourarrive"));
+      jest.advanceTimersByTime(TOUR_HEADING_WAIT_MS + TOUR_HEADING_POLL_MS);
+      expect(element.shadowRoot.activeElement).toBe(
+        element.shadowRoot.querySelector(".region-content")
+      );
+    });
+
+    it("focuses the page content when the tour ends, so focus never drops with the bar", () => {
+      const element = render();
+      bar(element).dispatchEvent(new CustomEvent("tourleave"));
+      expect(element.shadowRoot.activeElement).toBe(
+        element.shadowRoot.querySelector(".region-content")
+      );
+    });
+
+    it("stops waiting for a heading when it leaves the page", () => {
+      jest.useFakeTimers();
+      const element = render([]);
+      bar(element).dispatchEvent(new CustomEvent("tournavigate"));
+      goTo("/portfolio/api-lab");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      bar(element).dispatchEvent(new CustomEvent("tourarrive"));
+      document.body.removeChild(element);
+      expect(jest.getTimerCount()).toBe(0);
     });
   });
 });

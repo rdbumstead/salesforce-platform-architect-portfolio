@@ -4,8 +4,14 @@ const assert = require("node:assert");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { check, tagOf, bundleOf } = require("./check-smoke-routes.js");
-const { ROUTES, isUnderBase } = require("./live-smoke.js");
+const {
+  check,
+  checkTour,
+  liveStops,
+  tagOf,
+  bundleOf
+} = require("./check-smoke-routes.js");
+const { ROUTES, TOUR, isUnderBase } = require("./live-smoke.js");
 
 const SITE =
   "packages/portfolio-site/main/default/digitalExperiences/site/Portfolio1";
@@ -116,4 +122,76 @@ test("the smoke treats only the base and pages under it as the site", () => {
     false
   );
   assert.strictEqual(isUnderBase(`${base}2/`, base), false);
+});
+
+// A pillarData source with two pillars, the second coming, for the tour checks.
+function withPillars(root, secondInProgress) {
+  write(
+    root,
+    `${LWC}/pillarData/pillarData.js`,
+    [
+      "const SOURCE = [",
+      '  { key: "about", letter: "A", url: "about", tour: "Read it.", inProgress: false },',
+      `  { key: "x", letter: "B", url: "", tour: "Home.", inProgress: ${secondInProgress} }`,
+      "];"
+    ].join("\n")
+  );
+  return root;
+}
+
+test("the tour stops are read from pillarData in order, live ones only", () => {
+  assert.deepStrictEqual(liveStops(withPillars(fixture(), true)), [
+    { letter: "A", path: "/about" }
+  ]);
+  assert.deepStrictEqual(liveStops(withPillars(fixture(), false)), [
+    { letter: "A", path: "/about" },
+    { letter: "B", path: "/" }
+  ]);
+});
+
+test("a tour walk that matches the live pillars and the site's pages passes", () => {
+  const root = withPillars(fixture(), true);
+  const tour = { start: "/", stops: [{ letter: "A", path: "/about" }] };
+  assert.deepStrictEqual(checkTour(root, tour), []);
+});
+
+test("a tour walk out of step with the pillars, or on a missing page, fails", () => {
+  const root = withPillars(fixture(), false);
+  const tour = {
+    start: "/gone",
+    stops: [{ letter: "A", path: "/about" }]
+  };
+  const problems = checkTour(root, tour);
+  assert.ok(
+    problems.some((line) => /the live pillars are A \/about, B \//.test(line))
+  );
+  assert.ok(
+    problems.some((line) => line === "tour: /gone is not a page the site has")
+  );
+  assert.deepStrictEqual(checkTour(root, undefined), [
+    "tour: the smoke has no tour walk"
+  ]);
+});
+
+test("the smoke's own tour walk matches this repository's pillars and site", () => {
+  assert.deepStrictEqual(checkTour(path.join(__dirname, ".."), TOUR), []);
+  assert.strictEqual(TOUR.stops.length, 5);
+});
+
+test("a part inside a component the page does not place fails", () => {
+  const routes = [
+    {
+      path: "/",
+      components: ["c-hero-banner"],
+      parts: [
+        { selector: "c-contact-call a.ok" },
+        { selector: "c-gone-card a.download" }
+      ]
+    },
+    { path: "/about", components: ["c-about-card"] }
+  ];
+  const problems = check(fixture(), routes);
+  assert.deepStrictEqual(problems, [
+    "/: the smoke looks inside c-gone-card, which the page does not place"
+  ]);
 });

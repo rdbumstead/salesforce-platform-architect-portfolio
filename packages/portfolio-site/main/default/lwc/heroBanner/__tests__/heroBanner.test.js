@@ -3,8 +3,8 @@
  *                      proof strip), the title line and the value sentence from the
  *                      ResumeController header wire, the start year from the timeline wire, the
  *                      two buttons, the profile links, the case studies button's scroll and
- *                      focus, the tour link and its event, and that the pillars, Start here and
- *                      the tour list are not in the hero.
+ *                      focus, the tour link that starts the tour at its first stop, and that the
+ *                      pillars, Start here and the tour list are not in the hero.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -502,14 +502,6 @@ describe("c-hero-banner", () => {
   });
 
   describe("tour link", () => {
-    function addSection(parent) {
-      const section = document.createElement("div");
-      section.id = "tour";
-      section.openTour = jest.fn();
-      parent.appendChild(section);
-      return section;
-    }
-
     function click(element) {
       const event = new MouseEvent("click", {
         bubbles: true,
@@ -519,13 +511,19 @@ describe("c-hero-banner", () => {
       return event;
     }
 
-    it("is a quiet link under the buttons with the tour's minutes, before any wire returns", () => {
+    afterEach(() => {
+      window.sessionStorage.clear();
+    });
+
+    it("is a quiet link under the buttons to the first stop, with the tour minutes", () => {
       const element = render();
       const link = byId(element, "tour-link");
       expect(link.tagName).toBe("A");
-      expect(link.getAttribute("href")).toBe("/portfolio/#tour");
-      expect(text(link)).toBe("Short on time? Take the 5 minute tour ↓");
-      expect(link.querySelector('[aria-hidden="true"]').textContent).toBe("↓");
+      expect(link.getAttribute("href")).toBe(
+        "/portfolio/business-architecture"
+      );
+      expect(text(link)).toBe("Short on time? Take the 10 minute tour →");
+      expect(link.querySelector('[aria-hidden="true"]').textContent).toBe("→");
       const actions = element.shadowRoot.querySelector(".hero-actions");
       expect(actions.contains(link)).toBe(false);
       expect(
@@ -533,33 +531,29 @@ describe("c-hero-banner", () => {
       ).toBeTruthy();
     });
 
-    it("asks the build section to open the tour and sends tour_opened from the hero", async () => {
-      systemReduces(false);
-      const section = addSection(document.body);
+    it("starts the tour and lets the link go to the first stop, sending no tour_opened", () => {
+      const started = jest.fn();
+      document.addEventListener("portfolio-tour-start", started);
       const element = render();
       const event = click(element);
-      expect(section.openTour).toHaveBeenCalledWith(false);
-      expect(event.defaultPrevented).toBe(true);
-      expect(trackEvent).toHaveBeenCalledWith("tour_opened", {
-        source: "hero"
-      });
-    });
-
-    it("passes reduced motion and finds the section inside a shadow root", async () => {
-      systemReduces(true);
-      const host = document.createElement("div");
-      document.body.appendChild(host);
-      const section = addSection(host.attachShadow({ mode: "open" }));
-      const element = render();
-      click(element);
-      expect(section.openTour).toHaveBeenCalledWith(true);
-    });
-
-    it("follows the home page #tour address when no section is on the page", () => {
-      const element = render();
-      const event = click(element);
+      document.removeEventListener("portfolio-tour-start", started);
+      expect(window.sessionStorage.getItem("portfolio-tour")).toBe("1");
+      expect(started).toHaveBeenCalledTimes(1);
       expect(event.defaultPrevented).toBe(false);
-      expect(trackEvent).toHaveBeenCalledTimes(1);
+      expect(trackEvent).not.toHaveBeenCalled();
+    });
+
+    it("still follows the link when storage is blocked", () => {
+      const setItem = jest
+        .spyOn(Storage.prototype, "setItem")
+        .mockImplementation(() => {
+          throw new Error("blocked");
+        });
+      const element = render();
+      const event = click(element);
+      setItem.mockRestore();
+      expect(event.defaultPrevented).toBe(false);
+      expect(window.sessionStorage.getItem("portfolio-tour")).toBeNull();
     });
   });
 });
