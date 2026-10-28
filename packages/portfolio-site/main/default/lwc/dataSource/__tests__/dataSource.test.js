@@ -176,6 +176,101 @@ describe("c-data-source", () => {
     expect(items[1].dataset.object).toBe("Experience_Highlight__c");
   });
 
+  describe("section data model dialog", () => {
+    const SKILLS_IN = { ...SKILLS, objectName: "Skill__c", inModel: true };
+    const ROLES_IN = { ...ROLES, inModel: true };
+    const OUT = {
+      name: "Other",
+      label: "Other",
+      objectName: "User",
+      inModel: false,
+      hasCount: false
+    };
+    const modelButton = (el) => el.shadowRoot.querySelector(".model-button");
+    const dialog = (el) => el.shadowRoot.querySelector("dialog");
+    const visualizer = (el) =>
+      el.shadowRoot.querySelector("c-schema-visualizer");
+
+    async function openPanel(rows) {
+      const el = create({ sourceKeys: "a" });
+      getSources.emit(rows);
+      await flush();
+      button(el).click();
+      await flush();
+      return el;
+    }
+
+    it("keeps the wording in the block and renames the model link", () => {
+      expect(WORDING.sectionModelButton).toBe(
+        "See the data model for this section"
+      );
+      expect(WORDING.modelLinkText).toBe("See the full data model");
+    });
+
+    it("shows the button only when a row is in the model", async () => {
+      const without = await openPanel([OUT, { ...ROLES }]);
+      expect(modelButton(without)).toBeNull();
+      expect(without.shadowRoot.querySelector(".model-link")).not.toBeNull();
+      const withRow = await openPanel([OUT, SKILLS_IN]);
+      expect(modelButton(withRow).textContent).toContain(
+        WORDING.sectionModelButton
+      );
+    });
+
+    it("renders no visualizer while closed", async () => {
+      const el = await openPanel([SKILLS_IN]);
+      expect(dialog(el)).toBeNull();
+      expect(visualizer(el)).toBeNull();
+    });
+
+    it("opens the dialog with the distinct in model objects in row order", async () => {
+      const el = await openPanel([
+        SKILLS_IN,
+        OUT,
+        ROLES_IN,
+        { ...SKILLS_IN, name: "again", label: "More skills" }
+      ]);
+      modelButton(el).click();
+      await flush();
+      expect(dialog(el).getAttribute("aria-modal")).toBe("true");
+      expect(visualizer(el).objects).toBe("Skill__c,Experience__c");
+      expect(
+        el.shadowRoot.querySelector(".dialog-heading").textContent
+      ).toContain(WORDING.sectionModelHeading);
+      expect(el.shadowRoot.activeElement.className).toContain("dialog-heading");
+    });
+
+    it("closes on Escape and returns focus to the marker button", async () => {
+      const el = await openPanel([SKILLS_IN]);
+      modelButton(el).click();
+      await flush();
+      dialog(el).dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+      await flush();
+      expect(dialog(el)).toBeNull();
+      expect(visualizer(el)).toBeNull();
+      expect(el.shadowRoot.activeElement).toBe(button(el));
+    });
+
+    it("closes with the close button and on a backdrop click", async () => {
+      const el = await openPanel([SKILLS_IN]);
+      modelButton(el).click();
+      await flush();
+      el.shadowRoot.querySelector(".model-close-button").click();
+      await flush();
+      expect(dialog(el)).toBeNull();
+      expect(el.shadowRoot.activeElement).toBe(button(el));
+      button(el).click();
+      await flush();
+      modelButton(el).click();
+      await flush();
+      dialog(el).click();
+      await flush();
+      expect(dialog(el)).toBeNull();
+    });
+  });
+
   it("reports expanded state on the button", async () => {
     const el = create({ sourceKeys: "a" });
     getSources.emit([ROLES]);
