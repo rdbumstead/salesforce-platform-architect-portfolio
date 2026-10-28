@@ -78,3 +78,11 @@ This supersedes the 2026-10-20 deferral and the "switch ships off" description i
 - **A Published template cannot be changed by deploy.** A deploy that changes one reports Succeeded and changes nothing. A later wording change is a new version made in Prompt Builder.
 - **API.** `POST /papi/v1/ai/generate` accepts `provider` with the one value `Agentforce`. With it only Agentforce is tried, and a failure is 503 `ALL_PROVIDERS_UNAVAILABLE`. The attempts outcome gains `skipped_open_circuit` and `budget_exhausted`.
 - **Measured.** In a scratch org on 2026-10-26 and 27, three cover letters called directly took 2.7 to 3.5 seconds and came back at 333 to 340 words. Production is not measured yet and is the owner's proof call after the merge.
+
+## Amendment (2026-10-27): the production proof call, and the letter length
+
+This answers the "Measured" line of the amendment of 2026-10-26. The rest of that amendment stands.
+
+- **Production proof call.** On 2026-10-27, after the deploy, one letter was requested on the live AI Lab as a site guest. It was written by Agentforce (`Portfolio_Cover_Letter`) in 418 words, 10 seconds from page load to letter, grounded on the real records, with no client name, email or phone. The route through the `Portfolio_API` Named Credential as the integration user works end to end. A second walk of the live journey the same day wrote two letters of 439 and 398 words.
+- **The length.** Those letters ran over `Cover_Letter_Max_Words` (350), because production's records are fuller than a scratch org's. The Published template adds its own sentence for a `Length` line (write toward the upper number, in three body paragraphs of five sentences), which pushed letters past the maximum. The prompt's length line is now a word limit line that does not start with "Length", states 350 as a hard maximum and fixes a five paragraph shape, so the template needs no new version.
+- **Measured after the change.** In a scratch org loaded with production's grounding records, six letters in a row came back at 277 to 322 words (nine Agentforce calls, 2026-10-27). Production lengths after the deploy that carries the line are not measured yet.
