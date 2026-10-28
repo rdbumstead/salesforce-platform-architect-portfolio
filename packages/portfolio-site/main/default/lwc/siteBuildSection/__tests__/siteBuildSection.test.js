@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for siteBuildSection: the live pillars in order with one
- *                      name each, Skills, the coming line, the stat line and case study
+ *                      name each, the coming line, the stat line and case study
  *                      disclosure merged in by letter with case_study_opened, the counts line
  *                      only with numbers, the docs link, and no tour (it left for the tour bar).
  *                      c/pillarData is a fixed stand in.
@@ -151,7 +151,7 @@ describe("c-site-build-section", () => {
   });
 
   describe("list", () => {
-    it("shows the heading, the intro and every live pillar in order, then Skills", () => {
+    it("shows the heading, the intro and every live pillar in order, and no Skills item", () => {
       const element = render();
       const root = element.shadowRoot;
       expect(text(root.querySelector("h2"))).toBe("How this site is built");
@@ -166,8 +166,7 @@ describe("c-site-build-section", () => {
         "Solution Architecture",
         "API Lab",
         "AI Lab",
-        "Delivery",
-        "Skills"
+        "Delivery"
       ]);
       const links = Array.from(root.querySelectorAll(".build-go"));
       expect(links.map((a) => a.getAttribute("href"))).toEqual([
@@ -175,9 +174,10 @@ describe("c-site-build-section", () => {
         "/portfolio/nonprofit-solutions",
         "/portfolio/api-lab",
         "/portfolio/ai-lab",
-        "/portfolio/delivery",
-        "/portfolio/skills"
+        "/portfolio/delivery"
       ]);
+      expect(root.querySelector('[data-key="skills"]')).toBeNull();
+      expect(root.querySelector('[data-id="skills-link"]')).toBeNull();
       expect(links[2].getAttribute("aria-label")).toBe("Open API Lab");
       expect(text(links[2])).toBe("Open →");
     });
@@ -201,7 +201,7 @@ describe("c-site-build-section", () => {
       const element = render();
       expect(item(element, "ai-lab")).toBeNull();
       expect(element.shadowRoot.querySelectorAll(".build-item")).toHaveLength(
-        4
+        3
       );
       expect(text(byId(element, "coming-note"))).toBe(
         "Pillars D and E, AI Lab and Delivery, are coming."
@@ -243,7 +243,7 @@ describe("c-site-build-section", () => {
       getPillarCards.error();
       await flush();
       expect(element.shadowRoot.querySelectorAll(".build-item")).toHaveLength(
-        6
+        5
       );
       expect(element.shadowRoot.querySelector(".case-study")).toBeNull();
       getPillarCards.emit([]);

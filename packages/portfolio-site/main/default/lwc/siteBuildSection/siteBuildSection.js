@@ -2,7 +2,7 @@
  * @description       : "How this site is built", above the contact call on the home page, for
  *                      a technical reviewer. A compact list of the live pillars from
  *                      c/pillarData (letter, page name, summary, a link to the page), then
- *                      Skills, then a footer row: the newest successful deploy's test counts
+ *                      a footer row: the newest successful deploy's test counts
  *                      linking to /delivery and a link to the design docs.
  *                      Pillars that are coming are named once in a plain line.
  *                      The tour is not here: it starts from the hero and the header menu and
@@ -175,10 +175,6 @@ export default class SiteBuildSection extends LightningElement {
           : "Read the case study"
       };
     });
-  }
-
-  get skillsHref() {
-    return toHref("skills");
   }
 
   get deliveryHref() {
