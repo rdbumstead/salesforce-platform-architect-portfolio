@@ -189,6 +189,11 @@ export default class SiteBuildSection extends LightningElement {
     return toHref("docs");
   }
 
+  /** The architecture spec's section on how the site guest reaches Apex and data. */
+  get guestAccessHref() {
+    return `${toHref("docs")}?doc=sas#3-2-how-a-guest-reaches-apex`;
+  }
+
   get countsText() {
     const apex = countText(this.counts && this.counts.apexPassed);
     if (!apex) {

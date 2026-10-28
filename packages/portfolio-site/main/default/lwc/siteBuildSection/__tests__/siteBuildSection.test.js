@@ -381,6 +381,17 @@ describe("c-site-build-section", () => {
         "Read the design: the architecture spec and the decision records→"
       );
     });
+
+    it("links to the spec's section on how a visitor reaches the data", () => {
+      const element = render();
+      const link = byId(element, "guest-access-link");
+      expect(link.getAttribute("href")).toBe(
+        "/portfolio/docs?doc=sas#3-2-how-a-guest-reaches-apex"
+      );
+      expect(text(link)).toBe(
+        "How a visitor's request reaches the data, and what limits it→"
+      );
+    });
   });
 
   describe("the tour has left the section", () => {
