@@ -137,3 +137,20 @@
   padding: 0 0.5rem;
   font-size: 0.875rem;
 }
+
+/* The live data marker sits beside the heading, like View source elsewhere. */
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0 0 0.75rem;
+}
+
+.title-row .wall-title {
+  margin: 0;
+}
+
+.card-source {
+  display: inline-flex;
+}

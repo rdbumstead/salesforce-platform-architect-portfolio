@@ -203,3 +203,19 @@ describe("c-testimonial-wall", () => {
     });
   });
 });
+
+describe("c-testimonial-wall live data marker", () => {
+  it("places the live data marker with the sources the section reads", () => {
+    const { readFileSync } = require("fs");
+    const { join } = require("path");
+    const html = readFileSync(
+      join(__dirname, "..", "testimonialWall.html"),
+      "utf8"
+    );
+    const marker = html.match(/<c-data-source\s([^>]*)>\s*<\/c-data-source>/);
+    expect(marker).not.toBeNull();
+    expect(marker[1]).toMatch(/source-keys="TestimonialController_Approved"/);
+    expect(marker[1]).not.toMatch(/objects=/);
+    expect(marker[1]).not.toMatch(/hide-counts/);
+  });
+});
