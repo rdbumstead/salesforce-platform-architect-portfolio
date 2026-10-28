@@ -12,7 +12,9 @@
     </values>
     <values>
         <field>Text_Value__c</field>
-        <value xsi:nil="true" />
+        <value
+      xsi:type="xsd:string"
+    >https://www.postman.com/rdbumstead/ryan-bumstead-portfolio-api/collection/45249089-c6785114-107e-4b46-9f9e-8c77c9a73231</value>
     </values>
     <values>
         <field>Min_Value__c</field>
