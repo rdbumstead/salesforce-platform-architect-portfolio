@@ -760,17 +760,32 @@ describe("c/graphEngine attachPanZoom and attachNodeDrag", () => {
     expect(onZoom.mock.calls.length).toBe(calls);
   });
 
-  it("eases a button move over a duration and moves at once without one", async () => {
+  it("eases a button move over a duration and moves at once without one", () => {
+    // This copy of the library runs on a clock the test moves and frames the test draws, so
+    // a busy machine cannot let the whole duration pass before the first frame.
+    let clockMs = 0;
+    const frames = [];
+    const timedD3 = loadD3FromResource({
+      navigator: window.navigator,
+      document,
+      performance: { now: () => clockMs },
+      requestAnimationFrame: (callback) => frames.push(callback)
+    });
     const svg = svgWithNodes([]);
     const onZoom = jest.fn();
-    const controls = engine.attachPanZoom(d3, svg, { onZoom, extent: EXTENT });
+    const controls = engine.attachPanZoom(timedD3, svg, {
+      onZoom,
+      extent: EXTENT
+    });
 
     controls.zoomIn(250);
-    // A transition starts on the next timer tick, so nothing has moved yet.
+    // A transition starts on the next frame, so nothing has moved yet.
     expect(controls.scale()).toBe(1);
-    await new Promise((resolve) => {
-      setTimeout(resolve, 450);
-    });
+    const drawFrame = (callback) => callback(clockMs);
+    while (clockMs < 400) {
+      clockMs += 16;
+      frames.splice(0).forEach(drawFrame);
+    }
     expect(controls.scale()).toBeCloseTo(engine.ZOOM.step);
     // Several frames were drawn on the way.
     expect(onZoom.mock.calls.length).toBeGreaterThan(2);
