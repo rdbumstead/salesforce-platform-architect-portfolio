@@ -21,7 +21,8 @@
   padding: var(--pf-space-3) var(--pf-space-4);
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  /* The buttons line up with the task line, both 44 px, not with the whole text block. */
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--pf-space-2) var(--pf-space-4);
 }
