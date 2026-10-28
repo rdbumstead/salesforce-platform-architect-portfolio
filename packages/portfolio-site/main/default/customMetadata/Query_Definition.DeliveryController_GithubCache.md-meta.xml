@@ -42,6 +42,6 @@
     </values>
     <values>
         <field>Visitor_Label__c</field>
-        <value xsi:type="xsd:string">commits</value>
+        <value xsi:type="xsd:string">GitHub commits</value>
     </values>
 </CustomMetadata>
