@@ -63,6 +63,7 @@ _Target Audience: Architects, Developers_
 - [ADR-035: Diagrams Rendered in CI, Not in the Browser](adr/035-diagrams-rendered-in-ci.md)
 - [ADR-036: The Portfolio Guide Agent, in Source and Not Live](adr/036-portfolio-guide-agent.md)
 - [ADR-037: Native Form Controls Site Wide](adr/037-native-form-controls-site-wide.md)
+- [ADR-038: Stable Public Keys in the API](adr/038-stable-public-keys-in-the-api.md)
 
 **AI, Data & FinOps**
 
