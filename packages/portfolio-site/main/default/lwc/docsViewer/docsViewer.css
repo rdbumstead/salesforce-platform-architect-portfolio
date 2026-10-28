@@ -311,6 +311,54 @@ summary:focus-visible,
   color: var(--pf-text);
 }
 
+.doc-body .doc-alert {
+  margin: 0 0 1rem;
+  padding: 0.5rem 1rem;
+  border-left: 4px solid var(--pf-border);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+}
+
+.doc-body .doc-alert > :last-child {
+  margin-bottom: 0;
+}
+
+.doc-body .doc-alert-title {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+  color: var(--pf-text);
+}
+
+.doc-body .doc-alert-note,
+.doc-body .doc-alert-tip,
+.doc-body .doc-alert-important {
+  border-left-color: var(--pf-accent);
+}
+
+.doc-body .doc-alert-note .doc-alert-title,
+.doc-body .doc-alert-tip .doc-alert-title,
+.doc-body .doc-alert-important .doc-alert-title {
+  color: var(--pf-accent);
+}
+
+.doc-body .doc-alert-warning {
+  border-left-color: var(--pf-warn-text);
+  background-color: var(--pf-warn);
+}
+
+.doc-body .doc-alert-warning .doc-alert-title {
+  color: var(--pf-warn-text);
+}
+
+.doc-body .doc-alert-caution {
+  border-left-color: var(--pf-error-text);
+  background-color: var(--pf-error);
+}
+
+.doc-body .doc-alert-caution .doc-alert-title {
+  color: var(--pf-error-text);
+}
+
 .doc-body hr {
   border: 0;
   border-top: 1px solid var(--pf-border);
