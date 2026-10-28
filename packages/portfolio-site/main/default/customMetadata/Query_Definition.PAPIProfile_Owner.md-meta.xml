@@ -14,7 +14,7 @@
         <field>Fields__c</field>
         <value
       xsi:type="xsd:string"
-    >Id, Name, Email, Phone, Title, LinkedIn_URL__c, GitHub_URL__c, Trailhead_URL__c, Portfolio_URL__c, Career_Objective__c</value>
+    >Id, Public_Key__c, Name, Email, Phone, Title, LinkedIn_URL__c, GitHub_URL__c, Trailhead_URL__c, Portfolio_URL__c, Career_Objective__c</value>
     </values>
     <values>
         <field>Filter__c</field>

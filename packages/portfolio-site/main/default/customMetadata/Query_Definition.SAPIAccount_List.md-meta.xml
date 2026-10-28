@@ -12,7 +12,7 @@
     </values>
     <values>
         <field>Fields__c</field>
-        <value xsi:type="xsd:string">Id, Name, Industry, Abbreviation__c</value>
+        <value xsi:type="xsd:string">Id, Public_Key__c, Name, Industry, Abbreviation__c</value>
     </values>
     <values>
         <field>Filter__c</field>

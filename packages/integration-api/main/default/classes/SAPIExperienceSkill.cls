@@ -32,15 +32,23 @@ global with sharing class SAPIExperienceSkill implements QueryDefinitions.Provid
         return;
       }
       String experienceId = ctx.stringParam('experienceId');
-      if (
-        String.isNotBlank(experienceId) &&
-        !SAPITransformer.isSalesforceId(experienceId)
-      ) {
-        ctx.error(400, 'BAD_REQUEST', 'experienceId must be a Salesforce Id.');
-        return;
+      String experienceIdRef = null;
+      if (String.isNotBlank(experienceId)) {
+        experienceIdRef = SAPITransformer.resolveReference(
+          Experience__c.SObjectType,
+          experienceId
+        );
+        if (experienceIdRef == null) {
+          ctx.error(
+            400,
+            'BAD_REQUEST',
+            'experienceId must be a Salesforce Id or a public key.'
+          );
+          return;
+        }
       }
 
-      Map<String, Object> binds = listBinds(experienceId?.trim());
+      Map<String, Object> binds = listBinds(experienceIdRef);
       List<Experience_Skill__c> records = (List<Experience_Skill__c>) QueryDefinitions.runPage(
         LIST_QUERY,
         binds,
@@ -71,8 +79,9 @@ global with sharing class SAPIExperienceSkill implements QueryDefinitions.Provid
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Experience_Skill__c',
-        'Id, Experience__c, Experience__r.Name, Skill__c, Skill__r.Name, ' +
-        'Skill__r.Category__c, Skill__r.Proficiency__c'
+        'Id, Public_Key__c, Experience__c, Experience__r.Name, ' +
+          'Experience__r.Public_Key__c, Skill__c, Skill__r.Name, ' +
+          'Skill__r.Public_Key__c, Skill__r.Category__c, Skill__r.Proficiency__c'
       )
       .filter('(IsDeleted = :hasExperienceId OR Experience__c = :experienceId)')
       .orderBy('Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC')

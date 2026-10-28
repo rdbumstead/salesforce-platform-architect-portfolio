@@ -36,6 +36,7 @@ public with sharing class PAPITransformer {
   public static Map<String, Object> transformContact(Contact c) {
     return new Map<String, Object>{
       'id' => c.Id,
+      'key' => c.Public_Key__c,
       'fullName' => c.Name,
       'email' => c.Email,
       'phone' => c.Phone,
@@ -58,6 +59,7 @@ public with sharing class PAPITransformer {
   ) {
     return new Map<String, Object>{
       'id' => exp.Id,
+      'key' => exp.Public_Key__c,
       'employer' => exp.Employer__r?.Name,
       'role' => exp.Name,
       'dateRange' => formatDateRange(exp.Start_Date__c, exp.End_Date__c),
@@ -78,6 +80,7 @@ public with sharing class PAPITransformer {
   ) {
     Map<String, Object> result = new Map<String, Object>{
       'id' => proj.Id,
+      'key' => proj.Public_Key__c,
       'title' => proj.Name,
       'challenge' => proj.Challenge__c,
       'solution' => proj.Solution__c,
@@ -103,6 +106,7 @@ public with sharing class PAPITransformer {
   public static Map<String, Object> transformSkill(Skill__c s) {
     return new Map<String, Object>{
       'id' => s.Id,
+      'key' => s.Public_Key__c,
       'name' => s.Name,
       'displayName' => s.Name,
       'category' => s.Category__c,
@@ -117,6 +121,7 @@ public with sharing class PAPITransformer {
   public static Map<String, Object> transformTestimonial(Testimonial__c t) {
     return new Map<String, Object>{
       'id' => t.Id,
+      'key' => t.Public_Key__c,
       'author' => t.Author_Name__c,
       'title' => t.Author_Title__c,
       'relationship' => t.Relationship_Type__c,

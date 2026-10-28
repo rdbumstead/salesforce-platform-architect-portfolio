@@ -44,9 +44,15 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
       List<Project__c> projects;
 
       if (String.isNotBlank(projectId) && projectId != 'projects') {
+        // The path segment is a Salesforce Id or a public key (ADR-038). Anything else
+        // goes to the query as it always did and ends in the same 404.
+        String resolvedId = SAPITransformer.resolveReference(
+          Project__c.SObjectType,
+          projectId
+        ) ?? projectId;
         projects = (List<Project__c>) QueryDefinitions.run(
           DETAIL_QUERY,
-          new Map<String, Object>{ 'projectId' => projectId },
+          new Map<String, Object>{ 'projectId' => resolvedId },
           detailDefault()
         );
 
@@ -92,6 +98,7 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
       result.add(
         new Map<String, Object>{
           'id' => p.Id,
+          'key' => p.Public_Key__c,
           'name' => p.Name,
           'challenge' => p.Challenge__c,
           'solution' => p.Solution__c,
@@ -108,6 +115,7 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
           'isFeatured' => p.Is_Featured__c,
           'contactName' => p.Contact__r?.Name,
           'contactId' => p.Contact__c,
+          'contactKey' => p.Contact__r?.Public_Key__c,
           'sortOrder' => p.Sort_Order__c
         }
       );
@@ -124,10 +132,10 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Project__c',
-        'Id, Name, Status__c, Pillar__c, Pillar_Label__c, Hero_Image_URL__c, ' +
-          'Is_Featured__c, Sort_Order__c, Contact__c, Contact__r.Name, ' +
-          'Challenge__c, Solution__c, Business_Value__c, Live_URL__c, ' +
-          'Repository_URL__c, Date_Completed__c'
+        'Id, Public_Key__c, Name, Status__c, Pillar__c, Pillar_Label__c, ' +
+          'Hero_Image_URL__c, Is_Featured__c, Sort_Order__c, Contact__c, ' +
+          'Contact__r.Name, Contact__r.Public_Key__c, Challenge__c, Solution__c, ' +
+          'Business_Value__c, Live_URL__c, Repository_URL__c, Date_Completed__c'
       )
       .filter(
         'Status__c IN (\'Live – In Production\', \'Live – Demo / Reference\', ' +
@@ -151,10 +159,10 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault detailDefault() {
     return new QueryDefinitions.QueryDefault(
         'Project__c',
-        'Id, Name, Challenge__c, Solution__c, Business_Value__c, Status__c, ' +
-          'Pillar__c, Pillar_Label__c, Hero_Image_URL__c, Is_Featured__c, ' +
-          'Live_URL__c, Repository_URL__c, Date_Completed__c, Sort_Order__c, ' +
-          'Contact__c, Contact__r.Name'
+        'Id, Public_Key__c, Name, Challenge__c, Solution__c, Business_Value__c, ' +
+          'Status__c, Pillar__c, Pillar_Label__c, Hero_Image_URL__c, ' +
+          'Is_Featured__c, Live_URL__c, Repository_URL__c, Date_Completed__c, ' +
+          'Sort_Order__c, Contact__c, Contact__r.Name, Contact__r.Public_Key__c'
       )
       .filter('Id = :projectId')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)

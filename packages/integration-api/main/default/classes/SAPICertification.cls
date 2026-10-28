@@ -70,8 +70,9 @@ global with sharing class SAPICertification implements QueryDefinitions.Provider
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Certification__c',
-        'Id, Name, Contact__c, Contact__r.Name, Issuer__c, Issuer__r.Name, ' +
-        'Earned_Date__c'
+        'Id, Public_Key__c, Name, Contact__c, Contact__r.Name, ' +
+          'Contact__r.Public_Key__c, Issuer__c, Issuer__r.Name, ' +
+          'Issuer__r.Public_Key__c, Earned_Date__c'
       )
       .filter(
         '(IsDeleted = :hasContactName OR Contact__r.Name = :contactName) AND ' +

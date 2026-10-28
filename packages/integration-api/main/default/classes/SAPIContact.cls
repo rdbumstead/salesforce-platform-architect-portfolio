@@ -64,7 +64,7 @@ global with sharing class SAPIContact implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Contact',
-        'Id, Name, Title, Trailhead_URL__c, Career_Objective__c, ' +
+        'Id, Public_Key__c, Name, Title, Trailhead_URL__c, Career_Objective__c, ' +
         'LinkedIn_URL__c, Portfolio_URL__c'
       )
       .filter(

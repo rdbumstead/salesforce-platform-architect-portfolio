@@ -14,7 +14,7 @@
         <field>Fields__c</field>
         <value
       xsi:type="xsd:string"
-    >Id, Author_Name__c, Author_Title__c, Relationship_Type__c, Context__c, Vibe_Mode__c, Avatar_URL__c</value>
+    >Id, Public_Key__c, Author_Name__c, Author_Title__c, Relationship_Type__c, Context__c, Vibe_Mode__c, Avatar_URL__c</value>
     </values>
     <values>
         <field>Filter__c</field>

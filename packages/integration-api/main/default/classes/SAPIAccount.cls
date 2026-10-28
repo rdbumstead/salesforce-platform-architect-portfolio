@@ -64,7 +64,7 @@ global with sharing class SAPIAccount implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Account',
-        'Id, Name, Industry, Abbreviation__c'
+        'Id, Public_Key__c, Name, Industry, Abbreviation__c'
       )
       .filter('(IsDeleted = :hasAccountName OR Name = :accountName)')
       .orderBy('Name ASC')

@@ -132,6 +132,7 @@ private class PAPITestimonialFeedTest {
     Assert.areEqual(
       new Set<String>{
         'id',
+        'key',
         'author',
         'title',
         'relationship',

@@ -67,6 +67,7 @@ global with sharing class SAPITestimonial implements QueryDefinitions.Provider {
     for (Testimonial__c t : testimonials) {
       Map<String, Object> item = new Map<String, Object>{
         'id' => t.Id,
+        'key' => t.Public_Key__c,
         'name' => t.Name,
         'authorName' => t.Author_Name__c,
         'authorTitle' => t.Author_Title__c,
@@ -88,8 +89,8 @@ global with sharing class SAPITestimonial implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Testimonial__c',
-        'Id, Name, Author_Name__c, Author_Title__c, Relationship_Type__c, ' +
-        'Vibe_Mode__c, Context__c'
+        'Id, Public_Key__c, Name, Author_Name__c, Author_Title__c, ' +
+        'Relationship_Type__c, Vibe_Mode__c, Context__c'
       )
       .filter(
         'Approved__c = true AND ' +

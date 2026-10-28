@@ -32,15 +32,23 @@ global with sharing class SAPIProjectSkill implements QueryDefinitions.Provider 
         return;
       }
       String projectId = ctx.stringParam('projectId');
-      if (
-        String.isNotBlank(projectId) &&
-        !SAPITransformer.isSalesforceId(projectId)
-      ) {
-        ctx.error(400, 'BAD_REQUEST', 'projectId must be a Salesforce Id.');
-        return;
+      String projectIdRef = null;
+      if (String.isNotBlank(projectId)) {
+        projectIdRef = SAPITransformer.resolveReference(
+          Project__c.SObjectType,
+          projectId
+        );
+        if (projectIdRef == null) {
+          ctx.error(
+            400,
+            'BAD_REQUEST',
+            'projectId must be a Salesforce Id or a public key.'
+          );
+          return;
+        }
       }
 
-      Map<String, Object> binds = listBinds(projectId?.trim());
+      Map<String, Object> binds = listBinds(projectIdRef);
       List<Project_Skill__c> records = (List<Project_Skill__c>) QueryDefinitions.runPage(
         LIST_QUERY,
         binds,
@@ -71,8 +79,9 @@ global with sharing class SAPIProjectSkill implements QueryDefinitions.Provider 
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Project_Skill__c',
-        'Id, Project__c, Project__r.Name, Skill__c, Skill__r.Name, ' +
-        'Skill__r.Category__c, Skill__r.Proficiency__c'
+        'Id, Public_Key__c, Project__c, Project__r.Name, ' +
+          'Project__r.Public_Key__c, Skill__c, Skill__r.Name, ' +
+          'Skill__r.Public_Key__c, Skill__r.Category__c, Skill__r.Proficiency__c'
       )
       .filter('(IsDeleted = :hasProjectId OR Project__c = :projectId)')
       .orderBy('Skill__r.Proficiency__c DESC NULLS LAST, Skill__r.Name ASC')

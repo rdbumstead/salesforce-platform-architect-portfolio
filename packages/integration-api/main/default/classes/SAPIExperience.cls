@@ -71,9 +71,11 @@ global with sharing class SAPIExperience implements QueryDefinitions.Provider {
     for (Experience__c exp : experiences) {
       Map<String, Object> item = new Map<String, Object>{
         'id' => exp.Id,
+        'key' => exp.Public_Key__c,
         'name' => exp.Name,
         'employerId' => exp.Employer__c,
         'employerName' => exp.Employer__r?.Name,
+        'employerKey' => exp.Employer__r?.Public_Key__c,
         'startDate' => exp.Start_Date__c != null
           ? String.valueOf(exp.Start_Date__c)
           : null,
@@ -85,6 +87,7 @@ global with sharing class SAPIExperience implements QueryDefinitions.Provider {
         'sortOrder' => exp.Sort_Order__c,
         'contactId' => exp.Contact__c,
         'contactName' => exp.Contact__r?.Name,
+        'contactKey' => exp.Contact__r?.Public_Key__c,
         'accomplishments' => exp.Accomplishments__c
       };
       result.add(item);
@@ -101,9 +104,10 @@ global with sharing class SAPIExperience implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Experience__c',
-        'Id, Name, Employer__c, Employer__r.Name, Start_Date__c, End_Date__c, ' +
+        'Id, Public_Key__c, Name, Employer__c, Employer__r.Name, ' +
+          'Employer__r.Public_Key__c, Start_Date__c, End_Date__c, ' +
           'Is_Current_Role__c, Is_Remote__c, Sort_Order__c, Contact__c, ' +
-          'Contact__r.Name, Accomplishments__c'
+          'Contact__r.Name, Contact__r.Public_Key__c, Accomplishments__c'
       )
       .filter(
         '(IsDeleted = :hasCurrentlyEmployed OR ' +

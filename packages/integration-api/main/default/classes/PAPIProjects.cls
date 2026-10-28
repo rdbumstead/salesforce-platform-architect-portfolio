@@ -15,7 +15,7 @@ global with sharing class PAPIProjects implements QueryDefinitions.Provider {
   private static final String ASSETS_QUERY = 'PAPIProjects_Assets';
 
   /** Every Project__c field the EnrichedProject schema reads. PAPIProfile reads the same. */
-  public static final String PROJECT_FIELDS = 'Id, Name, Challenge__c, Solution__c, Business_Value__c, Status__c, Hero_Image_URL__c, Live_URL__c, Repository_URL__c, Date_Completed__c, Is_Featured__c';
+  public static final String PROJECT_FIELDS = 'Id, Public_Key__c, Name, Challenge__c, Solution__c, Business_Value__c, Status__c, Hero_Image_URL__c, Live_URL__c, Repository_URL__c, Date_Completed__c, Is_Featured__c';
 
   /** The statuses a visitor may see. PAPIProfile filters on the same. */
   public static final String LISTED_STATUS_FILTER =

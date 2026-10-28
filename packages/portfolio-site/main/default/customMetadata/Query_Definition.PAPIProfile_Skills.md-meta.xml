@@ -14,7 +14,7 @@
         <field>Fields__c</field>
         <value
       xsi:type="xsd:string"
-    >Id, Name, Category__c, Proficiency__c, Icon_Name__c</value>
+    >Id, Public_Key__c, Name, Category__c, Proficiency__c, Icon_Name__c</value>
     </values>
     <values>
         <field>Filter__c</field>

@@ -43,12 +43,20 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
         return;
       }
       String experienceId = ctx.stringParam('experienceId');
-      if (
-        String.isNotBlank(experienceId) &&
-        !SAPITransformer.isSalesforceId(experienceId)
-      ) {
-        ctx.error(400, 'BAD_REQUEST', 'experienceId must be a Salesforce Id.');
-        return;
+      String experienceIdRef = null;
+      if (String.isNotBlank(experienceId)) {
+        experienceIdRef = SAPITransformer.resolveReference(
+          Experience__c.SObjectType,
+          experienceId
+        );
+        if (experienceIdRef == null) {
+          ctx.error(
+            400,
+            'BAD_REQUEST',
+            'experienceId must be a Salesforce Id or a public key.'
+          );
+          return;
+        }
       }
       String persona = ctx.stringParam('persona');
       List<String> personas = parsePersonas(persona);
@@ -61,7 +69,7 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
         return;
       }
 
-      Map<String, Object> binds = listBinds(experienceId?.trim(), personas);
+      Map<String, Object> binds = listBinds(experienceIdRef, personas);
       List<Experience_Highlight__c> records = (List<Experience_Highlight__c>) QueryDefinitions.runPage(
         LIST_QUERY,
         binds,
@@ -117,8 +125,9 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Experience_Highlight__c',
-        'Id, Name, Experience__c, Experience__r.Name, Description__c, ' +
-        'Sort_Order__c, Persona_Tag__c'
+        'Id, Public_Key__c, Name, Experience__c, Experience__r.Name, ' +
+          'Experience__r.Public_Key__c, Description__c, Sort_Order__c, ' +
+          'Persona_Tag__c'
       )
       .filter(
         '(IsDeleted = :hasExperienceId OR Experience__c = :experienceId) AND ' +

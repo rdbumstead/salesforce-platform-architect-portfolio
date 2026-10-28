@@ -193,6 +193,7 @@ private class SAPIProjectTest {
   // Property names of the Project schema in salesforce-sapi.yaml.
   private static final Set<String> SPEC_PROJECT_KEYS = new Set<String>{
     'id',
+    'key',
     'name',
     'challenge',
     'solution',
@@ -206,6 +207,7 @@ private class SAPIProjectTest {
     'pillarLabel',
     'isFeatured',
     'contactName',
+    'contactKey',
     'contactId',
     'sortOrder'
   };
