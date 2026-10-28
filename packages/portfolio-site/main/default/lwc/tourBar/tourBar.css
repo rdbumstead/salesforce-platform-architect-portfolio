@@ -1,0 +1,199 @@
+@import "c/nativeControls";
+
+/*
+ * The tour bar. Under the header on wider screens, pinned to the bottom of the screen on a
+ * phone. Colours come from the --pf- tokens the theme layout sets. The buttons and links take
+ * the shared native look, and this file sets only their layout.
+ */
+:host {
+  display: block;
+}
+
+.tour-bar {
+  border-bottom: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+}
+
+.tour-inner {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: var(--pf-space-3) var(--pf-space-4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pf-space-2) var(--pf-space-4);
+}
+
+.tour-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.tour-progress {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--pf-text);
+}
+
+.tour-progress:focus {
+  outline: none;
+}
+
+.tour-progress:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+.tour-minutes {
+  font-weight: 400;
+  color: var(--pf-muted);
+}
+
+.tour-minutes::before {
+  content: "·";
+  margin: 0 6px;
+}
+
+/* The task line is the Show me control: a real button that reads as a line of text. */
+.tour-task {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pf-accent);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.tour-task:hover {
+  color: var(--pf-text);
+}
+
+.tour-task:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.tour-task-icon {
+  flex: 0 0 14px;
+}
+
+.tour-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2);
+}
+
+/* The links that move between stops take the native button look. The site's own link rule
+   would paint them in the link colour, so these keep the colour the button look gives them. */
+.tour-move {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.tour-move.nc-button:link,
+.tour-move.nc-button:visited,
+.tour-move.nc-button:link:hover,
+.tour-move.nc-button:visited:hover {
+  color: var(--pf-btn-text);
+}
+
+.tour-bar .tour-move:link,
+.tour-bar .tour-move:visited,
+.tour-bar .tour-move:link:hover,
+.tour-bar .tour-move:visited:hover {
+  text-decoration: none;
+}
+
+.tour-move.nc-button_secondary:link,
+.tour-move.nc-button_secondary:visited,
+.tour-move.nc-button_secondary:link:hover,
+.tour-move.nc-button_secondary:visited:hover {
+  color: var(--pf-text);
+}
+
+.tour-end {
+  min-height: 44px;
+  padding: 0 var(--pf-space-2);
+  border: 0;
+  background: transparent;
+  color: var(--pf-body);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.tour-end:hover {
+  color: var(--pf-text);
+}
+
+.tour-end:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.tour-ending-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* On a phone the bar is pinned to the bottom of the screen, above the page, and the layout
+   pads the page by its height so it covers nothing. */
+@media screen and (max-width: 767.98px) {
+  .tour-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    border-bottom: 0;
+    border-top: 1px solid var(--pf-border);
+    box-shadow: var(--pf-shadow);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .tour-inner {
+    padding: var(--pf-space-2) var(--pf-space-4);
+    gap: 0 var(--pf-space-2);
+  }
+
+  .tour-text {
+    flex-basis: 100%;
+  }
+
+  .tour-actions {
+    width: 100%;
+  }
+
+  .tour-actions > .tour-end {
+    margin-left: auto;
+  }
+}

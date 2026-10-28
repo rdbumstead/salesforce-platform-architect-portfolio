@@ -237,7 +237,10 @@
 .pillar-link:visited,
 .docs-link,
 .docs-link:link,
-.docs-link:visited {
+.docs-link:visited,
+.tour-start,
+.tour-start:link,
+.tour-start:visited {
   color: var(--pf-text);
 }
 
@@ -328,7 +331,8 @@
 }
 
 .pillar-link,
-.docs-link {
+.docs-link,
+.tour-start {
   display: flex;
   align-items: center;
   gap: var(--pf-space-3);
@@ -340,7 +344,8 @@
 }
 
 .pillar-link:hover,
-.docs-link:hover {
+.docs-link:hover,
+.tour-start:hover {
   background: var(--pf-chip);
 }
 
@@ -384,6 +389,23 @@
   color: var(--pf-warn-text);
   font-size: 12px;
   font-weight: 500;
+}
+
+/* On a wide screen the tour bar sticks right under the header, so Next stays in reach after
+   Show me scrolls the page. The layout sets its top to the header height. On a phone the bar
+   pins itself to the bottom instead. */
+@media screen and (min-width: 768px) {
+  c-tour-bar {
+    position: sticky;
+    z-index: 9;
+  }
+}
+
+/* The tour row opens the menu, set apart from the pillars by a rule. */
+.pillar-menu > .tour-item {
+  margin-bottom: 2px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--pf-border);
 }
 
 /* Docs and the API reference close the menu, set apart from the pillars by a rule. */
@@ -447,6 +469,7 @@
 .nav-link:focus-visible,
 .pillar-link:focus-visible,
 .docs-link:focus-visible,
+.tour-start:focus-visible,
 .icon-button:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;

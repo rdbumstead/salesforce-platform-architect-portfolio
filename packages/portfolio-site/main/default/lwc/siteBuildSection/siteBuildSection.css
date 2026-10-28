@@ -136,30 +136,6 @@
   font-weight: 500;
 }
 
-/* The tour opens the section, above the pillar list. */
-.tour-open {
-  margin: 0 0 var(--pf-space-6);
-}
-
-.tour-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--pf-accent);
-  cursor: pointer;
-}
-
-.tour-button:hover {
-  text-decoration: underline;
-}
-
 /* Case study disclosure */
 .case-study {
   margin-top: var(--pf-space-2);
@@ -197,8 +173,7 @@
   padding: var(--pf-space-2) 0 var(--pf-space-3);
 }
 
-.case-body[hidden],
-.tour[hidden] {
+.case-body[hidden] {
   display: none;
 }
 
@@ -248,96 +223,15 @@
   border: 0;
 }
 
-/* Tour */
-.tour {
-  margin-top: var(--pf-space-3);
-}
-
-.tour-heading {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.3;
-  font-weight: 700;
-  color: var(--pf-text);
-  scroll-margin-top: 88px;
-}
-
-.tour-heading:focus {
-  outline: none;
-}
-
-.tour-heading:focus-visible {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 4px;
-}
-
-.tour-intro {
-  margin: var(--pf-space-2) 0 var(--pf-space-4);
-  color: var(--pf-muted);
-}
-
-.tour-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--pf-border);
-}
-
-.tour-step {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pf-space-2) var(--pf-space-5);
-  padding: 16px 0;
-  border-bottom: 1px solid var(--pf-border);
-}
-
-.tour-lead {
-  flex: 0 0 200px;
-  display: flex;
-  align-items: baseline;
-  gap: var(--pf-space-3);
-}
-
-.tour-number {
-  font-family: var(--pf-font-mono);
-  font-size: 13px;
-  color: var(--pf-muted);
-}
-
-.tour-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  color: var(--pf-text);
-  font-weight: 600;
-}
-
-.tour-link:hover {
-  color: var(--pf-accent);
-}
-
-.tour-text {
-  flex: 1 1 320px;
-  min-width: 0;
-  color: var(--pf-body);
-}
-
-.tour-duration {
-  flex: 0 0 auto;
-  font-size: 13px;
-  color: var(--pf-muted);
-}
-
 .build-go:focus-visible,
 .foot-link:focus-visible,
 .case-toggle:focus-visible,
-.case-link:focus-visible,
-.tour-link:focus-visible {
+.case-link:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
-/* A short fade and slide when a case study or the tour opens. */
+/* A short fade and slide when a case study opens. */
 @keyframes reveal-in {
   from {
     opacity: 0;
@@ -367,10 +261,6 @@
 @media (max-width: 767.98px) {
   .section-heading {
     font-size: 26px;
-  }
-
-  .tour-lead {
-    flex-basis: 100%;
   }
 }
 

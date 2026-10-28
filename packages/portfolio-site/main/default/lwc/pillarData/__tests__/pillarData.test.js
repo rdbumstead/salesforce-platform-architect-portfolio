@@ -15,7 +15,7 @@ import {
   SALESFORCE_START_YEAR,
   salesforceSince,
   TOUR_MINUTES,
-  TOUR_MINUTES_PER_STEP
+  TOUR_TASK_MAX
 } from "c/pillarData";
 
 jest.mock(
@@ -125,15 +125,9 @@ describe("c/pillarData", () => {
     );
   });
 
-  it("keeps the pillar A and B tour lines and summaries", () => {
-    expect(pillarByLetter("A").tour).toBe(
-      "See how a business process maps to its data model, drawn live from the org."
-    );
+  it("keeps the pillar A and B summaries and tags", () => {
     expect(pillarByLetter("A").summary).toBe(
       "How an employer hub for an education provider models a business process and its data."
-    );
-    expect(pillarByLetter("B").tour).toBe(
-      "Follow the reasoning behind a platform choice for a literacy program."
     );
     expect(pillarByLetter("B").summary).toBe(
       "A solution design, decision matrix and cost comparison for a regional adult literacy nonprofit."
@@ -176,8 +170,27 @@ describe("c/pillarData", () => {
     expect(salesforceSince(0)).toBe("On Salesforce since 2017");
   });
 
-  it("counts the tour as one minute per live pillar", () => {
-    expect(TOUR_MINUTES_PER_STEP).toBe(1);
-    expect(TOUR_MINUTES).toBe(LIVE_PILLARS.length * TOUR_MINUTES_PER_STEP);
+  it("gives each stop its approved task line, at most 70 characters", () => {
+    expect(TOUR_TASK_MAX).toBe(70);
+    expect(PILLARS.map((pillar) => pillar.tour)).toEqual([
+      "Open a dashboard image, then find Account in the live data model.",
+      "Move one weight in the matrix and watch the ranking change.",
+      "Press Execute GET and find X-Request-Id and X-RateLimit-Limit.",
+      "Paste a job posting, press Generate, read the letter (about 40 s).",
+      "Find In Progress on the Jira board, then the latest commit below."
+    ]);
+    PILLARS.forEach((pillar) => {
+      expect(pillar.tour.length).toBeLessThanOrEqual(TOUR_TASK_MAX);
+    });
+  });
+
+  it("gives each stop its own minutes and sums them over the live stops", () => {
+    expect(PILLARS.map((pillar) => pillar.tourMinutes)).toEqual([
+      2, 3, 1, 3, 1
+    ]);
+    expect(TOUR_MINUTES).toBe(10);
+    expect(TOUR_MINUTES).toBe(
+      LIVE_PILLARS.reduce((total, pillar) => total + pillar.tourMinutes, 0)
+    );
   });
 });

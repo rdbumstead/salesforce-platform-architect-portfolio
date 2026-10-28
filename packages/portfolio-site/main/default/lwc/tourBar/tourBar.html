@@ -1,0 +1,121 @@
+<template>
+  <template lwc:if={shown}>
+    <div
+      class={barClass}
+      role="region"
+      aria-label={regionLabel}
+      data-id="tour-bar"
+    >
+      <div class="tour-inner">
+        <div class="tour-text">
+          <p
+            class="tour-progress"
+            aria-live="polite"
+            tabindex="-1"
+            data-id="tour-progress"
+          >
+            <span class="tour-stop">{progressText}</span>
+            <template lwc:if={showStop}>
+              <span class="nc-visually-hidden">, </span
+              ><span class="tour-minutes" data-id="tour-minutes"
+                >{minutesLabel}</span
+              >
+            </template>
+          </p>
+          <template lwc:if={showStop}>
+            <button
+              type="button"
+              class="tour-task"
+              data-id="tour-task"
+              onclick={handleShowMe}
+            >
+              <span class="nc-visually-hidden">Show me: </span>{taskText}
+              <svg
+                class="tour-task-icon"
+                aria-hidden="true"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="8"></circle>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </template>
+        </div>
+        <template lwc:if={showStop}>
+          <div class="tour-actions">
+            <template lwc:if={hasBack}>
+              <a
+                class="nc-button nc-button_secondary tour-move"
+                href={backHref}
+                aria-label={backLabel}
+                data-id="tour-back"
+                onclick={handleMove}
+                >Back</a
+              >
+            </template>
+            <template lwc:if={nextHref}>
+              <a
+                class="nc-button tour-move tour-move_next"
+                href={nextHref}
+                aria-label={nextLabel}
+                data-id="tour-next"
+                onclick={handleMove}
+                >Next</a
+              >
+            </template>
+            <template lwc:else>
+              <button
+                type="button"
+                class="nc-button"
+                data-id="tour-finish"
+                onclick={handleFinish}
+              >
+                Finish
+              </button>
+            </template>
+            <button
+              type="button"
+              class="tour-end"
+              data-id="tour-end"
+              onclick={handleEnd}
+            >
+              End tour
+            </button>
+          </div>
+        </template>
+        <template lwc:if={ending}>
+          <div class="tour-actions">
+            <ul class="tour-ending-links" aria-label="Where next">
+              <template for:each={endingLinks} for:item="link">
+                <li key={link.key}>
+                  <a
+                    class="nc-button nc-button_secondary tour-move"
+                    href={link.href}
+                    data-key={link.key}
+                    onclick={handleEndingLink}
+                    >{link.label}</a
+                  >
+                </li>
+              </template>
+            </ul>
+            <button
+              type="button"
+              class="tour-end"
+              data-id="tour-close"
+              onclick={handleClose}
+            >
+              Close
+            </button>
+          </div>
+        </template>
+      </div>
+    </div>
+  </template>
+</template>
