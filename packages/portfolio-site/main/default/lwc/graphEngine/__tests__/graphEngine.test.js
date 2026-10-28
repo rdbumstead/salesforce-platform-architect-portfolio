@@ -17,13 +17,13 @@ const path = require("path");
 const vm = require("vm");
 const crypto = require("crypto");
 
-// config/jest.config.js maps every lightning/* import to one universal mock
-// component, so the resource loader is mocked here explicitly.
-jest.mock(
-  "lightning/platformResourceLoader",
-  () => ({ loadScript: jest.fn(), loadStyle: jest.fn() }),
-  { virtual: true }
-);
+// The resource loader is mocked here so each test sets what loadScript does. The mock is not
+// virtual: the sfdx-lwc-jest resolver gives the module a real stub path, and a virtual mock is
+// passed over once another test file in the same worker has resolved that path.
+jest.mock("lightning/platformResourceLoader", () => ({
+  loadScript: jest.fn(),
+  loadStyle: jest.fn()
+}));
 
 const RESOURCE_PATH = path.join(
   __dirname,
