@@ -1,9 +1,10 @@
 /**
  * @description       : Serves the certification evidence for the skills graph. Returns each
  *                      certification that backs at least one skill, with its Id, its name,
- *                      whether it is retired and the Ids of the skills it backs. Nothing else:
- *                      no issuer, no date, no Contact or Account value. The site guest already
- *                      sees the same certification names on the resume.
+ *                      whether it is retired, the year it was earned and the Ids of the skills it
+ *                      backs. Nothing else: no issuer, no full date, no Contact or Account value.
+ *                      The site guest already sees the same certification names and years on the
+ *                      resume.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -53,6 +54,7 @@ public with sharing class SkillGraphController implements QueryDefinitions.Provi
         entry.id = link.Certification__c;
         entry.name = link.Certification__r?.Name;
         entry.isRetired = link.Certification__r?.Is_Retired__c == true;
+        entry.earnedYear = link.Certification__r?.Earned_Date__c?.year();
         byCertification.put(link.Certification__c, entry);
       }
       if (!entry.skillIds.contains(link.Skill__c)) {
@@ -71,7 +73,7 @@ public with sharing class SkillGraphController implements QueryDefinitions.Provi
   private static QueryDefinitions.QueryDefault certificationLinksDefault() {
     return new QueryDefinitions.QueryDefault(
         'Certification_Skill__c',
-        'Id, Certification__c, Certification__r.Name, Certification__r.Is_Retired__c, Skill__c'
+        'Id, Certification__c, Certification__r.Name, Certification__r.Is_Retired__c, Certification__r.Earned_Date__c, Skill__c'
       )
       .orderBy('Certification__r.Name ASC, Skill__c ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);
@@ -115,6 +117,8 @@ public with sharing class SkillGraphController implements QueryDefinitions.Provi
     public String name;
     @AuraEnabled
     public Boolean isRetired;
+    @AuraEnabled
+    public Integer earnedYear;
     @AuraEnabled
     public List<Id> skillIds = new List<Id>();
   }

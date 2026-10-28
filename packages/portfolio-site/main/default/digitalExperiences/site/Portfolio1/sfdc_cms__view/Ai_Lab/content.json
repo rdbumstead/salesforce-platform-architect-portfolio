@@ -61,7 +61,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/ai-lab\" />\n<meta property=\"og:title\" content=\"AI Lab | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Pillar D. Generate a cover letter grounded in Ryan Bumstead&#x27;s portfolio data.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/ai-lab\" />\n<meta name=\"twitter:title\" content=\"AI Lab | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Pillar D. Generate a cover letter grounded in Ryan Bumstead&#x27;s portfolio data.\" />",
                 "description": "Pillar D. Generate a cover letter grounded in Ryan Bumstead's portfolio data.",
                 "pageTitle": "AI Lab | Ryan Bumstead",
                 "recordId": "{!recordId}"

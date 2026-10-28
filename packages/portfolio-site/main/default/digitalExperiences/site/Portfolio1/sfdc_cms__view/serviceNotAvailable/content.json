@@ -25,10 +25,10 @@
                   "children": [
                     {
                       "attributes": {
-                        "imageInfos": "",
-                        "richTextValue": "<div style=\"display: flex; align-items: center; flex-direction: column; margin: 60px 25px 40px 25px;\">\n\t<div style=\"background: url(assets/img/serviceNotAvailable.svg) center no-repeat !important; background-size: contain; height: 331px; width: 100%; max-width: 538px;\"></div>\n</div>\n<div style=\"margin: 0 25px; text-align: center;\">\n\t<h1><b style=\"font-size: 2em\">Looks like the site is temporarily unavailable</b></h1>\n\t<br/>\n\t<p><span style=\"font-size: 1.5em;\">Please try again in a bit.</span></p>\n</div>"
+                        "body": "Please try again in a bit.",
+                        "heading": "The site is taking a short break"
                       },
-                      "definition": "community_builder:htmlEditor",
+                      "definition": "c:messagePage",
                       "id": "f0530616-29e1-4d49-935a-37339286ffd6",
                       "type": "component"
                     }

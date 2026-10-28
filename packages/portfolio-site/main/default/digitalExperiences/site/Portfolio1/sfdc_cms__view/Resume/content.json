@@ -61,7 +61,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/resume\" />\n<meta property=\"og:title\" content=\"Resume | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Ryan Bumstead&#x27;s Salesforce resume, filtered by Admin, Developer or Architect focus, with PDF and plain text downloads.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/resume\" />\n<meta name=\"twitter:title\" content=\"Resume | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Ryan Bumstead&#x27;s Salesforce resume, filtered by Admin, Developer or Architect focus, with PDF and plain text downloads.\" />",
                 "description": "Ryan Bumstead's Salesforce resume, filtered by Admin, Developer or Architect focus, with PDF and plain text downloads.",
                 "pageTitle": "Resume | Ryan Bumstead",
                 "recordId": "{!recordId}"
