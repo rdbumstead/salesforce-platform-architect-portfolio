@@ -64,7 +64,8 @@
               onclick={handleTabClick}
               onkeydown={handleTabKeydown}
             >
-              {tab.tabText}
+              <span class="tab-label">{tab.tabLabel}</span
+              ><span class="tab-count">{tab.tabCount}</span>
             </button>
           </template>
         </div>

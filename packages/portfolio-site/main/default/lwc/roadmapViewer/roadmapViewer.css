@@ -283,6 +283,14 @@
   cursor: pointer;
 }
 
+/* On a narrow phone the count drops under the name on all three tabs, so no tab wraps on its
+   own and the labels sit on the same lines. */
+@media (max-width: 479.98px) {
+  .tab-count {
+    display: block;
+  }
+}
+
 .tab-active {
   background-color: var(--pf-chip);
   color: var(--pf-chip-text);
