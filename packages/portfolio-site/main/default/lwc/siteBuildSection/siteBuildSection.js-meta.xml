@@ -4,7 +4,7 @@
     <isExposed>true</isExposed>
     <masterLabel>Site Build Section</masterLabel>
     <description
-  >How this site is built: the pillars with their case studies, Skills, the docs, the tour and the live test counts</description>
+  >How this site is built: the pillars with their case studies, the docs, the tour and the live test counts</description>
     <targets>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>

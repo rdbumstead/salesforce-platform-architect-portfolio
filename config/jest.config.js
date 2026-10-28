@@ -15,6 +15,14 @@ module.exports = {
     "^c/nativeControls$": path.join(
       projectRoot,
       "packages/portfolio-site/main/default/lwc/nativeControls/nativeControls.css"
+    ),
+    // Every other c/ module is named here too, so Jest gives an import of it one module id in
+    // every test file. Left to the resolver, a suite that mocks a module as virtual and a suite
+    // that loads it plainly cache different ids for the same import in a shared worker, and a
+    // later suite's mock never reaches the component that imports it.
+    "^c/([^/]+)$": path.join(
+      projectRoot,
+      "packages/portfolio-site/main/default/lwc/$1/$1"
     )
   },
   roots: [path.join(projectRoot, "packages", "portfolio-site")],

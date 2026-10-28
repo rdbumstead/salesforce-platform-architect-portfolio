@@ -16,6 +16,10 @@
  *                      you panel that fades in and takes focus. Each submit the server answers
  *                      sends testimonial_submitted with the vibe and the outcome (accepted,
  *                      rate_limited or invalid) and nothing the visitor typed or chose.
+ *                      A visitor who would rather write than build the sentence switches to
+ *                      "Write my own": the relationship stays, and one box takes the review in
+ *                      their own words, sent to TestimonialController.submitOwnTestimonial. Each
+ *                      box shows its count against its limit and warns near it (c/fieldLimit).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -25,13 +29,18 @@
 import { LightningElement, wire } from "lwc";
 import getFragments from "@salesforce/apex/TestimonialController.getFragments";
 import submitTestimonial from "@salesforce/apex/TestimonialController.submitTestimonial";
+import submitOwnTestimonial from "@salesforce/apex/TestimonialController.submitOwnTestimonial";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { limitState } from "c/fieldLimit";
 
-// Limits mirror TestimonialController (MAX_AUTHOR_NAME_LENGTH, MAX_NOTE_LENGTH and the
-// Author_Title__c field length). The server stays the authority.
+// Limits mirror TestimonialController (MAX_AUTHOR_NAME_LENGTH, MAX_NOTE_LENGTH,
+// MAX_OWN_WORDS_LENGTH and the Author_Title__c field length). The server stays the authority.
 export const MAX_NAME_LENGTH = 80;
 export const MAX_TITLE_LENGTH = 100;
 export const MAX_NOTE_LENGTH = 255;
+export const MAX_OWN_WORDS_LENGTH = 255;
+export const MODE_BUILDER = "builder";
+export const MODE_OWN = "own";
 export const RELATIONSHIPS = ["Manager", "Peer", "Client", "Recruiter", "Fan"];
 export const ANYONE_ONLY = ["Recruiter", "Fan"];
 export const VIBE_PROFESSIONAL = "Professional";
@@ -57,7 +66,9 @@ export const FIELD_ERRORS = {
   relationship: "Choose how you know Ryan.",
   strength: "Choose a strength.",
   outcome: "Choose a result.",
-  note: `Use ${MAX_NOTE_LENGTH} characters or fewer.`
+  note: `Use ${MAX_NOTE_LENGTH} characters or fewer.`,
+  ownWords: "Write your review.",
+  ownWordsLong: `Use ${MAX_OWN_WORDS_LENGTH} characters or fewer.`
 };
 
 // The order a visitor meets the fields in, so the first invalid one gets focus.
@@ -67,6 +78,7 @@ export const FIELD_ORDER = [
   "relationship",
   "strength",
   "outcome",
+  "ownWords",
   "note"
 ];
 
@@ -93,8 +105,10 @@ function emptyForm() {
     strength: "",
     outcome: "",
     note: "",
+    ownWords: "",
     website: "",
-    vibeMode: VIBE_PROFESSIONAL
+    vibeMode: VIBE_PROFESSIONAL,
+    mode: MODE_BUILDER
   };
 }
 
@@ -132,6 +146,7 @@ export default class TestimonialSubmit extends LightningElement {
   maxNameLength = MAX_NAME_LENGTH;
   maxTitleLength = MAX_TITLE_LENGTH;
   maxNoteLength = MAX_NOTE_LENGTH;
+  maxOwnWordsLength = MAX_OWN_WORDS_LENGTH;
   successTitle = SUCCESS_TITLE;
   successMessage = SUCCESS_MESSAGE;
 
@@ -238,13 +253,43 @@ export default class TestimonialSubmit extends LightningElement {
   }
 
   get vibeHint() {
+    if (this.isOwnWords) {
+      return this.isCasual
+        ? "Your review is marked casual."
+        : "Your review is marked professional.";
+    }
     return this.isCasual
       ? "Casual shows the fun phrases."
       : "Professional shows formal phrases.";
   }
 
-  get noteCount() {
-    return `${this.form.note.length} of ${MAX_NOTE_LENGTH} characters`;
+  get isOwnWords() {
+    return this.form.mode === MODE_OWN;
+  }
+
+  get builderPressed() {
+    return this.isOwnWords ? "false" : "true";
+  }
+
+  get ownPressed() {
+    return this.isOwnWords ? "true" : "false";
+  }
+
+  // Each box says how much of its limit is used, and warns once it is close.
+  get nameLimit() {
+    return limitState(this.form.authorName, MAX_NAME_LENGTH);
+  }
+
+  get titleLimit() {
+    return limitState(this.form.authorTitle, MAX_TITLE_LENGTH);
+  }
+
+  get noteLimit() {
+    return limitState(this.form.note, MAX_NOTE_LENGTH);
+  }
+
+  get ownWordsLimit() {
+    return limitState(this.form.ownWords, MAX_OWN_WORDS_LENGTH);
   }
 
   textOf(id) {
@@ -282,6 +327,12 @@ export default class TestimonialSubmit extends LightningElement {
   get noteError() {
     return this.errors.note || "";
   }
+  get ownWordsError() {
+    return this.errors.ownWords || "";
+  }
+  get ownWordsInvalid() {
+    return this.errors.ownWords ? "true" : undefined;
+  }
   get authorNameInvalid() {
     return this.errors.authorName ? "true" : undefined;
   }
@@ -318,6 +369,15 @@ export default class TestimonialSubmit extends LightningElement {
     }
     if (!RELATIONSHIPS.includes(this.form.relationship)) {
       errors.relationship = FIELD_ERRORS.relationship;
+    }
+    if (this.isOwnWords) {
+      const words = this.form.ownWords.trim();
+      if (!words.length) {
+        errors.ownWords = FIELD_ERRORS.ownWords;
+      } else if (words.length > MAX_OWN_WORDS_LENGTH) {
+        errors.ownWords = FIELD_ERRORS.ownWordsLong;
+      }
+      return errors;
     }
     if (!this.strengthOptions.some((o) => o.value === this.form.strength)) {
       errors.strength = FIELD_ERRORS.strength;
@@ -366,6 +426,24 @@ export default class TestimonialSubmit extends LightningElement {
     return next;
   }
 
+  // Build a sentence or write my own. The relationship and vibe stay. The other mode's
+  // messages go, because those fields leave the form.
+  handleModeChange(event) {
+    const mode = event.currentTarget.dataset.mode;
+    if (mode === this.form.mode) {
+      return;
+    }
+    this.form = { ...this.form, mode };
+    this.errors = without(
+      this.errors,
+      "strength",
+      "outcome",
+      "note",
+      "ownWords"
+    );
+    this.serverError = "";
+  }
+
   handleVibeToggle() {
     // Each vibe has its own fragments, so the two phrase blanks start again.
     this.form = {
@@ -408,18 +486,28 @@ export default class TestimonialSubmit extends LightningElement {
     const vibe = this.form.vibeMode;
     const title = this.form.authorTitle.trim();
     const note = this.form.note.trim();
+    const shared = {
+      authorName: this.form.authorName.trim(),
+      authorTitle: title.length ? title : null,
+      relationship: this.form.relationship,
+      vibeMode: this.form.vibeMode,
+      website: this.form.website.length ? this.form.website : null,
+      elapsedMs: Date.now() - this.startedAt
+    };
     try {
-      await submitTestimonial({
-        authorName: this.form.authorName.trim(),
-        authorTitle: title.length ? title : null,
-        relationship: this.form.relationship,
-        vibeMode: this.form.vibeMode,
-        strengthId: this.form.strength,
-        outcomeId: this.form.outcome,
-        note: note.length ? note : null,
-        website: this.form.website.length ? this.form.website : null,
-        elapsedMs: Date.now() - this.startedAt
-      });
+      if (this.isOwnWords) {
+        await submitOwnTestimonial({
+          ...shared,
+          ownWords: this.form.ownWords.trim()
+        });
+      } else {
+        await submitTestimonial({
+          ...shared,
+          strengthId: this.form.strength,
+          outcomeId: this.form.outcome,
+          note: note.length ? note : null
+        });
+      }
       this.form = emptyForm();
       this.vibeAnnouncement = "";
       this.isSent = true;

@@ -1105,4 +1105,15 @@ describe("c-resume-builder", () => {
     const element = createComponent();
     expect(query(element, ".card-tools")).toBeNull();
   });
+
+  it("places the live data marker beside View source with the resume definitions", () => {
+    const template = require("fs").readFileSync(
+      require("path").join(__dirname, "..", "resumeBuilder.html"),
+      "utf8"
+    );
+    expect(template).toMatch(
+      /<c-data-source\s+slot="actions"\s+source-keys="ResumeController_Roles,/
+    );
+    expect(template).toContain("ResumeController_Education");
+  });
 });

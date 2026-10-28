@@ -46,4 +46,8 @@
       xsi:type="xsd:string"
     >Cover letter grounding: featured live projects.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">projects</value>
+    </values>
 </CustomMetadata>

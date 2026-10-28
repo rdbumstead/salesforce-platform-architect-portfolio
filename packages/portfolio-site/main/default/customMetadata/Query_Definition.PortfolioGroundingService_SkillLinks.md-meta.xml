@@ -42,4 +42,8 @@
       xsi:type="xsd:string"
     >Cover letter grounding: skills of the projects read before.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">project skills</value>
+    </values>
 </CustomMetadata>

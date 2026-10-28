@@ -5,46 +5,53 @@
         >&copy; {currentYear} Ryan Bumstead. Built on Salesforce LWR.</span
       >
 
-      <p class="metrics-caption" data-id="metrics-caption">
-        Live readings from the Salesforce org serving this page
-      </p>
-      <div class="metrics" data-id="metrics">
-        <div class="metric-group" data-group="deploy">
-          <span class="group-label" id="footer-group-deploy">Deploy</span>
-          <ul class="group-list" aria-labelledby="footer-group-deploy">
-            <li class="metric deploy">
-              <span class="status-dot" aria-hidden="true"></span>
-              <template lwc:if={badgeFailed}>
-                <a
-                  class="target badge-fallback"
-                  data-id="badge-fallback"
-                  href={actionsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  >Production deploy status</a
-                >
-              </template>
-              <template lwc:else>
-                <a
-                  class="target badge-link"
-                  href={actionsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <img
-                    class="badge"
-                    data-id="badge"
-                    src={badgeUrl}
-                    alt="Production deploy status"
-                    height="20"
-                    onerror={handleBadgeError}
-                  />
-                </a>
-              </template>
-            </li>
+      <div class="metrics metrics-ci" data-id="ci-row">
+        <div class="metric-group" data-group="ci">
+          <span class="group-label" id="footer-group-ci">CI</span>
+          <ul class="group-list" aria-labelledby="footer-group-ci">
+            <template for:each={badgeRows} for:item="badge">
+              <li key={badge.key} class="metric ci-badge" data-id="ci-badge">
+                <template lwc:if={badge.failed}>
+                  <a
+                    class="target badge-fallback"
+                    data-id={badge.fallbackId}
+                    href={badge.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >{badge.label}</a
+                  >
+                </template>
+                <template lwc:else>
+                  <a
+                    class="target badge-link"
+                    href={badge.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      class="badge"
+                      data-id={badge.imageId}
+                      data-key={badge.key}
+                      src={badge.src}
+                      alt={badge.label}
+                      height="20"
+                      onerror={handleBadgeError}
+                    />
+                  </a>
+                </template>
+              </li>
+            </template>
           </ul>
         </div>
+      </div>
 
+      <div class="metrics-head">
+        <p class="metrics-caption" data-id="metrics-caption">
+          Live readings from the Salesforce org serving this page
+        </p>
+        <c-view-source source-key="footer"></c-view-source>
+      </div>
+      <div class="metrics" data-id="metrics">
         <template lwc:if={showPlatform}>
           <div class="metric-group" data-group="platform">
             <span class="group-label" id="footer-group-platform">Platform</span>
@@ -178,10 +185,6 @@
       </div>
 
       <span class="links">
-        <a class="target" data-id="skills" href={skillsUrl}>Skills</a>
-        <a class="target" data-id="testimonials" href={testimonialsUrl}
-          >Testimonials</a
-        >
         <a class="target" data-id="contact" href={contactUrl}>Contact</a>
         <a class="target" data-id="docs" href={docsUrl}>Docs</a>
         <template lwc:if={gitHubUrl}>

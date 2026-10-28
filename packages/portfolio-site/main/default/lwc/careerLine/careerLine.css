@@ -447,3 +447,14 @@
     transform: translateY(0);
   }
 }
+
+/* The live data marker sits at the right of the timeline, above the filters. */
+.source-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 var(--pf-space-2);
+}
+
+.card-source {
+  display: inline-flex;
+}

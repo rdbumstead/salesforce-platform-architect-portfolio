@@ -361,31 +361,8 @@ jobs:
              exit 1
           fi
 
-  # Keeps the public Postman workspace's collection equal to the one the site offers. The key
-  # lives only in the POSTMAN_API_KEY secret, and the collection to update is the
-  # POSTMAN_COLLECTION_UID repository variable. The generator's own ids are removed first, so
-  # Postman keeps its ids for the collection and its requests.
-  postman-sync:
-    needs: [deploy]
-    if: github.event_name == 'push' && needs.deploy.result == 'success' && vars.POSTMAN_COLLECTION_UID != ''
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Check the collection is current
-        run: |
-          npm install --prefix "$RUNNER_TEMP/o2p" --no-save --no-audit --no-fund openapi-to-postmanv2@6.4.0
-          OPENAPI_TO_POSTMAN_DIR="$RUNNER_TEMP/o2p/node_modules/openapi-to-postmanv2" node scripts/build-postman-collection.js --check
-
-      - name: Push the collection to the public Postman workspace
-        env:
-          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
-          POSTMAN_COLLECTION_UID: ${{ vars.POSTMAN_COLLECTION_UID }}
-        run: node scripts/postman-sync.js push
+  # The Postman collection sync is its own workflow, postman-sync.yml. It starts when this one
+  # completes, so the site footer can show its badge.
 
   deploy-status:
     if: always()

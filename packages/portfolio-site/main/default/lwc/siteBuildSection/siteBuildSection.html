@@ -75,22 +75,6 @@
             >
           </li>
         </template>
-        <li class="build-item" data-key="skills">
-          <span class="letter" aria-hidden="true"></span>
-          <div class="build-main">
-            <h3 class="build-name">Skills</h3>
-            <p class="build-text">
-              Every skill rated 1 to 5, with the years I used it in a role.
-            </p>
-          </div>
-          <a
-            class="build-go"
-            href={skillsHref}
-            aria-label="Open Skills"
-            data-id="skills-link"
-            >Open <span aria-hidden="true">→</span></a
-          >
-        </li>
       </ul>
       <template lwc:if={hasComing}>
         <p class="coming-note" data-id="coming-note">{comingText}</p>

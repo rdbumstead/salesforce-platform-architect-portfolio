@@ -162,7 +162,7 @@ private class PortfolioGroundingServicePersonaTest {
   @IsTest
   static void removeContactDetailsCutsVeryLongText() {
     String cleaned = PortfolioGroundingService.removeContactDetails(
-      'word '.repeat(2000)
+      'word '.repeat(PortfolioGroundingService.MAX_JOB_TEXT_CHARS / 5 + 500)
     );
 
     Assert.isTrue(

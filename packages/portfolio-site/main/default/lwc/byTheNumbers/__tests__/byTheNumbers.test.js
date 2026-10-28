@@ -116,6 +116,23 @@ describe("c-by-the-numbers", () => {
     expect(element.shadowRoot.querySelector("details")).toBeNull();
   });
 
+  it("puts cover letters before the two API Lab counts, so those sit together", async () => {
+    const element = mount();
+    getStats.emit(stats());
+    await flush();
+    const order = Array.from(
+      element.shadowRoot.querySelectorAll("[data-stat]")
+    ).map((tile) => tile.dataset.stat);
+    expect(order).toEqual([
+      "deploys",
+      "apex",
+      "jest",
+      "letters",
+      "tokens",
+      "requests"
+    ]);
+  });
+
   it("shows every count as text", async () => {
     const element = mount();
     getStats.emit(stats());
@@ -566,5 +583,23 @@ describe("formatting helpers", () => {
   it("keeps the measured groups adding up to a total above zero", () => {
     expect(totalOf(APEX_GROUPS)).toBeGreaterThan(0);
     expect(totalOf(JEST_GROUPS)).toBeGreaterThan(0);
+  });
+});
+
+describe("c-by-the-numbers live data marker", () => {
+  it("places the live data marker with the sources the section reads", () => {
+    const { readFileSync } = require("fs");
+    const { join } = require("path");
+    const html = readFileSync(
+      join(__dirname, "..", "byTheNumbers.html"),
+      "utf8"
+    );
+    const marker = html.match(/<c-data-source\s([^>]*)>\s*<\/c-data-source>/);
+    expect(marker).not.toBeNull();
+    expect(marker[1]).toMatch(
+      /source-keys="PortfolioStatsController_Approved,PortfolioStatsController_Waiting,PortfolioStatsController_UsageCounters,PortfolioStatsController_DeployRuns,PortfolioStatsController_LatestDeploy,PortfolioStatsController_IssuedTokens"/
+    );
+    expect(marker[1]).not.toMatch(/objects=/);
+    expect(marker[1]).toMatch(/\shide-counts[\s>]/);
   });
 });

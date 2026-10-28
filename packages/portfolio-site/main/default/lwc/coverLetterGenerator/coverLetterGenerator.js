@@ -19,8 +19,9 @@
  *                      change it, and a failed read leaves it out. Download PDF writes the same
  *                      header and the letter as selectable text, and Copy text copies the letter
  *                      alone. Each sends its event with the provider and nothing else. The
- *                      fields are native controls, and the job description field is the tour's
- *                      stop D anchor.
+ *                      fields are native controls, each with a count against its limit that
+ *                      warns near it, and the job description field is the tour's stop D
+ *                      anchor.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -34,6 +35,7 @@ import { headerLinks } from "c/profileLinks";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { onShowMe, revealAnchor } from "c/tourShowMe";
 import { createPdfLoader, previewStyle } from "c/documentPdf";
+import { limitState } from "c/fieldLimit";
 import { LETTER_LAYOUT, letterFileName, writeLetterPdf } from "./letterFormat";
 
 /** The sheet's paper, ink and type, from the layout the PDF reads. */
@@ -41,7 +43,9 @@ const SHEET_STYLE = previewStyle(LETTER_LAYOUT);
 
 export const MAX_COMPANY_LENGTH = 120;
 export const MAX_TITLE_LENGTH = 120;
-export const MAX_DESCRIPTION_LENGTH = 4000;
+// A long posting runs to about 6,000 characters, so 12,000 leaves room. ApiLabController and
+// PortfolioGroundingService hold the same limit.
+export const MAX_DESCRIPTION_LENGTH = 12000;
 /** The tour stop whose task line points at this page's job description field. */
 export const TOUR_STOP = "D";
 /** Provider value the API returns when the local template wrote the letter. */
@@ -138,6 +142,7 @@ export default class CoverLetterGenerator extends LightningElement {
   companyName = "";
   jobTitle = "";
   jobDescription = "";
+  descriptionCut = false;
   isLoading = false;
   error = null;
   result = null;
@@ -183,6 +188,41 @@ export default class CoverLetterGenerator extends LightningElement {
   handleInputChange(event) {
     const field = event.target.dataset.field;
     this[field] = event.target.value;
+    if (field === "jobDescription" && this.descriptionCut) {
+      this.descriptionCut =
+        this.jobDescription.length >= MAX_DESCRIPTION_LENGTH;
+    }
+  }
+
+  /**
+   * The browser drops whatever a paste puts past maxlength, with no sign. This works out
+   * whether this paste overflows, so the field can say the end was left out.
+   */
+  handleDescriptionPaste(event) {
+    const pasted = event.clipboardData?.getData("text") || "";
+    const field = event.target;
+    const selected = (field.selectionEnd || 0) - (field.selectionStart || 0);
+    const after = (field.value || "").length - selected + pasted.length;
+    this.descriptionCut = after > MAX_DESCRIPTION_LENGTH;
+  }
+
+  // Each box says how much of its limit is used, and warns once it is close (c/fieldLimit).
+  get companyLimit() {
+    return limitState(this.companyName, MAX_COMPANY_LENGTH);
+  }
+
+  get titleLimit() {
+    return limitState(this.jobTitle, MAX_TITLE_LENGTH);
+  }
+
+  get descriptionLimit() {
+    return limitState(this.jobDescription, MAX_DESCRIPTION_LENGTH);
+  }
+
+  get descriptionCutText() {
+    return this.descriptionCut
+      ? `The pasted text was longer than ${MAX_DESCRIPTION_LENGTH.toLocaleString("en-US")} characters, so the end was left out.`
+      : "";
   }
 
   get isGenerateDisabled() {

@@ -2,23 +2,25 @@
   <section class="erd" aria-label="Data model">
     <div class="erd-header">
       <div class="erd-title-row">
-        <h2 class="erd-title">Data model, live</h2>
+        <h2 class="erd-title">{title}</h2>
         <c-view-source source-key="schemaVisualizer"></c-view-source>
       </div>
-      <div class="scope-toggle" role="group" aria-label="Schema scope">
-        <template for:each={scopeButtons} for:item="button">
-          <button
-            key={button.value}
-            type="button"
-            class={button.className}
-            aria-pressed={button.pressed}
-            data-scope={button.value}
-            onclick={handleScopeClick}
-          >
-            {button.label}
-          </button>
-        </template>
-      </div>
+      <template lwc:if={showScopeToggle}>
+        <div class="scope-toggle" role="group" aria-label="Schema scope">
+          <template for:each={scopeButtons} for:item="button">
+            <button
+              key={button.value}
+              type="button"
+              class={button.className}
+              aria-pressed={button.pressed}
+              data-scope={button.value}
+              onclick={handleScopeClick}
+            >
+              {button.label}
+            </button>
+          </template>
+        </div>
+      </template>
     </div>
 
     <template lwc:if={isLoading}>
@@ -28,7 +30,7 @@
       <p class="status status_error" role="alert">{errorMessage}</p>
     </template>
     <template lwc:if={isEmpty}>
-      <p class="status">No objects to show for this scope.</p>
+      <p class="status">{emptyMessage}</p>
     </template>
 
     <template lwc:if={showContent}>

@@ -88,7 +88,8 @@ public with sharing class ApiLabController {
 
   public static final Integer MAX_COMPANY_LENGTH = 120;
   public static final Integer MAX_TITLE_LENGTH = 120;
-  public static final Integer MAX_DESCRIPTION_LENGTH = 4000;
+  // The cover letter page and PortfolioGroundingService.MAX_JOB_TEXT_CHARS hold the same limit.
+  public static final Integer MAX_DESCRIPTION_LENGTH = 12000;
 
   private static final String APEX_REST_PATH = '/services/apexrest';
   private static final Pattern PARAM_NAME = Pattern.compile(

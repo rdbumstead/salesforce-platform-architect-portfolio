@@ -40,4 +40,8 @@
       xsi:type="xsd:string"
     >Delivery page: newest Jira cache row.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">Jira issues</value>
+    </values>
 </CustomMetadata>

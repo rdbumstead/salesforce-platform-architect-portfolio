@@ -1,7 +1,13 @@
 <template>
   <template lwc:if={hasItems}>
     <section class="wall" aria-labelledby="wall-heading">
-      <h2 id="wall-heading" class="wall-title">What people say</h2>
+      <div class="title-row">
+        <h2 id="wall-heading" class="wall-title">What people say</h2>
+        <c-data-source
+          source-keys="TestimonialController_Approved"
+          class="card-source"
+        ></c-data-source>
+      </div>
       <div class="filter" role="group" aria-label="Show testimonials">
         <button
           type="button"

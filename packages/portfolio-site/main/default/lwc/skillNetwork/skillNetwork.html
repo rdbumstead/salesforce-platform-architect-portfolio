@@ -1,6 +1,11 @@
 <template>
   <lightning-card title="Skill Network" icon-name="standard:invocable_action">
     <c-view-source slot="actions" source-key="skillNetwork"></c-view-source>
+    <c-data-source
+      slot="actions"
+      objects="Skill__c"
+      class="card-source"
+    ></c-data-source>
     <div class="slds-p-around_medium network-body">
       <template lwc:if={isLoading}>
         <div class="state state-loading">
@@ -111,9 +116,12 @@
                             <template lwc:if={chip.hasYears}>
                               <span class="chip-years">{chip.years}</span>
                             </template>
-                            <template lwc:if={chip.hasEvidenceText}>
-                              <span class="chip-evidence"
-                                >{chip.evidenceText}</span
+                            <template for:each={chip.evidence} for:item="part">
+                              <span
+                                key={part.key}
+                                class="chip-evidence"
+                                data-evidence={part.key}
+                                >{part.text}</span
                               >
                             </template>
                           </span>

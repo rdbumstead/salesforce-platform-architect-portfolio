@@ -42,4 +42,8 @@
       xsi:type="xsd:string"
     >Resume highlights of the roles read before.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">highlights</value>
+    </values>
 </CustomMetadata>

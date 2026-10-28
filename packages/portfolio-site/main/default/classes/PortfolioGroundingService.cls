@@ -44,8 +44,8 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
   /** Score added to a highlight tagged with the job's persona. */
   public static final Integer PERSONA_BOOST = 2;
 
-  /** Job text longer than this is cut before contact details are removed. */
-  public static final Integer MAX_JOB_TEXT_CHARS = 4000;
+  /** Job text longer than this is cut before contact details are removed. The page's limit. */
+  public static final Integer MAX_JOB_TEXT_CHARS = 12000;
 
   /** The order the title is checked in. */
   private static final List<String> PERSONA_ORDER = new List<String>{
@@ -122,8 +122,11 @@ public with sharing class PortfolioGroundingService implements QueryDefinitions.
 
   /** Free text is cut to this length before cleaning. Only MAX_TEXT_CHARS survive anyway. */
   private static final Integer MAX_SCAN_CHARS = 2000;
-  /** Text read for keyword matching is cut to this length, so splitting stays bounded. */
-  private static final Integer MAX_MATCH_CHARS = 8000;
+  /**
+   * Text read for keyword matching is cut to this length, so splitting stays bounded. It is the
+   * job text limit, so the whole of a long description counts toward matching.
+   */
+  private static final Integer MAX_MATCH_CHARS = MAX_JOB_TEXT_CHARS;
   private static final Selector SELECTOR = new Selector();
 
   private static final Pattern PHONE = Pattern.compile(

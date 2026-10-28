@@ -1,6 +1,7 @@
 /**
- * @description       : Unit tests for the Glass Box footer, its caption, its four metric groups
- *                      in plain words with the quotas in a closed disclosure, and its links.
+ * @description       : Unit tests for the Glass Box footer: the CI row with its two badges, the
+ *                      readings row with its caption and View source, the metric groups in plain
+ *                      words, and the links.
  *                      getLinks is a
  *                      mocked wire adapter, getSystemSnapshot a mocked imperative call, and
  *                      requestIdleCallback is captured so a test decides when the page is idle.
@@ -13,9 +14,16 @@
  * @Created           : 12/19/2025
  **/
 import { createElement } from "@lwc/engine-dom";
+import { readFileSync } from "fs";
+import { join } from "path";
 import Footer, {
   ACTIONS_URL,
   BADGE_URL,
+  CI_BADGES,
+  POSTMAN_ACTIONS_URL,
+  POSTMAN_BADGE_URL,
+  SMOKE_ACTIONS_URL,
+  SMOKE_BADGE_URL,
   formatNumber,
   formatSize,
   formatTime,
@@ -258,6 +266,71 @@ describe("c-footer", () => {
       "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/deploy.yml/badge.svg?branch=main"
     );
     expect(badge.getAttribute("alt")).toBe("Production deploy status");
+    expect(badge.getAttribute("height")).toBe("20");
+    const link = badge.closest("a");
+    expect(link.getAttribute("href")).toBe(ACTIONS_URL);
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it("shows the Live Smoke Test badge with its link", () => {
+    const element = createComponent();
+    const badge = q(element, '[data-id="badge-smoke"]');
+    expect(SMOKE_BADGE_URL).toBe(
+      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/smoke.yml/badge.svg"
+    );
+    expect(badge.getAttribute("src")).toBe(SMOKE_BADGE_URL);
+    expect(badge.getAttribute("alt")).toBe("Live smoke test status");
+    expect(badge.getAttribute("height")).toBe("20");
+    const link = badge.closest("a");
+    expect(link.getAttribute("href")).toBe(SMOKE_ACTIONS_URL);
+    expect(SMOKE_ACTIONS_URL).toBe(
+      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/smoke.yml"
+    );
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it("shows the Postman Sync badge with its link", () => {
+    const element = createComponent();
+    const badge = q(element, '[data-id="badge-postman"]');
+    expect(POSTMAN_BADGE_URL).toBe(
+      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/postman-sync.yml/badge.svg"
+    );
+    expect(badge.getAttribute("src")).toBe(POSTMAN_BADGE_URL);
+    expect(badge.getAttribute("alt")).toBe("Postman collection sync status");
+    expect(badge.getAttribute("height")).toBe("20");
+    const link = badge.closest("a");
+    expect(link.getAttribute("href")).toBe(POSTMAN_ACTIONS_URL);
+    expect(POSTMAN_ACTIONS_URL).toBe(
+      "https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions/workflows/postman-sync.yml"
+    );
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it("swaps only the smoke badge for its own fallback link when it fails", async () => {
+    const element = createComponent();
+    q(element, '[data-id="badge-smoke"]').dispatchEvent(
+      new CustomEvent("error")
+    );
+    await flushPromises();
+
+    expect(q(element, '[data-id="badge-smoke"]')).toBeNull();
+    expect(q(element, '[data-id="badge"]')).not.toBeNull();
+    const fallback = q(element, '[data-id="badge-fallback-smoke"]');
+    expect(fallback.textContent).toBe("Live smoke test status");
+    expect(fallback.getAttribute("href")).toBe(SMOKE_ACTIONS_URL);
+    expect(fallback.getAttribute("target")).toBe("_blank");
+    expect(fallback.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it("renders one badge per CI_BADGES entry, in order", () => {
+    const element = createComponent();
+    const images = all(element, ".ci-badge img");
+    expect(images.map((img) => img.dataset.id)).toEqual(
+      CI_BADGES.map((badge) => badge.imageId)
+    );
   });
 
   it("swaps the badge for a text link to the Actions page when it fails", async () => {
@@ -611,11 +684,11 @@ describe("c-footer", () => {
       return element;
     }
 
-    it("shows four labelled groups in order once everything has loaded", async () => {
+    it("shows five labelled groups in order once everything has loaded", async () => {
       const element = await loadEverything();
       const found = groups(element);
       expect(found.map((g) => g.label)).toEqual([
-        "Deploy",
+        "CI",
         "Platform",
         "Integrations",
         "Quotas and limits"
@@ -628,8 +701,13 @@ describe("c-footer", () => {
 
     it("puts each metric in its group, each one a list item", async () => {
       const element = await loadEverything();
-      const [deploy, platform, integrations, quotas] = groups(element);
-      expect(deploy.group.querySelector('[data-id="badge"]')).not.toBeNull();
+      const [ci, platform, integrations, quotas] = groups(element);
+      expect(ci.group.querySelector('[data-id="badge"]')).not.toBeNull();
+      expect(ci.group.querySelector('[data-id="badge-smoke"]')).not.toBeNull();
+      expect(
+        ci.group.querySelector('[data-id="badge-postman"]')
+      ).not.toBeNull();
+      expect(ci.ids).toEqual(["ci-badge", "ci-badge", "ci-badge"]);
       expect(platform.ids).toEqual(["graphql"]);
       expect(integrations.ids).toEqual([
         "provider",
@@ -662,9 +740,9 @@ describe("c-footer", () => {
       });
     });
 
-    it("shows only Deploy before the page is idle", () => {
+    it("shows only CI before the page is idle", () => {
       const element = createComponent();
-      expect(groups(element).map((g) => g.label)).toEqual(["Deploy"]);
+      expect(groups(element).map((g) => g.label)).toEqual(["CI"]);
     });
 
     it("shows the snapshot error under Platform and no empty group when the call fails", async () => {
@@ -672,7 +750,7 @@ describe("c-footer", () => {
       const element = createComponent();
       await runIdle();
       const found = groups(element);
-      expect(found.map((g) => g.label)).toEqual(["Deploy", "Platform"]);
+      expect(found.map((g) => g.label)).toEqual(["CI", "Platform"]);
       expect(found[1].ids).toEqual(["snapshot-error"]);
     });
 
@@ -681,7 +759,7 @@ describe("c-footer", () => {
       const element = createComponent();
       await runIdle();
       expect(groups(element).map((g) => g.label)).toEqual([
-        "Deploy",
+        "CI",
         "Quotas and limits"
       ]);
     });
@@ -693,12 +771,69 @@ describe("c-footer", () => {
     expect(caption.textContent.trim()).toBe(
       "Live readings from the Salesforce org serving this page"
     );
-    expect(caption.nextElementSibling).toBe(q(element, '[data-id="metrics"]'));
+    expect(caption.parentElement.nextElementSibling).toBe(
+      q(element, '[data-id="metrics"]')
+    );
+  });
+
+  it("puts the CI row first and the readings row under the caption", () => {
+    const element = createComponent();
+    const ci = q(element, '[data-id="ci-row"]');
+    const caption = q(element, '[data-id="metrics-caption"]');
+    const readings = q(element, '[data-id="metrics"]');
+    expect(ci.querySelector('[data-group="ci"]')).not.toBeNull();
+    expect(readings.querySelector('[data-group="ci"]')).toBeNull();
+    expect(
+      ci.compareDocumentPosition(caption) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      caption.compareDocumentPosition(readings) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("puts the live groups in the readings row and only CI in the first row", async () => {
+    getSystemSnapshot.mockResolvedValue(
+      snapshot({ integrations: INTEGRATIONS, orgQuotas: ORG_QUOTAS })
+    );
+    const element = createComponent();
+    await runIdle();
+    const readings = q(element, '[data-id="metrics"]');
+    expect(
+      Array.from(readings.querySelectorAll(".metric-group")).map(
+        (g) => g.dataset.group
+      )
+    ).toEqual(["integrations", "quotas"]);
+    expect(
+      Array.from(
+        q(element, '[data-id="ci-row"]').querySelectorAll(".metric-group")
+      ).map((g) => g.dataset.group)
+    ).toEqual(["ci"]);
+  });
+
+  it("offers View source for the footer beside the caption", () => {
+    const element = createComponent();
+    const viewSource = q(element, "c-view-source");
+    expect(viewSource).not.toBeNull();
+    expect(viewSource.parentElement).toBe(
+      q(element, '[data-id="metrics-caption"]').parentElement
+    );
+  });
+
+  it("declares c-view-source with the footer key in the template", () => {
+    const html = readFileSync(
+      join(__dirname, "..", "footer.html"),
+      "utf8"
+    ).replace(/\r\n/g, "\n");
+    expect(html).toMatch(
+      /<c-view-source\s+source-key="footer"\s*><\/c-view-source>/
+    );
+    expect(html.match(/<c-view-source/g)).toHaveLength(1);
   });
 
   it("drops the bare deploy word beside the badge", () => {
     const element = createComponent();
-    const deploy = q(element, ".metric.deploy");
+    const deploy = q(element, ".metric.ci-badge");
     expect(deploy.textContent.trim()).toBe("");
     expect(q(element, '[data-id="badge"]').getAttribute("alt")).toBe(
       "Production deploy status"
@@ -744,19 +879,13 @@ describe("c-footer", () => {
     expect(trackEvent).toHaveBeenCalledWith("finops_quota_visibility");
   });
 
-  it("links Skills and Testimonials first, before Contact", () => {
+  it("leaves Skills and Testimonials to the header and opens its links with Contact", () => {
     const element = createComponent();
-    const skills = q(element, '[data-id="skills"]');
-    const testimonials = q(element, '[data-id="testimonials"]');
-    expect(skills.textContent).toBe("Skills");
-    expect(skills.getAttribute("href")).toBe("/portfolio/skills");
-    expect(testimonials.textContent).toBe("Testimonials");
-    expect(testimonials.getAttribute("href")).toBe("/portfolio/testimonials");
-    expect(skills.parentElement.firstElementChild).toBe(skills);
-    expect(skills.nextElementSibling).toBe(testimonials);
-    expect(testimonials.nextElementSibling).toBe(
-      q(element, '[data-id="contact"]')
-    );
+    expect(q(element, '[data-id="skills"]')).toBeNull();
+    expect(q(element, '[data-id="testimonials"]')).toBeNull();
+    const contact = q(element, '[data-id="contact"]');
+    expect(contact.parentElement.firstElementChild).toBe(contact);
+    expect(contact.nextElementSibling).toBe(q(element, '[data-id="docs"]'));
   });
 
   it("sits in the same 1024 px column as the header", () => {

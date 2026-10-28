@@ -1,6 +1,6 @@
 /**
  * @description       : Live ERD. Reads SchemaService for one
- *                      scope, lays the objects out with the site graph engine and draws them as SVG from
+ *                      scope, or for just the objects named in the objects property, lays the objects out with the site graph engine and draws them as SVG from
  *                      this template. The engine loads only on desktop and tablet, and only once the
  *                      component is on screen. Phones and narrow viewports get the object list as the
  *                      visible view and never request the engine. The list mirrors every node and edge
@@ -16,6 +16,7 @@
 import { LightningElement, api, wire } from "lwc";
 import FORM_FACTOR from "@salesforce/client/formFactor";
 import getSchemaGraph from "@salesforce/apex/SchemaService.getSchemaGraph";
+import getObjectGraph from "@salesforce/apex/SchemaService.getObjectGraph";
 import { boundsOf, loadGraphEngine, layoutGraph } from "c/graphEngine";
 import { trackEvent, EVENTS } from "c/analyticsService";
 
@@ -58,6 +59,29 @@ function isPlatformSelfLookup(edge) {
 
 function isScope(value) {
   return SCOPES.some((scope) => scope.value === value);
+}
+
+/**
+ * Turns the objects property into a clean list of API names. It takes a comma separated
+ * string or an array. Blanks and repeats are dropped and the order is kept.
+ * @param {string|string[]} value the property value
+ * @returns {string[]} the API names, empty when there are none
+ */
+export function parseObjectNames(value) {
+  let parts = [];
+  if (Array.isArray(value)) {
+    parts = value;
+  } else if (typeof value === "string") {
+    parts = value.split(",");
+  }
+  const names = [];
+  parts.forEach((part) => {
+    const name = typeof part === "string" ? part.trim() : "";
+    if (name && !names.includes(name)) {
+      names.push(name);
+    }
+  });
+  return names;
 }
 
 function shorten(text) {
@@ -103,9 +127,11 @@ export default class SchemaVisualizer extends LightningElement {
   isSmall = false;
 
   scopeValue = DEFAULT_SCOPE;
+  objectList = [];
   d3;
   observer;
-  visibilityWatched = false;
+  watchedContainer;
+  engineRequested = false;
   disconnected = false;
 
   /** ERD scope, employerHub (default) or portfolio. Anything else falls back to the default. */
@@ -118,6 +144,28 @@ export default class SchemaVisualizer extends LightningElement {
     this.activeScope = this.scopeValue;
   }
 
+  /**
+   * API names of the objects to draw, as a comma separated string or an array. With at least
+   * one name the component draws just those objects and hides the scope toggle. Empty means
+   * the whole scope, as before.
+   */
+  @api
+  get objects() {
+    return this.objectList.join(",");
+  }
+  set objects(value) {
+    const next = parseObjectNames(value);
+    if (next.join(",") === this.objectList.join(",")) {
+      return;
+    }
+    this.objectList = next;
+    this.selectedApiName = undefined;
+    this.graph = undefined;
+    this.diagram = undefined;
+    this.errorMessage = undefined;
+    this.isLoading = true;
+  }
+
   connectedCallback() {
     this.disconnected = false;
     this.isSmall = FORM_FACTOR === "Small" || this.isNarrowViewport();
@@ -125,11 +173,43 @@ export default class SchemaVisualizer extends LightningElement {
 
   disconnectedCallback() {
     this.disconnected = true;
+    this.stopWatching();
+    this.engineRequested = false;
+  }
+
+  stopWatching() {
     if (this.observer) {
       this.observer.disconnect();
       this.observer = undefined;
     }
-    this.visibilityWatched = false;
+    this.watchedContainer = undefined;
+  }
+
+  get hasObjects() {
+    return this.objectList.length > 0;
+  }
+
+  // A wire whose parameter is undefined does not fire, so exactly one of these two is set.
+  get scopeParam() {
+    return this.hasObjects ? undefined : this.activeScope;
+  }
+
+  get objectsParam() {
+    return this.hasObjects ? this.objectList : undefined;
+  }
+
+  get showScopeToggle() {
+    return !this.hasObjects;
+  }
+
+  get title() {
+    return this.hasObjects ? "This section's data model" : "Data model, live";
+  }
+
+  get emptyMessage() {
+    return this.hasObjects
+      ? "No objects to show for this section."
+      : "No objects to show for this scope.";
   }
 
   isNarrowViewport() {
@@ -139,8 +219,17 @@ export default class SchemaVisualizer extends LightningElement {
     );
   }
 
-  @wire(getSchemaGraph, { scope: "$activeScope" })
-  wiredGraph({ data, error }) {
+  @wire(getSchemaGraph, { scope: "$scopeParam" })
+  wiredGraph(result) {
+    this.receiveGraph(result);
+  }
+
+  @wire(getObjectGraph, { objectNames: "$objectsParam" })
+  wiredObjectGraph(result) {
+    this.receiveGraph(result);
+  }
+
+  receiveGraph({ data, error }) {
     if (error) {
       this.isLoading = false;
       this.graph = undefined;
@@ -159,17 +248,27 @@ export default class SchemaVisualizer extends LightningElement {
   }
 
   renderedCallback() {
-    if (this.showDiagram && !this.visibilityWatched) {
-      this.visibilityWatched = true;
-      this.whenVisible(() => this.startEngine());
+    if (!this.showDiagram || this.engineRequested) {
+      return;
+    }
+    const container = this.template.querySelector(".diagram");
+    // The container is rebuilt when the graph reloads, so a watch on a removed one is replaced.
+    if (container && container !== this.watchedContainer) {
+      this.stopWatching();
+      this.watchedContainer = container;
+      this.whenVisible(container, () => {
+        this.engineRequested = true;
+        this.startEngine();
+      });
     }
   }
 
-  // Waits until the diagram scrolls into view, so the engine never competes with the
-  // page's first paint. Without IntersectionObserver it starts after the first render.
-  whenVisible(callback) {
-    const container = this.template.querySelector(".diagram");
-    if (!container || typeof window.IntersectionObserver !== "function") {
+  // Waits until the diagram is in view, so the engine never competes with the page's first
+  // paint. A diagram that is already on screen, as in a dialog that has just opened, starts
+  // at once because the observer reports it on its first look. Without IntersectionObserver
+  // it starts after the first render.
+  whenVisible(container, callback) {
+    if (typeof window.IntersectionObserver !== "function") {
       callback();
       return;
     }
@@ -336,6 +435,10 @@ export default class SchemaVisualizer extends LightningElement {
     }
     const count = this.graph.objectCount ?? this.nodes.length;
     const objectWord = count === 1 ? "object" : "objects";
+    if (this.hasObjects) {
+      const subject = count === 1 ? "The one object" : `The ${count} objects`;
+      return `${subject} this section reads, described live in ${this.graph.cpuMs} ms of server CPU.`;
+    }
     return `${count} ${objectWord}, described in ${this.graph.cpuMs} ms of server CPU`;
   }
 

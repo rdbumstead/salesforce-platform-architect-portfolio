@@ -76,10 +76,30 @@
   margin-bottom: var(--pf-space-2);
 }
 
+/* The timer and status sit over the sheet, in its column, where the letter's actions go. */
 .loading-state {
   display: flex;
   align-items: center;
   gap: var(--pf-space-3);
+  max-width: 8.5in;
+  margin-inline: auto;
+}
+
+/* Each box's count against its limit. Near the limit it takes the warning colour. */
+.field-limit,
+.description-cut {
+  margin: var(--pf-space-1) 0 0;
+  color: var(--pf-muted);
+  font-size: 0.875rem;
+}
+
+.field-limit_near {
+  color: var(--pf-warn-text);
+  font-weight: 600;
+}
+
+.description-cut:empty {
+  display: none;
 }
 
 .elapsed {
@@ -90,23 +110,30 @@
   white-space: nowrap;
 }
 
-/* The skeleton letter shown while the real one is written. Static unless motion is welcome. */
-.skeleton {
+/*
+ * While a letter is written, the same sheet shows with the owner's header and grey lines where
+ * the paragraphs will be, so the letter appears in the place it was waiting. Static unless
+ * motion is welcome.
+ */
+.skeleton-body {
   display: grid;
   gap: var(--pf-space-2);
-  max-width: 72ch;
-  margin-top: var(--pf-space-3);
-  padding: var(--pf-space-4);
-  background-color: var(--pf-subtle);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-sm);
 }
 
 .skeleton-line {
   display: block;
   height: 0.75rem;
-  background-color: var(--pf-chip);
+  background-color: color-mix(
+    in srgb,
+    var(--resume-ink) 14%,
+    var(--resume-paper)
+  );
   border-radius: 999px;
+}
+
+.skeleton-gap {
+  display: block;
+  height: var(--pf-space-2);
 }
 
 .skeleton-line_short {
@@ -351,4 +378,8 @@
   max-height: 24rem;
   overflow-y: auto;
   font-family: var(--pf-font-mono);
+}
+
+.card-source {
+  display: inline-flex;
 }

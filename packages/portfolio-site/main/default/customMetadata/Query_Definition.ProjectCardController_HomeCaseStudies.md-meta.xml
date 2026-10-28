@@ -42,4 +42,8 @@
       xsi:type="xsd:string"
     >Home page case study cards: the projects with Home Sort set, lowest first, never filtered on Is Featured.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">case studies</value>
+    </values>
 </CustomMetadata>

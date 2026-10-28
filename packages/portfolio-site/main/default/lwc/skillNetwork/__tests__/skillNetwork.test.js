@@ -159,6 +159,13 @@ function chipByName(element, name) {
   );
 }
 
+// The evidence parts a chip shows beside its years, in order.
+function evidenceOf(chip) {
+  return [...chip.querySelectorAll(".chip-evidence")].map(
+    (part) => part.textContent
+  );
+}
+
 function switchButton(element, view) {
   return element.shadowRoot.querySelector(`.view-button[data-view="${view}"]`);
 }
@@ -337,48 +344,53 @@ describe("c-skill-network (Large form factor)", () => {
     expect(trackEvent).toHaveBeenCalledTimes(1);
   });
 
-  it("shows Project in place of years for a skill only a project links", async () => {
+  it("shows Project for a skill a project links, and counts several projects", async () => {
     const element = await mountWithData();
     const chip = chipByName(element, "Agentforce");
 
-    expect(chip.querySelector(".chip-evidence").textContent).toBe("Project");
+    expect(evidenceOf(chip)).toEqual(["Project"]);
     expect(chip.querySelector(".chip-years")).toBeNull();
-    expect(
-      chipByName(element, "Apex").querySelector(".chip-evidence")
-    ).toBeNull();
+    // A skill with years and projects shows both.
+    const apex = chipByName(element, "Apex");
+    expect(apex.querySelector(".chip-years").textContent).toBe("8.0 yrs");
+    expect(evidenceOf(apex)).toEqual(["2 projects"]);
   });
 
-  it("shows the earliest certified year for a skill with no role, and never gives it years", async () => {
+  it("shows the earliest certified year beside its project for a skill with no role, and never gives it years", async () => {
     const element = await mountWithData();
     getCertificationLinks.emit(JSON.parse(JSON.stringify(CERTIFICATIONS)));
     await flushPromises();
     const chip = chipByName(element, "Agentforce");
 
-    expect(chip.querySelector(".chip-evidence").textContent).toBe(
-      "Certified 2023"
-    );
+    expect(evidenceOf(chip)).toEqual(["Certified 2023", "Project"]);
     expect(chip.querySelector(".chip-years")).toBeNull();
     expect(chip.getAttribute("aria-label")).toBe(
-      "Agentforce, proficiency 3 of 5, certified in 2023"
+      "Agentforce, proficiency 3 of 5, certified in 2023, used on a project"
     );
     chip.click();
     await flushPromises();
     expect(
       element.shadowRoot.querySelector(".selection-summary").textContent
-    ).toBe("Proficiency 3 of 5, certified in 2023.");
+    ).toBe("Proficiency 3 of 5, certified in 2023, used on a project.");
   });
 
-  it("keeps years for a skill with roles even when a certification backs it", async () => {
+  it("shows years, the certified year and projects together for a skill that has all three", async () => {
     const element = await mountWithData();
     getCertificationLinks.emit(JSON.parse(JSON.stringify(CERTIFICATIONS)));
     await flushPromises();
 
+    const chip = chipByName(element, "Apex");
+    expect(chip.querySelector(".chip-years").textContent).toBe("8.0 yrs");
+    // Time worked, a certification and projects are separate evidence, so the chip shows each.
+    expect(evidenceOf(chip)).toEqual(["Certified 2021", "2 projects"]);
+    expect(chip.getAttribute("aria-label")).toContain("certified in 2021");
+    chip.click();
+    await flushPromises();
     expect(
-      chipByName(element, "Apex").querySelector(".chip-years").textContent
-    ).toBe("8.0 yrs");
-    expect(
-      chipByName(element, "Apex").querySelector(".chip-evidence")
-    ).toBeNull();
+      element.shadowRoot.querySelector(".selection-summary").textContent
+    ).toMatch(
+      /^Proficiency \d of 5, .+ used, certified in 2021, used on 2 projects\.$/
+    );
   });
 
   it("sends null years for a skill with no role", async () => {
@@ -1530,5 +1542,21 @@ describe("c-skill-network evidence words and label placement", () => {
     // Centred on the node: the first baseline moves up by half a line from a single line's.
     expect(placed.y).toBe(100 + 4 - 7);
     expect(placed.box.bottom - placed.box.top).toBe(12 + 14);
+  });
+});
+
+describe("c-skill-network live data marker", () => {
+  it("places the live data marker with the sources the section reads", () => {
+    const { readFileSync } = require("fs");
+    const { join } = require("path");
+    const html = readFileSync(
+      join(__dirname, "..", "skillNetwork.html"),
+      "utf8"
+    );
+    const marker = html.match(/<c-data-source\s([^>]*)>\s*<\/c-data-source>/);
+    expect(marker).not.toBeNull();
+    expect(marker[1]).not.toMatch(/source-keys/);
+    expect(marker[1]).toMatch(/objects="Skill__c"/);
+    expect(marker[1]).not.toMatch(/hide-counts/);
   });
 });
