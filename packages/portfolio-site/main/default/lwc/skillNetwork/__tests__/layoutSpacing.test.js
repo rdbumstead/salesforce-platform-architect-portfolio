@@ -31,9 +31,11 @@ const CERTIFICATIONS = require("./data/productionCertifications.json");
 
 // Text metrics from skillNetwork.css: node labels are 12px in the sans face, category labels
 // 13px in the mono face. Average character widths are 0.56em (sans) and 0.6em (mono). A box
-// runs from 0.75em above the baseline to 0.25em below it.
+// runs from 0.75em above the first baseline to 0.25em below the last, and a node label's
+// second line sits 14 units under its first.
 const NODE_FONT = 12;
 const NODE_CHAR = 0.56 * NODE_FONT;
+const LINE_HEIGHT = 14;
 const CATEGORY_FONT = 13;
 const CATEGORY_CHAR = 0.6 * CATEGORY_FONT;
 
@@ -123,9 +125,14 @@ function num(element, name) {
   return Number(element.getAttribute(name));
 }
 
-// The box a text element covers, from its x, y, anchor and character count.
+// The box a text element covers, from its x, y, anchor and the character count of its longest
+// line. A node label draws each line as a tspan.
 function textBox(element, charWidth, fontSize) {
-  const width = element.textContent.trim().length * charWidth;
+  const spans = [...element.querySelectorAll("tspan")];
+  const lines = spans.length
+    ? spans.map((span) => span.textContent.trim())
+    : [element.textContent.trim()];
+  const width = Math.max(...lines.map((line) => line.length)) * charWidth;
   const x = num(element, "x");
   const anchor = element.getAttribute("text-anchor") || "start";
   let left = x;
@@ -139,7 +146,7 @@ function textBox(element, charWidth, fontSize) {
     left,
     right: left + width,
     top: y - 0.75 * fontSize,
-    bottom: y + 0.25 * fontSize
+    bottom: y + (lines.length - 1) * LINE_HEIGHT + 0.25 * fontSize
   };
 }
 

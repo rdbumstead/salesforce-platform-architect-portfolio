@@ -10,7 +10,11 @@
  * @Created           : 01/03/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import SkillNetwork, { evidenceSentence, placeLabels } from "c/skillNetwork";
+import SkillNetwork, {
+  evidenceSentence,
+  labelLines,
+  placeLabels
+} from "c/skillNetwork";
 // Same module as the component, which the site pins.
 // eslint-disable-next-line @lwc/lwc/newer-version-available
 import { graphql } from "lightning/uiGraphQLApi";
@@ -1494,5 +1498,37 @@ describe("c-skill-network evidence words and label placement", () => {
       { x: 200, y: 200 }
     );
     expect(crowded.get("b").anchor).toBe("middle");
+  });
+
+  it("wraps a long label onto two close lines at a space and never cuts it", () => {
+    expect(labelLines("Platform Administrator")).toEqual([
+      "Platform Administrator"
+    ]);
+    expect(labelLines("Platform Administrator II")).toEqual([
+      "Platform",
+      "Administrator II"
+    ]);
+    expect(labelLines("Employer Hub for an education provider")).toEqual([
+      "Employer Hub for an",
+      "education provider"
+    ]);
+    expect(labelLines("Supercalifragilisticexpialidocious")).toEqual([
+      "Supercalifragilisticexpialidocious"
+    ]);
+  });
+
+  it("keeps a two line label beside its node and counts both lines in its box", () => {
+    const text = "Marketing Cloud Engagement Foundations";
+    const placed = placeLabels(
+      [{ id: "a", text, x: 300, y: 100, r: 10 }],
+      [{ id: "a", x: 300, y: 100, r: 10 }],
+      [],
+      { x: 200, y: 200 }
+    ).get("a");
+    expect(placed.lines).toEqual(["Marketing Cloud", "Engagement Foundations"]);
+    expect(placed.anchor).toBe("start");
+    // Centred on the node: the first baseline moves up by half a line from a single line's.
+    expect(placed.y).toBe(100 + 4 - 7);
+    expect(placed.box.bottom - placed.box.top).toBe(12 + 14);
   });
 });
