@@ -370,3 +370,21 @@ test("the committed collection has the three folders and the scripts, and holds 
   // A Salesforce session id starts with the org id and an exclamation mark.
   assert.doesNotMatch(committed, /00D[A-Za-z0-9]{12,15}![A-Za-z0-9._]{20,}/);
 });
+
+test("every committed request body is the spec's example, with no converter placeholder", () => {
+  const collection = JSON.parse(fs.readFileSync(OUTPUT_FILE, "utf8"));
+  const bodies = [];
+  const walk = (items) =>
+    items.forEach((item) => (item.item ? walk(item.item) : bodies.push(item)));
+  walk(collection.item);
+  bodies
+    .filter((item) => item.request.body && item.request.body.raw)
+    .forEach((item) =>
+      assert.doesNotMatch(item.request.body.raw, /<string>|<integer>|<number>/)
+    );
+  const ai = bodies.find((item) => item.name === AI_REQUEST_NAME);
+  const body = JSON.parse(ai.request.body.raw);
+  assert.strictEqual(body.type, "CoverLetter");
+  assert.ok(body.context.companyName && body.context.role);
+  assert.strictEqual(body.provider, undefined);
+});
