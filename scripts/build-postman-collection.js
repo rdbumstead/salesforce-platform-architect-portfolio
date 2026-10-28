@@ -60,7 +60,7 @@ const TOKEN_PURPOSE = "Evaluate the Portfolio API from Postman";
 const REFERENCE_URL = "https://ryanbumstead.com/api-lab/reference";
 const AI_REQUEST_NAME = "Generate AI Content";
 const MISSING_EMAIL_MESSAGE =
-  "evaluatorEmail is empty. Click the collection name, open its Variables tab, type an address you can be reached at in the Current value column of evaluatorEmail, save, then send again.";
+  "evaluatorEmail is empty. If you opened the collection on postman.com, fork it into your own workspace first, because the copy there cannot be edited. Then click the collection name, open its Variables tab, type an address you can be reached at in the Current value column of evaluatorEmail, save, and send again.";
 
 /** The collection's description, a short readme shown on the collection's overview. */
 const COLLECTION_README = [
@@ -68,13 +68,14 @@ const COLLECTION_README = [
   "",
   "## Set up once",
   "",
-  "1. Click the collection name, Ryan Bumstead Portfolio API, in the sidebar. Click the name itself, not a folder.",
-  "2. Open the Variables tab.",
-  "3. In the evaluatorEmail row, type an address you can be reached at in the Current value column. Leave Initial value empty, because Current value stays on your machine and Initial value is shared.",
-  "4. Save with Ctrl+S, or Cmd+S on a Mac.",
-  "5. Open any request and press Send. The first send fetches an evaluator token for you and keeps it in accessToken, so there is nothing else to set up.",
+  "1. If you opened this on postman.com, fork it first. Click Fork on the collection and pick your own workspace, then carry on in the copy. The copy on postman.com is read only, so its variables cannot be edited. If you imported the downloaded file, skip this step.",
+  "2. Click the collection name, Ryan Bumstead Portfolio API, in the sidebar. Click the name itself, not a folder.",
+  "3. Open the Variables tab.",
+  "4. In the evaluatorEmail row, type an address you can be reached at in the Current value column. Leave Initial value empty, because Current value stays on your machine and Initial value is shared.",
+  "5. Save with Ctrl+S, or Cmd+S on a Mac.",
+  "6. Open any request and press Send. The first send fetches an evaluator token for you and keeps it in accessToken, so there is nothing else to set up.",
   "",
-  "If Postman will not let you edit the variables, fork the collection into your own workspace first with the Fork button, then follow the same steps there. You can also run Start here, Get an evaluator token, yourself to fetch the token before anything else.",
+  "You can also run Start here, Get an evaluator token, yourself to fetch the token before anything else.",
   "",
   "The token is shared by every evaluator, shown once, and ends after 30 minutes without use. When it ends the next request answers 401, the collection clears the token, and the send after that fetches a new one.",
   "",
@@ -292,6 +293,43 @@ function normalizeRequest(request, apiPath, isSapi) {
   return copy;
 }
 
+/**
+ * Sends the spec's own request body example. The converter fills a body from the schema, so an
+ * enum such as the AI request's type arrives as "<string>" and the API refuses it. Each request
+ * whose operation has an application/json example takes that example as its raw body instead.
+ */
+function useBodyExamples(items, spec, apiPath) {
+  const examples = new Map();
+  Object.entries(spec.paths || {}).forEach(([specPath, operations]) => {
+    Object.entries(operations).forEach(([method, operation]) => {
+      const content =
+        operation && operation.requestBody && operation.requestBody.content;
+      const json = content && content["application/json"];
+      if (json && json.example !== undefined) {
+        const segments = `${apiPath}${specPath}`
+          .split("/")
+          .filter(Boolean)
+          .map((segment) => segment.replace(/^\{(.+)\}$/, ":$1"));
+        examples.set(
+          `${method.toUpperCase()} ${segments.join("/")}`,
+          json.example
+        );
+      }
+    });
+  });
+  walkItems(items, (item) => {
+    const key = `${item.request.method} ${(item.request.url.path || []).join("/")}`;
+    if (examples.has(key) && item.request.body) {
+      item.request.body = {
+        ...item.request.body,
+        mode: "raw",
+        raw: JSON.stringify(examples.get(key), null, 2)
+      };
+    }
+  });
+  return items;
+}
+
 /** Points every request and response example of one API at {{baseUrl}} plus its path. */
 function normalizeApiItems(items, apiPath, isSapi) {
   walkItems(items, (item) => {
@@ -421,12 +459,16 @@ function normalizeCollection(converted, spec, sapiConverted, sapiSpec) {
   if (!converterToken) {
     throw new Error(`The spec has no POST ${TOKEN_PATH} operation.`);
   }
-  normalizeApiItems(rest, apiPath, false);
+  useBodyExamples(normalizeApiItems(rest, apiPath, false), spec, apiPath);
   const sapiPath = pathOf(serverUrl(sapiSpec.servers[0]));
-  const sapiItems = normalizeApiItems(
-    pruneEmpty(JSON.parse(JSON.stringify(sapiConverted.item || []))),
-    sapiPath,
-    true
+  const sapiItems = useBodyExamples(
+    normalizeApiItems(
+      pruneEmpty(JSON.parse(JSON.stringify(sapiConverted.item || []))),
+      sapiPath,
+      true
+    ),
+    sapiSpec,
+    sapiPath
   );
 
   const items = [

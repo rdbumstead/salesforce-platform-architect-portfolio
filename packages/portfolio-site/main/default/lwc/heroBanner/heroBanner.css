@@ -51,9 +51,10 @@
 }
 
 /* The title line: larger than the body text and in the accent colour. */
+/* One short line, so it takes the hero column's width and never leaves a word alone. */
 .hero-line {
   margin: 0;
-  max-width: 640px;
+  text-wrap: pretty;
   font-size: 21px;
   line-height: 1.3;
   font-weight: 600;

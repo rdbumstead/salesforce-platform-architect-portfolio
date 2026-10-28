@@ -11,9 +11,9 @@
  *                      with a text link fallback. Platform holds the GraphQL timing, or the
  *                      snapshot error. Integrations holds the AI providers and the GitHub and
  *                      Jira connections, in plain words: "connected", or "paused" while a
- *                      circuit breaker holds calls back. Quotas and limits sits in a closed
- *                      disclosure and holds AI requests today, the org quotas and the governor
- *                      limits, every number grouped by thousands. Platform shows once it has a
+ *                      circuit breaker holds calls back. Quotas and limits is always open, like
+ *                      the other groups, and holds AI requests today, the org quotas and the
+ *                      governor limits, every number grouped by thousands. Platform shows once it has a
  *                      line, the last two once the telemetry from
  *                      FooterController.getSystemSnapshot() has loaded. The snapshot is requested
  *                      only once the page has loaded and the browser is idle, so it never delays
@@ -26,8 +26,8 @@
  *                      The probe is the c/graphqlProbe child, imported with a literal dynamic import
  *                      only at that moment, so the GraphQL adapter stack is not part of what loads
  *                      before first paint. A statically rendered child, even behind lwc:if, still
- *                      put it in the layout's preloads. Opening the quotas, or hovering over
- *                      the AI requests line, sends finops_quota_visibility once.
+ *                      put it in the layout's preloads. Hovering over the AI requests line
+ *                      sends finops_quota_visibility once.
  *                      Back to top sends back_to_top_used, as the header's arrow does.
  *                      Storage sits between Integrations and Quotas and limits once the snapshot
  *                      holds stored figures. It is one line, "Data 1 of 5 MB, Files 5 of 20 MB",
@@ -458,12 +458,6 @@ export default class Footer extends LightningElement {
     }
     this._quotaTracked = true;
     trackEvent(EVENTS.FINOPS_QUOTA_VISIBILITY);
-  }
-
-  handleQuotaToggle(event) {
-    if (event.currentTarget.open) {
-      this.handleQuotaVisibility();
-    }
   }
 
   handleStorageToggle() {

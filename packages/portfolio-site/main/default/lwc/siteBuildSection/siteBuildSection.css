@@ -31,10 +31,12 @@
   color: var(--pf-text);
 }
 
+/* A one or two sentence intro runs to the section's width, like the page leads. */
 .section-intro {
   margin: var(--pf-space-2) 0 var(--pf-space-6);
-  max-width: 62ch;
+  max-width: 64rem;
   color: var(--pf-muted);
+  text-wrap: pretty;
 }
 
 .build-list {

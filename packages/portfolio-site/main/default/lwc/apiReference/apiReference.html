@@ -40,6 +40,10 @@
           >
         </template>
       </div>
+      <p lwc:if={hasPostmanRun} class="postman-note">
+        Run in Postman opens a copy you cannot edit. Fork it into your own
+        workspace, then add your email in the collection's Variables tab.
+      </p>
     </header>
     <div class={bodyClass}>
       <div

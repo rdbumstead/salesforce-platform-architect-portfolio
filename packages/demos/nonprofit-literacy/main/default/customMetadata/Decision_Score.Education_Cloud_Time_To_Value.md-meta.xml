@@ -28,7 +28,7 @@
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >The engagement's signed scope, a small steps approach. Rates and totals stay private</value>
+    >Judgment from the engagement, no public source: a small fixed budget. Context: Understand What's Included with Education Cloud (Help)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

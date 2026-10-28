@@ -28,7 +28,7 @@
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >PMM objects (Install PMM, Help). Education Cloud data model entity lists. Nonprofit Cloud ProgramManagement feature (scratch org features)</value>
+    >Manage Your Programs with Program Management Module (PMM) (Help), which defines Program Cohort, Service Schedule, Service Session and Service Delivery</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

@@ -20,7 +20,8 @@ const HEADINGS = [
   "3. The decision matrix",
   "4. Cost and effort",
   "5. Solution design",
-  "6. Outcome"
+  "6. Outcome",
+  "7. What I would revisit"
 ];
 
 function createComponent() {
@@ -42,7 +43,7 @@ describe("c-pillar-b-story", () => {
     jest.clearAllMocks();
   });
 
-  it("renders the six section headings in order", () => {
+  it("renders the seven section headings in order", () => {
     const element = createComponent();
     expect(qa(element, "h2.section-heading").map(text)).toEqual(HEADINGS);
   });
@@ -99,8 +100,28 @@ describe("c-pillar-b-story", () => {
     expect(q(element, ".placeholder")).toBeNull();
     expect(text(q(element, "article"))).not.toMatch(/PLACEHOLDER/);
     expect(text(q(element, '[data-id="licence-sources"]'))).toContain(
-      "read on 22 October 2026"
+      "read on 28 October 2026"
     );
+  });
+
+  it("ends with what I would revisit, after the outcome", () => {
+    const element = createComponent();
+    const outcome = q(element, '[data-section="outcome"]');
+    const revisit = q(element, '[data-section="revisit"]');
+    expect(
+      outcome.compareDocumentPosition(revisit) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(text(revisit.querySelector("h2"))).toBe("7. What I would revisit");
+    expect(text(revisit)).toContain("no assigned technical resource");
+  });
+
+  it("cites no scratch org reference as a cost source", () => {
+    const element = createComponent();
+    const hrefs = qa(element, ".cost-table a").map((a) =>
+      a.getAttribute("href")
+    );
+    expect(hrefs.some((href) => href.includes("scratch-orgs"))).toBe(false);
   });
 
   it("links the client's ten Power of Us licences to the public P10 page", () => {

@@ -28,7 +28,7 @@
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >Engagement walkthrough note (not verified)</value>
+    >Judgment from the engagement, no public source: instructors and students hold no licences, so only staff enter data</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

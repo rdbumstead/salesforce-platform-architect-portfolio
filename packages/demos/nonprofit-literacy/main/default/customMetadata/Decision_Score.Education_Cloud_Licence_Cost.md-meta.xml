@@ -28,7 +28,7 @@
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >NPSP "free, open-source" (Trailhead, Meet Nonprofit Success Pack). Turn On Education Cloud (Help). Power of Us (P10) Application (Help). Nonprofit Pricing (salesforce.com)</value>
+    >Salesforce for Education Pricing (Salesforce). Power of Us (P10) Application for Nonprofits and Education (Help). Turn On Education Cloud (Help)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

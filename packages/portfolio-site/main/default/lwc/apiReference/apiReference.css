@@ -259,6 +259,12 @@
   margin: var(--pf-space-3) 0 var(--pf-space-2);
 }
 
+.postman-note {
+  margin: 0 0 var(--pf-space-2);
+  color: var(--pf-body);
+  font-size: 0.875rem;
+}
+
 .collection-download,
 .postman-run {
   display: inline-flex;

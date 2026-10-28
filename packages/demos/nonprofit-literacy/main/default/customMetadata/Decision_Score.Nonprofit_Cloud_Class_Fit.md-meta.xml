@@ -16,19 +16,19 @@
     </values>
     <values>
         <field>Score__c</field>
-        <value xsi:type="xsd:double">4</value>
+        <value xsi:type="xsd:double">5</value>
     </values>
     <values>
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >Program, Program Enrollment, Benefit and Benefit Session cover classes and attendance, with cohorts less direct than PMM (not verified in an org).</value>
+    >Program, Program Cohort, Program Enrollment, Benefit Schedule and Benefit Session cover classes, cohorts and attendance natively, from the published data model.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >PMM objects (Install PMM, Help). Education Cloud data model entity lists. Nonprofit Cloud ProgramManagement feature (scratch org features)</value>
+    >Program Management (Salesforce Developers). Explore Enrollment and Benefit Delivery in Nonprofit Programs (Trailhead)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

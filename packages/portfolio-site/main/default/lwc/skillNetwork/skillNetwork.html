@@ -321,7 +321,18 @@
                             y={node.labelY}
                             text-anchor={node.anchor}
                           >
-                            {node.label}
+                            <template
+                              for:each={node.labelLines}
+                              for:item="line"
+                            >
+                              <tspan
+                                key={line.key}
+                                x={node.labelX}
+                                dy={line.dy}
+                              >
+                                {line.text}
+                              </tspan>
+                            </template>
                           </text>
                         </template>
                       </g>

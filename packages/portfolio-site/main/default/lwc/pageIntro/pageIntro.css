@@ -33,12 +33,18 @@
   letter-spacing: -0.02em;
 }
 
+/*
+ * A lead is one or two sentences, so it may run as wide as the header's 1024 px column. At
+ * 48rem a short lead left its last word alone on a second line. Pretty wrapping keeps a
+ * single word off the last line where the browser supports it.
+ */
 .intro-lead {
   margin: var(--pf-space-4) 0 0;
-  max-width: 48rem;
+  max-width: 64rem;
   color: var(--pf-body);
   font-size: 1.125rem;
   line-height: 1.65;
+  text-wrap: pretty;
 }
 
 .intro-points {

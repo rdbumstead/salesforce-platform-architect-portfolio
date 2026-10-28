@@ -28,7 +28,7 @@
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >Client custom objects. Education Cloud data model entity lists. Nonprofit Cloud OutcomeManagement feature (scratch org features)</value>
+    >Outcome Management (Help) is offered in other clouds, not NPSP. Object list in Manage Your Programs with Program Management Module (PMM) (Help)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

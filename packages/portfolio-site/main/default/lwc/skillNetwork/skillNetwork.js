@@ -15,7 +15,8 @@
  *                      Phones and narrow viewports get the matrix only and never request the engine.
  *                      Positions are computed once and drawn as SVG from this template. The ring radii
  *                      follow the node counts, and a label placement pass puts each label right, left,
- *                      above or below its node, wherever it covers no other label or node. The graph
+ *                      above or below its node, wherever it covers no other label or node. A long
+ *                      label wraps onto two lines at a space and is never cut. The graph
  *                      opens fitted to its content, Fit shows it whole again, and Reset layout puts every
  *                      dragged node back. The view eases about 250 ms only after a button press, and
  *                      moves at once under reduced motion. Nothing moves on its own. Pan and zoom
@@ -188,7 +189,8 @@ const OUTER_ARC = 100;
 const CLUSTER_ROOM = 170;
 const BOX_MARGIN = 40;
 const WORK_RADIUS = 10;
-const LABEL_MAX = 24;
+// A label longer than this wraps onto a second line at a space. Labels are never cut.
+const LINE_MAX = 22;
 // Certification names all open with this. The label leaves it out, the title and lists keep it.
 const ERROR_TITLE = "The skills could not be loaded.";
 const CERTIFICATION_PREFIX = /^Salesforce Certified\s+/i;
@@ -237,10 +239,11 @@ const EVIDENCE_EDGE_CLASS = [
 ];
 
 // Label metrics, matching skillNetwork.css: node labels 12px sans at about 0.56em a
-// character, category labels 13px mono at 0.6em. A box runs 0.75em above the baseline and
-// 0.25em below it.
+// character, category labels 13px mono at 0.6em. A box runs 0.75em above the first baseline
+// and 0.25em below the last, and a second line sits LINE_HEIGHT under the first.
 const NODE_FONT = 12;
 const NODE_CHAR = 0.56 * NODE_FONT;
+const LINE_HEIGHT = 14;
 const CATEGORY_FONT = 13;
 const CATEGORY_CHAR = 0.6 * CATEGORY_FONT;
 const LABEL_GAP = 4;
@@ -374,8 +377,25 @@ function byName(a, b) {
   return a.name.localeCompare(b.name);
 }
 
-function shorten(text) {
-  return text.length > LABEL_MAX ? `${text.slice(0, LABEL_MAX - 1)}…` : text;
+/**
+ * Splits a label into one or two lines. A label over LINE_MAX characters breaks at the space
+ * that leaves the longer line shortest, so the two lines come out close in length. A label
+ * with no space stays on one line.
+ * @param {string} text the whole label
+ * @returns {Array<string>} the lines, top first
+ */
+export function labelLines(text) {
+  if (text.length <= LINE_MAX) {
+    return [text];
+  }
+  let best;
+  for (let i = text.indexOf(" "); i !== -1; i = text.indexOf(" ", i + 1)) {
+    const longer = Math.max(i, text.length - i - 1);
+    if (!best || longer < best.longer) {
+      best = { at: i, longer };
+    }
+  }
+  return best ? [text.slice(0, best.at), text.slice(best.at + 1)] : [text];
 }
 
 function labelOf(node) {
@@ -383,7 +403,7 @@ function labelOf(node) {
     node.kind === "certification"
       ? node.name.replace(CERTIFICATION_PREFIX, "")
       : node.name;
-  return shorten(name || node.name);
+  return name || node.name;
 }
 
 function certificationText(certification) {
@@ -545,8 +565,9 @@ function buildModel(data, certificationLinks, today) {
 
 // ---------- label placement ----------
 
-function textBox(x, y, anchor, text, charWidth, fontSize) {
-  const width = text.length * charWidth;
+// The box a label covers, with y the first line's baseline.
+function textBox(x, y, anchor, lines, charWidth, fontSize) {
+  const width = Math.max(...lines.map((line) => line.length)) * charWidth;
   let left = x;
   if (anchor === "middle") {
     left = x - width / 2;
@@ -557,7 +578,7 @@ function textBox(x, y, anchor, text, charWidth, fontSize) {
     left,
     right: left + width,
     top: y - 0.75 * fontSize,
-    bottom: y + 0.25 * fontSize
+    bottom: y + (lines.length - 1) * LINE_HEIGHT + 0.25 * fontSize
   };
 }
 
@@ -574,24 +595,45 @@ function boxHitsCircle(box, circle) {
 }
 
 // Spots round a node, nearest first: beside it on the outward side, then the other side, then
-// above or below, then the four corners.
+// above or below, then the four corners. Lift is how much of a second line the label moves
+// up by, so a two line label stays centred beside its node and grows away from it above.
 function labelSpots(entry, centre) {
   const { x, y, r } = entry;
   const side = r + LABEL_GAP;
-  const right = { x: x + side, y: y + 4, anchor: "start" };
-  const left = { x: x - side, y: y + 4, anchor: "end" };
-  const above = { x, y: y - side - 1, anchor: "middle" };
-  const below = { x, y: y + side + 9, anchor: "middle" };
+  const right = { x: x + side, y: y + 4, anchor: "start", lift: 0.5 };
+  const left = { x: x - side, y: y + 4, anchor: "end", lift: 0.5 };
+  const above = { x, y: y - side - 1, anchor: "middle", lift: 1 };
+  const below = { x, y: y + side + 9, anchor: "middle", lift: 0 };
   const corner = r * 0.7 + LABEL_GAP;
   const corners = [
-    { x: x + corner, y: y - corner, anchor: "start" },
-    { x: x + corner, y: y + corner + 8, anchor: "start" },
-    { x: x - corner, y: y - corner, anchor: "end" },
-    { x: x - corner, y: y + corner + 8, anchor: "end" }
+    { x: x + corner, y: y - corner, anchor: "start", lift: 1 },
+    { x: x + corner, y: y + corner + 8, anchor: "start", lift: 0 },
+    { x: x - corner, y: y - corner, anchor: "end", lift: 1 },
+    { x: x - corner, y: y + corner + 8, anchor: "end", lift: 0 }
   ];
   const sideFirst = x >= centre.x ? [right, left] : [left, right];
   const verticalFirst = y >= centre.y ? [below, above] : [above, below];
   return [...sideFirst, ...verticalFirst, ...corners];
+}
+
+// What placeLabels tries for one label, in order. A label that wraps tries every spot as two
+// lines, then beside the node with the block growing down or up from the node's line, and
+// last the whole text on one line, which fits a gap that is wide but not tall.
+function labelCandidates(entry, centre) {
+  const spots = labelSpots(entry, centre);
+  const lines = labelLines(entry.text);
+  if (lines.length === 1) {
+    return spots.map((spot) => ({ ...spot, lines }));
+  }
+  const shifted = spots.slice(0, 2).flatMap((spot) => [
+    { ...spot, lift: 0, lines },
+    { ...spot, lift: 1, lines }
+  ]);
+  return [
+    ...spots.map((spot) => ({ ...spot, lines })),
+    ...shifted,
+    ...spots.map((spot) => ({ ...spot, lines: [entry.text] }))
+  ];
 }
 
 /**
@@ -602,7 +644,7 @@ function labelSpots(entry, centre) {
  * @param {Array<object>} circles every drawn node as { id, x, y, r }
  * @param {Array<object>} fixed boxes labels must not cover, such as the category labels
  * @param {object} centre the graph's centre { x, y }, so labels lean outward
- * @returns {Map<string, object>} id to { x, y, anchor, box }
+ * @returns {Map<string, object>} id to { x, y, anchor, lines, box }, y the first baseline
  */
 export function placeLabels(entries, circles, fixed, centre) {
   const placed = new Map();
@@ -610,15 +652,10 @@ export function placeLabels(entries, circles, fixed, centre) {
   entries.forEach((entry) => {
     let best;
     let bestHits = Infinity;
-    for (const spot of labelSpots(entry, centre)) {
-      const box = textBox(
-        spot.x,
-        spot.y,
-        spot.anchor,
-        entry.text,
-        NODE_CHAR,
-        NODE_FONT
-      );
+    for (const spot of labelCandidates(entry, centre)) {
+      const { lines } = spot;
+      const y = spot.y - spot.lift * (lines.length - 1) * LINE_HEIGHT;
+      const box = textBox(spot.x, y, spot.anchor, lines, NODE_CHAR, NODE_FONT);
       let hits = 0;
       taken.forEach((other) => {
         if (boxesOverlap(box, other)) {
@@ -631,7 +668,7 @@ export function placeLabels(entries, circles, fixed, centre) {
         }
       });
       if (hits < bestHits) {
-        best = { ...spot, box };
+        best = { x: spot.x, y, anchor: spot.anchor, lines, box };
         bestHits = hits;
         if (hits === 0) {
           break;
@@ -1465,7 +1502,7 @@ export default class SkillNetwork extends LightningElement {
         category.x,
         category.y,
         "middle",
-        category.name,
+        [category.name],
         CATEGORY_CHAR,
         CATEGORY_FONT
       )
@@ -1622,7 +1659,11 @@ export default class SkillNetwork extends LightningElement {
         ringR: node.radius + EVIDENCE_RING_GAP + ringWidth / 2,
         title: `${node.name} (${kindLabel})`,
         showLabel: Boolean(spot),
-        label: labelOf(node),
+        labelLines: (spot ? spot.lines : [labelOf(node)]).map((text, i) => ({
+          key: `${node.id}-${i}`,
+          text,
+          dy: i === 0 ? 0 : LINE_HEIGHT
+        })),
         labelX: spot ? spot.x : node.x,
         labelY: spot ? spot.y : node.y,
         anchor: spot ? spot.anchor : "start"

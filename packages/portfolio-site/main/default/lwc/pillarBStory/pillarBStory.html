@@ -93,10 +93,10 @@
               <th scope="row">Attendance</th>
               <td>Service Delivery per session</td>
               <td>
-                No attendance object in the lists. Benefit Session sits in the
-                services model
+                An Attendance domain in the data model, and Benefit Session in
+                the services model
               </td>
-              <td>A real gap to state</td>
+              <td>Two places attendance could live</td>
             </tr>
             <tr>
               <th scope="row">Assessment and gain</th>
@@ -182,8 +182,8 @@
               </td>
               <td role="cell" data-label="Implementation effort">Smallest</td>
               <td role="cell" data-label="Why">
-                Two packages in one org and the smallest model, so a small staff
-                can adopt it first
+                Three managed packages, NPSP, PMM and V4S, and the smallest
+                model, so a small staff can adopt it first
               </td>
               <td role="cell" data-label="Source">
                 <a
@@ -199,6 +199,13 @@
                   >Install Program Management Module (Help)</a
                 >
                 <a
+                  href="https://www.salesforce.com/nonprofit/managed-packages/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Nonprofit Success Pack &amp; Other Managed Packages
+                  (Salesforce)</a
+                >
+                <a
                   href="https://help.salesforce.com/s/articleView?id=000385150&amp;language=en_US&amp;type=1"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -209,8 +216,9 @@
             <tr role="row">
               <th scope="row" role="rowheader">Education Cloud</th>
               <td role="cell" data-label="Licence model">
-                A paid Education Cloud licence. A Developer Edition qualifies
-                only with Education Cloud
+                A paid Education Cloud licence. Sales and Service Core is $87
+                per user per month, billed annually. A Developer Edition
+                qualifies only with Education Cloud
               </td>
               <td role="cell" data-label="Implementation effort">Largest</td>
               <td role="cell" data-label="Why">
@@ -223,6 +231,18 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   >Turn On Education Cloud (Help)</a
+                >
+                <a
+                  href="https://www.salesforce.com/education/pricing/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Salesforce for Education Pricing (Salesforce)</a
+                >
+                <a
+                  href="https://help.salesforce.com/s/articleView?id=sfdo.EC_Understand_Whats_Included_with_Education_Cloud.htm&amp;language=en_US&amp;type=5"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Understand What's Included with Education Cloud (Help)</a
                 >
               </td>
             </tr>
@@ -240,10 +260,16 @@
               </td>
               <td role="cell" data-label="Source">
                 <a
-                  href="https://developer.salesforce.com/docs/platform/sfdx-dev/guide/sfdx-dev-scratch-orgs-def-file-config-values.html"
+                  href="https://help.salesforce.com/s/articleView?id=sfdo.NPC_Person_Accounts_and_Party_Relationship_Groups.htm&amp;language=en_US&amp;type=5"
                   target="_blank"
                   rel="noopener noreferrer"
-                  >Scratch Org Features (Salesforce Developers)</a
+                  >Complete Nonprofit Cloud Prerequisites (Help)</a
+                >
+                <a
+                  href="https://developer.salesforce.com/docs/platform/data-models/guide/program-management.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Program Management (Salesforce Developers)</a
                 >
                 <a
                   href="https://help.salesforce.com/s/articleView?id=000385150&amp;language=en_US&amp;type=1"
@@ -264,7 +290,7 @@
       </div>
       <p class="footnote" data-id="licence-sources">
         Licence counts and prices are from the public Salesforce pages linked in
-        each row, read on 22 October 2026. They change over time, so check the
+        each row, read on 28 October 2026. They change over time, so check the
         pages before relying on them.
       </p>
     </section>
@@ -349,6 +375,19 @@
         preparing for production. Staff record classes, sessions and attendance
         in one place, with assessment, employment and referral outcomes on the
         learner's record, ready for the state report.
+      </p>
+    </section>
+
+    <section class="story-section" data-section="revisit">
+      <h2 class="section-heading">7. What I would revisit</h2>
+      <p>
+        The client has no assigned technical resource for maintenance, so the
+        lighter platform was the safer one, and that is why NPSP leads the
+        matrix by a narrow margin. NPSP stays supported, but Salesforce now
+        recommends Nonprofit Cloud to new customers. If the client assigns
+        someone to own Salesforce, a move to Nonprofit Cloud is worth
+        revisiting, starting with whether its native outcome features can
+        replace the custom assessment and employment objects.
       </p>
     </section>
   </article>

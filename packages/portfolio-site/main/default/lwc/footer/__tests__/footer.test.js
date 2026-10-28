@@ -721,37 +721,27 @@ describe("c-footer", () => {
     );
   });
 
-  it("keeps the quotas in a disclosure that starts closed", async () => {
+  it("shows the quotas open, like every other group", async () => {
     const element = createComponent();
     await runIdle();
-    const details = q(element, 'details[data-group="quotas"]');
-    expect(details).not.toBeNull();
-    expect(details.open).toBe(false);
-    const summary = details.querySelector("summary");
-    expect(summary.textContent.trim()).toBe("Quotas and limits");
-    expect(details.querySelector('[data-id="ai-requests"]')).not.toBeNull();
+    expect(q(element, "details")).toBeNull();
+    const group = q(element, 'div[data-group="quotas"]');
+    expect(group).not.toBeNull();
+    expect(group.querySelector(".group-label").textContent.trim()).toBe(
+      "Quotas and limits"
+    );
+    expect(group.querySelector('[data-id="ai-requests"]')).not.toBeNull();
   });
 
-  it("tracks finops_quota_visibility once when the quotas are opened", async () => {
+  it("tracks finops_quota_visibility once on hover over AI requests", async () => {
     const element = createComponent();
     await runIdle();
-    const details = q(element, 'details[data-group="quotas"]');
-    details.open = true;
-    details.dispatchEvent(new CustomEvent("toggle"));
-    q(element, '[data-id="ai-requests"]').dispatchEvent(
-      new CustomEvent("mouseenter")
-    );
+    expect(trackEvent).not.toHaveBeenCalled();
+    const aiRequests = q(element, '[data-id="ai-requests"]');
+    aiRequests.dispatchEvent(new CustomEvent("mouseenter"));
+    aiRequests.dispatchEvent(new CustomEvent("mouseenter"));
     expect(trackEvent).toHaveBeenCalledTimes(1);
     expect(trackEvent).toHaveBeenCalledWith("finops_quota_visibility");
-  });
-
-  it("sends nothing when the quotas are closed again", async () => {
-    const element = createComponent();
-    await runIdle();
-    const details = q(element, 'details[data-group="quotas"]');
-    details.open = false;
-    details.dispatchEvent(new CustomEvent("toggle"));
-    expect(trackEvent).not.toHaveBeenCalled();
   });
 
   it("links Skills and Testimonials first, before Contact", () => {

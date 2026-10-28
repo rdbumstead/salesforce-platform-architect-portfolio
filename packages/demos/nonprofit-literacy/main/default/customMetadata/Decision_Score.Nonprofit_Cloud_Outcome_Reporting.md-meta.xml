@@ -28,7 +28,7 @@
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >Client custom objects. Education Cloud data model entity lists. Nonprofit Cloud OutcomeManagement feature (scratch org features)</value>
+    >Outcome Management (Help). Nonprofit Cloud Data Model Objects (Help), which lists the Outcome Management objects</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

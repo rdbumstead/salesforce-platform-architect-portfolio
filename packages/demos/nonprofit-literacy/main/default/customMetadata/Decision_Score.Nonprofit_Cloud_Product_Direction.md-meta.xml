@@ -22,13 +22,13 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >The product Salesforce is investing in for nonprofits.</value>
+    >The product Salesforce recommends to new nonprofit customers.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >Nonprofit Success Pack and Other Managed Packages (salesforce.com)</value>
+    >Nonprofit Success Pack &amp; Other Managed Packages (Salesforce), which recommends Nonprofit Cloud for new customers</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

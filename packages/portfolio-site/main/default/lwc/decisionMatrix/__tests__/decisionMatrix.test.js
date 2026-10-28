@@ -188,7 +188,10 @@ describe("c-decision-matrix", () => {
         th.querySelector(".option-label").textContent.trim()
       );
     expect(leading()).toHaveLength(1);
-    expect(q(element, ".leading-tag").textContent.trim()).toBe("Leading");
+    expect(q(element, "th.leading .leading-tag").textContent.trim()).toBe(
+      "Leading"
+    );
+    expect(qa(element, ".leading-tag:not(.tag-reserved)")).toHaveLength(1);
     expect(qa(element, "td.total-cell.leading")).toHaveLength(1);
     const before = leading()[0];
 
@@ -211,6 +214,25 @@ describe("c-decision-matrix", () => {
       zero[c.developerName] = 0;
     });
     expect(leaderKey(m, computeTotals(m, zero))).toBeNull();
+  });
+
+  it("keeps a tag's line in every header through a tie, so the header does not resize", async () => {
+    const element = await createComponent();
+    const heads = qa(element, "th.option-head");
+    expect(qa(element, "th.option-head .leading-tag")).toHaveLength(
+      heads.length
+    );
+    const criteria = qa(element, "input.weight-slider").map(
+      (s) => s.dataset.criterion
+    );
+    for (const key of criteria) {
+      await moveSlider(element, key, 0);
+    }
+    expect(qa(element, "th.option-head.leading")).toHaveLength(0);
+    expect(qa(element, "th.option-head .leading-tag")).toHaveLength(
+      heads.length
+    );
+    expect(qa(element, ".leading-tag:not(.tag-reserved)")).toHaveLength(0);
   });
 
   it("highlights only the totals that change, and again on the next change", async () => {
