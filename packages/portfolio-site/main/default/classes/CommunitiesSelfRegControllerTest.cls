@@ -1,3 +1,11 @@
+/**
+ * @description       : Unit tests for CommunitiesSelfRegController.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
+ * @Created           : 01/03/2026
+ **/
 @IsTest
 public with sharing class CommunitiesSelfRegControllerTest {
   @IsTest
