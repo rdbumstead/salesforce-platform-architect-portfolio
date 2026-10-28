@@ -68,3 +68,10 @@ This changes item 7 and the hero link above. The other items stand.
 - **Why 10, not 5.** The five minute tour overran. Two guest walks of the journey on production on 2026-10-27 (GA4 blocked, one letter and one API request per walk) modelled at about 6.9 minutes for a skimmer reading at 300 words a minute and 10.2 minutes for a careful reader at 200. The AI Lab (2.6 to 3.5 minutes) and Solution Architecture (1.8 to 2.7) stops ran longest. Reading speeds, orientation and action times are modelled, and mobile, WebKit and slow connections are not measured. The label now says 10, and the finish line is a measurement of the live journey after the deploy.
 - **What stays.** The tour is opt in only, one session storage key says it is running, and nothing goes in the address. `tour_opened` stays in the event list for past data and is no longer sent. The journey sends `tour_step_viewed`, `tour_exited` and `tour_finished`.
 - **Detail.** [Technical Guide 2.20](../guides/04-Technical-Guide.md#220-the-10-minute-tour-c-tour-bar).
+
+## Amendment (2026-10-27): Skills and Testimonials return to the header
+
+This changes the header list in item 10. The other items stand.
+
+- **The header reads Home, Resume, Skills, How it's built, Testimonials and Contact.** Skills and Testimonials left the header on 2026-10-26 for the footer, and the owner wants both one click from any page again: Skills is the evidence a recruiter looks for first, and Testimonials is where a reference can leave a quote. The footer keeps its links too.
+- **Fit.** Six items and the menu fit on one line from 768 px only with the links a little closer, so the link padding narrows from 12 to 8 px between 768 and 899 px. The brand, the divider, the Back to top arrow and the theme button do not move. Phones keep the menu button, which lists the same six.
