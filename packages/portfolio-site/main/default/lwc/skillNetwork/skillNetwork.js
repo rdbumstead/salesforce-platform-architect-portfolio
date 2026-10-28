@@ -331,27 +331,35 @@ function yearsSpoken(years) {
   return `used for ${years.toFixed(1)} years`;
 }
 
-// What a skill with no role shows in place of years: "Certified 2024" from the earliest year a
-// linked certification was earned, or "Project" when only a project links it. Years stay a number
-// of years worked, so a skill with no role never gets one. Empty when nothing backs the skill.
-function evidenceLabel(skill) {
-  if (skill.years !== null) {
-    return "";
-  }
+// Everything besides time worked that backs a skill, each shown beside the years: "Certified 2024"
+// from the earliest year a linked certification was earned, then "Project" or "3 projects". A
+// certification, a project and years in a role are different evidence, so a chip shows every one
+// it has. Years stay a number of years worked, so a skill with no role never gets one.
+function evidenceParts(skill) {
+  const parts = [];
   if (skill.certifiedYear !== null) {
-    return `Certified ${skill.certifiedYear}`;
+    parts.push({
+      key: "certification",
+      text: `Certified ${skill.certifiedYear}`,
+      spoken: `certified in ${skill.certifiedYear}`
+    });
   }
-  return skill.projectIds.length > 0 ? "Project" : "";
+  const projects = skill.projectIds.length;
+  if (projects > 0) {
+    parts.push({
+      key: "projects",
+      text: projects === 1 ? "Project" : `${projects} projects`,
+      spoken:
+        projects === 1 ? "used on a project" : `used on ${projects} projects`
+    });
+  }
+  return parts;
 }
 
 function evidenceSpoken(skill) {
-  if (skill.years !== null) {
-    return "";
-  }
-  if (skill.certifiedYear !== null) {
-    return `certified in ${skill.certifiedYear}`;
-  }
-  return skill.projectIds.length > 0 ? "used on a project" : "";
+  return evidenceParts(skill)
+    .map((part) => part.spoken)
+    .join(", ");
 }
 
 // The earliest earned year among a skill's linked certifications, or null when none carries one.
@@ -364,13 +372,12 @@ function earliestYear(certificationIds, certifications) {
 }
 
 function summaryOf(skill, years) {
-  if (years) {
-    return `Proficiency ${skill.proficiency} of 5, ${years} used.`;
-  }
-  const spoken = evidenceSpoken(skill);
-  return spoken
-    ? `Proficiency ${skill.proficiency} of 5, ${spoken}.`
-    : `Proficiency ${skill.proficiency} of 5.`;
+  const parts = [
+    `Proficiency ${skill.proficiency} of 5`,
+    years ? `${years} used` : "",
+    evidenceSpoken(skill)
+  ].filter(Boolean);
+  return `${parts.join(", ")}.`;
 }
 
 function byName(a, b) {
@@ -1119,8 +1126,7 @@ export default class SkillNetwork extends LightningElement {
       proficiency: `${skill.proficiency}/5`,
       years,
       hasYears: Boolean(years),
-      evidenceText: evidenceLabel(skill),
-      hasEvidenceText: !years && Boolean(evidenceLabel(skill)),
+      evidence: evidenceParts(skill),
       pressed: String(selected),
       className: selected ? "chip is-selected" : "chip",
       ariaLabel: [

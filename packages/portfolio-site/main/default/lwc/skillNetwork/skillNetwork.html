@@ -111,9 +111,12 @@
                             <template lwc:if={chip.hasYears}>
                               <span class="chip-years">{chip.years}</span>
                             </template>
-                            <template lwc:if={chip.hasEvidenceText}>
-                              <span class="chip-evidence"
-                                >{chip.evidenceText}</span
+                            <template for:each={chip.evidence} for:item="part">
+                              <span
+                                key={part.key}
+                                class="chip-evidence"
+                                data-evidence={part.key}
+                                >{part.text}</span
                               >
                             </template>
                           </span>
