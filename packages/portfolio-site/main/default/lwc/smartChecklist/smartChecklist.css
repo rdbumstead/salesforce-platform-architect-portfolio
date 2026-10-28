@@ -33,12 +33,41 @@
   padding: 0;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .item {
+  /* Each item keeps the height it has once its run and time have loaded, so the page below
+     does not move when they arrive. These are the measured heights, a little under. */
+  min-height: 8rem;
   display: flex;
   gap: var(--pf-space-3);
   align-items: flex-start;
   padding: var(--pf-space-3) 0;
   border-top: 1px solid var(--pf-border);
+}
+
+.item[data-key="caches"] {
+  min-height: 12.5rem;
+}
+
+@media (min-width: 768px) {
+  .item {
+    min-height: 4.75rem;
+  }
+
+  .item[data-key="caches"] {
+    min-height: 6.25rem;
+  }
 }
 
 .item:first-child {

@@ -21,6 +21,8 @@
  *                      columns become tabs (To Do, In Progress, Done) that open on In Progress,
  *                      with the arrow keys, Home and End moving between them. On wider screens
  *                      all three columns show and none of the tab roles apply.
+ *                      The tour's "Show me" for stop E opens the In Progress tab and moves focus to
+ *                      its tab on a phone, or to the In Progress column heading otherwise.
  *                      The c-view-source control is the last item of the title row, at the right.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -30,6 +32,7 @@
 import { LightningElement, wire } from "lwc";
 import getRoadmap from "@salesforce/apex/DeliveryController.getRoadmap";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { onShowMe, revealAnchor } from "c/tourShowMe";
 import {
   isSimulating,
   setSimulating,
@@ -39,6 +42,8 @@ import {
 // The width below which the columns become tabs. The stylesheet stacks them at the same width.
 export const PHONE_QUERY = "(max-width: 767px)";
 export const DEFAULT_TAB = "indeterminate";
+// The tour's stop E points at the In Progress column, or its tab on a phone.
+export const TOUR_STOP = "E";
 export const SIMULATE_HINT =
   "See how the roadmap and Latest Updates behave if Jira or GitHub is down.";
 
@@ -145,6 +150,7 @@ export default class RoadmapViewer extends LightningElement {
   simulateHint = SIMULATE_HINT;
   phoneQuery;
   stopListening;
+  stopShowMe;
 
   handlePhoneChange = (event) => {
     this.isPhone = Boolean(event.matches);
@@ -160,9 +166,21 @@ export default class RoadmapViewer extends LightningElement {
       this.simulate = value;
     });
     this.watchPhoneWidth();
+    this.stopShowMe = onShowMe(TOUR_STOP, () => this.showInProgress());
+  }
+
+  // Opens the In Progress tab where there are tabs, then scrolls to and focuses the marked
+  // control: the tab on a phone, the column heading beside the other columns.
+  showInProgress() {
+    this.activeCategory = DEFAULT_TAB;
+    revealAnchor(this.template);
   }
 
   disconnectedCallback() {
+    if (this.stopShowMe) {
+      this.stopShowMe();
+      this.stopShowMe = undefined;
+    }
     if (this.stopListening) {
       this.stopListening();
       this.stopListening = undefined;
@@ -272,10 +290,18 @@ export default class RoadmapViewer extends LightningElement {
         panelLabelledBy: this.isPhone ? `tab-${column.category}` : undefined,
         panelHidden: this.isPhone && !isActive,
         tabId: `tab-${column.category}`,
-        tabText: `${column.label} (${items.length})`,
+        tabLabel: column.label,
+        tabCount: ` (${items.length})`,
         tabSelected: String(isActive),
         tabIndex: isActive ? "0" : "-1",
         headingId: `roadmap-column-${column.category}`,
+        // The tour's anchor is the heading beside the other columns, and the tab on a phone.
+        columnTourAnchor:
+          column.category === DEFAULT_TAB && !this.isPhone ? "true" : undefined,
+        titleTabIndex:
+          column.category === DEFAULT_TAB && !this.isPhone ? "-1" : undefined,
+        tourAnchor:
+          column.category === DEFAULT_TAB && this.isPhone ? "true" : undefined,
         moreId: `roadmap-${column.category}-more`,
         cards: epicsFirst(split.visible.map(toCard)),
         hiddenCards,
@@ -339,10 +365,12 @@ export default class RoadmapViewer extends LightningElement {
     return this.columns.map((column) => ({
       category: column.category,
       tabId: column.tabId,
-      tabText: column.tabText,
+      tabLabel: column.tabLabel,
+      tabCount: column.tabCount,
       tabSelected: column.tabSelected,
       tabIndex: column.tabIndex,
       panelId: column.panelId,
+      tourAnchor: column.tourAnchor,
       className: column.isActive ? "tab tab-active" : "tab"
     }));
   }

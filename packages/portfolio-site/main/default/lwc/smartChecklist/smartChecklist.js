@@ -12,6 +12,9 @@
  *                      missing or unreadable value shows no time. The three items read as plain
  *                      sentences: a production deploy, a daily health check and Jira and GitHub
  *                      data refreshed in the last 30 minutes.
+ *                      Each item keeps the height it has once its evidence has loaded, and the
+ *                      loading line is read aloud only, so the page below does not move when the
+ *                      data arrives.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

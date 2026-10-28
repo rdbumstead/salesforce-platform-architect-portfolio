@@ -24,6 +24,13 @@
                     <span class="metric-label">{card.headlineLabel}</span>
                   </p>
                 </template>
+                <template lwc:else>
+                  <p
+                    class="metric metric-spacer"
+                    data-id="metric-spacer"
+                    aria-hidden="true"
+                  ></p>
+                </template>
                 <h3 class="card-title">
                   <a
                     class="card-link"

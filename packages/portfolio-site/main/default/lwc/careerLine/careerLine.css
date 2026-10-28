@@ -8,6 +8,10 @@
 }
 
 .career {
+  /* Below the fold, so the browser skips its layout and paint until it nears the screen. The
+     size is a first guess that the browser replaces with the real one after the first render. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 360px;
   max-width: 1024px;
   margin: 0 auto;
   padding: 0 var(--pf-space-4);
@@ -384,7 +388,34 @@
   outline-offset: 2px;
 }
 
+/* The phone list's "Show all" button, shown below 768 px only. */
+.stack-more {
+  display: none;
+  margin: var(--pf-space-2) 0 0;
+}
+
+.stack-toggle {
+  min-height: 44px;
+  padding: 0 var(--pf-space-4);
+  border: 1px solid var(--pf-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--pf-accent);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.stack-toggle:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
 @media screen and (max-width: 767.98px) {
+  .stack-more {
+    display: block;
+  }
+
   .line-wrap,
   .panel[data-id="line-panel"] {
     display: none;

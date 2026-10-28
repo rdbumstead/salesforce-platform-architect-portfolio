@@ -7,6 +7,8 @@
  *                      simulate=true, which returns the same cached commits marked
  *                      SIMULATED. DEGRADED means the GitHub circuit breaker is open. A commit
  *                      link click sends changelog_commit_clicked with its sha.
+ *                      An empty feed says "No recent updates found." and a failed read says the
+ *                      updates could not be loaded, so an outage never reads as a quiet week.
  *                      Each row reads as a plain update. Merge commits are left out. A leading
  *                      type such as "feat(lwc):" becomes a tag (Feature, Fix, Docs or Tests) and
  *                      is taken off the sentence, which then starts with a capital. Other
@@ -172,8 +174,13 @@ export default class Changelog extends LightningElement {
     return this.commits.length > 0;
   }
 
+  // A feed that came back with nothing says so. A read that failed says it failed.
   get showEmpty() {
-    return this.hasError || (!!this.feed && !this.hasCommits);
+    return !this.hasError && !!this.feed && !this.hasCommits;
+  }
+
+  get showFailed() {
+    return this.hasError;
   }
 
   get ageText() {
