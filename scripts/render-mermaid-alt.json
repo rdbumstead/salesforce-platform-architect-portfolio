@@ -1,5 +1,5 @@
 {
-  "0842676a906482": "Sequence diagram. A recruiter lands on the home page, takes the five minute tour, and visits five showcase areas: business architecture, solution architecture, the API Lab, the AI Lab and delivery. Each area shows real work, and View source shows the real code.",
+  "1e76ab258d68d2": "Sequence diagram. A recruiter lands on the home page, takes the 10 minute tour, and visits five showcase areas: business architecture, solution architecture, the API Lab, the AI Lab and delivery. Each area shows real work, and View source shows the real code.",
   "00e3a42f888240": "Flow diagram of the system. A visitor reaches the Experience Cloud LWR site, which reads custom objects through GraphQL and calls Apex. Apex talks to the AI dispatch, the Jira API and the GitHub API. A planned AWS Lambda sits beside Apex.",
   "129cb0dc3a232a": "Layer diagram. The browser calls the LWR site, which calls Apex. Apex reads the custom objects, the AI dispatch, Jira and GitHub.",
   "16bc31341d9ad5": "Entity relationship diagram of the portfolio data model. Projects link to skills and assets, skills link to experience records, and experience records link to their highlights. Testimonials stand on their own.",
