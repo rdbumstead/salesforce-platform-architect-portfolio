@@ -129,6 +129,21 @@
             </svg>
             Lookup
           </li>
+          <template lwc:if={hasHighlight}>
+            <li class="legend-item" data-id="legend-highlight">
+              <svg class="legend-swatch" viewBox="0 0 40 12" aria-hidden="true">
+                <rect
+                  class="legend-box"
+                  x="2"
+                  y="1"
+                  width="36"
+                  height="10"
+                  rx="3"
+                ></rect>
+              </svg>
+              Read by this section, the rest faded
+            </li>
+          </template>
         </ul>
       </template>
 
