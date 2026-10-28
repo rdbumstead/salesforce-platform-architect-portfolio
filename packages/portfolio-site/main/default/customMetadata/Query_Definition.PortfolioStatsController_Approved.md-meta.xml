@@ -40,4 +40,8 @@
       xsi:type="xsd:string"
     >Numbers panel: approved testimonials, counted by vibe.</value>
     </values>
+    <values>
+        <field>Visitor_Label__c</field>
+        <value xsi:type="xsd:string">approved testimonials</value>
+    </values>
 </CustomMetadata>
