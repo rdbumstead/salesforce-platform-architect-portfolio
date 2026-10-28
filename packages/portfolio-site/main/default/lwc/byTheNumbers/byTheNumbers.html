@@ -5,6 +5,18 @@
 
     <template lwc:if={isLoading}>
       <p class="note" role="status">Loading the counts.</p>
+      <ul class="stats stats-pending" aria-hidden="true" data-placeholder>
+        <template for:each={placeholderTiles} for:item="tile">
+          <li class="stat" key={tile.key}>
+            <p class="value">{tile.valueText}</p>
+            <p class="label">{tile.label}</p>
+            <p class="detail">{tile.detail}</p>
+            <template lwc:if={tile.hasLine}>
+              <p class="plain-line">{tile.line}</p>
+            </template>
+          </li>
+        </template>
+      </ul>
     </template>
     <template lwc:elseif={hasError}>
       <p class="note" role="status">The counts could not be loaded.</p>
