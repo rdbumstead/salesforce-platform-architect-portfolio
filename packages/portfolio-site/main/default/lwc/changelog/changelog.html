@@ -1,7 +1,14 @@
 <template>
   <section class="changelog" aria-labelledby="changelog-heading">
     <header class="changelog-header">
-      <h2 id="changelog-heading" class="changelog-title">Latest Updates</h2>
+      <div class="changelog-title-group">
+        <h2 id="changelog-heading" class="changelog-title">Latest Updates</h2>
+        <c-data-source
+          source-keys="DeliveryController_GithubCache"
+          hide-counts
+          class="card-source"
+        ></c-data-source>
+      </div>
       <div class="changelog-meta">
         <template lwc:if={statusBadge}>
           <span class={statusBadge.className} data-id="status-badge"
