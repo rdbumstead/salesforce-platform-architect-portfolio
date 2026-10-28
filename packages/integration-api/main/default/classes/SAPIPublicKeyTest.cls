@@ -14,6 +14,12 @@ private class SAPIPublicKeyTest {
   @TestSetup
   static void setup() {
     SapiTestData.createGraph();
+    // The project list query only returns live or in development projects.
+    List<Project__c> projects = [SELECT Id FROM Project__c];
+    for (Project__c project : projects) {
+      project.Status__c = 'Active Development';
+    }
+    update projects;
   }
 
   private static void callResource(

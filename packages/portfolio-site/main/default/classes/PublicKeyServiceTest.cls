@@ -35,13 +35,16 @@ private class PublicKeyServiceTest {
       Name = 'Key Role',
       Employer__c = account.Id,
       Contact__c = contact.Id,
-      Start_Date__c = Date.today().addYears(-1)
+      Start_Date__c = Date.today().addYears(-1),
+      Sort_Order__c = 1
     );
     insert experience;
     Experience_Highlight__c highlight = new Experience_Highlight__c(
       Name = 'Key Highlight',
       Experience__c = experience.Id,
-      Description__c = 'Key highlight text'
+      Description__c = 'Key highlight text',
+      Persona_Tag__c = 'Admin',
+      Sort_Order__c = 1
     );
     insert highlight;
     Experience_Skill__c experienceSkill = new Experience_Skill__c(
@@ -49,13 +52,17 @@ private class PublicKeyServiceTest {
       Skill__c = skill.Id
     );
     insert experienceSkill;
-    Project__c project = new Project__c(Name = 'Key Project');
+    Project__c project = new Project__c(
+      Name = 'Key Project',
+      Sort_Order__c = 1
+    );
     insert project;
     Project_Asset__c asset = new Project_Asset__c(
       Name = 'Key Asset',
       Project__c = project.Id,
       Type__c = 'Link',
-      External_URL__c = 'https://example.com/asset'
+      External_URL__c = 'https://example.com/asset',
+      Alt_Text__c = 'Key asset'
     );
     insert asset;
     Project_Skill__c projectSkill = new Project_Skill__c(
@@ -175,7 +182,7 @@ private class PublicKeyServiceTest {
   static void shouldAssignDistinctKeys_WhenInsertingInBulk() {
     List<Project__c> projects = new List<Project__c>();
     for (Integer i = 0; i < 251; i++) {
-      projects.add(new Project__c(Name = 'Bulk ' + i));
+      projects.add(new Project__c(Name = 'Bulk ' + i, Sort_Order__c = 1));
     }
 
     Test.startTest();
@@ -194,7 +201,8 @@ private class PublicKeyServiceTest {
   static void shouldKeepKey_WhenRecordArrivesWithOne() {
     Project__c project = new Project__c(
       Name = 'Preset',
-      Public_Key__c = 'prj_abcdefghjk'
+      Public_Key__c = 'prj_abcdefghjk',
+      Sort_Order__c = 1
     );
 
     Test.startTest();
@@ -211,7 +219,7 @@ private class PublicKeyServiceTest {
 
   @IsTest
   static void shouldKeepKey_WhenRenamed() {
-    Project__c project = new Project__c(Name = 'Before');
+    Project__c project = new Project__c(Name = 'Before', Sort_Order__c = 1);
     insert project;
     String before = [
       SELECT Public_Key__c
@@ -235,7 +243,7 @@ private class PublicKeyServiceTest {
 
   @IsTest
   static void shouldRefuseUpdate_WhenKeyChanges() {
-    Project__c project = new Project__c(Name = 'Locked');
+    Project__c project = new Project__c(Name = 'Locked', Sort_Order__c = 1);
     insert project;
     project = [SELECT Id, Public_Key__c FROM Project__c WHERE Id = :project.Id];
     project.Public_Key__c = 'prj_zzzzzzzzzz';
@@ -255,7 +263,7 @@ private class PublicKeyServiceTest {
 
   @IsTest
   static void shouldRefuseUpdate_WhenKeyCleared() {
-    Project__c project = new Project__c(Name = 'Locked');
+    Project__c project = new Project__c(Name = 'Locked', Sort_Order__c = 1);
     insert project;
     project.Public_Key__c = null;
 
@@ -270,7 +278,8 @@ private class PublicKeyServiceTest {
   static void shouldRefuseUpdate_WhenOnlyTheCaseChanges() {
     Project__c project = new Project__c(
       Name = 'Cased',
-      Public_Key__c = 'prj_abcdefghjk'
+      Public_Key__c = 'prj_abcdefghjk',
+      Sort_Order__c = 1
     );
     insert project;
     project.Public_Key__c = 'PRJ_ABCDEFGHJK';
@@ -284,7 +293,7 @@ private class PublicKeyServiceTest {
 
   @IsTest
   static void shouldAllowUpdate_WhenKeyIsTheSame() {
-    Project__c project = new Project__c(Name = 'Same');
+    Project__c project = new Project__c(Name = 'Same', Sort_Order__c = 1);
     insert project;
     project = [SELECT Id, Public_Key__c FROM Project__c WHERE Id = :project.Id];
     project.Name = 'Same again';
@@ -298,12 +307,16 @@ private class PublicKeyServiceTest {
 
   @IsTest
   static void shouldDrawAgain_WhenKeyIsTaken() {
-    insert new Project__c(Name = 'Holder', Public_Key__c = 'prj_aaaaaaaaaa');
+    insert new Project__c(
+      Name = 'Holder',
+      Public_Key__c = 'prj_aaaaaaaaaa',
+      Sort_Order__c = 1
+    );
     PublicKeyService.forcedKeys = new List<String>{
       'prj_aaaaaaaaaa',
       'prj_bbbbbbbbbb'
     };
-    Project__c second = new Project__c(Name = 'Second');
+    Project__c second = new Project__c(Name = 'Second', Sort_Order__c = 1);
 
     Test.startTest();
     insert second;
@@ -325,8 +338,8 @@ private class PublicKeyServiceTest {
       'prj_dddddddddd'
     };
     List<Project__c> projects = new List<Project__c>{
-      new Project__c(Name = 'One'),
-      new Project__c(Name = 'Two')
+      new Project__c(Name = 'One', Sort_Order__c = 1),
+      new Project__c(Name = 'Two', Sort_Order__c = 1)
     };
 
     Test.startTest();
@@ -339,7 +352,11 @@ private class PublicKeyServiceTest {
 
   @IsTest
   static void shouldThrow_WhenEveryAttemptCollides() {
-    insert new Project__c(Name = 'Holder', Public_Key__c = 'prj_aaaaaaaaaa');
+    insert new Project__c(
+      Name = 'Holder',
+      Public_Key__c = 'prj_aaaaaaaaaa',
+      Sort_Order__c = 1
+    );
     PublicKeyService.forcedKeys = new List<String>();
     for (Integer i = 0; i < PublicKeyService.MAX_ATTEMPTS; i++) {
       PublicKeyService.forcedKeys.add('prj_aaaaaaaaaa');
@@ -348,7 +365,7 @@ private class PublicKeyServiceTest {
     Test.startTest();
     try {
       PublicKeyService.assign(
-        new List<Project__c>{ new Project__c(Name = 'X') }
+        new List<Project__c>{ new Project__c(Name = 'X', Sort_Order__c = 1) }
       );
       Assert.fail('Expected PublicKeyException');
     } catch (PublicKeyService.PublicKeyException e) {
@@ -370,7 +387,7 @@ private class PublicKeyServiceTest {
 
   @IsTest
   static void shouldFindRecord_WhenKeyMatches() {
-    Project__c project = new Project__c(Name = 'Findable');
+    Project__c project = new Project__c(Name = 'Findable', Sort_Order__c = 1);
     insert project;
     String key = [SELECT Public_Key__c FROM Project__c WHERE Id = :project.Id]
     .Public_Key__c;
@@ -399,7 +416,7 @@ private class PublicKeyServiceTest {
     PublicKeyService.suspended = true;
     List<Project__c> projects = new List<Project__c>();
     for (Integer i = 0; i < 5; i++) {
-      projects.add(new Project__c(Name = 'Old ' + i));
+      projects.add(new Project__c(Name = 'Old ' + i, Sort_Order__c = 1));
     }
     insert projects;
     PublicKeyService.suspended = false;
@@ -433,7 +450,11 @@ private class PublicKeyServiceTest {
 
   @IsTest
   static void shouldLeaveExistingKeys_WhenBackfilled() {
-    insert new Project__c(Name = 'Keyed', Public_Key__c = 'prj_abcdefghjk');
+    insert new Project__c(
+      Name = 'Keyed',
+      Public_Key__c = 'prj_abcdefghjk',
+      Sort_Order__c = 1
+    );
 
     Test.startTest();
     Integer filled = PublicKeyService.backfill(Project__c.SObjectType, 200);
