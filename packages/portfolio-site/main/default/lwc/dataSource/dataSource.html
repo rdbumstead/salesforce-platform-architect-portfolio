@@ -1,0 +1,45 @@
+<template>
+  <div class="marker" onkeydown={handleKeydown} onfocusout={handleFocusOut}>
+    <button
+      type="button"
+      class="marker-button"
+      aria-expanded={expanded}
+      aria-label={buttonLabel}
+      onclick={handleToggle}
+    >
+      <span class="dot" aria-hidden="true"></span>
+      <span class="marker-label" aria-hidden="true">{wording.markerLabel}</span>
+      <span lwc:if={hasSummary} class="marker-counts" aria-hidden="true"
+        >{summary}</span
+      >
+    </button>
+    <div
+      lwc:if={isOpen}
+      class="panel"
+      role="group"
+      aria-label={wording.panelHeading}
+    >
+      <h2 class="panel-heading">{wording.panelHeading}</h2>
+      <p class="panel-text">{wording.explanation}</p>
+      <template lwc:if={hasRows}>
+        <h3 class="sources-heading">{wording.sourcesHeading}</h3>
+        <ul class="sources">
+          <template for:each={rows} for:item="row">
+            <li key={row.key} class="source">
+              <span class="source-text">{row.text}</span>
+              <span lwc:if={row.description} class="source-description"
+                >{row.description}</span
+              >
+            </li>
+          </template>
+        </ul>
+      </template>
+      <p class="panel-footer">
+        <a class="model-link" href={modelPath}>{wording.modelLinkText}</a>
+        <button type="button" class="close-button" onclick={handleClose}>
+          {wording.closeButton}
+        </button>
+      </p>
+    </div>
+  </div>
+</template>

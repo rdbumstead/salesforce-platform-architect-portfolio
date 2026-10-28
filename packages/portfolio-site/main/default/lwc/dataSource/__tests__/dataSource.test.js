@@ -1,0 +1,231 @@
+/**
+ * @description       : Unit tests for c-data-source. Both DataSourceController methods are
+ *                      mocked wire adapters. The tests cover the marker with counts, with
+ *                      objects only, with an empty read and with a failed read, the panel's
+ *                      content and link, aria-expanded, Escape and Close returning focus, and
+ *                      the wording block.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @Created           : 10/28/2026
+ **/
+import { createElement } from "@lwc/engine-dom";
+import DataSource, { WORDING, MODEL_PATH, countText } from "c/dataSource";
+import getSources from "@salesforce/apex/DataSourceController.getSources";
+import getObjectSources from "@salesforce/apex/DataSourceController.getObjectSources";
+
+jest.mock(
+  "@salesforce/apex/DataSourceController.getSources",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+jest.mock(
+  "@salesforce/apex/DataSourceController.getObjectSources",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+const ROLES = {
+  name: "ResumeController_Roles",
+  label: "Roles",
+  description: "Resume roles, current first.",
+  hasCount: true,
+  count: 10
+};
+const SKILLS = {
+  name: "ResumeController_Skills",
+  label: "Skills",
+  description: "Resume skill groups.",
+  hasCount: true,
+  count: 54
+};
+const HIGHLIGHTS = {
+  name: "ResumeController_Highlights",
+  label: "Experience Highlights",
+  description: "Highlights.",
+  hasCount: false,
+  count: null
+};
+
+const flush = () => Promise.resolve();
+
+function create(props = {}) {
+  const element = createElement("c-data-source", { is: DataSource });
+  Object.assign(element, props);
+  document.body.appendChild(element);
+  return element;
+}
+
+const button = (el) => el.shadowRoot.querySelector(".marker-button");
+const panel = (el) => el.shadowRoot.querySelector(".panel");
+
+describe("c-data-source", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    jest.clearAllMocks();
+  });
+
+  it("keeps every visible string in the exported wording block", () => {
+    expect(WORDING.markerLabel).toBe("Live from Salesforce");
+    expect(WORDING.explanation).toMatch(/not a stored copy/);
+    expect(WORDING.explanation).toMatch(/each time the page loads/);
+    expect(MODEL_PATH).toBe("/portfolio/business-architecture");
+  });
+
+  it("formats a count with the lower case label", () => {
+    expect(countText("Skills", 54)).toBe("54 skills");
+    expect(countText("Roles", 1)).toBe("1 role");
+    expect(countText("Address", 1)).toBe("1 address");
+  });
+
+  it("shows the live label with short counts", async () => {
+    const el = create({
+      sourceKeys: "ResumeController_Roles, ResumeController_Skills"
+    });
+    getSources.emit([ROLES, SKILLS]);
+    await flush();
+    expect(button(el).textContent).toContain("Live from Salesforce");
+    expect(button(el).textContent).toContain("10 roles, 54 skills");
+    expect(button(el).getAttribute("aria-label")).toBe(
+      "Live from Salesforce, 10 roles, 54 skills"
+    );
+  });
+
+  it("passes the trimmed, de-duplicated names to the wire", async () => {
+    create({ sourceKeys: " A , B,A,, ", objects: "Skill__c" });
+    await flush();
+    expect(getSources.getLastConfig()).toEqual({ names: ["A", "B"] });
+    expect(getObjectSources.getLastConfig()).toEqual({
+      objectNames: ["Skill__c"]
+    });
+  });
+
+  it("serves object only sections", async () => {
+    const el = create({ objects: "Skill__c" });
+    getObjectSources.emit([
+      { name: "Skill__c", label: "Skills", hasCount: true, count: 54 }
+    ]);
+    await flush();
+    expect(button(el).textContent).toContain("54 skills");
+  });
+
+  it("limits the button to three counts and lists all of them in the panel", async () => {
+    const el = create({ sourceKeys: "a" });
+    getSources.emit([
+      ROLES,
+      SKILLS,
+      { name: "c", label: "Certifications", hasCount: true, count: 7 },
+      { name: "d", label: "Education Entries", hasCount: true, count: 2 }
+    ]);
+    await flush();
+    expect(el.shadowRoot.querySelector(".marker-counts").textContent).toBe(
+      "10 roles, 54 skills, 7 certifications"
+    );
+    button(el).click();
+    await flush();
+    expect(el.shadowRoot.querySelectorAll(".source")).toHaveLength(4);
+  });
+
+  it("opens a panel with the sentence, the sources and the model link", async () => {
+    const el = create({ sourceKeys: "a" });
+    getSources.emit([ROLES, HIGHLIGHTS]);
+    await flush();
+    expect(panel(el)).toBeNull();
+    button(el).click();
+    await flush();
+    expect(panel(el)).not.toBeNull();
+    expect(panel(el).textContent).toContain(WORDING.explanation);
+    const items = [...el.shadowRoot.querySelectorAll(".source")];
+    expect(items[0].textContent).toContain("10 roles");
+    expect(items[0].textContent).toContain("Resume roles, current first.");
+    expect(items[1].textContent).toContain("Experience Highlights");
+    const link = el.shadowRoot.querySelector(".model-link");
+    expect(link.getAttribute("href")).toBe("/portfolio/business-architecture");
+    expect(link.textContent).toBe(WORDING.modelLinkText);
+  });
+
+  it("reports expanded state on the button", async () => {
+    const el = create({ sourceKeys: "a" });
+    getSources.emit([ROLES]);
+    await flush();
+    expect(button(el).getAttribute("aria-expanded")).toBe("false");
+    button(el).click();
+    await flush();
+    expect(button(el).getAttribute("aria-expanded")).toBe("true");
+    button(el).click();
+    await flush();
+    expect(button(el).getAttribute("aria-expanded")).toBe("false");
+    expect(panel(el)).toBeNull();
+  });
+
+  it("closes on Escape and returns focus to the button", async () => {
+    const el = create({ sourceKeys: "a" });
+    getSources.emit([ROLES]);
+    await flush();
+    button(el).click();
+    await flush();
+    el.shadowRoot.querySelector(".model-link").focus();
+    el.shadowRoot
+      .querySelector(".marker")
+      .dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+    await flush();
+    expect(panel(el)).toBeNull();
+    expect(button(el).getAttribute("aria-expanded")).toBe("false");
+    expect(el.shadowRoot.activeElement).toBe(button(el));
+  });
+
+  it("closes with the Close button and returns focus", async () => {
+    const el = create({ sourceKeys: "a" });
+    getSources.emit([ROLES]);
+    await flush();
+    button(el).click();
+    await flush();
+    el.shadowRoot.querySelector(".close-button").click();
+    await flush();
+    expect(panel(el)).toBeNull();
+    expect(el.shadowRoot.activeElement).toBe(button(el));
+  });
+
+  it("still says the data is live when the read is empty", async () => {
+    const el = create({ sourceKeys: "a" });
+    getSources.emit([]);
+    await flush();
+    expect(button(el).textContent).toContain("Live from Salesforce");
+    expect(el.shadowRoot.querySelector(".marker-counts")).toBeNull();
+    button(el).click();
+    await flush();
+    expect(panel(el).textContent).toContain(WORDING.explanation);
+    expect(el.shadowRoot.querySelector(".sources")).toBeNull();
+    expect(el.shadowRoot.querySelector(".model-link")).not.toBeNull();
+  });
+
+  it("still says the data is live when the read fails", async () => {
+    const el = create({ sourceKeys: "a", objects: "Skill__c" });
+    getSources.error();
+    getObjectSources.error();
+    await flush();
+    expect(button(el).textContent).toContain("Live from Salesforce");
+    expect(el.shadowRoot.querySelector(".marker-counts")).toBeNull();
+    button(el).click();
+    await flush();
+    expect(panel(el).textContent).toContain(WORDING.explanation);
+    expect(el.shadowRoot.querySelector(".sources")).toBeNull();
+  });
+
+  it("still says the data is live with no keys at all", async () => {
+    const el = create();
+    await flush();
+    expect(button(el).textContent).toContain("Live from Salesforce");
+    expect(getSources.getLastConfig()).toEqual({});
+  });
+});
