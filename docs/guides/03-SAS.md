@@ -238,6 +238,18 @@ The architecture is designed to operate within the specific limits of the Salesf
 - **API Abuse:** Mitigated by read-only endpoints and hardcoded query limits in the SAPI layer.
 - **Service Unavailability (AI):** Mitigated by the Strategy Pattern ([ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)): a cover letter falls back from Agentforce to the Gemini API and then to a deterministic Local Template built from the records. Agentforce is held to an hourly budget under the Developer Edition's cap of 150 generations an hour ([ADR-015 amendment of 2026-10-26](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-26-agentforce-is-built-and-the-deferral-is-lifted)).
 
+### 3.2 How a guest reaches Apex
+
+Nobody logs in to this site. Every visitor is the Experience Cloud site's guest user, so everything a visitor sees comes through five steps, each granted on purpose.
+
+1. **A component calls a method.** A Lightning Web Component imports an `@AuraEnabled` method, for example `getResume` from `ResumeController`, and wires or calls it. Reads are marked `cacheable=true`.
+2. **The guest may run only 16 classes.** The `Portfolio_Guest` permission set lists them, among them `ResumeController`, `ProjectCardController`, `SkillGraphController`, `FooterController`, `ContactFormController`, `TestimonialController` and `ApiLabController`. Any other class refuses a guest even if its method is `@AuraEnabled`.
+3. **The controller is the boundary.** Each method returns a fixed shape built for the page, never a raw record. Its reads run through `QueryDefinitions` ([ADR-033](../adr/033-queries-in-custom-metadata.md)), and most of them run in system mode inside a small private `without sharing` selector, because the data sits on objects the guest has no access to (roles look up to Account, certifications and education are children of Contact). Each selector names its fields and selects no email, phone, address or owner field, so system mode widens what the controller can read, never what the visitor gets. `ResumeController.ResumeSelector` is the pattern.
+4. **Where the guest reads records directly, the guest's own access applies.** The project gallery and the skills graph read through the UI API GraphQL adapter, so the guest needs its own permission and record access: `Portfolio_Guest` grants read on six portfolio objects and create and read on `Testimonial__c`, sharing rules for the guest open `Project__c`, `Experience__c`, `Skill__c` and `Testimonial__c` read only, and the restriction rule `Block_Unapproved_Testimonials` hides any testimonial that is not approved ([ADR-012](../adr/012-guest-user-security-restriction-rules.md)). The two testimonial reads run in user mode, so that rule applies to them too.
+5. **Writes and shared state go through narrow stores.** Counters, rate windows, circuit breakers, caches and audit rows live in small `without sharing` classes that each touch one object and return only what the page shows, such as a count or a cached feed. The contact form's Lead is saved by a platform event trigger, never by the guest. The API Lab calls the REST API through the `Portfolio_API` Named Credential as the integration user, whose `Integration_Access` permission set is read only ([ADR-027](../adr/027-platform-native-api-authentication.md)).
+
+So the guest can run 16 classes and read what sharing allows, and anything wider happens inside a class that decides exactly what leaves it.
+
 ## 4. Data Architecture & Schema
 
 This section defines the structured metadata model that underpins portfolio rendering, AI grounding, and cross-object relationships. For the detailed field-level definition, see Appendix D.
