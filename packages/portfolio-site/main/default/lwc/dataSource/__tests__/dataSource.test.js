@@ -34,6 +34,7 @@ jest.mock(
 const ROLES = {
   name: "ResumeController_Roles",
   label: "Roles",
+  objectName: "Experience__c",
   description: "Resume roles, current first.",
   hasCount: true,
   count: 10
@@ -48,6 +49,7 @@ const SKILLS = {
 const HIGHLIGHTS = {
   name: "ResumeController_Highlights",
   label: "Experience Highlights",
+  objectName: "Experience_Highlight__c",
   description: "Highlights.",
   hasCount: false,
   count: null
@@ -145,11 +147,33 @@ describe("c-data-source", () => {
     expect(panel(el).textContent).toContain(WORDING.explanation);
     const items = [...el.shadowRoot.querySelectorAll(".source")];
     expect(items[0].textContent).toContain("10 roles");
-    expect(items[0].textContent).toContain("Resume roles, current first.");
+    expect(items[0].textContent).not.toContain("Resume roles, current first.");
+    expect(el.shadowRoot.querySelector(".source-description")).toBeNull();
     expect(items[1].textContent).toContain("Experience Highlights");
     const link = el.shadowRoot.querySelector(".model-link");
     expect(link.getAttribute("href")).toBe("/portfolio/business-architecture");
     expect(link.textContent).toBe(WORDING.modelLinkText);
+  });
+
+  it("shows the label the server sends and keeps the object name on each row", async () => {
+    const el = create({ sourceKeys: "ProjectCardController_HomeCaseStudies" });
+    getSources.emit([
+      {
+        name: "ProjectCardController_HomeCaseStudies",
+        label: "case studies",
+        objectName: "Project__c",
+        hasCount: true,
+        count: 3
+      },
+      { ...HIGHLIGHTS }
+    ]);
+    await flush();
+    button(el).click();
+    await flush();
+    const items = [...el.shadowRoot.querySelectorAll(".source")];
+    expect(items[0].textContent).toContain("3 case studies");
+    expect(items[0].dataset.object).toBe("Project__c");
+    expect(items[1].dataset.object).toBe("Experience_Highlight__c");
   });
 
   it("reports expanded state on the button", async () => {
@@ -241,7 +265,7 @@ describe("c-data-source", () => {
     const items = [...el.shadowRoot.querySelectorAll(".source")];
     expect(items).toHaveLength(2);
     expect(items[0].textContent).toContain("Roles");
-    expect(items[0].textContent).toContain("Resume roles, current first.");
+    expect(items[0].textContent).not.toContain("Resume roles");
     expect(panel(el).textContent).not.toMatch(/[0-9]/);
   });
 

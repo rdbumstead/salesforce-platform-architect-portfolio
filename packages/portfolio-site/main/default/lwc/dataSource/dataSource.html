@@ -25,11 +25,8 @@
         <h3 class="sources-heading">{wording.sourcesHeading}</h3>
         <ul class="sources">
           <template for:each={rows} for:item="row">
-            <li key={row.key} class="source">
+            <li key={row.key} class="source" data-object={row.objectName}>
               <span class="source-text">{row.text}</span>
-              <span lwc:if={row.description} class="source-description"
-                >{row.description}</span
-              >
             </li>
           </template>
         </ul>
