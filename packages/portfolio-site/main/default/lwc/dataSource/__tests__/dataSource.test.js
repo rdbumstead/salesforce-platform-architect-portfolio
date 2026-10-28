@@ -244,4 +244,26 @@ describe("c-data-source", () => {
     expect(items[0].textContent).toContain("Resume roles, current first.");
     expect(panel(el).textContent).not.toMatch(/[0-9]/);
   });
+
+  it("ships the rules that let the marker wrap and keep the panel on screen", () => {
+    const css = require("fs").readFileSync(
+      require("path").join(__dirname, "..", "dataSource.css"),
+      "utf8"
+    );
+    const rule = (selector, from = 0) => {
+      const start = css.indexOf(`${selector} {`, from);
+      return start < 0 ? "" : css.slice(start, css.indexOf("}", start));
+    };
+    expect(rule(":host")).toContain("max-width: 100%");
+    expect(css).toContain("min-height: 44px");
+    const buttonRule = rule(".marker-button");
+    expect(buttonRule).toContain("flex-wrap: wrap");
+    expect(buttonRule).toContain("max-width: 100%");
+    expect(buttonRule).toContain("white-space: normal");
+    expect(rule(".marker-counts")).toContain("overflow-wrap: anywhere");
+    expect(rule(".panel")).toContain("max-width: calc(100vw - 2rem)");
+    const narrow = css.indexOf("@media (max-width: 600px)");
+    expect(narrow).toBeGreaterThan(-1);
+    expect(rule(".panel", narrow)).toContain("position: static");
+  });
 });
