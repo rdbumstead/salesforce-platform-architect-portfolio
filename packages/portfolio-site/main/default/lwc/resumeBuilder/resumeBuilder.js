@@ -26,6 +26,9 @@ import {
   pdfFileName
 } from "./resumeFormat";
 import { RESUME_LAYOUT, previewStyle } from "./resumeLayout";
+import { watchMedia } from "c/mediaWatch";
+
+const ACTIONS_IN_BODY_QUERY = "(max-width: 1023px)";
 
 const DEFAULT_PERSONA = "Architect";
 
@@ -78,6 +81,35 @@ export function reduceError(error, fallback = NO_ANSWER_MESSAGE) {
 }
 
 export default class ResumeBuilder extends LightningElement {
+  // At 1023 px and narrower the card title row has no room for View source and the marker,
+  // so they move to the top of the card body.
+  actionsInBody = false;
+
+  get actionsInHeader() {
+    return !this.actionsInBody;
+  }
+
+  watchActionsPlacement() {
+    this.stopActionsWatch = watchMedia(ACTIONS_IN_BODY_QUERY, (matches) => {
+      this.actionsInBody = matches;
+    });
+  }
+
+  stopActionsPlacement() {
+    if (this.stopActionsWatch) {
+      this.stopActionsWatch();
+      this.stopActionsWatch = undefined;
+    }
+  }
+
+  connectedCallback() {
+    this.watchActionsPlacement();
+  }
+
+  disconnectedCallback() {
+    this.stopActionsPlacement();
+  }
+
   selectedPersona = DEFAULT_PERSONA;
   includeHeader = true;
   includeSkills = true;

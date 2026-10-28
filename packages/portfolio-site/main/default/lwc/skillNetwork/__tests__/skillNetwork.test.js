@@ -222,9 +222,35 @@ describe("c-skill-network (Large form factor)", () => {
       "utf8"
     );
     expect(html).toMatch(
-      /<lightning-card[^>]*>\s*<c-view-source slot="actions" source-key="skillNetwork"><\/c-view-source>/
+      /<lightning-card[^>]*>\s*<template lwc:if=\{actionsInHeader\}>\s*<div slot="actions" class="card-actions">\s*<c-view-source source-key="skillNetwork"><\/c-view-source>/
     );
-    expect(html.match(/<c-view-source/g)).toHaveLength(1);
+    // The same pair is written once more for the card body on a narrow screen, and only one
+    // of the two renders.
+    expect(html.match(/<c-view-source/g)).toHaveLength(2);
+  });
+
+  it("moves View source and the marker into the card body on a narrow screen", async () => {
+    const original = window.matchMedia;
+    window.matchMedia = jest.fn((query) => ({
+      matches: query === "(max-width: 767px)",
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn()
+    }));
+    try {
+      const element = mount();
+      await Promise.resolve();
+      const row = element.shadowRoot.querySelector(".card-actions_body");
+      expect(row).not.toBeNull();
+      expect(row.querySelector("c-view-source").sourceKey).toBe("skillNetwork");
+      expect(row.querySelector("c-data-source")).not.toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it("keeps the card body free of the pair on a wide screen", () => {
+    const element = mount();
+    expect(element.shadowRoot.querySelector(".card-actions_body")).toBeNull();
   });
 
   it("shows a spinner until the wire returns", () => {

@@ -37,6 +37,9 @@ import { onShowMe, revealAnchor } from "c/tourShowMe";
 import { createPdfLoader, previewStyle } from "c/documentPdf";
 import { limitState } from "c/fieldLimit";
 import { LETTER_LAYOUT, letterFileName, writeLetterPdf } from "./letterFormat";
+import { watchMedia } from "c/mediaWatch";
+
+const ACTIONS_IN_BODY_QUERY = "(max-width: 767px)";
 
 /** The sheet's paper, ink and type, from the layout the PDF reads. */
 const SHEET_STYLE = previewStyle(LETTER_LAYOUT);
@@ -231,12 +234,35 @@ export default class CoverLetterGenerator extends LightningElement {
     );
   }
 
+  // At 767 px and narrower the card title row has no room for View source and the marker,
+  // so they move to the top of the card body.
+  actionsInBody = false;
+
+  get actionsInHeader() {
+    return !this.actionsInBody;
+  }
+
+  watchActionsPlacement() {
+    this.stopActionsWatch = watchMedia(ACTIONS_IN_BODY_QUERY, (matches) => {
+      this.actionsInBody = matches;
+    });
+  }
+
+  stopActionsPlacement() {
+    if (this.stopActionsWatch) {
+      this.stopActionsWatch();
+      this.stopActionsWatch = undefined;
+    }
+  }
+
   connectedCallback() {
+    this.watchActionsPlacement();
     // The tour's stop D points at the job description field.
     this.stopShowMe = onShowMe(TOUR_STOP, () => revealAnchor(this.template));
   }
 
   disconnectedCallback() {
+    this.stopActionsPlacement();
     this.stopTimer();
     if (this.stopShowMe) {
       this.stopShowMe();

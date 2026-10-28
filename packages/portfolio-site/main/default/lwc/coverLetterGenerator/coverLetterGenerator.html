@@ -1,16 +1,24 @@
 <template>
   <lightning-card title="AI Cover Letter Generator" icon-name="custom:custom15">
-    <c-view-source
-      slot="actions"
-      source-key="coverLetterGenerator"
-    ></c-view-source>
-    <c-data-source
-      slot="actions"
-      source-keys="PortfolioGroundingService_Projects,PortfolioGroundingService_Highlights,PortfolioGroundingService_SkillLinks"
-      hide-counts
-      class="card-source"
-    ></c-data-source>
+    <template lwc:if={actionsInHeader}>
+      <div slot="actions" class="card-actions">
+        <c-view-source source-key="coverLetterGenerator"></c-view-source>
+        <c-data-source
+          source-keys="PortfolioGroundingService_Projects,PortfolioGroundingService_Highlights,PortfolioGroundingService_SkillLinks"
+          hide-counts
+        ></c-data-source>
+      </div>
+    </template>
     <div class="slds-p-around_medium generator">
+      <template lwc:if={actionsInBody}>
+        <div class="card-actions card-actions_body">
+          <c-view-source source-key="coverLetterGenerator"></c-view-source>
+          <c-data-source
+            source-keys="PortfolioGroundingService_Projects,PortfolioGroundingService_Highlights,PortfolioGroundingService_SkillLinks"
+            hide-counts
+          ></c-data-source>
+        </div>
+      </template>
       <p class="intro">Fill in the company and the job, then press Generate.</p>
 
       <div class="slds-grid slds-wrap slds-gutters">

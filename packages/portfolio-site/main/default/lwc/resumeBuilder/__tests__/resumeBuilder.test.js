@@ -1100,7 +1100,7 @@ describe("c-resume-builder", () => {
       "utf8"
     );
     expect(template).toMatch(
-      /<c-view-source\s+slot="actions"\s+source-key="resumeBuilder"/
+      /<div slot="actions" class="card-actions">\s*<c-view-source\s+source-key="resumeBuilder"/
     );
     const element = createComponent();
     expect(query(element, ".card-tools")).toBeNull();
@@ -1112,8 +1112,33 @@ describe("c-resume-builder", () => {
       "utf8"
     );
     expect(template).toMatch(
-      /<c-data-source\s+slot="actions"\s+source-keys="ResumeController_Roles,/
+      /<\/c-view-source>\s*<c-data-source\s+source-keys="ResumeController_Roles,/
     );
     expect(template).toContain("ResumeController_Education");
+  });
+
+  it("moves View source and the marker into the card body below 1024 px", () => {
+    const original = window.matchMedia;
+    window.matchMedia = jest.fn((media) => ({
+      matches: media === "(max-width: 1023px)",
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn()
+    }));
+    try {
+      const element = createComponent();
+      const row = query(element, ".card-actions_body");
+      expect(row).not.toBeNull();
+      expect(row.querySelector("c-view-source").sourceKey).toBe(
+        "resumeBuilder"
+      );
+      expect(row.querySelector("c-data-source")).not.toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it("keeps the card body free of the pair on a wide screen", () => {
+    const element = createComponent();
+    expect(query(element, ".card-actions_body")).toBeNull();
   });
 });

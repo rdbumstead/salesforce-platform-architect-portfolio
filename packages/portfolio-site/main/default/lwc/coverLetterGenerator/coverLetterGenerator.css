@@ -380,6 +380,18 @@
   font-family: var(--pf-font-mono);
 }
 
-.card-source {
-  display: inline-flex;
+/* View source and the live data marker share the card title row on the right, centred on
+   one line with a gap, and wrap under each other when the row is narrow. */
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--pf-space-2);
+}
+
+/* On a narrow screen the same pair opens the card body, from the start of the row. */
+.card-actions_body {
+  justify-content: flex-start;
+  margin-bottom: var(--pf-space-3);
 }
