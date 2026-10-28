@@ -15,7 +15,7 @@
     </button>
     <div
       lwc:if={isOpen}
-      class="panel"
+      class={panelClass}
       role="group"
       aria-label={wording.panelHeading}
     >
@@ -73,7 +73,7 @@
         </button>
       </header>
       <div class="dialog-scroll">
-        <c-schema-visualizer objects={modelObjects}></c-schema-visualizer>
+        <c-schema-visualizer highlight={modelObjects}></c-schema-visualizer>
       </div>
     </div>
   </dialog>

@@ -95,6 +95,12 @@
   text-align: left;
 }
 
+/* Set by placePanel when opening from the start would run past the right edge of the window. */
+.panel_end {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
 .panel-heading {
   margin: 0 0 var(--pf-space-2);
   font-size: 1.125rem;
