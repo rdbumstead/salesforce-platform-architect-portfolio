@@ -92,19 +92,6 @@
         </template>
         <template lwc:if={ending}>
           <div class="tour-actions">
-            <ul class="tour-ending-links" aria-label="Where next">
-              <template for:each={endingLinks} for:item="link">
-                <li key={link.key}>
-                  <a
-                    class="nc-button nc-button_secondary tour-move"
-                    href={link.href}
-                    data-key={link.key}
-                    onclick={handleEndingLink}
-                    >{link.label}</a
-                  >
-                </li>
-              </template>
-            </ul>
             <button
               type="button"
               class="tour-end"

@@ -218,6 +218,33 @@ jobs:
              echo "::warning::$((RAN - PASSED)) Jest tests failed after the deploy."
           fi
 
+      # A deploy changes the site's components but visitors see the last published copy, so the
+      # site is published after every real deploy and the smoke checks what was just shipped.
+      # The publish answers with a background job id, polled until it ends. A publish that ends
+      # in anything but Complete, or runs past five minutes, fails the run.
+      - name: Publish the Site
+        if: steps.execute.outputs.deployed == 'true'
+        run: |
+          sf community publish --name Portfolio --target-org portfolio --json > publish.json || true
+          JOB=$(jq -r '.result.jobId // empty' publish.json)
+          if [ -z "$JOB" ]; then
+             echo "::error::The publish returned no job id."
+             jq -r '.message // empty' publish.json
+             exit 1
+          fi
+          echo "Publish job $JOB"
+          for i in $(seq 1 30); do
+             STATUS=$(sf data query --target-org portfolio --json --query "SELECT Status FROM BackgroundOperation WHERE Id = '$JOB'" | jq -r '.result.records[0].Status // empty')
+             echo "Publish status: ${STATUS:-unknown}"
+             case "$STATUS" in
+                Complete) exit 0 ;;
+                Error|Failed|Canceled) echo "::error::The publish ended $STATUS."; exit 1 ;;
+             esac
+             sleep 10
+          done
+          echo "::error::The publish did not finish within five minutes."
+          exit 1
+
       - name: Publish Governance Event
         if: success() && steps.execute.outputs.deployed == 'true'
         continue-on-error: true
@@ -246,9 +273,9 @@ jobs:
             --values "Workflow__c=deploy Status__c=Failure Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --target-org portfolio
 
-  # Checks the live site read only after a deploy that changed production. A failure fails
-  # this run and writes a smoke Failure row, and undoes nothing. The same check can be run by
-  # hand from the Live Smoke Test workflow, for example after the site is published.
+  # Checks the live site read only after a deploy that changed production, once the deploy job
+  # has published it. A failure fails this run and writes a smoke Failure row, and undoes
+  # nothing. The same check can be run by hand from the Live Smoke Test workflow.
   smoke:
     needs: [deploy]
     if: needs.deploy.result == 'success' && needs.deploy.outputs.deployed == 'true'

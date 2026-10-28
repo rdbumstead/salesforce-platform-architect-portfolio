@@ -166,15 +166,6 @@
   border-radius: 4px;
 }
 
-.tour-ending-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pf-space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 /* On a phone the bar is pinned to the bottom of the screen, above the page, and the layout
    pads the page by its height so it covers nothing. */
 @media screen and (max-width: 767.98px) {
