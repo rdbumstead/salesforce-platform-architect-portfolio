@@ -104,7 +104,8 @@
 }
 
 /* The links that move between stops take the native button look. The site's own link rule
-   would paint them in the link colour, so these keep the colour the button look gives them. */
+   outranks a class on a link and clears its fill and colour, so these state the same fill,
+   colour and hover the button look gives a button, with the same tokens. */
 .tour-move {
   display: inline-flex;
   align-items: center;
@@ -112,24 +113,32 @@
   text-decoration: none;
 }
 
-.tour-move.nc-button:link,
-.tour-move.nc-button:visited,
-.tour-move.nc-button:link:hover,
-.tour-move.nc-button:visited:hover {
+.tour-bar .tour-move.nc-button:link,
+.tour-bar .tour-move.nc-button:visited {
+  background-color: var(--pf-btn);
   color: var(--pf-btn-text);
-}
-
-.tour-bar .tour-move:link,
-.tour-bar .tour-move:visited,
-.tour-bar .tour-move:link:hover,
-.tour-bar .tour-move:visited:hover {
   text-decoration: none;
 }
 
-.tour-move.nc-button_secondary:link,
-.tour-move.nc-button_secondary:visited,
-.tour-move.nc-button_secondary:link:hover,
-.tour-move.nc-button_secondary:visited:hover {
+.tour-bar .tour-move.nc-button:link:hover,
+.tour-bar .tour-move.nc-button:visited:hover {
+  background-color: var(--pf-btn-hover);
+  border-color: var(--pf-btn-hover);
+  color: var(--pf-btn-text);
+  text-decoration: none;
+}
+
+.tour-bar .tour-move.nc-button_secondary:link,
+.tour-bar .tour-move.nc-button_secondary:visited {
+  background-color: var(--pf-surface);
+  border-color: var(--pf-muted);
+  color: var(--pf-text);
+}
+
+.tour-bar .tour-move.nc-button_secondary:link:hover,
+.tour-bar .tour-move.nc-button_secondary:visited:hover {
+  background-color: var(--pf-subtle);
+  border-color: var(--pf-muted);
   color: var(--pf-text);
 }
 
