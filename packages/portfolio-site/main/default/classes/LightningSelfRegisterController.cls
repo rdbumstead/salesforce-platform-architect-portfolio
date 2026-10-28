@@ -1,3 +1,14 @@
+/**
+ * @description       : Self registration for the site's Lightning pages. Validates the password
+ *                      with Site.validatePassword, creates a portal user with
+ *                      Site.createPortalUser and signs them in with Site.login.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
+ * @Created           : 01/03/2026
+ * @Test Class        : [LightningSelfRegisterControllerTest]
+ **/
 global class LightningSelfRegisterController {
   public LightningSelfRegisterController() {
   }

@@ -1,3 +1,11 @@
+/**
+ * @description       : Unit tests for LightningSelfRegisterController.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
+ * @Created           : 01/03/2026
+ **/
 @IsTest(SeeAllData=true)
 public with sharing class LightningSelfRegisterControllerTest {
   /* Verifies that IsValidPassword method with various password combinations. */
