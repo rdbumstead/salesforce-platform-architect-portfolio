@@ -51,7 +51,9 @@ const SMOKE_JSON = process.env.SMOKE_JSON || "";
 // What each page must show. A component named as a string counts once its first instance
 // is visible. A component that renders nothing until it has records (the testimonial wall
 // before any testimonial is approved, an asset gallery with no assets) is named with
-// mayBeEmpty, and counts once it is on the page.
+// mayBeEmpty, and counts once it is on the page. A route can also name parts: an element inside
+// a component (the selector starts with the component's tag and pierces its shadow tree) that
+// must be on the page, and when an attribute is named, carry that value.
 const ROUTES = [
   {
     path: "/",
@@ -68,8 +70,22 @@ const ROUTES = [
   { path: "/docs", components: ["c-docs-viewer"] },
   { path: "/resume", components: ["c-resume-builder"] },
   { path: "/skills", components: ["c-skill-network"] },
-  { path: "/api-lab", components: ["c-api-tester"] },
-  { path: "/api-lab/reference", components: ["c-api-reference"] },
+  {
+    path: "/api-lab",
+    components: ["c-api-tester"],
+    parts: [
+      {
+        selector: "c-api-tester a.collection-download",
+        attribute: "download",
+        value: "ryan-bumstead-portfolio-api.postman_collection.json"
+      }
+    ]
+  },
+  {
+    path: "/api-lab/reference",
+    components: ["c-api-reference"],
+    parts: [{ selector: "c-api-reference a.collection-download" }]
+  },
   { path: "/ai-lab", components: ["c-cover-letter-generator"] },
   {
     path: "/delivery",
@@ -196,6 +212,24 @@ async function componentState(page, tag, mayBeEmpty) {
     .catch(() => "empty");
 }
 
+// "visible" when the part is on the page with the attribute value named, "missing" otherwise.
+async function partState(page, part) {
+  const first = page.locator(part.selector).first();
+  const attached = await first
+    .waitFor({ state: "attached", timeout: COMPONENT_TIMEOUT_MS })
+    .then(() => true)
+    .catch(() => false);
+  if (!attached) {
+    return "missing";
+  }
+  if (!part.attribute) {
+    return "visible";
+  }
+  return (await first.getAttribute(part.attribute)) === part.value
+    ? "visible"
+    : "missing";
+}
+
 async function checkOnce(browser, route, viewport) {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height }
@@ -248,6 +282,9 @@ async function checkOnce(browser, route, viewport) {
       const { tag, mayBeEmpty } =
         typeof entry === "string" ? { tag: entry, mayBeEmpty: false } : entry;
       result.components[tag] = await componentState(page, tag, mayBeEmpty);
+    }
+    for (const part of route.parts || []) {
+      result.components[part.selector] = await partState(page, part);
     }
     await page.waitForTimeout(SETTLE_MS);
   } catch (error) {

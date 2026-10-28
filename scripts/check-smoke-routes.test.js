@@ -177,3 +177,21 @@ test("the smoke's own tour walk matches this repository's pillars and site", () 
   assert.deepStrictEqual(checkTour(path.join(__dirname, ".."), TOUR), []);
   assert.strictEqual(TOUR.stops.length, 5);
 });
+
+test("a part inside a component the page does not place fails", () => {
+  const routes = [
+    {
+      path: "/",
+      components: ["c-hero-banner"],
+      parts: [
+        { selector: "c-contact-call a.ok" },
+        { selector: "c-gone-card a.download" }
+      ]
+    },
+    { path: "/about", components: ["c-about-card"] }
+  ];
+  const problems = check(fixture(), routes);
+  assert.deepStrictEqual(problems, [
+    "/: the smoke looks inside c-gone-card, which the page does not place"
+  ]);
+});

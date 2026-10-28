@@ -7,7 +7,7 @@
 // collects the components the view places, then every component those components place in
 // their own templates. It fails when:
 //   - the smoke names a route the site does not have,
-//   - the smoke expects a component its route no longer places,
+//   - the smoke expects a component its route no longer places, or a part inside one,
 //   - the site has a page route the smoke does not check, or
 //   - a page places a component that has no bundle in the repository (a deleted component
 //     still named in a view or a template).
@@ -146,6 +146,14 @@ function check(root, routes) {
       if (!hasBundle(root, tag)) {
         problems.push(
           `${route.path}: the page places ${tag}, which has no bundle in the repository`
+        );
+      }
+    }
+    for (const part of route.parts || []) {
+      const tag = String(part.selector || "").split(" ")[0];
+      if (!placed.has(tag)) {
+        problems.push(
+          `${route.path}: the smoke looks inside ${tag || "nothing"}, which the page does not place`
         );
       }
     }
