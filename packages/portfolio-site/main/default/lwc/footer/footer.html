@@ -92,6 +92,63 @@
               </ul>
             </div>
           </template>
+          <template lwc:if={storageLine}>
+            <div
+              class="metric-group storage"
+              data-group="storage"
+              onkeydown={handleStorageKeydown}
+            >
+              <span class="group-label" id="footer-group-storage">Storage</span>
+              <ul class="group-list" aria-labelledby="footer-group-storage">
+                <li class="metric">
+                  <button
+                    type="button"
+                    class="target storage-toggle"
+                    data-id="storage-toggle"
+                    aria-expanded={storageExpanded}
+                    aria-controls="footer-storage-panel"
+                    onclick={handleStorageToggle}
+                  >
+                    {storageLine}
+                  </button>
+                </li>
+              </ul>
+              <div
+                class="storage-panel"
+                id="footer-storage-panel"
+                data-id="storage-panel"
+                hidden={storagePanelHidden}
+              >
+                <p class="storage-title">Data by area</p>
+                <ul class="storage-list">
+                  <template for:each={storageDataRows} for:item="row">
+                    <li key={row.key} data-id="storage-data">{row.label}</li>
+                  </template>
+                </ul>
+                <template lwc:if={hasStorageFiles}>
+                  <p class="storage-title">Files by kind</p>
+                  <ul class="storage-list">
+                    <template for:each={storageFileRows} for:item="row">
+                      <li key={row.key} data-id="storage-file">{row.label}</li>
+                    </template>
+                  </ul>
+                </template>
+                <template lwc:if={hasStorageTraffic}>
+                  <p class="storage-title">Site traffic</p>
+                  <ul class="storage-list">
+                    <template for:each={storageTrafficRows} for:item="row">
+                      <li key={row.key} data-id="storage-traffic">
+                        {row.label}
+                      </li>
+                    </template>
+                  </ul>
+                </template>
+                <p class="storage-note" data-id="storage-note">
+                  {storageNote} {storageUpdated}
+                </p>
+              </div>
+            </div>
+          </template>
           <details
             class="metric-group quotas"
             data-group="quotas"

@@ -29,7 +29,11 @@
  *                      tab.
  *                      At 768 px and up the points sit on one horizontal line that scrolls
  *                      sideways inside its own region, with a fade at an edge that has more.
- *                      Below 768 px every point shows in a compact vertical list.
+ *                      Below 768 px the points show in a compact vertical list: the newest 4 of
+ *                      the active filter, then a "Show all <n>" button that opens the rest in
+ *                      place. It becomes "Show fewer", keeps focus, and sends
+ *                      career_timeline_show_all with the kind. The filters count against the
+ *                      full list, and changing the filter folds the list back to 4.
  *                      Openings fade and slide in for about 200 ms, and appear at once when the
  *                      visitor asks for reduced motion (c/motionPreference).
  *                      Renders nothing when the timeline read fails or has no points. When only
@@ -37,6 +41,7 @@
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 10/26/2026
  **/
 import { LightningElement, wire } from "lwc";
@@ -66,6 +71,9 @@ const ROLE = "role";
 const FOLD = "fold";
 const CERTIFICATION = "certification";
 const SCHOOL = "school";
+
+/** Points the phone list shows before "Show all". */
+export const STACK_PREVIEW = 4;
 
 const LINE = "line";
 const STACK = "stack";
@@ -379,6 +387,9 @@ export default class CareerLine extends LightningElement {
   openList = null;
   revealKey = null;
   focusAfterRender = null;
+  highlightPersona;
+  observer;
+  stackExpanded = false;
   scrollToStart = false;
   edgeStart = false;
   edgeEnd = false;
@@ -400,7 +411,9 @@ export default class CareerLine extends LightningElement {
     }
   }
 
-  @wire(getResume, { persona: HIGHLIGHT_PERSONA })
+  // The highlights only open on a press, so their read waits until the section nears the
+  // screen. A browser with no IntersectionObserver reads them at once.
+  @wire(getResume, { persona: "$highlightPersona" })
   wiredResume({ data, error }) {
     if (data) {
       this.highlights = highlightsById(data);
@@ -412,10 +425,36 @@ export default class CareerLine extends LightningElement {
 
   connectedCallback() {
     window.addEventListener("resize", this.resizeListener);
+    this.waitForScreen();
   }
 
   disconnectedCallback() {
     window.removeEventListener("resize", this.resizeListener);
+    this.stopWaiting();
+  }
+
+  waitForScreen() {
+    if (typeof IntersectionObserver !== "function") {
+      this.highlightPersona = HIGHLIGHT_PERSONA;
+      return;
+    }
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          this.highlightPersona = HIGHLIGHT_PERSONA;
+          this.stopWaiting();
+        }
+      },
+      { rootMargin: "800px 0px" }
+    );
+    this.observer.observe(this.template.host);
+  }
+
+  stopWaiting() {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = undefined;
+    }
   }
 
   get hasPoints() {
@@ -550,10 +589,26 @@ export default class CareerLine extends LightningElement {
     );
   }
 
+  // The phone list shows the newest few points of the active filter until the visitor asks for
+  // all of them. The horizontal line, which is the only list on a wide screen, always shows all.
   get stackPoints() {
-    return this.shownPoints.map((point, index) =>
-      this.decorate(point, index, STACK)
-    );
+    const shown = this.shownPoints;
+    const visible = this.stackExpanded ? shown : shown.slice(0, STACK_PREVIEW);
+    return visible.map((point, index) => this.decorate(point, index, STACK));
+  }
+
+  get showStackToggle() {
+    return this.shownPoints.length > STACK_PREVIEW;
+  }
+
+  get stackToggleExpanded() {
+    return String(this.stackExpanded);
+  }
+
+  get stackToggleLabel() {
+    return this.stackExpanded
+      ? "Show fewer"
+      : `Show all ${this.shownPoints.length}`;
   }
 
   get openPoint() {
@@ -604,6 +659,12 @@ export default class CareerLine extends LightningElement {
       return;
     }
     this.filter = kind;
+    this.stackExpanded = false;
+    if (this.openList === STACK) {
+      this.openKey = null;
+      this.openList = null;
+      this.revealKey = null;
+    }
     const stillShown = this.shownPoints.some(
       (point) => point.key === this.openKey
     );
@@ -641,6 +702,15 @@ export default class CareerLine extends LightningElement {
     this.revealKey = null;
     if (moveFocus && key) {
       this.focusAfterRender = `[data-point-button][data-list="${list}"][data-key="${key}"]`;
+    }
+  }
+
+  handleStackToggle() {
+    this.stackExpanded = !this.stackExpanded;
+    if (this.stackExpanded) {
+      trackEvent(EVENTS.CAREER_TIMELINE_SHOW_ALL, { kind: this.activeFilter });
+    } else if (this.openList === STACK) {
+      this.closePoint(false);
     }
   }
 

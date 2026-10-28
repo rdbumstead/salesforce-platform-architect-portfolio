@@ -13,8 +13,10 @@
 
       <template lwc:elseif={hasError}>
         <div class="state state-error" role="alert">
-          <p class="state-title">The skills could not be loaded.</p>
-          <p class="slds-text-body_small">{errorMessage}</p>
+          <p class="state-title">{errorTitle}</p>
+          <template lwc:if={hasErrorDetail}>
+            <p class="slds-text-body_small">{errorDetail}</p>
+          </template>
         </div>
       </template>
 
@@ -108,6 +110,11 @@
                             >
                             <template lwc:if={chip.hasYears}>
                               <span class="chip-years">{chip.years}</span>
+                            </template>
+                            <template lwc:if={chip.hasEvidenceText}>
+                              <span class="chip-evidence"
+                                >{chip.evidenceText}</span
+                              >
                             </template>
                           </span>
                         </button>

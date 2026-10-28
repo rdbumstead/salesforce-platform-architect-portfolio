@@ -761,7 +761,7 @@
     },
     {
       "name": "Portfolio Process API (PAPI)",
-      "description": "A Process API (PAPI) responsible for orchestrating, transforming, and filtering data",
+      "description": "A Process API (PAPI) that combines, transforms and filters the portfolio's Salesforce data,",
       "item": [
         {
           "name": "GET /health",

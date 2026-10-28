@@ -615,8 +615,8 @@ Example Usage: `/projects?isFeatured=true`
     "businessValue": "Reduced data storage costs by 40%.",
     "status": "Active Development",
     "dateCompleted": "2025-12-01",
-    "heroImageUrl": "https://assets.ryanbumstead.com/hero.jpg",
-    "liveUrl": "https://project-demo.com",
+    "heroImageUrl": "https://example.com/images/hero.jpg",
+    "liveUrl": "https://example.com/demo",
     "repositoryUrl": "https://github.com/rdbumstead/project",
     "pillar": "A",
     "pillarLabel": "Pillar A: Business Architecture",
@@ -762,7 +762,7 @@ Retrieves assets (images, links) associated with a project. A malformed Salesfor
     "projectId": "a015e00000B2O3DAAV",
     "projectName": "Global CRM Migration",
     "type": "Image",
-    "externalUrl": "https://assets.ryanbumstead.com/arch.png",
+    "externalUrl": "https://example.com/images/diagram.png",
     "altText": "C4 Model System Context Diagram",
     "sortOrder": 1
   }
@@ -892,7 +892,7 @@ Retrieves received testimonials. Returns only records where Approved__c = true.
     "name": "Testimonial from Jane Doe",
     "authorName": "Jane Doe",
     "authorTitle": "CTO, Tech Corp",
-    "avatarUrl": "https://linkedin.com/image/jane.jpg",
+    "avatarUrl": "https://example.com/images/avatar.jpg",
     "relationshipType": "Manager",
     "vibeMode": "Professional",
     "context": "Worked together on the Q1 digital transformation."
@@ -1880,8 +1880,8 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 ```json
 {
   "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-  "gitHubProfileUrl": "https://github.com/ryanbumstead",
-  "calendlyUrl": "https://calendly.com/ryanbumstead",
+  "gitHubProfileUrl": "https://example.com/source",
+  "calendlyUrl": "https://example.com/schedule",
   "trailblazerProfileUrl": "https://trailblazer.me/id/rbumstead",
   "personalWebsiteUrl": "https://ryanbumstead.com",
   "careerObjective": "Looking for Principal Architect roles.",
@@ -2261,8 +2261,8 @@ Contact Information Schema. The contact's email and phone are never returned.
   "businessValue": "Reduced data storage costs by 40%.",
   "status": "Active Development",
   "dateCompleted": "2025-12-01",
-  "heroImageUrl": "https://assets.ryanbumstead.com/hero.jpg",
-  "liveUrl": "https://project-demo.com",
+  "heroImageUrl": "https://example.com/images/hero.jpg",
+  "liveUrl": "https://example.com/demo",
   "repositoryUrl": "https://github.com/rdbumstead/project",
   "pillar": "A",
   "pillarLabel": "Pillar A: Business Architecture",
@@ -2389,7 +2389,7 @@ Experience Bullet Point Schema.
   "projectId": "a015e00000B2O3DAAV",
   "projectName": "Global CRM Migration",
   "type": "Image",
-  "externalUrl": "https://assets.ryanbumstead.com/arch.png",
+  "externalUrl": "https://example.com/images/diagram.png",
   "altText": "C4 Model System Context Diagram",
   "sortOrder": 1
 }
@@ -2424,7 +2424,7 @@ Project Asset (Image/Video) Schema.
   "name": "Testimonial from Jane Doe",
   "authorName": "Jane Doe",
   "authorTitle": "CTO, Tech Corp",
-  "avatarUrl": "https://linkedin.com/image/jane.jpg",
+  "avatarUrl": "https://example.com/images/avatar.jpg",
   "relationshipType": "Manager",
   "vibeMode": "Professional",
   "context": "Worked together on the Q1 digital transformation."
@@ -2559,8 +2559,8 @@ Junction Object: Certification <-> Skill.
 ```json
 {
   "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-  "gitHubProfileUrl": "https://github.com/ryanbumstead",
-  "calendlyUrl": "https://calendly.com/ryanbumstead",
+  "gitHubProfileUrl": "https://example.com/source",
+  "calendlyUrl": "https://example.com/schedule",
   "trailblazerProfileUrl": "https://trailblazer.me/id/rbumstead",
   "personalWebsiteUrl": "https://ryanbumstead.com",
   "careerObjective": "Looking for Principal Architect roles.",

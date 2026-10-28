@@ -232,6 +232,17 @@ describe("c-case-study-grid", () => {
     expect(second.querySelector('[data-id="client"]')).toBeNull();
   });
 
+  it("keeps the metric slot on a card with no metric, hidden from everyone", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    const [first, second] = cards(element);
+    expect(first.querySelector('[data-id="metric-spacer"]')).toBeNull();
+    const spacer = second.querySelector('[data-id="metric-spacer"]');
+    expect(spacer).not.toBeNull();
+    expect(spacer.getAttribute("aria-hidden")).toBe("true");
+  });
+
   it("makes the title the card's one link, to an https address or a site path", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);

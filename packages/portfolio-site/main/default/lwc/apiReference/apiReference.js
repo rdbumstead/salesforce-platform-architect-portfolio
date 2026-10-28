@@ -20,18 +20,49 @@
  *                      { mounted: true } tells the theme layout, whose floating Back to top
  *                      would sit on Redoc's phone menu button. A failed render or leaving the
  *                      page sends { mounted: false }.
+ *                      Under the intro, the Postman collection downloads with a file name
+ *                      (the PAPI_Postman_Collection resource), and a Run in Postman link shows
+ *                      only while Portfolio_Setting.Postman_Run_Url holds one. Both send their
+ *                      event with source reference. A failed load reads as a plain sentence,
+ *                      never the platform's raw error.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 10/21/2026
  **/
-import { LightningElement, api } from "lwc";
+import { LightningElement, api, wire } from "lwc";
 import { loadScript } from "lightning/platformResourceLoader";
 import REDOC_SCRIPT from "@salesforce/resourceUrl/Redoc_Script";
 import SAPI_SPEC from "@salesforce/resourceUrl/SAPI_Spec";
 import PAPI_SPEC from "@salesforce/resourceUrl/PAPI_Spec";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import basePath from "@salesforce/community/basePath";
+import POSTMAN_COLLECTION from "@salesforce/resourceUrl/PAPI_Postman_Collection";
+import getPostmanRunUrl from "@salesforce/apex/ApiLabController.getPostmanRunUrl";
+
+/** The file name the Postman collection downloads as, the same as on the API Lab. */
+export const COLLECTION_FILE_NAME =
+  "ryan-bumstead-portfolio-api.postman_collection.json";
+
+/** The source param of the Postman events from this component. */
+export const ANALYTICS_SOURCE = "reference";
+
+/** True for an https link on postman.com or getpostman.com, the only Run in Postman links shown. */
+export function isPostmanRunUrl(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return false;
+  }
+  try {
+    const url = new URL(value.trim());
+    return (
+      url.protocol === "https:" &&
+      /(^|.)(getpostman|postman).com$/.test(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
 
 export const HOSTED_REFERENCE_URL =
   "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi";
@@ -342,17 +373,23 @@ function cssString(value) {
   return String(value).replace(/["\\]/g, "\\$&");
 }
 
-function reduceError(error) {
-  if (!error) {
-    return "Unknown error";
-  }
+/** The platform's own wording when it could not read an answer. Never shown. */
+const RAW_ERROR = /failed to get error from response|^unknown error$/i;
+
+/**
+ * The cause of a failed load or render as a plain sentence, or "" when the error carries none
+ * a visitor can use (a script load failure arrives as an event with no message). Never the
+ * platform's "Failed to get error from response".
+ */
+export function reduceError(error) {
+  let message = "";
   if (typeof error === "string") {
-    return error;
+    message = error;
+  } else if (error && typeof error.message === "string") {
+    message = error.message;
   }
-  if (typeof error.message === "string") {
-    return error.message;
-  }
-  return "Unknown error";
+  message = message.trim();
+  return message && !RAW_ERROR.test(message) ? message : "";
 }
 
 export default class ApiReference extends LightningElement {
@@ -372,6 +409,30 @@ export default class ApiReference extends LightningElement {
   timeoutId;
 
   hostedUrl = HOSTED_REFERENCE_URL;
+  collectionUrl = POSTMAN_COLLECTION;
+  collectionFileName = COLLECTION_FILE_NAME;
+  /** The Run in Postman link from Portfolio_Setting.Postman_Run_Url, "" while it is not set. */
+  postmanRunUrl = "";
+
+  /** Anything but a postman.com https link keeps the button hidden. */
+  @wire(getPostmanRunUrl)
+  wiredPostmanRunUrl({ data }) {
+    this.postmanRunUrl = isPostmanRunUrl(data) ? data.trim() : "";
+  }
+
+  get hasPostmanRun() {
+    return isPostmanRunUrl(this.postmanRunUrl);
+  }
+
+  handleCollectionDownload() {
+    trackEvent(EVENTS.POSTMAN_COLLECTION_DOWNLOADED, {
+      source: ANALYTICS_SOURCE
+    });
+  }
+
+  handlePostmanRun() {
+    trackEvent(EVENTS.POSTMAN_RUN_CLICKED, { source: ANALYTICS_SOURCE });
+  }
 
   get specButtons() {
     return Object.keys(SPECS).map((key) => {
@@ -725,7 +786,7 @@ export default class ApiReference extends LightningElement {
           ? error.message
           : `The interactive reference could not be shown. ${reduceError(
               error
-            )}`;
+            )}`.trim();
     } finally {
       if (renderId === this.renderCount) {
         this.clearRenderTimeout();

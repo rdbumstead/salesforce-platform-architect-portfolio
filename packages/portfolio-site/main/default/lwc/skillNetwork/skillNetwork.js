@@ -34,6 +34,7 @@
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 12/26/2025
  **/
 import { LightningElement, wire } from "lwc";
@@ -189,6 +190,7 @@ const BOX_MARGIN = 40;
 const WORK_RADIUS = 10;
 const LABEL_MAX = 24;
 // Certification names all open with this. The label leaves it out, the title and lists keep it.
+const ERROR_TITLE = "The skills could not be loaded.";
 const CERTIFICATION_PREFIX = /^Salesforce Certified\s+/i;
 // A category label is drawn in its cluster. An unseen node of this radius per character holds
 // the label's place, so skills settle round the label instead of under it (13px mono, 0.6em
@@ -324,6 +326,48 @@ function yearsSpoken(years) {
     return "used for under 1 year";
   }
   return `used for ${years.toFixed(1)} years`;
+}
+
+// What a skill with no role shows in place of years: "Certified 2024" from the earliest year a
+// linked certification was earned, or "Project" when only a project links it. Years stay a number
+// of years worked, so a skill with no role never gets one. Empty when nothing backs the skill.
+function evidenceLabel(skill) {
+  if (skill.years !== null) {
+    return "";
+  }
+  if (skill.certifiedYear !== null) {
+    return `Certified ${skill.certifiedYear}`;
+  }
+  return skill.projectIds.length > 0 ? "Project" : "";
+}
+
+function evidenceSpoken(skill) {
+  if (skill.years !== null) {
+    return "";
+  }
+  if (skill.certifiedYear !== null) {
+    return `certified in ${skill.certifiedYear}`;
+  }
+  return skill.projectIds.length > 0 ? "used on a project" : "";
+}
+
+// The earliest earned year among a skill's linked certifications, or null when none carries one.
+function earliestYear(certificationIds, certifications) {
+  const years = certificationIds
+    .map((id) => certifications.get(id))
+    .map((certification) => certification && certification.earnedYear)
+    .filter((year) => Number.isInteger(year));
+  return years.length ? Math.min(...years) : null;
+}
+
+function summaryOf(skill, years) {
+  if (years) {
+    return `Proficiency ${skill.proficiency} of 5, ${years} used.`;
+  }
+  const spoken = evidenceSpoken(skill);
+  return spoken
+    ? `Proficiency ${skill.proficiency} of 5, ${spoken}.`
+    : `Proficiency ${skill.proficiency} of 5.`;
 }
 
 function byName(a, b) {
@@ -471,7 +515,10 @@ function buildModel(data, certificationLinks, today) {
           certifications.set(entry.id, {
             id: entry.id,
             name: entry.name || "Certification",
-            isRetired: entry.isRetired === true
+            isRetired: entry.isRetired === true,
+            earnedYear: Number.isInteger(entry.earnedYear)
+              ? entry.earnedYear
+              : null
           });
         }
         skill.certificationIds.push(entry.id);
@@ -489,6 +536,7 @@ function buildModel(data, certificationLinks, today) {
       skill.roleIds.map((id) => roles.get(id)),
       today
     );
+    skill.certifiedYear = earliestYear(skill.certificationIds, certifications);
     skill.evidence = evidenceOf(skill);
   });
 
@@ -702,7 +750,7 @@ export default class SkillNetwork extends LightningElement {
         errors
           .map((error) => error && error.message)
           .filter(Boolean)
-          .join(" ") || "The skills could not be loaded.";
+          .join(" ") || ERROR_TITLE;
       return;
     }
     if (!data) {
@@ -765,6 +813,20 @@ export default class SkillNetwork extends LightningElement {
 
   get hasError() {
     return !this.isLoading && Boolean(this.errorMessage);
+  }
+
+  // The reason under the error title, left out when it is only the title's own sentence again.
+  get errorDetail() {
+    const message = (this.errorMessage || "").trim();
+    return message.toLowerCase() === ERROR_TITLE.toLowerCase() ? "" : message;
+  }
+
+  get hasErrorDetail() {
+    return this.errorDetail !== "";
+  }
+
+  get errorTitle() {
+    return ERROR_TITLE;
   }
 
   get hasSkills() {
@@ -1020,12 +1082,15 @@ export default class SkillNetwork extends LightningElement {
       proficiency: `${skill.proficiency}/5`,
       years,
       hasYears: Boolean(years),
+      evidenceText: evidenceLabel(skill),
+      hasEvidenceText: !years && Boolean(evidenceLabel(skill)),
       pressed: String(selected),
       className: selected ? "chip is-selected" : "chip",
       ariaLabel: [
         skill.name,
         `proficiency ${skill.proficiency} of 5`,
-        yearsSpoken(skill.years)
+        yearsSpoken(skill.years),
+        evidenceSpoken(skill)
       ]
         .filter(Boolean)
         .join(", ")
@@ -1058,9 +1123,7 @@ export default class SkillNetwork extends LightningElement {
     const years = yearsLabel(skill.years);
     return {
       name: skill.name,
-      summary: years
-        ? `Proficiency ${skill.proficiency} of 5, ${years} used.`
-        : `Proficiency ${skill.proficiency} of 5.`,
+      summary: summaryOf(skill, years),
       evidence: evidenceSentence(skill, this.model.certifications),
       roles,
       projects,

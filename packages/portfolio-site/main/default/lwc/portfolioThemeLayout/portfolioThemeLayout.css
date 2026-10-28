@@ -158,8 +158,12 @@
   z-index: 1;
 }
 
+/* The content region holds at least one screen, so the footer starts below the first screen
+   while a page's components are still loading, instead of painting at the bottom of the screen
+   and dropping when the page arrives. */
 .region-content {
   flex: 1 0 auto;
+  min-height: 100vh;
 }
 
 /* The focus target for Back to top. It is not a tab stop, so it shows no ring. */
@@ -237,7 +241,10 @@
 .pillar-link:visited,
 .docs-link,
 .docs-link:link,
-.docs-link:visited {
+.docs-link:visited,
+.tour-start,
+.tour-start:link,
+.tour-start:visited {
   color: var(--pf-text);
 }
 
@@ -250,6 +257,7 @@
   font-size: 15px;
   letter-spacing: -0.01em;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 /* The left auto margin pushes the links to the right, next to the divider and the controls. */
@@ -285,7 +293,15 @@
   font: inherit;
   font-size: 14px;
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+/* Six header items and the menu fit on one line from 768 px only with the links a little closer. */
+@media screen and (min-width: 768px) and (max-width: 899.98px) {
+  .nav-link {
+    padding: 0 var(--pf-space-2);
+  }
 }
 
 .nav-link:hover {
@@ -328,7 +344,8 @@
 }
 
 .pillar-link,
-.docs-link {
+.docs-link,
+.tour-start {
   display: flex;
   align-items: center;
   gap: var(--pf-space-3);
@@ -340,7 +357,8 @@
 }
 
 .pillar-link:hover,
-.docs-link:hover {
+.docs-link:hover,
+.tour-start:hover {
   background: var(--pf-chip);
 }
 
@@ -384,6 +402,23 @@
   color: var(--pf-warn-text);
   font-size: 12px;
   font-weight: 500;
+}
+
+/* On a wide screen the tour bar sticks right under the header, so Next stays in reach after
+   Show me scrolls the page. The layout sets its top to the header height. On a phone the bar
+   pins itself to the bottom instead. */
+@media screen and (min-width: 768px) {
+  c-tour-bar {
+    position: sticky;
+    z-index: 9;
+  }
+}
+
+/* The tour row opens the menu, set apart from the pillars by a rule. */
+.pillar-menu > .tour-item {
+  margin-bottom: 2px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--pf-border);
 }
 
 /* Docs and the API reference close the menu, set apart from the pillars by a rule. */
@@ -447,6 +482,7 @@
 .nav-link:focus-visible,
 .pillar-link:focus-visible,
 .docs-link:focus-visible,
+.tour-start:focus-visible,
 .icon-button:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;

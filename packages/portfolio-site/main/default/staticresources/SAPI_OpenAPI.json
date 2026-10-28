@@ -655,14 +655,14 @@
           "heroImageUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://assets.ryanbumstead.com/hero.jpg",
+            "example": "https://example.com/images/hero.jpg",
             "nullable": true,
             "description": "Banner Image URL"
           },
           "liveUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://project-demo.com",
+            "example": "https://example.com/demo",
             "nullable": true,
             "description": "Live Demo URL"
           },
@@ -858,7 +858,7 @@
           "externalUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://assets.ryanbumstead.com/arch.png",
+            "example": "https://example.com/images/diagram.png",
             "description": "Asset URL"
           },
           "altText": {
@@ -904,7 +904,7 @@
           "avatarUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://linkedin.com/image/jane.jpg",
+            "example": "https://example.com/images/avatar.jpg",
             "nullable": true,
             "description": "Author Avatar URL"
           },
@@ -1066,14 +1066,14 @@
           "gitHubProfileUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://github.com/ryanbumstead",
+            "example": "https://example.com/source",
             "nullable": true,
             "description": "GitHub URL"
           },
           "calendlyUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://calendly.com/ryanbumstead",
+            "example": "https://example.com/schedule",
             "nullable": true,
             "description": "Calendly URL"
           },

@@ -22,6 +22,9 @@ keeps its own licence. The project's own code is under the licence in [LICENSE](
   bundle's first line points to, `redoc.standalone.js.LICENSE.txt`, which this repository does not
   copy. It is published with the package at
   https://unpkg.com/redoc@2.5.4/bundles/redoc.standalone.js.LICENSE.txt
+- The vendored copy in `Redoc_Script.js` is modified to remove one image. It no longer draws
+  Redocly's hosted logo (`cdn.redoc.ly/redoc/logo-mini.svg`), which the site's content policy
+  blocks. Nothing else in the bundle is changed.
 
 ## d3 modules
 

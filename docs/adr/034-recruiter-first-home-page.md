@@ -59,3 +59,19 @@ This changes items 1, 3, 6 and 10 above. The other items stand.
 - **Item 6, no credentials strip.** Until three testimonials are approved the section renders nothing. The certifications and their verify link moved to the career line, and "References available on request" is in the contact call.
 - **Item 10, the first link reads Home.** The header reads Home, Resume, How it's built and Contact. Home links to the home page from every page. On the home page it carries `aria-current="page"`, scrolls to the top and moves focus to the page content, the same landing as the Back to top arrow. The case studies scroll is the hero's button alone.
 - **What was built.** The home view holds `c-hero-banner`, `c-career-line`, `c-case-study-grid`, `c-home-testimonials`, `c-site-build-section` and `c-contact-call`, in that order. The hero's "Short on time? Take the 5 minute tour" link opens the tour in the build section and sends `tour_opened`. `c-experience-timeline` is removed, and its three tabs became the career line's selector (All, Work, Education, Certifications), which sends `career_timeline_filtered`.
+
+## Amendment (2026-10-27): the tour becomes a 10 minute journey
+
+This changes item 7 and the hero link above. The other items stand.
+
+- **Item 7, the tour leaves the build section.** "How this site is built" still holds the pillars, the architecture and decision records and the live counts, and it no longer holds a tour. The tour is now the 10 minute tour, an opt in journey across the five pillar pages. It starts from the hero's "Short on time? Take the 10 minute tour" link and from the first row of the header's "How it's built" menu, and runs in a bar under the header (`c-tour-bar`). Each stop has one task and a Show me button that scrolls to the control and focuses it. Stop minutes (A 2, B 3, C 1, D 3 and E 1) are in `c/pillarData`, and the total is computed.
+- **Why 10, not 5.** The five minute tour overran. Two guest walks of the journey on production on 2026-10-27 (GA4 blocked, one letter and one API request per walk) modelled at about 6.9 minutes for a skimmer reading at 300 words a minute and 10.2 minutes for a careful reader at 200. The AI Lab (2.6 to 3.5 minutes) and Solution Architecture (1.8 to 2.7) stops ran longest. Reading speeds, orientation and action times are modelled, and mobile, WebKit and slow connections are not measured. The label now says 10, and the finish line is a measurement of the live journey after the deploy.
+- **What stays.** The tour is opt in only, one session storage key says it is running, and nothing goes in the address. `tour_opened` stays in the event list for past data and is no longer sent. The journey sends `tour_step_viewed`, `tour_exited` and `tour_finished`.
+- **Detail.** [Technical Guide 2.20](../guides/04-Technical-Guide.md#220-the-10-minute-tour-c-tour-bar).
+
+## Amendment (2026-10-27): Skills and Testimonials return to the header
+
+This changes the header list in item 10. The other items stand.
+
+- **The header reads Home, Resume, Skills, How it's built, Testimonials and Contact.** Skills and Testimonials left the header on 2026-10-26 for the footer, and the owner wants both one click from any page again: Skills is the evidence a recruiter looks for first, and Testimonials is where a reference can leave a quote. The footer keeps its links too.
+- **Fit.** Six items and the menu fit on one line from 768 px only with the links a little closer, so the link padding narrows from 12 to 8 px between 768 and 899 px. The brand, the divider, the Back to top arrow and the theme button do not move. Phones keep the menu button, which lists the same six.

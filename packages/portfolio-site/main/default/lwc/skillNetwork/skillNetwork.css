@@ -185,7 +185,8 @@
   color: inherit;
 }
 
-.chip-years::before {
+.chip-years::before,
+.chip-evidence::before {
   content: "\00B7";
   margin-right: var(--pf-space-2);
 }

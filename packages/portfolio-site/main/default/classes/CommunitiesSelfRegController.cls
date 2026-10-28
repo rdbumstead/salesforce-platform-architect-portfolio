@@ -1,3 +1,14 @@
+/**
+ * @description       : Self registration for the Experience Cloud site. Creates an external
+ *                      user with Site.createExternalUser and signs them in with Site.login.
+ *                      Part of the site template.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
+ * @Created           : 01/02/2026
+ * @Test Class        : [CommunitiesSelfRegControllerTest]
+ **/
 public with sharing class CommunitiesSelfRegController {
   public String firstName { get; set; }
   public String lastName { get; set; }

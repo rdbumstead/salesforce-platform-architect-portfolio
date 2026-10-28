@@ -27,6 +27,11 @@
   color: var(--pf-text);
 }
 
+/* Holds the loaded tiles' space while the counts load, unseen and unread. */
+.stats-pending {
+  visibility: hidden;
+}
+
 .stats {
   list-style: none;
   margin: 0 0 var(--pf-space-4);

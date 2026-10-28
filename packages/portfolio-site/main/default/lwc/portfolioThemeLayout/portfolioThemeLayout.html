@@ -1,5 +1,5 @@
 <template>
-  <div class="portfolio-layout-wrapper">
+  <div class="portfolio-layout-wrapper" style={wrapperStyle}>
     <header class={headerClass} onkeydown={handleKeydown}>
       <div class={barClass}>
         <a class="site-brand" href={homeHref}>Ryan Bumstead</a>
@@ -47,6 +47,33 @@
                 aria-label={builtMenuLabel}
                 hidden={pillarsHidden}
               >
+                <li class="tour-item">
+                  <a
+                    class="tour-start"
+                    href={tourHref}
+                    data-key="tour"
+                    onclick={handleTourStart}
+                  >
+                    <span class="pillar-letter" aria-hidden="true">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                      </svg>
+                    </span>
+                    <span class="pillar-text">
+                      <span class="pillar-label">{tourLabel}</span>
+                      <span class="pillar-sas">{tourMenuNote}</span>
+                    </span>
+                  </a>
+                </li>
                 <template for:each={pillars} for:item="pillar">
                   <li key={pillar.key}>
                     <a
@@ -249,6 +276,15 @@
         <slot name="header"></slot>
       </div>
     </header>
+
+    <c-tour-bar
+      style={tourBarStyle}
+      route-url={routeUrl}
+      ontournavigate={handleTourNavigate}
+      ontourarrive={handleTourArrive}
+      ontourleave={handleTourLeave}
+      ontourspace={handleTourSpace}
+    ></c-tour-bar>
 
     <div class="region-content" tabindex="-1" data-id="main-content">
       <slot></slot>

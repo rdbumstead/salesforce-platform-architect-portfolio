@@ -50,7 +50,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/docs\" />\n<meta property=\"og:title\" content=\"Architecture docs | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"The executive overview, the Systems Architecture Specification, the program charter, the guardrails and the architecture decision records behind Ryan Bumstead&#x27;s Salesforce portfolio.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/docs\" />\n<meta name=\"twitter:title\" content=\"Architecture docs | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"The executive overview, the Systems Architecture Specification, the program charter, the guardrails and the architecture decision records behind Ryan Bumstead&#x27;s Salesforce portfolio.\" />",
                 "description": "The executive overview, the Systems Architecture Specification, the program charter, the guardrails and the architecture decision records behind Ryan Bumstead's Salesforce portfolio.",
                 "pageTitle": "Architecture docs | Ryan Bumstead",
                 "recordId": "{!recordId}"

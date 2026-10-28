@@ -41,7 +41,8 @@ jest.mock(
     trackEvent: jest.fn(),
     EVENTS: {
       CAREER_ROLE_OPENED: "career_role_opened",
-      CAREER_TIMELINE_FILTERED: "career_timeline_filtered"
+      CAREER_TIMELINE_FILTERED: "career_timeline_filtered",
+      CAREER_TIMELINE_SHOW_ALL: "career_timeline_show_all"
     }
   }),
   { virtual: true }
@@ -359,12 +360,40 @@ describe("c-career-line", () => {
   });
 
   describe("reads", () => {
-    it("reads getTimeline and getResume for the Architect persona", () => {
+    it("reads getTimeline and getResume for the Architect persona", async () => {
       render();
+      await flush();
       expect(getResume.getLastConfig()).toEqual({
         persona: HIGHLIGHT_PERSONA
       });
       expect(HIGHLIGHT_PERSONA).toBe("Architect");
+    });
+
+    it("holds the highlights read until the section nears the screen", async () => {
+      const original = global.IntersectionObserver;
+      let notify;
+      const disconnect = jest.fn();
+      global.IntersectionObserver = jest.fn((callback) => {
+        notify = callback;
+        return { observe: jest.fn(), disconnect };
+      });
+      try {
+        render();
+        await flush();
+        // The test adapter passes an unset parameter through. The platform holds the read.
+        expect(getResume.getLastConfig().persona).toBeUndefined();
+        notify([{ isIntersecting: false }]);
+        await flush();
+        expect(getResume.getLastConfig().persona).toBeUndefined();
+        notify([{ isIntersecting: true }]);
+        await flush();
+        expect(getResume.getLastConfig()).toEqual({
+          persona: HIGHLIGHT_PERSONA
+        });
+        expect(disconnect).toHaveBeenCalled();
+      } finally {
+        global.IntersectionObserver = original;
+      }
     });
 
     it("renders nothing before the read, on an error or with no points", async () => {
@@ -770,14 +799,67 @@ describe("c-career-line", () => {
   });
 
   describe("the phone list", () => {
-    it("lists every point in a real list", async () => {
+    function toggle(element) {
+      return element.shadowRoot.querySelector('[data-id="stack-toggle"]');
+    }
+
+    function stackKeys(element) {
+      return keysOf(all(element, '[data-id="stack-point"]'));
+    }
+
+    it("lists the newest 4 in a real list and offers the rest", async () => {
       const element = await renderWithData();
       expect(element.shadowRoot.querySelector("ol.stack")).not.toBeNull();
-      expect(keysOf(all(element, '[data-id="stack-point"]'))).toEqual(ORDER);
+      expect(stackKeys(element)).toEqual(ORDER.slice(0, 4));
+      expect(keysOf(linePoints(element))).toEqual(ORDER);
+      expect(text(toggle(element))).toBe("Show all 8");
+      expect(toggle(element).getAttribute("aria-expanded")).toBe("false");
+      expect(toggle(element).getAttribute("aria-controls")).toBe(
+        element.shadowRoot.querySelector("ol.stack").id
+      );
+    });
+
+    it("shows every point in place, keeps focus on the button, and sends the kind", async () => {
+      const element = await renderWithData();
+      toggle(element).focus();
+      toggle(element).click();
+      await flush();
+      expect(stackKeys(element)).toEqual(ORDER);
+      expect(text(toggle(element))).toBe("Show fewer");
+      expect(toggle(element).getAttribute("aria-expanded")).toBe("true");
+      expect(element.shadowRoot.activeElement).toBe(toggle(element));
+      expect(trackEvent).toHaveBeenCalledWith("career_timeline_show_all", {
+        kind: "all"
+      });
+      toggle(element).click();
+      await flush();
+      expect(stackKeys(element)).toEqual(ORDER.slice(0, 4));
+      expect(trackEvent).toHaveBeenCalledTimes(1);
+    });
+
+    it("counts the active filter, folds back when the filter changes, and hides the button with 4 or fewer", async () => {
+      const element = await renderWithData();
+      toggle(element).click();
+      await flush();
+      filter(element, "work").click();
+      await flush();
+      expect(stackKeys(element)).toEqual(["a01", "a02", "a03", "a05"]);
+      expect(text(toggle(element))).toBe("Show all 5");
+      filter(element, "education").click();
+      await flush();
+      expect(stackKeys(element)).toEqual(["e01"]);
+      expect(toggle(element)).toBeNull();
+      filter(element, "all").click();
+      await flush();
+      expect(stackKeys(element)).toEqual(ORDER.slice(0, 4));
+      expect(text(toggle(element))).toBe("Show all 8");
+      expect(toggle(element).getAttribute("aria-expanded")).toBe("false");
     });
 
     it("opens a point in place under it, one at a time, and closes on Escape", async () => {
       const element = await renderWithData();
+      toggle(element).click();
+      await flush();
       const first = stackButton(element, "a01");
       expect(first.getAttribute("aria-controls")).toBe(
         all(element, '[data-id="stack-panel"]')[0].id

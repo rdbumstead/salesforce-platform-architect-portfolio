@@ -2,16 +2,25 @@
  * @description       : Site theme layout. Renders the slim sticky header for every portfolio page,
  *                      the page content in the unnamed slot, and the footer region.
  *                      The header holds the name (a home link everywhere) at the left, and at the
- *                      right Home, Resume, a "How it's built" menu and Contact, a thin divider
+ *                      right Home, Resume, Skills, a "How it's built" menu, Testimonials and
+ *                      Contact, a thin divider
  *                      drawn in CSS (aria-hidden), then the Back to top arrow, the theme toggle
  *                      and the phone menu button. While the arrow is hidden the links and the
  *                      divider slide over its place, so the divider always sits beside the next
  *                      control, and they slide back as it appears. Home links to the home page from
  *                      every page and, already on the home page, scrolls to the top and moves focus
  *                      to the page content, as the Back to top arrow does. The menu lists
- *                      the five pillars from c/pillarData, then Docs and each pillar's own pages
- *                      (the API reference) as items of their own. The link to the page on screen
- *                      carries aria-current="page". Skills and Testimonials live in the footer.
+ *                      "Take the 10 minute tour" first, which starts the tour and goes to its
+ *                      first stop, then the five pillars from c/pillarData, then Docs and each
+ *                      pillar's own pages (the API reference) as items of their own. The tour
+ *                      bar (c-tour-bar) sits right under the header and shows only while a
+ *                      tour runs. When the bar moves the visitor to a stop, focus goes to the
+ *                      new page's main heading (its h1, found through the open shadow trees,
+ *                      given tabindex -1 for as long as it has focus), or to the page content
+ *                      when none shows within TOUR_HEADING_WAIT_MS. Ending the tour moves focus
+ *                      to the page content. On a phone the bar is pinned to the bottom and the
+ *                      layout pads the page by its height. The link to the page on screen
+ *                      carries aria-current="page". Skills and Testimonials are in the footer too.
  *                      Owns the theme: the stylesheet follows the system setting, and the toggle
  *                      writes data-theme and the portfolio-theme storage key, with a 200 ms
  *                      crossfade where the browser supports view transitions.
@@ -28,6 +37,7 @@
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 12/26/2025
  **/
 import { LightningElement, wire } from "lwc";
@@ -43,13 +53,21 @@ import {
   MOTION_FULL,
   MOTION_REDUCE
 } from "c/motionPreference";
+import { startTour, firstStopHref, TOUR_LABEL } from "c/tourBar";
 
-// The header links in order, with the "How it's built" menu between Resume and Contact. All are
-// plain route links. URLs match the urlPrefix of each route in the Portfolio1 site bundle. Home
-// is the route with an empty URL, so it carries aria-current="page" on the home page only.
+// The header links in order, with the "How it's built" menu between Skills and Testimonials. All
+// are plain route links. URLs match the urlPrefix of each route in the Portfolio1 site bundle.
+// Home is the route with an empty URL, so it carries aria-current="page" on the home page only.
 const PAGES = [
   { key: "home", label: "Home", url: "" },
   { key: "resume", label: "Resume", url: "resume" },
+  { key: "skills", label: "Skills", url: "skills" },
+  {
+    key: "testimonials",
+    label: "Testimonials",
+    url: "testimonials",
+    afterMenu: true
+  },
   { key: "contact", label: "Contact", url: "contact", afterMenu: true }
 ];
 
@@ -70,6 +88,12 @@ export const BACK_TO_TOP_SCREENS = 1;
 export const HERO_LOOKUP_MS = 1000;
 // The length of the theme crossfade.
 export const THEME_FADE_MS = 200;
+// How long the layout waits for the next stop's main heading before it focuses the content.
+export const TOUR_HEADING_WAIT_MS = 5000;
+// How often it looks for that heading while it waits.
+export const TOUR_HEADING_POLL_MS = 100;
+// The line under the tour row in the "How it's built" menu.
+export const TOUR_MENU_NOTE = "Five stops, with one task on each";
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -269,6 +293,13 @@ export default class PortfolioThemeLayout extends LightningElement {
   // True once page content has scrolled under the sticky header.
   headerRaised = false;
   _scrollFrame = null;
+  // The room the tour bar takes at the bottom of a phone screen, in px.
+  tourSpace = 0;
+  // The header's height in px, where the tour bar sticks on a wide screen.
+  headerHeight = 0;
+  // Where a move by the tour bar started: the route and the main heading on screen then.
+  _tourFrom = null;
+  _tourTimer = null;
 
   // The layout stays on screen while the site changes routes in place, so the current route
   // is read again each time the page reference changes.
@@ -370,6 +401,7 @@ export default class PortfolioThemeLayout extends LightningElement {
     window.removeEventListener("scroll", this._onScroll);
     window.removeEventListener("resize", this._onScroll);
     window.removeEventListener("popstate", this._onPopState);
+    this.stopHeadingWait();
   }
 
   /**
@@ -436,6 +468,27 @@ export default class PortfolioThemeLayout extends LightningElement {
     const button = this.template.querySelector('[data-id="back-to-top"]');
     const focused = Boolean(button) && this.template.activeElement === button;
     this.showBackToTop = scrolled || focused;
+    this.measureHeader();
+  }
+
+  /**
+   * Keeps the header's height, so the tour bar on a wide screen sticks right under it. Set only
+   * when it changes, so a render does not ask for another.
+   */
+  measureHeader() {
+    const header = this.template.querySelector(".site-header");
+    const height = header
+      ? Math.round(header.getBoundingClientRect().height)
+      : 0;
+    if (height !== this.headerHeight) {
+      this.headerHeight = height;
+    }
+  }
+
+  // Where the tour bar sticks on a wide screen: under the header. A phone pins it to the
+  // bottom in its own CSS, which wins over this.
+  get tourBarStyle() {
+    return this.headerHeight > 0 ? `top: ${this.headerHeight}px;` : "";
   }
 
   handleBackToTopBlur() {
@@ -582,6 +635,120 @@ export default class PortfolioThemeLayout extends LightningElement {
 
   get builtMenuLabel() {
     return BUILT_MENU_LABEL;
+  }
+
+  get tourHref() {
+    return firstStopHref();
+  }
+
+  get tourLabel() {
+    return TOUR_LABEL;
+  }
+
+  get tourMenuNote() {
+    return TOUR_MENU_NOTE;
+  }
+
+  // The page keeps room at the bottom for the tour bar while it is pinned on a phone.
+  get wrapperStyle() {
+    return this.tourSpace > 0 ? `padding-bottom: ${this.tourSpace}px;` : "";
+  }
+
+  /**
+   * The menu's tour row: closes the menus and starts the tour. The link then goes to the first
+   * stop as a plain link does.
+   */
+  handleTourStart() {
+    this.handleNavClick();
+    startTour();
+  }
+
+  handleTourSpace(event) {
+    const height = event && event.detail ? Number(event.detail.height) : 0;
+    this.tourSpace = Number.isFinite(height) && height > 0 ? height : 0;
+    this.measureHeader();
+  }
+
+  /** The bar is about to move the visitor: note the route and the main heading on screen. */
+  handleTourNavigate() {
+    this.stopHeadingWait();
+    this._tourFrom = {
+      route: this.routeUrl,
+      heading: findInContent(this.contentRoots(), "h1")
+    };
+  }
+
+  /**
+   * A stop has arrived after a move by the bar. Focus goes to the new page's main heading once
+   * it shows, a heading other than the one on screen when the move started, or to the content
+   * when none shows in time. On the same page the heading on screen is the one.
+   */
+  handleTourArrive() {
+    const from = this._tourFrom || { route: null, heading: null };
+    this._tourFrom = null;
+    this.stopHeadingWait();
+    const samePage = from.route === this.routeUrl;
+    const started = Date.now();
+    const look = () => {
+      const heading = findInContent(this.contentRoots(), "h1");
+      if (
+        heading &&
+        heading.isConnected &&
+        (samePage || heading !== from.heading)
+      ) {
+        this._tourTimer = null;
+        this.focusHeading(heading);
+        return;
+      }
+      if (Date.now() - started >= TOUR_HEADING_WAIT_MS) {
+        this._tourTimer = null;
+        this.focusContent();
+        return;
+      }
+      this._tourTimer = setTimeout(look, TOUR_HEADING_POLL_MS);
+    };
+    look();
+  }
+
+  /** The tour has ended or its ending was closed: focus goes to the page content. */
+  handleTourLeave() {
+    this.stopHeadingWait();
+    this.focusContent();
+  }
+
+  stopHeadingWait() {
+    if (this._tourTimer !== null) {
+      clearTimeout(this._tourTimer);
+      this._tourTimer = null;
+    }
+  }
+
+  /**
+   * Moves focus to a heading without scrolling. A heading is no focus target of its own, so it
+   * holds tabindex -1 while it has focus and loses it again on blur.
+   * @param {Element} heading the page's main heading
+   */
+  focusHeading(heading) {
+    try {
+      if (!heading.hasAttribute("tabindex")) {
+        heading.setAttribute("tabindex", "-1");
+        const clear = () => {
+          heading.removeAttribute("tabindex");
+          heading.removeEventListener("blur", clear);
+        };
+        heading.addEventListener("blur", clear);
+      }
+      heading.focus({ preventScroll: true });
+    } catch {
+      this.focusContent();
+    }
+  }
+
+  focusContent() {
+    const main = this.template.querySelector(".region-content");
+    if (main) {
+      main.focus({ preventScroll: true });
+    }
   }
 
   get menuExpanded() {

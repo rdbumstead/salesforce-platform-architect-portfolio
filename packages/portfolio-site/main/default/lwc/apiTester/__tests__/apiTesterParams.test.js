@@ -73,6 +73,12 @@ const CATALOG_TEXT = readFileSync(
   "utf8"
 );
 
+/** Picks a path in the native endpoint select, as a visitor does. */
+function chooseEndpoint(select, path) {
+  select.value = path;
+  select.dispatchEvent(new CustomEvent("change"));
+}
+
 const flush = () => new Promise((resolve) => process.nextTick(resolve));
 
 function create() {
@@ -87,9 +93,7 @@ const $$ = (element, selector) =>
   Array.from(element.shadowRoot.querySelectorAll(selector));
 
 async function choosePath(element, path) {
-  $(element, "lightning-combobox.endpoint-picker").dispatchEvent(
-    new CustomEvent("change", { detail: { value: path } })
-  );
+  chooseEndpoint($(element, "select.endpoint-picker"), path);
   await flush();
 }
 
@@ -254,7 +258,7 @@ describe("c-api-tester v2 controls", () => {
     await choosePath(element, "/sapi/v1/skills");
 
     setField(element, 'input[data-name="limit"]', "5");
-    setField(element, "lightning-input.query-input", "limit=abc");
+    setField(element, "input.query-input", "limit=abc");
     await flush();
     expect($(element, ".query-string").textContent).toBe("?limit=abc");
 
@@ -267,7 +271,7 @@ describe("c-api-tester v2 controls", () => {
 
     await choosePath(element, "/sapi/v1/accounts");
     expect($(element, ".chosen-pills")).toBeNull();
-    expect($(element, "lightning-input.query-input").value).toBe("limit=abc");
+    expect($(element, "input.query-input").value).toBe("limit=abc");
   });
 
   it("says when a path takes no query parameters", async () => {
@@ -285,7 +289,7 @@ describe("c-api-tester v2 controls", () => {
     await flush();
     await choosePath(element, "/sapi/v1/skills");
     setField(element, 'input[data-name="limit"]', "2");
-    setField(element, "lightning-input.query-input", "offset=4");
+    setField(element, "input.query-input", "offset=4");
     await flush();
 
     $(element, "button.execute-button").click();
@@ -297,7 +301,7 @@ describe("c-api-tester v2 controls", () => {
       path: "/sapi/v1/skills",
       params: { limit: "2", offset: "6" }
     });
-    expect($(element, "lightning-input.query-input").value).toBe("");
+    expect($(element, "input.query-input").value).toBe("");
   });
 
   it("uses the spec default limit for Next page when none is set", async () => {

@@ -19,10 +19,16 @@ import DecisionMatrix, {
 import getMatrix from "@salesforce/apex/DecisionMatrixController.getMatrix";
 import { trackEvent } from "c/analyticsService";
 import { isReduced } from "c/motionPreference";
+import { showMe } from "c/tourShowMe";
 
-jest.mock("c/motionPreference", () => ({ isReduced: jest.fn(() => false) }), {
-  virtual: true
-});
+jest.mock(
+  "c/motionPreference",
+  () => ({
+    isReduced: jest.fn(() => false),
+    scrollBehavior: jest.fn(() => "auto")
+  }),
+  { virtual: true }
+);
 
 jest.mock(
   "@salesforce/apex/DecisionMatrixController.getMatrix",
@@ -388,5 +394,30 @@ describe("c-decision-matrix", () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
     expect(css).toMatch(/min-height: 44px/);
     expect(css).toMatch(/min-height: 24px/);
+  });
+
+  it("marks the first weight control as the tour anchor and answers stop B only", async () => {
+    const element = await createComponent();
+    const anchors = qa(element, "[data-tour-anchor]");
+    expect(anchors).toHaveLength(1);
+    expect(anchors[0]).toBe(qa(element, "input.weight-slider")[0]);
+    anchors[0].focus = jest.fn();
+    anchors[0].scrollIntoView = jest.fn();
+
+    showMe("A");
+    expect(anchors[0].focus).not.toHaveBeenCalled();
+    showMe("B");
+    expect(anchors[0].scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(anchors[0].focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("stops listening for the tour when it leaves the page", async () => {
+    const element = await createComponent();
+    const anchor = q(element, "[data-tour-anchor]");
+    anchor.focus = jest.fn();
+    document.body.removeChild(element);
+
+    showMe("B");
+    expect(anchor.focus).not.toHaveBeenCalled();
   });
 });

@@ -107,6 +107,7 @@ describe("c-pillar-b-story", () => {
     const element = createComponent();
     const item = q(element, '[data-id="client-licences"]');
     expect(text(item)).toContain("ten free licences under Power of Us");
+    expect(text(item)).not.toContain("Power of Us (Power of Us");
     const link = item.querySelector("a");
     expect(link.getAttribute("href")).toBe(
       "https://help.salesforce.com/s/articleView?id=000385150&language=en_US&type=1"

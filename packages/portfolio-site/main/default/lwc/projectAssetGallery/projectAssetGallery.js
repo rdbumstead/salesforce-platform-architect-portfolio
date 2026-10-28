@@ -10,6 +10,7 @@
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 10/22/2026
  **/
 import { LightningElement, api, wire } from "lwc";
@@ -18,6 +19,7 @@ import { LightningElement, api, wire } from "lwc";
 import { gql, graphql } from "lightning/uiGraphQLApi";
 import basePath from "@salesforce/community/basePath";
 import { trackEvent, EVENTS } from "c/analyticsService";
+import { onShowMe, revealAnchor } from "c/tourShowMe";
 
 // Reads only fields the guest can read: Name and the required Alt_Text__c and
 // Sort_Order__c, plus Type__c and External_URL__c from Portfolio_Guest.
@@ -120,6 +122,20 @@ export default class ProjectAssetGallery extends LightningElement {
   @api heading;
 
   assets = [];
+  stopShowMe;
+
+  // The tour's stop A names the first image link. The same gallery sits on the Solution
+  // Architecture page too, and it answers stop A only.
+  connectedCallback() {
+    this.stopShowMe = onShowMe("A", () => revealAnchor(this.template));
+  }
+
+  disconnectedCallback() {
+    if (this.stopShowMe) {
+      this.stopShowMe();
+      this.stopShowMe = undefined;
+    }
+  }
 
   get variables() {
     return PILLAR_PATTERN.test(this.pillar || "")
@@ -150,7 +166,12 @@ export default class ProjectAssetGallery extends LightningElement {
       const b = Number(fieldValue(right, "Sort_Order__c"));
       return (Number.isFinite(a) ? a : 0) - (Number.isFinite(b) ? b : 0);
     });
-    return rows.map((row) => this.toAsset(row));
+    const assets = rows.map((row) => this.toAsset(row));
+    const firstImage = assets.find((asset) => asset.isImage);
+    if (firstImage) {
+      firstImage.tourAnchor = "stop-a";
+    }
+    return assets;
   }
 
   toAsset(row) {
@@ -166,7 +187,8 @@ export default class ProjectAssetGallery extends LightningElement {
       isImage: type === "Image" && Boolean(url),
       isDocument: type === "Document" && Boolean(url),
       isExternal: (type === "Video" || type === "Link") && Boolean(url),
-      isUnavailable: !url
+      isUnavailable: !url,
+      tourAnchor: undefined
     };
   }
 

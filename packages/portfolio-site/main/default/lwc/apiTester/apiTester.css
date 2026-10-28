@@ -1,7 +1,11 @@
+@import "c/nativeControls";
+
 /*
  * Colours come only from the --pf- site tokens, which hold the light and dark values.
  * Every element that sets a background also sets its text colour from the matching token
- * pair. The response box uses the code pair. Buttons are at least 44 px high.
+ * pair. The response box uses the code pair. Buttons are at least 44 px high. The endpoint,
+ * Advanced, Email and Purpose fields, the parameter fields and the Execute and Request token
+ * buttons take their look from c/nativeControls, and this file sets only their layout.
  */
 .console-container {
   background-color: var(--pf-surface);
@@ -15,32 +19,59 @@
   color: var(--pf-text);
 }
 
-.execute-button,
-.token-button {
+/*
+ * A row that pairs fields with a button lines up by its controls: the labels share the first
+ * grid row and the controls and the button the second, so a label or an error never moves a
+ * control. On a phone the row is one column in page order.
+ */
+.control-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: var(--pf-space-4);
+  row-gap: var(--pf-space-1);
+}
+
+.row-field {
+  display: contents;
+}
+
+.row-action {
   width: 100%;
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 var(--pf-space-4);
-  background-color: var(--pf-btn);
-  color: var(--pf-btn-text);
-  border: 0;
-  border-radius: var(--pf-radius-sm);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
+  margin-top: var(--pf-space-2);
 }
 
-.execute-button:disabled,
-.token-button:disabled {
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  cursor: not-allowed;
-}
+@media (min-width: 768px) {
+  .control-row_invoke {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
 
-.execute-button:focus-visible,
-.token-button:focus-visible {
-  outline: 2px solid var(--pf-accent);
-  outline-offset: 2px;
+  .control-row_token {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto;
+  }
+
+  .control-row .row-label {
+    grid-row: 1;
+  }
+
+  .control-row .row-control,
+  .control-row .row-action {
+    grid-row: 2;
+    margin-top: 0;
+  }
+
+  .control-row .row-message {
+    grid-row: 3;
+  }
+
+  .row-field_purpose .row-label,
+  .row-field_purpose .row-control {
+    grid-column: 2;
+  }
+
+  .control-row_token .row-action {
+    grid-column: 3;
+    white-space: nowrap;
+  }
 }
 
 .view-toggle {
@@ -152,13 +183,31 @@
   margin-bottom: var(--pf-space-3);
 }
 
+/*
+ * Every control sits at the bottom of its grid cell, so the pills, selects and inputs in one
+ * row line up whatever the name and hint above each one take.
+ */
+.param-control {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .pill-group {
   border: 0;
   margin: 0;
   padding: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.pill-row {
   display: flex;
   flex-wrap: wrap;
   gap: var(--pf-space-2);
+  margin-top: auto;
 }
 
 .param-label {
@@ -181,7 +230,13 @@
 }
 
 .param-field {
-  display: block;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.param-field > .nc-control {
+  margin-top: auto;
 }
 
 .pill,
@@ -205,24 +260,11 @@
   font-weight: 700;
 }
 
-.param-input,
-.param-select {
-  width: 100%;
-  min-height: 44px;
-  padding: 0 var(--pf-space-2);
-  background-color: var(--pf-bg);
-  color: var(--pf-text);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius-sm);
-  font: inherit;
-}
-
 .pill:focus-visible,
 .remove-pill:focus-visible,
 .next-page-button:focus-visible,
-.param-input:focus-visible,
-.param-select:focus-visible,
-.result-box:focus-visible {
+.result-box:focus-visible,
+.curl-block:focus-visible {
   outline: 2px solid var(--pf-accent);
   outline-offset: 2px;
 }
@@ -434,4 +476,142 @@
   to {
     opacity: 1;
   }
+}
+
+/* Using the API outside the page: setup steps, the collection, and curl. */
+.quickstart {
+  margin-top: var(--pf-space-4);
+  padding-top: var(--pf-space-4);
+  border-top: 1px solid var(--pf-border);
+  min-width: 0;
+}
+
+.quickstart-heading,
+.curl-heading {
+  margin: 0 0 var(--pf-space-2);
+  color: var(--pf-text);
+  font-weight: 700;
+}
+
+.curl-heading {
+  margin-top: var(--pf-space-4);
+}
+
+.setup-steps {
+  margin: 0 0 var(--pf-space-3);
+  padding-left: var(--pf-space-5, 1.5rem);
+  list-style: decimal;
+  color: var(--pf-text);
+}
+
+.setup-steps li + li {
+  margin-top: var(--pf-space-1);
+}
+
+.quickstart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-2);
+}
+
+.collection-download,
+.postman-run {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.curl-example {
+  min-width: 0;
+  margin-bottom: var(--pf-space-3);
+}
+
+.curl-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pf-space-2);
+  margin-bottom: var(--pf-space-1);
+}
+
+.curl-title {
+  margin: 0;
+  color: var(--pf-text);
+  font-weight: 700;
+}
+
+/* A long line scrolls inside the block, never the page. */
+.curl-block {
+  margin: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre;
+  padding: var(--pf-space-3);
+  background-color: var(--pf-code);
+  color: var(--pf-code-text);
+  border-radius: var(--pf-radius-sm);
+  font-family: var(--pf-font-mono);
+  font-size: 0.875rem;
+}
+
+.curl-code {
+  font-family: inherit;
+  background: none;
+  color: inherit;
+}
+
+.copy-status,
+.curl-note,
+.status-notes {
+  color: var(--pf-text);
+}
+
+.curl-note {
+  margin: var(--pf-space-2) 0;
+}
+
+.status-notes {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.status-notes li + li {
+  margin-top: var(--pf-space-1);
+}
+
+.status-code {
+  font-family: var(--pf-font-mono);
+  font-weight: 700;
+  color: var(--pf-text);
+  background: none;
+}
+
+/*
+ * The site's own link rule (a:link and a:visited, outside this component) outranks
+ * .nc-button on an anchor and paints it as a text link. These restate the shared look's
+ * own tokens for a link styled as a button, and add nothing of their own.
+ */
+.quickstart-actions a.nc-button:link,
+.quickstart-actions a.nc-button:visited {
+  background-color: var(--pf-btn);
+  color: var(--pf-btn-text);
+}
+
+.quickstart-actions a.nc-button_secondary:link,
+.quickstart-actions a.nc-button_secondary:visited {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+}
+
+.quickstart-actions a.nc-button:link:hover,
+.quickstart-actions a.nc-button:visited:hover {
+  background-color: var(--pf-btn-hover);
+}
+
+.quickstart-actions a.nc-button_secondary:link:hover,
+.quickstart-actions a.nc-button_secondary:visited:hover {
+  background-color: var(--pf-subtle);
 }

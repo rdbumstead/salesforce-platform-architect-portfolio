@@ -8,6 +8,10 @@
 }
 
 .case-studies {
+  /* Below the fold, so the browser skips its layout and paint until it nears the screen. The
+     size is a first guess that the browser replaces with the real one after the first render. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 520px;
   max-width: 1024px;
   margin: 0 auto;
   padding: 0 var(--pf-space-4);
@@ -94,6 +98,58 @@
   margin: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* Where the cards sit side by side, each card shares four row tracks with the cards beside it
+   (metric, title, client, arrow). Titles then start level whether or not a card has a metric,
+   and whatever height a wrapped label takes. A card with no metric keeps its empty slot. */
+.metric-spacer {
+  display: none;
+}
+
+@media (min-width: 980px) {
+  .cards {
+    row-gap: 0;
+  }
+
+  .card {
+    display: grid;
+    grid-row: span 4;
+    grid-template-rows: subgrid;
+    margin-bottom: var(--pf-space-4);
+  }
+
+  .card-body {
+    display: grid;
+    grid-row: 1 / -1;
+    grid-template-rows: subgrid;
+    gap: 0;
+  }
+
+  .card-body > .metric {
+    grid-row: 1;
+    margin-bottom: 8px;
+  }
+
+  .card-body > .card-title {
+    grid-row: 2;
+    margin-bottom: 8px;
+  }
+
+  .card-body > .client {
+    grid-row: 3;
+    margin-bottom: 8px;
+  }
+
+  .card-body > .card-go {
+    grid-row: 4;
+    align-self: end;
+  }
+
+  .metric-spacer {
+    display: block;
+    visibility: hidden;
+  }
 }
 
 .metric-number {

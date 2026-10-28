@@ -2,14 +2,15 @@
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
-A Process API (PAPI) responsible for orchestrating, transforming, and filtering data 
-from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
+A Process API (PAPI) that combines, transforms and filters the portfolio's Salesforce data,
+the same records the System API (SAPI) serves, into responses shaped for a client. PAPI
+reads them in process, not through SAPI over HTTP (section 3).
 
 ### 1. Authentication Strategy
 - **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.
 - **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.
 - **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It is the only unauthenticated path, and the only path served on the Experience Cloud site domain (see its `servers` entry). Every other path is called on My Domain with the Bearer token.
-- **PAPI → SAPI**: in-process Apex (same transaction), not HTTP; see ADR-025 for why fan-out callouts were rejected.
+- **PAPI → SAPI**: in-process Apex in the same transaction, not HTTP. See section 3 and ADR-025 for why fan out callouts were rejected.
 
 ### 2. Versioning Strategy
 - **Pattern**: Header-based versioning takes precedence.
@@ -19,15 +20,16 @@ from the Salesforce System API (SAPI) for consumption by the Portfolio frontend.
 
 ### 3. Rate Limiting & Aggregation Math
 - **SAPI Limit**: 120 requests/minute.
-- **PAPI Aggregation**: A single `/profile/full` call triggers ~8 upstream SAPI calls.
-- **PAPI Limit**: Restricted to **15 requests/minute** (Standard Tier) to prevent cascading rate limit violations on SAPI (15 * 8 = 120).
+- **PAPI work per request**: PAPI never calls SAPI over HTTP. It reads the same records in process, in the same Apex transaction, through `QueryDefinitions` (ADR-033). One `/profile/full` request runs nine reads (owner, roles, highlights, skills, role skills, projects, certifications, education, testimonials) and builds one response.
+- **PAPI Limit**: **15 requests/minute** (Standard Tier) against SAPI's 120. One PAPI request runs about eight data reads in one transaction, the same records about eight SAPI requests would return. Eight data reads are not eight HTTP requests, but the lower limit keeps one caller's PAPI load in step with what the same data costs through SAPI (ADR-025).
+- **Why not HTTP** (ADR-025): making the reads HTTP requests to SAPI was rejected. The site's API Lab reaches PAPI through the `Portfolio_API` Named Credential, a callout into this same org, and a request that arrived as a same org callout may not call out again (ADR-015), so the fan out would fail on the site's own path. Each SAPI request would also be an inbound REST request counted against the org's daily API request allocation (15,000 on this Developer Edition), the callouts would run one after another inside the 120 second callout time a transaction allows, and they would all run as the one shared evaluator session, spending the SAPI limit every evaluator shares. So PAPI and SAPI stay distinct logical layers: PAPI reads the same records in process, through the query engine (`QueryDefinitions`) and request framework (`ApiRequestContext`) SAPI also uses, with its own query definitions and its own transformer (`PAPITransformer`). The deliberate exception is `/health`, which calls SAPI's `/sapi/v1/health` through `Portfolio_API` to prove the credential works.
 - **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. Every token from `POST /auth/token` is the same session, so all evaluators share one key per tier and one limit (SAPI 120, PAPI 15, `/ai/*` 10 per minute, ADR-028). `POST /auth/token` is also limited to 15 requests per minute per email and source IP.
 
 ### 4. Caching Strategy (Aggregation Logic)
-*Note: PAPI cannot pass SAPI headers verbatim due to mixed sensitivity in aggregated payloads.*
+*Note: each section of a PAPI response takes the cache policy its SAPI endpoint sends for the same data (`PAPITransformer`), and the response takes the strictest of its sections.*
 - **Rule**: Strictest policy wins.
-  1. If *any* upstream resource is `no-store` (e.g., Contact) → PAPI response is `no-store`.
-  2. If *any* upstream resource is `private` → PAPI response is `private`.
+  1. If *any* section's resource is `no-store` (e.g., Contact) → PAPI response is `no-store`.
+  2. If *any* section's resource is `private` → PAPI response is `private`.
   3. Otherwise → PAPI response is `public` with the minimum `max-age`.
 
 ### 5. Field Mapping (Transformation Layer)
@@ -105,7 +107,7 @@ OAuth2ClientCredentials ( Scopes: api )
 
 <h1 id="portfolio-process-api-papi--orchestration">Orchestration</h1>
 
-Endpoints that aggregate multiple SAPI calls
+Endpoints that combine several reads into one response
 
 ## getFullPortfolio
 
@@ -142,20 +144,11 @@ fetch('https://{domain}/services/apexrest/papi/v1/profile/full',
 
 The "Hydration" endpoint. Returns the entire portfolio state in a single call.
 
-**Parallel Execution Strategy**:
-The following groups are executed in parallel:
-1. **Config Group**: `/portfolio-config`, `/contacts`
-2. **Work History Group**: `/experience`, `/education`, `/certifications`
-3. **Portfolio Group**: `/projects`, `/skills`, `/testimonials`
+**How it is built**: nine reads in process, in one Apex transaction, through `QueryDefinitions`, not SAPI calls over HTTP (see the description's section 3). The reads are the owner, roles, highlights, skills (at most 100), the skills of each role, projects, certifications, education and approved testimonials. Each read returns its records whole, so there is no paging.
 
-*Note*: Junction object calls (e.g., `/project-skills`) are dependent on their parent calls and execute sequentially *within* their group.
+**Partial failure**: each section is read on its own. A section that fails comes back empty, the response is still `200 OK`, `X-Data-Integrity` is `partial` and `integrityNote` names the section.
 
-**Architecture Strategies**:
-1. **Recursive Pagination**: Consumes `X-Has-More` from SAPI to fetch all pages.
-2. **Partial Failure Tolerance**: "Best Effort" aggregation. 
-   - **Timeout**: 3 seconds per group.
-   - If a group fails, the main response returns `200 OK` with empty arrays for that section and `X-Data-Integrity: partial`.
-3. **Smart Caching**: Applies strictest upstream cache policy.
+**Caching**: the strictest cache policy of the sections read.
 
 <h3 id="getfullportfolio-parameters">Parameters</h3>
 
@@ -172,9 +165,9 @@ The following groups are executed in parallel:
 {
   "config": {
     "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-    "calendlyUrl": "https://calendly.com/ryanbumstead",
-    "githubUrl": "https://github.com/ryanbumstead",
-    "trailheadUrl": "https://trailblazer.me/id/ryanbumstead",
+    "calendlyUrl": "https://example.com/schedule",
+    "githubUrl": "https://example.com/source",
+    "trailheadUrl": "https://example.com/trailhead",
     "personalWebsiteUrl": "https://ryanbumstead.com",
     "careerObjective": "Driving digital transformation through architecture."
   },
@@ -183,8 +176,8 @@ The following groups are executed in parallel:
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://github.com/ryanbumstead",
-    "trailhead": "https://trailblazer.me/id/ryanbumstead",
+    "github": "https://example.com/source",
+    "trailhead": "https://example.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -237,9 +230,9 @@ The following groups are executed in parallel:
       "businessValue": "Increased interview rate by 40%",
       "status": "Live – In Production",
       "completionDate": "2025-12-01",
-      "heroImageUrl": "https://assets.portfolio.com/hero.png",
-      "liveUrl": "https://portfolio.ryanbumstead.com",
-      "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
+      "heroImageUrl": "https://example.com/images/hero.png",
+      "liveUrl": "https://example.com/portfolio",
+      "repositoryUrl": "https://example.com/source",
       "technologies": [
         "LWR",
         "Apex"
@@ -276,7 +269,7 @@ The following groups are executed in parallel:
       "relationship": "Manager",
       "quote": "Ryan is a beast at architecture.",
       "vibe": "Professional",
-      "avatarUrl": "https://linkedin.com/in/janedoe/photo"
+      "avatarUrl": "https://example.com/images/avatar.jpg"
     }
   ],
   "integrityNote": "complete"
@@ -354,7 +347,7 @@ The following groups are executed in parallel:
 |Status|Header|Type|Format|Description|
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|200|Cache-Control|string||Derived from upstream SAPI resources (Contacts = no-store).|
+|200|Cache-Control|string||The strictest policy of the sections read. The contact section makes it no-store.|
 |200|X-Data-Integrity|string||Indicates if the payload is complete or has partial missing data.|
 |400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
@@ -400,15 +393,10 @@ fetch('https://{domain}/services/apexrest/papi/v1/profile/summary',
 
 *Get Employment Profile Only*
 
-Orchestrates calls to Contact, Work Experience, Skills, Education, and Certifications.
-Stitches junction objects (ExperienceSkill, CertificationSkill) to their parents.
-
-**SAPI Calls**:
-- `GET /contacts`
-- `GET /experience` → `GET /experience-skills?experienceId={id}` for each
-- `GET /skills`
-- `GET /certifications` → `GET /certification-skills?certificationId={id}` for each
-- `GET /education`
+Reads the owner, roles, skills, certifications and education in process, in one
+Apex transaction, and attaches each role's skills to it. The same records SAPI's
+`/contacts`, `/experience`, `/experience-skills`, `/skills`, `/certifications`
+and `/education` serve, without calling them over HTTP.
 
 **Use Case**: Resume page, profile cards
 
@@ -433,8 +421,8 @@ strictest-policy-wins.
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://github.com/ryanbumstead",
-    "trailhead": "https://trailblazer.me/id/ryanbumstead",
+    "github": "https://example.com/source",
+    "trailhead": "https://example.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -611,11 +599,8 @@ fetch('https://{domain}/services/apexrest/papi/v1/projects/featured',
 
 Retrieves projects marked as 'Featured' with nested Skills and Assets.
 
-**SAPI Calls**:
-- `GET /projects?isFeatured=true`
-- For each project:
-  - `GET /project-skills?projectId={id}`
-  - `GET /project-assets?projectId={id}`
+**Reads**, in process in one Apex transaction: the featured projects, then their skills
+and their assets, each in one query for every project at once.
 
 **Use Case**: Home page project showcase, portfolio gallery
 
@@ -640,9 +625,9 @@ Retrieves projects marked as 'Featured' with nested Skills and Assets.
     "businessValue": "Increased interview rate by 40%",
     "status": "Live – In Production",
     "completionDate": "2025-12-01",
-    "heroImageUrl": "https://assets.portfolio.com/hero.png",
-    "liveUrl": "https://portfolio.ryanbumstead.com",
-    "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
+    "heroImageUrl": "https://example.com/images/hero.png",
+    "liveUrl": "https://example.com/portfolio",
+    "repositoryUrl": "https://example.com/source",
     "technologies": [
       "Apex"
     ],
@@ -650,7 +635,7 @@ Retrieves projects marked as 'Featured' with nested Skills and Assets.
     "assets": [
       {
         "type": "Image",
-        "url": "https://assets.portfolio.com/diagram.png",
+        "url": "https://example.com/images/diagram.png",
         "caption": "System Architecture Diagram"
       }
     ]
@@ -816,13 +801,8 @@ fetch('https://{domain}/services/apexrest/papi/v1/resume/generate',
 
 Generates an ATS-optimized plain text resume. 
 
-**SAPI Calls**:
-- `GET /contacts`
-- `GET /experience`
-- `GET /experience-highlights?persona={persona}` - Filters bullets by target audience
-- `GET /skills`
-- `GET /certifications`
-- `GET /education`
+**Reads**, in process in one Apex transaction: the owner, roles, highlights (by persona),
+skills, certifications and education. The same records SAPI serves, without calling it.
 
 **Transformation Logic**:
 - Formats dates as "MMM YYYY - MMM YYYY" or "MMM YYYY - Present"
@@ -836,8 +816,8 @@ Generates an ATS-optimized plain text resume.
 - `Architect`: Architecture/Design highlights only
 - Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.
 
-**SAPI Mapping**:
-- PAPI persona values are passed directly to SAPI `/experience-highlights?persona={value}`
+**Persona values**:
+- `Admin`, `Developer` or `Architect`. Any other value returns 400 BAD_REQUEST.
 - If persona is omitted, all highlights are returned (no filtering)
 
 **Response format**:
@@ -858,7 +838,7 @@ Generates an ATS-optimized plain text resume.
 
 **persona**: Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.
 
-**Note**: This value is passed directly to SAPI's persona filter.
+**Note**: Highlights are filtered by their persona tag in process.
 
 #### Enumerated Values
 
@@ -1008,8 +988,7 @@ fetch('https://{domain}/services/apexrest/papi/v1/testimonials/feed',
 
 Retrieves testimonials with "Vibe Control" logic applied.
 
-**SAPI Calls**:
-- `GET /testimonials?limit=200` (returns only `Approved__c = true`)
+**Reads**, in process: approved testimonials only (`Approved__c = true`), at most 200.
 
 **Filtering Logic**:
 - `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.
@@ -1048,7 +1027,7 @@ any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest firs
     "relationship": "Manager",
     "quote": "Ryan is a beast at architecture",
     "vibe": "Professional",
-    "avatarUrl": "https://linkedin.com/in/janedoe/photo"
+    "avatarUrl": "https://example.com/images/avatar.jpg"
   }
 ]
 ```
@@ -1820,9 +1799,9 @@ This operation does not require authentication
 {
   "config": {
     "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-    "calendlyUrl": "https://calendly.com/ryanbumstead",
-    "githubUrl": "https://github.com/ryanbumstead",
-    "trailheadUrl": "https://trailblazer.me/id/ryanbumstead",
+    "calendlyUrl": "https://example.com/schedule",
+    "githubUrl": "https://example.com/source",
+    "trailheadUrl": "https://example.com/trailhead",
     "personalWebsiteUrl": "https://ryanbumstead.com",
     "careerObjective": "Driving digital transformation through architecture.",
     "jiraProjectKey": "SPAP",
@@ -1833,8 +1812,8 @@ This operation does not require authentication
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://github.com/ryanbumstead",
-    "trailhead": "https://trailblazer.me/id/ryanbumstead",
+    "github": "https://example.com/source",
+    "trailhead": "https://example.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -1876,9 +1855,9 @@ This operation does not require authentication
       "businessValue": "Increased interview rate by 40%",
       "status": "Live – In Production",
       "completionDate": "2025-12-01",
-      "heroImageUrl": "https://assets.portfolio.com/hero.png",
-      "liveUrl": "https://portfolio.ryanbumstead.com",
-      "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
+      "heroImageUrl": "https://example.com/images/hero.png",
+      "liveUrl": "https://example.com/portfolio",
+      "repositoryUrl": "https://example.com/source",
       "technologies": [
         "Apex"
       ],
@@ -1886,7 +1865,7 @@ This operation does not require authentication
       "assets": [
         {
           "type": "Image",
-          "url": "https://assets.portfolio.com/diagram.png",
+          "url": "https://example.com/images/diagram.png",
           "caption": "System Architecture Diagram"
         }
       ]
@@ -1921,7 +1900,7 @@ This operation does not require authentication
       "relationship": "Manager",
       "quote": "Ryan is a beast at architecture",
       "vibe": "Professional",
-      "avatarUrl": "https://linkedin.com/in/janedoe/photo"
+      "avatarUrl": "https://example.com/images/avatar.jpg"
     }
   ],
   "integrityNote": "complete"
@@ -1960,8 +1939,8 @@ The master payload for initial app load
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://github.com/ryanbumstead",
-    "trailhead": "https://trailblazer.me/id/ryanbumstead",
+    "github": "https://example.com/source",
+    "trailhead": "https://example.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -2088,9 +2067,9 @@ Work Experience enriched with related Skills and Highlights
   "businessValue": "Increased interview rate by 40%",
   "status": "Live – In Production",
   "completionDate": "2025-12-01",
-  "heroImageUrl": "https://assets.portfolio.com/hero.png",
-  "liveUrl": "https://portfolio.ryanbumstead.com",
-  "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
+  "heroImageUrl": "https://example.com/images/hero.png",
+  "liveUrl": "https://example.com/portfolio",
+  "repositoryUrl": "https://example.com/source",
   "technologies": [
     "Apex"
   ],
@@ -2098,7 +2077,7 @@ Work Experience enriched with related Skills and Highlights
   "assets": [
     {
       "type": "Image",
-      "url": "https://assets.portfolio.com/diagram.png",
+      "url": "https://example.com/images/diagram.png",
       "caption": "System Architecture Diagram"
     }
   ]
@@ -2153,7 +2132,7 @@ Project enriched with Skills and Assets
   "relationship": "Manager",
   "quote": "Ryan is a beast at architecture",
   "vibe": "Professional",
-  "avatarUrl": "https://linkedin.com/in/janedoe/photo"
+  "avatarUrl": "https://example.com/images/avatar.jpg"
 }
 
 ```
@@ -2192,9 +2171,9 @@ Project enriched with Skills and Assets
 ```json
 {
   "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-  "calendlyUrl": "https://calendly.com/ryanbumstead",
-  "githubUrl": "https://github.com/ryanbumstead",
-  "trailheadUrl": "https://trailblazer.me/id/ryanbumstead",
+  "calendlyUrl": "https://example.com/schedule",
+  "githubUrl": "https://example.com/source",
+  "trailheadUrl": "https://example.com/trailhead",
   "personalWebsiteUrl": "https://ryanbumstead.com",
   "careerObjective": "Driving digital transformation through architecture.",
   "jiraProjectKey": "SPAP",
@@ -2231,8 +2210,8 @@ Public configuration. The owner's email and phone are never returned.
   "fullName": "Ryan Bumstead",
   "title": "Platform Architect",
   "linkedIn": "https://linkedin.com/in/ryanbumstead",
-  "github": "https://github.com/ryanbumstead",
-  "trailhead": "https://trailblazer.me/id/ryanbumstead",
+  "github": "https://example.com/source",
+  "trailhead": "https://example.com/trailhead",
   "portfolioUrl": "https://ryanbumstead.com",
   "bio": "Specializing in API-led connectivity..."
 }

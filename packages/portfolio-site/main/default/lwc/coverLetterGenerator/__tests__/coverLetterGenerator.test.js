@@ -12,11 +12,19 @@ import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import CoverLetterGenerator, {
   STATUS_STEPS,
+  TOUR_STOP,
   statusLineFor
 } from "c/coverLetterGenerator";
 import generateCoverLetter from "@salesforce/apex/ApiLabController.generateCoverLetter";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import { trackEvent } from "c/analyticsService";
+import { loadScript } from "lightning/platformResourceLoader";
+import { showMe } from "c/tourShowMe";
+import {
+  letterParagraphs,
+  letterFileName,
+  writeLetterPdf
+} from "../letterFormat";
 
 jest.mock(
   "@salesforce/apex/ApiLabController.generateCoverLetter",
@@ -33,6 +41,18 @@ jest.mock(
   { virtual: true }
 );
 
+// config/jest.config.js maps every lightning/* import to one universal mock file, so keep its
+// default export and add the loader beside it, as the resume's tests do.
+jest.mock("lightning/platformResourceLoader", () => {
+  const universal = jest.requireActual("lightning/platformResourceLoader");
+  return {
+    __esModule: true,
+    default: universal.default,
+    loadScript: jest.fn(),
+    loadStyle: jest.fn()
+  };
+});
+
 const HEADER = {
   name: "Ryan Bumstead",
   title: "Salesforce Platform Architect",
@@ -48,7 +68,9 @@ jest.mock(
     trackEvent: jest.fn(),
     EVENTS: {
       AI_GENERATION_COMPLETED: "ai_generation_completed",
-      AI_COMPLETE_FAILURE: "ai_complete_failure"
+      AI_COMPLETE_FAILURE: "ai_complete_failure",
+      COVER_LETTER_DOWNLOADED: "cover_letter_downloaded",
+      COVER_LETTER_COPIED: "cover_letter_copied"
     }
   }),
   { virtual: true }
@@ -129,13 +151,13 @@ function query(element, selector) {
 function setInput(element, selector, value) {
   const input = query(element, selector);
   input.value = value;
-  input.dispatchEvent(new CustomEvent("change"));
+  input.dispatchEvent(new CustomEvent("input"));
 }
 
 async function fillAndGenerate(element) {
-  setInput(element, "lightning-input.company-input", "Acme");
-  setInput(element, "lightning-input.title-input", "Architect");
-  setInput(element, "lightning-textarea.description-input", "Apex and APIs");
+  setInput(element, "input.company-input", "Acme");
+  setInput(element, "input.title-input", "Architect");
+  setInput(element, "textarea.description-input", "Apex and APIs");
   await flushPromises();
   query(element, "button.generate-button").click();
   await flushPromises();
@@ -155,15 +177,17 @@ describe("c-cover-letter-generator", () => {
     await flushPromises();
 
     for (const [selector, label, field] of [
-      ["lightning-input.company-input", "Company Name", "companyName"],
-      ["lightning-input.title-input", "Job Title", "jobTitle"]
+      ["input.company-input", "Company Name", "companyName"],
+      ["input.title-input", "Job Title", "jobTitle"]
     ]) {
       const input = query(element, selector);
-      // The base asterisk fails contrast on the dark branding, so the base fields
-      // are not flagged required. Their accessible name says it instead.
-      expect(input.label).toBe(`${label} (required)`);
-      expect(input.variant).toBe("label-hidden");
-      expect(input.required).toBeFalsy();
+      // A native control carries required itself, and its hidden label names it for
+      // screen readers. The visible label and marker are drawn beside it, hidden from them.
+      const hidden = query(element, `label[for="${input.id}"]`);
+      expect(hidden.textContent.trim()).toBe(label);
+      expect(hidden.classList.contains("nc-visually-hidden")).toBe(true);
+      expect(input.required).toBe(true);
+      expect(input.classList.contains("nc-control")).toBe(true);
       expect(query(element, `[data-id="required-${field}"]`).textContent).toBe(
         "*"
       );
@@ -224,11 +248,11 @@ describe("c-cover-letter-generator", () => {
     const button = query(element, "button.generate-button");
     expect(button.disabled).toBe(true);
 
-    setInput(element, "lightning-input.company-input", "Acme");
+    setInput(element, "input.company-input", "Acme");
     await flushPromises();
     expect(button.disabled).toBe(true);
 
-    setInput(element, "lightning-input.title-input", "Architect");
+    setInput(element, "input.title-input", "Architect");
     await flushPromises();
     expect(button.disabled).toBe(false);
   });
@@ -246,8 +270,8 @@ describe("c-cover-letter-generator", () => {
   it("sends the trimmed inputs to the Apex proxy", async () => {
     generateCoverLetter.mockResolvedValue(GEMINI_RESULT);
     const element = createComponent();
-    setInput(element, "lightning-input.company-input", "  Acme ");
-    setInput(element, "lightning-input.title-input", " Architect");
+    setInput(element, "input.company-input", "  Acme ");
+    setInput(element, "input.title-input", " Architect");
     await flushPromises();
 
     query(element, "button.generate-button").click();
@@ -420,8 +444,8 @@ describe("c-cover-letter-generator", () => {
       generateCoverLetter.mockReturnValue(new Promise(() => {}));
       const element = createComponent();
       await flushPromises();
-      setInput(element, "lightning-input.company-input", "Acme");
-      setInput(element, "lightning-input.title-input", "Architect");
+      setInput(element, "input.company-input", "Acme");
+      setInput(element, "input.title-input", "Architect");
       await flushPromises();
       query(element, "button.generate-button").click();
       await Promise.resolve();
@@ -494,8 +518,8 @@ describe("c-cover-letter-generator", () => {
       generateCoverLetter.mockReturnValue(new Promise(() => {}));
       const element = createComponent();
       await flushPromises();
-      setInput(element, "lightning-input.company-input", "Acme");
-      setInput(element, "lightning-input.title-input", "Architect");
+      setInput(element, "input.company-input", "Acme");
+      setInput(element, "input.title-input", "Architect");
       await flushPromises();
       query(element, "button.generate-button").click();
       await Promise.resolve();
@@ -735,5 +759,294 @@ describe("c-cover-letter-generator", () => {
     );
     expect(css).toMatch(/\.generate-button \{[^}]*min-height: 44px/);
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+  });
+
+  describe("the tour's stop D", () => {
+    it("marks the job description field as the anchor and shows it on request", async () => {
+      const element = createComponent();
+      await flushPromises();
+      const field = query(element, "textarea.description-input");
+      expect(field.hasAttribute("data-tour-anchor")).toBe(true);
+      expect(TOUR_STOP).toBe("D");
+      field.scrollIntoView = jest.fn();
+      field.focus = jest.fn();
+
+      showMe("C");
+      expect(field.scrollIntoView).not.toHaveBeenCalled();
+      showMe("D");
+      expect(field.scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(field.focus).toHaveBeenCalledWith({ preventScroll: true });
+    });
+
+    it("stops listening when the page goes away", async () => {
+      const element = createComponent();
+      await flushPromises();
+      const field = query(element, "textarea.description-input");
+      field.scrollIntoView = jest.fn();
+      document.body.removeChild(element);
+
+      showMe("D");
+      expect(field.scrollIntoView).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the native fields", () => {
+    it("ties every field to a label and keeps the length limits", async () => {
+      const element = createComponent();
+      await flushPromises();
+      for (const [selector, max] of [
+        ["input.company-input", "120"],
+        ["input.title-input", "120"],
+        ["textarea.description-input", "4000"]
+      ]) {
+        const control = query(element, selector);
+        expect(control.getAttribute("maxlength")).toBe(max);
+        expect(query(element, `label[for="${control.id}"]`)).not.toBeNull();
+        expect(control.classList.contains("nc-control")).toBe(true);
+      }
+      expect(
+        query(element, ".description-label").classList.contains(
+          "nc-visually-hidden"
+        )
+      ).toBe(false);
+      expect(query(element, "lightning-input")).toBeNull();
+      expect(query(element, "lightning-textarea")).toBeNull();
+    });
+  });
+
+  describe("the letter as a page", () => {
+    const LETTER =
+      "Dear Hiring Manager,\n\nI build integrations that last.\n\nSincerely,\nRyan Bumstead";
+    let jsPdf;
+
+    function fakeDoc() {
+      const state = { size: 10 };
+      const doc = {
+        internal: { pageSize: { getWidth: () => 612, getHeight: () => 792 } },
+        drawn: [],
+        setFont: jest.fn(),
+        setFontSize: jest.fn((size) => {
+          state.size = size;
+        }),
+        getTextWidth: jest.fn((text) => String(text).length * state.size * 0.5),
+        setTextColor: jest.fn(),
+        setDrawColor: jest.fn(),
+        setLineWidth: jest.fn(),
+        line: jest.fn(),
+        text: jest.fn((text) => doc.drawn.push({ text })),
+        textWithLink: jest.fn((text, x, y, options) =>
+          doc.drawn.push({ text, url: options.url })
+        ),
+        addPage: jest.fn(),
+        addFileToVFS: jest.fn(),
+        addFont: jest.fn(),
+        save: jest.fn()
+      };
+      return doc;
+    }
+
+    async function letterShown(result = { ...GEMINI_RESULT, content: LETTER }) {
+      generateCoverLetter.mockResolvedValue(result);
+      const element = createComponent();
+      getHeader.emit(HEADER);
+      await flushPromises();
+      await fillAndGenerate(element);
+      return element;
+    }
+
+    beforeEach(() => {
+      jsPdf = fakeDoc();
+      loadScript.mockResolvedValue();
+      window.jspdf = { jsPDF: jest.fn(() => jsPdf) };
+      global.fetch = jest.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          arrayBuffer: () => Promise.resolve(new Uint8Array([65, 66]).buffer)
+        })
+      );
+    });
+
+    afterEach(() => {
+      delete window.jspdf;
+      delete global.fetch;
+    });
+
+    it("shows the header and the letter on one sheet with the layout's paper and ink", async () => {
+      const element = await letterShown();
+      const sheet = query(element, '[data-id="letter-sheet"]');
+      expect(sheet.contains(query(element, '[data-id="letter-header"]'))).toBe(
+        true
+      );
+      expect(sheet.contains(query(element, '[data-id="letter"]'))).toBe(true);
+      const style = sheet.getAttribute("style");
+      expect(style).toContain("--resume-paper: #ffffff");
+      expect(style).toContain("--resume-ink: #101828");
+    });
+
+    it("puts the template letter on the same sheet", async () => {
+      const element = await letterShown(LOCAL_RESULT);
+      expect(
+        query(element, '[data-id="letter-sheet"]').contains(
+          query(element, '[data-id="letter"]')
+        )
+      ).toBe(true);
+    });
+
+    it("centres a sheet of page width in the CSS", () => {
+      const css = readFileSync(
+        join(__dirname, "..", "coverLetterGenerator.css"),
+        "utf8"
+      );
+      const rule = css.match(/\.letter-sheet \{[^}]*\}/)[0];
+      expect(rule).toContain("max-width: 8.5in");
+      expect(rule).toContain("margin: var(--pf-space-2) auto 0");
+      expect(css).toMatch(/^@import "c\/nativeControls";/);
+      expect(css).toContain('content: "\\2022"');
+    });
+
+    it("offers Download PDF and Copy text only once a letter is shown", async () => {
+      const before = createComponent();
+      await flushPromises();
+      expect(query(before, "button.download-letter")).toBeNull();
+      document.body.removeChild(before);
+
+      const element = await letterShown();
+      const download = query(element, "button.download-letter");
+      const copy = query(element, "button.copy-letter");
+      expect(download.textContent.trim()).toBe("Download PDF");
+      expect(download.disabled).toBe(false);
+      expect(copy.textContent.trim()).toBe("Copy text");
+      expect(copy.classList.contains("nc-button_secondary")).toBe(true);
+      expect(
+        query(element, '[data-id="export-status"]').getAttribute("aria-live")
+      ).toBe("polite");
+    });
+
+    it("downloads a text PDF with the resume's header, named for the company", async () => {
+      const element = await letterShown();
+      query(element, "button.download-letter").click();
+      await flushPromises();
+      await flushPromises();
+      await flushPromises();
+
+      expect(loadScript).toHaveBeenCalledTimes(1);
+      expect(window.jspdf.jsPDF).toHaveBeenCalledWith({
+        unit: "pt",
+        format: "letter",
+        compress: true
+      });
+      expect(jsPdf.save).toHaveBeenCalledWith(
+        "Ryan-Bumstead-Cover-Letter-Acme.pdf"
+      );
+      const texts = jsPdf.drawn.map((piece) => piece.text);
+      expect(texts.slice(0, 2)).toEqual([
+        "Ryan Bumstead",
+        "Salesforce Platform Architect"
+      ]);
+      expect(texts).toContain("Dear Hiring Manager,");
+      expect(
+        jsPdf.drawn.filter((piece) => piece.url).map((piece) => piece.text)
+      ).toEqual(["LinkedIn", "GitHub", "Portfolio", "Contact"]);
+      expect(query(element, ".export-message").textContent).toContain(
+        "PDF downloaded"
+      );
+      expect(trackEvent).toHaveBeenCalledWith("cover_letter_downloaded", {
+        provider: "Gemini"
+      });
+    });
+
+    it("says so plainly when the PDF cannot be made, and tries again next time", async () => {
+      loadScript.mockRejectedValueOnce(new Error("blocked"));
+      const element = await letterShown();
+      query(element, "button.download-letter").click();
+      await flushPromises();
+      await flushPromises();
+      expect(query(element, ".export-error").textContent).toContain(
+        "The PDF could not be created"
+      );
+      expect(trackEvent).not.toHaveBeenCalledWith(
+        "cover_letter_downloaded",
+        expect.anything()
+      );
+
+      query(element, "button.download-letter").click();
+      await flushPromises();
+      await flushPromises();
+      await flushPromises();
+      expect(loadScript).toHaveBeenCalledTimes(2);
+      expect(jsPdf.save).toHaveBeenCalled();
+    });
+
+    it("copies the letter text alone and sends the provider", async () => {
+      const writeText = jest.fn().mockResolvedValue();
+      Object.defineProperty(navigator, "clipboard", {
+        value: { writeText },
+        configurable: true
+      });
+      const element = await letterShown();
+      query(element, "button.copy-letter").click();
+      await flushPromises();
+
+      expect(writeText).toHaveBeenCalledWith(LETTER);
+      expect(query(element, ".export-message").textContent).toContain("copied");
+      expect(trackEvent).toHaveBeenCalledWith("cover_letter_copied", {
+        provider: "Gemini"
+      });
+      delete navigator.clipboard;
+    });
+
+    it("says what to do when the clipboard is not there", async () => {
+      const element = await letterShown();
+      query(element, "button.copy-letter").click();
+      await flushPromises();
+      expect(query(element, ".export-error").textContent).toContain(
+        "Select the letter"
+      );
+    });
+
+    it("splits the letter into paragraphs and lines", () => {
+      expect(letterParagraphs(LETTER)).toEqual([
+        ["Dear Hiring Manager,"],
+        ["I build integrations that last."],
+        ["Sincerely,", "Ryan Bumstead"]
+      ]);
+      expect(letterParagraphs("a\r\n\r\n \n\nb")).toEqual([["a"], ["b"]]);
+      expect(letterParagraphs(null)).toEqual([]);
+    });
+
+    it("names the file from the owner and the company, leaving out what is unknown", () => {
+      expect(letterFileName("Ryan Bumstead", "Acme Financial, Inc.")).toBe(
+        "Ryan-Bumstead-Cover-Letter-Acme-Financial-Inc.pdf"
+      );
+      expect(letterFileName("", "")).toBe("Cover-Letter.pdf");
+      expect(letterFileName("Ryan Bumstead", undefined)).toBe(
+        "Ryan-Bumstead-Cover-Letter.pdf"
+      );
+    });
+
+    it("leaves a line's space between paragraphs and never adds a contact line", () => {
+      const doc = fakeDoc();
+      const trace = [];
+      writeLetterPdf(
+        doc,
+        {
+          header: { name: "Ryan Bumstead", title: "Architect", links: [] },
+          content: LETTER
+        },
+        { trace }
+      );
+      const body = trace.filter((piece) => piece.section === "letter");
+      expect(body.map((piece) => piece.text)).toEqual([
+        "Dear Hiring Manager,",
+        "I build integrations that last.",
+        "Sincerely,",
+        "Ryan Bumstead"
+      ]);
+      // A 14 pt line plus 14 pt of paragraph space between paragraphs, 14 pt inside one.
+      expect(body[1].y - body[0].y).toBe(28);
+      expect(body[3].y - body[2].y).toBe(14);
+      expect(trace.map((piece) => piece.text).join(" ")).not.toMatch(/@/);
+    });
   });
 });

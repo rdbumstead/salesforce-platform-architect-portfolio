@@ -93,6 +93,12 @@ const OPTIONS = {
   contactName: []
 };
 
+/** Picks a path in the native endpoint select, as a visitor does. */
+function chooseEndpoint(select, path) {
+  select.value = path;
+  select.dispatchEvent(new CustomEvent("change"));
+}
+
 const flush = () => new Promise((resolve) => process.nextTick(resolve));
 
 const $ = (element, selector) => element.shadowRoot.querySelector(selector);
@@ -129,9 +135,7 @@ function create(options = OPTIONS) {
 }
 
 async function choosePath(element, path) {
-  $(element, "lightning-combobox.endpoint-picker").dispatchEvent(
-    new CustomEvent("change", { detail: { value: path } })
-  );
+  chooseEndpoint($(element, "select.endpoint-picker"), path);
   await flush();
 }
 
@@ -296,7 +300,7 @@ describe("c-api-tester phone sections", () => {
     const element = create();
     await flush();
 
-    expect($(element, "lightning-combobox.endpoint-picker")).not.toBeNull();
+    expect($(element, "select.endpoint-picker")).not.toBeNull();
     expect($(element, "button.execute-button")).not.toBeNull();
     ["filters", "advanced", "token"].forEach((section) => {
       const button = disclosure(element, section);

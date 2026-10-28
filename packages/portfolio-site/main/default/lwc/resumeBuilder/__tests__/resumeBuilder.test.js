@@ -9,7 +9,11 @@
  * @Created           : 01/03/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import ResumeBuilder from "c/resumeBuilder";
+import ResumeBuilder, {
+  reduceError,
+  NO_ANSWER_MESSAGE,
+  NO_RESUME_MESSAGE
+} from "c/resumeBuilder";
 import getResume from "@salesforce/apex/ResumeController.getResume";
 import { loadScript } from "lightning/platformResourceLoader";
 import { trackEvent } from "c/analyticsService";
@@ -174,7 +178,7 @@ function queryAll(element, selector) {
 }
 
 function button(element, cssClass) {
-  return query(element, `lightning-button.${cssClass}`);
+  return query(element, `button.${cssClass}`);
 }
 
 /**
@@ -339,13 +343,14 @@ describe("c-resume-builder", () => {
     getResume.emit(RESUME);
     await flushPromises();
 
-    const picker = query(element, "lightning-combobox.persona-picker");
-    expect(picker.label).toBe("Tailor for");
-    expect(picker.options.map((option) => option.label)).toEqual([
-      "Platform Architect",
-      "Salesforce Developer",
-      "System Admin"
-    ]);
+    const picker = query(element, "select.persona-picker");
+    const label = query(element, `label[for="${picker.id}"]`);
+    expect(label.textContent.trim()).toBe("Tailor for");
+    expect(
+      Array.from(picker.options).map((option) => option.textContent.trim())
+    ).toEqual(["Platform Architect", "Salesforce Developer", "System Admin"]);
+    expect(picker.value).toBe("Architect");
+    expect(picker.classList.contains("nc-control")).toBe(true);
   });
 
   it("re-wires with the new persona when the picker changes", async () => {
@@ -353,10 +358,9 @@ describe("c-resume-builder", () => {
     getResume.emit(RESUME);
     await flushPromises();
 
-    const picker = query(element, "lightning-combobox.persona-picker");
-    picker.dispatchEvent(
-      new CustomEvent("change", { detail: { value: "Developer" } })
-    );
+    const picker = query(element, "select.persona-picker");
+    picker.value = "Developer";
+    picker.dispatchEvent(new CustomEvent("change"));
     await flushPromises();
 
     expect(getResume.getLastConfig()).toEqual({ persona: "Developer" });
@@ -373,13 +377,19 @@ describe("c-resume-builder", () => {
     getResume.emit(RESUME);
     await flushPromises();
 
-    expect(button(element, "download-pdf").variant).toBe("brand");
-    expect(button(element, "copy-ats").variant).toBe("neutral");
+    expect(button(element, "download-pdf").className).toBe(
+      "nc-button download-pdf"
+    );
     expect(
-      queryAll(element, "lightning-button").filter(
-        (control) => control.variant === "brand"
+      button(element, "copy-ats").classList.contains("nc-button_secondary")
+    ).toBe(true);
+    expect(
+      queryAll(element, "button.nc-button").filter(
+        (control) => !control.classList.contains("nc-button_secondary")
       )
     ).toHaveLength(1);
+    expect(query(element, "lightning-button")).toBeNull();
+    expect(query(element, "lightning-combobox")).toBeNull();
     expect(query(element, ".config-panel")).not.toBeNull();
     expect(query(element, '[class*="slds-theme_"]')).toBeNull();
     expect(query(element, '[class*="slds-text-color_"]')).toBeNull();
@@ -413,6 +423,46 @@ describe("c-resume-builder", () => {
       "Invalid persona. Valid values: Admin, Developer, Architect"
     );
     expect(button(element, "download-pdf").disabled).toBe(true);
+  });
+
+  it("says what happened in place of the platform's raw failure text", async () => {
+    const element = createComponent();
+    getResume.error({ message: "Failed to get error from response" });
+    await flushPromises();
+
+    const errorState = query(element, ".error-state");
+    expect(errorState.textContent).toContain("The resume could not be loaded.");
+    expect(errorState.textContent).toContain(NO_ANSWER_MESSAGE);
+    expect(errorState.textContent).not.toContain("Failed to get error");
+    expect(query(element, ".empty-state")).toBeNull();
+  });
+
+  it("never shows the empty state when the call answers with no resume", async () => {
+    const element = createComponent();
+    getResume.emit(null);
+    await flushPromises();
+
+    expect(query(element, ".empty-state")).toBeNull();
+    expect(query(element, ".error-state").textContent).toContain(
+      NO_RESUME_MESSAGE
+    );
+    expect(button(element, "download-pdf").disabled).toBe(true);
+  });
+
+  it("reduces errors to the controller's message or a plain sentence", () => {
+    expect(reduceError(null)).toBe("");
+    expect(reduceError({ body: { message: "Invalid persona." } })).toBe(
+      "Invalid persona."
+    );
+    expect(
+      reduceError({ body: [{ message: "One" }, {}, { message: "Two" }] })
+    ).toBe("One, Two");
+    expect(reduceError({ body: [] })).toBe(NO_ANSWER_MESSAGE);
+    expect(reduceError({})).toBe(NO_ANSWER_MESSAGE);
+    expect(reduceError({ message: "  " }, "Try again.")).toBe("Try again.");
+    expect(
+      reduceError({ body: { message: "Failed to get error from response" } })
+    ).toBe(NO_ANSWER_MESSAGE);
   });
 
   it("shows the empty state when the resume has no content", async () => {

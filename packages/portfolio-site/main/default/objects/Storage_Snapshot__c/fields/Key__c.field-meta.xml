@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Key__c</fullName>
+    <caseSensitive>true</caseSensitive>
+    <description
+  >Names the one record the job keeps. Always "current", so each run overwrites the same row.</description>
+    <externalId>true</externalId>
+    <inlineHelpText
+  >Set by the storage snapshot job. Always current.</inlineHelpText>
+    <label>Key</label>
+    <length>40</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

@@ -64,7 +64,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/testimonials\" />\n<meta property=\"og:title\" content=\"Testimonials | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Leave a testimonial for Ryan Bumstead. Every submission is reviewed before it appears.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/testimonials\" />\n<meta name=\"twitter:title\" content=\"Testimonials | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Leave a testimonial for Ryan Bumstead. Every submission is reviewed before it appears.\" />",
                 "description": "Leave a testimonial for Ryan Bumstead. Every submission is reviewed before it appears.",
                 "pageTitle": "Testimonials | Ryan Bumstead",
                 "recordId": "{!recordId}"

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Payload__c</fullName>
+    <description
+  >The snapshot as JSON: storage totals, the data and file breakdowns by area, and the site usage readings. Aggregates only, never a record name or a file name.</description>
+    <inlineHelpText>Set by the storage snapshot job.</inlineHelpText>
+    <label>Payload</label>
+    <length>32768</length>
+    <type>LongTextArea</type>
+    <visibleLines>10</visibleLines>
+</CustomField>

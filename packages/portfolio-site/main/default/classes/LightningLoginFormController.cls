@@ -1,3 +1,13 @@
+/**
+ * @description       : Username and password login for the site's login form. Signs in with
+ *                      Site.login and reports which sign in options the site offers.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
+ * @Created           : 01/03/2026
+ * @Test Class        : [LightningLoginFormControllerTest]
+ **/
 global class LightningLoginFormController {
   public LightningLoginFormController() {
   }

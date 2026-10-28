@@ -7,43 +7,6 @@
         Each part below is live, so a technical reviewer can check the work
         instead of taking my word for it.
       </p>
-      <div class="tour-open">
-        <button
-          type="button"
-          class="tour-button"
-          aria-expanded={tourExpandedText}
-          aria-controls="build-tour"
-          data-id="tour-button"
-          onclick={handleTourClick}
-        >
-          {tourButtonLabel} <span aria-hidden="true">↓</span>
-        </button>
-        <div
-          id="build-tour"
-          class="tour reveal"
-          data-id="tour"
-          hidden={tourHidden}
-        >
-          <h3 class="tour-heading" data-id="tour-heading" tabindex="-1">
-            {tourHeading}
-          </h3>
-          <p class="tour-intro">One stop per pillar.</p>
-          <ol class="tour-list">
-            <template for:each={tourSteps} for:item="step">
-              <li key={step.key} class="tour-step" data-key={step.key}>
-                <span class="tour-lead">
-                  <span class="tour-number" aria-hidden="true"
-                    >{step.number}</span
-                  >
-                  <a class="tour-link" href={step.href}>{step.title}</a>
-                </span>
-                <span class="tour-text">{step.text}</span>
-                <span class="tour-duration">{step.duration}</span>
-              </li>
-            </template>
-          </ol>
-        </div>
-      </div>
       <ul class="build-list" data-id="pillar-list">
         <template for:each={pillars} for:item="pillar">
           <li key={pillar.key} class="build-item" data-key={pillar.key}>
@@ -140,6 +103,10 @@
         </template>
         <a class="foot-link" href={docsHref} data-id="docs-link"
           >Read the design: the architecture spec and the decision records
+          <span aria-hidden="true">→</span></a
+        >
+        <a class="foot-link" href={guestAccessHref} data-id="guest-access-link"
+          >How a visitor's request reaches the data, and what limits it
           <span aria-hidden="true">→</span></a
         >
       </div>

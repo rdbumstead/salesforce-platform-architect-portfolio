@@ -50,9 +50,9 @@
                     },
                     {
                       "attributes": {
-                        "heading": "Need an architect for a Salesforce program?",
+                        "heading": "Get in touch",
                         "linkLabel": "Contact Ryan",
-                        "text": "I take on select freelance work for nonprofits and education."
+                        "text": "Questions about a project, a role or this site?"
                       },
                       "definition": "c:contactCall",
                       "id": "1c5521dd-ac63-427c-8a4c-4e4e58450ea6",
@@ -79,7 +79,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/\" />\n<meta property=\"og:title\" content=\"Ryan Bumstead | Salesforce Platform Architect, Higher Education\" />\n<meta property=\"og:description\" content=\"Ryan Bumstead designs and delivers Salesforce Education Cloud for universities and nonprofits. Case studies, resume and a live site built on Salesforce.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/\" />\n<meta name=\"twitter:title\" content=\"Ryan Bumstead | Salesforce Platform Architect, Higher Education\" />\n<meta name=\"twitter:description\" content=\"Ryan Bumstead designs and delivers Salesforce Education Cloud for universities and nonprofits. Case studies, resume and a live site built on Salesforce.\" />",
                 "description": "Ryan Bumstead designs and delivers Salesforce Education Cloud for universities and nonprofits. Case studies, resume and a live site built on Salesforce.",
                 "pageTitle": "Ryan Bumstead | Salesforce Platform Architect, Higher Education",
                 "recordId": "{!recordId}"

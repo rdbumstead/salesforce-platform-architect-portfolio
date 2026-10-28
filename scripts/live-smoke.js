@@ -6,8 +6,16 @@
 // layout and each key component of that route render, and that the page logs no console
 // error and throws no script error outside the short KNOWN_ERRORS list below.
 //
-// It loads pages and nothing more. No form is submitted and nothing is clicked. Requests to
-// Google Analytics are blocked, so a smoke run never counts as a visitor.
+// It loads pages and, apart from the tour walk below, nothing more. No form is submitted.
+// Requests to Google Analytics are blocked, so a smoke run never counts as a visitor.
+//
+// The tour walk, once per engine and size: on a normal visit to the home page the tour bar
+// shows nothing (the tour is opt in). Then it presses the hero's tour link, which goes to the
+// first stop, and at each stop checks the bar's progress row and task line and presses the
+// task line (Show me), then Next. On the last stop it presses Finish, checks "That's the tour"
+// with Resume, Contact and Docs, presses Close and checks the bar has gone. It clicks only the
+// tour's own links and buttons. TOUR below must follow LIVE_PILLARS in c/pillarData, which
+// scripts/check-smoke-routes.js checks.
 //
 // Environment:
 //   SITE_BASE   the site root, for example https://example.my.site.com/portfolio (required)
@@ -43,7 +51,9 @@ const SMOKE_JSON = process.env.SMOKE_JSON || "";
 // What each page must show. A component named as a string counts once its first instance
 // is visible. A component that renders nothing until it has records (the testimonial wall
 // before any testimonial is approved, an asset gallery with no assets) is named with
-// mayBeEmpty, and counts once it is on the page.
+// mayBeEmpty, and counts once it is on the page. A route can also name parts: an element inside
+// a component (the selector starts with the component's tag and pierces its shadow tree) that
+// must be on the page, and when an attribute is named, carry that value.
 const ROUTES = [
   {
     path: "/",
@@ -60,8 +70,22 @@ const ROUTES = [
   { path: "/docs", components: ["c-docs-viewer"] },
   { path: "/resume", components: ["c-resume-builder"] },
   { path: "/skills", components: ["c-skill-network"] },
-  { path: "/api-lab", components: ["c-api-tester"] },
-  { path: "/api-lab/reference", components: ["c-api-reference"] },
+  {
+    path: "/api-lab",
+    components: ["c-api-tester"],
+    parts: [
+      {
+        selector: "c-api-tester a.collection-download",
+        attribute: "download",
+        value: "ryan-bumstead-portfolio-api.postman_collection.json"
+      }
+    ]
+  },
+  {
+    path: "/api-lab/reference",
+    components: ["c-api-reference"],
+    parts: [{ selector: "c-api-reference a.collection-download" }]
+  },
   { path: "/ai-lab", components: ["c-cover-letter-generator"] },
   {
     path: "/delivery",
@@ -98,6 +122,20 @@ const ROUTES = [
 ];
 
 const LAYOUT = "c-portfolio-theme-layout";
+
+// The tour's stops in order, each a page above, starting from the hero on the home page.
+const TOUR = {
+  start: "/",
+  stops: [
+    { letter: "A", path: "/business-architecture" },
+    { letter: "B", path: "/nonprofit-solutions" },
+    { letter: "C", path: "/api-lab" },
+    { letter: "D", path: "/ai-lab" },
+    { letter: "E", path: "/delivery" }
+  ]
+};
+
+const TOUR_STEP_TIMEOUT_MS = 30000;
 
 const VIEWPORTS = [
   { name: "desktop", width: 1400, height: 900 },
@@ -174,6 +212,24 @@ async function componentState(page, tag, mayBeEmpty) {
     .catch(() => "empty");
 }
 
+// "visible" when the part is on the page with the attribute value named, "missing" otherwise.
+async function partState(page, part) {
+  const first = page.locator(part.selector).first();
+  const attached = await first
+    .waitFor({ state: "attached", timeout: COMPONENT_TIMEOUT_MS })
+    .then(() => true)
+    .catch(() => false);
+  if (!attached) {
+    return "missing";
+  }
+  if (!part.attribute) {
+    return "visible";
+  }
+  return (await first.getAttribute(part.attribute)) === part.value
+    ? "visible"
+    : "missing";
+}
+
 async function checkOnce(browser, route, viewport) {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height }
@@ -226,6 +282,9 @@ async function checkOnce(browser, route, viewport) {
       const { tag, mayBeEmpty } =
         typeof entry === "string" ? { tag: entry, mayBeEmpty: false } : entry;
       result.components[tag] = await componentState(page, tag, mayBeEmpty);
+    }
+    for (const part of route.parts || []) {
+      result.components[part.selector] = await partState(page, part);
     }
     await page.waitForTimeout(SETTLE_MS);
   } catch (error) {
@@ -316,6 +375,163 @@ async function checkRow(browser, engine, route, viewport) {
   };
 }
 
+/**
+ * The tour bar's own element, inside the layout's shadow tree. Playwright's CSS locators
+ * pierce open shadow roots.
+ * @param {object} page the Playwright page
+ * @param {string} id the data-id of the part
+ * @returns {object} a locator
+ */
+function tourPart(page, id) {
+  return page.locator(`c-tour-bar [data-id="${id}"]`).first();
+}
+
+function waitText(locator, pattern) {
+  return locator
+    .filter({ hasText: pattern })
+    .waitFor({ state: "visible", timeout: TOUR_STEP_TIMEOUT_MS })
+    .then(() => "visible")
+    .catch(() => "missing");
+}
+
+/**
+ * Walks the tour once: opt in, the hero link, every stop with Show me and Next, Finish, the
+ * ending and Close. Each check is a "component" of the row, so the CI summary names a failing
+ * step the same way it names a missing component.
+ */
+async function tourOnce(browser, viewport) {
+  const context = await browser.newContext({
+    viewport: { width: viewport.width, height: viewport.height }
+  });
+  const page = await context.newPage();
+  const errors = [];
+  await page.route("**/*", (request) =>
+    isBlocked(request.request().url()) ? request.abort() : request.continue()
+  );
+  page.on("console", (message) => {
+    if (message.type() !== "error") {
+      return;
+    }
+    const locationUrl = (message.location() || {}).url || "";
+    if (!isBlocked(locationUrl)) {
+      errors.push(message.text().slice(0, 200));
+    }
+  });
+  page.on("pageerror", (error) => {
+    errors.push(`script error: ${String(error.message).slice(0, 200)}`);
+  });
+  const steps = {};
+  const result = { status: null, layout: false, components: steps, errors };
+  try {
+    const response = await page.goto(BASE + TOUR.start, {
+      waitUntil: "domcontentloaded",
+      timeout: NAVIGATION_TIMEOUT_MS
+    });
+    result.status = response ? response.status() : null;
+    result.layout = await hasLayout(page);
+    if (result.status !== 200 || !result.layout) {
+      result.missingPage = true;
+      return finishCheck(result, []);
+    }
+    const heroLink = page
+      .locator('c-hero-banner [data-id="tour-link"]')
+      .first();
+    steps["hero tour link"] = await heroLink
+      .waitFor({ state: "visible", timeout: COMPONENT_TIMEOUT_MS })
+      .then(() => "visible")
+      .catch(() => "missing");
+    // Opt in: before the visitor starts, the bar holds nothing.
+    steps["no bar before the start"] =
+      (await page.locator('c-tour-bar [data-id="tour-bar"]').count()) === 0
+        ? "visible"
+        : "hidden";
+    if (steps["hero tour link"] !== "visible") {
+      return finishCheck(result, []);
+    }
+    await heroLink.click();
+    const total = TOUR.stops.length;
+    for (let index = 0; index < total; index += 1) {
+      const stop = TOUR.stops[index];
+      const name = `stop ${stop.letter}`;
+      const arrived = await page
+        .waitForURL((url) => new URL(url).pathname.endsWith(stop.path), {
+          timeout: TOUR_STEP_TIMEOUT_MS
+        })
+        .then(() => true)
+        .catch(() => false);
+      const progress = arrived
+        ? await waitText(
+            tourPart(page, "tour-progress"),
+            `Stop ${index + 1} of ${total},`
+          )
+        : "missing";
+      const task = tourPart(page, "tour-task");
+      const taskState =
+        progress === "visible"
+          ? await task
+              .waitFor({ state: "visible", timeout: COMPONENT_TIMEOUT_MS })
+              .then(() => "visible")
+              .catch(() => "missing")
+          : "missing";
+      steps[name] =
+        progress === "visible" && taskState === "visible"
+          ? "visible"
+          : "missing";
+      if (steps[name] !== "visible") {
+        return finishCheck(result, []);
+      }
+      // Show me asks the page to show the control the task names. It must never fail.
+      await task.click();
+      await page.waitForTimeout(300);
+      if (index < total - 1) {
+        await tourPart(page, "tour-next").click();
+      } else {
+        await tourPart(page, "tour-finish").click();
+      }
+    }
+    steps.ending = await waitText(
+      tourPart(page, "tour-progress"),
+      "That's the tour"
+    );
+    const endingLinks = await page
+      .locator("c-tour-bar .tour-ending-links a")
+      .allTextContents();
+    steps["ending links"] =
+      endingLinks.map((label) => label.trim()).join(",") ===
+      "Resume,Contact,Docs"
+        ? "visible"
+        : "missing";
+    await tourPart(page, "tour-close").click();
+    steps["bar gone after Close"] = await page
+      .locator('c-tour-bar [data-id="tour-bar"]')
+      .waitFor({ state: "detached", timeout: COMPONENT_TIMEOUT_MS })
+      .then(() => "visible")
+      .catch(() => "hidden");
+    await page.waitForTimeout(SETTLE_MS);
+  } catch (error) {
+    result.error = String(error.message).split("\n")[0];
+  } finally {
+    await context.close();
+  }
+  return finishCheck(result, []);
+}
+
+async function tourRow(browser, engine, viewport) {
+  let attempt = await tourOnce(browser, viewport);
+  let attempts = 1;
+  if (!attempt.pass && !attempt.missingPage) {
+    attempt = await tourOnce(browser, viewport);
+    attempts = 2;
+  }
+  return {
+    browser: engine,
+    route: "tour",
+    viewport: viewport.name,
+    attempts,
+    ...attempt
+  };
+}
+
 async function runPool(tasks, size) {
   const results = [];
   let next = 0;
@@ -399,6 +615,9 @@ async function main() {
           tasks.push(() => checkRow(browser, engine, route, viewport));
         }
       }
+      for (const viewport of VIEWPORTS) {
+        tasks.push(() => tourRow(browser, engine, viewport));
+      }
       rows.push(...(await runPool(tasks, PARALLEL_PAGES)));
     } finally {
       await browser.close();
@@ -409,7 +628,7 @@ async function main() {
   const ok = rows.length > 0 && failed.length === 0;
   const summary =
     `live smoke: ${ok ? "PASS" : "FAIL"}, ${rows.length - failed.length} of ` +
-    `${rows.length} rows pass (${BROWSERS.join(", ")}, ${ROUTES.length} routes, ` +
+    `${rows.length} rows pass (${BROWSERS.join(", ")}, ${ROUTES.length} routes and the tour walk, ` +
     `${VIEWPORTS.length} sizes)` +
     (failed.length
       ? `, failing: ${failed
@@ -433,7 +652,7 @@ async function main() {
 
 // The route list is shared with scripts/check-smoke-routes.js, which checks it against the
 // site's views without a browser. Requiring this file runs nothing.
-module.exports = { ROUTES, isUnderBase };
+module.exports = { ROUTES, TOUR, isUnderBase };
 
 if (require.main === module) {
   main().catch((error) => {

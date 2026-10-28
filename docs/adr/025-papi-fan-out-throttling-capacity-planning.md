@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Amended 2026-10-01 and 2026-10-21 (see below).
+Accepted. Amended 2026-10-01, 2026-10-21 and 2026-10-28 (see below). The 2026-10-28 amendment corrects the Context and Rationale: PAPI was never built to call SAPI over HTTP, so the "~8 upstream calls" below are eight data reads in one transaction, not eight requests.
 
 ## Context
 
@@ -43,3 +43,21 @@ The tier limits above (120, 15 and 10 a minute) and the API page sizes are now r
 ## Note (2026-10-24)
 
 The SAPI list reads now come from `Query_Definition__mdt` records ([ADR-033](033-queries-in-custom-metadata.md)). The rate check is unchanged and still runs before any data query: the records load only when a read runs, so a rejected request loads none. The counter's own read stays in code, because a row read `FOR UPDATE` must not be editable as data. `/sapi/v1/projects` and `/sapi/v1/experience-highlights` spend one more SOQL query per request, to read their long filters in full.
+
+## Amendment (2026-10-28): PAPI composes in process, and HTTP fan out was rejected
+
+This corrects the Rationale above. The 15 a minute limit stands. The reason given for it does not, because PAPI never fans out to SAPI over HTTP.
+
+**What is built.** PAPI and SAPI remain distinct logical API layers. PAPI composes the shared data access engine and request framework in process: it reads the same records through the query engine (`QueryDefinitions`, [ADR-033](033-queries-in-custom-metadata.md)) and the request framework (`ApiRequestContext`) SAPI also uses, with its own query definitions and its own transformer (`PAPITransformer`). One `/profile/full` request runs nine data reads in one Apex transaction. Those are data reads, not HTTP requests: nine SOQL queries cost the transaction nine of its query limit and nothing outside it.
+
+**What was rejected, and why.** Turning those reads into HTTP requests from PAPI to SAPI through the `Portfolio_API` Named Credential:
+
+- **The same org callout constraint.** The site's API Lab reaches PAPI through `Portfolio_API`, which is a callout into this same org. A request that arrived as a same org callout may not call out again ([ADR-015](015-strategy-pattern-for-generative-ai.md)), so an HTTP fan out would fail on the site's own path, the one visitors use.
+- **Latency.** Callouts in one synchronous Apex transaction run one after another, and together they must finish inside the 120 seconds of callout time a transaction allows. Eight loopback calls would add each call's round trip to every PAPI response. The "parallel groups" the specification once described could not have run in parallel.
+- **Shared capacity.** Each loopback request would arrive as an inbound REST request and count against the org's daily API request allocation (15,000 on this Developer Edition, `DailyApiRequests`), where the in process reads count nothing. Each would also run as the integration user's one shared session, so one PAPI call would spend about eight of the SAPI tier's 120 requests a minute that every evaluator shares ([ADR-028](028-evaluator-access-via-token-vending.md)).
+
+**Why 15 a minute still holds.** One PAPI request still does the data work of about eight SAPI reads in one transaction. The lower limit keeps one caller's PAPI load in step with what the same data costs through SAPI's 120 a minute. The arithmetic 15 \* 8 = 120 is a sizing ratio, not a count of HTTP calls.
+
+**The deliberate exception.** `/papi/v1/health` calls SAPI's `/sapi/v1/health` through `Portfolio_API`, once, so the health check proves the credential works. It is the only PAPI callout.
+
+**Not decided here.** An opt in HTTP fan out for outside callers, kept off the site's path, would be a separate experiment with its own decision record.

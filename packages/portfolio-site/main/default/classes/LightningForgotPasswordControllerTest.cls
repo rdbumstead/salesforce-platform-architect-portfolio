@@ -1,3 +1,11 @@
+/**
+ * @description       : Unit tests for LightningForgotPasswordController.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
+ * @Created           : 01/03/2026
+ **/
 @IsTest(SeeAllData=true)
 public with sharing class LightningForgotPasswordControllerTest {
   /* Verifies that ForgotPasswordController handles invalid usernames appropriately */

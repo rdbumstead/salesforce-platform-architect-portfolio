@@ -10,12 +10,14 @@
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 10/22/2026
  **/
 import { LightningElement, wire } from "lwc";
 import getMatrix from "@salesforce/apex/DecisionMatrixController.getMatrix";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { isReduced } from "c/motionPreference";
+import { onShowMe, revealAnchor } from "c/tourShowMe";
 
 export const MIN_WEIGHT = 0;
 export const MAX_WEIGHT = 10;
@@ -119,6 +121,19 @@ export default class DecisionMatrix extends LightningElement {
   // Per option, how many times its total has changed. The odd or even count picks one of two
   // identical highlight classes, so the highlight starts again on each change.
   flashes = {};
+  stopShowMe;
+
+  // The tour's stop B names the first weight control.
+  connectedCallback() {
+    this.stopShowMe = onShowMe("B", () => revealAnchor(this.template));
+  }
+
+  disconnectedCallback() {
+    if (this.stopShowMe) {
+      this.stopShowMe();
+      this.stopShowMe = undefined;
+    }
+  }
 
   @wire(getMatrix)
   wiredMatrix({ data, error }) {
@@ -176,7 +191,7 @@ export default class DecisionMatrix extends LightningElement {
     (this.matrix.scores || []).forEach((s) =>
       byKey.set(scoreKey(s.optionName, s.criterionName), s)
     );
-    return (this.matrix.criteria || []).map((c) => {
+    return (this.matrix.criteria || []).map((c, index) => {
       const weight = Number(this.weights[c.developerName]) || 0;
       return {
         key: c.developerName,
@@ -184,6 +199,7 @@ export default class DecisionMatrix extends LightningElement {
         description: c.description,
         weight,
         sliderLabel: `Weight for ${c.label}`,
+        tourAnchor: index === 0 ? "stop-b" : undefined,
         valueText: `${weight} of ${MAX_WEIGHT}`,
         cells: (this.matrix.options || []).map((o) => {
           const s = byKey.get(scoreKey(o.developerName, c.developerName));

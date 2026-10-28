@@ -20,6 +20,9 @@ import RoadmapViewer, {
 import getRoadmap from "@salesforce/apex/DeliveryController.getRoadmap";
 import { trackEvent } from "c/analyticsService";
 import { setSimulating } from "c/outageSimulation";
+import { showMe } from "c/tourShowMe";
+import fs from "fs";
+import path from "path";
 
 jest.mock(
   "@salesforce/apex/DeliveryController.getRoadmap",
@@ -666,6 +669,20 @@ describe("c-roadmap-viewer", () => {
       expect(q(element, ".column-hidden")).toBeNull();
     });
 
+    it("puts the tour anchor on the In Progress heading beside the other columns", async () => {
+      mockPhone(false);
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+      const anchors = element.shadowRoot.querySelectorAll("[data-tour-anchor]");
+      expect(anchors).toHaveLength(1);
+      expect(anchors[0].tagName).toBe("H3");
+      expect(anchors[0].textContent).toContain("In Progress");
+      showMe("E");
+      await flushPromises();
+      expect(element.shadowRoot.activeElement).toBe(anchors[0]);
+    });
+
     it("turns the columns into tabs that open on In Progress", async () => {
       mockPhone(true);
       const element = createComponent();
@@ -693,6 +710,59 @@ describe("c-roadmap-viewer", () => {
       expect(panels.every((p) => p.getAttribute("aria-labelledby"))).toBe(true);
       // Every card is still in the page for the open tab.
       expect(keysIn(element, "indeterminate")).toEqual(["SPAP-902"]);
+    });
+
+    it("marks the active tab without changing its weight", async () => {
+      mockPhone(true);
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+      expect(q(element, ".tab-active")).not.toBeNull();
+      const css = fs.readFileSync(
+        path.join(__dirname, "..", "roadmapViewer.css"),
+        "utf8"
+      );
+      const rule = /\.tab-active \{[^}]*\}/.exec(css)[0];
+      expect(rule).not.toMatch(/font-weight/);
+    });
+
+    it("answers stop E by opening In Progress and focusing its tab", async () => {
+      mockPhone(true);
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+      tabs(element)[0].click();
+      await flushPromises();
+      expect(tabs(element)[1].getAttribute("aria-selected")).toBe("false");
+      expect(
+        element.shadowRoot.querySelectorAll("[data-tour-anchor]")
+      ).toHaveLength(1);
+      showMe("E");
+      await flushPromises();
+      expect(tabs(element)[1].getAttribute("aria-selected")).toBe("true");
+      expect(element.shadowRoot.activeElement).toBe(tabs(element)[1]);
+      expect(tabs(element)[1].hasAttribute("data-tour-anchor")).toBe(true);
+    });
+
+    it("ignores the other stops", async () => {
+      mockPhone(true);
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+      tabs(element)[0].click();
+      await flushPromises();
+      showMe("A");
+      await flushPromises();
+      expect(tabs(element)[0].getAttribute("aria-selected")).toBe("true");
+    });
+
+    it("stops listening when it leaves the page", async () => {
+      mockPhone(true);
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+      document.body.removeChild(element);
+      expect(showMe("E")).toBe(true);
     });
 
     it("opens another tab on a click and moves with the arrow keys, Home and End", async () => {

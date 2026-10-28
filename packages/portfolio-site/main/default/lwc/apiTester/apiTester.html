@@ -6,30 +6,35 @@
         <h2 class="slds-text-heading_small slds-m-bottom_small">
           Call the API
         </h2>
-        <div
-          class="slds-grid slds-wrap slds-gutters slds-grid_vertical-align-end"
-        >
-          <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3">
-            <lightning-combobox
+        <div class="control-row control-row_invoke">
+          <div class="nc-field row-field">
+            <label class="nc-label row-label" for="endpoint">Endpoint</label>
+            <select
+              id="endpoint"
               name="endpoint"
-              label="Endpoint"
-              value={selectedPath}
-              options={endpointOptions}
+              class="nc-control row-control endpoint-picker"
               onchange={handleEndpointChange}
-              class="endpoint-picker"
             >
-            </lightning-combobox>
+              <template for:each={endpointOptions} for:item="option">
+                <option
+                  key={option.value}
+                  value={option.value}
+                  selected={option.selected}
+                >
+                  {option.label}
+                </option>
+              </template>
+            </select>
           </div>
-          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
-            <button
-              type="button"
-              class="execute-button"
-              onclick={handleExecute}
-              disabled={isExecuteDisabled}
-            >
-              Execute GET
-            </button>
-          </div>
+          <button
+            type="button"
+            class="nc-button row-action execute-button"
+            onclick={handleExecute}
+            disabled={isExecuteDisabled}
+            data-tour-anchor="C"
+          >
+            Execute GET
+          </button>
         </div>
 
         <p lwc:if={catalogError} class="catalog-error text-error" role="alert">
@@ -62,19 +67,21 @@
                     <template lwc:if={control.isPills}>
                       <fieldset class="pill-group" data-param={control.name}>
                         <legend class="param-label">{control.name}</legend>
-                        <template for:each={control.pills} for:item="pill">
-                          <button
-                            key={pill.key}
-                            type="button"
-                            class={pill.className}
-                            aria-pressed={pill.pressed}
-                            data-name={control.name}
-                            data-value={pill.value}
-                            onclick={handlePillClick}
-                          >
-                            {pill.value}
-                          </button>
-                        </template>
+                        <div class="pill-row">
+                          <template for:each={control.pills} for:item="pill">
+                            <button
+                              key={pill.key}
+                              type="button"
+                              class={pill.className}
+                              aria-pressed={pill.pressed}
+                              data-name={control.name}
+                              data-value={pill.value}
+                              onclick={handlePillClick}
+                            >
+                              {pill.value}
+                            </button>
+                          </template>
+                        </div>
                       </fieldset>
                     </template>
                     <template lwc:if={control.isSelect}>
@@ -84,7 +91,7 @@
                           >{control.selectHint}</span
                         >
                         <select
-                          class="param-select"
+                          class="nc-control param-select"
                           data-name={control.name}
                           onchange={handleParamInput}
                         >
@@ -109,7 +116,7 @@
                         <span class="param-hint">({control.hint})</span>
                         <input
                           type="number"
-                          class="param-input"
+                          class="nc-control param-input"
                           inputmode="numeric"
                           min={control.min}
                           max={control.max}
@@ -125,7 +132,7 @@
                         <span class="param-hint">{control.hint}</span>
                         <input
                           type="text"
-                          class="param-input"
+                          class="nc-control param-input"
                           value={control.value}
                           data-name={control.name}
                           onchange={handleParamInput}
@@ -179,13 +186,22 @@
             class="section-panel"
             hidden={advancedHidden}
           >
-            <lightning-input
-              label="Advanced: query parameters as text (optional)"
-              placeholder="limit=10&amp;offset=0"
-              value={queryText}
-              onchange={handleQueryChange}
-              class="query-input"
-            ></lightning-input>
+            <div class="nc-field">
+              <label class="nc-label" for="query-text"
+                >Advanced: query parameters as text (optional)</label
+              >
+              <input
+                id="query-text"
+                type="text"
+                class="nc-control query-input"
+                placeholder="limit=10&amp;offset=0"
+                autocomplete="off"
+                spellcheck="false"
+                value={queryText}
+                oninput={handleQueryChange}
+                onchange={handleQueryChange}
+              />
+            </div>
           </div>
           <p class="query-preview" aria-live="polite">
             Query string: <code class="query-string">{queryPreview}</code>
@@ -384,38 +400,55 @@
           </h2>
         </template>
         <div id="token-panel" class="section-panel" hidden={tokenHidden}>
-          <div
-            class="slds-grid slds-wrap slds-gutters slds-grid_vertical-align-end"
-          >
-            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
-              <lightning-input
+          <div class="control-row control-row_token">
+            <div class="nc-field row-field row-field_email">
+              <label class="nc-label row-label" for="token-email">Email</label>
+              <input
+                id="token-email"
                 type="email"
-                label="Email"
+                class="nc-control row-control token-email"
+                autocomplete="email"
+                inputmode="email"
+                maxlength={maxEmail}
+                aria-invalid={emailInvalid}
+                aria-describedby="token-email-error"
                 value={email}
-                onchange={handleTokenInput}
+                oninput={handleTokenInput}
+                onchange={handleEmailCommit}
                 data-field="email"
-                class="token-email"
-              ></lightning-input>
+              />
+              <template lwc:if={emailError}>
+                <p
+                  id="token-email-error"
+                  class="nc-error row-message token-email-error"
+                >
+                  {emailError}
+                </p>
+              </template>
             </div>
-            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-              <lightning-input
-                label="Purpose"
+            <div class="nc-field row-field row-field_purpose">
+              <label class="nc-label row-label" for="token-purpose"
+                >Purpose</label
+              >
+              <input
+                id="token-purpose"
+                type="text"
+                class="nc-control row-control token-purpose"
+                maxlength={maxPurpose}
                 value={purpose}
+                oninput={handleTokenInput}
                 onchange={handleTokenInput}
                 data-field="purpose"
-                class="token-purpose"
-              ></lightning-input>
+              />
             </div>
-            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-6">
-              <button
-                type="button"
-                class="token-button"
-                onclick={handleRequestToken}
-                disabled={isTokenDisabled}
-              >
-                Request token
-              </button>
-            </div>
+            <button
+              type="button"
+              class="nc-button row-action token-button"
+              onclick={handleRequestToken}
+              disabled={isTokenDisabled}
+            >
+              Request token
+            </button>
           </div>
 
           <div aria-live="polite" class="slds-m-top_medium">
@@ -480,6 +513,75 @@
               </template>
             </template>
           </div>
+
+          <section class="quickstart" aria-labelledby="quickstart-heading">
+            <h3 id="quickstart-heading" class="quickstart-heading">
+              Use the API from your own tools
+            </h3>
+            <ol class="setup-steps">
+              <li>Download the Postman collection and import it.</li>
+              <li>
+                Run its first request, Get an evaluator token, or paste the
+                token from this page into the accessToken variable.
+              </li>
+              <li>Send any request. Each one uses the token for you.</li>
+            </ol>
+            <div class="quickstart-actions">
+              <a
+                class="nc-button collection-download"
+                href={collectionUrl}
+                download={collectionFileName}
+                onclick={handleCollectionDownload}
+                >Download the Postman collection</a
+              >
+              <template lwc:if={hasPostmanRun}>
+                <a
+                  class="nc-button nc-button_secondary postman-run"
+                  href={postmanRunUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onclick={handlePostmanRun}
+                  >Run in Postman</a
+                >
+              </template>
+            </div>
+
+            <h4 class="curl-heading">Or try it with curl</h4>
+            <template for:each={curlExamples} for:item="example">
+              <div key={example.key} class="curl-example">
+                <div class="curl-head">
+                  <p class="curl-title">{example.title}</p>
+                  <button
+                    type="button"
+                    class="nc-button nc-button_secondary copy-button"
+                    data-example={example.key}
+                    aria-label={example.copyLabel}
+                    onclick={handleCopyCurl}
+                  >
+                    Copy
+                  </button>
+                </div>
+                <pre
+                  class="curl-block"
+                  tabindex="0"
+                  role="region"
+                  aria-label={example.title}
+                  data-example={example.key}
+                ><code class="curl-code">{example.text}</code></pre>
+              </div>
+            </template>
+            <p class="copy-status" role="status" aria-live="polite">
+              {copyStatus}
+            </p>
+            <p class="curl-note">{curlNote}</p>
+            <ul class="status-notes">
+              <template for:each={statusNotes} for:item="note">
+                <li key={note.code}>
+                  <code class="status-code">{note.code}</code> {note.text}
+                </li>
+              </template>
+            </ul>
+          </section>
         </div>
       </section>
     </div>

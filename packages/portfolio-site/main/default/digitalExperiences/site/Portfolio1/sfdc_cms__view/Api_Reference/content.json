@@ -53,7 +53,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/api-lab/reference\" />\n<meta property=\"og:title\" content=\"API Reference | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Pillar C. The interactive reference for the portfolio&#x27;s system and process APIs, with every path, parameter and response.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/api-lab/reference\" />\n<meta name=\"twitter:title\" content=\"API Reference | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Pillar C. The interactive reference for the portfolio&#x27;s system and process APIs, with every path, parameter and response.\" />",
                 "description": "Pillar C. The interactive reference for the portfolio's system and process APIs, with every path, parameter and response.",
                 "pageTitle": "API Reference | Ryan Bumstead",
                 "recordId": "{!recordId}"

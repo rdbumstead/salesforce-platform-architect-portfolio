@@ -9,10 +9,14 @@
  *                      are, and today's AI tier request count, in which a cover letter that went
  *                      through the API counts once. It also returns the
  *                      org's own quotas from OrgLimits (daily API requests and daily async
- *                      Apex runs) and the GitHub and Jira circuit breaker state.
+ *                      Apex runs) and the GitHub and Jira circuit breaker state. It also
+ *                      returns the stored storage snapshot from StorageSnapshot.read(), the
+ *                      aggregates StorageSnapshotJob wrote on its schedule. The guest cannot
+ *                      read storage from OrgLimits itself, so it reads those figures here.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 10/21/2026
  * @Test Class        : [FooterControllerTest]
  **/
@@ -57,6 +61,8 @@ public with sharing class FooterController {
   private static Map<String, System.OrgLimit> orgLimitsOverride;
   @TestVisible
   private static Boolean throwOnOrgLimits = false;
+  @TestVisible
+  private static Boolean throwOnStorage = false;
 
   @TestVisible
   private static Portfolio_Config__mdt configOverride;
@@ -99,6 +105,9 @@ public with sharing class FooterController {
     /** The GitHub and Jira circuit breakers. */
     @AuraEnabled
     public List<IntegrationState> integrations;
+    /** The stored storage figures. Null until the first snapshot is taken or when unreadable. */
+    @AuraEnabled
+    public StorageSnapshot.Snapshot storage;
   }
 
   /**
@@ -163,6 +172,7 @@ public with sharing class FooterController {
       throw new AuraHandledException('System status is unavailable.');
     }
     snapshot.orgQuotas = orgQuotas();
+    snapshot.storage = storedStorage();
     // Read last, so the numbers include the work above.
     snapshot.cpuTimeMs = Limits.getCpuTime();
     snapshot.cpuTimeLimitMs = Limits.getLimitCpuTime();
@@ -205,6 +215,22 @@ public with sharing class FooterController {
       quotas.add(quota);
     }
     return quotas;
+  }
+
+  /**
+   * The stored storage snapshot, or null when there is none or it cannot be read, so the
+   * rest of the footer never waits on it.
+   */
+  @TestVisible
+  private static StorageSnapshot.Snapshot storedStorage() {
+    try {
+      if (throwOnStorage) {
+        throw new QueryException('Forced failure for the storage path test.');
+      }
+      return StorageSnapshot.read();
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   /**

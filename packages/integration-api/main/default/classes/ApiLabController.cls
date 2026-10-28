@@ -21,12 +21,15 @@
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 10/20/2026
  * @Test Class        : [ApiLabControllerTest]
  **/
 public with sharing class ApiLabController {
   public static final String NAMED_CREDENTIAL = 'Portfolio_API';
   public static final String API_VERSION = 'v1';
+  /** The Portfolio_Setting__mdt record that holds the Run in Postman link. */
+  public static final String POSTMAN_RUN_URL_SETTING = 'Postman_Run_Url';
 
   /**
    * The static resource that lists the Lab's paths. scripts/sync-specs.js builds it from the
@@ -186,6 +189,22 @@ public with sharing class ApiLabController {
       throw auraError('The API Lab catalog is not available.');
     }
     return body;
+  }
+
+  /**
+   * @description The Run in Postman link the API Lab and the API reference page show, from
+   *              Portfolio_Setting.Postman_Run_Url. Blank when the record is missing or
+   *              empty, which keeps the button hidden. It never throws to the page: a failed
+   *              read also gives blank.
+   * @return String The link, or an empty string.
+   */
+  @AuraEnabled(cacheable=true)
+  public static String getPostmanRunUrl() {
+    try {
+      return PortfolioSettings.getText(POSTMAN_RUN_URL_SETTING, '');
+    } catch (Exception e) {
+      return '';
+    }
   }
 
   /**

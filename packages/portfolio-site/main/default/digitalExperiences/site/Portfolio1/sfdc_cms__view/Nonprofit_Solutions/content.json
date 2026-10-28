@@ -70,7 +70,7 @@
           "children": [
             {
               "attributes": {
-                "customHeadTags": "",
+                "customHeadTags": "<link rel=\"canonical\" href=\"https://ryanbumstead.com/nonprofit-solutions\" />\n<meta property=\"og:title\" content=\"Solution Architecture | Ryan Bumstead\" />\n<meta property=\"og:description\" content=\"Pillar B. Solution architecture for a nonprofit literacy program: solution design, decision matrix, cost comparison.\" />\n<meta property=\"og:url\" content=\"https://ryanbumstead.com/nonprofit-solutions\" />\n<meta name=\"twitter:title\" content=\"Solution Architecture | Ryan Bumstead\" />\n<meta name=\"twitter:description\" content=\"Pillar B. Solution architecture for a nonprofit literacy program: solution design, decision matrix, cost comparison.\" />",
                 "description": "Pillar B. Solution architecture for a nonprofit literacy program: solution design, decision matrix, cost comparison.",
                 "pageTitle": "Solution Architecture | Ryan Bumstead",
                 "recordId": "{!recordId}"

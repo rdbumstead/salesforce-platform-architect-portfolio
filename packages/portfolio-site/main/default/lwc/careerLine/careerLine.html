@@ -165,7 +165,12 @@
           </template>
         </div>
 
-        <ol class="stack" data-id="stack" aria-labelledby="career-heading">
+        <ol
+          id="career-stack"
+          class="stack"
+          data-id="stack"
+          aria-labelledby="career-heading"
+        >
           <template for:each={stackPoints} for:item="point">
             <li
               key={point.key}
@@ -276,6 +281,21 @@
             </li>
           </template>
         </ol>
+
+        <template lwc:if={showStackToggle}>
+          <div class="stack-more">
+            <button
+              type="button"
+              class="stack-toggle"
+              data-id="stack-toggle"
+              aria-expanded={stackToggleExpanded}
+              aria-controls="career-stack"
+              onclick={handleStackToggle}
+            >
+              {stackToggleLabel}
+            </button>
+          </div>
+        </template>
 
         <template lwc:if={showVerify}>
           <p class="career-foot">

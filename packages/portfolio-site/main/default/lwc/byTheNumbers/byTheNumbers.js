@@ -19,6 +19,7 @@
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 10/24/2026
  **/
 import { LightningElement, wire } from "lwc";
@@ -36,6 +37,24 @@ export const APEX_LINE =
 /** One plain line on what the Jest tests prove. */
 export const JEST_LINE =
   "Every site component's rendering, wiring and accessibility rules, run on each change.";
+
+/**
+ * Stand in counts for the hidden tiles drawn while the real counts load. Every tile then has
+ * its value, label, detail and line, so the space they hold matches the loaded tiles and the
+ * sections below do not jump when the numbers arrive.
+ */
+const PLACEHOLDER_STATS = Object.freeze({
+  deployRuns: 0,
+  latestTestsRun: 0,
+  latestTestsPassed: 0,
+  latestCoverage: 0,
+  latestJestRun: 0,
+  latestJestPassed: 0,
+  tokensIssued: 0,
+  coverLettersWritten: 0,
+  apiLabRequests: 0,
+  countingSince: "2026-01-01"
+});
 
 const MONTHS = [
   "January",
@@ -233,7 +252,15 @@ export default class ByTheNumbers extends LightningElement {
   }
 
   get tiles() {
-    const stats = this.stats;
+    return this.tilesFor(this.stats);
+  }
+
+  /** The same tiles from stand in counts, drawn hidden while the real counts load. */
+  get placeholderTiles() {
+    return this.tilesFor(PLACEHOLDER_STATS);
+  }
+
+  tilesFor(stats) {
     const since = formatMonth(stats.countingSince);
     const sinceText = since ? `since ${since}` : "";
     return [

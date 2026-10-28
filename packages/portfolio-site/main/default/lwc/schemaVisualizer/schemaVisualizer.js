@@ -10,6 +10,7 @@
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 12/26/2025
  **/
 import { LightningElement, api, wire } from "lwc";
@@ -73,6 +74,18 @@ function boxEdge(x, y, dx, dy) {
     return { x, y };
   }
   return { x: x + dx * scale, y: y + dy * scale };
+}
+
+/**
+ * Names an object for a heading or a list line: its label, with the API name in brackets only
+ * when the two differ, so a standard object such as Account does not read "Account (Account)".
+ * @param {{label: string, apiName: string}} node the schema node
+ * @returns {string} the name to show
+ */
+function objectName(node) {
+  return node.label === node.apiName
+    ? node.label
+    : `${node.label} (${node.apiName})`;
 }
 
 function kindLabel(kind) {
@@ -433,7 +446,7 @@ export default class SchemaVisualizer extends LightningElement {
       return {
         key: node.apiName,
         apiName: node.apiName,
-        text: `${node.label} (${node.apiName}), ${node.fieldCount} fields`,
+        text: `${objectName(node)}, ${node.fieldCount} fields`,
         buttonLabel: `Show fields of ${node.label}`,
         relationships,
         hasRelationships: relationships.length > 0
@@ -453,7 +466,7 @@ export default class SchemaVisualizer extends LightningElement {
 
   get panelHeading() {
     const node = this.selectedNode;
-    return node ? `${node.label} (${node.apiName})` : "";
+    return node ? objectName(node) : "";
   }
 
   get selectedFields() {

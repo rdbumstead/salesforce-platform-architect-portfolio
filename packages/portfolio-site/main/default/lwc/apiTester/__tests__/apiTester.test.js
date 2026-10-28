@@ -65,6 +65,12 @@ const INVOKE_RESULT = {
   path: "/sapi/v1/skills"
 };
 
+/** Picks a path in the native endpoint select, as a visitor does. */
+function chooseEndpoint(select, path) {
+  select.value = path;
+  select.dispatchEvent(new CustomEvent("change"));
+}
+
 const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
 
 // The real generated catalog, so the tests follow the specs.
@@ -112,12 +118,13 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    const options = query(
-      element,
-      "lightning-combobox.endpoint-picker"
-    ).options;
+    const select = query(element, "select.endpoint-picker");
+    const options = Array.from(select.querySelectorAll("option"));
     expect(options.map((option) => option.value)).toEqual(CATALOG_PATHS);
-    expect(options[0].label).toBe("GET /sapi/v1/health");
+    expect(options[0].textContent.trim()).toBe("GET /sapi/v1/health");
+    // The native select is labelled and shows the first path as chosen.
+    expect(select.id).toBeTruthy();
+    expect(options[0].selected).toBe(true);
     expect(CATALOG_PATHS).toHaveLength(21);
     // SAPIResume was removed, so no SAPI path may end in /resume.
     expect(
@@ -178,10 +185,8 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    query(element, "lightning-combobox.endpoint-picker").dispatchEvent(
-      new CustomEvent("change", { detail: { value: "/sapi/v1/skills" } })
-    );
-    setInput(element, "lightning-input.query-input", "limit=5&offset=0");
+    chooseEndpoint(query(element, "select.endpoint-picker"), "/sapi/v1/skills");
+    setInput(element, "input.query-input", "limit=5&offset=0");
     await flushPromises();
 
     query(element, "button.execute-button").click();
@@ -245,7 +250,25 @@ describe("c-api-tester", () => {
     );
     expect(query(element, '[class*="slds-text-color_"]')).toBeNull();
     const css = readFileSync(join(__dirname, "..", "apiTester.css"), "utf8");
-    expect(css).toMatch(/\.token-button \{[^}]*min-height: 44px/);
+    // Both buttons and every replaced field take the shared 44 px look.
+    expect(css.startsWith('@import "c/nativeControls";')).toBe(true);
+    ["button.execute-button", "button.token-button"].forEach((selector) =>
+      expect(query(element, selector).classList.contains("nc-button")).toBe(
+        true
+      )
+    );
+    [
+      "select.endpoint-picker",
+      "input.query-input",
+      "input.token-email",
+      "input.token-purpose"
+    ].forEach((selector) =>
+      expect(query(element, selector).classList.contains("nc-control")).toBe(
+        true
+      )
+    );
+    expect(element.shadowRoot.querySelector("lightning-input")).toBeNull();
+    expect(element.shadowRoot.querySelector("lightning-combobox")).toBeNull();
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}/);
   });
 
@@ -254,9 +277,7 @@ describe("c-api-tester", () => {
     invoke.mockRejectedValueOnce({ body: { message: "unreachable" } });
     const element = createComponent();
     await flushPromises();
-    query(element, "lightning-combobox.endpoint-picker").dispatchEvent(
-      new CustomEvent("change", { detail: { value: "/sapi/v1/skills" } })
-    );
+    chooseEndpoint(query(element, "select.endpoint-picker"), "/sapi/v1/skills");
     await flushPromises();
 
     query(element, "button.execute-button").click();
@@ -313,8 +334,8 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    setInput(element, "lightning-input.token-email", "eval@example.com");
-    setInput(element, "lightning-input.token-purpose", "Review the API");
+    setInput(element, "input.token-email", "eval@example.com");
+    setInput(element, "input.token-purpose", "Review the API");
     query(element, "button.token-button").click();
     await flushPromises();
 

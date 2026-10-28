@@ -1,3 +1,14 @@
+/**
+ * @description       : Sends a password reset for the site's login page through
+ *                      Site.forgotPassword and returns a message when the username is not
+ *                      valid.
+ * @author            : Ryan Bumstead
+ * @githubRepo        : https://github.com/rdbumstead
+ * @portfolio         : https://ryanbumstead.com
+ * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
+ * @Created           : 01/03/2026
+ * @Test Class        : [LightningForgotPasswordControllerTest]
+ **/
 global class LightningForgotPasswordController {
   public LightningForgotPasswordController() {
   }

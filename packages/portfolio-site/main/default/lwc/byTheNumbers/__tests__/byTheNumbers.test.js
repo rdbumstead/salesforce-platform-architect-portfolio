@@ -88,6 +88,22 @@ describe("c-by-the-numbers", () => {
     expect(element.shadowRoot.querySelector("table")).toBeNull();
   });
 
+  it("holds the tiles' space with six hidden tiles while the counts load", () => {
+    const element = mount();
+    const pending = element.shadowRoot.querySelector("ul[data-placeholder]");
+    expect(pending).not.toBeNull();
+    expect(pending.getAttribute("aria-hidden")).toBe("true");
+    expect(pending.classList.contains("stats-pending")).toBe(true);
+    expect(pending.querySelectorAll("li.stat")).toHaveLength(6);
+  });
+
+  it("drops the hidden tiles once the counts arrive", async () => {
+    const element = mount();
+    getStats.emit(stats());
+    await flush();
+    expect(element.shadowRoot.querySelector("ul[data-placeholder]")).toBeNull();
+  });
+
   it("shows an error status and no numbers when the read fails", async () => {
     const element = mount();
     getStats.error();
