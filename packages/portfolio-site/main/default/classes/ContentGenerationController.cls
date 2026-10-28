@@ -20,8 +20,9 @@
  *                      coverLetterPrompt() is the one cover letter prompt builder, used by
  *                      generateCoverLetter and by ApiLabController.generateCoverLetter. Its
  *                      instruction comes from the AI_Prompt__mdt record Cover_Letter, with
- *                      COVER_LETTER_INSTRUCTION as the fallback, and its word range from the
- *                      Cover_Letter_Min_Words and Cover_Letter_Max_Words settings.
+ *                      COVER_LETTER_INSTRUCTION as the fallback, and its word limit from the
+ *                      Cover_Letter_Min_Words and Cover_Letter_Max_Words settings, with the
+ *                      paragraph and sentence shape that keeps a letter under the maximum.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -67,6 +68,14 @@ public with sharing class ContentGenerationController {
   public static final Integer COVER_LETTER_MAX_WORDS = 350;
   public static final String MIN_WORDS_SETTING = 'Cover_Letter_Min_Words';
   public static final String MAX_WORDS_SETTING = 'Cover_Letter_Max_Words';
+  /**
+   * The length line starts with this, not with "Length", so the Portfolio_Cover_Letter
+   * template's own sentence for a Length line (write toward the upper number, in three body
+   * paragraphs of five sentences) does not apply. That sentence pushed letters past the
+   * maximum. The line sets the paragraph and sentence shape itself, which the model keeps to
+   * more closely than a word count.
+   */
+  public static final String WORD_LIMIT_PREFIX = 'Word limit: ';
 
   /**
    * The cover letter instruction used when the Cover_Letter record is missing or blank. The
@@ -428,7 +437,7 @@ public with sharing class ContentGenerationController {
   /**
    * @description The cover letter prompt, built in one place for every cover letter path.
    *              Lines, in order: the instruction (the Cover_Letter record, else
-   *              COVER_LETTER_INSTRUCTION), the word range from the settings, the company,
+   *              COVER_LETTER_INSTRUCTION), the word limit line (coverLetterLengthLine), the company,
    *              the role, the job description when given, the persona when the job points
    *              at one, and the grounding facts when there are any. Email and phone shapes
    *              are removed from the visitor's text. A grounding failure leaves the facts
@@ -455,11 +464,7 @@ public with sharing class ContentGenerationController {
     List<Integer> range = coverLetterWordRange();
     List<String> lines = new List<String>{
       coverLetterInstruction(),
-      'Length: ' +
-      range[0] +
-      ' to ' +
-      range[1] +
-      ' words.',
+      coverLetterLengthLine(range),
       'companyName: ' + company,
       'role: ' + title
     };
@@ -497,6 +502,30 @@ public with sharing class ContentGenerationController {
     return String.isBlank(instruction)
       ? COVER_LETTER_INSTRUCTION
       : instruction.replace('\r\n', '\n').trim();
+  }
+
+  /**
+   * @description The prompt's length line: the word range from the settings, the maximum
+   *              as a hard limit, and the paragraph and sentence shape that keeps a letter
+   *              inside it.
+   * @param range The minimum and the maximum, from coverLetterWordRange.
+   * @return String The line.
+   * @example
+   * String line = ContentGenerationController.coverLetterLengthLine(
+   *   ContentGenerationController.coverLetterWordRange()
+   * );
+   */
+  public static String coverLetterLengthLine(List<Integer> range) {
+    return WORD_LIMIT_PREFIX +
+      range[0] +
+      ' to ' +
+      range[1] +
+      ' words, never more than ' +
+      range[1] +
+      '. This limit overrides any later line about length, paragraphs or sentences.' +
+      ' Write five paragraphs and no more: an opening of two sentences, three body' +
+      ' paragraphs of three sentences each, and a closing of two sentences, then the' +
+      ' sign off. Keep each sentence under 25 words.';
   }
 
   /**
