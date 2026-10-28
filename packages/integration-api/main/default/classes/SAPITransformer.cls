@@ -316,6 +316,7 @@ public with sharing class SAPITransformer {
 
   private static Map<String, Object> skillColumns(
     Id junctionId,
+    String junctionKey,
     Id skillId,
     Skill__c skill
   ) {

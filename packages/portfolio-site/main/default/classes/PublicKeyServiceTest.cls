@@ -89,8 +89,8 @@ private class PublicKeyServiceTest {
     insert testimonial;
 
     return new Map<SObjectType, SObject>{
-      Account.SObjectType => account,
-      Contact.SObjectType => contact,
+      Schema.Account.SObjectType => account,
+      Schema.Contact.SObjectType => contact,
       Skill__c.SObjectType => skill,
       Experience__c.SObjectType => experience,
       Experience_Highlight__c.SObjectType => highlight,
