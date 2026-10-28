@@ -1,16 +1,82 @@
-<apex:page showHeader="false" title="{!$Label.site.bandwidth_limit_exceeded}">
-  <apex:composition template="StdExceptionTemplate">
-    <apex:define name="icon">
-      <apex:image url="{!URLFOR($Resource.SiteSamples, 'img/warning.png')}" />
-    </apex:define>
-    <apex:define name="error">
-      <apex:outputText
-        styleClass="title"
-        value="{!$Label.site.limit_exceeded}"
-      />
-      <br />
-      <br />
-      <apex:outputText value="{!$Label.site.sorry_for_inconvenience}" />
-    </apex:define>
-  </apex:composition>
+<apex:page
+  showHeader="false"
+  standardStylesheets="false"
+  docType="html-5.0"
+  applyHtmlTag="true"
+  applyBodyTag="true"
+  title="Busy right now | Ryan Bumstead"
+  cache="false"
+>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --text: #101828;
+        --muted: #4b5563;
+        --accent: #2563eb;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0f17;
+          --text: #f3f4f6;
+          --muted: #c0c7d4;
+          --accent: #60a5fa;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main {
+        box-sizing: border-box;
+        max-width: 40rem;
+        margin: 0 auto;
+        padding: 4rem 1rem;
+        text-align: center;
+      }
+      .eyebrow {
+        margin: 0 0 0.5rem;
+        color: var(--muted);
+        font-size: 0.875rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0;
+        font-size: 2.25rem;
+        line-height: 1.15;
+      }
+      p {
+        margin: 1rem 0 0;
+        color: var(--muted);
+        font-size: 1.125rem;
+        line-height: 1.65;
+      }
+      a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        color: var(--accent);
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <main>
+    <p class="eyebrow">Ryan Bumstead</p>
+    <h1>The site is very busy right now</h1>
+    <p>
+      It has reached its daily allowance for visitors. Please try again later
+      today, or tomorrow.
+    </p>
+    <p>
+      <a href="https://www.linkedin.com/in/ryanbumstead"
+        >Find me on LinkedIn in the meantime</a
+      >
+    </p>
+  </main>
 </apex:page>
