@@ -913,11 +913,12 @@ describe("c-footer", () => {
     expect(link.getAttribute("target")).toBeNull();
   });
 
-  it("shows no storage group before the first snapshot is stored", async () => {
+  it("shows no storage row before the first snapshot is stored", async () => {
     const element = createComponent();
     await runIdle();
 
-    expect(q(element, '[data-group="storage"]')).toBeNull();
+    expect(q(element, '[data-id="storage"]')).toBeNull();
+    expect(q(element, '[data-id="storage-panel"]')).toBeNull();
   });
 
   it("shows the compact storage line once the snapshot holds figures", async () => {
@@ -992,7 +993,7 @@ describe("c-footer", () => {
     toggle.click();
     await flushPromises();
 
-    q(element, '[data-group="storage"]').dispatchEvent(
+    q(element, '[data-group="quotas"]').dispatchEvent(
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
     );
     await flushPromises();

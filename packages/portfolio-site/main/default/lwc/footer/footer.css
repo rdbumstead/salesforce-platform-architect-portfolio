@@ -20,17 +20,22 @@
   padding: var(--pf-space-5) var(--pf-space-4) var(--pf-space-6);
 }
 
-/* The caption and View source share one row over the readings. */
+/* The caption and View source share one row over the readings, View source right after the
+   caption so it reads as the code behind them. */
 .metrics-head {
   display: flex;
   flex: 1 1 100%;
+  flex-wrap: wrap;
   gap: var(--pf-space-3);
   align-items: center;
-  justify-content: space-between;
+}
+
+.metrics-head c-view-source {
+  margin-inline-start: 0;
 }
 
 .metrics-caption {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   margin: 0;
   color: var(--pf-body);
   font-size: 13px;
