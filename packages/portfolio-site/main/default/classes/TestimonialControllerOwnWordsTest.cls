@@ -108,13 +108,29 @@ private class TestimonialControllerOwnWordsTest {
     );
   }
 
+  // Runs as the site guest, because the insert is in user mode and the guest's permission set
+  // is what grants it field access. The org's own admin has none in a fresh scratch org.
   @isTest
   static void wordsAtTheLimitAreSaved() {
-    Id saved = submitOwn(
-      'Peer',
-      'x'.repeat(TestimonialController.MAX_OWN_WORDS_LENGTH)
-    );
+    User guest = SiteGuestTestSupport.preparedGuest();
+    Id saved;
+
+    Test.startTest();
+    System.runAs(guest) {
+      saved = submitOwn(
+        'Peer',
+        'x'.repeat(TestimonialController.MAX_OWN_WORDS_LENGTH)
+      );
+    }
+    Test.stopTest();
+
     Assert.isNotNull(saved, 'Saved at exactly the limit');
+    Assert.areEqual(
+      TestimonialController.MAX_OWN_WORDS_LENGTH,
+      [SELECT Context__c FROM Testimonial__c WHERE Id = :saved]
+        .Context__c.length(),
+      'Every character kept'
+    );
   }
 
   @isTest
