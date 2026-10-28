@@ -32,7 +32,7 @@
  *                      control row lines up by its controls, and every parameter control sits
  *                      at the bottom of its grid cell so a row of them lines up. The email is
  *                      checked on leaving the field and on Request token. Under the token
- *                      form come three setup steps, a download of the PAPI Postman collection
+ *                      form come three setup steps, a download of the Postman collection
  *                      (the PAPI_Postman_Collection resource), a Run in Postman link shown
  *                      only while one is set, and three copyable curl examples filled with the
  *                      issued token and built in the page. The download, the link and each

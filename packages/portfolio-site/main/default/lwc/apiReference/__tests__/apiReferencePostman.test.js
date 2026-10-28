@@ -80,6 +80,7 @@ describe("c-api-reference Postman row", () => {
     await flush();
     const link = $(element, "a.collection-download");
     expect(link.getAttribute("download")).toBe(COLLECTION_FILE_NAME);
+    expect(link.textContent.trim()).toBe("Download the Postman collection");
     expect(link.getAttribute("href")).toBeTruthy();
     link.click();
     expect(trackEvent).toHaveBeenCalledWith("postman_collection_downloaded", {
