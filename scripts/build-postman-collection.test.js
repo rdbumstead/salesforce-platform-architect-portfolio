@@ -245,14 +245,16 @@ test("bearer auth from accessToken and three variables, accessToken and evaluato
   );
   assert.match(
     collection.variable[2].description,
-    /real address you can be reached at/
+    /address you can be reached at in Current value/
   );
 });
 
 test("the readme says how to start, how the token behaves, and to untick the AI request in the Runner", () => {
   const readme = build("a").info.description.content;
   assert.match(readme, /evaluatorEmail/);
-  assert.match(readme, /press Send on any request/);
+  assert.match(readme, /Variables tab/);
+  assert.match(readme, /Current value column/);
+  assert.match(readme, /Open any request and press Send/);
   assert.match(readme, /30 minutes without use/);
   assert.match(readme, /Collection Runner/);
   assert.ok(readme.includes(`Untick ${AI_REQUEST_NAME}`));

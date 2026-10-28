@@ -2,7 +2,7 @@
  * @description       : Unit tests for tourBar: nothing renders unless a tour is running, the
  *                      stop from the route against the live pillars, the progress row with the
  *                      stop's minutes, the task line as the Show me button, Back, Next, Finish
- *                      and the ending with Resume, Contact and Docs, End tour, the three tour
+ *                      and the ending with only Close, End tour, the three tour
  *                      events, the start, storage that throws, and the phone padding report.
  *                      c/pillarData is the real module.
  * @author            : Ryan Bumstead
@@ -318,7 +318,7 @@ describe("c-tour-bar", () => {
       expect(byId(element, "tour-bar")).toBeNull();
     });
 
-    it("shows That's the tour with Resume, Contact and Docs after Finish", async () => {
+    it("shows That's the tour and only Close after Finish", async () => {
       startTour();
       const element = render("delivery");
       byId(element, "tour-finish").click();
@@ -326,17 +326,14 @@ describe("c-tour-bar", () => {
       expect(trackEvent).toHaveBeenLastCalledWith("tour_finished");
       expect(isTourRunning()).toBe(false);
       const progress = byId(element, "tour-progress");
-      expect(text(progress)).toBe("That's the tour");
+      expect(text(progress)).toBe("That's the tour. Thanks for taking it.");
       expect(element.shadowRoot.activeElement).toBe(progress);
       expect(byId(element, "tour-task")).toBeNull();
-      const links = Array.from(
-        element.shadowRoot.querySelectorAll(".tour-ending-links a")
-      ).map((link) => [text(link), link.getAttribute("href")]);
-      expect(links).toEqual([
-        ["Resume", "/portfolio/resume"],
-        ["Contact", "/portfolio/contact"],
-        ["Docs", "/portfolio/docs"]
-      ]);
+      // The header already links Resume, Contact and Docs, so the ending adds no links.
+      expect(
+        element.shadowRoot.querySelectorAll(".tour-actions a")
+      ).toHaveLength(0);
+      expect(byId(element, "tour-close")).not.toBeNull();
     });
 
     it("closes the ending from Close, and on the next page", async () => {
@@ -358,20 +355,6 @@ describe("c-tour-bar", () => {
       again.routeUrl = "resume";
       await flush();
       expect(byId(again, "tour-bar")).toBeNull();
-    });
-
-    it("leaves the ending when one of its links is followed", async () => {
-      startTour();
-      const element = render("delivery");
-      byId(element, "tour-finish").click();
-      await flush();
-      const link = element.shadowRoot.querySelector(
-        '.tour-ending-links a[data-key="resume"]'
-      );
-      link.addEventListener("click", (event) => event.preventDefault());
-      link.click();
-      await flush();
-      expect(byId(element, "tour-bar")).toBeNull();
     });
   });
 

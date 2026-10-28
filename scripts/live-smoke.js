@@ -13,7 +13,7 @@
 // shows nothing (the tour is opt in). Then it presses the hero's tour link, which goes to the
 // first stop, and at each stop checks the bar's progress row and task line and presses the
 // task line (Show me), then Next. On the last stop it presses Finish, checks "That's the tour"
-// with Resume, Contact and Docs, presses Close and checks the bar has gone. It clicks only the
+// with no links in the ending, presses Close and checks the bar has gone. It clicks only the
 // tour's own links and buttons. TOUR below must follow LIVE_PILLARS in c/pillarData, which
 // scripts/check-smoke-routes.js checks.
 //
@@ -493,12 +493,9 @@ async function tourOnce(browser, viewport) {
       tourPart(page, "tour-progress"),
       "That's the tour"
     );
-    const endingLinks = await page
-      .locator("c-tour-bar .tour-ending-links a")
-      .allTextContents();
-    steps["ending links"] =
-      endingLinks.map((label) => label.trim()).join(",") ===
-      "Resume,Contact,Docs"
+    // The header already links Resume, Contact and Docs, so the ending has none of its own.
+    steps["no links in the ending"] =
+      (await page.locator("c-tour-bar .tour-actions a").count()) === 0
         ? "visible"
         : "missing";
     await tourPart(page, "tour-close").click();

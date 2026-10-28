@@ -11,9 +11,9 @@
  *                      stop's minutes, announced politely), the stop's task line as a button that
  *                      asks the page to show the control it names (showMe from c/tourShowMe),
  *                      Back and Next as links to the stops either side, and End tour. Next on the
- *                      last stop is Finish, which shows "That's the tour" with Resume, Contact
- *                      and Docs and a Close button. The ending goes away when closed or on the
- *                      next page. On a page that is not a stop the bar shows nothing and the tour
+ *                      last stop is Finish, which shows "That's the tour. Thanks for taking
+ *                      it." and a Close button, with no links because the header already has
+ *                      them. The ending goes away when closed or on the next page. On a page that is not a stop the bar shows nothing and the tour
  *                      waits for the next stop page.
  *                      Moving by the bar, or starting, tells the layout (tournavigate) so it can
  *                      move focus to the new page's main heading when the stop arrives
@@ -42,13 +42,6 @@ export const TOUR_START_EVENT = "portfolio-tour-start";
 
 /** The width under which the bar is pinned to the bottom of the screen. */
 export const PHONE_QUERY = "(max-width: 767.98px)";
-
-/** The routes the ending links to. */
-const ENDING_LINKS = [
-  { key: "resume", label: "Resume", url: "resume" },
-  { key: "contact", label: "Contact", url: "contact" },
-  { key: "docs", label: "Docs", url: "docs" }
-];
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -251,7 +244,7 @@ export default class TourBar extends LightningElement {
 
   get progressText() {
     if (this.ending) {
-      return "That's the tour";
+      return "That's the tour. Thanks for taking it.";
     }
     const stop = this.stop;
     return stop
@@ -297,10 +290,6 @@ export default class TourBar extends LightningElement {
     return this.nextHref
       ? `Next, ${LIVE_PILLARS[this.stopIndex + 1].pageLabel}`
       : "";
-  }
-
-  get endingLinks() {
-    return ENDING_LINKS.map((link) => ({ ...link, href: toHref(link.url) }));
   }
 
   get barClass() {
@@ -374,11 +363,6 @@ export default class TourBar extends LightningElement {
     this.ending = false;
     this._endingRoute = null;
     this.dispatchEvent(new CustomEvent("tourleave"));
-  }
-
-  handleEndingLink() {
-    this.ending = false;
-    this._endingRoute = null;
   }
 
   /** Watches the bar's size, so the page padding follows it when the text wraps. */
