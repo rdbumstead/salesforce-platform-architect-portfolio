@@ -201,9 +201,7 @@ describe("c-data-source", () => {
     }
 
     it("keeps the wording in the block and renames the model link", () => {
-      expect(WORDING.sectionModelButton).toBe(
-        "See the data model for this section"
-      );
+      expect(WORDING.sectionModelButton).toBe("See this section's data model");
       expect(WORDING.modelLinkText).toBe("See the full data model");
     });
 

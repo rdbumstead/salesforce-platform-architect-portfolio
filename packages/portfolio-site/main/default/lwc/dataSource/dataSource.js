@@ -30,8 +30,8 @@ export const WORDING = Object.freeze({
     "This section is not a stored copy. It is rebuilt from my Salesforce records each time the page loads.",
   sourcesHeading: "Where it comes from",
   modelLinkText: "See the full data model",
-  sectionModelButton: "See the data model for this section",
-  sectionModelHeading: "Data model for this section",
+  sectionModelButton: "See this section's data model",
+  sectionModelHeading: "This section's data model",
   closeButton: "Close",
   countSeparator: ", "
 });

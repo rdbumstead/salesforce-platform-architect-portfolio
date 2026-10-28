@@ -167,10 +167,10 @@ describe("c-schema-visualizer objects mode", () => {
 
     expect(q(element, ".scope-toggle")).toBeNull();
     expect(q(element, ".erd-title").textContent).toBe(
-      "Data model for this section"
+      "This section's data model"
     );
     expect(q(element, ".caption").textContent).toBe(
-      "The objects this section reads. 3 objects, described in 142 ms of server CPU"
+      "The 3 objects this section reads, described live in 142 ms of server CPU."
     );
     expect(qa(element, ".object-item")).toHaveLength(3);
     expect(qa(element, "g.node")).toHaveLength(3);

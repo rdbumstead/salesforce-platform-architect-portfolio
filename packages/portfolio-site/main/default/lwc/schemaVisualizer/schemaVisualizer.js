@@ -203,7 +203,7 @@ export default class SchemaVisualizer extends LightningElement {
   }
 
   get title() {
-    return this.hasObjects ? "Data model for this section" : "Data model, live";
+    return this.hasObjects ? "This section's data model" : "Data model, live";
   }
 
   get emptyMessage() {
@@ -435,10 +435,11 @@ export default class SchemaVisualizer extends LightningElement {
     }
     const count = this.graph.objectCount ?? this.nodes.length;
     const objectWord = count === 1 ? "object" : "objects";
-    const summary = `${count} ${objectWord}, described in ${this.graph.cpuMs} ms of server CPU`;
-    return this.hasObjects
-      ? `The objects this section reads. ${summary}`
-      : summary;
+    if (this.hasObjects) {
+      const subject = count === 1 ? "The one object" : `The ${count} objects`;
+      return `${subject} this section reads, described live in ${this.graph.cpuMs} ms of server CPU.`;
+    }
+    return `${count} ${objectWord}, described in ${this.graph.cpuMs} ms of server CPU`;
   }
 
   // The drawn boxes plus a margin, so the diagram fills its canvas. The layout box is the
