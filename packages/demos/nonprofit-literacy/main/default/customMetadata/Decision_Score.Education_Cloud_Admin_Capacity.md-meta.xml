@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Education Cloud, Admin capacity and adop</label>
+    <label>Education Cloud, Maintenance with no tec</label>
     <protected>false</protected>
     <values>
         <field>Option__c</field>
@@ -22,13 +22,13 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >Largest model, Person Accounts and an OmniStudio-heavy setup (not verified in an org).</value>
+    >The largest model to keep running: Person Accounts and a toolkit built on OmniStudio, with releases to test before they reach production.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >The engagement's signed scope has the client name staff to run Salesforce, and its first architecture decision chose a minimalist model</value>
+    >Judgment from the engagement, no public source: the client has no assigned technical resource. Model size from Understand What's Included with Education Cloud (Help)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

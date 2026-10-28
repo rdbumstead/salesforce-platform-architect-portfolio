@@ -28,7 +28,7 @@
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >NPSP Household Accounts (Help). Person Accounts per org (not verified). Scratch org sample</value>
+    >Complete Nonprofit Cloud Prerequisites (Help)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

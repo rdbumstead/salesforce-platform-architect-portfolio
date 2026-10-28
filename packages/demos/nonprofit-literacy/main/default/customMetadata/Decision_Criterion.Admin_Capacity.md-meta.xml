@@ -4,13 +4,13 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Admin capacity and adoption risk</label>
+    <label>Maintenance with no technical resource</label>
     <protected>false</protected>
     <values>
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >How much model a small staff with no full-time admin must learn and keep running.</value>
+    >What the client must keep running after go-live with no assigned technical resource: upgrades, the data model and setup.</value>
     </values>
     <values>
         <field>Default_Weight__c</field>

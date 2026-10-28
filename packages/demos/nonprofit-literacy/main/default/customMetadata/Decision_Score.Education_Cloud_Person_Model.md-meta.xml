@@ -22,13 +22,13 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >Person Accounts, which means no household grouping.</value>
+    >Person Accounts for learners, with households as accounts linked through Group Membership, a different model from the Contact in a Household Account the staff know.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >NPSP Household Accounts (Help). Person Accounts per org (not verified). Scratch org sample</value>
+    >Model Faculty, Staff, Students, and Alumni (Help). Model Households, Groups, and Organizations (Help)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

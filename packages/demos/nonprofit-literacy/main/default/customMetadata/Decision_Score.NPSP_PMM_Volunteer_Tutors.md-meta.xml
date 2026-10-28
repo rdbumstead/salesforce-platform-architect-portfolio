@@ -28,7 +28,7 @@
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >V4S in use by the client. Education Cloud data model entity lists. Nonprofit Cloud VolunteerManagement feature (scratch org features)</value>
+    >Volunteers for Salesforce (V4S) (Help). Volunteers for Salesforce FAQ (Help)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>NPSP and PMM, Admin capacity and adoptio</label>
+    <label>NPSP and PMM, Maintenance with no techni</label>
     <protected>false</protected>
     <values>
         <field>Option__c</field>
@@ -22,13 +22,13 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >Smallest model, which suits a staff with no full-time admin.</value>
+    >Three managed packages, NPSP, PMM and V4S, that Salesforce upgrades, plus two small custom objects for outcome reporting and a third as a proof of concept. The least to keep running with no one assigned to look after Salesforce.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >The engagement's signed scope has the client name staff to run Salesforce, and its first architecture decision chose a minimalist model</value>
+    >Judgment from the engagement, no public source: the client has no assigned technical resource. Model size from Manage Your Programs with Program Management Module (PMM) (Help)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

@@ -22,13 +22,13 @@
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >The academic model is terms and course offerings for credit-bearing study, heavier than adult literacy cohorts.</value>
+    >The academic model is terms and course offerings for credit-bearing study, heavier than adult literacy cohorts. Its services model of Program and Program Enrollment is built for support programs rather than classes.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >PMM objects (Install PMM, Help). Education Cloud data model entity lists. Nonprofit Cloud ProgramManagement feature (scratch org features)</value>
+    >Academic Operations (Salesforce Developers). Model Support Programs (Help)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

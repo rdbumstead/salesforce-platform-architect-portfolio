@@ -4,7 +4,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 >
-    <label>Nonprofit Cloud, Admin capacity and adop</label>
+    <label>Nonprofit Cloud, Maintenance with no tec</label>
     <protected>false</protected>
     <values>
         <field>Option__c</field>
@@ -16,19 +16,19 @@
     </values>
     <values>
         <field>Score__c</field>
-        <value xsi:type="xsd:double">3</value>
+        <value xsi:type="xsd:double">2</value>
     </values>
     <values>
         <field>Rationale__c</field>
         <value
       xsi:type="xsd:string"
-    >A medium model, newer to most consultants and admins.</value>
+    >Native features save build, but Person Accounts, the setup in its prerequisites and a product fewer admins know yet leave more to keep running with no one assigned to look after Salesforce.</value>
     </values>
     <values>
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >The engagement's signed scope has the client name staff to run Salesforce, and its first architecture decision chose a minimalist model</value>
+    >Judgment from the engagement, no public source: the client has no assigned technical resource. Model size from Complete Nonprofit Cloud Prerequisites (Help)</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>

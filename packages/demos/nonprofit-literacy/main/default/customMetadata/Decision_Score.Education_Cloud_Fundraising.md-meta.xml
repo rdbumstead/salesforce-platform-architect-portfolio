@@ -28,7 +28,7 @@
         <field>Evidence__c</field>
         <value
       xsi:type="xsd:string"
-    >Donor management excluded by the engagement's signed scope</value>
+    >Support Advancement in Education Cloud (Help) for Fundraising and gift operations. Out of scope by agreement is a judgment from the engagement.</value>
     </values>
     <values>
         <field>Is_Placeholder__c</field>
