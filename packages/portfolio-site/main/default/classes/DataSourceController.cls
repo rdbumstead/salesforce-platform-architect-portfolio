@@ -161,11 +161,18 @@ public with sharing class DataSourceController {
     source.hasCount = false;
     if (isCountable(record)) {
       try {
-        source.count = Database.countQueryWithBinds(
-          'SELECT COUNT() FROM ' + record.Object__c + whereOf(record),
-          new Map<String, Object>(),
-          accessLevelOf(record.Access_Mode__c)
-        );
+        String countQuery =
+          'SELECT COUNT() FROM ' +
+          record.Object__c +
+          whereOf(record);
+        AccessLevel level = accessLevelOf(record.Access_Mode__c);
+        source.count = level == AccessLevel.SYSTEM_MODE
+          ? new CountSelector().countOf(countQuery)
+          : Database.countQueryWithBinds(
+              countQuery,
+              new Map<String, Object>(),
+              level
+            );
         source.hasCount = true;
       } catch (Exception e) {
         source.count = null;
@@ -210,5 +217,22 @@ public with sharing class DataSourceController {
       return overrides.get(name);
     }
     return Query_Definition__mdt.getAll().get(name);
+  }
+
+  /**
+   * @description Counts a system mode definition without sharing, because system mode skips
+   *              object and field permission checks but record sharing still follows the
+   *              class's sharing keyword, and the site guest can see none of these rows.
+   *              The query text comes from an active Query_Definition__mdt record, never from
+   *              the request, and only the number leaves this class.
+   */
+  private without sharing class CountSelector {
+    private Integer countOf(String countQuery) {
+      return Database.countQueryWithBinds(
+        countQuery,
+        new Map<String, Object>(),
+        AccessLevel.SYSTEM_MODE
+      );
+    }
   }
 }

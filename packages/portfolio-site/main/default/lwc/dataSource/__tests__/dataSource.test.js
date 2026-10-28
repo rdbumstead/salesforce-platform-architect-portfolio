@@ -228,4 +228,20 @@ describe("c-data-source", () => {
     expect(button(el).textContent).toContain("Live from Salesforce");
     expect(getSources.getLastConfig()).toEqual({});
   });
+
+  it("shows no number anywhere when hideCounts is set", async () => {
+    const el = create({ sourceKeys: "a", hideCounts: true });
+    getSources.emit([ROLES, SKILLS]);
+    await flush();
+    expect(button(el).textContent).toContain("Live from Salesforce");
+    expect(el.shadowRoot.querySelector(".marker-counts")).toBeNull();
+    expect(button(el).getAttribute("aria-label")).toBe("Live from Salesforce");
+    button(el).click();
+    await flush();
+    const items = [...el.shadowRoot.querySelectorAll(".source")];
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toContain("Roles");
+    expect(items[0].textContent).toContain("Resume roles, current first.");
+    expect(panel(el).textContent).not.toMatch(/[0-9]/);
+  });
 });
