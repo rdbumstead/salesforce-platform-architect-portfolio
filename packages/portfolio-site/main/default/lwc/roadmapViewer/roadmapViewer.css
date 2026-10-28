@@ -291,6 +291,13 @@
   }
 }
 
+@media (max-width: 359.98px) {
+  .tab {
+    padding: 0 var(--pf-space-1);
+    font-size: 0.8125rem;
+  }
+}
+
 .tab-active {
   background-color: var(--pf-chip);
   color: var(--pf-chip-text);
