@@ -158,8 +158,12 @@
   z-index: 1;
 }
 
+/* The content region holds at least one screen, so the footer starts below the first screen
+   while a page's components are still loading, instead of painting at the bottom of the screen
+   and dropping when the page arrives. */
 .region-content {
   flex: 1 0 auto;
+  min-height: 100vh;
 }
 
 /* The focus target for Back to top. It is not a tab stop, so it shows no ring. */
