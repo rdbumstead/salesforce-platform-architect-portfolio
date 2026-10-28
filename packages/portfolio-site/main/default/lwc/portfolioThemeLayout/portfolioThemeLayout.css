@@ -257,6 +257,7 @@
   font-size: 15px;
   letter-spacing: -0.01em;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 /* The left auto margin pushes the links to the right, next to the divider and the controls. */
@@ -292,7 +293,15 @@
   font: inherit;
   font-size: 14px;
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+/* Six header items and the menu fit on one line from 768 px only with the links a little closer. */
+@media screen and (min-width: 768px) and (max-width: 899.98px) {
+  .nav-link {
+    padding: 0 var(--pf-space-2);
+  }
 }
 
 .nav-link:hover {

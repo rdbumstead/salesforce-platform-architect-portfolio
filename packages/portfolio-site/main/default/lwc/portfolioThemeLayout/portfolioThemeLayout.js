@@ -2,7 +2,8 @@
  * @description       : Site theme layout. Renders the slim sticky header for every portfolio page,
  *                      the page content in the unnamed slot, and the footer region.
  *                      The header holds the name (a home link everywhere) at the left, and at the
- *                      right Home, Resume, a "How it's built" menu and Contact, a thin divider
+ *                      right Home, Resume, Skills, a "How it's built" menu, Testimonials and
+ *                      Contact, a thin divider
  *                      drawn in CSS (aria-hidden), then the Back to top arrow, the theme toggle
  *                      and the phone menu button. While the arrow is hidden the links and the
  *                      divider slide over its place, so the divider always sits beside the next
@@ -19,7 +20,7 @@
  *                      when none shows within TOUR_HEADING_WAIT_MS. Ending the tour moves focus
  *                      to the page content. On a phone the bar is pinned to the bottom and the
  *                      layout pads the page by its height. The link to the page on screen
- *                      carries aria-current="page". Skills and Testimonials live in the footer.
+ *                      carries aria-current="page". Skills and Testimonials are in the footer too.
  *                      Owns the theme: the stylesheet follows the system setting, and the toggle
  *                      writes data-theme and the portfolio-theme storage key, with a 200 ms
  *                      crossfade where the browser supports view transitions.
@@ -54,12 +55,19 @@ import {
 } from "c/motionPreference";
 import { startTour, firstStopHref, TOUR_LABEL } from "c/tourBar";
 
-// The header links in order, with the "How it's built" menu between Resume and Contact. All are
-// plain route links. URLs match the urlPrefix of each route in the Portfolio1 site bundle. Home
-// is the route with an empty URL, so it carries aria-current="page" on the home page only.
+// The header links in order, with the "How it's built" menu between Skills and Testimonials. All
+// are plain route links. URLs match the urlPrefix of each route in the Portfolio1 site bundle.
+// Home is the route with an empty URL, so it carries aria-current="page" on the home page only.
 const PAGES = [
   { key: "home", label: "Home", url: "" },
   { key: "resume", label: "Resume", url: "resume" },
+  { key: "skills", label: "Skills", url: "skills" },
+  {
+    key: "testimonials",
+    label: "Testimonials",
+    url: "testimonials",
+    afterMenu: true
+  },
   { key: "contact", label: "Contact", url: "contact", afterMenu: true }
 ];
 
