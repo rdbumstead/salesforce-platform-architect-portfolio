@@ -27,6 +27,8 @@
 public with sharing class ApiLabController {
   public static final String NAMED_CREDENTIAL = 'Portfolio_API';
   public static final String API_VERSION = 'v1';
+  /** The Portfolio_Setting__mdt record that holds the Run in Postman link. */
+  public static final String POSTMAN_RUN_URL_SETTING = 'Postman_Run_Url';
 
   /**
    * The static resource that lists the Lab's paths. scripts/sync-specs.js builds it from the
@@ -187,9 +189,6 @@ public with sharing class ApiLabController {
     }
     return body;
   }
-
-  /** The Portfolio_Setting__mdt record that holds the Run in Postman link. */
-  public static final String POSTMAN_RUN_URL_SETTING = 'Postman_Run_Url';
 
   /**
    * @description The Run in Postman link the API Lab and the API reference page show, from

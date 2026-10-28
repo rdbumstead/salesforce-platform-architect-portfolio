@@ -12,7 +12,7 @@ private class ApiLabControllerPostmanTest {
   private static final String RUN_URL = 'https://god.gw.postman.com/run-collection/example';
 
   @IsTest
-  static void shouldReturnBlank_WhenShippedRecordIsEmpty() {
+  static void returnsBlankWhenShippedRecordIsEmpty() {
     Portfolio_Setting__mdt shipped = Portfolio_Setting__mdt.getInstance(
       ApiLabController.POSTMAN_RUN_URL_SETTING
     );
@@ -30,7 +30,7 @@ private class ApiLabControllerPostmanTest {
   }
 
   @IsTest
-  static void shouldReturnLink_WhenRecordHoldsOne() {
+  static void returnsLinkWhenRecordHoldsOne() {
     PortfolioSettings.overrides.put(
       ApiLabController.POSTMAN_RUN_URL_SETTING,
       new Portfolio_Setting__mdt(
@@ -47,7 +47,7 @@ private class ApiLabControllerPostmanTest {
   }
 
   @IsTest
-  static void shouldReturnBlank_WhenRecordIsMissing() {
+  static void returnsBlankWhenRecordIsMissing() {
     PortfolioSettings.overrides.put(
       ApiLabController.POSTMAN_RUN_URL_SETTING,
       null
