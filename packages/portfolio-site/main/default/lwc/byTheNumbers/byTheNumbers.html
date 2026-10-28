@@ -1,7 +1,14 @@
 <template>
   <section class="numbers" aria-labelledby="numbers-heading">
     <p class="eyebrow">Counted from records</p>
-    <h2 class="heading" id="numbers-heading">By the numbers</h2>
+    <div class="title-row">
+      <h2 class="heading" id="numbers-heading">By the numbers</h2>
+      <c-data-source
+        source-keys="PortfolioStatsController_Approved,PortfolioStatsController_Waiting,PortfolioStatsController_UsageCounters,PortfolioStatsController_DeployRuns,PortfolioStatsController_LatestDeploy,PortfolioStatsController_IssuedTokens"
+        hide-counts
+        class="card-source"
+      ></c-data-source>
+    </div>
 
     <template lwc:if={isLoading}>
       <p class="note" role="status">Loading the counts.</p>

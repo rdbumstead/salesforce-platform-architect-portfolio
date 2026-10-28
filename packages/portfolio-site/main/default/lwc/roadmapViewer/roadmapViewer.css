@@ -322,3 +322,7 @@
 .column-hidden {
   display: none;
 }
+
+.card-source {
+  display: inline-flex;
+}

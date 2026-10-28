@@ -379,3 +379,7 @@
   overflow-y: auto;
   font-family: var(--pf-font-mono);
 }
+
+.card-source {
+  display: inline-flex;
+}

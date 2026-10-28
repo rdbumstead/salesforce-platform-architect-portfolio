@@ -139,3 +139,15 @@
   font-size: 0.75rem;
   font-weight: 700;
 }
+
+/* The live data marker sits beside the heading, like View source elsewhere. */
+.changelog-title-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2) var(--pf-space-4);
+}
+
+.card-source {
+  display: inline-flex;
+}

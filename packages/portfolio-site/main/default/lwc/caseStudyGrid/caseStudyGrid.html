@@ -2,14 +2,20 @@
   <template lwc:if={hasCards}>
     <div class="case-studies">
       <section class="section" aria-labelledby="case-studies-heading">
-        <h2
-          id="case-studies-heading"
-          class="section-heading"
-          data-id="case-heading"
-          tabindex="-1"
-        >
-          Case studies
-        </h2>
+        <div class="heading-row">
+          <h2
+            id="case-studies-heading"
+            class="section-heading"
+            data-id="case-heading"
+            tabindex="-1"
+          >
+            Case studies
+          </h2>
+          <c-data-source
+            source-keys="ProjectCardController_HomeCaseStudies"
+            class="card-source"
+          ></c-data-source>
+        </div>
         <p class="section-intro">
           Client names are left out. Pick one for the problem, the call I made
           and how it turned out.

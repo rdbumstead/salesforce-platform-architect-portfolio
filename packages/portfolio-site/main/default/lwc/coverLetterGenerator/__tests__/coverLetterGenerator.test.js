@@ -1130,3 +1130,19 @@ describe("c-cover-letter-generator", () => {
     });
   });
 });
+
+describe("c-cover-letter-generator live data marker", () => {
+  it("places the live data marker with the sources the section reads", () => {
+    const html = readFileSync(
+      join(__dirname, "..", "coverLetterGenerator.html"),
+      "utf8"
+    );
+    const marker = html.match(/<c-data-source\s([^>]*)>\s*<\/c-data-source>/);
+    expect(marker).not.toBeNull();
+    expect(marker[1]).toMatch(
+      /source-keys="PortfolioGroundingService_Projects,PortfolioGroundingService_Highlights,PortfolioGroundingService_SkillLinks"/
+    );
+    expect(marker[1]).not.toMatch(/objects=/);
+    expect(marker[1]).toMatch(/\shide-counts[\s>]/);
+  });
+});

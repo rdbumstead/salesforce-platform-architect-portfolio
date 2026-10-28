@@ -235,3 +235,20 @@
     padding: var(--pf-space-2) var(--pf-space-1);
   }
 }
+
+/* The live data marker sits beside the heading, like View source elsewhere. */
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2) var(--pf-space-4);
+  margin: 0 0 var(--pf-space-4);
+}
+
+.title-row .heading {
+  margin: 0;
+}
+
+.card-source {
+  display: inline-flex;
+}

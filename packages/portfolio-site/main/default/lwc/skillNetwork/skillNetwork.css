@@ -544,3 +544,7 @@
     grid-template-columns: 1fr;
   }
 }
+
+.card-source {
+  display: inline-flex;
+}
