@@ -31,6 +31,15 @@
           </template>
         </ul>
       </template>
+      <button
+        lwc:if={hasModelObjects}
+        type="button"
+        class="model-button"
+        aria-haspopup="dialog"
+        onclick={handleOpenModel}
+      >
+        {wording.sectionModelButton}
+      </button>
       <p class="panel-footer">
         <a class="model-link" href={modelPath}>{wording.modelLinkText}</a>
         <button type="button" class="close-button" onclick={handleClose}>
@@ -39,4 +48,33 @@
       </p>
     </div>
   </div>
+  <dialog
+    lwc:if={isModelOpen}
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="data-source-model-heading"
+    onkeydown={handleModelKeydown}
+    onfocusout={handleModelFocusOut}
+    oncancel={handleModelCancel}
+    onclick={handleModelClick}
+  >
+    <div class="dialog-body">
+      <header class="dialog-header">
+        <h2 id="data-source-model-heading" class="dialog-heading" tabindex="-1">
+          {wording.sectionModelHeading}
+        </h2>
+        <button
+          type="button"
+          class="model-close-button"
+          onclick={handleCloseModel}
+        >
+          {wording.closeButton}
+        </button>
+      </header>
+      <div class="dialog-scroll">
+        <c-schema-visualizer objects={modelObjects}></c-schema-visualizer>
+      </div>
+    </div>
+  </dialog>
 </template>

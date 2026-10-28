@@ -72,6 +72,31 @@ private class DataSourceControllerTest {
   }
 
   @isTest
+  static void sourcesSayWhetherTheModelDrawsTheirObject() {
+    Query_Definition__mdt unknown = definition(null, true);
+    unknown.Object__c = 'User';
+    DataSourceController.overrides.put('Test_Not_In_Model', unknown);
+    DataSourceController.overrides.put('Test_In_Model', definition(null, true));
+    Boolean skillDrawn = SchemaService.modelObjectNames().contains('Skill__c');
+
+    List<DataSourceController.DataSource> sources = DataSourceController.getSources(
+      new List<String>{ 'Test_In_Model', 'Test_Not_In_Model' }
+    );
+    List<DataSourceController.DataSource> objects = DataSourceController.getObjectSources(
+      new List<String>{ 'skill__c' }
+    );
+
+    Assert.areEqual(2, sources.size());
+    Assert.areEqual(skillDrawn, sources[0].inModel, 'Skill follows the model.');
+    Assert.isFalse(sources[1].inModel, 'User is not drawn by the model.');
+    Assert.areEqual(
+      skillDrawn,
+      objects[0].inModel,
+      'Object sources follow it too.'
+    );
+  }
+
+  @isTest
   static void visitorLabelWinsOverObjectPluralLabel() {
     Query_Definition__mdt withLabel = definition(null, true);
     withLabel.Visitor_Label__c = 'abilities';

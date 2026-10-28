@@ -4,7 +4,9 @@
  *                      the visitor label of the definition (Visitor_Label__c, else the plural
  *                      label of the object it reads), the object API name and a live count of
  *                      the rows its filter matches, counted in the definition's own access mode.
- *                      The developer facing Description__c is never returned.
+ *                      The developer facing Description__c is never returned. Each source also
+ *                      says whether its object is drawn by the data model diagram
+ *                      (SchemaService.modelObjectNames), read once per request.
  *                      Unknown, inactive or unreadable names are skipped. At most MAX_NAMES
  *                      names are read per call. A definition whose filter takes bind values, or
  *                      whose filter the metadata read cut short, is returned with no count
@@ -41,6 +43,8 @@ public with sharing class DataSourceController {
     @AuraEnabled
     public String objectName;
     @AuraEnabled
+    public Boolean inModel;
+    @AuraEnabled
     public Boolean hasCount;
     @AuraEnabled
     public Integer count;
@@ -76,7 +80,7 @@ public with sharing class DataSourceController {
         result.add(source);
       }
     }
-    return result;
+    return markModel(result);
   }
 
   /**
@@ -132,7 +136,24 @@ public with sharing class DataSourceController {
       }
       result.add(source);
     }
-    return result;
+    return markModel(result);
+  }
+
+  /** Sets inModel on each source, with one read of the model's object names. */
+  private static List<DataSource> markModel(List<DataSource> sources) {
+    if (sources.isEmpty()) {
+      return sources;
+    }
+    Set<String> drawn = new Set<String>();
+    for (String modelName : SchemaService.modelObjectNames()) {
+      drawn.add(modelName.toLowerCase());
+    }
+    for (DataSource source : sources) {
+      source.inModel =
+        String.isNotBlank(source.objectName) &&
+        drawn.contains(source.objectName.trim().toLowerCase());
+    }
+    return sources;
   }
 
   /**
