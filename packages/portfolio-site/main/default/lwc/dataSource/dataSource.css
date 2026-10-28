@@ -6,13 +6,17 @@
  */
 :host {
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .marker {
   position: relative;
   display: inline-block;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .marker-button,
@@ -27,8 +31,12 @@
 
 .marker-button {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--pf-space-2);
+  box-sizing: border-box;
+  max-width: 100%;
+  padding-block: var(--pf-space-1);
+  gap: var(--pf-space-1) var(--pf-space-2);
   background-color: transparent;
   color: var(--pf-text);
   border: 1px solid var(--pf-border);
@@ -36,6 +44,7 @@
   font-weight: 400;
   line-height: 1.5;
   text-align: left;
+  white-space: normal;
 }
 
 .marker-button:hover {
@@ -58,7 +67,9 @@
 }
 
 .marker-counts {
+  min-width: 0;
   color: var(--pf-body);
+  overflow-wrap: anywhere;
 }
 
 .panel {
@@ -136,4 +147,14 @@
   color: var(--pf-btn-text);
   border: 0;
   font-weight: 700;
+}
+
+/* On a phone the panel opens in the flow under the button, so it never leaves the screen. */
+@media (max-width: 600px) {
+  .panel {
+    position: static;
+    width: auto;
+    max-width: 100%;
+    margin-top: var(--pf-space-2);
+  }
 }
