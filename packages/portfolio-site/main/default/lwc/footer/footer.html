@@ -149,17 +149,10 @@
               </div>
             </div>
           </template>
-          <details
-            class="metric-group quotas"
-            data-group="quotas"
-            ontoggle={handleQuotaToggle}
-          >
-            <summary
-              class="group-label quotas-summary"
-              id="footer-group-quotas"
+          <div class="metric-group" data-group="quotas">
+            <span class="group-label" id="footer-group-quotas"
+              >Quotas and limits</span
             >
-              Quotas and limits
-            </summary>
             <ul class="group-list" aria-labelledby="footer-group-quotas">
               <li class="metric">
                 <span
@@ -180,7 +173,7 @@
                 </li>
               </template>
             </ul>
-          </details>
+          </div>
         </template>
       </div>
 

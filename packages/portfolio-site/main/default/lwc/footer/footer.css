@@ -70,25 +70,6 @@
   letter-spacing: 0.02em;
 }
 
-/* Quotas and limits is a closed disclosure. Its summary is the group label, with the
-   browser's own marker kept so it reads as something to open. A flex parent would turn the
-   summary into a block and drop the marker, so it is a list item again here. */
-.quotas-summary {
-  display: list-item;
-  min-height: 24px;
-  cursor: pointer;
-}
-
-.quotas-summary:hover {
-  color: var(--pf-accent);
-}
-
-.quotas-summary:focus-visible {
-  outline: 2px solid var(--pf-accent);
-  outline-offset: 2px;
-  border-radius: var(--pf-radius-sm);
-}
-
 /* Storage: the compact line is a button that opens a small panel under it. */
 .storage-toggle {
   gap: 4px;
@@ -143,10 +124,6 @@
 
 .storage-note {
   margin: var(--pf-space-2) 0 0;
-}
-
-.quotas[open] .quotas-summary {
-  margin-bottom: var(--pf-space-1);
 }
 
 /*
