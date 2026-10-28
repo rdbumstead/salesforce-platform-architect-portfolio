@@ -6,15 +6,14 @@
         aria-labelledby="career-heading"
         onkeydown={handleKeydown}
       >
-        <h2
-          id="career-heading"
-          class="visually-hidden"
-          data-id="career-heading"
-        >
-          Career, newest first
-        </h2>
-
-        <div class="source-row">
+        <div class="heading-row">
+          <h2
+            id="career-heading"
+            class="section-heading"
+            data-id="career-heading"
+          >
+            Career timeline
+          </h2>
           <c-data-source
             source-keys="ResumeController_TimelineRoles,ResumeController_Education,ResumeController_Certifications,ResumeController_Highlights"
             class="card-source"
