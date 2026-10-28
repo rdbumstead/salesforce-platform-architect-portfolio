@@ -175,7 +175,11 @@ export default class DecisionMatrix extends LightningElement {
       summary: o.summary,
       isLeading: o.developerName === leader,
       className:
-        o.developerName === leader ? "option-head leading" : "option-head"
+        o.developerName === leader ? "option-head leading" : "option-head",
+      // Every header keeps the tag's line, so the header row stays the same height when the
+      // lead moves or a tie leaves no leader.
+      tagClassName:
+        o.developerName === leader ? "leading-tag" : "leading-tag tag-reserved"
     }));
   }
 

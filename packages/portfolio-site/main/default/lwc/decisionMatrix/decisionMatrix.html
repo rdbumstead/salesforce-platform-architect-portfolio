@@ -41,9 +41,7 @@
                 >
                   <span class="option-label">{col.label}</span>
                   <span class="option-summary">{col.summary}</span>
-                  <span lwc:if={col.isLeading} class="leading-tag"
-                    >Leading</span
-                  >
+                  <span class={col.tagClassName}>Leading</span>
                 </th>
               </template>
             </tr>

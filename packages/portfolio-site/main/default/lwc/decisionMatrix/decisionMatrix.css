@@ -166,6 +166,11 @@
   text-transform: uppercase;
 }
 
+/* The tag on an option that is not leading holds its space but is not seen or read. */
+.leading-tag.tag-reserved {
+  visibility: hidden;
+}
+
 .total-cell {
   position: relative;
 }
