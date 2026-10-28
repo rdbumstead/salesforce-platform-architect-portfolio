@@ -172,9 +172,9 @@ The following groups are executed in parallel:
 {
   "config": {
     "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-    "calendlyUrl": "https://calendly.com/ryanbumstead",
-    "githubUrl": "https://github.com/ryanbumstead",
-    "trailheadUrl": "https://trailblazer.me/id/ryanbumstead",
+    "calendlyUrl": "https://example.com/schedule",
+    "githubUrl": "https://example.com/source",
+    "trailheadUrl": "https://example.com/trailhead",
     "personalWebsiteUrl": "https://ryanbumstead.com",
     "careerObjective": "Driving digital transformation through architecture."
   },
@@ -183,8 +183,8 @@ The following groups are executed in parallel:
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://github.com/ryanbumstead",
-    "trailhead": "https://trailblazer.me/id/ryanbumstead",
+    "github": "https://example.com/source",
+    "trailhead": "https://example.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -237,9 +237,9 @@ The following groups are executed in parallel:
       "businessValue": "Increased interview rate by 40%",
       "status": "Live – In Production",
       "completionDate": "2025-12-01",
-      "heroImageUrl": "https://assets.portfolio.com/hero.png",
-      "liveUrl": "https://portfolio.ryanbumstead.com",
-      "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
+      "heroImageUrl": "https://example.com/images/hero.png",
+      "liveUrl": "https://example.com/portfolio",
+      "repositoryUrl": "https://example.com/source",
       "technologies": [
         "LWR",
         "Apex"
@@ -276,7 +276,7 @@ The following groups are executed in parallel:
       "relationship": "Manager",
       "quote": "Ryan is a beast at architecture.",
       "vibe": "Professional",
-      "avatarUrl": "https://linkedin.com/in/janedoe/photo"
+      "avatarUrl": "https://example.com/images/avatar.jpg"
     }
   ],
   "integrityNote": "complete"
@@ -433,8 +433,8 @@ strictest-policy-wins.
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://github.com/ryanbumstead",
-    "trailhead": "https://trailblazer.me/id/ryanbumstead",
+    "github": "https://example.com/source",
+    "trailhead": "https://example.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -640,9 +640,9 @@ Retrieves projects marked as 'Featured' with nested Skills and Assets.
     "businessValue": "Increased interview rate by 40%",
     "status": "Live – In Production",
     "completionDate": "2025-12-01",
-    "heroImageUrl": "https://assets.portfolio.com/hero.png",
-    "liveUrl": "https://portfolio.ryanbumstead.com",
-    "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
+    "heroImageUrl": "https://example.com/images/hero.png",
+    "liveUrl": "https://example.com/portfolio",
+    "repositoryUrl": "https://example.com/source",
     "technologies": [
       "Apex"
     ],
@@ -650,7 +650,7 @@ Retrieves projects marked as 'Featured' with nested Skills and Assets.
     "assets": [
       {
         "type": "Image",
-        "url": "https://assets.portfolio.com/diagram.png",
+        "url": "https://example.com/images/diagram.png",
         "caption": "System Architecture Diagram"
       }
     ]
@@ -1048,7 +1048,7 @@ any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest firs
     "relationship": "Manager",
     "quote": "Ryan is a beast at architecture",
     "vibe": "Professional",
-    "avatarUrl": "https://linkedin.com/in/janedoe/photo"
+    "avatarUrl": "https://example.com/images/avatar.jpg"
   }
 ]
 ```
@@ -1820,9 +1820,9 @@ This operation does not require authentication
 {
   "config": {
     "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-    "calendlyUrl": "https://calendly.com/ryanbumstead",
-    "githubUrl": "https://github.com/ryanbumstead",
-    "trailheadUrl": "https://trailblazer.me/id/ryanbumstead",
+    "calendlyUrl": "https://example.com/schedule",
+    "githubUrl": "https://example.com/source",
+    "trailheadUrl": "https://example.com/trailhead",
     "personalWebsiteUrl": "https://ryanbumstead.com",
     "careerObjective": "Driving digital transformation through architecture.",
     "jiraProjectKey": "SPAP",
@@ -1833,8 +1833,8 @@ This operation does not require authentication
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://github.com/ryanbumstead",
-    "trailhead": "https://trailblazer.me/id/ryanbumstead",
+    "github": "https://example.com/source",
+    "trailhead": "https://example.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -1876,9 +1876,9 @@ This operation does not require authentication
       "businessValue": "Increased interview rate by 40%",
       "status": "Live – In Production",
       "completionDate": "2025-12-01",
-      "heroImageUrl": "https://assets.portfolio.com/hero.png",
-      "liveUrl": "https://portfolio.ryanbumstead.com",
-      "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
+      "heroImageUrl": "https://example.com/images/hero.png",
+      "liveUrl": "https://example.com/portfolio",
+      "repositoryUrl": "https://example.com/source",
       "technologies": [
         "Apex"
       ],
@@ -1886,7 +1886,7 @@ This operation does not require authentication
       "assets": [
         {
           "type": "Image",
-          "url": "https://assets.portfolio.com/diagram.png",
+          "url": "https://example.com/images/diagram.png",
           "caption": "System Architecture Diagram"
         }
       ]
@@ -1921,7 +1921,7 @@ This operation does not require authentication
       "relationship": "Manager",
       "quote": "Ryan is a beast at architecture",
       "vibe": "Professional",
-      "avatarUrl": "https://linkedin.com/in/janedoe/photo"
+      "avatarUrl": "https://example.com/images/avatar.jpg"
     }
   ],
   "integrityNote": "complete"
@@ -1960,8 +1960,8 @@ The master payload for initial app load
     "fullName": "Ryan Bumstead",
     "title": "Platform Architect",
     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-    "github": "https://github.com/ryanbumstead",
-    "trailhead": "https://trailblazer.me/id/ryanbumstead",
+    "github": "https://example.com/source",
+    "trailhead": "https://example.com/trailhead",
     "portfolioUrl": "https://ryanbumstead.com",
     "bio": "Specializing in API-led connectivity..."
   },
@@ -2088,9 +2088,9 @@ Work Experience enriched with related Skills and Highlights
   "businessValue": "Increased interview rate by 40%",
   "status": "Live – In Production",
   "completionDate": "2025-12-01",
-  "heroImageUrl": "https://assets.portfolio.com/hero.png",
-  "liveUrl": "https://portfolio.ryanbumstead.com",
-  "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
+  "heroImageUrl": "https://example.com/images/hero.png",
+  "liveUrl": "https://example.com/portfolio",
+  "repositoryUrl": "https://example.com/source",
   "technologies": [
     "Apex"
   ],
@@ -2098,7 +2098,7 @@ Work Experience enriched with related Skills and Highlights
   "assets": [
     {
       "type": "Image",
-      "url": "https://assets.portfolio.com/diagram.png",
+      "url": "https://example.com/images/diagram.png",
       "caption": "System Architecture Diagram"
     }
   ]
@@ -2153,7 +2153,7 @@ Project enriched with Skills and Assets
   "relationship": "Manager",
   "quote": "Ryan is a beast at architecture",
   "vibe": "Professional",
-  "avatarUrl": "https://linkedin.com/in/janedoe/photo"
+  "avatarUrl": "https://example.com/images/avatar.jpg"
 }
 
 ```
@@ -2192,9 +2192,9 @@ Project enriched with Skills and Assets
 ```json
 {
   "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-  "calendlyUrl": "https://calendly.com/ryanbumstead",
-  "githubUrl": "https://github.com/ryanbumstead",
-  "trailheadUrl": "https://trailblazer.me/id/ryanbumstead",
+  "calendlyUrl": "https://example.com/schedule",
+  "githubUrl": "https://example.com/source",
+  "trailheadUrl": "https://example.com/trailhead",
   "personalWebsiteUrl": "https://ryanbumstead.com",
   "careerObjective": "Driving digital transformation through architecture.",
   "jiraProjectKey": "SPAP",
@@ -2231,8 +2231,8 @@ Public configuration. The owner's email and phone are never returned.
   "fullName": "Ryan Bumstead",
   "title": "Platform Architect",
   "linkedIn": "https://linkedin.com/in/ryanbumstead",
-  "github": "https://github.com/ryanbumstead",
-  "trailhead": "https://trailblazer.me/id/ryanbumstead",
+  "github": "https://example.com/source",
+  "trailhead": "https://example.com/trailhead",
   "portfolioUrl": "https://ryanbumstead.com",
   "bio": "Specializing in API-led connectivity..."
 }
