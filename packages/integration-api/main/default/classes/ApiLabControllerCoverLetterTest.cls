@@ -344,12 +344,15 @@ private class ApiLabControllerCoverLetterTest {
       ApiLabController.generateCoverLetter(
         'Acme',
         'Architect',
-        'x'.repeat(4001)
+        'x'.repeat(ApiLabController.MAX_DESCRIPTION_LENGTH + 1)
       );
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
       Assert.isTrue(
-        e.getMessage().contains('at most 4000 characters'),
+        e.getMessage()
+          .contains(
+            'at most ' + ApiLabController.MAX_DESCRIPTION_LENGTH + ' characters'
+          ),
         e.getMessage()
       );
     }
