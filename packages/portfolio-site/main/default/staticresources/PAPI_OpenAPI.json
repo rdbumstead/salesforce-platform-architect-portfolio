@@ -596,17 +596,17 @@
             "type": "string",
             "format": "uri",
             "description": "URL of the main display image. Matches SAPI field name.",
-            "example": "https://assets.portfolio.com/hero.png"
+            "example": "https://example.com/images/hero.png"
           },
           "liveUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://portfolio.ryanbumstead.com"
+            "example": "https://example.com/portfolio"
           },
           "repositoryUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://github.com/ryanbumstead/portfolio"
+            "example": "https://example.com/source"
           },
           "technologies": {
             "type": "array",
@@ -645,7 +645,7 @@
                 "url": {
                   "type": "string",
                   "format": "uri",
-                  "example": "https://assets.portfolio.com/diagram.png"
+                  "example": "https://example.com/images/diagram.png"
                 },
                 "caption": {
                   "type": "string",
@@ -702,7 +702,7 @@
           "avatarUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://linkedin.com/in/janedoe/photo"
+            "example": "https://example.com/images/avatar.jpg"
           }
         }
       },
@@ -718,17 +718,17 @@
           "calendlyUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://calendly.com/ryanbumstead"
+            "example": "https://example.com/schedule"
           },
           "githubUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://github.com/ryanbumstead"
+            "example": "https://example.com/source"
           },
           "trailheadUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://trailblazer.me/id/ryanbumstead"
+            "example": "https://example.com/trailhead"
           },
           "personalWebsiteUrl": {
             "type": "string",
@@ -780,12 +780,12 @@
           "github": {
             "type": "string",
             "format": "uri",
-            "example": "https://github.com/ryanbumstead"
+            "example": "https://example.com/source"
           },
           "trailhead": {
             "type": "string",
             "format": "uri",
-            "example": "https://trailblazer.me/id/ryanbumstead"
+            "example": "https://example.com/trailhead"
           },
           "portfolioUrl": {
             "type": "string",
@@ -1142,9 +1142,9 @@
                 "example": {
                   "config": {
                     "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
-                    "calendlyUrl": "https://calendly.com/ryanbumstead",
-                    "githubUrl": "https://github.com/ryanbumstead",
-                    "trailheadUrl": "https://trailblazer.me/id/ryanbumstead",
+                    "calendlyUrl": "https://example.com/schedule",
+                    "githubUrl": "https://example.com/source",
+                    "trailheadUrl": "https://example.com/trailhead",
                     "personalWebsiteUrl": "https://ryanbumstead.com",
                     "careerObjective": "Driving digital transformation through architecture."
                   },
@@ -1153,8 +1153,8 @@
                     "fullName": "Ryan Bumstead",
                     "title": "Platform Architect",
                     "linkedIn": "https://linkedin.com/in/ryanbumstead",
-                    "github": "https://github.com/ryanbumstead",
-                    "trailhead": "https://trailblazer.me/id/ryanbumstead",
+                    "github": "https://example.com/source",
+                    "trailhead": "https://example.com/trailhead",
                     "portfolioUrl": "https://ryanbumstead.com",
                     "bio": "Specializing in API-led connectivity..."
                   },
@@ -1207,9 +1207,9 @@
                       "businessValue": "Increased interview rate by 40%",
                       "status": "Live – In Production",
                       "completionDate": "2025-12-01",
-                      "heroImageUrl": "https://assets.portfolio.com/hero.png",
-                      "liveUrl": "https://portfolio.ryanbumstead.com",
-                      "repositoryUrl": "https://github.com/ryanbumstead/portfolio",
+                      "heroImageUrl": "https://example.com/images/hero.png",
+                      "liveUrl": "https://example.com/portfolio",
+                      "repositoryUrl": "https://example.com/source",
                       "technologies": [
                         "LWR",
                         "Apex"
@@ -1246,7 +1246,7 @@
                       "relationship": "Manager",
                       "quote": "Ryan is a beast at architecture.",
                       "vibe": "Professional",
-                      "avatarUrl": "https://linkedin.com/in/janedoe/photo"
+                      "avatarUrl": "https://example.com/images/avatar.jpg"
                     }
                   ],
                   "integrityNote": "complete"
