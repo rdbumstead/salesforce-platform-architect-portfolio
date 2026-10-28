@@ -17,6 +17,7 @@
   - [3.6 Changing a Query Definition](#36-changing-a-query-definition)
   - [3.7 Site Content the Owner Edits](#37-site-content-the-owner-edits)
   - [3.8 Owner Emails and Testimonial Approvals](#38-owner-emails-and-testimonial-approvals)
+  - [3.9 The Postman Collection and the Run in Postman Link](#39-the-postman-collection-and-the-run-in-postman-link)
 - [4. Disaster Recovery](#4-disaster-recovery)
   - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
   - [4.2 Scenario: Security Misconfiguration (Guest User)](#42-scenario-security-misconfiguration-guest-user)
@@ -201,7 +202,7 @@ The portfolio's content reads (the SAPI lists, the Process API, the API Lab opti
 - **The proof strip.** "On Salesforce since 2017" and the active certification count are one list, `PROOF_POINTS` in `c/pillarData`. Check both every quarter, and change the count and its test in the same commit.
 - **A home case study.** The home page shows up to three `Project__c` rows that have **Home Sort** set, lowest first. To add one, create the row with its Home Title (optional), Client Line, Case Tags, headline number and label, Challenge, Solution, Business Value and link, and give it a Home Sort. To reorder, change the Home Sort numbers. To retire one, clear its Home Sort. Clear every Home Sort and the section disappears with no empty heading. A row with a Home Sort and no Pillar never appears as a pillar card. The featured flag is not used here and changing it does not move a card. The text reaches production through an owner run script, not through CI. A card's number can be computed from a live source (Technical Guide §2.12), which is better than a typed number that goes stale.
 - **When home testimonials appear.** Edit **Home testimonials minimum** in Portfolio Setting (§3.5). The home page shows up to three approved testimonials once that many are approved.
-- **The cover letter instruction.** Edit **Instruction** on the **Cover Letter** record of the AI Prompt custom metadata type, and commit the same text to `AI_Prompt.Cover_Letter.md-meta.xml`. A blank or missing record falls back to the text in `ContentGenerationController`. The word range is the `Cover_Letter_Min_Words` and `Cover_Letter_Max_Words` settings.
+- **The cover letter instruction.** Edit **Instruction** on the **Cover Letter** record of the AI Prompt custom metadata type, and commit the same text to `AI_Prompt.Cover_Letter.md-meta.xml`. A blank or missing record falls back to the text in `ContentGenerationController`. The word range is the `Cover_Letter_Min_Words` and `Cover_Letter_Max_Words` settings, and the prompt turns them into a word limit line with the maximum as a hard limit and a fixed five paragraph shape. Keep the line from starting with "Length": the Published `Portfolio_Cover_Letter` template adds its own sentence for a `Length` line, and a changed template needs a new version made in Prompt Builder, not a deploy.
 - **A document on `/docs`.** Each listed document is a `Source_File__mdt` record with `Source_Key__c` `docs`, its `Path__c` in the repository, its `Label__c` and its `Sort_Order__c`. The daily source refresh reads it from `main`, and a push that changes `docs/**` refreshes every listed document after the deploy (§3.2), so a changed document shows soon after its merge. A new document needs its record deployed first. The doc key in the address comes from the record name: `docs_sas` gives `sas` and `docs_adr_027` gives `adr-027`. Keep the SAS headings 5.1 to 5.5 as they are, because each pillar page's "Read the design" link uses their slugs.
 
 ### 3.8 Owner Emails and Testimonial Approvals
@@ -210,6 +211,16 @@ The portfolio's content reads (the SAPI lists, the Process API, the API Lab opti
 - **A new testimonial.** It is submitted to the Testimonial Approval process for you, and the request email shows the quote, the author, title, relationship and vibe. Reply with APPROVE, APPROVED or YES on the first line to publish it, or REJECT, REJECTED or NO to keep it off the site, or open the request in Salesforce. Approval sets **Approved** and the testimonial shows on the site. A rejected one stays saved and hidden.
 - **A testimonial saved before the hand off.** It was never submitted, so submit it for approval from the record, or tick **Approved** by hand.
 - **Who gets the emails.** Both go to a user, never to an address in source. The approval goes to the testimonial's owner, the site's default owner for guest records.
+
+### 3.9 The Postman Collection and the Run in Postman Link
+
+The API Lab and the API reference offer the Process API (PAPI) collection as a download, the static resource `PAPI_Postman_Collection`. It is generated from `PAPI_OpenAPI.json`, so it follows the spec.
+
+1. After a change to `packages/integration-api/specs/portfolio-papi.yaml`, run `npm run specs:sync`. The collection is now stale, because it is built from the JSON that command rewrites.
+2. Regenerate it. The converter is not a project dependency. Install it outside `package.json`, then run the script with the folder it names: `npm install --prefix "$TMP/o2p" --no-save --no-audit --no-fund openapi-to-postmanv2@6.4.0`, then `OPENAPI_TO_POSTMAN_DIR="$TMP/o2p/node_modules/openapi-to-postmanv2" node scripts/build-postman-collection.js`.
+3. `node scripts/build-postman-collection.js --check` (with the same variable) writes nothing and exits 1 when the committed file is stale. The same spec gives the same bytes. The file must never hold a token.
+4. `docs/api/postman/portfolio-api.postman_collection.json` is a different collection. It holds both specs, comes from `sync-specs.js` and stays in the repository for the System API. The site offers the generated one.
+5. **Run in Postman.** The button shows only while `Portfolio_Setting.Postman_Run_Url` holds an https link on postman.com or getpostman.com. It ships empty, so only the download shows. Fill it in Setup after the public workspace exists, and commit the same value to `Portfolio_Setting.Postman_Run_Url.md-meta.xml`. No workflow syncs the workspace yet, so a changed spec means importing the regenerated collection into the workspace by hand.
 
 ## 4. Disaster Recovery
 
@@ -261,6 +272,8 @@ The design was a scheduled job that read a Gemini usage counter from a Platform 
 - The footer's "AI requests today" line (`FooterController.getSystemSnapshot`), the sum of today's `papi-ai` counts. It counts requests, not Gemini calls.
 - The audit object `API_Access_Request__c` for evaluator token requests.
 - Setup → System Overview for the org's daily API request usage (15,000 per day in Developer Edition).
+- The footer's Storage line and panel, read from one stored snapshot (`Storage_Snapshot__c`). `StorageSnapshotJob` refreshes it from the 15 minute integration scheduler when it is older than the `Storage_Snapshot_Hours` setting (1 to 24). If the line is missing, no snapshot has been stored yet, and scheduling `IntegrationCacheRefreshScheduler.scheduleAll()` as the admin starts it. The data by area is an estimate (record counts times 2 KB) and Setup holds the exact figures ([Technical Guide §2.23](./04-Technical-Guide.md#223-storage-snapshot-and-site-usage)).
+- The `Site_Usage_History` report type and the "Site usage, last 30 days" report in Portfolio Owner Reports show each site's origin and cache bandwidth and request time by day. Whether the LWR site's traffic appears there, or counts toward the Developer Edition's 500 MB a day, is open. On 2026-10-27 the LWR site showed no rows. "Site traffic today" in the footer is off (`Footer_Site_Traffic_Visible` is 0).
 
 ### 5.2 Logging
 

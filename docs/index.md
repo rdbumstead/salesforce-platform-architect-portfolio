@@ -62,6 +62,7 @@ _Target Audience: Architects, Developers_
 - [ADR-034: A Recruiter First Home Page](adr/034-recruiter-first-home-page.md)
 - [ADR-035: Diagrams Rendered in CI, Not in the Browser](adr/035-diagrams-rendered-in-ci.md)
 - [ADR-036: The Portfolio Guide Agent, in Source and Not Live](adr/036-portfolio-guide-agent.md)
+- [ADR-037: Native Form Controls Site Wide](adr/037-native-form-controls-site-wide.md)
 
 **AI, Data & FinOps**
 
