@@ -68,6 +68,8 @@ export default class DataSource extends LightningElement {
   @api sourceKeys;
   /** Comma separated plain object API names, for sections with no definition. */
   @api objects;
+  /** True for caches where a row count would mislead. Labels and descriptions still show. */
+  @api hideCounts = false;
 
   definitionRows = [];
   objectRows = [];
@@ -103,7 +105,10 @@ export default class DataSource extends LightningElement {
         return;
       }
       seen.add(row.label);
-      const counted = row.hasCount === true && Number.isInteger(row.count);
+      const counted =
+        !this.hideCounts &&
+        row.hasCount === true &&
+        Number.isInteger(row.count);
       rows.push({
         key: row.name || row.label,
         label: row.label,
