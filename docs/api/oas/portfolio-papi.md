@@ -824,7 +824,12 @@ skills, certifications and education. The same records SAPI serves, without call
 - When the first media type in the `Accept` header is `text/plain`, a 200 answer is the generated text alone, with `Content-Type: text/plain; charset=UTF-8`. Parameters after a semicolon are ignored and the header name matches in any case.
 - With no `Accept` header, `*/*`, `application/json` or any other first type, the answer is the JSON object below.
 - Every other response header, the rate count and the cache directive are the same in both forms. Errors are always JSON, whatever `Accept` says.
-- Example: `curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/services/apexrest/papi/v1/resume/generate?persona=Architect"`
+
+For example, with your token in TOKEN and the instance URL in INSTANCE_URL:
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/services/apexrest/papi/v1/resume/generate?persona=Architect"
+```
 
 <h3 id="generateresume-parameters">Parameters</h3>
 

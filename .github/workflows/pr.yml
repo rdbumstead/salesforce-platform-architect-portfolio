@@ -58,12 +58,15 @@ jobs:
           node scripts/check-smoke-routes.js
 
       # The API Lab's Postman collection is generated from the PAPI spec. A spec change that did
-      # not regenerate it fails the PR. The converter is installed outside package.json.
+      # not regenerate it fails the PR. The converter is installed outside package.json. The
+      # probe sends the deploy's exact request body to Postman with a key that cannot be valid,
+      # so a body Postman's firewall would refuse fails here instead of after the merge.
       - name: Postman Collection Is Current
         run: |
           node --test scripts/build-postman-collection.test.js
           npm install --prefix "$RUNNER_TEMP/o2p" --no-save --no-audit --no-fund openapi-to-postmanv2@6.4.0
           OPENAPI_TO_POSTMAN_DIR="$RUNNER_TEMP/o2p/node_modules/openapi-to-postmanv2" node scripts/build-postman-collection.js --check
+          node scripts/postman-sync.js probe
 
       # Draws every Mermaid block in the docs as a light and a dark SVG, the same way the deploy
       # does, so a diagram that will not render fails the PR. Its tests fail the PR when a block
