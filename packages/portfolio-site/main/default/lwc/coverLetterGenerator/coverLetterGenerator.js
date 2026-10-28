@@ -41,7 +41,9 @@ const SHEET_STYLE = previewStyle(LETTER_LAYOUT);
 
 export const MAX_COMPANY_LENGTH = 120;
 export const MAX_TITLE_LENGTH = 120;
-export const MAX_DESCRIPTION_LENGTH = 4000;
+// A long posting runs to about 6,000 characters, so 12,000 leaves room. ApiLabController and
+// PortfolioGroundingService hold the same limit.
+export const MAX_DESCRIPTION_LENGTH = 12000;
 /** The tour stop whose task line points at this page's job description field. */
 export const TOUR_STOP = "D";
 /** Provider value the API returns when the local template wrote the letter. */
@@ -138,6 +140,7 @@ export default class CoverLetterGenerator extends LightningElement {
   companyName = "";
   jobTitle = "";
   jobDescription = "";
+  descriptionCut = false;
   isLoading = false;
   error = null;
   result = null;
@@ -183,6 +186,33 @@ export default class CoverLetterGenerator extends LightningElement {
   handleInputChange(event) {
     const field = event.target.dataset.field;
     this[field] = event.target.value;
+    if (field === "jobDescription" && this.descriptionCut) {
+      this.descriptionCut =
+        this.jobDescription.length >= MAX_DESCRIPTION_LENGTH;
+    }
+  }
+
+  /**
+   * The browser drops whatever a paste puts past maxlength, with no sign. This works out
+   * whether this paste overflows, so the field can say the end was left out.
+   */
+  handleDescriptionPaste(event) {
+    const pasted = event.clipboardData?.getData("text") || "";
+    const field = event.target;
+    const selected = (field.selectionEnd || 0) - (field.selectionStart || 0);
+    const after = (field.value || "").length - selected + pasted.length;
+    this.descriptionCut = after > MAX_DESCRIPTION_LENGTH;
+  }
+
+  get descriptionCountText() {
+    const used = (this.jobDescription || "").length.toLocaleString("en-US");
+    return `${used} of ${MAX_DESCRIPTION_LENGTH.toLocaleString("en-US")} characters`;
+  }
+
+  get descriptionCutText() {
+    return this.descriptionCut
+      ? `The pasted text was longer than ${MAX_DESCRIPTION_LENGTH.toLocaleString("en-US")} characters, so the end was left out.`
+      : "";
   }
 
   get isGenerateDisabled() {

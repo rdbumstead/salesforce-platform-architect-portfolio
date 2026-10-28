@@ -512,6 +512,71 @@ describe("c-cover-letter-generator", () => {
     expect(query(element, '[data-id="elapsed"]')).toBeNull();
   });
 
+  it("draws the skeleton as the letter's own sheet, with the header and no links in it", async () => {
+    generateCoverLetter.mockReturnValue(new Promise(() => {}));
+    const element = createComponent();
+    getHeader.emit(HEADER);
+    await flushPromises();
+    await fillAndGenerate(element);
+
+    const skeleton = query(element, '[data-id="skeleton"]');
+    expect(skeleton.classList.contains("letter-sheet")).toBe(true);
+    expect(skeleton.getAttribute("style")).toBeTruthy();
+    expect(
+      skeleton.querySelector(".letter-header-name").textContent.trim()
+    ).toBe(HEADER.name);
+    // Hidden from assistive technology, so nothing inside it can take focus.
+    expect(skeleton.querySelector("a")).toBeNull();
+  });
+
+  it("places View source with the coverLetterGenerator key in the card title row", () => {
+    const html = readFileSync(
+      join(__dirname, "..", "coverLetterGenerator.html"),
+      "utf8"
+    );
+    expect(html).toMatch(
+      /<lightning-card[^>]*>\s*<c-view-source\s+slot="actions"\s+source-key="coverLetterGenerator"\s*><\/c-view-source>/
+    );
+  });
+
+  it("counts the description's characters against the limit", async () => {
+    const element = createComponent();
+    await flushPromises();
+    const field = query(element, "textarea.description-input");
+    field.value = "x".repeat(1234);
+    field.dispatchEvent(new CustomEvent("input"));
+    await flushPromises();
+    expect(
+      query(element, '[data-id="description-count"]').textContent.trim()
+    ).toBe("1,234 of 12,000 characters");
+    // The engine rewrites ids inside the component and keeps the reference in step.
+    expect(field.getAttribute("aria-describedby")).toBe(
+      query(element, '[data-id="description-count"]').id
+    );
+  });
+
+  it("says so when a paste runs past the limit, and clears it once the text fits", async () => {
+    const element = createComponent();
+    await flushPromises();
+    const field = query(element, "textarea.description-input");
+    const cut = () =>
+      query(element, '[data-id="description-cut"]').textContent.trim();
+    expect(cut()).toBe("");
+
+    const paste = new CustomEvent("paste");
+    paste.clipboardData = { getData: () => "y".repeat(12500) };
+    field.dispatchEvent(paste);
+    await flushPromises();
+    expect(cut()).toBe(
+      "The pasted text was longer than 12,000 characters, so the end was left out."
+    );
+
+    field.value = "short";
+    field.dispatchEvent(new CustomEvent("input"));
+    await flushPromises();
+    expect(cut()).toBe("");
+  });
+
   it("stops its timer when the call ends and when the page goes away", async () => {
     jest.useFakeTimers({ doNotFake: ["nextTick"] });
     try {
@@ -797,7 +862,7 @@ describe("c-cover-letter-generator", () => {
       for (const [selector, max] of [
         ["input.company-input", "120"],
         ["input.title-input", "120"],
-        ["textarea.description-input", "4000"]
+        ["textarea.description-input", "12000"]
       ]) {
         const control = query(element, selector);
         expect(control.getAttribute("maxlength")).toBe(max);

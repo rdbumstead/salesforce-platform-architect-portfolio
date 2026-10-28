@@ -1,5 +1,9 @@
 <template>
   <lightning-card title="AI Cover Letter Generator" icon-name="custom:custom15">
+    <c-view-source
+      slot="actions"
+      source-key="coverLetterGenerator"
+    ></c-view-source>
     <div class="slds-p-around_medium generator">
       <p class="intro">Fill in the company and the job, then press Generate.</p>
 
@@ -64,9 +68,21 @@
           rows="6"
           maxlength={maxDescriptionLength}
           oninput={handleInputChange}
+          onpaste={handleDescriptionPaste}
           data-field="jobDescription"
+          aria-describedby="description-count"
           data-tour-anchor
         ></textarea>
+        <p
+          id="description-count"
+          class="description-count"
+          data-id="description-count"
+        >
+          {descriptionCountText}
+        </p>
+        <p class="description-cut" aria-live="polite" data-id="description-cut">
+          {descriptionCutText}
+        </p>
       </div>
 
       <div class="slds-m-top_medium slds-text-align_right">
@@ -99,16 +115,41 @@
 
       <div
         lwc:if={isLoading}
-        class="skeleton"
+        class="letter-sheet skeleton"
+        style={sheetStyle}
         data-id="skeleton"
         aria-hidden="true"
       >
-        <span class="skeleton-line skeleton-line_short"></span>
-        <span class="skeleton-line"></span>
-        <span class="skeleton-line"></span>
-        <span class="skeleton-line skeleton-line_medium"></span>
-        <span class="skeleton-line"></span>
-        <span class="skeleton-line skeleton-line_medium"></span>
+        <div lwc:if={letterHeader} class="letter-header">
+          <p lwc:if={letterHeader.name} class="letter-header-name">
+            {letterHeader.name}
+          </p>
+          <p lwc:if={letterHeader.title} class="letter-header-title">
+            {letterHeader.title}
+          </p>
+          <ul lwc:if={letterHeader.hasLinks} class="letter-header-links">
+            <template for:each={letterHeader.links} for:item="link">
+              <li key={link.key} class="letter-header-link">
+                <span class="letter-header-text">{link.label}</span>
+              </li>
+            </template>
+          </ul>
+        </div>
+        <div class="letter skeleton-body">
+          <span class="skeleton-line skeleton-line_short"></span>
+          <span class="skeleton-gap"></span>
+          <span class="skeleton-line"></span>
+          <span class="skeleton-line"></span>
+          <span class="skeleton-line skeleton-line_medium"></span>
+          <span class="skeleton-gap"></span>
+          <span class="skeleton-line"></span>
+          <span class="skeleton-line"></span>
+          <span class="skeleton-line"></span>
+          <span class="skeleton-line skeleton-line_medium"></span>
+          <span class="skeleton-gap"></span>
+          <span class="skeleton-line"></span>
+          <span class="skeleton-line skeleton-line_short"></span>
+        </div>
       </div>
 
       <div class="slds-m-top_medium">
