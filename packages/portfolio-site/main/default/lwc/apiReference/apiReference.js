@@ -20,7 +20,7 @@
  *                      { mounted: true } tells the theme layout, whose floating Back to top
  *                      would sit on Redoc's phone menu button. A failed render or leaving the
  *                      page sends { mounted: false }.
- *                      Under the intro, the PAPI Postman collection downloads with a file name
+ *                      Under the intro, the Postman collection downloads with a file name
  *                      (the PAPI_Postman_Collection resource), and a Run in Postman link shows
  *                      only while Portfolio_Setting.Postman_Run_Url holds one. Both send their
  *                      event with source reference. A failed load reads as a plain sentence,
