@@ -50,9 +50,9 @@
                     },
                     {
                       "attributes": {
-                        "heading": "Need an architect for a Salesforce program?",
+                        "heading": "Get in touch",
                         "linkLabel": "Contact Ryan",
-                        "text": "I take on select freelance work for nonprofits and education."
+                        "text": "Questions about a project, a role or this site?"
                       },
                       "definition": "c:contactCall",
                       "id": "1c5521dd-ac63-427c-8a4c-4e4e58450ea6",
