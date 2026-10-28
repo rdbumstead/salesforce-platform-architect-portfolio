@@ -744,19 +744,13 @@ describe("c-footer", () => {
     expect(trackEvent).toHaveBeenCalledWith("finops_quota_visibility");
   });
 
-  it("links Skills and Testimonials first, before Contact", () => {
+  it("leaves Skills and Testimonials to the header and opens its links with Contact", () => {
     const element = createComponent();
-    const skills = q(element, '[data-id="skills"]');
-    const testimonials = q(element, '[data-id="testimonials"]');
-    expect(skills.textContent).toBe("Skills");
-    expect(skills.getAttribute("href")).toBe("/portfolio/skills");
-    expect(testimonials.textContent).toBe("Testimonials");
-    expect(testimonials.getAttribute("href")).toBe("/portfolio/testimonials");
-    expect(skills.parentElement.firstElementChild).toBe(skills);
-    expect(skills.nextElementSibling).toBe(testimonials);
-    expect(testimonials.nextElementSibling).toBe(
-      q(element, '[data-id="contact"]')
-    );
+    expect(q(element, '[data-id="skills"]')).toBeNull();
+    expect(q(element, '[data-id="testimonials"]')).toBeNull();
+    const contact = q(element, '[data-id="contact"]');
+    expect(contact.parentElement.firstElementChild).toBe(contact);
+    expect(contact.nextElementSibling).toBe(q(element, '[data-id="docs"]'));
   });
 
   it("sits in the same 1024 px column as the header", () => {

@@ -506,7 +506,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 
 - **Framework:** LWR.
 - **Domain Strategy:** `ryanbumstead.com` is a Cloudflare 301 redirect to https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio/ that keeps the path and the query string, so `ryanbumstead.com/skills` lands on `/portfolio/skills`. A Developer Edition org cannot have a Salesforce custom domain, so the redirect is the domain.
-- **Navigation Strategy:** a header with Home, Resume, a "How it's built" menu (the pillars, Docs and the API reference) and Contact, a Back to top arrow in the header, and the 10 minute tour, an opt in journey across the five pillar pages that starts from the hero link and from the first row of the "How it's built" menu and runs in a bar under the header (`c-tour-bar`, [Technical Guide §2.20](./04-Technical-Guide.md#220-the-10-minute-tour-c-tour-bar)). Skills and Testimonials are footer links.
+- **Navigation Strategy:** a header with Home, Resume, Skills, a "How it's built" menu (the pillars, Docs and the API reference), Testimonials and Contact, a Back to top arrow in the header, and the 10 minute tour, an opt in journey across the five pillar pages that starts from the hero link and from the first row of the "How it's built" menu and runs in a bar under the header (`c-tour-bar`, [Technical Guide §2.20](./04-Technical-Guide.md#220-the-10-minute-tour-c-tour-bar)). The footer links to Contact, Docs and the profiles.
 
 ### 6.2 Lightning Web Components (LWC)
 

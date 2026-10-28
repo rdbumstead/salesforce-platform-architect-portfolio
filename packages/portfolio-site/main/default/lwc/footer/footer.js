@@ -1,8 +1,8 @@
 /**
  * @description       : Glass Box footer, in the same 1024 px column as the header: copyright,
  *                      one caption over the live readings, the readings in labelled groups,
- *                      the footer links (Skills, Testimonials, Contact, Docs, then the profile
- *                      links from getLinks()), and Back to top.
+ *                      the footer links (Contact, Docs, then the profile links from getLinks()),
+ *                      and Back to top. Skills and Testimonials are in the header, not here.
  *                      Each group is a list named by its visible label (Deploy, Platform,
  *                      Integrations, Quotas and limits), set apart by vertical rules on wide
  *                      screens and stacked on phones. Inside a group the metrics are split by thin
@@ -205,8 +205,6 @@ export default class Footer extends LightningElement {
 
   badgeUrl = BADGE_URL;
   actionsUrl = ACTIONS_URL;
-  skillsUrl = `${basePath || ""}/skills`;
-  testimonialsUrl = `${basePath || ""}/testimonials`;
   contactUrl = `${basePath || ""}/contact`;
   docsUrl = `${basePath || ""}/docs`;
 
