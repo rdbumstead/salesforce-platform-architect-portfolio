@@ -32,4 +32,4 @@ The site also had two native looks, not one. The contact forms and the API Lab's
 - **WebKit draws a native `select` at 48 px** where Chromium draws 44. The alignment audit flags a row that pairs a select with a button in WebKit. The documents components have no such row (alignment audit, 2026-10-27).
 - **A CSS only module needs a Jest mapping.** `config/jest.config.js` maps `c/nativeControls` to its CSS file. A second CSS only module needs its own line.
 - **A script that finds a field by its old name misses it.** An AI Lab field's accessible name no longer carries "(required)", so a lookup by that text finds nothing.
-- **Not measured on every device.** The look was checked in Chromium and WebKit on the integration site. A real phone is the owner's check.
+- **Not measured on every device.** The look was checked in Chromium and WebKit on the integration site. A real phone is my check.
