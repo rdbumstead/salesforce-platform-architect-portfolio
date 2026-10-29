@@ -49,6 +49,29 @@ public with sharing class ApiRequestContext {
   public static final Integer PAPI_LIMIT_PER_MINUTE = 15;
   public static final Integer PAPI_AI_LIMIT_PER_MINUTE = 10;
 
+  // Paths a v1 caller can still reach after the sunset date, so a client with no version
+  // header can get a token and see whether the API is up. They keep their deprecation
+  // headers and are answered 200, never 410. Matched on the end of the path.
+  @TestVisible
+  private static final Set<String> SUNSET_EXEMPT_PATHS = new Set<String>{
+    '/papi/v1/auth/token',
+    '/sapi/v1/health',
+    '/papi/v1/health'
+  };
+
+  // Paths whose body is not a list of records, so v2 leaves it as the resource wrote it.
+  // Every other path returns records and has `id`, `xId` and `accomplishments` removed in v2.
+  // A future field with those names on one of these paths would survive, on purpose.
+  @TestVisible
+  private static final Set<String> UNSHAPED_PATHS = new Set<String>{
+    '/papi/v1/auth/token',
+    '/sapi/v1/health',
+    '/papi/v1/health',
+    '/papi/v1/ai/generate',
+    '/papi/v1/resume/generate',
+    '/sapi/v1/portfolio-config'
+  };
+
   private static final String HEADER_REQUEST_ID = 'X-Request-Id';
   private static final String HEADER_API_VERSION = 'X-API-Version';
   private static final Pattern UUID_PATTERN = Pattern.compile(
@@ -76,6 +99,7 @@ public with sharing class ApiRequestContext {
   private final Long startedAt = System.currentTimeMillis();
   private Boolean logged = false;
   private String servedVersion = SUPPORTED_VERSION;
+  private Boolean shapesRecords = true;
 
   // Tests set the clock here to cross the sunset date.
   @TestVisible
@@ -151,6 +175,10 @@ public with sharing class ApiRequestContext {
       RestContext.request,
       RestContext.response
     );
+    ctx.shapesRecords = !pathIn(
+      UNSHAPED_PATHS,
+      RestContext.request?.requestURI
+    );
     ctx.applyRequestRules();
     return ctx;
   }
@@ -181,6 +209,20 @@ public with sharing class ApiRequestContext {
     return VERSION_2.equals(servedVersion);
   }
 
+  // True when the path ends with one of the given paths, ignoring case and a trailing slash.
+  private static Boolean pathIn(Set<String> paths, String uri) {
+    if (String.isBlank(uri)) {
+      return false;
+    }
+    String path = uri.toLowerCase().removeEnd('/');
+    for (String candidate : paths) {
+      if (path.endsWith(candidate)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * @description The v1 deprecation date from the Api_V1_Deprecation_Date setting.
    * @return Date The date, or null when blank or not a yyyy-MM-dd date.
@@ -203,7 +245,10 @@ public with sharing class ApiRequestContext {
    * @return Boolean True when v1 is gone.
    */
   public static Boolean isV1Gone() {
-    Date sunset = v1SunsetDate();
+    return isGone(v1SunsetDate());
+  }
+
+  private static Boolean isGone(Date sunset) {
     if (sunset == null) {
       return false;
     }
@@ -229,9 +274,7 @@ public with sharing class ApiRequestContext {
    *              date (RFC 8594). Link always names the v2 reference as successor-version,
    *              and as deprecation and sunset when those dates are set.
    */
-  private void addDeprecationHeaders() {
-    Date deprecation = v1DeprecationDate();
-    Date sunset = v1SunsetDate();
+  private void addDeprecationHeaders(Date deprecation, Date sunset) {
     List<String> links = new List<String>{
       '<' +
       V2_REFERENCE_URL +
@@ -248,7 +291,7 @@ public with sharing class ApiRequestContext {
       header('Sunset', httpDate(sunset));
       links.add('<' + V2_REFERENCE_URL + '>; rel="sunset"');
     }
-    header('Link', String.join(links, ', '));
+    appendHeader('Link', String.join(links, ', '));
   }
 
   // IMF-fixdate, for example Sun, 06 Nov 1994 00:00:00 GMT. Names are spelled here so the
@@ -370,17 +413,35 @@ public with sharing class ApiRequestContext {
   }
 
   /**
+   * @description Adds a value to a header that may already hold one, joined with a comma,
+   *              instead of replacing it. A value already present is not added twice.
+   * @param name Header name.
+   * @param value Value to add.
+   */
+  public void appendHeader(String name, String value) {
+    String existing = res.headers.get(name);
+    if (String.isBlank(existing)) {
+      res.addHeader(name, value);
+    } else if (!existing.contains(value)) {
+      res.addHeader(name, existing + ', ' + value);
+    }
+  }
+
+  /**
    * @description Writes a 200 response with a JSON body. Also writes the rate-limit count
    *              recorded at begin(); this is the first DML the context performs, so any
    *              callout a resource makes must happen before ok() or error().
-   *              A v2 request has its body shaped to public keys only first.
+   *              A v2 request to a record path has its body shaped to public keys only first.
+   *              Paths in UNSHAPED_PATHS return their body as written.
    * @param body Object to serialise.
    */
   public void ok(Object body) {
     commitRateCounts();
     res.statusCode = 200;
     res.responseBody = Blob.valueOf(
-      JSON.serialize(isV2() ? SAPITransformer.toV2(body) : body)
+      JSON.serialize(
+        isV2() && shapesRecords ? SAPITransformer.toV2(body) : body
+      )
     );
     logRequest();
   }
@@ -480,19 +541,37 @@ public with sharing class ApiRequestContext {
     if (!idValid && !platformId) {
       header(HEADER_REQUEST_ID, correlationId);
     }
-    String requested = headerValue(HEADER_API_VERSION);
+    // The version and sunset checks come before the rate limiter, so a request refused for
+    // them spends none of the shared quota.
+    String requested = headerValue(HEADER_API_VERSION)?.trim().toLowerCase();
     Boolean versionKnown =
       String.isBlank(requested) ||
-      SUPPORTED_VERSION.equals(requested.trim()) ||
-      VERSION_2.equals(requested.trim());
+      SUPPORTED_VERSION.equals(requested) ||
+      VERSION_2.equals(requested);
     if (versionKnown && String.isNotBlank(requested)) {
-      servedVersion = requested.trim();
+      servedVersion = requested;
     }
     header(HEADER_API_VERSION, servedVersion);
     // The body differs by version, so a shared cache must key on the header.
-    header('Vary', HEADER_API_VERSION);
-    if (versionKnown && !isV2()) {
-      addDeprecationHeaders();
+    appendHeader('Vary', HEADER_API_VERSION);
+    if (!versionKnown) {
+      error(400, 'BAD_REQUEST', 'Unsupported X-API-Version');
+      return;
+    }
+    if (!isV2()) {
+      // Each date is read and parsed once for this request.
+      Date deprecation = v1DeprecationDate();
+      Date sunset = v1SunsetDate();
+      addDeprecationHeaders(deprecation, sunset);
+      if (isGone(sunset) && !pathIn(SUNSET_EXEMPT_PATHS, uri)) {
+        error(
+          410,
+          'GONE',
+          'API v1 has been retired. Send X-API-Version: v2. See ' +
+          V2_REFERENCE_URL
+        );
+        return;
+      }
     }
 
     System.debug(
@@ -529,19 +608,6 @@ public with sharing class ApiRequestContext {
     if (!idMissing && !idValid) {
       error(400, 'BAD_REQUEST', 'X-Request-Id must be a UUID.');
       return;
-    }
-
-    if (!versionKnown) {
-      error(400, 'BAD_REQUEST', 'Unsupported X-API-Version');
-      return;
-    }
-    if (!isV2() && isV1Gone()) {
-      error(
-        410,
-        'GONE',
-        'API v1 has been retired. Send X-API-Version: v2. See ' +
-        V2_REFERENCE_URL
-      );
     }
   }
 
