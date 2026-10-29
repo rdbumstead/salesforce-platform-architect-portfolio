@@ -25,7 +25,7 @@ import ApiTester, {
 } from "c/apiTester";
 import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
 import getOptions from "@salesforce/apex/ApiLabOptionsController.getOptions";
-import invoke from "@salesforce/apex/ApiLabController.invoke";
+import invoke from "@salesforce/apex/ApiLabController.invokeVersioned";
 import { trackEvent } from "c/analyticsService";
 
 jest.mock(
@@ -56,7 +56,7 @@ jest.mock(
   { virtual: true }
 );
 jest.mock(
-  "@salesforce/apex/ApiLabController.invoke",
+  "@salesforce/apex/ApiLabController.invokeVersioned",
   () => ({ default: jest.fn() }),
   { virtual: true }
 );
@@ -193,7 +193,8 @@ describe("c-api-tester filter options", () => {
     await flush();
     expect(invoke).toHaveBeenCalledWith({
       path: "/sapi/v1/project-assets",
-      params: { projectId: PROJECT_ID }
+      params: { projectId: PROJECT_ID },
+      apiVersion: "v2"
     });
   });
 

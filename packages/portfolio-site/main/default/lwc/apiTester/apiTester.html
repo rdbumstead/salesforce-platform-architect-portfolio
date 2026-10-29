@@ -26,6 +26,25 @@
               </template>
             </select>
           </div>
+          <div class="nc-field row-field">
+            <label class="nc-label row-label" for="api-version">Version</label>
+            <select
+              id="api-version"
+              name="api-version"
+              class="nc-control row-control version-picker"
+              onchange={handleVersionChange}
+            >
+              <template for:each={versionOptions} for:item="option">
+                <option
+                  key={option.value}
+                  value={option.value}
+                  selected={option.selected}
+                >
+                  {option.label}
+                </option>
+              </template>
+            </select>
+          </div>
           <button
             type="button"
             class="nc-button row-action execute-button"
@@ -36,6 +55,10 @@
             Execute GET
           </button>
         </div>
+
+        <p lwc:if={isDeprecatedVersion} class="version-notice" role="note">
+          {versionNotice}
+        </p>
 
         <p lwc:if={catalogError} class="catalog-error text-error" role="alert">
           {catalogError}

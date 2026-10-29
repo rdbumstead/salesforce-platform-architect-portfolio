@@ -26,7 +26,7 @@ import ApiTester, {
   KIND_TEXT
 } from "c/apiTester";
 import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
-import invoke from "@salesforce/apex/ApiLabController.invoke";
+import invoke from "@salesforce/apex/ApiLabController.invokeVersioned";
 import { trackEvent } from "c/analyticsService";
 
 jest.mock(
@@ -46,7 +46,7 @@ jest.mock(
   { virtual: true }
 );
 jest.mock(
-  "@salesforce/apex/ApiLabController.invoke",
+  "@salesforce/apex/ApiLabController.invokeVersioned",
   () => ({ default: jest.fn() }),
   { virtual: true }
 );
@@ -111,8 +111,8 @@ function pill(element, name, value) {
 }
 
 const SKILLS = [
-  { id: "a01", name: "Apex", category: "Backend" },
-  { id: "a02", name: "LWC", category: "Frontend", surprise: true }
+  { key: "skl_a", name: "Apex", category: "Backend" },
+  { key: "skl_b", name: "LWC", category: "Frontend", surprise: true }
 ];
 
 function result(body, headers = {}, statusCode = 200) {
@@ -177,7 +177,8 @@ describe("c-api-tester v2 controls", () => {
     await flush();
     expect(invoke).toHaveBeenCalledWith({
       path: "/papi/v1/resume/generate",
-      params: { persona: "Architect" }
+      params: { persona: "Architect" },
+      apiVersion: "v2"
     });
     expect(trackEvent).toHaveBeenLastCalledWith("api_test_executed", {
       path: "/papi/v1/resume/generate",
@@ -266,7 +267,8 @@ describe("c-api-tester v2 controls", () => {
     await flush();
     expect(invoke).toHaveBeenLastCalledWith({
       path: "/sapi/v1/skills",
-      params: { limit: "abc" }
+      params: { limit: "abc" },
+      apiVersion: "v2"
     });
 
     await choosePath(element, "/sapi/v1/accounts");
@@ -299,7 +301,8 @@ describe("c-api-tester v2 controls", () => {
 
     expect(invoke).toHaveBeenLastCalledWith({
       path: "/sapi/v1/skills",
-      params: { limit: "2", offset: "6" }
+      params: { limit: "2", offset: "6" },
+      apiVersion: "v2"
     });
     expect($(element, "input.query-input").value).toBe("");
   });
@@ -317,7 +320,8 @@ describe("c-api-tester v2 controls", () => {
 
     expect(invoke).toHaveBeenLastCalledWith({
       path: "/sapi/v1/skills",
-      params: { offset: "50" }
+      params: { offset: "50" },
+      apiVersion: "v2"
     });
   });
 
@@ -442,5 +446,153 @@ describe("c-api-tester v2 helpers", () => {
       expected: "object"
     });
     expect(checkAgainstSchema({}, undefined)).toEqual({ status: "noSchema" });
+  });
+});
+
+describe("c-api-tester version picker", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    jest.clearAllMocks();
+  });
+
+  function chooseVersion(element, value) {
+    const select = $(element, "select.version-picker");
+    select.value = value;
+    select.dispatchEvent(new CustomEvent("change"));
+  }
+
+  it("offers v2 first and v1 labelled deprecated, with v2 selected", async () => {
+    const element = create();
+    await flush();
+
+    const options = $$(element, "select.version-picker option");
+    expect(options.map((option) => option.value)).toEqual(["v2", "v1"]);
+    expect(options.map((option) => option.textContent.trim())).toEqual([
+      "v2",
+      "v1 (deprecated)"
+    ]);
+    expect($(element, "select.version-picker").value).toBe("v2");
+    expect($(element, "p.version-notice")).toBeNull();
+  });
+
+  it("sends v2 by default and v1 once the visitor picks it", async () => {
+    invoke.mockResolvedValue(result({}));
+    const element = create();
+    await flush();
+
+    $(element, "button.execute-button").click();
+    await flush();
+    expect(invoke).toHaveBeenLastCalledWith({
+      path: "/sapi/v1/health",
+      params: {},
+      apiVersion: "v2"
+    });
+
+    chooseVersion(element, "v1");
+    await flush();
+    $(element, "button.execute-button").click();
+    await flush();
+    expect(invoke).toHaveBeenLastCalledWith({
+      path: "/sapi/v1/health",
+      params: {},
+      apiVersion: "v1"
+    });
+  });
+
+  it("says v1 is deprecated in one line while it is picked, and drops the line for v2", async () => {
+    const element = create();
+    await flush();
+
+    chooseVersion(element, "v1");
+    await flush();
+    const notice = $(element, "p.version-notice");
+    expect(notice.textContent).toContain("v1 is deprecated");
+    expect(notice.textContent).toContain("Sunset");
+
+    chooseVersion(element, "v2");
+    await flush();
+    expect($(element, "p.version-notice")).toBeNull();
+  });
+
+  it("shows the Deprecation, Sunset and Link headers of a v1 call, and marks them when absent on v2", async () => {
+    invoke.mockResolvedValueOnce(
+      result(
+        {},
+        {
+          "X-API-Version": "v1",
+          Deprecation: "true",
+          Sunset: "Sat, 28 Nov 2026 00:00:00 GMT",
+          Link: '<https://ryanbumstead.com/api-lab/reference?version=v2>; rel="alternate"'
+        }
+      )
+    );
+    invoke.mockResolvedValueOnce(result({}, { "X-API-Version": "v2" }));
+    const element = create();
+    await flush();
+    const header = (name) =>
+      $$(element, ".header-panel dt")
+        .find((dt) => dt.textContent.trim() === name)
+        .nextElementSibling.textContent.trim();
+
+    chooseVersion(element, "v1");
+    await flush();
+    $(element, "button.execute-button").click();
+    await flush();
+    expect(header("X-API-Version")).toBe("v1");
+    expect(header("Deprecation")).toBe("true");
+    expect(header("Sunset")).toContain("28 Nov 2026");
+    expect(header("Link")).toContain("version=v2");
+
+    chooseVersion(element, "v2");
+    await flush();
+    $(element, "button.execute-button").click();
+    await flush();
+    expect(header("X-API-Version")).toBe("v2");
+    expect(header("Deprecation")).toBe("(not returned)");
+    expect(header("Sunset")).toBe("(not returned)");
+  });
+
+  it("checks a v2 body against the key only shape and a v1 body against the shape that still has id", async () => {
+    invoke.mockResolvedValue(
+      result([{ id: "a01", key: "skl_a", name: "Apex" }])
+    );
+    const element = create();
+    await flush();
+    await choosePath(element, "/sapi/v1/skills");
+
+    $(element, "button.execute-button").click();
+    await flush();
+    expect($(element, '.schema-list[data-list="extra"]').textContent).toContain(
+      "id"
+    );
+
+    chooseVersion(element, "v1");
+    await flush();
+    $(element, "button.execute-button").click();
+    await flush();
+    expect($(element, ".schema-summary").textContent).toContain("0 not in");
+    expect(
+      $(element, '.schema-list[data-list="present"]').textContent
+    ).toContain("id");
+  });
+
+  it("does not depend on an Id format: a text filter takes a key as typed", async () => {
+    invoke.mockResolvedValue(result([]));
+    const element = create();
+    await flush();
+    await choosePath(element, "/sapi/v1/project-skills");
+
+    setField(element, 'input[data-name="projectId"]', "prj_8f3k2m9qtz");
+    await flush();
+    $(element, "button.execute-button").click();
+    await flush();
+    expect(invoke).toHaveBeenLastCalledWith({
+      path: "/sapi/v1/project-skills",
+      params: { projectId: "prj_8f3k2m9qtz" },
+      apiVersion: "v2"
+    });
+    expect(ID_HINT).toContain("key");
   });
 });
