@@ -353,7 +353,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.1 Pillar A: Business Architecture (Employer Hub)
 
 > [!NOTE]
-> **Live on the site.** The process flows and dashboards on the page are redrawn from the original demo deck with no names, and the dashboards carry sample values. The client is described as "an education provider" and never named (owner decision, reworded later so the page cannot be tied to the owner's employer).
+> **Live on the site.** The process flows and dashboards on the page are redrawn from the original demo deck with no names, and the dashboards carry sample values. I describe the client as "an education provider" and never name it.
 
 - **Objective:** Demonstrate Business Analysis and Process Mapping.
 - **Page:** `/business-architecture`. An introduction to the problem (departments of an education provider shared employer partners with no shared view) and the Employer Hub, a working demo design that centralizes, routes and reports on the relationship, then the process map and dashboard gallery, then the live data model, then an eight step walkthrough of a partner inquiry.
