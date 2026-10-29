@@ -149,6 +149,20 @@
   stroke-width: 3;
 }
 
+/* In a section view the section's objects stand out and the rest of the model fades, so the
+   section still shows how it connects. The words in each label and in the list say the same. */
+.node_highlight rect,
+.legend-box {
+  fill: var(--pf-chip);
+  stroke: var(--pf-accent);
+  stroke-width: 3;
+}
+
+.node_dim,
+.edge_dim {
+  opacity: 0.4;
+}
+
 .node:focus {
   outline: none;
 }

@@ -4,17 +4,23 @@
     icon-name="doctype:pdf"
     class="builder-card"
   >
-    <c-view-source
-      slot="actions"
-      source-key="resumeBuilder"
-      class="card-source"
-    ></c-view-source>
-    <c-data-source
-      slot="actions"
-      source-keys="ResumeController_Roles,ResumeController_Skills,ResumeController_Certifications,ResumeController_Education,ResumeController_Highlights"
-      class="card-source"
-    ></c-data-source>
+    <template lwc:if={actionsInHeader}>
+      <div slot="actions" class="card-actions">
+        <c-view-source source-key="resumeBuilder"></c-view-source>
+        <c-data-source
+          source-keys="ResumeController_Roles,ResumeController_Skills,ResumeController_Certifications,ResumeController_Education,ResumeController_Highlights"
+        ></c-data-source>
+      </div>
+    </template>
     <div class="builder-body">
+      <template lwc:if={actionsInBody}>
+        <div class="card-actions card-actions_body">
+          <c-view-source source-key="resumeBuilder"></c-view-source>
+          <c-data-source
+            source-keys="ResumeController_Roles,ResumeController_Skills,ResumeController_Certifications,ResumeController_Education,ResumeController_Highlights"
+          ></c-data-source>
+        </div>
+      </template>
       <div class="builder-grid">
         <div class="config-column">
           <div class="config-panel">

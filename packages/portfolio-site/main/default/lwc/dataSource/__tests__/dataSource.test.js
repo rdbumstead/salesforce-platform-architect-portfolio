@@ -221,7 +221,7 @@ describe("c-data-source", () => {
       expect(visualizer(el)).toBeNull();
     });
 
-    it("opens the dialog with the distinct in model objects in row order", async () => {
+    it("opens the dialog highlighting the distinct in model objects in row order", async () => {
       const el = await openPanel([
         SKILLS_IN,
         OUT,
@@ -231,7 +231,8 @@ describe("c-data-source", () => {
       modelButton(el).click();
       await flush();
       expect(dialog(el).getAttribute("aria-modal")).toBe("true");
-      expect(visualizer(el).objects).toBe("Skill__c,Experience__c");
+      expect(visualizer(el).highlight).toBe("Skill__c,Experience__c");
+      expect(visualizer(el).objects).toBeFalsy();
       expect(
         el.shadowRoot.querySelector(".dialog-heading").textContent
       ).toContain(WORDING.sectionModelHeading);
@@ -266,6 +267,63 @@ describe("c-data-source", () => {
       dialog(el).click();
       await flush();
       expect(dialog(el)).toBeNull();
+    });
+  });
+
+  describe("panel placement", () => {
+    // jsdom applies no stylesheet and lays nothing out, so the computed position and the
+    // panel's box are given here.
+    let computedStyle;
+    let rect;
+
+    beforeEach(() => {
+      computedStyle = jest
+        .spyOn(window, "getComputedStyle")
+        .mockReturnValue({ position: "absolute" });
+      rect = jest.spyOn(Element.prototype, "getBoundingClientRect");
+    });
+
+    afterEach(() => {
+      computedStyle.mockRestore();
+      rect.mockRestore();
+    });
+
+    async function openWithPanelRight(right) {
+      rect.mockReturnValue({ left: right - 352, right, top: 0, bottom: 0 });
+      const el = create({ sourceKeys: "a" });
+      getSources.emit([ROLES]);
+      await flush();
+      button(el).click();
+      await flush();
+      await flush();
+      return el;
+    }
+
+    it("opens from the button's start when the panel fits the window", async () => {
+      const el = await openWithPanelRight(window.innerWidth - 40);
+      expect(panel(el).className).toBe("panel");
+    });
+
+    it("opens from the button's end when the panel would run past the window", async () => {
+      const el = await openWithPanelRight(window.innerWidth + 120);
+      expect(panel(el).classList.contains("panel_end")).toBe(true);
+    });
+
+    it("measures again on each opening", async () => {
+      const el = await openWithPanelRight(window.innerWidth + 120);
+      button(el).click();
+      await flush();
+      rect.mockReturnValue({ left: 0, right: 352, top: 0, bottom: 0 });
+      button(el).click();
+      await flush();
+      await flush();
+      expect(panel(el).className).toBe("panel");
+    });
+
+    it("leaves the panel in the flow on a phone", async () => {
+      computedStyle.mockReturnValue({ position: "static" });
+      const el = await openWithPanelRight(window.innerWidth + 120);
+      expect(panel(el).className).toBe("panel");
     });
   });
 

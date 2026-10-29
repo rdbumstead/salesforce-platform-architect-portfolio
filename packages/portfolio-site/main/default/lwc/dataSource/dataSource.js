@@ -79,6 +79,8 @@ export default class DataSource extends LightningElement {
   objectRows = [];
   isOpen = false;
   isModelOpen = false;
+  panelAtEnd = false;
+  panelPlaced = false;
   focusOnRender;
 
   @wire(getSources, { names: "$definitionNames" })
@@ -175,11 +177,37 @@ export default class DataSource extends LightningElement {
       : WORDING.markerLabel;
   }
 
+  get panelClass() {
+    return this.panelAtEnd ? "panel panel_end" : "panel";
+  }
+
   handleToggle() {
     if (this.isOpen) {
       this.close(true);
     } else {
       this.isOpen = true;
+      this.panelAtEnd = false;
+      this.panelPlaced = false;
+    }
+  }
+
+  /**
+   * A panel that would run past the right edge of the window opens from the button's right
+   * edge instead, as it does for a marker at the end of a title row. On a phone the panel is
+   * in the flow under the button, so it is left alone.
+   */
+  placePanel() {
+    const panel = this.template.querySelector(".panel");
+    if (!panel) {
+      return;
+    }
+    this.panelPlaced = true;
+    if (window.getComputedStyle(panel).position !== "absolute") {
+      return;
+    }
+    const edge = document.documentElement.clientWidth || window.innerWidth;
+    if (panel.getBoundingClientRect().right > edge) {
+      this.panelAtEnd = true;
     }
   }
 
@@ -284,6 +312,9 @@ export default class DataSource extends LightningElement {
   }
 
   renderedCallback() {
+    if (this.isOpen && !this.panelPlaced) {
+      this.placePanel();
+    }
     if (this.isModelOpen) {
       this.showModelDialog();
     }

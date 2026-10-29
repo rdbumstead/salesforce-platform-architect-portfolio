@@ -769,30 +769,26 @@ describe("c-footer", () => {
     const element = createComponent();
     const caption = q(element, '[data-id="metrics-caption"]');
     expect(caption.textContent.trim()).toBe(
-      "Live readings from the Salesforce org serving this page"
+      "Live readings from Salesforce and its integrations"
     );
     expect(caption.parentElement.nextElementSibling).toBe(
       q(element, '[data-id="metrics"]')
     );
   });
 
-  it("puts the CI row first and the readings row under the caption", () => {
+  it("puts CI first among the readings under the caption, with no row of its own", () => {
     const element = createComponent();
-    const ci = q(element, '[data-id="ci-row"]');
-    const caption = q(element, '[data-id="metrics-caption"]');
     const readings = q(element, '[data-id="metrics"]');
-    expect(ci.querySelector('[data-group="ci"]')).not.toBeNull();
-    expect(readings.querySelector('[data-group="ci"]')).toBeNull();
+    expect(q(element, '[data-id="ci-row"]')).toBeNull();
+    expect(readings.firstElementChild.dataset.group).toBe("ci");
     expect(
-      ci.compareDocumentPosition(caption) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    expect(
-      caption.compareDocumentPosition(readings) &
-        Node.DOCUMENT_POSITION_FOLLOWING
+      q(element, '[data-id="metrics-caption"]').compareDocumentPosition(
+        readings
+      ) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 
-  it("puts the live groups in the readings row and only CI in the first row", async () => {
+  it("keeps every group in the one readings block, CI first", async () => {
     getSystemSnapshot.mockResolvedValue(
       snapshot({ integrations: INTEGRATIONS, orgQuotas: ORG_QUOTAS })
     );
@@ -803,12 +799,7 @@ describe("c-footer", () => {
       Array.from(readings.querySelectorAll(".metric-group")).map(
         (g) => g.dataset.group
       )
-    ).toEqual(["integrations", "quotas"]);
-    expect(
-      Array.from(
-        q(element, '[data-id="ci-row"]').querySelectorAll(".metric-group")
-      ).map((g) => g.dataset.group)
-    ).toEqual(["ci"]);
+    ).toEqual(["ci", "integrations", "quotas"]);
   });
 
   it("offers View source for the footer beside the caption", () => {
@@ -913,11 +904,12 @@ describe("c-footer", () => {
     expect(link.getAttribute("target")).toBeNull();
   });
 
-  it("shows no storage group before the first snapshot is stored", async () => {
+  it("shows no storage row before the first snapshot is stored", async () => {
     const element = createComponent();
     await runIdle();
 
-    expect(q(element, '[data-group="storage"]')).toBeNull();
+    expect(q(element, '[data-id="storage"]')).toBeNull();
+    expect(q(element, '[data-id="storage-panel"]')).toBeNull();
   });
 
   it("shows the compact storage line once the snapshot holds figures", async () => {
@@ -992,7 +984,7 @@ describe("c-footer", () => {
     toggle.click();
     await flushPromises();
 
-    q(element, '[data-group="storage"]').dispatchEvent(
+    q(element, '[data-group="quotas"]').dispatchEvent(
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
     );
     await flushPromises();

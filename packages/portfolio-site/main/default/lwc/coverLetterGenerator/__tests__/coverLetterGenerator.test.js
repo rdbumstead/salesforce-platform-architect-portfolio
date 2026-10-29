@@ -535,8 +535,35 @@ describe("c-cover-letter-generator", () => {
       "utf8"
     );
     expect(html).toMatch(
-      /<lightning-card[^>]*>\s*<c-view-source\s+slot="actions"\s+source-key="coverLetterGenerator"\s*><\/c-view-source>/
+      /<lightning-card[^>]*>\s*<template lwc:if=\{actionsInHeader\}>\s*<div slot="actions" class="card-actions">\s*<c-view-source\s+source-key="coverLetterGenerator"\s*><\/c-view-source>/
     );
+  });
+
+  it("moves View source and the marker into the card body on a narrow screen", async () => {
+    const original = window.matchMedia;
+    window.matchMedia = jest.fn((media) => ({
+      matches: media === "(max-width: 767px)",
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn()
+    }));
+    try {
+      const element = createComponent();
+      await flushPromises();
+      const row = query(element, ".card-actions_body");
+      expect(row).not.toBeNull();
+      expect(row.querySelector("c-view-source").sourceKey).toBe(
+        "coverLetterGenerator"
+      );
+      expect(row.querySelector("c-data-source")).not.toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it("keeps the card body free of the pair on a wide screen", async () => {
+    const element = createComponent();
+    await flushPromises();
+    expect(query(element, ".card-actions_body")).toBeNull();
   });
 
   it("counts the description's characters against the limit", async () => {

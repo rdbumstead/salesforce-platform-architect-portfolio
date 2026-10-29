@@ -25,6 +25,7 @@ export const SCOPES = Object.freeze([
   { value: "portfolio", label: "Portfolio" }
 ]);
 const DEFAULT_SCOPE = "employerHub";
+const EMPLOYER_HUB_PREFIX = "eh_";
 const NARROW_VIEWPORT_QUERY = "(max-width: 767px)";
 const KIND_MASTER_DETAIL = "masterDetail";
 
@@ -128,6 +129,7 @@ export default class SchemaVisualizer extends LightningElement {
 
   scopeValue = DEFAULT_SCOPE;
   objectList = [];
+  highlightList = [];
   d3;
   observer;
   watchedContainer;
@@ -166,6 +168,26 @@ export default class SchemaVisualizer extends LightningElement {
     this.isLoading = true;
   }
 
+  /**
+   * API names of the objects a section reads, as a comma separated string or an array. With
+   * at least one name the component draws the whole data model those objects belong to and
+   * highlights them, so a section with one object still shows how it connects. Ignored when
+   * objects is set.
+   */
+  @api
+  get highlight() {
+    return this.highlightList.join(",");
+  }
+  set highlight(value) {
+    const next = parseObjectNames(value);
+    if (next.join(",") === this.highlightList.join(",")) {
+      return;
+    }
+    this.highlightList = next;
+    this.selectedApiName = undefined;
+    this.diagram = undefined;
+  }
+
   connectedCallback() {
     this.disconnected = false;
     this.isSmall = FORM_FACTOR === "Small" || this.isNarrowViewport();
@@ -189,9 +211,41 @@ export default class SchemaVisualizer extends LightningElement {
     return this.objectList.length > 0;
   }
 
+  get hasHighlight() {
+    return !this.hasObjects && this.highlightList.length > 0;
+  }
+
+  get isSectionView() {
+    return this.hasObjects || this.hasHighlight;
+  }
+
+  // The scope the highlighted objects live in: Employer Hub when every one is an EH_ object,
+  // the portfolio otherwise.
+  get highlightScope() {
+    return this.highlightList.every((name) =>
+      name.toLowerCase().startsWith(EMPLOYER_HUB_PREFIX)
+    )
+      ? "employerHub"
+      : "portfolio";
+  }
+
+  get highlightNames() {
+    return new Set(this.highlightList.map((name) => name.toLowerCase()));
+  }
+
+  isHighlighted(apiName) {
+    return (
+      this.hasHighlight &&
+      this.highlightNames.has((apiName || "").toLowerCase())
+    );
+  }
+
   // A wire whose parameter is undefined does not fire, so exactly one of these two is set.
   get scopeParam() {
-    return this.hasObjects ? undefined : this.activeScope;
+    if (this.hasObjects) {
+      return undefined;
+    }
+    return this.hasHighlight ? this.highlightScope : this.activeScope;
   }
 
   get objectsParam() {
@@ -199,15 +253,17 @@ export default class SchemaVisualizer extends LightningElement {
   }
 
   get showScopeToggle() {
-    return !this.hasObjects;
+    return !this.isSectionView;
   }
 
   get title() {
-    return this.hasObjects ? "This section's data model" : "Data model, live";
+    return this.isSectionView
+      ? "This section's data model"
+      : "Data model, live";
   }
 
   get emptyMessage() {
-    return this.hasObjects
+    return this.isSectionView
       ? "No objects to show for this section."
       : "No objects to show for this scope.";
   }
@@ -435,6 +491,13 @@ export default class SchemaVisualizer extends LightningElement {
     }
     const count = this.graph.objectCount ?? this.nodes.length;
     const objectWord = count === 1 ? "object" : "objects";
+    if (this.hasHighlight) {
+      const read = this.nodes.filter((node) =>
+        this.isHighlighted(node.apiName)
+      ).length;
+      const subject = read === 1 ? "The one object" : `The ${read} objects`;
+      return `${subject} this section reads, highlighted among the ${count} in the data model, described live in ${this.graph.cpuMs} ms of server CPU.`;
+    }
     if (this.hasObjects) {
       const subject = count === 1 ? "The one object" : `The ${count} objects`;
       return `${subject} this section reads, described live in ${this.graph.cpuMs} ms of server CPU.`;
@@ -480,6 +543,8 @@ export default class SchemaVisualizer extends LightningElement {
     return this.diagram.nodes.map((placed) => {
       const node = byName.get(placed.id) || {};
       const selected = placed.id === this.selectedApiName;
+      const highlighted = this.isHighlighted(placed.id);
+      const readBySection = highlighted ? ", read by this section" : "";
       return {
         key: placed.id,
         apiName: placed.id,
@@ -492,13 +557,16 @@ export default class SchemaVisualizer extends LightningElement {
         countY: placed.y + 15,
         label: shorten(node.label),
         count: `${node.fieldCount} fields`,
-        ariaLabel: `${node.label}, ${node.fieldCount} fields. Show fields.`,
+        ariaLabel: `${node.label}, ${node.fieldCount} fields${readBySection}. Show fields.`,
         pressed: selected ? "true" : "false",
         className: [
           "node",
           node.isCustom ? "node_custom" : "node_standard",
-          selected ? "node_selected" : ""
+          selected ? "node_selected" : "",
+          highlighted ? "node_highlight" : "",
+          this.hasHighlight && !highlighted ? "node_dim" : ""
         ]
+          .filter(Boolean)
           .join(" ")
           .trim()
       };
@@ -515,6 +583,12 @@ export default class SchemaVisualizer extends LightningElement {
       const start = boxEdge(edge.x1, edge.y1, dx, dy);
       const end = boxEdge(edge.x2, edge.y2, -dx, -dy);
       const masterDetail = edge.kind === KIND_MASTER_DETAIL;
+      // An edge with neither end in the section fades with the objects it joins.
+      const dim =
+        this.hasHighlight &&
+        !this.isHighlighted(edge.source) &&
+        !this.isHighlighted(edge.target);
+      const kindClass = masterDetail ? "edge edge_master" : "edge edge_lookup";
       return {
         key: `${edge.source}.${edge.field}.${index}`,
         x1: start.x,
@@ -523,7 +597,7 @@ export default class SchemaVisualizer extends LightningElement {
         y2: end.y,
         isMasterDetail: masterDetail,
         dotRadius: DOT_RADIUS,
-        className: masterDetail ? "edge edge_master" : "edge edge_lookup"
+        className: dim ? `${kindClass} edge_dim` : kindClass
       };
     });
   }
@@ -544,12 +618,22 @@ export default class SchemaVisualizer extends LightningElement {
         text: `${edge.field}: ${kindLabel(edge.kind)} to ${edge.toObject}`
       });
     });
-    return this.nodes.map((node) => {
+    // The section's own objects come first in the list, which is what a phone shows.
+    const ordered = this.hasHighlight
+      ? [
+          ...this.nodes.filter((node) => this.isHighlighted(node.apiName)),
+          ...this.nodes.filter((node) => !this.isHighlighted(node.apiName))
+        ]
+      : this.nodes;
+    return ordered.map((node) => {
       const relationships = edgesByObject.get(node.apiName) || [];
+      const readBySection = this.isHighlighted(node.apiName)
+        ? ", read by this section"
+        : "";
       return {
         key: node.apiName,
         apiName: node.apiName,
-        text: `${objectName(node)}, ${node.fieldCount} fields`,
+        text: `${objectName(node)}, ${node.fieldCount} fields${readBySection}`,
         buttonLabel: `Show fields of ${node.label}`,
         relationships,
         hasRelationships: relationships.length > 0

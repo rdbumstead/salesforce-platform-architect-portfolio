@@ -121,6 +121,47 @@ export function dropOwnContents(tokens) {
   return [...list.slice(0, at), ...list.slice(next + 1)];
 }
 
+const ALERT_TYPES = {
+  note: "Note",
+  tip: "Tip",
+  important: "Important",
+  warning: "Warning",
+  caution: "Caution"
+};
+
+/**
+ * Reads a GitHub alert marker from the start of a blockquote's first line.
+ * The marker must stand alone on that line. Returns the type and the quote's
+ * tokens without the marker, or null when the quote is an ordinary one.
+ * @returns {{ type: string, tokens: Array }|null}
+ */
+export function alertFrom(tokens) {
+  const first = (tokens || [])[0];
+  if (!first || first.type !== "paragraph") {
+    return null;
+  }
+  const inline = first.tokens || [];
+  const lead = inline[0];
+  if (!lead || lead.type !== "text") {
+    return null;
+  }
+  const match = /^\[!([A-Za-z]+)\][ \t]*(\r?\n|$)/.exec(lead.text);
+  const type = match ? match[1].toLowerCase() : "";
+  if (!ALERT_TYPES[type]) {
+    return null;
+  }
+  const remainder = { ...lead, text: lead.text.slice(match[0].length) };
+  let rest = [remainder, ...inline.slice(1)];
+  if (!remainder.text) {
+    rest = inline.slice(1);
+    if (rest[0] && rest[0].type === "br") {
+      rest = rest.slice(1);
+    }
+  }
+  const body = rest.length ? [{ ...first, tokens: rest }] : [];
+  return { type, tokens: [...body, ...tokens.slice(1)] };
+}
+
 /** Visits every block token in document order, including those inside lists and quotes. */
 function eachBlock(tokens, visit) {
   for (const token of tokens || []) {
@@ -272,6 +313,10 @@ class Builder {
       case "code":
         return this.code(token);
       case "blockquote": {
+        const alert = alertFrom(token.tokens);
+        if (alert) {
+          return this.alert(alert);
+        }
         const quote = this.el("blockquote");
         this.blocks(quote, token.tokens);
         return quote;
@@ -287,6 +332,18 @@ class Builder {
       default:
         return null;
     }
+  }
+
+  alert(alert) {
+    const title = ALERT_TYPES[alert.type];
+    const box = this.el("div", `doc-alert doc-alert-${alert.type}`);
+    box.setAttribute("role", "note");
+    box.setAttribute("aria-label", title);
+    const label = this.el("p", "doc-alert-title");
+    label.appendChild(this.text(title));
+    box.appendChild(label);
+    this.blocks(box, alert.tokens);
+    return box;
   }
 
   heading(token) {

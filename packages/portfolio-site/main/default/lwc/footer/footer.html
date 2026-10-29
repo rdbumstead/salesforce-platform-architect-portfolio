@@ -5,7 +5,13 @@
         >&copy; {currentYear} Ryan Bumstead. Built on Salesforce LWR.</span
       >
 
-      <div class="metrics metrics-ci" data-id="ci-row">
+      <div class="metrics-head">
+        <p class="metrics-caption" data-id="metrics-caption">
+          Live readings from Salesforce and its integrations
+        </p>
+        <c-view-source source-key="footer"></c-view-source>
+      </div>
+      <div class="metrics" data-id="metrics">
         <div class="metric-group" data-group="ci">
           <span class="group-label" id="footer-group-ci">CI</span>
           <ul class="group-list" aria-labelledby="footer-group-ci">
@@ -43,15 +49,6 @@
             </template>
           </ul>
         </div>
-      </div>
-
-      <div class="metrics-head">
-        <p class="metrics-caption" data-id="metrics-caption">
-          Live readings from the Salesforce org serving this page
-        </p>
-        <c-view-source source-key="footer"></c-view-source>
-      </div>
-      <div class="metrics" data-id="metrics">
         <template lwc:if={showPlatform}>
           <div class="metric-group" data-group="platform">
             <span class="group-label" id="footer-group-platform">Platform</span>
@@ -99,15 +96,31 @@
               </ul>
             </div>
           </template>
-          <template lwc:if={storageLine}>
-            <div
-              class="metric-group storage"
-              data-group="storage"
-              onkeydown={handleStorageKeydown}
+          <div
+            class="metric-group"
+            data-group="quotas"
+            onkeydown={handleStorageKeydown}
+          >
+            <span class="group-label" id="footer-group-quotas"
+              >Quotas and limits</span
             >
-              <span class="group-label" id="footer-group-storage">Storage</span>
-              <ul class="group-list" aria-labelledby="footer-group-storage">
-                <li class="metric">
+            <ul class="group-list" aria-labelledby="footer-group-quotas">
+              <li class="metric">
+                <span
+                  class="target ai-requests"
+                  data-id="ai-requests"
+                  onmouseenter={handleQuotaVisibility}
+                  >AI requests today: {aiRequestsToday}</span
+                >
+              </li>
+              <template for:each={quotaRows} for:item="row">
+                <li key={row.key} class="metric" data-id="quota">
+                  {row.label}
+                </li>
+              </template>
+              <template lwc:if={storageLine}>
+                <li class="metric" data-id="storage">
+                  Storage:
                   <button
                     type="button"
                     class="target storage-toggle"
@@ -119,7 +132,14 @@
                     {storageLine}
                   </button>
                 </li>
-              </ul>
+              </template>
+              <template for:each={limitRows} for:item="row">
+                <li key={row.key} class="metric" data-id="limit">
+                  {row.label}
+                </li>
+              </template>
+            </ul>
+            <template lwc:if={storageLine}>
               <div
                 class="storage-panel"
                 id="footer-storage-panel"
@@ -154,32 +174,7 @@
                   {storageNote} {storageUpdated}
                 </p>
               </div>
-            </div>
-          </template>
-          <div class="metric-group" data-group="quotas">
-            <span class="group-label" id="footer-group-quotas"
-              >Quotas and limits</span
-            >
-            <ul class="group-list" aria-labelledby="footer-group-quotas">
-              <li class="metric">
-                <span
-                  class="target ai-requests"
-                  data-id="ai-requests"
-                  onmouseenter={handleQuotaVisibility}
-                  >AI requests today: {aiRequestsToday}</span
-                >
-              </li>
-              <template for:each={quotaRows} for:item="row">
-                <li key={row.key} class="metric" data-id="quota">
-                  {row.label}
-                </li>
-              </template>
-              <template for:each={limitRows} for:item="row">
-                <li key={row.key} class="metric" data-id="limit">
-                  {row.label}
-                </li>
-              </template>
-            </ul>
+            </template>
           </div>
         </template>
       </div>

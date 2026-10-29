@@ -596,6 +596,72 @@ describe("docsRenderer", () => {
   });
 });
 
+describe("GitHub alert blocks", () => {
+  const render = (markdown) => {
+    const result = renderMarkdown(MARKED, markdown, {
+      doc: document,
+      baseUrl: "https://github.com/o/r/blob/main/docs/guides/03-SAS.md",
+      docHrefForPath: () => null
+    });
+    const holder = document.createElement("div");
+    holder.appendChild(result.fragment);
+    return holder;
+  };
+
+  it.each([
+    ["NOTE", "Note"],
+    ["TIP", "Tip"],
+    ["IMPORTANT", "Important"],
+    ["WARNING", "Warning"],
+    ["CAUTION", "Caution"]
+  ])("renders [!%s] as a titled callout without the marker", (type, title) => {
+    const holder = render(`> [!${type}]\n> Body text.\n`);
+    const box = holder.querySelector(".doc-alert");
+    expect(box.getAttribute("role")).toBe("note");
+    expect(box.getAttribute("aria-label")).toBe(title);
+    expect(box.classList.contains(`doc-alert-${type.toLowerCase()}`)).toBe(
+      true
+    );
+    expect(box.querySelector(".doc-alert-title").textContent).toBe(title);
+    expect(box.textContent).not.toContain("[!");
+    expect(box.textContent).toContain("Body text.");
+    expect(holder.querySelector("blockquote")).toBeNull();
+  });
+
+  it("accepts a lower case marker", () => {
+    const box = render("> [!tip]\n> Small.\n").querySelector(".doc-alert-tip");
+    expect(box.querySelector(".doc-alert-title").textContent).toBe("Tip");
+  });
+
+  it("keeps bold text, links and later paragraphs after the marker", () => {
+    const box = render(
+      "> [!TIP]\n> **Technical Implementation:** See [the guide](https://example.com/g).\n>\n> Second paragraph.\n"
+    ).querySelector(".doc-alert");
+    expect(box.querySelector("strong").textContent).toBe(
+      "Technical Implementation:"
+    );
+    expect(box.querySelector("a").getAttribute("href")).toBe(
+      "https://example.com/g"
+    );
+    expect(box.querySelectorAll("p").length).toBe(3);
+    expect(box.textContent).toContain("Second paragraph.");
+  });
+
+  it("leaves a plain blockquote as it was", () => {
+    const holder = render("> Just a quote.\n");
+    expect(holder.querySelector(".doc-alert")).toBeNull();
+    expect(holder.querySelector("blockquote").textContent).toContain(
+      "Just a quote."
+    );
+  });
+
+  it("leaves an unknown marker as an ordinary blockquote", () => {
+    const holder = render("> [!FOO]\n> Text.\n");
+    expect(holder.querySelector(".doc-alert")).toBeNull();
+    expect(holder.querySelector("blockquote").textContent).toContain("[!FOO]");
+  });
+});
+
 describe("Mermaid drawings", () => {
   const SOURCE = "graph TD\n  A-->B";
   const DOC = "## Flow\n\n```mermaid\n" + SOURCE + "\n```\n";

@@ -423,7 +423,8 @@ describe("c-career-line", () => {
       const heading = element.shadowRoot.querySelector(
         '[data-id="career-heading"]'
       );
-      expect(text(heading)).toBe("Career, newest first");
+      expect(text(heading)).toBe("Career timeline");
+      expect(heading.classList.contains("visually-hidden")).toBe(false);
       expect(element.shadowRoot.querySelector("ol.line")).not.toBeNull();
     });
 

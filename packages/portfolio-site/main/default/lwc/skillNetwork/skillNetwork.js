@@ -55,6 +55,7 @@ import {
 } from "c/graphEngine";
 import { EVENTS, trackEvent } from "c/analyticsService";
 import { isReduced } from "c/motionPreference";
+import { watchMedia } from "c/mediaWatch";
 
 // Reads only fields the guest can read: the skill fields Portfolio_Guest grants, the required
 // Category_Order__c, and the two Experience__c dates. GraphQL returns a field to the guest
@@ -157,6 +158,7 @@ const SKILL_PERSONAS_QUERY = gql`
 `;
 
 const NARROW_VIEWPORT_QUERY = "(max-width: 767px)";
+const ACTIONS_IN_BODY_QUERY = NARROW_VIEWPORT_QUERY;
 const OTHER_CATEGORY = "Other";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const YEAR_DAYS = 365.25;
@@ -757,8 +759,30 @@ export default class SkillNetwork extends LightningElement {
   boundNodeKey = "";
   keyboardPanTracked = false;
 
+  // At 767 px and narrower the card title row has no room for View source and the marker,
+  // so they move to the top of the card body.
+  actionsInBody = false;
+
+  get actionsInHeader() {
+    return !this.actionsInBody;
+  }
+
+  watchActionsPlacement() {
+    this.stopActionsWatch = watchMedia(ACTIONS_IN_BODY_QUERY, (matches) => {
+      this.actionsInBody = matches;
+    });
+  }
+
+  stopActionsPlacement() {
+    if (this.stopActionsWatch) {
+      this.stopActionsWatch();
+      this.stopActionsWatch = undefined;
+    }
+  }
+
   connectedCallback() {
     this.disconnected = false;
+    this.watchActionsPlacement();
     this.isSmall = FORM_FACTOR === "Small" || this.isNarrowViewport();
     if (this.isSmall) {
       this.view = VIEW_MATRIX;
@@ -767,6 +791,7 @@ export default class SkillNetwork extends LightningElement {
 
   disconnectedCallback() {
     this.disconnected = true;
+    this.stopActionsPlacement();
     this.unbindGraph();
     if (this.fadeTimer) {
       clearTimeout(this.fadeTimer);

@@ -1,12 +1,18 @@
 <template>
   <lightning-card title="Skill Network" icon-name="standard:invocable_action">
-    <c-view-source slot="actions" source-key="skillNetwork"></c-view-source>
-    <c-data-source
-      slot="actions"
-      objects="Skill__c"
-      class="card-source"
-    ></c-data-source>
+    <template lwc:if={actionsInHeader}>
+      <div slot="actions" class="card-actions">
+        <c-view-source source-key="skillNetwork"></c-view-source>
+        <c-data-source objects="Skill__c"></c-data-source>
+      </div>
+    </template>
     <div class="slds-p-around_medium network-body">
+      <template lwc:if={actionsInBody}>
+        <div class="card-actions card-actions_body">
+          <c-view-source source-key="skillNetwork"></c-view-source>
+          <c-data-source objects="Skill__c"></c-data-source>
+        </div>
+      </template>
       <template lwc:if={isLoading}>
         <div class="state state-loading">
           <lightning-spinner

@@ -24,11 +24,14 @@
   cursor: pointer;
 }
 
+/* A host can set --view-source-size and --view-source-padding to fit a smaller line, as the
+   footer does. The tap target stays 44 px. */
 .view-source-button {
+  padding-inline: var(--view-source-padding, var(--pf-space-4));
   background-color: transparent;
   color: var(--pf-text);
   border: 1px solid var(--pf-border);
-  font-size: 1rem;
+  font-size: var(--view-source-size, 1rem);
   font-weight: 400;
   line-height: 1.5;
   white-space: nowrap;

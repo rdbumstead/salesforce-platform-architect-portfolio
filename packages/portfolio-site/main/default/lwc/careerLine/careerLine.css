@@ -8,10 +8,6 @@
 }
 
 .career {
-  /* Below the fold, so the browser skips its layout and paint until it nears the screen. The
-     size is a first guess that the browser replaces with the real one after the first render. */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 360px;
   max-width: 1024px;
   margin: 0 auto;
   padding: 0 var(--pf-space-4);
@@ -449,10 +445,22 @@
 }
 
 /* The live data marker sits at the right of the timeline, above the filters. */
-.source-row {
+/* The heading and the live data marker share one row, as on the case studies. */
+.heading-row {
   display: flex;
-  justify-content: flex-end;
-  margin: 0 0 var(--pf-space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2) var(--pf-space-4);
+  margin: 0 0 var(--pf-space-4);
+}
+
+.section-heading {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pf-text);
 }
 
 .card-source {
