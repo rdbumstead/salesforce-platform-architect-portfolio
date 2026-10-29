@@ -1200,7 +1200,6 @@ export default class ApiTester extends LightningElement {
 
   /** Moves offset on by one page, keeps the limit, and calls again. */
   handleNextPage() {
-    const entry = this.currentEntry;
     const merged = this.mergedParams;
     const limitParam = this.currentParams.find(
       (param) => param.name === "limit"
