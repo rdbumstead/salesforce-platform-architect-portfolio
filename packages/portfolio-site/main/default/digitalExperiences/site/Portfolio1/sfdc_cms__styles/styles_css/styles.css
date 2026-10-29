@@ -88,6 +88,12 @@
   --pf-btn-hover: #1d4ed8;
   --pf-error: #fee4e2;
   --pf-error-text: #b42318;
+  /* GitHub's own alert colours, so a doc reads as it does on GitHub. */
+  --pf-alert-note: #0969da;
+  --pf-alert-tip: #1a7f37;
+  --pf-alert-important: #8250df;
+  --pf-alert-warning: #9a6700;
+  --pf-alert-caution: #d1242f;
   --pf-focus: #2563eb;
   --pf-color-scheme: light;
   --pf-glass: rgba(255, 255, 255, 0.9);
@@ -169,6 +175,11 @@
     --pf-btn-hover: #1d4ed8;
     --pf-error: #3b1219;
     --pf-error-text: #fda29b;
+    --pf-alert-note: #4493f8;
+    --pf-alert-tip: #3fb950;
+    --pf-alert-important: #ab7df8;
+    --pf-alert-warning: #d29922;
+    --pf-alert-caution: #f85149;
     --pf-focus: #60a5fa;
     --pf-color-scheme: dark;
     --pf-glass: rgba(11, 15, 23, 0.9);
@@ -200,6 +211,11 @@
   --pf-btn-hover: #1d4ed8;
   --pf-error: #3b1219;
   --pf-error-text: #fda29b;
+  --pf-alert-note: #4493f8;
+  --pf-alert-tip: #3fb950;
+  --pf-alert-important: #ab7df8;
+  --pf-alert-warning: #d29922;
+  --pf-alert-caution: #f85149;
   --pf-focus: #60a5fa;
   --pf-color-scheme: dark;
   --pf-glass: rgba(11, 15, 23, 0.9);

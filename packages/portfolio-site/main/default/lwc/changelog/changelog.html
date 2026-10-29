@@ -3,11 +3,6 @@
     <header class="changelog-header">
       <div class="changelog-title-group">
         <h2 id="changelog-heading" class="changelog-title">Latest Updates</h2>
-        <c-data-source
-          source-keys="DeliveryController_GithubCache"
-          hide-counts
-          class="card-source"
-        ></c-data-source>
       </div>
       <div class="changelog-meta">
         <template lwc:if={statusBadge}>
@@ -19,6 +14,11 @@
           <span class={ageClass} data-id="age-label">{ageText}</span>
         </template>
       </div>
+      <c-data-source
+        source-keys="DeliveryController_GithubCache"
+        hide-counts
+        class="card-source"
+      ></c-data-source>
     </header>
 
     <p class="status-note" data-id="status-note" aria-live="polite">
