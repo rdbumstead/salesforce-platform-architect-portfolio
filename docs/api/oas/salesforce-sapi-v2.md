@@ -28,7 +28,8 @@ System API exposing core Salesforce objects for the Portfolio. This is **version
 - **Pagination**: Offset-based pagination implemented for simplicity (<200 records). 
   - *Enterprise Note*: For volumes >2,000, this would be refactored to **Keyset/Cursor Pagination** (`WHERE Id > lastSeenId`).
 - **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning, and the URL keeps its `v1` segment. Send `X-API-Version: v2` for this contract. A missing header resolves to `v1`, and any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
-- **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a short message and the link to the version 2 reference, `https://ryanbumstead.com/api-reference?version=v2`.
+- **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a short message and the link to the version 2 reference, `https://ryanbumstead.com/api-lab/reference?version=v2`.
+- **Removed from version 1**: `accomplishments` on `/experience` is not returned in version 2. Read `/experience-highlights` instead.
 
 Base URLs:
 
@@ -351,7 +352,6 @@ Retrieves professional experience history.
     "endDate": "2025-01-01",
     "isCurrentRole": true,
     "isRemote": true,
-    "accomplishments": "<ul><li>Led 5 successful deployments</li></ul>",
     "contactKey": "con_7c5j3w9sfa",
     "contactName": "Ryan Bumstead",
     "sortOrder": 10
@@ -397,7 +397,6 @@ Status Code **200**
 |» endDate|string(date)¦null|false|none|End Date (null if current)|
 |» isCurrentRole|boolean|false|read-only|Is Current Role Flag|
 |» isRemote|boolean|false|none|Remote Work Flag|
-|» accomplishments|string¦null|false|none|DEPRECATED: Use /experience-highlights endpoint instead. Still returned in 2.0.0, because the 2.0.0 cut changes identifiers only.|
 |» contactKey|string|false|none|Public key of the contact.|
 |» contactName|string|false|none|Contact Name|
 |» sortOrder|number¦null|false|none|Sort Order|
@@ -2408,7 +2407,6 @@ Portfolio Project Schema.
   "endDate": "2025-01-01",
   "isCurrentRole": true,
   "isRemote": true,
-  "accomplishments": "<ul><li>Led 5 successful deployments</li></ul>",
   "contactKey": "con_7c5j3w9sfa",
   "contactName": "Ryan Bumstead",
   "sortOrder": 10
@@ -2430,7 +2428,6 @@ Professional Experience Schema.
 |endDate|string(date)¦null|false|none|End Date (null if current)|
 |isCurrentRole|boolean|false|read-only|Is Current Role Flag|
 |isRemote|boolean|false|none|Remote Work Flag|
-|accomplishments|string¦null|false|none|DEPRECATED: Use /experience-highlights endpoint instead. Still returned in 2.0.0, because the 2.0.0 cut changes identifiers only.|
 |contactKey|string|false|none|Public key of the contact.|
 |contactName|string|false|none|Contact Name|
 |sortOrder|number¦null|false|none|Sort Order|

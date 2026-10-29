@@ -312,7 +312,6 @@
             "endDate",
             "isCurrentRole",
             "isRemote",
-            "accomplishments",
             "contactKey",
             "contactName",
             "sortOrder"
