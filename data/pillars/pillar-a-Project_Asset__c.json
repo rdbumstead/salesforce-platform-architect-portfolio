@@ -8,7 +8,7 @@
       "Name": "Process flow, part 1: Initial inquiry and routing",
       "Project__c": "@PillarAProjectRef",
       "Type__c": "Image",
-      "Alt_Text__c": "Process flow, part 1: the web form finds or creates the Account and Contact, creates a Case per request, routes each Case to a queue by academic focus area, and a queue member reviews it.",
+      "Alt_Text__c": "Process flow, part 1: the web form finds or creates the Account and Contact, creates a Case per request, routes each Case to a queue by the employer's industry, and a queue member reviews it.",
       "Sort_Order__c": 1,
       "External_URL__c": "resource:EH_Assets/flow-part-1.svg"
     },
