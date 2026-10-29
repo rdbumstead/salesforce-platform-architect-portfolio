@@ -5,6 +5,11 @@ info:
   description: |
     System API exposing core Salesforce objects for the Portfolio.
 
+    ### Deprecation of version 1
+    **Version 1 is deprecated and has a sunset date.** Use version 2 (`X-API-Version: v2`, documented in `salesforce-sapi-v2.yaml`), which returns public keys only. The sunset date is 30 days after version 2 reaches production.
+    - **Before the sunset date**: every version 1 response carries a `Deprecation` header (RFC 9745), a `Link` header pointing at the version 2 reference, `https://ryanbumstead.com/api-reference?version=v2`, and, once the sunset date is set, a `Sunset` header (RFC 8594) with that date. The body is unchanged.
+    - **After the sunset date**: every version 1 call returns `410 Gone` in the standard error envelope, with a short message and the link to the version 2 reference. No data is returned.
+
     ### Authentication (ADR-027)
     1. **Inbound**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App. Every request carries `Authorization: Bearer <access_token>`. The platform rejects missing, expired or invalid tokens before any Apex executes.
        - **Run-as identity**: a dedicated integration user holding a single read-only permission set (`Integration_Access`). Authorisation is bounded by that permission set, not by the token.
@@ -14,7 +19,7 @@ info:
 
     ### Architecture & Governance
     - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
-    - **ID Strategy** (ADR-038): Every record carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the identifier to use. The `id` field is the 18-character Salesforce Id, kept in v1 so existing clients keep working, and it is **deprecated**. Each reference has the same pair (`projectId` and `projectKey`). Every parameter that takes an Id (`projectId`, `experienceId`, `certificationId`, and the `/projects` path segment) also takes the key. A key is set once, never changes, and never carries a name. Removing `id` would be a v2 change.
+    - **ID Strategy** (ADR-038): Every record carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the identifier to use. The `id` field is the 18-character Salesforce Id, kept in v1 so existing clients keep working, and it is **deprecated**. Each reference has the same pair (`projectId` and `projectKey`). Every parameter that takes an Id (`projectId`, `experienceId`, `certificationId`, and the `/projects` path segment) also takes the key. A key is set once, never changes, and never carries a name. Version 2 removes `id` and every Id reference field.
     - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
     ### Non-Functional Requirements (NFRs)

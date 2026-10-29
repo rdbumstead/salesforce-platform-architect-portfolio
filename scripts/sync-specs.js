@@ -5,12 +5,18 @@
  *   node scripts/sync-specs.js --check   writes nothing, exits 1 when a file differs
  *
  * Outputs under packages/portfolio-site/main/default/staticresources:
- *   SAPI_Spec.yaml, PAPI_Spec.yaml   byte copies of the YAML specs (the API reference reads them)
- *   SAPI_OpenAPI.json, PAPI_OpenAPI.json   the same specs as JSON, served at /openapi.json
+ *   SAPI_Spec.yaml, PAPI_Spec.yaml   byte copies of the version 1 YAML specs (deprecated, kept
+ *                          until the sunset date, the API reference reads them)
+ *   SAPI_Spec_V2.yaml, PAPI_Spec_V2.yaml   byte copies of the version 2 YAML specs, the ones
+ *                          the API reference opens by default
+ *   SAPI_OpenAPI.json, PAPI_OpenAPI.json   the version 1 specs as JSON, served at /openapi.json
  *   API_Lab_Catalog.json   the API Lab's GET paths, their query parameters and the top level
- *                          keys of each JSON response, read by ApiLabController and apiTester
+ *                          keys of each JSON response, read by ApiLabController and apiTester.
+ *                          Paths, parameters and "responses" come from the version 2 specs.
+ *                          "v1Responses" holds the same shapes from the version 1 specs, for a
+ *                          call the Lab sends as version 1.
  * and docs/api/postman/portfolio-api.postman_collection.json, a Postman collection of every
- * operation in both specs.
+ * operation in both version 2 specs, sent with X-API-Version v2.
  * The YAML copies are compared byte for byte. The JSON files are compared by content, so
  * Prettier may format them.
  */
@@ -26,17 +32,42 @@ const RESOURCE_DIR = path.join(ROOT, RESOURCE_REL);
 const POSTMAN_COLLECTION =
   "docs/api/postman/portfolio-api.postman_collection.json";
 
-/** Each spec, the API prefix its paths take in the Lab, and its resource names. */
+/**
+ * Each version 2 spec, the API prefix its paths take in the Lab, and its resource names. The
+ * Lab and the Postman collection are built from these.
+ */
 const SPECS = [
+  {
+    file: "salesforce-sapi-v2.yaml",
+    api: "sapi",
+    version: "v2",
+    yamlResource: "SAPI_Spec_V2.yaml"
+  },
+  {
+    file: "portfolio-papi-v2.yaml",
+    api: "papi",
+    version: "v2",
+    yamlResource: "PAPI_Spec_V2.yaml"
+  }
+];
+
+/**
+ * The version 1 specs, deprecated until the sunset date. Their YAML and JSON copies stay, and
+ * their response shapes go in the catalog as "v1Responses". The files are deleted with this
+ * list entry after the sunset.
+ */
+const V1_SPECS = [
   {
     file: "salesforce-sapi.yaml",
     api: "sapi",
+    version: "v1",
     yamlResource: "SAPI_Spec.yaml",
     jsonResource: "SAPI_OpenAPI.json"
   },
   {
     file: "portfolio-papi.yaml",
     api: "papi",
+    version: "v1",
     yamlResource: "PAPI_Spec.yaml",
     jsonResource: "PAPI_OpenAPI.json"
   }
@@ -241,7 +272,7 @@ function exampleFor(doc, schema, depth = 0) {
  * calls go to {{instanceUrl}} with {{accessToken}}. The token request and /openapi.json go
  * to the site, {{siteUrl}}, with no auth, and the token request stores what it returns.
  */
-function postmanCollection(specDocs) {
+function postmanCollection(specDocs, apiVersion) {
   const myDomain = serverUrl(specDocs[0].doc.servers[0]).replace(
     /\/services\/apexrest\/.*$/,
     ""
@@ -285,7 +316,7 @@ function postmanCollection(specDocs) {
           method: method.toUpperCase(),
           header: [
             { key: "Accept", value: "application/json" },
-            { key: "X-API-Version", value: "v1" },
+            { key: "X-API-Version", value: apiVersion },
             { key: "X-Request-Id", value: "{{$guid}}" }
           ],
           url: {
@@ -397,19 +428,31 @@ function build() {
   const outputs = { yaml: {}, json: {} };
   const paths = [];
   const specDocs = [];
+  const v1Shapes = {};
+  V1_SPECS.forEach((spec) => {
+    const { raw, doc } = readSpec(spec);
+    outputs.yaml[resource(spec.yamlResource)] = raw;
+    outputs.json[resource(spec.jsonResource)] = doc;
+    catalogEntries(doc, spec).forEach((entry) => {
+      v1Shapes[entry.path] = entry.responses;
+    });
+  });
   SPECS.forEach((spec) => {
     const { raw, doc } = readSpec(spec);
     specDocs.push({ spec, doc });
     outputs.yaml[resource(spec.yamlResource)] = raw;
-    outputs.json[resource(spec.jsonResource)] = doc;
-    paths.push(...catalogEntries(doc, spec));
+    catalogEntries(doc, spec).forEach((entry) => {
+      paths.push({ ...entry, v1Responses: v1Shapes[entry.path] || {} });
+    });
   });
   outputs.json[resource(CATALOG_RESOURCE)] = {
-    source: SPECS.map((spec) => `packages/integration-api/specs/${spec.file}`),
+    source: [...SPECS, ...V1_SPECS].map(
+      (spec) => `packages/integration-api/specs/${spec.file}`
+    ),
     excluded: EXCLUDED_PATHS,
     paths
   };
-  outputs.json[POSTMAN_COLLECTION] = postmanCollection(specDocs);
+  outputs.json[POSTMAN_COLLECTION] = postmanCollection(specDocs, "v2");
   return outputs;
 }
 

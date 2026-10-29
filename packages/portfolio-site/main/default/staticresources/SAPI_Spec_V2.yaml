@@ -1,0 +1,1626 @@
+openapi: 3.0.0
+info:
+  title: Salesforce System API (SAPI)
+  version: 2.0.0
+  description: |
+    System API exposing core Salesforce objects for the Portfolio. This is **version 2**, selected with `X-API-Version: v2`. It returns public keys only. Version 1 is documented in `salesforce-sapi.yaml` and is deprecated (see Versioning below).
+
+    ### Authentication (ADR-027)
+    1. **Inbound**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App. Every request carries `Authorization: Bearer <access_token>`. The platform rejects missing, expired or invalid tokens before any Apex executes.
+       - **Run-as identity**: a dedicated integration user holding a single read-only permission set (`Integration_Access`). Authorisation is bounded by that permission set, not by the token.
+       - **Previous design**: `client_id`/`client_secret` headers validated in Apex against Custom Metadata (ADR-017, superseded). Retired when MuleSoft left the architecture.
+    2. **On-platform consumers**: the site API Lab proxy and the PAPI health check obtain tokens through the `Portfolio_API` Named Credential (External Credential, Client Credentials principal). No secret is stored in metadata, source, or the browser.
+    3. **External evaluators**: request a short-lived token from `POST /papi/v1/auth/token` (see the PAPI specification, ADR-028), then call this API with it.
+
+    ### Architecture & Governance
+    - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
+    - **ID Strategy** (ADR-038): Every record carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the only identifier. Version 2 returns no `id` field and no Salesforce Id anywhere. Each reference is a key field named for its Id field in version 1 with `Id` replaced by `Key` (`projectKey`, `contactKey`). Every parameter that takes a record (`projectId`, `experienceId` and `certificationId`) takes the key only, and a Salesforce Id is treated as an unknown key. A key is set once, never changes, and never carries a name.
+    - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
+
+    ### Non-Functional Requirements (NFRs)
+    - **Observability**: `X-Request-Id` **mandatory** in Request/Response for distributed tracing. A missing or non-UUID value returns `400 BAD_REQUEST` (`ApiRequestContext.applyRequestRules`). The platform echoes a caller-supplied value on every response; Apex sets the header only when it generated the value (ADR-026).
+    - **Latency**: Target < 500ms for internal processing.
+    - **Resilience**: 120 requests per minute per caller key, enforced by `RateWindowLimiter` (ADR-025), with `429` responses and `Retry-After` headers. Every vended evaluator token is the same session, so all evaluators share one key and one limit of 120 per minute (ADR-028).
+    - **Caching Strategy**: 
+      - **Public Data** (Skills, Projects, Junctions): `Cache-Control: max-age=300, public`.
+      - **Private Data** (Contact, Config): `Cache-Control: max-age=300, private` or `no-store`.
+
+    ### Design Constraints & Trade-offs
+    - **Pagination**: Offset-based pagination implemented for simplicity (<200 records). 
+      - *Enterprise Note*: For volumes >2,000, this would be refactored to **Keyset/Cursor Pagination** (`WHERE Id > lastSeenId`).
+    - **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning, and the URL keeps its `v1` segment. Send `X-API-Version: v2` for this contract. A missing header resolves to `v1`, and any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
+    - **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a short message and the link to the version 2 reference, `https://ryanbumstead.com/api-reference?version=v2`.
+  contact:
+    name: Ryan Bumstead
+    email: ryan@ryanbumstead.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+tags:
+  - name: Monitoring
+    description: Health checks and observability endpoints.
+  - name: Profile
+    description: Core candidate information (Contact, Experience, Education).
+  - name: Objects
+    description: Portfolio entities (Projects, Skills, Certifications).
+  - name: Junctions
+    description: Many-to-many relationships (Project-Skills, Experience-Skills).
+  - name: Configuration
+    description: Global portfolio settings.
+
+servers:
+  - url: https://{domain}/services/apexrest/sapi/v1
+    description: |
+      Salesforce My Domain (authenticated Apex REST). Bearer-token callers use the `instance_url`
+      returned with their token. The Experience Cloud site domain serves Apex REST to the guest
+      user only, and the only guest-callable path is PAPI `POST /auth/token`.
+    variables:
+      domain:
+        default: ryan-bumstead-dev-ed.develop.my.salesforce.com
+        description: The org's My Domain host.
+        enum:
+          - ryan-bumstead-dev-ed.develop.my.salesforce.com
+
+security:
+  - OAuth2ClientCredentials:
+      - api
+
+components:
+  x-rate-limit:
+    description: "Enforced in Apex by RateWindowLimiter (ADR-025), a custom-object counter: one API_Rate_Window__c row per caller key per fixed UTC calendar minute. The caller key is sapi:{SHA-256 hex of the session id}, or sapi:{user id} when the session id is null. Every response carries X-RateLimit-Limit and X-RateLimit-Remaining. Request limit + 1 within the minute gets 429 RATE_LIMIT_EXCEEDED with Retry-After set to the seconds left in the minute. Rejected requests count. No burst allowance. Every token from POST /papi/v1/auth/token is the same session, so all evaluators share one key and one limit (ADR-028)."
+    tier: standard
+    requestsPerMinute: 120
+
+  securitySchemes:
+    OAuth2ClientCredentials:
+      type: oauth2
+      description: |
+        OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).
+        Tokens run as the read-only integration user. External evaluators obtain a short-lived token
+        from `POST /papi/v1/auth/token` (ADR-028) instead of holding the consumer secret. Every
+        evaluator receives the same session, so all evaluators share one rate limit.
+      flows:
+        clientCredentials:
+          tokenUrl: https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/oauth2/token
+          scopes:
+            api: Access Salesforce REST APIs as the integration user
+
+  headers:
+    RequestIdResponse:
+      description: "Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header)."
+      schema:
+        type: string
+        format: uuid
+
+    TotalCountResponse:
+      description: "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request."
+      schema:
+        type: integer
+
+    HasMoreResponse:
+      description: "Boolean indicator if more records exist beyond the current offset."
+      schema:
+        type: boolean
+
+    CacheControlResponse:
+      description: "Directives for caching mechanisms in both requests and responses."
+      schema:
+        type: string
+        example: "max-age=300, public"
+
+    NoCacheResponse:
+      description: "Directive to prevent caching of sensitive/dynamic data."
+      schema:
+        type: string
+        example: "no-store, no-cache"
+
+  parameters:
+    apiVersionParam:
+      name: X-API-Version
+      in: header
+      required: false
+      description: "API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026)."
+      schema:
+        type: string
+        enum: [v1, v2]
+        example: "v2"
+
+    requestIdParam:
+      name: X-Request-Id
+      in: header
+      required: true
+      description: "Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026)."
+      schema:
+        type: string
+        format: uuid
+
+    limitParam:
+      name: limit
+      in: query
+      required: false
+      description: "Maximum number of records to return."
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 200
+
+    offsetParam:
+      name: offset
+      in: query
+      required: false
+      description: "Pagination offset."
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+
+    contactNameParam:
+      name: contactName
+      in: query
+      description: Filter by Contact Name.
+      schema:
+        type: string
+
+    employerNameParam:
+      name: employerName
+      in: query
+      description: Filter by Employer Name.
+      schema:
+        type: string
+
+    currentlyEmployedParam:
+      name: currentlyEmployed
+      in: query
+      description: Filter by active employment status.
+      schema:
+        type: boolean
+
+    projectIdParam:
+      name: projectId
+      in: query
+      description: Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.
+      schema:
+        type: string
+
+    experienceIdParam:
+      name: experienceId
+      in: query
+      description: Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.
+      schema:
+        type: string
+
+    personaParam:
+      name: persona
+      in: query
+      description: |
+        Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).
+        Takes a single value or a comma-separated list of Admin, Developer and Architect. An unknown value returns 400.
+
+        Examples:
+        - Single: `?persona=Admin`
+        - Multiple (comma): `?persona=Admin,Developer`
+      schema:
+        type: string
+      example: "Admin"
+
+    statusParam:
+      name: status
+      in: query
+      description: "Filter by Project Status."
+      schema:
+        $ref: "#/components/schemas/ProjectStatus"
+
+    issuerNameParam:
+      name: issuerName
+      in: query
+      description: Filter by Issuer Name.
+      schema:
+        type: string
+
+    accountNameParam:
+      name: accountName
+      in: query
+      description: Filter by Account Name.
+      schema:
+        type: string
+
+    certificationNameParam:
+      name: certificationName
+      in: query
+      description: Filter by Certification Name.
+      schema:
+        type: string
+
+    projectNameParam:
+      name: projectName
+      in: query
+      description: Filter by Project Name.
+      schema:
+        type: string
+
+    certificationIdParam:
+      name: certificationId
+      in: query
+      description: Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.
+      schema:
+        type: string
+
+    isFeaturedParam:
+      name: isFeatured
+      in: query
+      description: Filter only featured projects.
+      schema:
+        type: boolean
+
+    categoryParam:
+      name: category
+      in: query
+      schema:
+        type: string
+      description: "Filter skills by Category, one of the Skill Category picklist values, for example 'Backend', 'Frontend' or 'Integration'."
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or schema validation failure.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    Unauthorized:
+      description: Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    Forbidden:
+      description: The integration user lacks object, field, or Apex class permission for this resource.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    NotFound:
+      description: The requested resource ID was not found.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    TooManyRequests:
+      description: API rate limit exceeded.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+        Retry-After:
+          description: Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    ServerError:
+      description: Internal platform error (unhandled Apex exception).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            httpStatus: 500
+            errorCode: "INTERNAL_SERVER_ERROR"
+            message: "Upstream Salesforce processing failed."
+            correlationId: "123e4567-e89b-12d3-a456-426614174000"
+            retryable: true
+
+  schemas:
+    Error:
+      type: object
+      description: Standard Error Response Schema.
+      required: [errorCode, message, correlationId, httpStatus]
+      properties:
+        httpStatus:
+          type: integer
+          readOnly: true
+          example: 400
+          description: "Standard HTTP Status Code."
+        errorCode:
+          type: string
+          description: "Machine-readable error code constant."
+          enum:
+            - BAD_REQUEST
+            - UNAUTHORIZED
+            - FORBIDDEN
+            - NOT_FOUND
+            - RATE_LIMIT_EXCEEDED
+            - INTERNAL_SERVER_ERROR
+            - SALESFORCE_UNAVAILABLE
+            - GATEWAY_TIMEOUT
+          example: "BAD_REQUEST"
+        message:
+          type: string
+          example: "Offset cannot be negative."
+          description: "Human-readable error message."
+        retryable:
+          type: boolean
+          example: false
+          description: "Indicates if the client should retry the request."
+        correlationId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+          description: "Unique ID tracking the request. Matches X-Request-Id."
+
+    Persona:
+      type: string
+      description: "Target audience for content filtering."
+      enum: [Admin, Developer, Architect]
+      example: "Architect"
+
+    ProjectStatus:
+      type: string
+      description: "Project Lifecycle Status"
+      enum:
+        - "Live – In Production"
+        - "Live – Demo / Reference"
+        - "Active Development"
+        - "On Hold"
+        - "Archived"
+      example: "Active Development"
+
+    AssetType:
+      type: string
+      description: "Asset Type"
+      enum: [Image, Video, Document, Link]
+      example: "Image"
+
+    RelationshipType:
+      type: string
+      description: "Professional Relationship"
+      enum: [Manager, Peer, Client, Recruiter, Fan]
+      example: "Manager"
+
+    VibeMode:
+      type: string
+      description: "Tone/Style Category"
+      enum: [Professional, Casual]
+      example: "Professional"
+
+    HealthStatus:
+      type: object
+      description: API Health Status Schema.
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN, DEGRADED]
+          example: "UP"
+          description: "Overall API Availability."
+        checkType:
+          type: string
+          enum: [SHALLOW, DEEP]
+          example: "SHALLOW"
+          description: "SHALLOW = Runtime only. DEEP = Includes downstream dependencies."
+        timestamp:
+          type: string
+          format: date-time
+          description: "ISO 8601 Timestamp of the health check."
+        orgTimeZone:
+          type: string
+          example: "America/Chicago"
+          description: "Time zone of the running user (org time)."
+        dependencies:
+          type: object
+          description: "Status of downstream systems."
+          properties:
+            salesforce:
+              type: string
+              example: "UP"
+              description: "Status of Salesforce Core."
+        limits:
+          type: object
+          description: "Governor-limit snapshot of the current transaction (`SAPIHealth.buildPayload`)."
+          properties:
+            queries:
+              $ref: "#/components/schemas/LimitUsage"
+            dmlStatements:
+              $ref: "#/components/schemas/LimitUsage"
+            callouts:
+              $ref: "#/components/schemas/LimitUsage"
+            cpuTimeMs:
+              $ref: "#/components/schemas/LimitUsage"
+            heapBytes:
+              $ref: "#/components/schemas/LimitUsage"
+
+    LimitUsage:
+      type: object
+      properties:
+        used:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 100
+
+    Contact:
+      type: object
+      description: Contact Information Schema. The contact's email and phone are never returned.
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "con_7c5j3w9sfa"
+          description: "Stable public key of the record. It is set once and never changes."
+        name:
+          type: string
+          example: "Ryan Bumstead"
+          description: "Full Name"
+        title:
+          type: string
+          example: "Platform Architect"
+          description: "Job Title"
+        trailhead:
+          type: string
+          format: uri
+          example: "https://trailblazer.me/id/rbumstead"
+          nullable: true
+          description: "Trailhead Profile URL"
+        careerObjective:
+          type: string
+          example: "Driving digital transformation..."
+          nullable: true
+          description: "Short Professional Summary"
+        linkedIn:
+          type: string
+          format: uri
+          example: "https://linkedin.com/in/ryanbumstead"
+          nullable: true
+          description: "LinkedIn Profile URL"
+        portfolio:
+          type: string
+          format: uri
+          example: "https://ryanbumstead.com"
+          nullable: true
+          description: "Portfolio Website URL"
+      additionalProperties: true
+
+    Project:
+      type: object
+      description: Portfolio Project Schema.
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "prj_8f3k2m9qtz"
+          description: "Stable public key of the record. It is set once and never changes."
+        name:
+          type: string
+          example: "Global CRM Migration"
+          description: "Project Name"
+        challenge:
+          type: string
+          example: "Legacy system had 5M duplicate records."
+          nullable: true
+          description: "STAR Method: Situation/Task"
+        solution:
+          type: string
+          example: "Implemented MDM strategy using Data Cloud."
+          nullable: true
+          description: "STAR Method: Action"
+        businessValue:
+          type: string
+          example: "Reduced data storage costs by 40%."
+          nullable: true
+          description: "STAR Method: Result"
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+        dateCompleted:
+          type: string
+          format: date
+          example: "2025-12-01"
+          nullable: true
+          description: "Completion Date"
+        heroImageUrl:
+          type: string
+          format: uri
+          example: "https://example.com/images/hero.jpg"
+          nullable: true
+          description: "Banner Image URL"
+        liveUrl:
+          type: string
+          format: uri
+          example: "https://example.com/demo"
+          nullable: true
+          description: "Live Demo URL"
+        repositoryUrl:
+          type: string
+          format: uri
+          example: "https://github.com/rdbumstead/project"
+          nullable: true
+          description: "Code Repository URL"
+        pillar:
+          type: string
+          example: "A"
+          nullable: true
+          description: "Architectural Pillar"
+        pillarLabel:
+          type: string
+          example: "Pillar A: Business Architecture"
+          nullable: true
+          description: "Architectural Pillar Label"
+        isFeatured:
+          type: boolean
+          example: true
+          description: "Featured Flag for Home Page"
+        contactName:
+          type: string
+          example: "Ryan Bumstead"
+          description: "Owner Name"
+        contactKey:
+          type: string
+          example: "con_7c5j3w9sfa"
+          description: "Public key of the contact."
+        sortOrder:
+          type: number
+          example: 10
+          nullable: true
+          description: "Display Sort Order"
+      additionalProperties: true
+
+    Experience:
+      type: object
+      description: Professional Experience Schema.
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "exp_4h7n2c8wpd"
+          description: "Stable public key of the record. It is set once and never changes."
+        employerName:
+          type: string
+          example: "Salesforce"
+          description: "Employer Name"
+        employerKey:
+          type: string
+          example: "acc_2t8e6y4mgb"
+          description: "Public key of the employer."
+        name:
+          type: string
+          description: "Role Title"
+          example: "Technical Architect"
+        startDate:
+          type: string
+          format: date
+          example: "2023-01-01"
+          description: "Start Date"
+        endDate:
+          type: string
+          format: date
+          example: "2025-01-01"
+          nullable: true
+          description: "End Date (null if current)"
+        isCurrentRole:
+          type: boolean
+          readOnly: true
+          example: true
+          description: "Is Current Role Flag"
+        isRemote:
+          type: boolean
+          example: true
+          description: "Remote Work Flag"
+        accomplishments:
+          type: string
+          deprecated: true
+          example: "<ul><li>Led 5 successful deployments</li></ul>"
+          description: "DEPRECATED: Use /experience-highlights endpoint instead. Still returned in 2.0.0, because the 2.0.0 cut changes identifiers only."
+          nullable: true
+        contactKey:
+          type: string
+          example: "con_7c5j3w9sfa"
+          description: "Public key of the contact."
+        contactName:
+          type: string
+          example: "Ryan Bumstead"
+          description: "Contact Name"
+        sortOrder:
+          type: number
+          example: 10
+          nullable: true
+          description: "Sort Order"
+      additionalProperties: true
+
+    ExperienceHighlight:
+      type: object
+      description: Experience Bullet Point Schema.
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "hlt_9d3p7k5vxn"
+          description: "Stable public key of the record. It is set once and never changes."
+        experienceKey:
+          type: string
+          example: "exp_4h7n2c8wpd"
+          description: "Public key of the experience."
+        experienceName:
+          type: string
+          example: "Technical Architect"
+          description: "Parent Experience Name"
+        name:
+          type: string
+          example: "DevOps Transformation"
+          description: "Highlight Title"
+        description:
+          type: string
+          example: "Implemented CI/CD pipelines reducing deployment time by 80%."
+          description: "Detailed Description"
+        sortOrder:
+          type: number
+          example: 1
+          description: "Sort Order"
+        personaTag:
+          type: string
+          example: "Developer;Architect"
+          description: "Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect)."
+      additionalProperties: true
+
+    ProjectAsset:
+      type: object
+      description: "Project Asset (Image/Video) Schema."
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "pas_4n7s3f9tdk"
+          description: "Stable public key of the record. It is set once and never changes."
+        name:
+          type: string
+          example: "Architecture Diagram"
+          description: "Asset Name"
+        projectKey:
+          type: string
+          example: "prj_8f3k2m9qtz"
+          description: "Public key of the project."
+        projectName:
+          type: string
+          example: "Global CRM Migration"
+          description: "Parent Project Name"
+        type:
+          $ref: "#/components/schemas/AssetType"
+        externalUrl:
+          type: string
+          format: uri
+          example: "https://example.com/images/diagram.png"
+          description: "Asset URL"
+        altText:
+          type: string
+          example: "C4 Model System Context Diagram"
+          nullable: true
+          description: "Accessibility Alt Text"
+        sortOrder:
+          type: number
+          example: 1
+          description: "Sort Order"
+      additionalProperties: true
+
+    Testimonial:
+      type: object
+      description: Social Proof Schema.
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "tst_2y7a5d9wmh"
+          description: "Stable public key of the record. It is set once and never changes."
+        name:
+          type: string
+          example: "Testimonial from Jane Doe"
+          description: "Testimonial Name"
+        authorName:
+          type: string
+          example: "Jane Doe"
+          description: "Author Name"
+        authorTitle:
+          type: string
+          example: "CTO, Tech Corp"
+          nullable: true
+          description: "Author Title"
+        avatarUrl:
+          type: string
+          format: uri
+          example: "https://example.com/images/avatar.jpg"
+          nullable: true
+          description: "Author Avatar URL"
+        relationshipType:
+          $ref: "#/components/schemas/RelationshipType"
+        vibeMode:
+          $ref: "#/components/schemas/VibeMode"
+        context:
+          type: string
+          example: "Worked together on the Q1 digital transformation."
+          nullable: true
+          description: "Context of Work"
+      additionalProperties: true
+
+    ProjectSkill:
+      type: object
+      description: "Junction Object: Project <-> Skill."
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "prs_8w2m6g4bha"
+          description: "Stable public key of the record. It is set once and never changes."
+        projectKey:
+          type: string
+          example: "prj_8f3k2m9qtz"
+          description: "Public key of the project."
+        projectName:
+          type: string
+          example: "Global CRM Migration"
+          description: "Project Name"
+        skillKey:
+          type: string
+          example: "skl_3m9x5b2rkt"
+          description: "Public key of the skill."
+        skillName:
+          type: string
+          example: "Apex"
+          description: "Skill Name"
+        skillCategory:
+          type: string
+          example: "Backend Development"
+          description: "Skill Category"
+        skillProficiencyScore:
+          type: number
+          example: 5
+          description: "Proficiency Score"
+      additionalProperties: true
+
+    ExperienceSkill:
+      type: object
+      description: "Junction Object: Experience <-> Skill."
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "exs_5r8h2q6cjw"
+          description: "Stable public key of the record. It is set once and never changes."
+        experienceKey:
+          type: string
+          example: "exp_4h7n2c8wpd"
+          description: "Public key of the experience."
+        experienceName:
+          type: string
+          example: "Technical Architect"
+          description: "Experience Name"
+        skillKey:
+          type: string
+          example: "skl_3m9x5b2rkt"
+          description: "Public key of the skill."
+        skillName:
+          type: string
+          example: "LWC"
+          description: "Skill Name"
+        skillCategory:
+          type: string
+          example: "Frontend Development"
+          description: "Skill Category"
+        skillProficiencyScore:
+          type: number
+          example: 4
+          description: "Proficiency Score"
+      additionalProperties: true
+
+    CertificationSkill:
+      type: object
+      description: "Junction Object: Certification <-> Skill."
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "cks_3k9z5x7pne"
+          description: "Stable public key of the record. It is set once and never changes."
+        certificationKey:
+          type: string
+          example: "crt_6q2v8d4nhz"
+          description: "Public key of the certification."
+        certificationName:
+          type: string
+          example: "Salesforce Certified Application Architect"
+          description: "Certification Name"
+        skillKey:
+          type: string
+          example: "skl_3m9x5b2rkt"
+          description: "Public key of the skill."
+        skillName:
+          type: string
+          example: "Security"
+          description: "Skill Name"
+        skillCategory:
+          type: string
+          example: "Architecture"
+          description: "Skill Category"
+        skillProficiencyScore:
+          type: number
+          example: 5
+          description: "Proficiency Score"
+      additionalProperties: true
+
+    PortfolioConfig:
+      type: object
+      description: "Global Config Schema (Custom Metadata). The owner's email and phone are never returned."
+      properties:
+        linkedInUrl:
+          type: string
+          format: uri
+          example: "https://linkedin.com/in/ryanbumstead"
+          nullable: true
+          description: "LinkedIn URL"
+        gitHubProfileUrl:
+          type: string
+          format: uri
+          example: "https://example.com/source"
+          nullable: true
+          description: "GitHub URL"
+        calendlyUrl:
+          type: string
+          format: uri
+          example: "https://example.com/schedule"
+          nullable: true
+          description: "Calendly URL"
+        trailblazerProfileUrl:
+          type: string
+          format: uri
+          example: "https://trailblazer.me/id/rbumstead"
+          nullable: true
+          description: "Trailhead URL"
+        personalWebsiteUrl:
+          type: string
+          format: uri
+          example: "https://ryanbumstead.com"
+          nullable: true
+          description: "Personal Website URL"
+        careerObjective:
+          type: string
+          example: "Looking for Principal Architect roles."
+          nullable: true
+          description: "Career Objective Text"
+        jiraProjectKey:
+          type: string
+          example: "SPAP"
+          description: "Jira Key for integration"
+        gitHubRepoPath:
+          type: string
+          example: "rdbumstead/salesforce-portfolio"
+          description: "GitHub Owner/Repo path for API calls"
+      additionalProperties: true
+
+    Account:
+      type: object
+      description: "Account/Employer Schema."
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "acc_2t8e6y4mgb"
+          description: "Stable public key of the record. It is set once and never changes."
+        name:
+          type: string
+          example: "Salesforce"
+          description: "Account Name"
+        industry:
+          type: string
+          example: "Technology"
+          nullable: true
+          description: "Industry"
+        abbreviation:
+          type: string
+          example: "SFDC"
+          nullable: true
+          description: "Abbreviation"
+      additionalProperties: true
+
+    Skill:
+      type: object
+      description: Skill Schema.
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "skl_3m9x5b2rkt"
+          description: "Stable public key of the record. It is set once and never changes."
+        name:
+          type: string
+          example: "Apex"
+          description: "Skill Name"
+        displayName:
+          type: string
+          example: "Salesforce Apex"
+          nullable: true
+          description: "Display Name"
+        category:
+          type: string
+          example: "Development"
+          description: "Skill Category"
+        proficiencyScore:
+          type: number
+          example: 5
+          description: "Self-Reported Proficiency"
+        iconName:
+          type: string
+          example: "utility:code"
+          nullable: true
+          description: "Icon Name"
+        svgPathData:
+          type: string
+          example: "M10..."
+          nullable: true
+          description: "SVG Path Data"
+        colorHex:
+          type: string
+          example: "#0070d2"
+          nullable: true
+          description: "Category Color Hex"
+        categoryOrder:
+          type: number
+          example: 10
+          description: "Category Order"
+      additionalProperties: true
+
+    Certification:
+      type: object
+      description: Certification Schema.
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "crt_6q2v8d4nhz"
+          description: "Stable public key of the record. It is set once and never changes."
+        name:
+          type: string
+          example: "Application Architect"
+          description: "Certification Name"
+        contactKey:
+          type: string
+          example: "con_7c5j3w9sfa"
+          description: "Public key of the contact."
+        contactName:
+          type: string
+          example: "Ryan Bumstead"
+          description: "Contact Name"
+        issuerKey:
+          type: string
+          example: "acc_2t8e6y4mgb"
+          description: "Public key of the issuer."
+        issuerName:
+          type: string
+          example: "Salesforce"
+          description: "Issuer Name"
+        earnedDate:
+          type: string
+          format: date
+          example: "2024-05-15"
+          description: "Date Earned"
+      additionalProperties: true
+
+    Education:
+      type: object
+      description: Education Schema.
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          readOnly: true
+          example: "edu_6b4c8j2rvq"
+          description: "Stable public key of the record. It is set once and never changes."
+        name:
+          type: string
+          example: "Bachelor of Science"
+          description: "Degree Name"
+        contactKey:
+          type: string
+          example: "con_7c5j3w9sfa"
+          description: "Public key of the contact."
+        contactName:
+          type: string
+          example: "Ryan Bumstead"
+          description: "Contact Name"
+        issuerKey:
+          type: string
+          example: "acc_2t8e6y4mgb"
+          description: "Public key of the issuer."
+        issuerName:
+          type: string
+          example: "University of Technology"
+          description: "University Name"
+        fieldOfStudy:
+          type: string
+          example: "Computer Science"
+          description: "Field of Study"
+        graduationDate:
+          type: string
+          format: date
+          example: "2018-05-01"
+          description: "Graduation Date"
+        gpa:
+          type: number
+          example: 3.8
+          nullable: true
+          description: "GPA"
+      additionalProperties: true
+
+paths:
+  /health:
+    get:
+      tags: [Monitoring]
+      summary: Health Check
+      description: |
+        Shallow check: runtime availability, the current transaction's governor-limit snapshot and org time
+        (`SAPIHealth.getHealth`, payload from `SAPIHealth.buildPayload`). `checkType` is always SHALLOW.
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is UP.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              description: "No-cache for health checks."
+              schema:
+                type: string
+                example: "no-store, no-cache"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /contacts:
+    get:
+      tags: [Profile]
+      summary: Get Contact records
+      description: Retrieves the primary contact details for the portfolio owner. Returns only the Contact flagged as the portfolio owner (`Is_Portfolio_Owner__c`).
+      operationId: getContacts
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/contactNameParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Contact records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/NoCacheResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contact"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /experience:
+    get:
+      tags: [Profile]
+      summary: Get Experience records
+      description: Retrieves professional experience history.
+      operationId: getExperience
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/contactNameParam"
+        - $ref: "#/components/parameters/employerNameParam"
+        - $ref: "#/components/parameters/currentlyEmployedParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Experience records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/NoCacheResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Experience"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /experience-highlights:
+    get:
+      tags: [Profile]
+      summary: Get Experience Highlights
+      description: Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unknown `persona` value returns 400. An `experienceId` that is not a known key, a Salesforce Id included, is treated as an unknown key.
+      operationId: getExperienceHighlights
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/experienceIdParam"
+        - $ref: "#/components/parameters/personaParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Experience Highlights.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/NoCacheResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExperienceHighlight"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /projects:
+    get:
+      tags: [Objects]
+      summary: Get Project records
+      description: |
+        Retrieves portfolio projects.
+        Example Usage: `/projects?isFeatured=true`
+      operationId: getProjects
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/statusParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+        - $ref: "#/components/parameters/contactNameParam"
+        - $ref: "#/components/parameters/projectNameParam"
+        - $ref: "#/components/parameters/isFeaturedParam"
+      responses:
+        "200":
+          description: Successful retrieval of Project records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /project-assets:
+    get:
+      tags: [Objects]
+      summary: Get Project Assets
+      description: Retrieves assets (images, links) associated with a project. A filter that is not a known key, a Salesforce Id included, is treated as an unknown key.
+      operationId: getProjectAssets
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/projectIdParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Project Assets. Returns empty array if none found.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectAsset"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /testimonials:
+    get:
+      tags: [Objects]
+      summary: Get Testimonials
+      description: Retrieves received testimonials. Returns only records where Approved__c = true.
+      operationId: getTestimonials
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Testimonials. Returns empty array if none found.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/NoCacheResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Testimonial"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /portfolio-config:
+    get:
+      tags: [Configuration]
+      summary: Get Portfolio Configuration
+      description: Returns the singleton Global Configuration object (Metadata-driven). Not pageable.
+      operationId: getPortfolioConfig
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+      responses:
+        "200":
+          description: Successful retrieval of Global Configuration. Returns an empty object when no configuration record exists.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              description: "Private configuration data; shared caches must not store it."
+              schema:
+                type: string
+                example: "max-age=300, private"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioConfig"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /accounts:
+    get:
+      tags: [Objects]
+      summary: Get Account records
+      description: Retrieves related account/employer records.
+      operationId: getAccounts
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/accountNameParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Account records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /skills:
+    get:
+      tags: [Objects]
+      summary: Get Skill records
+      description: Retrieves technical skills and proficiency scores.
+      operationId: getSkills
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/categoryParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Skill records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Skill"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /certifications:
+    get:
+      tags: [Objects]
+      summary: Get Certification records
+      description: Retrieves professional certifications.
+      operationId: getCertifications
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/contactNameParam"
+        - $ref: "#/components/parameters/issuerNameParam"
+        - $ref: "#/components/parameters/certificationNameParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Certification records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Certification"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /education:
+    get:
+      tags: [Objects]
+      summary: Get Education records
+      description: Retrieves educational background.
+      operationId: getEducation
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/contactNameParam"
+        - $ref: "#/components/parameters/issuerNameParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Education records.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Education"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /project-skills:
+    get:
+      tags: [Junctions]
+      summary: Get Project-Skill Links
+      description: Retrieves junction records linking Projects to Skills. A filter that is not a known key, a Salesforce Id included, is treated as an unknown key.
+      operationId: getProjectSkills
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/projectIdParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Project-Skill junctions.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectSkill"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /experience-skills:
+    get:
+      tags: [Junctions]
+      summary: Get Experience-Skill Links
+      description: Retrieves junction records linking Experiences to Skills. A filter that is not a known key, a Salesforce Id included, is treated as an unknown key.
+      operationId: getExperienceSkills
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/experienceIdParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Experience-Skill junctions.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExperienceSkill"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /certification-skills:
+    get:
+      tags: [Junctions]
+      summary: Get Certification-Skill Links
+      description: Retrieves junction records linking Certifications to Skills. A filter that is not a known key, a Salesforce Id included, is treated as an unknown key.
+      operationId: getCertificationSkills
+      parameters:
+        - $ref: "#/components/parameters/apiVersionParam"
+        - $ref: "#/components/parameters/requestIdParam"
+        - $ref: "#/components/parameters/certificationIdParam"
+        - $ref: "#/components/parameters/limitParam"
+        - $ref: "#/components/parameters/offsetParam"
+      responses:
+        "200":
+          description: Successful retrieval of Certification-Skill junctions.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCountResponse"
+            X-Has-More:
+              $ref: "#/components/headers/HasMoreResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControlResponse"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CertificationSkill"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }

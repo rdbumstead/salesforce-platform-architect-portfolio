@@ -1,7 +1,7 @@
 /**
  * Builds the one Postman collection the API Lab and the API reference offer for download, and
- * that CI pushes to the public Postman workspace, from the PAPI and SAPI OpenAPI JSON, so the
- * collection cannot drift from the specs. It holds three folders in this order: "Start here"
+ * that CI pushes to the public Postman workspace, from the version 2 PAPI and SAPI specs
+ * (the YAML files in packages/integration-api/specs), so the collection cannot drift from the specs. It holds three folders in this order: "Start here"
  * with the token request, "Process API (PAPI)" and "System API (SAPI)", each API grouped by its
  * spec tags. A collection pre-request script fetches a token on the first send once
  * evaluatorEmail is set, and a collection test clears the token on a 401 so the next send
@@ -26,6 +26,7 @@
  * request that sends it sends a fresh UUID, and every SAPI request sends it with X-API-Version.
  */
 const fs = require("fs");
+const yaml = require("js-yaml");
 const path = require("path");
 const crypto = require("crypto");
 
@@ -34,8 +35,11 @@ const RESOURCE_DIR = path.join(
   ROOT,
   "packages/portfolio-site/main/default/staticresources"
 );
-const SPEC_FILE = path.join(RESOURCE_DIR, "PAPI_OpenAPI.json");
-const SAPI_SPEC_FILE = path.join(RESOURCE_DIR, "SAPI_OpenAPI.json");
+const SPEC_DIR = path.join(ROOT, "packages/integration-api/specs");
+const SPEC_FILE = path.join(SPEC_DIR, "portfolio-papi-v2.yaml");
+const SAPI_SPEC_FILE = path.join(SPEC_DIR, "salesforce-sapi-v2.yaml");
+/** The API version every request sends, the version 2 contract. */
+const API_VERSION = "v2";
 const OUTPUT_FILE = path.join(RESOURCE_DIR, "PAPI_Postman_Collection.json");
 
 /** The converter version the output was proven deterministic on. */
@@ -64,7 +68,7 @@ const MISSING_EMAIL_MESSAGE =
 
 /** The collection's description, a short readme shown on the collection's overview. */
 const COLLECTION_README = [
-  "Every request here calls the live API behind ryanbumstead.com.",
+  "Every request here calls the live API behind ryanbumstead.com, as version 2 (the X-API-Version header is v2), which returns public keys only.",
   "",
   "## Set up once",
   "",
@@ -275,9 +279,21 @@ function sapiHeaders(headers) {
   );
   return [
     { key: "X-Request-Id", value: "{{$guid}}" },
-    { key: "X-API-Version", value: "v1" },
+    { key: "X-API-Version", value: API_VERSION },
     ...others
   ];
+}
+
+/**
+ * The PAPI headers: the converter writes the optional X-API-Version as a disabled row, and a
+ * missing header means version 1, which is deprecated. So the row is sent, set to v2, and
+ * the X-Request-Id takes a fresh UUID.
+ */
+function papiHeaders(headers) {
+  const others = guidHeaders(headers).filter(
+    (header) => header.key !== "X-API-Version"
+  );
+  return [...others, { key: "X-API-Version", value: API_VERSION }];
 }
 
 /**
@@ -288,7 +304,7 @@ function normalizeRequest(request, apiPath, isSapi) {
   const copy = { ...request, url: apiUrl(request.url, apiPath) };
   copy.header = isSapi
     ? sapiHeaders(request.header)
-    : guidHeaders(request.header);
+    : papiHeaders(request.header);
   delete copy.auth;
   return copy;
 }
@@ -591,6 +607,11 @@ function loadConverter() {
   return require(dir ? path.resolve(dir) : "openapi-to-postmanv2");
 }
 
+/** A YAML spec file as the JSON text the converter reads. */
+function readSpecJson(file) {
+  return JSON.stringify(yaml.load(fs.readFileSync(file, "utf8")));
+}
+
 async function build(converter, specText, sapiSpecText) {
   const spec = JSON.parse(specText);
   const sapiSpec = JSON.parse(sapiSpecText);
@@ -604,8 +625,8 @@ async function build(converter, specText, sapiSpecText) {
 
 async function main(argv) {
   const check = argv.includes("--check");
-  const specText = fs.readFileSync(SPEC_FILE, "utf8");
-  const sapiSpecText = fs.readFileSync(SAPI_SPEC_FILE, "utf8");
+  const specText = readSpecJson(SPEC_FILE);
+  const sapiSpecText = readSpecJson(SAPI_SPEC_FILE);
   const text = await build(loadConverter(), specText, sapiSpecText);
   const relative = path.relative(ROOT, OUTPUT_FILE).split(path.sep).join("/");
   if (check) {
@@ -638,6 +659,7 @@ if (require.main === module) {
 
 module.exports = {
   AI_REQUEST_NAME,
+  API_VERSION,
   COLLECTION_NAME,
   COLLECTION_README,
   COLLECTION_TEST_SCRIPT,

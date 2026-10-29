@@ -1,5 +1,7 @@
 {
   "source": [
+    "packages/integration-api/specs/salesforce-sapi-v2.yaml",
+    "packages/integration-api/specs/portfolio-papi-v2.yaml",
     "packages/integration-api/specs/salesforce-sapi.yaml",
     "packages/integration-api/specs/portfolio-papi.yaml"
   ],
@@ -14,6 +16,20 @@
       "summary": "Health Check",
       "params": [],
       "responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "status",
+            "checkType",
+            "timestamp",
+            "orgTimeZone",
+            "dependencies",
+            "limits"
+          ],
+          "required": []
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "object",
           "properties": [
@@ -55,6 +71,103 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "name",
+            "title",
+            "trailhead",
+            "careerObjective",
+            "linkedIn",
+            "portfolio"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -191,6 +304,108 @@
         "200": {
           "type": "array",
           "properties": [
+            "key",
+            "employerName",
+            "employerKey",
+            "name",
+            "startDate",
+            "endDate",
+            "isCurrentRole",
+            "isRemote",
+            "accomplishments",
+            "contactKey",
+            "contactName",
+            "sortOrder"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
+        "200": {
+          "type": "array",
+          "properties": [
             "id",
             "key",
             "employerName",
@@ -299,7 +514,7 @@
         {
           "name": "experienceId",
           "type": "string",
-          "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated."
+          "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key."
         },
         {
           "name": "persona",
@@ -323,6 +538,103 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "experienceKey",
+            "experienceName",
+            "name",
+            "description",
+            "sortOrder",
+            "personaTag"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -472,6 +784,112 @@
         "200": {
           "type": "array",
           "properties": [
+            "key",
+            "name",
+            "challenge",
+            "solution",
+            "businessValue",
+            "status",
+            "dateCompleted",
+            "heroImageUrl",
+            "liveUrl",
+            "repositoryUrl",
+            "pillar",
+            "pillarLabel",
+            "isFeatured",
+            "contactName",
+            "contactKey",
+            "sortOrder"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
+        "200": {
+          "type": "array",
+          "properties": [
             "id",
             "key",
             "name",
@@ -583,7 +1001,7 @@
         {
           "name": "projectId",
           "type": "string",
-          "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated."
+          "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key."
         },
         {
           "name": "limit",
@@ -602,6 +1020,104 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "name",
+            "projectKey",
+            "projectName",
+            "type",
+            "externalUrl",
+            "altText",
+            "sortOrder"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -722,6 +1238,104 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "name",
+            "authorName",
+            "authorTitle",
+            "avatarUrl",
+            "relationshipType",
+            "vibeMode",
+            "context"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -903,6 +1517,86 @@
             "httpStatus"
           ]
         }
+      },
+      "v1Responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "linkedInUrl",
+            "gitHubProfileUrl",
+            "calendlyUrl",
+            "trailblazerProfileUrl",
+            "personalWebsiteUrl",
+            "careerObjective",
+            "jiraProjectKey",
+            "gitHubRepoPath"
+          ],
+          "required": []
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
       }
     },
     {
@@ -932,6 +1626,100 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "name",
+            "industry",
+            "abbreviation"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -1052,6 +1840,105 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "name",
+            "displayName",
+            "category",
+            "proficiencyScore",
+            "iconName",
+            "svgPathData",
+            "colorHex",
+            "categoryOrder"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -1190,6 +2077,103 @@
         "200": {
           "type": "array",
           "properties": [
+            "key",
+            "name",
+            "contactKey",
+            "contactName",
+            "issuerKey",
+            "issuerName",
+            "earnedDate"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
+        "200": {
+          "type": "array",
+          "properties": [
             "id",
             "key",
             "name",
@@ -1320,6 +2304,105 @@
         "200": {
           "type": "array",
           "properties": [
+            "key",
+            "name",
+            "contactKey",
+            "contactName",
+            "issuerKey",
+            "issuerName",
+            "fieldOfStudy",
+            "graduationDate",
+            "gpa"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
+        "200": {
+          "type": "array",
+          "properties": [
             "id",
             "key",
             "name",
@@ -1425,7 +2508,7 @@
         {
           "name": "projectId",
           "type": "string",
-          "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated."
+          "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key."
         },
         {
           "name": "limit",
@@ -1444,6 +2527,103 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "projectKey",
+            "projectName",
+            "skillKey",
+            "skillName",
+            "skillCategory",
+            "skillProficiencyScore"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -1550,7 +2730,7 @@
         {
           "name": "experienceId",
           "type": "string",
-          "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated."
+          "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key."
         },
         {
           "name": "limit",
@@ -1569,6 +2749,103 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "experienceKey",
+            "experienceName",
+            "skillKey",
+            "skillName",
+            "skillCategory",
+            "skillProficiencyScore"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -1675,7 +2952,7 @@
         {
           "name": "certificationId",
           "type": "string",
-          "description": "Filter by Certification public key (for example `crt_6q2v8d4nhz`) or Salesforce ID. The Salesforce ID is deprecated."
+          "description": "Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key."
         },
         {
           "name": "limit",
@@ -1694,6 +2971,103 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "certificationKey",
+            "certificationName",
+            "skillKey",
+            "skillName",
+            "skillCategory",
+            "skillProficiencyScore"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -1809,6 +3183,19 @@
           ],
           "required": []
         }
+      },
+      "v1Responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "status",
+            "checkType",
+            "timestamp",
+            "dependencies",
+            "details"
+          ],
+          "required": []
+        }
       }
     },
     {
@@ -1817,6 +3204,105 @@
       "summary": "Get Complete Portfolio State",
       "params": [],
       "responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "config",
+            "contactInfo",
+            "summary",
+            "skills",
+            "experience",
+            "projects",
+            "certifications",
+            "education",
+            "testimonials",
+            "integrityNote"
+          ],
+          "required": [
+            "config",
+            "contactInfo",
+            "skills",
+            "experience",
+            "projects",
+            "certifications",
+            "education",
+            "testimonials"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "object",
           "properties": [
@@ -2013,6 +3499,99 @@
             "retryable"
           ]
         }
+      },
+      "v1Responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "contactInfo",
+            "summary",
+            "skills",
+            "experience",
+            "certifications",
+            "education",
+            "integrityNote"
+          ],
+          "required": [
+            "contactInfo",
+            "skills",
+            "experience",
+            "certifications",
+            "education"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
       }
     },
     {
@@ -2118,6 +3697,94 @@
             "retryable"
           ]
         }
+      },
+      "v1Responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "integrityNote",
+            "generatedText",
+            "persona",
+            "generatedAt"
+          ],
+          "required": [
+            "generatedText",
+            "persona",
+            "generatedAt"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
       }
     },
     {
@@ -2126,6 +3793,101 @@
       "summary": "Get Featured Projects (Enriched)",
       "params": [],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "title",
+            "challenge",
+            "solution",
+            "businessValue",
+            "status",
+            "completionDate",
+            "heroImageUrl",
+            "liveUrl",
+            "repositoryUrl",
+            "technologies",
+            "pillarLabel",
+            "assets"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -2239,6 +4001,97 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "author",
+            "title",
+            "relationship",
+            "quote",
+            "vibe",
+            "avatarUrl"
+          ],
+          "required": [
+            "key",
+            "author",
+            "quote"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      },
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
