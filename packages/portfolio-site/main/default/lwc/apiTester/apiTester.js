@@ -1064,8 +1064,10 @@ export default class ApiTester extends LightningElement {
       ? value
       : DEFAULT_VERSION;
     // The filters are named per version (projectKey, projectId), so a value set under one
-    // version does not carry to the other.
+    // version does not carry to the other. That covers the Advanced text as well, where a
+    // name typed under v1 would be refused by v2.
     this.paramValues = {};
+    this.queryText = "";
     // The shown answer belongs to the version that made it.
     this.result = undefined;
     this.invokeError = "";

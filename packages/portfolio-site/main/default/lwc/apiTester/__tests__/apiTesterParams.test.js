@@ -464,6 +464,28 @@ describe("c-api-tester version picker", () => {
     select.dispatchEvent(new CustomEvent("change"));
   }
 
+  it("clears the Advanced text when the version changes", async () => {
+    invoke.mockResolvedValue(result([]));
+    const element = create();
+    await flush();
+    await choosePath(element, "/sapi/v1/skills");
+    chooseVersion(element, "v1");
+    await flush();
+    setField(element, "input.query-input", "projectId=abc");
+    await flush();
+    expect($(element, "input.query-input").value).toBe("projectId=abc");
+
+    chooseVersion(element, "v2");
+    await flush();
+
+    expect($(element, "input.query-input").value).toBe("");
+    $(element, "button.execute-button").click();
+    await flush();
+    expect(invoke.mock.calls[invoke.mock.calls.length - 1][0].params).toEqual(
+      {}
+    );
+  });
+
   it("offers v2 first and v1 labelled deprecated, with v2 selected", async () => {
     const element = create();
     await flush();

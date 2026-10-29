@@ -603,6 +603,130 @@ private class ApiVersionTest {
     Assert.isTrue(v1Row.containsKey('accomplishments'), 'v1 keeps it');
   }
 
+  private class CountingLimiter implements ApiRateLimiter {
+    Integer checks = 0;
+    public ApiRequestContext.RateDecision check(
+      String tierKey,
+      Integer limitPerMinute
+    ) {
+      checks++;
+      return new ApiRequestContext.RateDecision(true, limitPerMinute, 5, 0);
+    }
+    public ApiRequestContext.RateDecision checkKey(
+      String callerKey,
+      Integer limitPerMinute
+    ) {
+      return check(callerKey, limitPerMinute);
+    }
+  }
+
+  @IsTest
+  static void shouldSpendNoQuotaOnAnUnsupportedVersionOrA410() {
+    CountingLimiter limiter = new CountingLimiter();
+    ApiRequestContext.limiterOverride = limiter;
+
+    send(SAPI + 'skills/', 'v3', null);
+    Assert.isTrue(ApiRequestContext.begin().isRejected(), 'v3 refused');
+    Assert.areEqual(0, limiter.checks, 'A 400 version spends none');
+
+    setting('Api_V1_Sunset_Date', '2026-11-01');
+    ApiRequestContext.nowOverride = Datetime.newInstanceGmt(2027, 1, 1);
+    send(SAPI + 'skills/', 'v1', null);
+    Assert.isTrue(ApiRequestContext.begin().isRejected(), '410');
+    Assert.areEqual(410, RestContext.response.statusCode, 'Gone');
+    Assert.areEqual(0, limiter.checks, 'A 410 spends none');
+
+    send(SAPI + 'skills/', 'v2', null);
+    Assert.isFalse(ApiRequestContext.begin().isRejected(), 'v2 served');
+    Assert.areEqual(1, limiter.checks, 'A served request spends one');
+  }
+
+  @IsTest
+  static void shouldKeepTokenAndHealthPathsOpenAfterTheSunset() {
+    setting('Api_V1_Sunset_Date', '2026-11-01');
+    setting('Api_V1_Deprecation_Date', '2026-10-01');
+    ApiRequestContext.nowOverride = Datetime.newInstanceGmt(2027, 1, 1);
+    for (
+      String path : new List<String>{
+        PAPI + 'auth/token',
+        PAPI + 'auth/token/',
+        PAPI + 'health',
+        SAPI + 'health'
+      }
+    ) {
+      send(path, null, null);
+      ApiRequestContext ctx = ApiRequestContext.begin();
+      Assert.isFalse(ctx.isRejected(), path + ' is not 410');
+      Assert.isNotNull(header('Deprecation'), path + ' keeps Deprecation');
+      Assert.isNotNull(header('Sunset'), path + ' keeps Sunset');
+    }
+    send(PAPI + 'healthcheck', null, null);
+    Assert.areEqual(
+      410,
+      (ApiRequestContext.begin().isRejected() ? 410 : 200),
+      'A path that only starts like health is not exempt'
+    );
+  }
+
+  @IsTest
+  static void shouldShapeRecordPathsAndLeaveOtherBodiesAlone() {
+    Map<String, Object> body = new Map<String, Object>{
+      'id' => 'x',
+      'name' => 'n'
+    };
+
+    send(PAPI + 'auth/token', 'v2', null);
+    ApiRequestContext.begin().ok(body);
+    Assert.isTrue(
+      ((Map<String, Object>) JSON.deserializeUntyped(
+          RestContext.response.responseBody.toString()
+        ))
+        .containsKey('id'),
+      'A non record body keeps id'
+    );
+
+    send(SAPI + 'skills/', 'v2', null);
+    ApiRequestContext.begin().ok(body);
+    Assert.isFalse(
+      ((Map<String, Object>) JSON.deserializeUntyped(
+          RestContext.response.responseBody.toString()
+        ))
+        .containsKey('id'),
+      'A record body loses id'
+    );
+  }
+
+  @IsTest
+  static void shouldAppendToVaryAndLinkInsteadOfReplacing() {
+    send(SAPI + 'skills/', 'v1', null);
+    ApiRequestContext ctx = ApiRequestContext.begin();
+
+    ctx.appendHeader('Vary', 'Accept');
+    ctx.appendHeader('Vary', 'Accept');
+    ctx.appendHeader('Link', '<https://example.org>; rel="help"');
+    ctx.appendHeader('X-New', 'one');
+
+    Assert.areEqual('X-API-Version, Accept', header('Vary'), 'Joined once');
+    Assert.isTrue(header('Link').contains('successor-version'), 'Kept');
+    Assert.isTrue(header('Link').endsWith('rel="help"'), 'Appended');
+    Assert.areEqual('one', header('X-New'), 'New header set');
+  }
+
+  @IsTest
+  static void shouldMatchTheVersionIgnoringCaseAndSpaces() {
+    send(SAPI + 'skills/', ' V2 ', null);
+    ApiRequestContext v2 = ApiRequestContext.begin();
+    Assert.isTrue(v2.isV2(), 'V2 is v2');
+    Assert.areEqual('v2', header('X-API-Version'), 'Echoed lower case');
+
+    send(SAPI + 'skills/', 'V1', null);
+    Assert.areEqual('v1', ApiRequestContext.begin().version(), 'V1 is v1');
+
+    send(SAPI + 'skills/', 'V3', null);
+    Assert.isTrue(ApiRequestContext.begin().isRejected(), 'V3 still refused');
+    Assert.areEqual(400, RestContext.response.statusCode, 'Status');
+  }
+
   @IsTest
   static void shouldShapeTransformerOutputAsKeysOnly() {
     Map<String, Object> shaped = (Map<String, Object>) SAPITransformer.toV2(
