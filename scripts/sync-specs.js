@@ -10,6 +10,8 @@
  *   SAPI_Spec_V2.yaml, PAPI_Spec_V2.yaml   byte copies of the version 2 YAML specs, the ones
  *                          the API reference opens by default
  *   SAPI_OpenAPI.json, PAPI_OpenAPI.json   the version 1 specs as JSON, served at /openapi.json
+ *   SAPI_OpenAPI_V2.json, PAPI_OpenAPI_V2.json   the version 2 specs as JSON, served at
+ *                          /openapi.json by default (?version=v1 serves the version 1 pair)
  *   API_Lab_Catalog.json   the API Lab's GET paths, their query parameters and the top level
  *                          keys of each JSON response, read by ApiLabController and apiTester.
  *                          Paths, parameters and "responses" come from the version 2 specs.
@@ -41,13 +43,15 @@ const SPECS = [
     file: "salesforce-sapi-v2.yaml",
     api: "sapi",
     version: "v2",
-    yamlResource: "SAPI_Spec_V2.yaml"
+    yamlResource: "SAPI_Spec_V2.yaml",
+    jsonResource: "SAPI_OpenAPI_V2.json"
   },
   {
     file: "portfolio-papi-v2.yaml",
     api: "papi",
     version: "v2",
-    yamlResource: "PAPI_Spec_V2.yaml"
+    yamlResource: "PAPI_Spec_V2.yaml",
+    jsonResource: "PAPI_OpenAPI_V2.json"
   }
 ];
 
@@ -441,6 +445,7 @@ function build() {
     const { raw, doc } = readSpec(spec);
     specDocs.push({ spec, doc });
     outputs.yaml[resource(spec.yamlResource)] = raw;
+    outputs.json[resource(spec.jsonResource)] = doc;
     catalogEntries(doc, spec).forEach((entry) => {
       paths.push({ ...entry, v1Responses: v1Shapes[entry.path] || {} });
     });

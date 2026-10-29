@@ -1,0 +1,1949 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Portfolio Process API (PAPI)",
+    "version": "2.0.0",
+    "description": "**Version 2**, selected with `X-API-Version: v2`, returns public keys only. Version 1 is documented in `portfolio-papi.yaml` and is deprecated (section 2).\n\nA Process API (PAPI) that combines, transforms and filters the portfolio's Salesforce data,\nthe same records the System API (SAPI) serves, into responses shaped for a client. PAPI\nreads them in process, not through SAPI over HTTP (section 3).\n\n### 1. Authentication Strategy\n- **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.\n- **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.\n- **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It is the only unauthenticated path, and the only path served on the Experience Cloud site domain (see its `servers` entry). Every other path is called on My Domain with the Bearer token.\n- **PAPI → SAPI**: in-process Apex in the same transaction, not HTTP. See section 3 and ADR-025 for why fan out callouts were rejected.\n\n### 2. Versioning Strategy\n- **Pattern**: Header-based versioning takes precedence.\n- **Header**: `X-API-Version: v2`. A missing header resolves to `v1`, which is deprecated; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). The URL keeps its `v1` segment.\n- **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a short message and the link to the version 2 reference, `https://ryanbumstead.com/api-reference?version=v2`.\n- **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID, and a present but non-UUID value returns `400 BAD_REQUEST`. On My Domain the platform injects its own 32-character hex id when the caller sends none, and PAPI treats that value as missing. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes whatever `X-Request-Id` the request carries, its own included, and Apex sets the header only when it generated the value and the request carried none, so the header appears once (ADR-026). When the platform injected its id, the header carries that id and an error body's `correlationId` carries the generated UUID. Send your own UUID to get one predictable id.\n- **URL**: Version segments removed from base path to align with SAPI ADR.\n\n### 3. Rate Limiting & Aggregation Math\n- **SAPI Limit**: 120 requests/minute.\n- **PAPI work per request**: PAPI never calls SAPI over HTTP. It reads the same records in process, in the same Apex transaction, through `QueryDefinitions` (ADR-033). One `/profile/full` request runs nine reads (owner, roles, highlights, skills, role skills, projects, certifications, education, testimonials) and builds one response.\n- **PAPI Limit**: **15 requests/minute** (Standard Tier) against SAPI's 120. One PAPI request runs about eight data reads in one transaction, the same records about eight SAPI requests would return. Eight data reads are not eight HTTP requests, but the lower limit keeps one caller's PAPI load in step with what the same data costs through SAPI (ADR-025).\n- **Why not HTTP** (ADR-025): making the reads HTTP requests to SAPI was rejected. The site's API Lab reaches PAPI through the `Portfolio_API` Named Credential, a callout into this same org, and a request that arrived as a same org callout may not call out again (ADR-015), so the fan out would fail on the site's own path. Each SAPI request would also be an inbound REST request counted against the org's daily API request allocation (15,000 on this Developer Edition), the callouts would run one after another inside the 120 second callout time a transaction allows, and they would all run as the one shared evaluator session, spending the SAPI limit every evaluator shares. So PAPI and SAPI stay distinct logical layers: PAPI reads the same records in process, through the query engine (`QueryDefinitions`) and request framework (`ApiRequestContext`) SAPI also uses, with its own query definitions and its own transformer (`PAPITransformer`). The deliberate exception is `/health`, which calls SAPI's `/sapi/v1/health` through `Portfolio_API` to prove the credential works.\n- **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. Every token from `POST /auth/token` is the same session, so all evaluators share one key per tier and one limit (SAPI 120, PAPI 15, `/ai/*` 10 per minute, ADR-028). `POST /auth/token` is also limited to 15 requests per minute per email and source IP.\n\n### 4. Caching Strategy (Aggregation Logic)\n*Note: each section of a PAPI response takes the cache policy its SAPI endpoint sends for the same data (`PAPITransformer`), and the response takes the strictest of its sections.*\n- **Rule**: Strictest policy wins.\n  1. If *any* section's resource is `no-store` (e.g., Contact) → PAPI response is `no-store`.\n  2. If *any* section's resource is `private` → PAPI response is `private`.\n  3. Otherwise → PAPI response is `public` with the minimum `max-age`.\n\n### 5. Identifiers (ADR-038)\nEach record in a response carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the only identifier. Version 2 returns no `id` field and no Salesforce Id anywhere. PAPI takes no Id parameters. SAPI takes the key wherever it takes a record, and only the key in version 2.\n\n### 6. Field Mapping (Transformation Layer)\n| Object | SAPI Field | PAPI Field | Logic |\n| :--- | :--- | :--- | :--- |\n| Contact | `name` | `fullName` | Rename |\n| Experience | `name` | `role` | Semantic Rename |\n| Certification | `earnedDate` | `dateEarned` | JS Convention |\n| Project | `dateCompleted` | `completionDate` | JS Convention |\n| Project | `heroImageUrl` | `heroImageUrl` | Passthrough |\n",
+    "x-api-layer": "process",
+    "contact": {
+      "name": "Ryan Bumstead",
+      "email": "ryan@ryanbumstead.com",
+      "url": "https://ryanbumstead.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://{domain}/services/apexrest/papi/v1",
+      "description": "Salesforce My Domain (authenticated Apex REST). Bearer-token callers use the `instance_url`\nreturned with their token. `POST /auth/token` overrides this with the site domain.\n",
+      "variables": {
+        "domain": {
+          "default": "ryan-bumstead-dev-ed.develop.my.salesforce.com",
+          "description": "The org's My Domain host.",
+          "enum": [
+            "ryan-bumstead-dev-ed.develop.my.salesforce.com"
+          ]
+        }
+      }
+    }
+  ],
+  "x-rate-limit": {
+    "description": "Enforced in Apex by RateWindowLimiter (ADR-025), a custom-object counter: one API_Rate_Window__c row per caller key per fixed UTC calendar minute. The caller key is {tier}:{SHA-256 hex of the session id}, or {tier}:{user id} when the session id is null. Every response carries X-RateLimit-Limit and X-RateLimit-Remaining. Request limit + 1 within the minute gets 429 RATE_LIMIT_EXCEEDED with Retry-After set to the seconds left in the minute. Rejected requests count. Every vended evaluator token is the same session, so all evaluators share one key and one limit per tier. Evaluator token vending adds a per-email and source IP limit and a daily cap (ADR-028).",
+    "tiers": {
+      "standard": {
+        "requestsPerMinute": 15,
+        "description": "Conservative limit to protect SAPI (1 PAPI req = 8 SAPI reqs)"
+      },
+      "ai": {
+        "requestsPerMinute": 10,
+        "description": "Expensive Generative AI calls (/ai/*)"
+      },
+      "token": {
+        "requestsPerMinute": 15,
+        "description": "POST /auth/token, per email and source IP (the Token_Requests_Per_Minute setting, default 15)"
+      }
+    }
+  },
+  "security": [
+    {
+      "OAuth2ClientCredentials": [
+        "api"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Orchestration",
+      "description": "Endpoints that combine several reads into one response"
+    },
+    {
+      "name": "Transformation",
+      "description": "Endpoints that transform SAPI data into new formats"
+    },
+    {
+      "name": "Logic",
+      "description": "Endpoints that apply business rules and filtering"
+    },
+    {
+      "name": "Monitoring",
+      "description": "Health checks and observability"
+    },
+    {
+      "name": "Access",
+      "description": "Evaluator token vending (ADR-028)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "OAuth2ClientCredentials": {
+        "type": "oauth2",
+        "description": "OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).\nTokens run as the read-only integration user. External evaluators obtain a short-lived token\nfrom `POST /auth/token` (ADR-028) instead of holding the consumer secret. Every\nevaluator receives the same session, so all evaluators share one rate limit per tier.\n",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/oauth2/token",
+            "scopes": {
+              "api": "Access Salesforce REST APIs as the integration user"
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "RequestIdParam": {
+        "name": "X-Request-Id",
+        "in": "header",
+        "required": false,
+        "description": "Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "ApiVersionParam": {
+        "name": "X-API-Version",
+        "in": "header",
+        "required": false,
+        "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "v1",
+            "v2"
+          ],
+          "default": "v2",
+          "example": "v2"
+        }
+      }
+    },
+    "headers": {
+      "RequestIdHeader": {
+        "description": "Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request parameters",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "httpStatus": 400,
+              "errorCode": "BAD_REQUEST",
+              "message": "Invalid persona value.",
+              "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+              "retryable": false
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "httpStatus": 401,
+              "errorCode": "UNAUTHORIZED",
+              "message": "Missing or invalid Bearer token",
+              "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+              "retryable": false
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limit exceeded (ADR-025, ADR-028)",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          },
+          "Retry-After": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "httpStatus": 429,
+              "errorCode": "RATE_LIMIT_EXCEEDED",
+              "message": "Rate limit exceeded. Retry after 42 seconds.",
+              "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+              "retryable": true
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal PAPI error or SAPI communication failure",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "httpStatus": 500,
+              "errorCode": "INTERNAL_SERVER_ERROR",
+              "message": "Failed to aggregate profile data. Partial SAPI failure.",
+              "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+              "retryable": true,
+              "details": {
+                "failedSapiCalls": [
+                  {
+                    "endpoint": "/experience-skills",
+                    "error": "Connection timeout"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "ServiceUnavailable": {
+        "description": "PAPI or downstream SAPI is unavailable",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          },
+          "Retry-After": {
+            "description": "Seconds until service may be available",
+            "schema": {
+              "type": "integer",
+              "example": 30
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "httpStatus": 503,
+              "errorCode": "SERVICE_UNAVAILABLE",
+              "message": "Downstream SAPI is currently unavailable",
+              "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+              "retryable": true
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "httpStatus",
+          "errorCode",
+          "message",
+          "correlationId",
+          "retryable"
+        ],
+        "properties": {
+          "httpStatus": {
+            "type": "integer",
+            "example": 500
+          },
+          "errorCode": {
+            "type": "string",
+            "example": "INTERNAL_SERVER_ERROR"
+          },
+          "message": {
+            "type": "string",
+            "example": "An unexpected error occurred"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "Indicates if the client should retry the request",
+            "example": true
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error context (optional)",
+            "additionalProperties": true
+          }
+        }
+      },
+      "HealthStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "UP",
+              "DOWN",
+              "DEGRADED"
+            ],
+            "example": "UP"
+          },
+          "checkType": {
+            "type": "string",
+            "enum": [
+              "SHALLOW",
+              "DEEP"
+            ],
+            "example": "DEEP"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dependencies": {
+            "type": "object",
+            "properties": {
+              "sapi": {
+                "type": "string",
+                "enum": [
+                  "UP",
+                  "DOWN"
+                ],
+                "example": "UP"
+              },
+              "credential": {
+                "type": "string",
+                "enum": [
+                  "UP",
+                  "DOWN"
+                ],
+                "example": "UP",
+                "description": "UP only when a GET through the Portfolio_API Named Credential to /sapi/v1/health returns HTTP 200."
+              },
+              "jira": {
+                "type": "string",
+                "enum": [
+                  "CONFIGURED",
+                  "MISSING",
+                  "UNKNOWN"
+                ],
+                "description": "Presence of the Jira_API Named Credential; UNKNOWN when NamedCredential cannot be read."
+              },
+              "github": {
+                "type": "string",
+                "enum": [
+                  "CONFIGURED",
+                  "MISSING",
+                  "UNKNOWN"
+                ],
+                "description": "Presence of the GitHub_API Named Credential."
+              },
+              "gemini": {
+                "type": "string",
+                "enum": [
+                  "CONFIGURED",
+                  "MISSING",
+                  "UNKNOWN"
+                ],
+                "description": "Presence of the Gemini_API Named Credential."
+              }
+            }
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Diagnostic per dependency, e.g. credential: \"HTTP 401\" or an exception type name."
+          }
+        }
+      },
+      "FullPortfolioPayload": {
+        "type": "object",
+        "description": "The master payload for initial app load",
+        "required": [
+          "config",
+          "contactInfo",
+          "skills",
+          "experience",
+          "projects",
+          "certifications",
+          "education",
+          "testimonials"
+        ],
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/PortfolioConfig"
+          },
+          "contactInfo": {
+            "$ref": "#/components/schemas/ContactDetail"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Auto-generated professional summary",
+            "example": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillSummary"
+            }
+          },
+          "experience": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnrichedExperience"
+            }
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnrichedProject"
+            }
+          },
+          "certifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnrichedCertification"
+            }
+          },
+          "education": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleEducation"
+            }
+          },
+          "testimonials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnrichedTestimonial"
+            }
+          },
+          "integrityNote": {
+            "type": "string",
+            "description": "\"complete\", or \"partial: <sections> unavailable\" naming each upstream section that could not be read (e.g. \"partial: certifications unavailable\").",
+            "example": "complete"
+          }
+        }
+      },
+      "ProfileSummary": {
+        "type": "object",
+        "required": [
+          "contactInfo",
+          "skills",
+          "experience",
+          "certifications",
+          "education"
+        ],
+        "properties": {
+          "contactInfo": {
+            "$ref": "#/components/schemas/ContactDetail"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Calculated summary based on experience",
+            "example": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillSummary"
+            }
+          },
+          "experience": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnrichedExperience"
+            }
+          },
+          "certifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnrichedCertification"
+            }
+          },
+          "education": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleEducation"
+            }
+          },
+          "integrityNote": {
+            "type": "string",
+            "description": "\"complete\", or \"partial: <sections> unavailable\" naming each upstream section that could not be read (e.g. \"partial: certifications unavailable\").",
+            "example": "complete"
+          }
+        }
+      },
+      "EnrichedExperience": {
+        "type": "object",
+        "description": "Work Experience enriched with related Skills and Highlights",
+        "required": [
+          "key",
+          "employer",
+          "dateRange"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "readOnly": true,
+            "example": "exp_4h7n2c8wpd",
+            "description": "Stable public key of the record. It is set once and never changes."
+          },
+          "employer": {
+            "type": "string",
+            "example": "Salesforce"
+          },
+          "role": {
+            "type": "string",
+            "example": "Senior Technical Architect",
+            "nullable": true
+          },
+          "dateRange": {
+            "type": "string",
+            "description": "Formatted as \"MMM YYYY - MMM YYYY\" or \"MMM YYYY - Present\"",
+            "example": "Jan 2023 - Present"
+          },
+          "isCurrent": {
+            "type": "boolean",
+            "example": true,
+            "nullable": true
+          },
+          "isRemote": {
+            "type": "boolean",
+            "example": true,
+            "nullable": true
+          },
+          "skillsUsed": {
+            "type": "array",
+            "description": "Skills derived from ExperienceSkill junction",
+            "items": {
+              "type": "string",
+              "example": "LWC"
+            }
+          },
+          "highlights": {
+            "type": "array",
+            "description": "Selected bullet points (filtered by persona if applicable)",
+            "items": {
+              "type": "string",
+              "example": "Implemented CI/CD pipelines using GitHub Actions"
+            }
+          }
+        }
+      },
+      "EnrichedProject": {
+        "type": "object",
+        "description": "Project enriched with Skills and Assets",
+        "required": [
+          "key"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "readOnly": true,
+            "example": "prj_8f3k2m9qtz",
+            "description": "Stable public key of the record. It is set once and never changes."
+          },
+          "title": {
+            "type": "string",
+            "example": "Portfolio Site",
+            "nullable": true
+          },
+          "challenge": {
+            "type": "string",
+            "example": "Display skills dynamically to recruiters"
+          },
+          "solution": {
+            "type": "string",
+            "example": "Built on LWR with SAPI/PAPI architecture"
+          },
+          "businessValue": {
+            "type": "string",
+            "example": "Increased interview rate by 40%"
+          },
+          "status": {
+            "type": "string",
+            "description": "Project Status (e.g., Live, Archived)",
+            "nullable": true,
+            "example": "Live – In Production"
+          },
+          "completionDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Mapped from SAPI dateCompleted",
+            "example": "2025-12-01",
+            "nullable": true
+          },
+          "heroImageUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the main display image. Matches SAPI field name.",
+            "example": "https://example.com/images/hero.png"
+          },
+          "liveUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com/portfolio"
+          },
+          "repositoryUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com/source"
+          },
+          "technologies": {
+            "type": "array",
+            "description": "Skill names from ProjectSkill junction",
+            "items": {
+              "type": "string",
+              "example": "Apex"
+            }
+          },
+          "pillarLabel": {
+            "type": "string",
+            "description": "The strategic pillar and pillar description (e.g. Pillar A: Business Architecture)",
+            "example": "Pillar A: Business Architecture",
+            "nullable": true
+          },
+          "assets": {
+            "type": "array",
+            "description": "Images, videos, or links related to the project",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "url"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "Image",
+                    "Video",
+                    "Document",
+                    "Link"
+                  ],
+                  "example": "Image"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "example": "https://example.com/images/diagram.png"
+                },
+                "caption": {
+                  "type": "string",
+                  "example": "System Architecture Diagram"
+                }
+              }
+            }
+          }
+        }
+      },
+      "EnrichedTestimonial": {
+        "type": "object",
+        "required": [
+          "key",
+          "author",
+          "quote"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "readOnly": true,
+            "example": "tst_2y7a5d9wmh",
+            "description": "Stable public key of the record. It is set once and never changes."
+          },
+          "author": {
+            "type": "string",
+            "example": "Jane Doe"
+          },
+          "title": {
+            "type": "string",
+            "example": "VP of Engineering"
+          },
+          "relationship": {
+            "type": "string",
+            "enum": [
+              "Manager",
+              "Peer",
+              "Client",
+              "Recruiter",
+              "Fan"
+            ],
+            "example": "Manager"
+          },
+          "quote": {
+            "type": "string",
+            "example": "Ryan is a beast at architecture"
+          },
+          "vibe": {
+            "type": "string",
+            "enum": [
+              "Professional",
+              "Casual"
+            ],
+            "example": "Professional"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com/images/avatar.jpg"
+          }
+        }
+      },
+      "PortfolioConfig": {
+        "type": "object",
+        "description": "Public configuration. The owner's email and phone are never returned.",
+        "properties": {
+          "linkedInUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://linkedin.com/in/ryanbumstead"
+          },
+          "calendlyUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com/schedule"
+          },
+          "githubUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com/source"
+          },
+          "trailheadUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com/trailhead"
+          },
+          "personalWebsiteUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://ryanbumstead.com"
+          },
+          "careerObjective": {
+            "type": "string",
+            "description": "Short professional bio/objective",
+            "example": "Driving digital transformation through architecture."
+          },
+          "jiraProjectKey": {
+            "type": "string",
+            "description": "Key for Jira integration",
+            "example": "SPAP"
+          },
+          "gitHubRepoPath": {
+            "type": "string",
+            "description": "GitHub Owner/Repo path",
+            "example": "rdbumstead/salesforce-portfolio"
+          }
+        }
+      },
+      "ContactDetail": {
+        "type": "object",
+        "description": "Simplified contact information for the header. No email or phone is returned.",
+        "required": [
+          "key",
+          "fullName"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "readOnly": true,
+            "example": "con_7c5j3w9sfa",
+            "description": "Stable public key of the record. It is set once and never changes."
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Ryan Bumstead"
+          },
+          "title": {
+            "type": "string",
+            "example": "Platform Architect",
+            "nullable": true
+          },
+          "linkedIn": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://linkedin.com/in/ryanbumstead"
+          },
+          "github": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com/source"
+          },
+          "trailhead": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://example.com/trailhead"
+          },
+          "portfolioUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://ryanbumstead.com"
+          },
+          "bio": {
+            "type": "string",
+            "description": "The 'Career Objective' from Salesforce",
+            "example": "Specializing in API-led connectivity..."
+          }
+        }
+      },
+      "SkillSummary": {
+        "type": "object",
+        "description": "Lightweight skill object for list views",
+        "required": [
+          "key",
+          "name",
+          "category",
+          "proficiency"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "readOnly": true,
+            "example": "skl_3m9x5b2rkt",
+            "description": "Stable public key of the record. It is set once and never changes."
+          },
+          "name": {
+            "type": "string",
+            "example": "Apex"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Prefer this over 'name' for UI rendering if present",
+            "example": "Salesforce Apex"
+          },
+          "category": {
+            "type": "string",
+            "example": "Backend"
+          },
+          "proficiency": {
+            "type": "number",
+            "description": "1-5 score",
+            "example": 5
+          },
+          "iconName": {
+            "type": "string",
+            "description": "SLDS Icon reference",
+            "example": "utility:code"
+          },
+          "colorHex": {
+            "type": "string",
+            "description": "Brand color for the category",
+            "example": "#0070d2"
+          },
+          "categoryOrder": {
+            "type": "number",
+            "description": "Order to display the category in the UI",
+            "example": 10
+          }
+        }
+      },
+      "EnrichedCertification": {
+        "type": "object",
+        "description": "Certification with associated skills",
+        "required": [
+          "key",
+          "name",
+          "issuer",
+          "dateEarned"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "readOnly": true,
+            "example": "crt_6q2v8d4nhz",
+            "description": "Stable public key of the record. It is set once and never changes."
+          },
+          "name": {
+            "type": "string",
+            "example": "Certified Application Architect"
+          },
+          "issuer": {
+            "type": "string",
+            "example": "Salesforce"
+          },
+          "dateEarned": {
+            "type": "string",
+            "format": "date",
+            "example": "2024-05-15"
+          },
+          "skillsUsed": {
+            "type": "array",
+            "description": "Derived from CertificationSkill junction",
+            "items": {
+              "type": "string",
+              "example": "Security"
+            }
+          }
+        }
+      },
+      "SimpleEducation": {
+        "type": "object",
+        "description": "Educational background",
+        "required": [
+          "key",
+          "school",
+          "degree",
+          "year"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "readOnly": true,
+            "example": "edu_6b4c8j2rvq",
+            "description": "Stable public key of the record. It is set once and never changes."
+          },
+          "school": {
+            "type": "string",
+            "example": "Creighton University"
+          },
+          "degree": {
+            "type": "string",
+            "example": "B.S. Computer Science"
+          },
+          "fieldOfStudy": {
+            "type": "string",
+            "example": "Computer Science"
+          },
+          "year": {
+            "type": "string",
+            "description": "Graduation Year derived from Graduation Date",
+            "example": "2018"
+          },
+          "gpa": {
+            "type": "number",
+            "nullable": true,
+            "example": 3.8
+          }
+        }
+      },
+      "TokenRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "purpose"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "example": "reviewer@example.com"
+          },
+          "purpose": {
+            "type": "string",
+            "maxLength": 280,
+            "description": "Free-text reason, stored on the audit record.",
+            "example": "Evaluating API contract parity"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "required": [
+          "access_token",
+          "token_type",
+          "instance_url"
+        ],
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "OAuth 2.0 Bearer token bound to the read-only integration user. It is the integration user's current session, shared by every evaluator, and it ends after 30 minutes without use (the integration profile's idle timeout). The response carries no expires_in, because the token endpoint reports no expiry and a fixed number would be a guess."
+          },
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ]
+          },
+          "instance_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The My Domain root, as returned by the token endpoint. Append `/services/apexrest/sapi/v1/...` or `/services/apexrest/papi/v1/...` and send the token as a Bearer credential.",
+            "example": "https://ryan-bumstead-dev-ed.develop.my.salesforce.com"
+          },
+          "docs": {
+            "type": "string",
+            "format": "uri",
+            "description": "Link to the rendered API documentation.",
+            "example": "https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "PAPI Health Check",
+        "description": "Deep health check (`PAPIHealth.getHealth`). Reads SAPI health in-process (`SAPIHealth.buildPayload`),\nexercises the `Portfolio_API` Named Credential with one GET to `/sapi/v1/health` (`credential` is UP\nonly on HTTP 200), and reports presence of the `Jira_API`, `GitHub_API` and `Gemini_API` Named\nCredentials without calling them. `status` is DOWN when SAPI is down, DEGRADED when the credential is\ndown or any Named Credential is not CONFIGURED, otherwise UP. Always returns 200.\n",
+        "operationId": "getHealth",
+        "tags": [
+          "Monitoring"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store, no-cache"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/token": {
+      "servers": [
+        {
+          "url": "https://{domain}/portfoliovforcesite/services/apexrest/papi/v1",
+          "description": "Experience Cloud site domain. Apex REST is served to the guest user under `/portfoliovforcesite/services/apexrest/`.",
+          "variables": {
+            "domain": {
+              "default": "ryan-bumstead-dev-ed.develop.my.site.com",
+              "description": "The Salesforce Experience Cloud domain.",
+              "enum": [
+                "ryan-bumstead-dev-ed.develop.my.site.com"
+              ]
+            }
+          }
+        }
+      ],
+      "post": {
+        "summary": "Request an evaluator access token",
+        "description": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.\n",
+        "operationId": "requestEvaluatorToken",
+        "security": [],
+        "tags": [
+          "Access"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIdParam"
+          },
+          {
+            "$ref": "#/components/parameters/ApiVersionParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequest"
+              },
+              "example": {
+                "email": "reviewer@example.com",
+                "purpose": "Evaluating API contract parity"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token issued",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store, no-cache"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/profile/full": {
+      "get": {
+        "tags": [
+          "Orchestration"
+        ],
+        "summary": "Get Complete Portfolio State",
+        "description": "The \"Hydration\" endpoint. Returns the entire portfolio state in a single call.\n\n**How it is built**: nine reads in process, in one Apex transaction, through `QueryDefinitions`, not SAPI calls over HTTP (see the description's section 3). The reads are the owner, roles, highlights, skills (at most 100), the skills of each role, projects, certifications, education and approved testimonials. Each read returns its records whole, so there is no paging.\n\n**Partial failure**: each section is read on its own. A section that fails comes back empty, the response is still `200 OK`, `X-Data-Integrity` is `partial` and `integrityNote` names the section.\n\n**Caching**: the strictest cache policy of the sections read.\n",
+        "operationId": "getFullPortfolio",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIdParam"
+          },
+          {
+            "$ref": "#/components/parameters/ApiVersionParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The complete portfolio payload",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "Cache-Control": {
+                "description": "The strictest policy of the sections read. The contact section makes it no-store.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store, no-cache"
+                }
+              },
+              "X-Data-Integrity": {
+                "description": "Indicates if the payload is complete or has partial missing data.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "complete",
+                    "partial"
+                  ],
+                  "default": "complete"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullPortfolioPayload"
+                },
+                "example": {
+                  "config": {
+                    "linkedInUrl": "https://linkedin.com/in/ryanbumstead",
+                    "calendlyUrl": "https://example.com/schedule",
+                    "githubUrl": "https://example.com/source",
+                    "trailheadUrl": "https://example.com/trailhead",
+                    "personalWebsiteUrl": "https://ryanbumstead.com",
+                    "careerObjective": "Driving digital transformation through architecture."
+                  },
+                  "contactInfo": {
+                    "key": "con_7c5j3w9sfa",
+                    "fullName": "Ryan Bumstead",
+                    "title": "Platform Architect",
+                    "linkedIn": "https://linkedin.com/in/ryanbumstead",
+                    "github": "https://example.com/source",
+                    "trailhead": "https://example.com/trailhead",
+                    "portfolioUrl": "https://ryanbumstead.com",
+                    "bio": "Specializing in API-led connectivity..."
+                  },
+                  "summary": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education",
+                  "skills": [
+                    {
+                      "key": "skl_3m9x5b2rkt",
+                      "name": "Apex",
+                      "displayName": "Salesforce Apex",
+                      "category": "Backend",
+                      "proficiency": 5,
+                      "iconName": "utility:code",
+                      "colorHex": "#0070d2"
+                    },
+                    {
+                      "key": "skl_8d2q6v4nwc",
+                      "name": "LWC",
+                      "displayName": "Lightning Web Components",
+                      "category": "Frontend",
+                      "proficiency": 5,
+                      "iconName": "standard:lightning_component",
+                      "colorHex": "#00A1E0"
+                    }
+                  ],
+                  "experience": [
+                    {
+                      "key": "exp_4h7n2c8wpd",
+                      "employer": "Salesforce",
+                      "role": "Senior Technical Architect",
+                      "dateRange": "Jan 2023 - Present",
+                      "isCurrent": true,
+                      "isRemote": true,
+                      "skillsUsed": [
+                        "Apex",
+                        "LWC",
+                        "Event Bus"
+                      ],
+                      "highlights": [
+                        "Designed multi-cloud architectures",
+                        "Led DevOps transformation"
+                      ]
+                    }
+                  ],
+                  "projects": [
+                    {
+                      "key": "prj_8f3k2m9qtz",
+                      "title": "Portfolio Site",
+                      "challenge": "Display skills dynamically",
+                      "solution": "Built on LWR with SAPI/PAPI architecture",
+                      "businessValue": "Increased interview rate by 40%",
+                      "status": "Live – In Production",
+                      "completionDate": "2025-12-01",
+                      "heroImageUrl": "https://example.com/images/hero.png",
+                      "liveUrl": "https://example.com/portfolio",
+                      "repositoryUrl": "https://example.com/source",
+                      "technologies": [
+                        "LWR",
+                        "Apex"
+                      ],
+                      "assets": []
+                    }
+                  ],
+                  "certifications": [
+                    {
+                      "key": "crt_6q2v8d4nhz",
+                      "name": "Certified Application Architect",
+                      "issuer": "Salesforce",
+                      "dateEarned": "2024-05-15",
+                      "skillsUsed": [
+                        "Security"
+                      ]
+                    }
+                  ],
+                  "education": [
+                    {
+                      "key": "edu_6b4c8j2rvq",
+                      "school": "Creighton University",
+                      "degree": "B.S. Computer Science",
+                      "fieldOfStudy": "Computer Science",
+                      "year": "2018",
+                      "gpa": 3.8
+                    }
+                  ],
+                  "testimonials": [
+                    {
+                      "key": "tst_2y7a5d9wmh",
+                      "author": "Jane Doe",
+                      "title": "VP of Engineering",
+                      "relationship": "Manager",
+                      "quote": "Ryan is a beast at architecture.",
+                      "vibe": "Professional",
+                      "avatarUrl": "https://example.com/images/avatar.jpg"
+                    }
+                  ],
+                  "integrityNote": "complete"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/profile/summary": {
+      "get": {
+        "tags": [
+          "Orchestration"
+        ],
+        "summary": "Get Employment Profile Only",
+        "description": "Reads the owner, roles, skills, certifications and education in process, in one\nApex transaction, and attaches each role's skills to it. The same records SAPI's\n`/contacts`, `/experience`, `/experience-skills`, `/skills`, `/certifications`\nand `/education` serve, without calling them over HTTP.\n\n**Use Case**: Resume page, profile cards\n\n**Caching**: Cache-Control is fixed at `max-age=300, private` by decision, an explicit exception to\nstrictest-policy-wins.\n",
+        "operationId": "getProfileSummary",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIdParam"
+          },
+          {
+            "$ref": "#/components/parameters/ApiVersionParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A unified profile object",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "X-Data-Integrity": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "complete",
+                    "partial"
+                  ]
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "max-age=300, private"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/resume/generate": {
+      "get": {
+        "tags": [
+          "Transformation"
+        ],
+        "summary": "Generate Plain Text Resume",
+        "description": "Generates an ATS-optimized plain text resume. \n\n**Reads**, in process in one Apex transaction: the owner, roles, highlights (by persona),\nskills, certifications and education. The same records SAPI serves, without calling it.\n\n**Transformation Logic**:\n- Formats dates as \"MMM YYYY - MMM YYYY\" or \"MMM YYYY - Present\"\n- Lists the skills linked to the printed roles, each once, grouped by category in category order and strongest first within a category\n- Prints up to 10 roles, current first\n- Prints at most 5 highlights per role, in sort order, as stored\n\n**Persona Filtering**:\n- `Admin`: System Admin highlights only\n- `Developer`: Development highlights only\n- `Architect`: Architecture/Design highlights only\n- Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.\n\n**Persona values**:\n- `Admin`, `Developer` or `Architect`. Any other value returns 400 BAD_REQUEST.\n- If persona is omitted, all highlights are returned (no filtering)\n\n**Response format**:\n- When the first media type in the `Accept` header is `text/plain`, a 200 answer is the generated text alone, with `Content-Type: text/plain; charset=UTF-8`. Parameters after a semicolon are ignored and the header name matches in any case.\n- With no `Accept` header, `*/*`, `application/json` or any other first type, the answer is the JSON object below.\n- Every other response header, the rate count and the cache directive are the same in both forms. Errors are always JSON, whatever `Accept` says.\n\nFor example, with your token in TOKEN and the instance URL in INSTANCE_URL:\n\n```bash\ncurl -H \"Authorization: Bearer $TOKEN\" -H \"Accept: text/plain\" \"$INSTANCE_URL/services/apexrest/papi/v1/resume/generate?persona=Architect\"\n```\n",
+        "operationId": "generateResume",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIdParam"
+          },
+          {
+            "$ref": "#/components/parameters/ApiVersionParam"
+          },
+          {
+            "name": "persona",
+            "in": "query",
+            "required": false,
+            "description": "Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.\n\n**Note**: Highlights are filtered by their persona tag in process.\n",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Admin",
+                "Developer",
+                "Architect"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The formatted resume text, as a JSON object by default, or as plain text when the first media type in `Accept` is `text/plain`",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "X-Data-Integrity": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "complete",
+                    "partial"
+                  ]
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store, no-cache"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "generatedText",
+                    "persona",
+                    "generatedAt"
+                  ],
+                  "properties": {
+                    "integrityNote": {
+                      "type": "string",
+                      "description": "\"complete\", or \"partial: <sections> unavailable\" naming each upstream section that could not be read.",
+                      "example": "complete"
+                    },
+                    "generatedText": {
+                      "type": "string",
+                      "description": "The complete, formatted resume string ready for clipboard copy",
+                      "example": "Ryan Bumstead\nSalesforce Platform Architect\n\nEXPERIENCE\n\nSalesforce | Senior Technical Architect\nJan 2023 - Present\n- Designed multi-cloud solutions...\n- Led DevOps transformation...\n"
+                    },
+                    "persona": {
+                      "type": "string",
+                      "description": "The persona filter applied",
+                      "example": "Architect"
+                    },
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp of generation"
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "description": "The same text as `generatedText`, with leading and trailing white space trimmed. Sent only when the first media type in `Accept` is `text/plain`."
+                },
+                "example": "Ryan Bumstead\nSalesforce Platform Architect\n\nEXPERIENCE\n\nSalesforce | Senior Technical Architect\nJan 2023 - Present\n- Designed multi-cloud solutions...\n- Led DevOps transformation...\n"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/projects/featured": {
+      "get": {
+        "tags": [
+          "Orchestration"
+        ],
+        "summary": "Get Featured Projects (Enriched)",
+        "description": "Retrieves projects marked as 'Featured' with nested Skills and Assets.\n\n**Reads**, in process in one Apex transaction: the featured projects, then their skills\nand their assets, each in one query for every project at once.\n\n**Use Case**: Home page project showcase, portfolio gallery\n",
+        "operationId": "getFeaturedProjects",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIdParam"
+          },
+          {
+            "$ref": "#/components/parameters/ApiVersionParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of enriched project records",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "X-Total-Count": {
+                "schema": {
+                  "type": "integer",
+                  "description": "Total number of featured projects"
+                }
+              },
+              "X-Data-Integrity": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "complete",
+                    "partial"
+                  ]
+                }
+              },
+              "X-Integrity-Note": {
+                "description": "Present only when partial; names the failed sub-queries, e.g. \"partial: project-skills unavailable\".",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "max-age=300, public"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EnrichedProject"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/testimonials/feed": {
+      "get": {
+        "tags": [
+          "Logic"
+        ],
+        "summary": "Get Curated Testimonials",
+        "description": "Retrieves testimonials with \"Vibe Control\" logic applied.\n\n**Reads**, in process: approved testimonials only (`Approved__c = true`), at most 200.\n\n**Filtering Logic**:\n- `professional`: Filters result set to only include records where `relationship` IN ('Manager', 'Client', 'Peer') AND `vibe` = 'Professional'.\n- `casual`: Returns all approved testimonials, regardless of relationship type or vibe (includes 'Casual' vibe and 'Fan' relationships).\n\n**Use Case**: About page testimonials section\n\n`mode` is matched case-insensitively (the VibeMode values `Professional` and `Casual` are accepted);\nany other value returns 400 BAD_REQUEST. Ordered by sort order, then newest first; at most 200.\n",
+        "operationId": "getTestimonialFeed",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIdParam"
+          },
+          {
+            "$ref": "#/components/parameters/ApiVersionParam"
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "description": "Filter testimonials by vibe",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "professional",
+                "casual"
+              ],
+              "default": "professional"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A filtered list of testimonials",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "X-Total-Count": {
+                "schema": {
+                  "type": "integer",
+                  "description": "Total number of testimonials returned"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "max-age=60, private"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EnrichedTestimonial"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/ai/generate": {
+      "post": {
+        "tags": [
+          "Logic"
+        ],
+        "summary": "Generate AI Content",
+        "description": "Generates content through `PAPIAiGenerate.generate`, which calls the one provider chain,\n`ContentGenerationController.dispatch`.\n\n**Provider chain**:\n1. Agentforce, only when its switch (`AI_Provider_Config__mdt` record `Agentforce`) is on.\n   It ships on and runs a Prompt Builder template as the caller. It has a 20 second\n   timeout and an hourly budget (`Hourly_Budget__c`, 120 calls per UTC hour). Past the\n   budget its attempt is `budget_exhausted` and the chain moves on.\n2. Gemini 2.5 Flash (`gemini-2.5-flash`, the model set on the `Gemini` record) through the Gemini API (`Gemini_API` Named Credential),\n   with a 60 second timeout. The code default model is `gemma-4-31b-it`, used only when the\n   record names none.\n3. Local template (`Local`), CoverLetter only.\n\nA CoverLetter prompt also carries facts from featured projects and experience highlights,\nchosen by keywords from `role` and `jobDescription`. No email address, phone number or\nowner field is ever included. The site's cover letter page calls this endpoint with\n`provider` set to `Agentforce` through the `Portfolio_API` Named Credential, and runs\nGemini and the template in process when it gets no letter, because a request that arrives\nas a callout from the same org may not call out again (ADR-015). Outside callers use it\nwith a Bearer token.\n\n**Asking for Agentforce only**: send `provider` set to `Agentforce`. Only Agentforce is\ntried, with no Gemini and no template. A failure is 503 `ALL_PROVIDERS_UNAVAILABLE` with\nthe message \"Agentforce currently unavailable\", or \"Agentforce hourly budget used\" when\nthe budget is spent. A CoverLetter asked of Agentforce uses the site's cover letter prompt\nand comes back whole unless `maxLength` is sent.\n\n**Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allowed Gemini 2.5 Flash\n5 requests per minute and 20 requests per day when it was read on 2026-10-20, a recorded reading and not a live one. When the Gemini API\nrefuses or fails, CoverLetter falls back to the local template and the other types answer\n503 `ALL_PROVIDERS_UNAVAILABLE`.\n\n**Validation**: `type` and `tone` must be enum values, `provider` only `Agentforce`, `maxLength` an integer 100 to 1000;\nCoverLetter requires `context.companyName` and `context.role`. Content longer than `maxLength` is cut.\n",
+        "operationId": "generateAiContent",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestIdParam"
+          },
+          {
+            "$ref": "#/components/parameters/ApiVersionParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "context"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "CoverLetter",
+                      "BioSummary",
+                      "SkillDescription"
+                    ],
+                    "description": "The type of content to generate",
+                    "example": "CoverLetter"
+                  },
+                  "context": {
+                    "type": "object",
+                    "description": "Contextual data for generation",
+                    "properties": {
+                      "jobDescription": {
+                        "type": "string",
+                        "description": "Full text of job posting (for cover letters)",
+                        "example": "We are seeking a Senior Salesforce Architect..."
+                      },
+                      "companyName": {
+                        "type": "string",
+                        "example": "Acme Corp"
+                      },
+                      "role": {
+                        "type": "string",
+                        "example": "Senior Technical Architect"
+                      },
+                      "skills": {
+                        "type": "array",
+                        "description": "Skills to emphasize",
+                        "items": {
+                          "type": "string"
+                        },
+                        "example": [
+                          "Apex",
+                          "LWC",
+                          "Integration Architecture"
+                        ]
+                      },
+                      "experienceSummary": {
+                        "type": "string",
+                        "description": "Brief professional summary",
+                        "example": "Nearly a decade on the Salesforce platform"
+                      }
+                    }
+                  },
+                  "tone": {
+                    "type": "string",
+                    "enum": [
+                      "Professional",
+                      "Enthusiastic",
+                      "Technical",
+                      "Casual"
+                    ],
+                    "default": "Professional",
+                    "description": "Desired tone of generated content"
+                  },
+                  "maxLength": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 1000,
+                    "default": 500,
+                    "description": "Maximum character count"
+                  },
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "Agentforce"
+                    ],
+                    "description": "Optional. When sent, only Agentforce is tried: no Gemini and no template, and a\nfailure is 503 `ALL_PROVIDERS_UNAVAILABLE`.\n",
+                    "example": "Agentforce"
+                  }
+                }
+              },
+              "example": {
+                "type": "CoverLetter",
+                "context": {
+                  "jobDescription": "We are seeking a Senior Salesforce Architect with 5+ years experience in multi-cloud integrations, DevOps, and API design.",
+                  "companyName": "Acme Financial",
+                  "role": "Senior Technical Architect",
+                  "skills": [
+                    "Apex",
+                    "LWC",
+                    "MuleSoft",
+                    "AWS Lambda"
+                  ],
+                  "experienceSummary": "Salesforce Platform Architect with nearly a decade on the platform, focused on higher education"
+                },
+                "tone": "Professional",
+                "maxLength": 500
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully generated content",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "X-AI-Provider": {
+                "description": "Which provider served the request",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "Agentforce",
+                    "Gemini",
+                    "Local"
+                  ],
+                  "example": "Gemini"
+                }
+              },
+              "X-Generation-Time-Ms": {
+                "description": "Time taken to generate content in milliseconds",
+                "schema": {
+                  "type": "integer",
+                  "example": 1247
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store, no-cache"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "content",
+                    "provider",
+                    "generatedAt",
+                    "latencyMs",
+                    "attempts",
+                    "promptShown"
+                  ],
+                  "properties": {
+                    "content": {
+                      "type": "string",
+                      "description": "The generated text content",
+                      "example": "Dear Hiring Manager,\n\nI am writing to express my strong interest in the Senior Technical Architect position at Acme Financial...\n"
+                    },
+                    "provider": {
+                      "type": "string",
+                      "enum": [
+                        "Agentforce",
+                        "Gemini",
+                        "Local"
+                      ],
+                      "description": "Provider that served the request",
+                      "example": "Gemini"
+                    },
+                    "model": {
+                      "type": "string",
+                      "description": "Model identifier (`local-template` when the local template served it)",
+                      "example": "gemini-2.5-flash"
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "The requested content type, echoed",
+                      "example": "CoverLetter"
+                    },
+                    "tone": {
+                      "type": "string",
+                      "description": "The applied tone, echoed",
+                      "example": "Professional"
+                    },
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "fallbackOccurred": {
+                      "type": "boolean",
+                      "description": "True when the local template served the request or an earlier provider failed",
+                      "example": false
+                    },
+                    "latencyMs": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "Time the provider chain took, in milliseconds",
+                      "example": 1240
+                    },
+                    "attempts": {
+                      "type": "array",
+                      "description": "Every provider the chain considered, in order, with what happened",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "provider",
+                          "outcome",
+                          "ms"
+                        ],
+                        "properties": {
+                          "provider": {
+                            "type": "string",
+                            "enum": [
+                              "Agentforce",
+                              "Gemini",
+                              "Local"
+                            ],
+                            "example": "Gemini"
+                          },
+                          "outcome": {
+                            "type": "string",
+                            "enum": [
+                              "served",
+                              "skipped_off",
+                              "skipped_open_circuit",
+                              "budget_exhausted",
+                              "failed"
+                            ],
+                            "description": "`served` wrote the content, `skipped_off` was switched off or unavailable,\n`skipped_open_circuit` was passed over because its circuit breaker is open,\n`budget_exhausted` is Agentforce past its hourly budget,\n`failed` threw or returned no usable text.\n",
+                            "example": "served"
+                          },
+                          "ms": {
+                            "type": "integer",
+                            "format": "int64",
+                            "description": "Time spent on this provider, in milliseconds",
+                            "example": 1236
+                          }
+                        }
+                      },
+                      "example": [
+                        {
+                          "provider": "Agentforce",
+                          "outcome": "skipped_off",
+                          "ms": 0
+                        },
+                        {
+                          "provider": "Gemini",
+                          "outcome": "served",
+                          "ms": 1236
+                        }
+                      ]
+                    },
+                    "promptShown": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The prompt sent to the provider that served, as built by Apex, including the\nportfolio facts for a CoverLetter. Null when the local template served, because\nit uses no prompt.\n",
+                      "example": "Write a cover letter for Ryan Bumstead in a professional tone, no longer than 500 characters."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded (ai tier, 10 requests per minute)",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "example": 60
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "httpStatus": 429,
+                  "errorCode": "RATE_LIMIT_EXCEEDED",
+                  "message": "Rate limit exceeded. Retry after 60 seconds.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": true
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "description": "All AI providers unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "httpStatus": 503,
+                  "errorCode": "ALL_PROVIDERS_UNAVAILABLE",
+                  "message": "All AI providers currently unavailable",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
