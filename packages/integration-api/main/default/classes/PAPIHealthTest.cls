@@ -93,7 +93,7 @@ private class PAPIHealthTest {
       'SAPI rejects a missing or non-UUID X-Request-Id'
     );
     Assert.areEqual(
-      'v1',
+      'v2',
       mock.received.getHeader('X-API-Version'),
       'Version header sent'
     );

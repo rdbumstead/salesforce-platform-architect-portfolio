@@ -31,18 +31,28 @@ global with sharing class SAPICertificationSkill implements QueryDefinitions.Pro
       if (ctx.isRejected()) {
         return;
       }
-      String certificationId = ctx.stringParam('certificationId');
+      // v2 names the filter certificationKey and takes a key only. v1 keeps certificationId.
+      if (ctx.isV2() && String.isNotBlank(ctx.stringParam('certificationId'))) {
+        ctx.error(400, 'BAD_REQUEST', 'Use certificationKey in v2.');
+        return;
+      }
+      String certificationId = ctx.stringParam(
+        ctx.isV2() ? 'certificationKey' : 'certificationId'
+      );
       String certificationIdRef = null;
       if (String.isNotBlank(certificationId)) {
         certificationIdRef = SAPITransformer.resolveReference(
           Certification__c.SObjectType,
-          certificationId
+          certificationId,
+          ctx.isV2()
         );
         if (certificationIdRef == null) {
           ctx.error(
             400,
             'BAD_REQUEST',
-            'certificationId must be a Salesforce Id or a public key.'
+            ctx.isV2()
+              ? 'certificationKey must be a public key.'
+              : 'certificationId must be a Salesforce Id or a public key.'
           );
           return;
         }
