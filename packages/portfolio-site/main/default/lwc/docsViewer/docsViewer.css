@@ -311,11 +311,13 @@ summary:focus-visible,
   color: var(--pf-text);
 }
 
+/* Drawn as GitHub draws alerts, the docs' home: a coloured left border and title in the type's
+   GitHub colour, the body in the page's own text colour, and no fill. */
 .doc-body .doc-alert {
+  --doc-alert-color: var(--pf-border);
   margin: 0 0 1rem;
   padding: 0.5rem 1rem;
-  border-left: 4px solid var(--pf-border);
-  background-color: var(--pf-surface);
+  border-left: 0.25em solid var(--doc-alert-color);
   color: var(--pf-text);
 }
 
@@ -325,38 +327,29 @@ summary:focus-visible,
 
 .doc-body .doc-alert-title {
   margin: 0 0 0.5rem;
-  font-weight: 700;
-  color: var(--pf-text);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--doc-alert-color);
 }
 
-.doc-body .doc-alert-note,
-.doc-body .doc-alert-tip,
+.doc-body .doc-alert-note {
+  --doc-alert-color: var(--pf-alert-note);
+}
+
+.doc-body .doc-alert-tip {
+  --doc-alert-color: var(--pf-alert-tip);
+}
+
 .doc-body .doc-alert-important {
-  border-left-color: var(--pf-accent);
-}
-
-.doc-body .doc-alert-note .doc-alert-title,
-.doc-body .doc-alert-tip .doc-alert-title,
-.doc-body .doc-alert-important .doc-alert-title {
-  color: var(--pf-accent);
+  --doc-alert-color: var(--pf-alert-important);
 }
 
 .doc-body .doc-alert-warning {
-  border-left-color: var(--pf-warn-text);
-  background-color: var(--pf-warn);
-}
-
-.doc-body .doc-alert-warning .doc-alert-title {
-  color: var(--pf-warn-text);
+  --doc-alert-color: var(--pf-alert-warning);
 }
 
 .doc-body .doc-alert-caution {
-  border-left-color: var(--pf-error-text);
-  background-color: var(--pf-error);
-}
-
-.doc-body .doc-alert-caution .doc-alert-title {
-  color: var(--pf-error-text);
+  --doc-alert-color: var(--pf-alert-caution);
 }
 
 .doc-body hr {

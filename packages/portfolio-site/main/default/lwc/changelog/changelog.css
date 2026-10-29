@@ -148,6 +148,18 @@
   gap: var(--pf-space-2) var(--pf-space-4);
 }
 
+/* The status line and the live data marker sit together at the end of the header, the
+   marker last, as in the cards. On a phone they wrap under the title from the start. */
+.changelog-meta {
+  margin-inline-start: auto;
+}
+
 .card-source {
   display: inline-flex;
+}
+
+@media (max-width: 600px) {
+  .changelog-meta {
+    margin-inline-start: 0;
+  }
 }
