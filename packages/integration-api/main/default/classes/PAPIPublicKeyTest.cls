@@ -73,7 +73,7 @@ private class PAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldCarryKeys_WhenFullProfile() {
+  static void shouldCarryKeysWhenFullProfile() {
     RestTestUtil.initGet('/services/apexrest/papi/v1/profile/full');
 
     Test.startTest();
@@ -101,7 +101,7 @@ private class PAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldCarryKey_WhenFeaturedProjects() {
+  static void shouldCarryKeyWhenFeaturedProjects() {
     RestTestUtil.initGet('/services/apexrest/papi/v1/projects/featured');
 
     Test.startTest();
@@ -118,7 +118,7 @@ private class PAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldCarryKey_WhenTestimonialFeed() {
+  static void shouldCarryKeyWhenTestimonialFeed() {
     RestTestUtil.initGet('/services/apexrest/papi/v1/testimonials/feed');
 
     Test.startTest();

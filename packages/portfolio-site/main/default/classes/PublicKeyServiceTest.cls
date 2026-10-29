@@ -113,7 +113,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldHaveOnePrefixPerObject_WhenListed() {
+  static void shouldHaveOnePrefixPerObjectWhenListed() {
     Set<String> prefixes = new Set<String>();
     for (SObjectType objectType : PublicKeyService.OBJECT_TYPES) {
       String prefix = PublicKeyService.prefixFor(objectType);
@@ -129,14 +129,14 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldBuildKeyInFormat_WhenGenerated() {
+  static void shouldBuildKeyInFormatWhenGenerated() {
     for (Integer i = 0; i < 50; i++) {
       assertKeyShape(PublicKeyService.generate('prj'), 'prj');
     }
   }
 
   @IsTest
-  static void shouldRecogniseKeys_WhenShapeMatches() {
+  static void shouldRecogniseKeysWhenShapeMatches() {
     Assert.isTrue(PublicKeyService.isKey('prj_8f3k2m9qtz'), 'Valid key');
     Assert.isTrue(
       PublicKeyService.isKey(' PRJ_8F3K2M9QTZ '),
@@ -158,7 +158,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldAssignKeyWithPrefix_WhenInsertingAnyObject() {
+  static void shouldAssignKeyWithPrefixWhenInsertingAnyObject() {
     Test.startTest();
     Map<SObjectType, SObject> inserted = insertOneOfEach();
     Test.stopTest();
@@ -179,7 +179,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldAssignDistinctKeys_WhenInsertingInBulk() {
+  static void shouldAssignDistinctKeysWhenInsertingInBulk() {
     List<Project__c> projects = new List<Project__c>();
     for (Integer i = 0; i < 251; i++) {
       projects.add(new Project__c(Name = 'Bulk ' + i, Sort_Order__c = 1));
@@ -198,7 +198,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldKeepKey_WhenRecordArrivesWithOne() {
+  static void shouldKeepKeyWhenRecordArrivesWithOne() {
     Project__c project = new Project__c(
       Name = 'Preset',
       Public_Key__c = 'prj_abcdefghjk',
@@ -218,7 +218,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldKeepKey_WhenRenamed() {
+  static void shouldKeepKeyWhenRenamed() {
     Project__c project = new Project__c(Name = 'Before', Sort_Order__c = 1);
     insert project;
     String before = [
@@ -242,7 +242,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldRefuseUpdate_WhenKeyChanges() {
+  static void shouldRefuseUpdateWhenKeyChanges() {
     Project__c project = new Project__c(Name = 'Locked', Sort_Order__c = 1);
     insert project;
     project = [SELECT Id, Public_Key__c FROM Project__c WHERE Id = :project.Id];
@@ -262,7 +262,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldRefuseUpdate_WhenKeyCleared() {
+  static void shouldRefuseUpdateWhenKeyCleared() {
     Project__c project = new Project__c(Name = 'Locked', Sort_Order__c = 1);
     insert project;
     project.Public_Key__c = null;
@@ -275,7 +275,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldRefuseUpdate_WhenOnlyTheCaseChanges() {
+  static void shouldRefuseUpdateWhenOnlyTheCaseChanges() {
     Project__c project = new Project__c(
       Name = 'Cased',
       Public_Key__c = 'prj_abcdefghjk',
@@ -292,7 +292,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldAllowUpdate_WhenKeyIsTheSame() {
+  static void shouldAllowUpdateWhenKeyIsTheSame() {
     Project__c project = new Project__c(Name = 'Same', Sort_Order__c = 1);
     insert project;
     project = [SELECT Id, Public_Key__c FROM Project__c WHERE Id = :project.Id];
@@ -306,7 +306,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldDrawAgain_WhenKeyIsTaken() {
+  static void shouldDrawAgainWhenKeyIsTaken() {
     insert new Project__c(
       Name = 'Holder',
       Public_Key__c = 'prj_aaaaaaaaaa',
@@ -331,7 +331,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldDrawAgain_WhenTwoRecordsDrawTheSameKey() {
+  static void shouldDrawAgainWhenTwoRecordsDrawTheSameKey() {
     PublicKeyService.forcedKeys = new List<String>{
       'prj_cccccccccc',
       'prj_cccccccccc',
@@ -351,7 +351,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldThrow_WhenEveryAttemptCollides() {
+  static void shouldThrowWhenEveryAttemptCollides() {
     insert new Project__c(
       Name = 'Holder',
       Public_Key__c = 'prj_aaaaaaaaaa',
@@ -378,7 +378,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldDoNothing_WhenListIsNullOrEmpty() {
+  static void shouldDoNothingWhenListIsNullOrEmpty() {
     PublicKeyService.assign(null);
     PublicKeyService.assign(new List<Project__c>());
     PublicKeyService.refuseChange(null, null);
@@ -386,7 +386,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldFindRecord_WhenKeyMatches() {
+  static void shouldFindRecordWhenKeyMatches() {
     Project__c project = new Project__c(Name = 'Findable', Sort_Order__c = 1);
     insert project;
     String key = [SELECT Public_Key__c FROM Project__c WHERE Id = :project.Id]
@@ -412,7 +412,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldFillBlankKeys_WhenBackfilled() {
+  static void shouldFillBlankKeysWhenBackfilled() {
     PublicKeyService.suspended = true;
     List<Project__c> projects = new List<Project__c>();
     for (Integer i = 0; i < 5; i++) {
@@ -449,7 +449,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldLeaveExistingKeys_WhenBackfilled() {
+  static void shouldLeaveExistingKeysWhenBackfilled() {
     insert new Project__c(
       Name = 'Keyed',
       Public_Key__c = 'prj_abcdefghjk',
@@ -469,7 +469,7 @@ private class PublicKeyServiceTest {
   }
 
   @IsTest
-  static void shouldIgnoreObjectsWithoutKeys_WhenBackfilled() {
+  static void shouldIgnoreObjectsWithoutKeysWhenBackfilled() {
     Assert.areEqual(
       0,
       PublicKeyService.backfill(Lead.SObjectType, 10),

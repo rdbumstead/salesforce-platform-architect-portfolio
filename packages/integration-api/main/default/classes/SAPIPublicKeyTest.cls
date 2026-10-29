@@ -131,67 +131,67 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturnKey_WhenAccounts() {
+  static void shouldReturnKeyWhenAccounts() {
     assertEveryRowKey('accounts', 'acc');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenContacts() {
+  static void shouldReturnKeyWhenContacts() {
     assertEveryRowKey('contacts', 'con');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenSkills() {
+  static void shouldReturnKeyWhenSkills() {
     assertEveryRowKey('skills', 'skl');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenExperience() {
+  static void shouldReturnKeyWhenExperience() {
     assertEveryRowKey('experience', 'exp');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenExperienceHighlights() {
+  static void shouldReturnKeyWhenExperienceHighlights() {
     assertEveryRowKey('experience-highlights', 'hlt');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenExperienceSkills() {
+  static void shouldReturnKeyWhenExperienceSkills() {
     assertEveryRowKey('experience-skills', 'exs');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenProjects() {
+  static void shouldReturnKeyWhenProjects() {
     assertEveryRowKey('projects', 'prj');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenProjectAssets() {
+  static void shouldReturnKeyWhenProjectAssets() {
     assertEveryRowKey('project-assets', 'pas');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenProjectSkills() {
+  static void shouldReturnKeyWhenProjectSkills() {
     assertEveryRowKey('project-skills', 'prs');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenCertifications() {
+  static void shouldReturnKeyWhenCertifications() {
     assertEveryRowKey('certifications', 'crt');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenCertificationSkills() {
+  static void shouldReturnKeyWhenCertificationSkills() {
     assertEveryRowKey('certification-skills', 'cks');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenEducation() {
+  static void shouldReturnKeyWhenEducation() {
     assertEveryRowKey('education', 'edu');
   }
 
   @IsTest
-  static void shouldReturnKey_WhenTestimonials() {
+  static void shouldReturnKeyWhenTestimonials() {
     insert new Testimonial__c(
       Author_Name__c = 'Key Author',
       Approved__c = true,
@@ -203,7 +203,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturnReferenceKeys_WhenJunctionRows() {
+  static void shouldReturnReferenceKeysWhenJunctionRows() {
     String experienceKey = keyOf(
       Experience__c.SObjectType,
       SapiTestData.EXPERIENCE_ONE
@@ -232,7 +232,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturnProjectKey_WhenProjectAssets() {
+  static void shouldReturnProjectKeyWhenProjectAssets() {
     String projectKey = keyOf(Project__c.SObjectType, SapiTestData.PROJECT_ONE);
 
     Test.startTest();
@@ -250,7 +250,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturnContactAndIssuerKeys_WhenCertifications() {
+  static void shouldReturnContactAndIssuerKeysWhenCertifications() {
     Test.startTest();
     callResource(
       'certifications',
@@ -265,7 +265,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturnContactAndIssuerKeys_WhenEducation() {
+  static void shouldReturnContactAndIssuerKeysWhenEducation() {
     Test.startTest();
     callResource('education', null);
     Test.stopTest();
@@ -282,7 +282,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturnEmployerAndContactKeys_WhenExperience() {
+  static void shouldReturnEmployerAndContactKeysWhenExperience() {
     Test.startTest();
     callResource('experience', null);
     Test.stopTest();
@@ -294,7 +294,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturnContactKey_WhenProjects() {
+  static void shouldReturnContactKeyWhenProjects() {
     Test.startTest();
     callResource('projects', null);
     Test.stopTest();
@@ -305,7 +305,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldFilterByKey_WhenProjectAssetsGetProjectKey() {
+  static void shouldFilterByKeyWhenProjectAssetsGetProjectKey() {
     assertFilterNarrows(
       'project-assets',
       'projectId',
@@ -315,7 +315,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldFilterByKey_WhenKeyIsUpperCase() {
+  static void shouldFilterByKeyWhenKeyIsUpperCase() {
     assertFilterNarrows(
       'project-skills',
       'projectId',
@@ -325,7 +325,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldFilterByKey_WhenExperienceSkillsGetExperienceKey() {
+  static void shouldFilterByKeyWhenExperienceSkillsGetExperienceKey() {
     assertFilterNarrows(
       'experience-skills',
       'experienceId',
@@ -335,7 +335,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldFilterByKey_WhenHighlightsGetExperienceKey() {
+  static void shouldFilterByKeyWhenHighlightsGetExperienceKey() {
     assertFilterNarrows(
       'experience-highlights',
       'experienceId',
@@ -345,7 +345,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldFilterByKey_WhenCertificationSkillsGetCertificationKey() {
+  static void shouldFilterByKeyWhenCertificationSkillsGetCertificationKey() {
     assertFilterNarrows(
       'certification-skills',
       'certificationId',
@@ -355,12 +355,12 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturnNoRows_WhenKeyHasNoRecord() {
+  static void shouldReturnNoRowsWhenKeyHasNoRecord() {
     assertFilterNarrows('project-assets', 'projectId', 'prj_abcdefghjk', 0);
   }
 
   @IsTest
-  static void shouldReturnNoRows_WhenKeyBelongsToAnotherObject() {
+  static void shouldReturnNoRowsWhenKeyBelongsToAnotherObject() {
     assertFilterNarrows(
       'project-assets',
       'projectId',
@@ -370,7 +370,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturn400_WhenValueIsNeitherIdNorKey() {
+  static void shouldReturn400WhenValueIsNeitherIdNorKey() {
     Test.startTest();
     callResource(
       'experience-skills',
@@ -387,7 +387,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturnProject_WhenPathIsTheKey() {
+  static void shouldReturnProjectWhenPathIsTheKey() {
     String projectKey = keyOf(Project__c.SObjectType, SapiTestData.PROJECT_ONE);
     RestTestUtil.initGet('/services/apexrest/sapi/v1/projects/' + projectKey);
 
@@ -411,7 +411,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturnProject_WhenPathIsTheId() {
+  static void shouldReturnProjectWhenPathIsTheId() {
     Project__c project = [
       SELECT Id
       FROM Project__c
@@ -436,7 +436,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldReturn404_WhenPathKeyHasNoRecord() {
+  static void shouldReturn404WhenPathKeyHasNoRecord() {
     RestTestUtil.initGet('/services/apexrest/sapi/v1/projects/prj_abcdefghjk');
 
     Test.startTest();
@@ -447,7 +447,7 @@ private class SAPIPublicKeyTest {
   }
 
   @IsTest
-  static void shouldResolveReference_WhenIdKeyOrOther() {
+  static void shouldResolveReferenceWhenIdKeyOrOther() {
     Project__c project = [
       SELECT Id, Public_Key__c
       FROM Project__c
