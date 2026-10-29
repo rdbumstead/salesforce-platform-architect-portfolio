@@ -117,6 +117,8 @@ export function describeFile(path, allPaths = []) {
 
 export default class ViewSource extends LightningElement {
   @api sourceKey;
+  /** Text on the opening button. Blank gives "View source". */
+  @api label;
 
   files = [];
   isOpen = false;
@@ -135,6 +137,10 @@ export default class ViewSource extends LightningElement {
     if (!this.files.length) {
       this.isOpen = false;
     }
+  }
+
+  get buttonLabel() {
+    return (this.label || "").trim() || "View source";
   }
 
   get hasFiles() {
