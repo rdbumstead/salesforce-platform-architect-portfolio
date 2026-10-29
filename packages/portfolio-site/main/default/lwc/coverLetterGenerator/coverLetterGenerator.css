@@ -395,3 +395,8 @@
   justify-content: flex-start;
   margin-bottom: var(--pf-space-3);
 }
+
+/* View source pushes itself to the end of a title row, which a body row does not want. */
+.card-actions_body c-view-source {
+  margin-inline-start: 0;
+}
