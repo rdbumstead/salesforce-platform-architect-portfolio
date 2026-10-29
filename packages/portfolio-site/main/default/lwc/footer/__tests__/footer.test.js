@@ -828,6 +828,10 @@ describe("c-footer", () => {
       (el) => el.sourceKey
     );
     expect(keys).toEqual(["footer", "siteAnalytics"]);
+    const labels = Array.from(caption.querySelectorAll("c-view-source")).map(
+      (el) => el.label
+    );
+    expect(labels).toEqual([undefined, "View analytics source"]);
   });
 
   it("declares c-view-source with the footer key in the template", () => {
@@ -839,7 +843,7 @@ describe("c-footer", () => {
       /<c-view-source\s+source-key="footer"\s*><\/c-view-source>/
     );
     expect(html).toMatch(
-      /<c-view-source\s+source-key="siteAnalytics"\s*><\/c-view-source>/
+      /<c-view-source\s+source-key="siteAnalytics"\s+label="View analytics source"\s*><\/c-view-source>/
     );
     expect(html.match(/<c-view-source/g)).toHaveLength(2);
   });
