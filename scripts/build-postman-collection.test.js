@@ -9,6 +9,7 @@ const assert = require("node:assert");
 const fs = require("fs");
 const {
   AI_REQUEST_NAME,
+  API_VERSION,
   COLLECTION_NAME,
   COLLECTION_TEST_SCRIPT,
   FIXED_UUID,
@@ -102,7 +103,10 @@ function converted(seed) {
                 query: [],
                 variable: [{ key: "domain" }]
               },
-              header: [{ key: "X-Request-Id", value: "<uuid>" }]
+              header: [
+                { key: "X-Request-Id", value: "<uuid>" },
+                { key: "X-API-Version", value: "v1", disabled: true }
+              ]
             },
             response: []
           }
@@ -287,6 +291,23 @@ test("PAPI requests go to baseUrl plus the PAPI path, inherit auth, and send a f
   );
 });
 
+test("PAPI requests send X-API-Version v2 once, enabled, even where the converter wrote a disabled v1 row", () => {
+  const health = folder(build("a"), PAPI_FOLDER).item[0].item[0].request;
+  const versions = health.header.filter(
+    (header) => header.key === "X-API-Version"
+  );
+  assert.deepStrictEqual(versions, [{ key: "X-API-Version", value: "v2" }]);
+});
+
+test("the collection README says it sends version 2", () => {
+  assert.match(build("a").info.description.content, /version 2/);
+});
+
+test("the committed collection shows no Salesforce Id in an example", () => {
+  const text = fs.readFileSync(OUTPUT_FILE, "utf8");
+  assert.doesNotMatch(text, /[0-9a-z]{3}5e0{5}[0-9A-Za-z]{8}/);
+});
+
 test("SAPI requests go to baseUrl plus the SAPI path, inherit auth, and always send both headers", () => {
   const sapi = folder(build("a"), SAPI_FOLDER);
   assert.deepStrictEqual(
@@ -306,8 +327,9 @@ test("SAPI requests go to baseUrl plus the SAPI path, inherit auth, and always s
   });
   assert.deepStrictEqual(header("X-API-Version"), {
     key: "X-API-Version",
-    value: "v1"
+    value: "v2"
   });
+  assert.strictEqual(API_VERSION, "v2");
   assert.strictEqual(header("Accept").value, "application/json");
 });
 

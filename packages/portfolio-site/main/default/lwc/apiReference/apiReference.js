@@ -1,7 +1,10 @@
 /**
  * @description       : Interactive API reference for the API Lab page. Shows the
- *                      SAPI or PAPI OpenAPI spec from the SAPI_Spec and PAPI_Spec static
- *                      resources in Redoc. Redoc_Script loads only when the visitor opens the
+ *                      SAPI or PAPI OpenAPI spec in Redoc, version 2 by default (the
+ *                      SAPI_Spec_V2 and PAPI_Spec_V2 static resources) or version 1, labelled
+ *                      deprecated with its sunset policy in one line (SAPI_Spec and PAPI_Spec).
+ *                      A link opens on ?version=v2 or ?version=v1, beside ?spec=sapi or
+ *                      ?spec=papi, and an unknown version opens v2. Redoc_Script loads only when the visitor opens the
  *                      reference. Any load or render failure shows a message and the hosted
  *                      reference link instead, and so does a render that has not finished 15 s
  *                      after the visitor opened it (Redoc never finishes under the site runtime
@@ -36,6 +39,8 @@ import { loadScript } from "lightning/platformResourceLoader";
 import REDOC_SCRIPT from "@salesforce/resourceUrl/Redoc_Script";
 import SAPI_SPEC from "@salesforce/resourceUrl/SAPI_Spec";
 import PAPI_SPEC from "@salesforce/resourceUrl/PAPI_Spec";
+import SAPI_SPEC_V2 from "@salesforce/resourceUrl/SAPI_Spec_V2";
+import PAPI_SPEC_V2 from "@salesforce/resourceUrl/PAPI_Spec_V2";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import basePath from "@salesforce/community/basePath";
 import POSTMAN_COLLECTION from "@salesforce/resourceUrl/PAPI_Postman_Collection";
@@ -95,6 +100,24 @@ export const SPECS = {
   sapi: { label: "System API (SAPI)", url: SAPI_SPEC },
   papi: { label: "Process API (PAPI)", url: PAPI_SPEC }
 };
+
+/** Each API version, its picker label and the spec resource of each API. v2 is the default. */
+export const VERSIONS = {
+  v2: {
+    label: "v2",
+    urls: { sapi: SAPI_SPEC_V2, papi: PAPI_SPEC_V2 }
+  },
+  v1: {
+    label: "v1 (deprecated)",
+    urls: { sapi: SAPI_SPEC, papi: PAPI_SPEC }
+  }
+};
+export const DEFAULT_VERSION = "v2";
+export const DEPRECATED_VERSION = "v1";
+
+/** The one line shown under the picker while v1 is open. */
+export const V1_NOTICE =
+  "v1 is deprecated. It stays for one month after v2 reaches production, then answers 410 Gone. Its responses carry Deprecation, Sunset and Link headers.";
 
 const SYSTEM_FONTS =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -399,6 +422,7 @@ export default class ApiReference extends LightningElement {
   @api openOnLoad = false;
 
   selectedSpec = "sapi";
+  selectedVersion = DEFAULT_VERSION;
   autoOpened = false;
   isOpen = false;
   isLoading = false;
@@ -444,6 +468,26 @@ export default class ApiReference extends LightningElement {
         cssClass: selected ? "spec-button spec-button_selected" : "spec-button"
       };
     });
+  }
+
+  get versionButtons() {
+    return Object.keys(VERSIONS).map((key) => {
+      const selected = key === this.selectedVersion;
+      return {
+        value: key,
+        label: VERSIONS[key].label,
+        pressed: selected ? "true" : "false",
+        cssClass: selected ? "spec-button spec-button_selected" : "spec-button"
+      };
+    });
+  }
+
+  get isDeprecatedVersion() {
+    return this.selectedVersion === DEPRECATED_VERSION;
+  }
+
+  get versionNotice() {
+    return V1_NOTICE;
   }
 
   get hasError() {
@@ -511,6 +555,17 @@ export default class ApiReference extends LightningElement {
     }
   }
 
+  handleVersionClick(event) {
+    const value = event.currentTarget.dataset.version;
+    if (!VERSIONS[value] || value === this.selectedVersion) {
+      return;
+    }
+    this.selectedVersion = value;
+    if (this.isOpen) {
+      this.renderReference();
+    }
+  }
+
   handleOpen() {
     if (this.openDisabled) {
       return;
@@ -526,6 +581,11 @@ export default class ApiReference extends LightningElement {
     const spec = (params.get("spec") || "").toLowerCase();
     if (SPECS[spec]) {
       this.selectedSpec = spec;
+    }
+    // ?version=v1 or ?version=v2 picks the version. Anything else is the default, v2.
+    const version = (params.get("version") || "").toLowerCase();
+    if (VERSIONS[version]) {
+      this.selectedVersion = version;
     }
     this.pendingHash = this.sectionHash();
     this.boundHashChange = () => {
@@ -812,7 +872,7 @@ export default class ApiReference extends LightningElement {
     await new Promise((resolve, reject) => {
       try {
         redoc.init(
-          SPECS[this.selectedSpec].url,
+          VERSIONS[this.selectedVersion].urls[this.selectedSpec],
           // A number, measured now, so Redoc scrolls a section below the header.
           { ...REDOC_OPTIONS, scrollYOffset: this.sectionOffset() },
           target,

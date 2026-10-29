@@ -48,8 +48,8 @@ async function flush() {
 }
 
 const SECTIONS = {
-  SAPI_Spec: ["tag/Objects", "tag/Objects/operation/getSkills"],
-  PAPI_Spec: ["tag/Orchestration", "tag/Orchestration/operation/getProfile"]
+  SAPI_Spec_V2: ["tag/Objects", "tag/Objects/operation/getSkills"],
+  PAPI_Spec_V2: ["tag/Orchestration", "tag/Orchestration/operation/getProfile"]
 };
 
 /** Renders a Redoc like menu and sections into the target, as Redoc does. */
@@ -184,7 +184,7 @@ describe("c-api-reference section links", () => {
     await flush();
 
     const specs = window.Redoc.init.mock.calls.map((call) => call[0]);
-    expect(specs).toEqual(["SAPI_Spec", "PAPI_Spec"]);
+    expect(specs).toEqual(["SAPI_Spec_V2", "PAPI_Spec_V2"]);
     expect(
       $(element, 'button[data-spec="papi"]').getAttribute("aria-pressed")
     ).toBe("true");
@@ -200,7 +200,7 @@ describe("c-api-reference section links", () => {
     await flush();
     await flush();
 
-    expect(window.Redoc.init.mock.calls[0][0]).toBe("PAPI_Spec");
+    expect(window.Redoc.init.mock.calls[0][0]).toBe("PAPI_Spec_V2");
     expect(element.shadowRoot.activeElement).toBe(
       $(element, '[id="tag/Orchestration/operation/getProfile"]')
     );

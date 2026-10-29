@@ -615,3 +615,13 @@
 .quickstart-actions a.nc-button_secondary:visited:hover {
   background-color: var(--pf-subtle);
 }
+
+/* The line under the endpoint row while the deprecated version is picked. */
+.version-notice {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 4px solid var(--pf-accent);
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  overflow-wrap: anywhere;
+}

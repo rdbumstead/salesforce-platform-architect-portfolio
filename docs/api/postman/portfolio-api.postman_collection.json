@@ -31,7 +31,7 @@
   "item": [
     {
       "name": "Salesforce System API (SAPI)",
-      "description": "System API exposing core Salesforce objects for the Portfolio.",
+      "description": "System API exposing core Salesforce objects for the Portfolio. This is **version 2**, selected with `X-API-Version: v2`. It returns public keys only. Version 1.",
       "item": [
         {
           "name": "GET /health",
@@ -44,7 +44,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -71,7 +71,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -117,7 +117,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -175,7 +175,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -194,9 +194,9 @@
               ],
               "query": [
                 {
-                  "key": "experienceId",
+                  "key": "experienceKey",
                   "value": "",
-                  "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated.",
+                  "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `expe.",
                   "disabled": true
                 },
                 {
@@ -233,7 +233,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -297,7 +297,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -310,9 +310,9 @@
               "path": ["services", "apexrest", "sapi", "v1", "project-assets"],
               "query": [
                 {
-                  "key": "projectId",
+                  "key": "projectKey",
                   "value": "",
-                  "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated.",
+                  "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `project.",
                   "disabled": true
                 },
                 {
@@ -343,7 +343,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -383,7 +383,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -416,7 +416,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -462,7 +462,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -508,7 +508,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -566,7 +566,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -618,7 +618,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -631,9 +631,9 @@
               "path": ["services", "apexrest", "sapi", "v1", "project-skills"],
               "query": [
                 {
-                  "key": "projectId",
+                  "key": "projectKey",
                   "value": "",
-                  "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated.",
+                  "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `project.",
                   "disabled": true
                 },
                 {
@@ -664,7 +664,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -683,9 +683,9 @@
               ],
               "query": [
                 {
-                  "key": "experienceId",
+                  "key": "experienceKey",
                   "value": "",
-                  "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated.",
+                  "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `expe.",
                   "disabled": true
                 },
                 {
@@ -716,7 +716,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -735,9 +735,9 @@
               ],
               "query": [
                 {
-                  "key": "certificationId",
+                  "key": "certificationKey",
                   "value": "",
-                  "description": "Filter by Certification public key (for example `crt_6q2v8d4nhz`) or Salesforce ID. The Salesforce ID is deprecated.",
+                  "description": "Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `c.",
                   "disabled": true
                 },
                 {
@@ -761,7 +761,7 @@
     },
     {
       "name": "Portfolio Process API (PAPI)",
-      "description": "A Process API (PAPI) that combines, transforms and filters the portfolio's Salesforce data,",
+      "description": "**Version 2**, selected with `X-API-Version: v2`, returns public keys only. Version 1 is documented in `portfolio-papi.yaml` and is deprecated (section 2).",
       "item": [
         {
           "name": "GET /health",
@@ -774,7 +774,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -801,7 +801,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -860,7 +860,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -887,7 +887,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -921,7 +921,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -962,7 +962,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -996,7 +996,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",
@@ -1037,7 +1037,7 @@
               },
               {
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "X-Request-Id",

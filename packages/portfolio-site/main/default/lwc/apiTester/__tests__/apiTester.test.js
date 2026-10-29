@@ -11,12 +11,13 @@ import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ApiTester, {
   DISPLAYED_HEADERS,
+  VERSION_HEADERS,
   parseQuery,
   longTextFields,
   RENDERED_MIN_LENGTH
 } from "c/apiTester";
 import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
-import invoke from "@salesforce/apex/ApiLabController.invoke";
+import invoke from "@salesforce/apex/ApiLabController.invokeVersioned";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
 import { trackEvent } from "c/analyticsService";
 
@@ -38,7 +39,7 @@ jest.mock(
   { virtual: true }
 );
 jest.mock(
-  "@salesforce/apex/ApiLabController.invoke",
+  "@salesforce/apex/ApiLabController.invokeVersioned",
   () => ({ default: jest.fn() }),
   { virtual: true }
 );
@@ -177,7 +178,15 @@ describe("c-api-tester", () => {
       return Array.from(match[1].matchAll(/'([^']+)'/g), (m) => m[1]);
     };
     expect(source).toContain("CATALOG_RESOURCE = 'API_Lab_Catalog'");
-    expect(DISPLAYED_HEADERS).toEqual(block("RETURNED_HEADERS"));
+    // The Apex list starts with DISPLAYED_HEADERS. It may go on with VERSION_HEADERS in order.
+    const returned = block("RETURNED_HEADERS");
+    expect(returned.slice(0, DISPLAYED_HEADERS.length)).toEqual(
+      DISPLAYED_HEADERS
+    );
+    const rest = returned.slice(DISPLAYED_HEADERS.length);
+    expect(rest.length === 0 || rest.join() === VERSION_HEADERS.join()).toBe(
+      true
+    );
   });
 
   it("calls invoke and renders status, latency, headers and body", async () => {
@@ -194,7 +203,8 @@ describe("c-api-tester", () => {
 
     expect(invoke).toHaveBeenCalledWith({
       path: "/sapi/v1/skills",
-      params: { limit: "5", offset: "0" }
+      params: { limit: "5", offset: "0" },
+      apiVersion: "v2"
     });
     expect(query(element, ".status-value").textContent).toBe("200");
     expect(query(element, ".latency-value").textContent).toBe("142 ms");
@@ -227,7 +237,8 @@ describe("c-api-tester", () => {
 
     expect(invoke).toHaveBeenCalledWith({
       path: "/sapi/v1/health",
-      params: {}
+      params: {},
+      apiVersion: "v2"
     });
     expect(query(element, ".status-value").textContent).toBe("429");
     expect(query(element, ".status-value").className).toContain("text-error");

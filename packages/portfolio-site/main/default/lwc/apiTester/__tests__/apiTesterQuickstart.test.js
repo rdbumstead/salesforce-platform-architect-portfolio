@@ -63,7 +63,7 @@ jest.mock(
   { virtual: true }
 );
 jest.mock(
-  "@salesforce/apex/ApiLabController.invoke",
+  "@salesforce/apex/ApiLabController.invokeVersioned",
   () => ({ default: jest.fn() }),
   { virtual: true }
 );
@@ -237,6 +237,8 @@ describe("c-api-tester outside the page", () => {
     expect(health).toContain(`Bearer ${FAKE_TOKEN}`);
     expect(health).toContain(`${FAKE_INSTANCE}/services/apexrest/papi/v1`);
     expect(data).toContain(`Bearer ${FAKE_TOKEN}`);
+    expect(health).toContain('-H "X-API-Version: v2"');
+    expect(data).toContain('-H "X-API-Version: v2"');
     expect(token).not.toContain("eval@example.com");
     expect(token).not.toContain(FAKE_TOKEN);
   });
