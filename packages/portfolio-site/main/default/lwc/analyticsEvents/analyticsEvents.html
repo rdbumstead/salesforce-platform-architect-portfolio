@@ -1,0 +1,79 @@
+<template>
+  <button
+    type="button"
+    class="open-button"
+    aria-haspopup="dialog"
+    onclick={handleOpen}
+  >
+    {buttonLabel}
+  </button>
+  <dialog
+    class="dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="analytics-events-heading"
+    onkeydown={handleDialogKeydown}
+    onfocusout={handleDialogFocusOut}
+    oncancel={handleCancel}
+    onclick={handleDialogClick}
+  >
+    <template lwc:if={isOpen}>
+      <div class="dialog-body">
+        <header class="dialog-header">
+          <h2
+            id="analytics-events-heading"
+            class="dialog-heading"
+            tabindex="-1"
+          >
+            {words.HEADING}
+          </h2>
+          <button type="button" class="close-button" onclick={handleClose}>
+            {words.CLOSE}
+          </button>
+        </header>
+        <p class="explanation" data-id="explanation">{words.EXPLANATION}</p>
+        <template lwc:if={isEmpty}>
+          <p class="empty" data-id="empty">{words.EMPTY}</p>
+        </template>
+        <template lwc:else>
+          <ul
+            class="event-list"
+            data-id="event-list"
+            role="list"
+            tabindex="0"
+            aria-label={words.LIST_LABEL}
+          >
+            <template for:each={rows} for:item="row">
+              <li key={row.key} class="event" data-id="event">
+                <div class="event-head">
+                  <span class="event-name" data-id="event-name"
+                    >{row.name}</span
+                  >
+                  <span class="event-time" data-id="event-time"
+                    >{row.time}</span
+                  >
+                </div>
+                <p class="event-outcome" data-id="event-outcome">
+                  {row.outcome}
+                </p>
+                <template lwc:if={row.hasParams}>
+                  <dl class="params" data-id="params">
+                    <template for:each={row.params} for:item="param">
+                      <div key={param.key} class="param">
+                        <dt>{param.key}</dt>
+                        <dd>{param.value}</dd>
+                      </div>
+                    </template>
+                  </dl>
+                </template>
+                <template lwc:else>
+                  <p class="event-outcome">{row.noParams}</p>
+                </template>
+              </li>
+            </template>
+          </ul>
+        </template>
+      </div>
+    </template>
+  </dialog>
+</template>

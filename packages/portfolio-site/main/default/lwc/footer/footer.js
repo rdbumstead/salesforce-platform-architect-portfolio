@@ -10,7 +10,9 @@
  *                      badge per workflow, which is why the Postman sync is its own workflow.
  *                      Row two is the live readings. One caption sits over it, with View source
  *                      beside the caption (source key footer: this component and
- *                      FooterController). The readings are labelled groups, each a list named by
+ *                      FooterController), then the Analytics events button (c-analytics-events, this visit's event
+ *                      list) and a second View source for it (source key siteAnalytics: the
+ *                      analytics service and that component). The readings are labelled groups, each a list named by
  *                      its visible label (Platform, Integrations, Storage, Quotas and limits),
  *                      set apart by vertical rules on wide screens and stacked on phones. Inside
  *                      a group the metrics are split by thin bars drawn in CSS only, clipped away
