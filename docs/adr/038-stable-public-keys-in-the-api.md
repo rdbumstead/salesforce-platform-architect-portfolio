@@ -8,7 +8,7 @@ Accepted and built (2026-10-28). In a scratch org `PublicKeyServiceTest`, `SAPIP
 
 A reviewer noted that the API returns Salesforce record Ids. It is not a security problem. The API runs as a read only integration user, tokens are scoped, and an Id grants nothing by itself. It is a design smell all the same. A public API should expose keys it controls, not the internal row Ids of the system behind it. An Id ties every client to Salesforce, changes when a record is deleted and recreated in another org, and shows a reader the platform and the object from its first three characters.
 
-The owner chose an additive change to v1, not a break. Nothing is removed. Removal would be v2.
+I chose an additive change to v1, not a break. Nothing is removed. Removal would be v2.
 
 ## Decision
 
@@ -29,7 +29,7 @@ The owner chose an additive change to v1, not a break. Nothing is removed. Remov
 | `Project__c`              | `prj`  |                          |        |
 
 - **Assignment.** `PublicKeyService.assign` fills any blank key before insert. It draws a key, checks the draw against stored rows and the rest of the batch with one query, and draws again for each clash, up to five times, then raises `PublicKeyException`. A key a record arrives with is kept. `PublicKeyService.refuseChange` runs on update and adds an error when an existing key is changed or cleared, with the case compared exactly. Setting a key on a row that had none is allowed, which is how the backfill works. None of the 13 objects had a trigger, so each got one minimal trigger named `<Object>PublicKeyTrigger` that does nothing but call the service.
-- **Existing rows.** `scripts/backfill-public-keys.apex` fills blank keys in batches of 200 and says how many rows remain. The owner runs it once against production after the deploy. Writing to production data is the owner's.
+- **Existing rows.** `scripts/backfill-public-keys.apex` fills blank keys in batches of 200 and says how many rows remain. I run it once against production after the deploy. Writing to production data is mine.
 - **API.** Every SAPI and PAPI object that carried `id` also carries `key`. Every reference carries its own pair: `projectKey`, `experienceKey`, `skillKey`, `certificationKey`, `contactKey`, `employerKey` and `issuerKey`. Each query parameter that took an Id (`projectId`, `experienceId`, `certificationId`) and the `/projects/{id}` path segment now take an Id or a key. A value that is a Salesforce Id is used as before. A value shaped like a key is looked up on that object, and a key with no record matches no rows, the way an Id with no record does. Anything else is a `400 BAD_REQUEST` on the three parameters. The path keeps its old behaviour for such a value, a `404`.
 - **Query definitions.** The key fields are added to the code defaults and to the matching `Query_Definition__mdt` records together, so each record still ships equal to its default.
 - **Specs.** Both specs move to 1.4.0, gain `key` and the reference keys, and mark `id` and each reference Id `deprecated: true` with a description that points at the key.
@@ -38,7 +38,7 @@ The owner chose an additive change to v1, not a break. Nothing is removed. Remov
 
 | Option                                               | Why not                                                                                                                             |
 | :--------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
-| Replace `id` with `key` in v1                        | It breaks every client that stores an Id. The owner chose the additive path.                                                        |
+| Replace `id` with `key` in v1                        | It breaks every client that stores an Id. I chose the additive path.                                                                |
 | Use the record Name or a slug                        | A rename would change the key, and names carry personal detail. Names are not unique on every object.                               |
 | Use `Auto Number` or a sequence                      | It tells a reader how many records exist and in what order. It is guessable.                                                        |
 | Use a UUID                                           | 36 characters is long for a URL, and it carries no hint of the object. The prefix makes a mistyped or misplaced key easy to spot.   |

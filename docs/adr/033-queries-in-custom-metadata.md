@@ -8,7 +8,7 @@ Accepted (2026-10-24).
 
 Every content read was SOQL written into its Apex class. Changing a field list, a filter or a sort order meant a code change, a test run and a deploy, even when the change only narrowed what a page or an API path returns.
 
-The owner chose whole queries in metadata for every content read, not only the parts of a query that change often. That has a risk the settings in [ADR-032](032-operational-settings-in-custom-metadata.md) do not have. A query decides which records and which fields leave the org, and several of these reads serve the site guest or a public API path. An edit to a record must never be able to return a field the class does not return today, drop a condition such as `Approved__c = true`, or put text from a request into a query.
+I chose whole queries in metadata for every content read, not only the parts of a query that change often. That has a risk the settings in [ADR-032](032-operational-settings-in-custom-metadata.md) do not have. A query decides which records and which fields leave the org, and several of these reads serve the site guest or a public API path. An edit to a record must never be able to return a field the class does not return today, drop a condition such as `Approved__c = true`, or put text from a request into a query.
 
 ## Decision
 
@@ -27,7 +27,7 @@ The owner chose whole queries in metadata for every content read, not only the p
 | Option                                         | Rejected because                                                                                                       |
 | :--------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------- |
 | Keep every query in code                       | Every field list or filter change is a code change and a full test run.                                                |
-| Only the changeable parts in metadata          | The owner chose whole queries.                                                                                         |
+| Only the changeable parts in metadata          | I chose whole queries.                                                                                                 |
 | A record replaces the code's query outright    | An edit could drop `Approved__c = true` or add a field the guest must not see, and nothing would catch it.             |
 | One record per combination of optional filters | Certifications alone would need 8 records, and the class would pick a record by the request, which is harder to check. |
 | Read records with SOQL every time              | Every content read would spend a query on its own definition.                                                          |

@@ -27,7 +27,7 @@ A mistyped value must never break a request. A rate limit of 0 or a page size of
 | Option                                       | Rejected because                                                                                          |
 | :------------------------------------------- | :-------------------------------------------------------------------------------------------------------- |
 | Keep the constants                           | Every number change is a code change and a full test run.                                                 |
-| A field per value on `Portfolio_Config__mdt` | Each new value is a new field, and the config type would mix owner details with operational limits.       |
+| A field per value on `Portfolio_Config__mdt` | Each new value is a new field, and the config type would mix my details with operational limits.          |
 | Hierarchy custom settings                    | Values are data, not metadata, so they do not deploy with the code to production or to CI's scratch orgs. |
 | No range check                               | A typo such as a rate of 0 would reach every caller until someone noticed.                                |
 

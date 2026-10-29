@@ -49,7 +49,7 @@ This is not a static website. It is a live, observable platform governed by prod
 #### Current MVP State (Q1 2027 Launch)
 
 - 100% on-platform data access using Apex REST + native Salesforce GraphQL (lightning/uiGraphQLApi)
-- Skill Graph and Project Gallery use the native GraphQL wire adapter. The Roadmap and Changelog read cached Jira and GitHub data through Apex (`DeliveryController`), because the cache is one JSON row per refresh, not one record per item (owner decision, 2026-10-21)
+- Skill Graph and Project Gallery use the native GraphQL wire adapter. The Roadmap and Changelog read cached Jira and GitHub data through Apex (`DeliveryController`), because the cache is one JSON row per refresh, not one record per item (my decision, 2026-10-21)
 - External services the site depends on: the Gemini API for cover letters (with a local template when it fails), GitHub and Jira for the Delivery page (read by scheduled jobs into caches, never by a visitor), and Google Analytics 4 for events. No middleware, server or database outside Salesforce is required
 
 #### Target Enterprise State, Phase 8 (planned for 2027 to 2028): _designed, not built_
@@ -78,7 +78,7 @@ This is not a static website. It is a live, observable platform governed by prod
 - **Advanced Visualization:** a skills matrix with "years used" from linked roles, and a D3.js force graph that loads only when a visitor opens it ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md)).
 - **Dynamic ERD Visualizer:** an Entity Relationship Diagram drawn from the org's own schema through the Apex Schema class and the same D3.js engine, in place of a static architecture diagram.
 - **Executable Governance:** LWC-based documentation that verifies its own success criteria from pipeline evidence. CI publishes a platform event, an Apex trigger persists it, and the checklist reads the result when viewed (for example, ticking "production deploy green" with the commit and the run behind it).
-- **Enterprise Observability:** structured Apex logging through one seam (`PortfolioLog`) that writes to **Nebula Logger** (Open Source) when the owner has installed it, and to debug logs when not. Nebula is optional, so CI and scratch orgs run without it.
+- **Enterprise Observability:** structured Apex logging through one seam (`PortfolioLog`) that writes to **Nebula Logger** (Open Source) when I have installed it, and to debug logs when not. Nebula is optional, so CI and scratch orgs run without it.
 
 **Out of Scope:**
 
@@ -127,7 +127,7 @@ To define the "Definition of Done" for this portfolio, the following metrics mus
 - **ai_fallback_usage:** % of generations served by the Local Template (the fallback share).
 - **ai_complete_failure_rate:** % of requests that end with no content at all, a 503 or an error message (Target < 1%).
 - **finops_quota_visibility:** visitors who hover over or focus the footer's "AI requests today" line.
-- All three AI rates are to come from one GA4 event, `ai_generation_completed`, with the parameters `provider`, `model`, `fallback`, `latency_ms` and `outcome`. GA4 computes the rates, so no counter is stored in Salesforce (owner decision, 2026-10-21). Component events go to GA4 through the site's head script ([Technical Guide §2.8](./04-Technical-Guide.md#28-analytics-instrumentation-ga4)). Delivery was proven on a scratch copy of the site. The check in production's GA4 DebugView is the owner's and is still open. Before that change no component event reached GA4, so no earlier rate or conversion figure exists.
+- All three AI rates are to come from one GA4 event, `ai_generation_completed`, with the parameters `provider`, `model`, `fallback`, `latency_ms` and `outcome`. GA4 computes the rates, so no counter is stored in Salesforce (my decision, 2026-10-21). Component events go to GA4 through the site's head script ([Technical Guide §2.8](./04-Technical-Guide.md#28-analytics-instrumentation-ga4)). Delivery was proven on a scratch copy of the site. I still have to do the check in production's GA4 DebugView. Before that change no component event reached GA4, so no earlier rate or conversion figure exists.
 
 **Conversion:**
 
@@ -196,16 +196,16 @@ The delivery is organized into four parallel tracks:
 **Phase 6: Observability & Launch**
 
 - **System Health "Glass Box Telemetry":** `c-footer` with deferred loading (ADR-014) shows CPU, heap and SOQL use against their limits, AI provider health and AI requests today.
-- **Enterprise Logging:** Nebula Logger is optional. The owner installs it (unlocked package, no namespace) in production by hand and sets 2-day retention (Maintenance Guide). Apex reaches it only through the `PortfolioLog` seam.
+- **Enterprise Logging:** Nebula Logger is optional. I install it (unlocked package, no namespace) in production by hand and sets 2-day retention (Maintenance Guide). Apex reaches it only through the `PortfolioLog` seam.
 - **Resilience Simulation:** the "Simulate an outage" switch on each Delivery page feed, which returns the cached data marked as simulated (`DeliveryController`).
 - **Analytics Instrumentation:** Google Analytics 4 (GA4) with custom events for API tests, resume downloads and the other events in `c/analyticsService`.
-- **API Mode Indicator:** the Glass Box footer measures the guest GraphQL path after first paint and shows it as live with its latency, or as unavailable. It is measured on every visit, never a constant label (owner decision, 2026-10-21).
+- **API Mode Indicator:** the Glass Box footer measures the guest GraphQL path after first paint and shows it as live with its latency, or as unavailable. It is measured on every visit, never a constant label (my decision, 2026-10-21).
 - **Final Polish:** Mobile optimization, Lighthouse audits, and Public DNS configuration. The domain redirect is in place. The device checks on iOS and Android are planned before launch.
 
 **Phase 7: Observability & Governance (moved into the launch scope, built)**
 
 - **System Health Dashboard:** "Glass Box Telemetry" footer.
-- **Smart Documentation:** moved into the launch scope (owner decision, 2026-10-21). `c-smart-checklist` reads `Pipeline_Run__c` records written by an Apex trigger on `Governance_Event__e`, which CI publishes. It does not use `lightning/empApi`, which LWR sites do not support.
+- **Smart Documentation:** moved into the launch scope (my decision, 2026-10-21). `c-smart-checklist` reads `Pipeline_Run__c` records written by an Apex trigger on `Governance_Event__e`, which CI publishes. It does not use `lightning/empApi`, which LWR sites do not support.
 
 **Phase 8: Multi-Cloud & FinOps, a Hybrid GraphQL Strategy (planned for 2027 to 2028)**
 
@@ -217,7 +217,7 @@ The delivery is organized into four parallel tracks:
 _The design is in the SAS. Apart from the GraphQL check, which confirms what runs today, every item below is a plan and none of it is built._
 
 - **Native GraphQL Verification:**
-  - Confirm `c-skill-network` and Project Gallery use `lightning/uiGraphQLApi`. `c-roadmap-viewer` reads Apex over the cache by design (owner decision, 2026-10-21)
+  - Confirm `c-skill-network` and Project Gallery use `lightning/uiGraphQLApi`. `c-roadmap-viewer` reads Apex over the cache by design (my decision, 2026-10-21)
 - **AWS Lambda Polyglot Gateway:** (Function URL), "Door 2", **designed, not built** (planned for 2027 to 2028)
   - Deploy single HTTPS Function URL endpoint (no API Gateway)
   - Support both REST → GraphQL translation and direct GraphQL
@@ -285,7 +285,7 @@ _The design is in the SAS. Apart from the GraphQL check, which confirms what run
 
 **Phase 6: Observability & Launch**
 
-- **Owner:** install Nebula Logger (unlocked package) by hand and set its retention (`LoggerSettings__c`). It is optional.
+- **Me:** install Nebula Logger (unlocked package) by hand and set its retention (`LoggerSettings__c`). It is optional.
 - **Dev:** Build `c-footer` LWC (Glass Box Telemetry) using requestIdleCallback.
 - **Dev:** Implement `c/analyticsService` for unified GA4 event tracking.
 - **Config:** the "Simulate an outage" switches and their simulated reads in `DeliveryController.cls`.
@@ -300,7 +300,7 @@ Before user stories are written, features are evaluated against a "Problem State
 
 - **Problem Statement:** Recruiters and Hiring Managers struggle to verify an architect's hands-on skills through static PDFs.
 - **The Need:** A verified, interactive demonstration of complex capabilities (API, LWC, AI).
-- **The Value:** Reduces "Time-to-Trust" for the evaluator; differentiates the candidate from paper-qualified applicants.
+- **The Value:** Reduces "Time-to-Trust" for the evaluator and differentiates me from paper-qualified applicants.
 
 ### 5.2 Epic Breakdown Example: Resume Builder
 
