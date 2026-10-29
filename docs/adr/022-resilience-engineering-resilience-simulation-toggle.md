@@ -28,3 +28,12 @@ The decision stands. The state and the toggle are built differently from the imp
 - **The breaker.** `CircuitBreaker` (`isOpen`, `openUntil`, `recordSuccess`, `recordFailure`, `snapshot`), keys `github`, `jira`, `gemini` and `agentforce`. Three consecutive failures open the circuit for 30 minutes. After that the next call is tried: a success closes it, a failure opens it for 30 more minutes. A skipped provider is recorded as `skipped_open_circuit`. The GitHub and Jira refresh jobs skip their callout while their circuit is open, and `ContentGenerationController.dispatch` skips Gemini (or Agentforce) while theirs is open and serves the next provider. State is written only after the callouts in a transaction, never before one.
 - **The toggle is a visible switch, "Simulate an outage", in the roadmap card, driving the roadmap and Latest Updates together**, off by default, not in the footer. It passes `simulate` to `DeliveryController.getRecentCommits(Boolean simulate)` and `getRoadmap(Boolean simulate)`, which return the cached data marked `SIMULATED` and make no callout. No service class mocks a 500, and nothing the visitor does changes stored state.
 - **What the visitor sees:** `SIMULATED` while the switch is on, `DEGRADED` while the real breaker for that source is open, and in both cases the last good data with its age.
+
+## Amendment (2026-10-29): the before and after for the outage switch
+
+The decision stands. The switch now shows a before and after beside the panel it affects.
+
+- While the "Simulate an outage" switch is on and a panel's feed is `SIMULATED`, the roadmap and Latest Updates show `c-outage-compare` above their content.
+- It sets a static, labelled illustration of a panel with no saved copy and no breaker beside a three step trace of what the panel really does. Step one says no call was made to the source. Step two says the breaker counts a failed refresh and opens at 3 in a row for 30 minutes. Step three says the panel shows the last saved copy with its age.
+- `DEGRADED`, a real open breaker, does not show it.
+- **The numbers are text, not settings.** The 3 and the 30 are the `CircuitBreaker` defaults and the values of the `Circuit_Failure_Threshold` and `Circuit_Open_Minutes` settings, but they are written into the component's wording. If I change either setting, I change the wording too.
