@@ -32,6 +32,8 @@
 
 .metrics-head c-view-source {
   margin-inline-start: 0;
+  --view-source-size: 13px;
+  --view-source-padding: var(--pf-space-3);
 }
 
 .metrics-caption {
@@ -68,6 +70,13 @@
   margin-left: -1px;
   padding: 0 var(--pf-space-4);
   border-left: 1px solid var(--pf-border);
+}
+
+/* CI takes the first line of the readings to itself, so Platform and Integrations share the
+   next one as before. */
+.metric-group[data-group="ci"] {
+  flex: 1 0 100%;
+  box-sizing: border-box;
 }
 
 /* The GraphQL probe renders nothing, so it takes no gap in the row. */
