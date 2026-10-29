@@ -3,7 +3,7 @@
  *                      exists instead of guessing what to type. getOptions returns one option
  *                      list per query parameter name: the distinct names a name filter can match,
  *                      each record's name with its public key for an Id filter (ADR-038, the
- *                      same value works in v1 and v2), and the active picklist values for
+ *                      same value works in v1 and v2, under projectId in v1 and projectKey in v2), and the active picklist values for
  *                      persona and category. Every read uses a fixed field list made only of
  *                      Ids, public keys, record names and lookups to them, so no email, phone or free
  *                      text field is ever queried. It shows only names the API already returns.
@@ -42,6 +42,9 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
   public static final String ISSUER_NAME = 'issuerName';
   public static final String CERTIFICATION_NAME = 'certificationName';
   public static final String CERTIFICATION_ID = 'certificationId';
+  public static final String EXPERIENCE_KEY = 'experienceKey';
+  public static final String PROJECT_KEY = 'projectKey';
+  public static final String CERTIFICATION_KEY = 'certificationKey';
 
   /** Every parameter getOptions answers for, each always present in the result. */
   public static final List<String> PARAMETERS = new List<String>{
@@ -55,7 +58,10 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
     CATEGORY,
     ISSUER_NAME,
     CERTIFICATION_NAME,
-    CERTIFICATION_ID
+    CERTIFICATION_ID,
+    EXPERIENCE_KEY,
+    PROJECT_KEY,
+    CERTIFICATION_KEY
   };
 
   /**
@@ -242,6 +248,11 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
     options.put(ISSUER_NAME, issuerNames.toOptions());
     options.put(CERTIFICATION_NAME, certificationNames.toOptions());
     options.put(CERTIFICATION_ID, recordOptions(certifications));
+    // v2 names these filters *Key. The values are the same public keys, so one list serves
+    // both names and the API Lab picks the name its version uses.
+    options.put(EXPERIENCE_KEY, options.get(EXPERIENCE_ID));
+    options.put(PROJECT_KEY, options.get(PROJECT_ID));
+    options.put(CERTIFICATION_KEY, options.get(CERTIFICATION_ID));
     return options;
   }
 

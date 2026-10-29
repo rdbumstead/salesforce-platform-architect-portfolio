@@ -161,9 +161,9 @@ private class ApiLabOptionsControllerTest {
       'Every parameter has a key and there is no other key'
     );
     Assert.areEqual(
-      11,
+      14,
       options.size(),
-      'Eleven parameter names cover the 18 filters'
+      'Fourteen parameter names cover the filters, the three Key names included'
     );
   }
 
@@ -216,6 +216,29 @@ private class ApiLabOptionsControllerTest {
         'The label is that record\'s name'
       );
     }
+  }
+
+  @isTest
+  static void offersTheSameKeysUnderTheV2KeyNames() {
+    Test.startTest();
+    Map<String, List<ApiLabOptionsController.Option>> options = ApiLabOptionsController.getOptions();
+    Test.stopTest();
+
+    Assert.areEqual(
+      JSON.serialize(options.get(ApiLabOptionsController.PROJECT_ID)),
+      JSON.serialize(options.get(ApiLabOptionsController.PROJECT_KEY)),
+      'projectKey'
+    );
+    Assert.areEqual(
+      JSON.serialize(options.get(ApiLabOptionsController.EXPERIENCE_ID)),
+      JSON.serialize(options.get(ApiLabOptionsController.EXPERIENCE_KEY)),
+      'experienceKey'
+    );
+    Assert.areEqual(
+      JSON.serialize(options.get(ApiLabOptionsController.CERTIFICATION_ID)),
+      JSON.serialize(options.get(ApiLabOptionsController.CERTIFICATION_KEY)),
+      'certificationKey'
+    );
   }
 
   @isTest

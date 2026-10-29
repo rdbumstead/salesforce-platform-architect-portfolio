@@ -220,52 +220,88 @@ private class ApiVersionTest {
     send(
       SAPI + 'project-assets/',
       'v2',
-      new Map<String, String>{ 'projectId' => projectKey }
+      new Map<String, String>{ 'projectKey' => projectKey }
     );
     SAPIProjectAsset.getProjectAssets();
     Assert.areEqual(200, RestContext.response.statusCode, 'A key works');
     Assert.areEqual(2, ((List<Object>) body()).size(), 'The key narrows');
 
+    // An Id under the new name is an unknown key.
     send(
       SAPI + 'project-assets/',
       'v2',
-      new Map<String, String>{ 'projectId' => String.valueOf(projectId) }
+      new Map<String, String>{ 'projectKey' => String.valueOf(projectId) }
     );
     SAPIProjectAsset.getProjectAssets();
     Assert.areEqual(400, RestContext.response.statusCode, 'An Id is refused');
     Assert.areEqual(
-      'projectId must be a public key.',
+      'projectKey must be a public key.',
       ((Map<String, Object>) body()).get('message'),
       'v2 message'
+    );
+
+    // The old name is refused in v2, even with a key.
+    send(
+      SAPI + 'project-assets/',
+      'v2',
+      new Map<String, String>{ 'projectId' => projectKey }
+    );
+    SAPIProjectAsset.getProjectAssets();
+    Assert.areEqual(400, RestContext.response.statusCode, 'Old name refused');
+    Assert.areEqual(
+      'Use projectKey in v2.',
+      ((Map<String, Object>) body()).get('message'),
+      'Names the new parameter'
     );
 
     send(
       SAPI + 'project-skills/',
       'v2',
-      new Map<String, String>{ 'projectId' => String.valueOf(projectId) }
+      new Map<String, String>{ 'projectId' => projectKey }
     );
     SAPIProjectSkill.getProjectSkills();
-    Assert.areEqual(400, RestContext.response.statusCode, 'project-skills');
+    Assert.areEqual(400, RestContext.response.statusCode, 'project-skills old');
+    send(
+      SAPI + 'project-skills/',
+      'v2',
+      new Map<String, String>{ 'projectKey' => String.valueOf(projectId) }
+    );
+    SAPIProjectSkill.getProjectSkills();
+    Assert.areEqual(400, RestContext.response.statusCode, 'project-skills Id');
 
     send(
       SAPI + 'experience-skills/',
       'v2',
-      new Map<String, String>{ 'experienceId' => String.valueOf(experienceId) }
+      new Map<String, String>{ 'experienceId' => experienceKey }
     );
     SAPIExperienceSkill.getExperienceSkills();
-    Assert.areEqual(400, RestContext.response.statusCode, 'experience-skills');
+    Assert.areEqual(400, RestContext.response.statusCode, 'exp-skills old');
+    send(
+      SAPI + 'experience-skills/',
+      'v2',
+      new Map<String, String>{ 'experienceKey' => String.valueOf(experienceId) }
+    );
+    SAPIExperienceSkill.getExperienceSkills();
+    Assert.areEqual(400, RestContext.response.statusCode, 'exp-skills Id');
 
     send(
       SAPI + 'experience-highlights/',
       'v2',
-      new Map<String, String>{ 'experienceId' => experienceKey }
+      new Map<String, String>{ 'experienceKey' => experienceKey }
     );
     SAPIExperienceHighlight.getExperienceHighlights();
     Assert.areEqual(200, RestContext.response.statusCode, 'highlights key');
     send(
       SAPI + 'experience-highlights/',
       'v2',
-      new Map<String, String>{ 'experienceId' => String.valueOf(experienceId) }
+      new Map<String, String>{ 'experienceId' => experienceKey }
+    );
+    SAPIExperienceHighlight.getExperienceHighlights();
+    Assert.areEqual(400, RestContext.response.statusCode, 'highlights old');
+    send(
+      SAPI + 'experience-highlights/',
+      'v2',
+      new Map<String, String>{ 'experienceKey' => String.valueOf(experienceId) }
     );
     SAPIExperienceHighlight.getExperienceHighlights();
     Assert.areEqual(400, RestContext.response.statusCode, 'highlights Id');
@@ -273,12 +309,24 @@ private class ApiVersionTest {
     send(
       SAPI + 'certification-skills/',
       'v2',
-      new Map<String, String>{ 'certificationId' => String.valueOf(projectId) }
+      new Map<String, String>{ 'certificationId' => 'crt_abcdefghij' }
     );
     SAPICertificationSkill.getCertificationSkills();
-    Assert.areEqual(400, RestContext.response.statusCode, 'cert skills Id');
+    Assert.areEqual(400, RestContext.response.statusCode, 'cert old name');
+    Assert.areEqual(
+      'Use certificationKey in v2.',
+      ((Map<String, Object>) body()).get('message'),
+      'cert message'
+    );
+    send(
+      SAPI + 'certification-skills/',
+      'v2',
+      new Map<String, String>{ 'certificationKey' => String.valueOf(projectId) }
+    );
+    SAPICertificationSkill.getCertificationSkills();
+    Assert.areEqual(400, RestContext.response.statusCode, 'cert Id');
 
-    // The same Id still works in v1.
+    // v1 keeps the old names and still takes an Id.
     send(
       SAPI + 'project-assets/',
       'v1',
