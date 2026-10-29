@@ -844,12 +844,13 @@ describe("c-roadmap-viewer", () => {
     expect(ageLabel(0)).toBe("Last updated 0 min ago");
     expect(ageLabel(undefined)).toBe("");
   });
-  it("places the View source control for its key at the right of the title row", () => {
+  it("places View source and then the live data marker at the right of the title row, as in the cards", () => {
     const element = createComponent();
     const row = q(element, ".roadmap-title-row");
     const control = row.querySelector("c-view-source");
     expect(control).not.toBeNull();
-    expect(row.lastElementChild).toBe(control);
+    expect(control.nextElementSibling.tagName).toBe("C-DATA-SOURCE");
+    expect(row.lastElementChild.tagName).toBe("C-DATA-SOURCE");
     expect(row.firstElementChild.tagName).toBe("H2");
     expect(control.sourceKey).toBe("roadmapViewer");
   });

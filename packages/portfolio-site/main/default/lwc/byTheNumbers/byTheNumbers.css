@@ -249,6 +249,15 @@
   margin: 0;
 }
 
+/* The live data marker sits at the end of the heading row, as it does in the cards, and
+   under the heading from the start of the line on a phone. */
 .card-source {
   display: inline-flex;
+  margin-inline-start: auto;
+}
+
+@media (max-width: 600px) {
+  .card-source {
+    margin-inline-start: 0;
+  }
 }
