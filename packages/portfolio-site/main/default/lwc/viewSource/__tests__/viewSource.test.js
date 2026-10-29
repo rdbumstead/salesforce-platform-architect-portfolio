@@ -133,6 +133,22 @@ describe("c-view-source", () => {
     expect($(element, ".dialog-body")).toBeNull();
   });
 
+  it("labels the button View source by default and by a custom label", async () => {
+    const element = create();
+    element.label = "   ";
+    getSourceFiles.emit(FILES);
+    await flush();
+    expect($(element, ".view-source-button").textContent.trim()).toBe(
+      "View source"
+    );
+
+    element.label = "View analytics source";
+    await flush();
+    expect($(element, ".view-source-button").textContent.trim()).toBe(
+      "View analytics source"
+    );
+  });
+
   it("opens a labelled modal dialog and moves focus into it", async () => {
     const element = create();
     getSourceFiles.emit(FILES);
