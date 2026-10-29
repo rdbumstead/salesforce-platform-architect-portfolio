@@ -285,7 +285,7 @@ _The design is in the SAS. Apart from the GraphQL check, which confirms what run
 
 **Phase 6: Observability & Launch**
 
-- **Me:** install Nebula Logger (unlocked package) by hand and set its retention (`LoggerSettings__c`). It is optional.
+- **Setup:** I install Nebula Logger (unlocked package) by hand and set its retention (`LoggerSettings__c`). It is optional.
 - **Dev:** Build `c-footer` LWC (Glass Box Telemetry) using requestIdleCallback.
 - **Dev:** Implement `c/analyticsService` for unified GA4 event tracking.
 - **Config:** the "Simulate an outage" switches and their simulated reads in `DeliveryController.cls`.
