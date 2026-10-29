@@ -25,9 +25,14 @@
       </div>
       <div class="part part-with" data-id="with">
         <h4 class="part-title">{wording.withHeading}</h4>
-        <ol class="steps" data-id="steps">
+        <ol class="steps" role="list" data-id="steps">
           <template for:each={steps} for:item="step">
-            <li key={step.id} class="step" data-id={step.id}>{step.text}</li>
+            <li key={step.id} class="step" data-id={step.id}>
+              <span class="step-number" data-id="step-number" aria-hidden="true"
+                >{step.number}</span
+              >
+              <span class="step-text" data-id="step-text">{step.text}</span>
+            </li>
           </template>
         </ol>
       </div>
