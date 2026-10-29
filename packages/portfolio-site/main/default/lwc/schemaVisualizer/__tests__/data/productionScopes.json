@@ -40,8 +40,8 @@
         "fields": []
       },
       {
-        "apiName": "EH_Letter_of_Support__c",
-        "label": "Letter of Support",
+        "apiName": "EH_Endorsement_Request__c",
+        "label": "Endorsement Request",
         "isCustom": true,
         "fieldCount": 15,
         "fields": []
@@ -54,8 +54,8 @@
         "fields": []
       },
       {
-        "apiName": "EH_Sponsorship__c",
-        "label": "Sponsorship",
+        "apiName": "EH_Partner_Investment__c",
+        "label": "Partner Investment",
         "isCustom": true,
         "fieldCount": 16,
         "fields": []
@@ -142,13 +142,13 @@
         "kind": "masterDetail"
       },
       {
-        "fromObject": "EH_Letter_of_Support__c",
+        "fromObject": "EH_Endorsement_Request__c",
         "toObject": "Case",
         "field": "Case__c",
         "kind": "lookup"
       },
       {
-        "fromObject": "EH_Letter_of_Support__c",
+        "fromObject": "EH_Endorsement_Request__c",
         "toObject": "Contact",
         "field": "Signatory__c",
         "kind": "lookup"
@@ -166,19 +166,19 @@
         "kind": "lookup"
       },
       {
-        "fromObject": "EH_Sponsorship__c",
+        "fromObject": "EH_Partner_Investment__c",
         "toObject": "Account",
         "field": "Account__c",
         "kind": "lookup"
       },
       {
-        "fromObject": "EH_Sponsorship__c",
+        "fromObject": "EH_Partner_Investment__c",
         "toObject": "Contract",
         "field": "Contract__c",
         "kind": "lookup"
       },
       {
-        "fromObject": "EH_Sponsorship__c",
+        "fromObject": "EH_Partner_Investment__c",
         "toObject": "Opportunity",
         "field": "Opportunity__c",
         "kind": "lookup"

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EH_Industry_Sector__c</fullName>
+    <description
+  >The industry an employer partner works in, which decides the queue its requests go to. Part of the Employer Hub demo schema.</description>
+    <inlineHelpText>Choose the industry this employer works in.</inlineHelpText>
+    <label>Industry Sector</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Healthcare</fullName>
+                <default>false</default>
+                <label>Healthcare</label>
+            </value>
+            <value>
+                <fullName>Manufacturing</fullName>
+                <default>false</default>
+                <label>Manufacturing</label>
+            </value>
+            <value>
+                <fullName>Technology</fullName>
+                <default>false</default>
+                <label>Technology</label>
+            </value>
+            <value>
+                <fullName>Business Services</fullName>
+                <default>false</default>
+                <label>Business Services</label>
+            </value>
+            <value>
+                <fullName>Construction</fullName>
+                <default>false</default>
+                <label>Construction</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

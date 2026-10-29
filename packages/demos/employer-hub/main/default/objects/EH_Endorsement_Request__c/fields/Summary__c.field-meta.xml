@@ -2,9 +2,9 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Summary__c</fullName>
     <description
-  >A short plain text summary of the letter and what it supports.</description>
+  >A short plain text summary of the endorsement and what it supports.</description>
     <inlineHelpText
-  >Describe the letter and what it supports in a few sentences.</inlineHelpText>
+  >Describe the endorsement and what it supports in a few sentences.</inlineHelpText>
     <label>Summary</label>
     <length>2000</length>
     <type>LongTextArea</type>

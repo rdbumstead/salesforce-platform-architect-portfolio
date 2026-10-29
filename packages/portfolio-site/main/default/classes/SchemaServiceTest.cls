@@ -158,8 +158,8 @@ private class SchemaServiceTest {
     for (
       String name : new List<String>{
         'EH_Job_Posting__c',
-        'EH_Sponsorship__c',
-        'EH_Letter_of_Support__c',
+        'EH_Partner_Investment__c',
+        'EH_Endorsement_Request__c',
         'EH_Partner_Engagement__c'
       }
     ) {
@@ -177,8 +177,8 @@ private class SchemaServiceTest {
     );
     Assert.areEqual(
       SchemaService.KIND_LOOKUP,
-      findEdge(employerHub, 'EH_Sponsorship__c', 'Contract__c').kind,
-      'Sponsorship looks up Contract'
+      findEdge(employerHub, 'EH_Partner_Investment__c', 'Contract__c').kind,
+      'Partner Investment looks up Contract'
     );
   }
 

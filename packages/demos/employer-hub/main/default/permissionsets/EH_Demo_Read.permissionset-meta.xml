@@ -29,32 +29,32 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Letter_of_Support__c.Case__c</field>
+        <field>EH_Endorsement_Request__c.Case__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Letter_of_Support__c.Due_Date__c</field>
+        <field>EH_Endorsement_Request__c.Due_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Letter_of_Support__c.Requested_Date__c</field>
+        <field>EH_Endorsement_Request__c.Requested_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Letter_of_Support__c.Signatory__c</field>
+        <field>EH_Endorsement_Request__c.Signatory__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Letter_of_Support__c.Status__c</field>
+        <field>EH_Endorsement_Request__c.Status__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Letter_of_Support__c.Summary__c</field>
+        <field>EH_Endorsement_Request__c.Summary__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -89,37 +89,37 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Sponsorship__c.Account__c</field>
+        <field>EH_Partner_Investment__c.Account__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Sponsorship__c.Amount__c</field>
+        <field>EH_Partner_Investment__c.Amount__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Sponsorship__c.Commitment_Date__c</field>
+        <field>EH_Partner_Investment__c.Commitment_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Sponsorship__c.Contract__c</field>
+        <field>EH_Partner_Investment__c.Contract__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Sponsorship__c.Opportunity__c</field>
+        <field>EH_Partner_Investment__c.Opportunity__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Sponsorship__c.Status__c</field>
+        <field>EH_Partner_Investment__c.Status__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>EH_Sponsorship__c.Summary__c</field>
+        <field>EH_Partner_Investment__c.Summary__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
@@ -140,7 +140,7 @@
         <allowEdit>false</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
-        <object>EH_Letter_of_Support__c</object>
+        <object>EH_Endorsement_Request__c</object>
         <viewAllFields>false</viewAllFields>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
@@ -160,7 +160,7 @@
         <allowEdit>false</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
-        <object>EH_Sponsorship__c</object>
+        <object>EH_Partner_Investment__c</object>
         <viewAllFields>false</viewAllFields>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>

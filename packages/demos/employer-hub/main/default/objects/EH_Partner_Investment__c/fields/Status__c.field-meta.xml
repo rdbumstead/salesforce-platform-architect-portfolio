@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Status__c</fullName>
-    <description>Where the letter stands.</description>
-    <inlineHelpText>Choose the letter's current status.</inlineHelpText>
+    <description>Where the investment stands.</description>
+    <inlineHelpText>Choose the investment's current status.</inlineHelpText>
     <label>Status</label>
     <required>false</required>
     <type>Picklist</type>
@@ -11,24 +11,24 @@
         <valueSetDefinition>
             <sorted>false</sorted>
             <value>
-                <fullName>Requested</fullName>
+                <fullName>Proposed</fullName>
                 <default>false</default>
-                <label>Requested</label>
+                <label>Proposed</label>
             </value>
             <value>
-                <fullName>Drafted</fullName>
+                <fullName>Committed</fullName>
                 <default>false</default>
-                <label>Drafted</label>
+                <label>Committed</label>
             </value>
             <value>
-                <fullName>Signed</fullName>
+                <fullName>Received</fullName>
                 <default>false</default>
-                <label>Signed</label>
+                <label>Received</label>
             </value>
             <value>
-                <fullName>Delivered</fullName>
+                <fullName>Declined</fullName>
                 <default>false</default>
-                <label>Delivered</label>
+                <label>Declined</label>
             </value>
         </valueSetDefinition>
     </valueSet>
