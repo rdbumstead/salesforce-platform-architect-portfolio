@@ -7,7 +7,8 @@
  *                      contents and the body, which c/docsViewer's docsRenderer builds from
  *                      Marked_Library's tokens without parsing any HTML. A hash in the address
  *                      names a heading, by its slug or by the slug GitHub would give it, and the
- *                      page scrolls to that heading and moves focus to it. Contents links and
+ *                      page scrolls to that heading and moves focus to it, as the "How it's
+ *                      built" links of c-data-source rely on for the Technical Guide. Contents links and
  *                      heading anchors do the same and update the address. Opening a document
  *                      sends docs_opened with its key.
  * @author            : Ryan Bumstead
@@ -120,7 +121,8 @@ export function docKeyFrom(pageRef, search) {
 const SHORT_BADGES = new Map([
   ["executive-overview", "OVERVIEW"],
   ["program-charter", "CHARTER"],
-  ["guardrails", "GUARDRAILS"]
+  ["guardrails", "GUARDRAILS"],
+  ["technical-guide", "TECH GUIDE"]
 ]);
 
 /**

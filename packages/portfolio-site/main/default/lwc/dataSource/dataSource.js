@@ -5,7 +5,10 @@
  *                      objects, and shows "Live from Salesforce" with a short count line such
  *                      as "10 roles, 54 skills". Pressed, it opens a small panel with one plain
  *                      sentence, the sources with their counts, a link to the full
- *                      data model and, when a source object is drawn in the model, a button
+ *                      data model, a "How it's built" link to the matching section of the
+ *                      Technical Guide on the docs page (same tab, chosen by the first entry
+ *                      of sourceKeys, then by objects, then a fallback section, from
+ *                      GUIDE_SECTIONS) and, when a source object is drawn in the model, a button
  *                      that opens a modal dialog with the diagram of this section only
  *                      (c-schema-visualizer). The dialog follows lwc/viewSource. The button reports aria-expanded, Escape and Close shut the panel
  *                      and focus returns to the button. A failed or empty read hides the counts
@@ -30,6 +33,7 @@ export const WORDING = Object.freeze({
     "This section is not a stored copy. It is rebuilt from my Salesforce records each time the page loads.",
   sourcesHeading: "Where it comes from",
   modelLinkText: "See the full data model",
+  guideLinkText: "How it's built",
   sectionModelButton: "See this section's data model",
   sectionModelHeading: "This section's data model",
   closeButton: "Close",
@@ -38,6 +42,31 @@ export const WORDING = Object.freeze({
 
 /** Where the live data model is shown, for anyone who wants to check. */
 export const MODEL_PATH = "/portfolio/business-architecture";
+
+/** The Technical Guide on the docs page, where "How it's built" opens. */
+export const GUIDE_PATH = "/portfolio/docs?doc=technical-guide";
+
+/**
+ * The Technical Guide heading id each marker opens, found by the first entry of sourceKeys,
+ * then by the first entry of objects, then the fallback. The ids are the docs renderer's
+ * slugs of the headings in docs/guides/04-Technical-Guide.md.
+ */
+export const GUIDE_SECTIONS = Object.freeze({
+  sourceKeys: Object.freeze({
+    ResumeController_Roles: "2-2-c-resume-builder-resume-generation",
+    ResumeController_TimelineRoles: "2-12-home-page",
+    ProjectCardController_HomeCaseStudies: "2-12-home-page",
+    TestimonialController_Approved: "2-3-c-testimonial-submit-social-proof",
+    PortfolioStatsController_Approved: "2-19-by-the-numbers-c-by-the-numbers",
+    DeliveryController_GithubCache: "1-1-github-integration-live-feed",
+    DeliveryController_JiraCache: "1-2-jira-integration-roadmap",
+    PortfolioGroundingService_Projects: "2-22-the-cover-letter-page-and-pdf"
+  }),
+  objects: Object.freeze({
+    Skill__c: "2-1-c-skill-network-visualization"
+  }),
+  fallback: "2-24-live-data-marker-c-data-source"
+});
 
 /** Counts shown in the button itself. The panel lists all of them. */
 export const SUMMARY_LIMIT = 3;
@@ -65,6 +94,19 @@ export function countText(label, count) {
     word = word.slice(0, -1);
   }
   return `${count} ${word}`;
+}
+
+/** The guide heading id for a marker's sourceKeys and objects lists. */
+export function guideSectionId(sourceKeys, objects) {
+  const key = splitList(sourceKeys)[0];
+  if (key && Object.hasOwn(GUIDE_SECTIONS.sourceKeys, key)) {
+    return GUIDE_SECTIONS.sourceKeys[key];
+  }
+  const objectName = splitList(objects)[0];
+  if (objectName && Object.hasOwn(GUIDE_SECTIONS.objects, objectName)) {
+    return GUIDE_SECTIONS.objects[objectName];
+  }
+  return GUIDE_SECTIONS.fallback;
 }
 
 export default class DataSource extends LightningElement {
@@ -165,6 +207,10 @@ export default class DataSource extends LightningElement {
 
   get modelPath() {
     return MODEL_PATH;
+  }
+
+  get guidePath() {
+    return `${GUIDE_PATH}#${guideSectionId(this.sourceKeys, this.objects)}`;
   }
 
   get expanded() {
