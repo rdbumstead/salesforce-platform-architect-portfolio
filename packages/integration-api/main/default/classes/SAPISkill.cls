@@ -67,6 +67,7 @@ global with sharing class SAPISkill implements QueryDefinitions.Provider {
       result.add(
         new Map<String, Object>{
           'id' => s.Id,
+          'key' => s.Public_Key__c,
           'name' => s.Name,
           'displayName' => s.Display_Name__c,
           'category' => s.Category__c,
@@ -90,7 +91,8 @@ global with sharing class SAPISkill implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Skill__c',
-        'Id, Name, Display_Name__c, Category__c, Proficiency__c, Icon_Name__c, SVG_Path_Data__c, Color_Hex__c, Category_Order__c'
+        'Id, Public_Key__c, Name, Display_Name__c, Category__c, Proficiency__c, ' +
+        'Icon_Name__c, SVG_Path_Data__c, Color_Hex__c, Category_Order__c'
       )
       .filter('(IsDeleted = :hasCategory OR Category__c = :category)')
       .orderBy('Proficiency__c DESC, Name ASC')

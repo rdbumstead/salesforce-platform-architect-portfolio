@@ -32,19 +32,23 @@ global with sharing class SAPICertificationSkill implements QueryDefinitions.Pro
         return;
       }
       String certificationId = ctx.stringParam('certificationId');
-      if (
-        String.isNotBlank(certificationId) &&
-        !SAPITransformer.isSalesforceId(certificationId)
-      ) {
-        ctx.error(
-          400,
-          'BAD_REQUEST',
-          'certificationId must be a Salesforce Id.'
+      String certificationIdRef = null;
+      if (String.isNotBlank(certificationId)) {
+        certificationIdRef = SAPITransformer.resolveReference(
+          Certification__c.SObjectType,
+          certificationId
         );
-        return;
+        if (certificationIdRef == null) {
+          ctx.error(
+            400,
+            'BAD_REQUEST',
+            'certificationId must be a Salesforce Id or a public key.'
+          );
+          return;
+        }
       }
 
-      Map<String, Object> binds = listBinds(certificationId?.trim());
+      Map<String, Object> binds = listBinds(certificationIdRef);
       List<Certification_Skill__c> records = (List<Certification_Skill__c>) QueryDefinitions.runPage(
         LIST_QUERY,
         binds,
@@ -75,8 +79,9 @@ global with sharing class SAPICertificationSkill implements QueryDefinitions.Pro
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Certification_Skill__c',
-        'Id, Certification__c, Certification__r.Name, Skill__c, Skill__r.Name, ' +
-        'Skill__r.Category__c, Skill__r.Proficiency__c'
+        'Id, Public_Key__c, Certification__c, Certification__r.Name, ' +
+          'Certification__r.Public_Key__c, Skill__c, Skill__r.Name, ' +
+          'Skill__r.Public_Key__c, Skill__r.Category__c, Skill__r.Proficiency__c'
       )
       .filter(
         '(IsDeleted = :hasCertificationId OR ' +

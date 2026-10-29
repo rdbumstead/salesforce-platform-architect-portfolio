@@ -34,6 +34,7 @@ public class SapiTestData {
   // No email or phone: never returned (owner decision, 2026-10-21).
   public static final Set<String> CONTACT_KEYS = new Set<String>{
     'id',
+    'key',
     'name',
     'title',
     'trailhead',
@@ -43,14 +44,17 @@ public class SapiTestData {
   };
   public static final Set<String> ACCOUNT_KEYS = new Set<String>{
     'id',
+    'key',
     'name',
     'industry',
     'abbreviation'
   };
   public static final Set<String> EXPERIENCE_HIGHLIGHT_KEYS = new Set<String>{
     'id',
+    'key',
     'experienceId',
     'experienceName',
+    'experienceKey',
     'name',
     'description',
     'sortOrder',
@@ -58,9 +62,11 @@ public class SapiTestData {
   };
   public static final Set<String> PROJECT_ASSET_KEYS = new Set<String>{
     'id',
+    'key',
     'name',
     'projectId',
     'projectName',
+    'projectKey',
     'type',
     'externalUrl',
     'altText',
@@ -68,48 +74,63 @@ public class SapiTestData {
   };
   public static final Set<String> CERTIFICATION_KEYS = new Set<String>{
     'id',
+    'key',
     'name',
     'contactId',
     'contactName',
+    'contactKey',
     'issuerId',
     'issuerName',
+    'issuerKey',
     'earnedDate'
   };
   public static final Set<String> EDUCATION_KEYS = new Set<String>{
     'id',
+    'key',
     'name',
     'contactId',
     'contactName',
+    'contactKey',
     'issuerId',
     'issuerName',
+    'issuerKey',
     'fieldOfStudy',
     'graduationDate',
     'gpa'
   };
   public static final Set<String> PROJECT_SKILL_KEYS = new Set<String>{
     'id',
+    'key',
     'projectId',
     'projectName',
+    'projectKey',
     'skillId',
     'skillName',
+    'skillKey',
     'skillCategory',
     'skillProficiencyScore'
   };
   public static final Set<String> EXPERIENCE_SKILL_KEYS = new Set<String>{
     'id',
+    'key',
     'experienceId',
     'experienceName',
+    'experienceKey',
     'skillId',
     'skillName',
+    'skillKey',
     'skillCategory',
     'skillProficiencyScore'
   };
   public static final Set<String> CERTIFICATION_SKILL_KEYS = new Set<String>{
     'id',
+    'key',
     'certificationId',
     'certificationName',
+    'certificationKey',
     'skillId',
     'skillName',
+    'skillKey',
     'skillCategory',
     'skillProficiencyScore'
   };

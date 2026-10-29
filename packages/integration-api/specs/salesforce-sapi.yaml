@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Salesforce System API (SAPI)
-  version: 1.3.0
+  version: 1.4.0
   description: |
     System API exposing core Salesforce objects for the Portfolio.
 
@@ -14,7 +14,7 @@ info:
 
     ### Architecture & Governance
     - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
-    - **ID Strategy**: All `id` fields utilize strictly **18-character Salesforce Case-Insensitive IDs**.
+    - **ID Strategy** (ADR-038): Every record carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the identifier to use. The `id` field is the 18-character Salesforce Id, kept in v1 so existing clients keep working, and it is **deprecated**. Each reference has the same pair (`projectId` and `projectKey`). Every parameter that takes an Id (`projectId`, `experienceId`, `certificationId`, and the `/projects` path segment) also takes the key. A key is set once, never changes, and never carries a name. Removing `id` would be a v2 change.
     - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
     ### Non-Functional Requirements (NFRs)
@@ -178,14 +178,14 @@ components:
     projectIdParam:
       name: projectId
       in: query
-      description: Filter by Project Salesforce ID.
+      description: Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated.
       schema:
         type: string
 
     experienceIdParam:
       name: experienceId
       in: query
-      description: Filter by Experience Salesforce ID.
+      description: Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated.
       schema:
         type: string
 
@@ -241,7 +241,7 @@ components:
     certificationIdParam:
       name: certificationId
       in: query
-      description: Filter by Certification Salesforce ID.
+      description: Filter by Certification public key (for example `crt_6q2v8d4nhz`) or Salesforce ID. The Salesforce ID is deprecated.
       schema:
         type: string
 
@@ -464,9 +464,15 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "0035e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "con_7c5j3w9sfa"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         name:
           type: string
           example: "Ryan Bumstead"
@@ -506,9 +512,15 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a015e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "prj_8f3k2m9qtz"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         name:
           type: string
           example: "Global CRM Migration"
@@ -574,8 +586,13 @@ components:
           description: "Owner Name"
         contactId:
           type: string
+          deprecated: true
           example: "0035e00000B2O3DAAV"
-          description: "Owner ID"
+          description: "Owner ID. Deprecated, use contactKey."
+        contactKey:
+          type: string
+          example: "con_7c5j3w9sfa"
+          description: "Public key of the contact. Use it in place of contactId."
         sortOrder:
           type: number
           example: 10
@@ -589,17 +606,28 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a025e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "exp_4h7n2c8wpd"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         employerName:
           type: string
           example: "Salesforce"
           description: "Employer Name"
         employerId:
           type: string
+          deprecated: true
           example: "0015e00000A1O3DAAV"
-          description: "Employer Account ID"
+          description: "Employer Account ID. Deprecated, use employerKey."
+        employerKey:
+          type: string
+          example: "acc_2t8e6y4mgb"
+          description: "Public key of the employer. Use it in place of employerId."
         name:
           type: string
           description: "Role Title"
@@ -632,8 +660,13 @@ components:
           nullable: true
         contactId:
           type: string
+          deprecated: true
           example: "0035e00000B2O3DAAV"
-          description: "Contact ID"
+          description: "Contact ID. Deprecated, use contactKey."
+        contactKey:
+          type: string
+          example: "con_7c5j3w9sfa"
+          description: "Public key of the contact. Use it in place of contactId."
         contactName:
           type: string
           example: "Ryan Bumstead"
@@ -651,13 +684,24 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a035e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "hlt_9d3p7k5vxn"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         experienceId:
           type: string
+          deprecated: true
           example: "a025e00000B2O3DAAV"
-          description: "Parent Experience ID"
+          description: "Parent Experience ID. Deprecated, use experienceKey."
+        experienceKey:
+          type: string
+          example: "exp_4h7n2c8wpd"
+          description: "Public key of the experience. Use it in place of experienceId."
         experienceName:
           type: string
           example: "Technical Architect"
@@ -686,17 +730,28 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a045e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "pas_4n7s3f9tdk"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         name:
           type: string
           example: "Architecture Diagram"
           description: "Asset Name"
         projectId:
           type: string
+          deprecated: true
           example: "a015e00000B2O3DAAV"
-          description: "Parent Project ID"
+          description: "Parent Project ID. Deprecated, use projectKey."
+        projectKey:
+          type: string
+          example: "prj_8f3k2m9qtz"
+          description: "Public key of the project. Use it in place of projectId."
         projectName:
           type: string
           example: "Global CRM Migration"
@@ -725,9 +780,15 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a055e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "tst_2y7a5d9wmh"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         name:
           type: string
           example: "Testimonial from Jane Doe"
@@ -764,21 +825,37 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a065e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "prs_8w2m6g4bha"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         projectId:
           type: string
+          deprecated: true
           example: "a015e00000B2O3DAAV"
-          description: "Project ID"
+          description: "Project ID. Deprecated, use projectKey."
+        projectKey:
+          type: string
+          example: "prj_8f3k2m9qtz"
+          description: "Public key of the project. Use it in place of projectId."
         projectName:
           type: string
           example: "Global CRM Migration"
           description: "Project Name"
         skillId:
           type: string
+          deprecated: true
           example: "a075e00000B2O3DAAV"
-          description: "Skill ID"
+          description: "Skill ID. Deprecated, use skillKey."
+        skillKey:
+          type: string
+          example: "skl_3m9x5b2rkt"
+          description: "Public key of the skill. Use it in place of skillId."
         skillName:
           type: string
           example: "Apex"
@@ -799,21 +876,37 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a085e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "exs_5r8h2q6cjw"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         experienceId:
           type: string
+          deprecated: true
           example: "a025e00000B2O3DAAV"
-          description: "Experience ID"
+          description: "Experience ID. Deprecated, use experienceKey."
+        experienceKey:
+          type: string
+          example: "exp_4h7n2c8wpd"
+          description: "Public key of the experience. Use it in place of experienceId."
         experienceName:
           type: string
           example: "Technical Architect"
           description: "Experience Name"
         skillId:
           type: string
+          deprecated: true
           example: "a075e00000B2O3DAAV"
-          description: "Skill ID"
+          description: "Skill ID. Deprecated, use skillKey."
+        skillKey:
+          type: string
+          example: "skl_3m9x5b2rkt"
+          description: "Public key of the skill. Use it in place of skillId."
         skillName:
           type: string
           example: "LWC"
@@ -834,21 +927,37 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a095e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "cks_3k9z5x7pne"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         certificationId:
           type: string
+          deprecated: true
           example: "a105e00000B2O3DAAV"
-          description: "Certification ID"
+          description: "Certification ID. Deprecated, use certificationKey."
+        certificationKey:
+          type: string
+          example: "crt_6q2v8d4nhz"
+          description: "Public key of the certification. Use it in place of certificationId."
         certificationName:
           type: string
           example: "Salesforce Certified Application Architect"
           description: "Certification Name"
         skillId:
           type: string
+          deprecated: true
           example: "a075e00000B2O3DAAV"
-          description: "Skill ID"
+          description: "Skill ID. Deprecated, use skillKey."
+        skillKey:
+          type: string
+          example: "skl_3m9x5b2rkt"
+          description: "Public key of the skill. Use it in place of skillId."
         skillName:
           type: string
           example: "Security"
@@ -918,9 +1027,15 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "0015e00000A1O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "acc_2t8e6y4mgb"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         name:
           type: string
           example: "Salesforce"
@@ -943,9 +1058,15 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a075e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "skl_3m9x5b2rkt"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         name:
           type: string
           example: "Apex"
@@ -990,25 +1111,41 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a105e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "crt_6q2v8d4nhz"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         name:
           type: string
           example: "Application Architect"
           description: "Certification Name"
         contactId:
           type: string
+          deprecated: true
           example: "0035e00000B2O3DAAV"
-          description: "Contact ID"
+          description: "Contact ID. Deprecated, use contactKey."
+        contactKey:
+          type: string
+          example: "con_7c5j3w9sfa"
+          description: "Public key of the contact. Use it in place of contactId."
         contactName:
           type: string
           example: "Ryan Bumstead"
           description: "Contact Name"
         issuerId:
           type: string
+          deprecated: true
           example: "0015e00000A1O3DAAV"
-          description: "Issuer Account ID"
+          description: "Issuer Account ID. Deprecated, use issuerKey."
+        issuerKey:
+          type: string
+          example: "acc_2t8e6y4mgb"
+          description: "Public key of the issuer. Use it in place of issuerId."
         issuerName:
           type: string
           example: "Salesforce"
@@ -1026,25 +1163,41 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           readOnly: true
           example: "a115e00000B2O3DAAV"
-          description: "Salesforce Record ID"
+          description: "Salesforce Record ID. Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "edu_6b4c8j2rvq"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         name:
           type: string
           example: "Bachelor of Science"
           description: "Degree Name"
         contactId:
           type: string
+          deprecated: true
           example: "0035e00000B2O3DAAV"
-          description: "Contact ID"
+          description: "Contact ID. Deprecated, use contactKey."
+        contactKey:
+          type: string
+          example: "con_7c5j3w9sfa"
+          description: "Public key of the contact. Use it in place of contactId."
         contactName:
           type: string
           example: "Ryan Bumstead"
           description: "Contact Name"
         issuerId:
           type: string
+          deprecated: true
           example: "0015e00000A1O3DAAV"
-          description: "University Account ID"
+          description: "University Account ID. Deprecated, use issuerKey."
+        issuerKey:
+          type: string
+          example: "acc_2t8e6y4mgb"
+          description: "Public key of the issuer. Use it in place of issuerId."
         issuerName:
           type: string
           example: "University of Technology"

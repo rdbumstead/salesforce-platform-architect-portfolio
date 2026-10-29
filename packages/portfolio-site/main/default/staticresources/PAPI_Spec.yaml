@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Portfolio Process API (PAPI)
-  version: 1.3.0
+  version: 1.4.0
   description: |
     A Process API (PAPI) that combines, transforms and filters the portfolio's Salesforce data,
     the same records the System API (SAPI) serves, into responses shaped for a client. PAPI
@@ -33,7 +33,10 @@ info:
       2. If *any* section's resource is `private` → PAPI response is `private`.
       3. Otherwise → PAPI response is `public` with the minimum `max-age`.
 
-    ### 5. Field Mapping (Transformation Layer)
+    ### 5. Identifiers (ADR-038)
+    Each record in a response carries a stable public `key`, for example `prj_8f3k2m9qtz`, beside `id`. Use `key`. The `id` field is the Salesforce Id, kept in v1 and **deprecated**. PAPI takes no Id parameters. SAPI takes the key wherever it takes an Id.
+
+    ### 6. Field Mapping (Transformation Layer)
     | Object | SAPI Field | PAPI Field | Logic |
     | :--- | :--- | :--- | :--- |
     | Contact | `name` | `fullName` | Rename |
@@ -404,8 +407,14 @@ components:
       properties:
         id:
           type: string
-          description: Salesforce Record ID (18-char)
+          deprecated: true
+          description: "Salesforce Record ID (18-char). Deprecated, use key."
           example: "a025e00000B2O3DAAV"
+        key:
+          type: string
+          readOnly: true
+          example: "exp_4h7n2c8wpd"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         employer:
           type: string
           example: "Salesforce"
@@ -446,7 +455,14 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           example: "a015e00000B2O3DAAV"
+          description: "Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "prj_8f3k2m9qtz"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         title:
           type: string
           example: "Portfolio Site"
@@ -525,7 +541,14 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           example: "a055e00000B2O3DAAV"
+          description: "Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "tst_2y7a5d9wmh"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         author:
           type: string
           example: "Jane Doe"
@@ -594,7 +617,14 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           example: "0035e00000B2O3DAAV"
+          description: "Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "con_7c5j3w9sfa"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         fullName:
           type: string
           example: "Ryan Bumstead"
@@ -634,7 +664,14 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           example: "a075e00000B2O3DAAV"
+          description: "Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "skl_3m9x5b2rkt"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         name:
           type: string
           example: "Apex"
@@ -673,7 +710,14 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           example: "a105e00000B2O3DAAV"
+          description: "Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "crt_6q2v8d4nhz"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         name:
           type: string
           example: "Certified Application Architect"
@@ -702,7 +746,14 @@ components:
       properties:
         id:
           type: string
+          deprecated: true
           example: "a115e00000B2O3DAAV"
+          description: "Deprecated, use key."
+        key:
+          type: string
+          readOnly: true
+          example: "edu_6b4c8j2rvq"
+          description: "Stable public key of the record. Use it in place of id. It is set once and never changes."
         school:
           type: string
           example: "Creighton University"

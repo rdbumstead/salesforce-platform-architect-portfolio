@@ -259,6 +259,7 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
         transformedCerts.add(
           new Map<String, Object>{
             'id' => c.Id,
+            'key' => c.Public_Key__c,
             'name' => c.Name,
             'issuer' => c.Issuer__r?.Name,
             'dateEarned' => c.Earned_Date__c != null
@@ -293,6 +294,7 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
         transformedEdu.add(
           new Map<String, Object>{
             'id' => e.Id,
+            'key' => e.Public_Key__c,
             'school' => e.Issuer__r?.Name,
             'degree' => e.Name,
             'fieldOfStudy' => e.Field_of_Study__c,
@@ -412,8 +414,8 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault ownerDefault() {
     return new QueryDefinitions.QueryDefault(
         'Contact',
-        'Id, Name, Email, Phone, Title, LinkedIn_URL__c, GitHub_URL__c, ' +
-        'Trailhead_URL__c, Portfolio_URL__c, Career_Objective__c'
+        'Id, Public_Key__c, Name, Email, Phone, Title, LinkedIn_URL__c, ' +
+        'GitHub_URL__c, Trailhead_URL__c, Portfolio_URL__c, Career_Objective__c'
       )
       .filter('Is_Portfolio_Owner__c = TRUE')
       .rowLimit(1)
@@ -428,8 +430,9 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault experienceDefault() {
     return new QueryDefinitions.QueryDefault(
         'Experience__c',
-        'Id, Name, Employer__c, Employer__r.Name, Start_Date__c, End_Date__c, ' +
-        'Is_Current_Role__c, Is_Remote__c'
+        'Id, Public_Key__c, Name, Employer__c, Employer__r.Name, ' +
+          'Employer__r.Public_Key__c, Start_Date__c, End_Date__c, ' +
+          'Is_Current_Role__c, Is_Remote__c'
       )
       .orderBy('Is_Current_Role__c DESC, End_Date__c DESC NULLS FIRST')
       .rowLimit(50)
@@ -460,7 +463,7 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault skillsDefault() {
     return new QueryDefinitions.QueryDefault(
         'Skill__c',
-        'Id, Name, Category__c, Proficiency__c, Icon_Name__c'
+        'Id, Public_Key__c, Name, Category__c, Proficiency__c, Icon_Name__c'
       )
       .orderBy('Proficiency__c DESC, Name ASC')
       .rowLimit(MAX_SKILLS)
@@ -491,7 +494,8 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault certificationsDefault() {
     return new QueryDefinitions.QueryDefault(
         'Certification__c',
-        'Id, Name, Issuer__r.Name, Earned_Date__c'
+        'Id, Public_Key__c, Name, Issuer__r.Name, Issuer__r.Public_Key__c, ' +
+        'Earned_Date__c'
       )
       .orderBy('Earned_Date__c DESC')
       .rowLimit(50)
@@ -506,8 +510,8 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault educationDefault() {
     return new QueryDefinitions.QueryDefault(
         'Education__c',
-        'Id, Issuer__c, Issuer__r.Name, Name, Field_of_Study__c, ' +
-        'Graduation_Date__c, GPA__c'
+        'Id, Public_Key__c, Issuer__c, Issuer__r.Name, Issuer__r.Public_Key__c, ' +
+        'Name, Field_of_Study__c, Graduation_Date__c, GPA__c'
       )
       .orderBy('Graduation_Date__c DESC')
       .rowLimit(10)
@@ -522,8 +526,8 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault testimonialsDefault() {
     return new QueryDefinitions.QueryDefault(
         'Testimonial__c',
-        'Id, Author_Name__c, Author_Title__c, Relationship_Type__c, ' +
-        'Context__c, Vibe_Mode__c, Avatar_URL__c'
+        'Id, Public_Key__c, Author_Name__c, Author_Title__c, ' +
+        'Relationship_Type__c, Context__c, Vibe_Mode__c, Avatar_URL__c'
       )
       .filter('Approved__c = TRUE')
       .orderBy('CreatedDate DESC')

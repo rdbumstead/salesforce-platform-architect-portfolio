@@ -65,8 +65,9 @@ global with sharing class SAPIEducation implements QueryDefinitions.Provider {
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Education__c',
-        'Id, Name, Contact__c, Contact__r.Name, Issuer__c, Issuer__r.Name, ' +
-        'Field_of_Study__c, Graduation_Date__c, GPA__c'
+        'Id, Public_Key__c, Name, Contact__c, Contact__r.Name, ' +
+          'Contact__r.Public_Key__c, Issuer__c, Issuer__r.Name, ' +
+          'Issuer__r.Public_Key__c, Field_of_Study__c, Graduation_Date__c, GPA__c'
       )
       .filter(
         '(IsDeleted = :hasContactName OR Contact__r.Name = :contactName) AND ' +

@@ -97,6 +97,7 @@ private class SAPISkillTest {
   // Property names of the Skill schema in salesforce-sapi.yaml.
   private static final Set<String> SPEC_SKILL_KEYS = new Set<String>{
     'id',
+    'key',
     'name',
     'displayName',
     'category',

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Public_Key__c</fullName>
+    <caseSensitive>false</caseSensitive>
+    <description
+  >Stable public identifier the portfolio API returns beside the record Id. Set once on insert by PublicKeyService, in the form acc_ plus 10 random characters, and never changed (ADR-038).</description>
+    <externalId>true</externalId>
+    <inlineHelpText
+  >Assigned automatically. Do not edit. API clients use it instead of the Salesforce Id.</inlineHelpText>
+    <label>Public Key</label>
+    <length>24</length>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

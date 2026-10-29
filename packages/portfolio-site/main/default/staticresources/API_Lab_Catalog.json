@@ -59,6 +59,7 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "name",
             "title",
             "trailhead",
@@ -191,8 +192,10 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "employerName",
             "employerId",
+            "employerKey",
             "name",
             "startDate",
             "endDate",
@@ -200,6 +203,7 @@
             "isRemote",
             "accomplishments",
             "contactId",
+            "contactKey",
             "contactName",
             "sortOrder"
           ],
@@ -295,7 +299,7 @@
         {
           "name": "experienceId",
           "type": "string",
-          "description": "Filter by Experience Salesforce ID."
+          "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated."
         },
         {
           "name": "persona",
@@ -323,7 +327,9 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "experienceId",
+            "experienceKey",
             "experienceName",
             "name",
             "description",
@@ -467,6 +473,7 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "name",
             "challenge",
             "solution",
@@ -481,6 +488,7 @@
             "isFeatured",
             "contactName",
             "contactId",
+            "contactKey",
             "sortOrder"
           ],
           "required": []
@@ -575,7 +583,7 @@
         {
           "name": "projectId",
           "type": "string",
-          "description": "Filter by Project Salesforce ID."
+          "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated."
         },
         {
           "name": "limit",
@@ -598,8 +606,10 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "name",
             "projectId",
+            "projectKey",
             "projectName",
             "type",
             "externalUrl",
@@ -716,6 +726,7 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "name",
             "authorName",
             "authorTitle",
@@ -925,6 +936,7 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "name",
             "industry",
             "abbreviation"
@@ -1044,6 +1056,7 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "name",
             "displayName",
             "category",
@@ -1178,10 +1191,13 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "name",
             "contactId",
+            "contactKey",
             "contactName",
             "issuerId",
+            "issuerKey",
             "issuerName",
             "earnedDate"
           ],
@@ -1305,10 +1321,13 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "name",
             "contactId",
+            "contactKey",
             "contactName",
             "issuerId",
+            "issuerKey",
             "issuerName",
             "fieldOfStudy",
             "graduationDate",
@@ -1406,7 +1425,7 @@
         {
           "name": "projectId",
           "type": "string",
-          "description": "Filter by Project Salesforce ID."
+          "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated."
         },
         {
           "name": "limit",
@@ -1429,9 +1448,12 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "projectId",
+            "projectKey",
             "projectName",
             "skillId",
+            "skillKey",
             "skillName",
             "skillCategory",
             "skillProficiencyScore"
@@ -1528,7 +1550,7 @@
         {
           "name": "experienceId",
           "type": "string",
-          "description": "Filter by Experience Salesforce ID."
+          "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated."
         },
         {
           "name": "limit",
@@ -1551,9 +1573,12 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "experienceId",
+            "experienceKey",
             "experienceName",
             "skillId",
+            "skillKey",
             "skillName",
             "skillCategory",
             "skillProficiencyScore"
@@ -1650,7 +1675,7 @@
         {
           "name": "certificationId",
           "type": "string",
-          "description": "Filter by Certification Salesforce ID."
+          "description": "Filter by Certification public key (for example `crt_6q2v8d4nhz`) or Salesforce ID. The Salesforce ID is deprecated."
         },
         {
           "name": "limit",
@@ -1673,9 +1698,12 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "certificationId",
+            "certificationKey",
             "certificationName",
             "skillId",
+            "skillKey",
             "skillName",
             "skillCategory",
             "skillProficiencyScore"
@@ -2102,6 +2130,7 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "title",
             "challenge",
             "solution",
@@ -2214,6 +2243,7 @@
           "type": "array",
           "properties": [
             "id",
+            "key",
             "author",
             "title",
             "relationship",

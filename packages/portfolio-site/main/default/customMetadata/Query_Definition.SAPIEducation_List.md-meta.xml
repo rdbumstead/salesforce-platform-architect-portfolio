@@ -14,7 +14,7 @@
         <field>Fields__c</field>
         <value
       xsi:type="xsd:string"
-    >Id, Name, Contact__c, Contact__r.Name, Issuer__c, Issuer__r.Name, Field_of_Study__c, Graduation_Date__c, GPA__c</value>
+    >Id, Public_Key__c, Name, Contact__c, Contact__r.Name, Contact__r.Public_Key__c, Issuer__c, Issuer__r.Name, Issuer__r.Public_Key__c, Field_of_Study__c, Graduation_Date__c, GPA__c</value>
     </values>
     <values>
         <field>Filter__c</field>

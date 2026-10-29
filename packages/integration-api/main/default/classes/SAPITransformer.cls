@@ -28,6 +28,36 @@ public with sharing class SAPITransformer {
   }
 
   /**
+   * @description An Id no record holds. A reference that is a well formed key with no
+   *              record behind it resolves to this, so the filter returns no rows, the way a
+   *              valid Id with no record does.
+   */
+  public static final String NO_MATCH_ID = '000000000000000AAA';
+
+  /**
+   * @description Turns an id parameter into a Salesforce Id for the query binds. The value may
+   *              be a Salesforce Id, which passes through, or the public key of a record of
+   *              the given object (ADR-038).
+   * @param objectType The object the parameter refers to.
+   * @param value Raw parameter value.
+   * @return String An Id, NO_MATCH_ID for a key with no record, or null when the value is
+   *         neither an Id nor a key (the caller answers 400).
+   */
+  public static String resolveReference(
+    Schema.SObjectType objectType,
+    String value
+  ) {
+    if (isSalesforceId(value)) {
+      return value.trim();
+    }
+    if (!PublicKeyService.isKey(value)) {
+      return null;
+    }
+    Id found = PublicKeyService.findId(objectType, value);
+    return found == null ? NO_MATCH_ID : String.valueOf(found);
+  }
+
+  /**
    * @description Maps owner Contacts to the Contact schema. Only fields granted by
    *              Integration_Access are read. The owner's email and phone are never
    *              returned (owner decision, 2026-10-21).
@@ -40,6 +70,7 @@ public with sharing class SAPITransformer {
       result.add(
         new Map<String, Object>{
           'id' => c.Id,
+          'key' => c.Public_Key__c,
           'name' => c.Name,
           'title' => c.Title,
           'trailhead' => c.Trailhead_URL__c,
@@ -63,6 +94,7 @@ public with sharing class SAPITransformer {
       result.add(
         new Map<String, Object>{
           'id' => a.Id,
+          'key' => a.Public_Key__c,
           'name' => a.Name,
           'industry' => a.Industry,
           'abbreviation' => a.Abbreviation__c
@@ -86,8 +118,10 @@ public with sharing class SAPITransformer {
       result.add(
         new Map<String, Object>{
           'id' => h.Id,
+          'key' => h.Public_Key__c,
           'experienceId' => h.Experience__c,
           'experienceName' => h.Experience__r?.Name,
+          'experienceKey' => h.Experience__r?.Public_Key__c,
           'name' => h.Name,
           'description' => h.Description__c,
           'sortOrder' => h.Sort_Order__c,
@@ -111,9 +145,11 @@ public with sharing class SAPITransformer {
       result.add(
         new Map<String, Object>{
           'id' => pa.Id,
+          'key' => pa.Public_Key__c,
           'name' => pa.Name,
           'projectId' => pa.Project__c,
           'projectName' => pa.Project__r?.Name,
+          'projectKey' => pa.Project__r?.Public_Key__c,
           'type' => pa.Type__c,
           'externalUrl' => pa.External_URL__c,
           'altText' => pa.Alt_Text__c,
@@ -137,11 +173,14 @@ public with sharing class SAPITransformer {
       result.add(
         new Map<String, Object>{
           'id' => cert.Id,
+          'key' => cert.Public_Key__c,
           'name' => cert.Name,
           'contactId' => cert.Contact__c,
           'contactName' => cert.Contact__r?.Name,
+          'contactKey' => cert.Contact__r?.Public_Key__c,
           'issuerId' => cert.Issuer__c,
           'issuerName' => cert.Issuer__r?.Name,
+          'issuerKey' => cert.Issuer__r?.Public_Key__c,
           'earnedDate' => formatDate(cert.Earned_Date__c)
         }
       );
@@ -162,11 +201,14 @@ public with sharing class SAPITransformer {
       result.add(
         new Map<String, Object>{
           'id' => edu.Id,
+          'key' => edu.Public_Key__c,
           'name' => edu.Name,
           'contactId' => edu.Contact__c,
           'contactName' => edu.Contact__r?.Name,
+          'contactKey' => edu.Contact__r?.Public_Key__c,
           'issuerId' => edu.Issuer__c,
           'issuerName' => edu.Issuer__r?.Name,
+          'issuerKey' => edu.Issuer__r?.Public_Key__c,
           'fieldOfStudy' => edu.Field_of_Study__c,
           'graduationDate' => formatDate(edu.Graduation_Date__c),
           'gpa' => edu.GPA__c
@@ -188,11 +230,13 @@ public with sharing class SAPITransformer {
     for (Project_Skill__c link : links) {
       Map<String, Object> row = skillColumns(
         link.Id,
+        link.Public_Key__c,
         link.Skill__c,
         link.Skill__r
       );
       row.put('projectId', link.Project__c);
       row.put('projectName', link.Project__r?.Name);
+      row.put('projectKey', link.Project__r?.Public_Key__c);
       result.add(row);
     }
     return result;
@@ -210,11 +254,13 @@ public with sharing class SAPITransformer {
     for (Experience_Skill__c link : links) {
       Map<String, Object> row = skillColumns(
         link.Id,
+        link.Public_Key__c,
         link.Skill__c,
         link.Skill__r
       );
       row.put('experienceId', link.Experience__c);
       row.put('experienceName', link.Experience__r?.Name);
+      row.put('experienceKey', link.Experience__r?.Public_Key__c);
       result.add(row);
     }
     return result;
@@ -232,11 +278,13 @@ public with sharing class SAPITransformer {
     for (Certification_Skill__c link : links) {
       Map<String, Object> row = skillColumns(
         link.Id,
+        link.Public_Key__c,
         link.Skill__c,
         link.Skill__r
       );
       row.put('certificationId', link.Certification__c);
       row.put('certificationName', link.Certification__r?.Name);
+      row.put('certificationKey', link.Certification__r?.Public_Key__c);
       result.add(row);
     }
     return result;
@@ -268,13 +316,16 @@ public with sharing class SAPITransformer {
 
   private static Map<String, Object> skillColumns(
     Id junctionId,
+    String junctionKey,
     Id skillId,
     Skill__c skill
   ) {
     return new Map<String, Object>{
       'id' => junctionId,
+      'key' => junctionKey,
       'skillId' => skillId,
       'skillName' => skill?.Name,
+      'skillKey' => skill?.Public_Key__c,
       'skillCategory' => skill?.Category__c,
       'skillProficiencyScore' => skill?.Proficiency__c
     };

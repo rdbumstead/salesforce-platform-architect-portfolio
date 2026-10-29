@@ -25,7 +25,7 @@ global with sharing class PAPITestimonialFeed implements QueryDefinitions.Provid
   private static final String CASUAL_QUERY = 'PAPITestimonialFeed_Casual';
   private static final String PROFESSIONAL_QUERY = 'PAPITestimonialFeed_Professional';
   private static final String TESTIMONIAL_OBJECT = 'Testimonial__c';
-  private static final String FEED_FIELDS = 'Id, Author_Name__c, Author_Title__c, Relationship_Type__c, Context__c, Vibe_Mode__c, Avatar_URL__c';
+  private static final String FEED_FIELDS = 'Id, Public_Key__c, Author_Name__c, Author_Title__c, Relationship_Type__c, Context__c, Vibe_Mode__c, Avatar_URL__c';
   private static final String FEED_ORDER = 'Sort_Order__c ASC NULLS LAST, CreatedDate DESC';
 
   /**

@@ -32,15 +32,23 @@ global with sharing class SAPIProjectAsset implements QueryDefinitions.Provider 
         return;
       }
       String projectId = ctx.stringParam('projectId');
-      if (
-        String.isNotBlank(projectId) &&
-        !SAPITransformer.isSalesforceId(projectId)
-      ) {
-        ctx.error(400, 'BAD_REQUEST', 'projectId must be a Salesforce Id.');
-        return;
+      String projectIdRef = null;
+      if (String.isNotBlank(projectId)) {
+        projectIdRef = SAPITransformer.resolveReference(
+          Project__c.SObjectType,
+          projectId
+        );
+        if (projectIdRef == null) {
+          ctx.error(
+            400,
+            'BAD_REQUEST',
+            'projectId must be a Salesforce Id or a public key.'
+          );
+          return;
+        }
       }
 
-      Map<String, Object> binds = listBinds(projectId?.trim());
+      Map<String, Object> binds = listBinds(projectIdRef);
       List<Project_Asset__c> records = (List<Project_Asset__c>) QueryDefinitions.runPage(
         LIST_QUERY,
         binds,
@@ -71,8 +79,9 @@ global with sharing class SAPIProjectAsset implements QueryDefinitions.Provider 
   private static QueryDefinitions.QueryDefault listDefault() {
     return new QueryDefinitions.QueryDefault(
         'Project_Asset__c',
-        'Id, Name, Project__c, Project__r.Name, Type__c, External_URL__c, ' +
-        'Alt_Text__c, Sort_Order__c'
+        'Id, Public_Key__c, Name, Project__c, Project__r.Name, ' +
+          'Project__r.Public_Key__c, Type__c, External_URL__c, Alt_Text__c, ' +
+          'Sort_Order__c'
       )
       .filter('(IsDeleted = :hasProjectId OR Project__c = :projectId)')
       .orderBy('Sort_Order__c ASC NULLS LAST, Name ASC')

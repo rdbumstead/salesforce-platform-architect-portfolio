@@ -59,6 +59,16 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Account.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Certification_Skill__c.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Certification__c.Earned_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -72,7 +82,16 @@
         <field>Certification__c.Issuer__c</field>
         <readable>true</readable>
     </fieldPermissions>
-
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Certification__c.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Contact.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Contact_Form_Failure__c.Company__c</field>
@@ -123,7 +142,11 @@
         <field>Education__c.Issuer__c</field>
         <readable>true</readable>
     </fieldPermissions>
-
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Education__c.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Experience_Highlight__c.Admin_Sort_Order__c</field>
@@ -149,7 +172,16 @@
         <field>Experience_Highlight__c.Lock_Sort_Across_Personas__c</field>
         <readable>true</readable>
     </fieldPermissions>
-
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Experience_Highlight__c.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Experience_Skill__c.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Experience__c.Accomplishments__c</field>
@@ -182,22 +214,24 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Experience__c.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Experience__c.Start_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
-
     <fieldPermissions>
         <editable>true</editable>
         <field>Github_Cache__c.JSON_Payload__c</field>
         <readable>true</readable>
     </fieldPermissions>
-
     <fieldPermissions>
         <editable>true</editable>
         <field>Jira_Cache__c.JSON_Payload__c</field>
         <readable>true</readable>
     </fieldPermissions>
-
     <fieldPermissions>
         <editable>true</editable>
         <field>Lead.Auto_Response_Requested__c</field>
@@ -285,6 +319,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Project_Asset__c.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Project_Asset__c.Sort_Order__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -293,7 +332,11 @@
         <field>Project_Asset__c.Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
-
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Project_Skill__c.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Project__c.Business_Value__c</field>
@@ -376,6 +419,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Project__c.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Project__c.Repository_URL__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -389,7 +437,6 @@
         <field>Project__c.Status__c</field>
         <readable>true</readable>
     </fieldPermissions>
-
     <fieldPermissions>
         <editable>true</editable>
         <field>Skill__c.Category__c</field>
@@ -418,6 +465,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Skill__c.Proficiency__c</field> <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Skill__c.Public_Key__c</field>
+        <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
@@ -464,7 +516,6 @@
         <field>Storage_Snapshot__c.Payload__c</field>
         <readable>true</readable>
     </fieldPermissions>
-
     <fieldPermissions>
         <editable>true</editable>
         <field>Submission_Block__c.Active__c</field>
@@ -523,6 +574,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Testimonial__c.Outcome_Fragment__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Testimonial__c.Public_Key__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
