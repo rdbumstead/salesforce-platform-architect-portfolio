@@ -300,7 +300,7 @@ Before user stories are written, features are evaluated against a "Problem State
 
 - **Problem Statement:** Recruiters and Hiring Managers struggle to verify an architect's hands-on skills through static PDFs.
 - **The Need:** A verified, interactive demonstration of complex capabilities (API, LWC, AI).
-- **The Value:** Reduces "Time-to-Trust" for the evaluator; differentiates the candidate from paper-qualified applicants.
+- **The Value:** Reduces "Time-to-Trust" for the evaluator; differentiates me from paper-qualified applicants.
 
 ### 5.2 Epic Breakdown Example: Resume Builder
 
