@@ -74,12 +74,35 @@
 }
 
 .steps {
+  list-style: none;
   margin: 0;
-  padding-left: var(--pf-space-4);
+  padding: 0;
   color: var(--pf-text);
 }
 
 .step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pf-space-2);
   margin-bottom: var(--pf-space-2);
   line-height: 1.5;
+}
+
+.step-number {
+  flex: 0 0 auto;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background-color: var(--pf-chip);
+  color: var(--pf-chip-text);
+  border: 1px solid var(--pf-accent);
+  font-family: var(--pf-font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.5rem;
+  text-align: center;
+}
+
+.step-text {
+  min-width: 0;
 }

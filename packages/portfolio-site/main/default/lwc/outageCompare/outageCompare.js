@@ -4,7 +4,9 @@
  *                      their content while their feed is SIMULATED. The left part, "Without
  *                      resilience", is a static illustration of a panel with no saved copy and
  *                      no breaker, labelled as an illustration for sighted and screen reader
- *                      users. The right part, "With resilience", is a numbered trace of what
+ *                      users. The right part, "With resilience", is a numbered trace (an ol, with
+ *                      the numbers drawn as visible markers because the site removes list
+ *                      markers) of what
  *                      this panel does: no call is made, a real outage is counted by the
  *                      circuit breaker, and the panel shows the last saved copy with its age.
  *                      The age comes from the feed's ageMinutes, else from fetchedAt, and reads
@@ -108,6 +110,6 @@ export default class OutageCompare extends LightningElement {
       { id: "no-call", text: fill(WORDING.stepNoCall, values) },
       { id: "breaker", text: fill(WORDING.stepBreaker, values) },
       { id: "copy", text: fill(WORDING.stepCopy, values) }
-    ];
+    ].map((step, index) => ({ ...step, number: String(index + 1) }));
   }
 }

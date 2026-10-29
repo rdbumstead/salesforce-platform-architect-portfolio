@@ -24,8 +24,8 @@ function q(element, selector) {
 }
 
 function stepTexts(element) {
-  return [...element.shadowRoot.querySelectorAll("ol li")].map((li) =>
-    li.textContent.trim()
+  return [...element.shadowRoot.querySelectorAll("ol li .step-text")].map(
+    (span) => span.textContent.trim()
   );
 }
 
@@ -113,6 +113,15 @@ describe("c-outage-compare", () => {
     expect(
       q(element, '[data-id="failure-line"]').getAttribute("aria-hidden")
     ).toBe("true");
+  });
+
+  it("shows each step's number as visible text and hides it from readers", async () => {
+    const element = await mount({ source: "Jira", subject: "the roadmap" });
+    const numbers = [
+      ...element.shadowRoot.querySelectorAll("ol li .step-number")
+    ];
+    expect(numbers.map((n) => n.textContent.trim())).toEqual(["1", "2", "3"]);
+    numbers.forEach((n) => expect(n.getAttribute("aria-hidden")).toBe("true"));
   });
 
   it("has both headings, with the steps as a numbered list", async () => {
