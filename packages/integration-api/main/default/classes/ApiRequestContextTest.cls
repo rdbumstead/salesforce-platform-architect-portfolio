@@ -384,7 +384,7 @@ private class ApiRequestContextTest {
 
   @IsTest
   static void unsupportedApiVersionRejected() {
-    RestTestUtil.initGetRaw(SAPI_URI, headers(VALID_ID, 'v2'), null);
+    RestTestUtil.initGetRaw(SAPI_URI, headers(VALID_ID, 'v3'), null);
 
     Test.startTest();
     SAPISkill.getSkills();

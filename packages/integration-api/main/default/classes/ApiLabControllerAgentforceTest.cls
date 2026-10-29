@@ -175,7 +175,7 @@ private class ApiLabControllerAgentforceTest {
 
     HttpRequest req = mock.firstTo(API_PREFIX);
     Assert.areEqual('POST', req.getMethod(), 'POST');
-    Assert.areEqual('v1', req.getHeader('X-API-Version'), 'API version');
+    Assert.areEqual('v2', req.getHeader('X-API-Version'), 'API version');
     Assert.isTrue(
       Pattern.matches(
         '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',

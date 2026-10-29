@@ -1,8 +1,9 @@
 /**
  * @description       : Apex proxy for the site's API Lab (ADR-027). invoke() calls an
  *                      allowlisted SAPI/PAPI GET path through the Portfolio_API Named
- *                      Credential and returns status, latency, tracing and paging headers and
- *                      the body. requestEvaluatorToken() vends a token through the same
+ *                      Credential and returns status, latency, tracing, paging and version headers and
+ *                      the body. invokeVersioned() does the same for the API version the visitor
+ *                      chose (v1 or v2, blank is v2) and invoke() stays as the v1 call. requestEvaluatorToken() vends a token through the same
  *                      TokenExchangeService path as POST /papi/v1/auth/token.
  *                      generateCoverLetter() is the site's cover letter path, under the AI
  *                      tier limit on the papi-ai key prefix. While the Agentforce switch is on
@@ -28,6 +29,7 @@
 public with sharing class ApiLabController {
   public static final String NAMED_CREDENTIAL = 'Portfolio_API';
   public static final String API_VERSION = 'v1';
+  public static final String API_VERSION_2 = 'v2';
   /** The Portfolio_Setting__mdt record that holds the Run in Postman link. */
   public static final String POSTMAN_RUN_URL_SETTING = 'Postman_Run_Url';
 
@@ -52,7 +54,11 @@ public with sharing class ApiLabController {
     'X-RateLimit-Remaining',
     'Cache-Control',
     'X-Total-Count',
-    'X-Has-More'
+    'X-Has-More',
+    'X-API-Version',
+    'Deprecation',
+    'Sunset',
+    'Link'
   };
 
   /**
@@ -261,8 +267,8 @@ public with sharing class ApiLabController {
   }
 
   /**
-   * @description Calls an allowlisted GET path through Portfolio_API with a fresh
-   *              X-Request-Id and X-API-Version v1.
+   * @description Calls an allowlisted GET path as API v1, the version before the Lab could
+   *              choose. Kept so a caller built before invokeVersioned keeps working.
    * @param path API path, e.g. /sapi/v1/skills.
    * @param params Query parameters (at most 10; names alphanumeric).
    * @return InvokeResult Status, latency, headers, body and the Named Credential name.
@@ -270,6 +276,41 @@ public with sharing class ApiLabController {
    */
   @AuraEnabled
   public static InvokeResult invoke(String path, Map<String, String> params) {
+    return call(path, params, API_VERSION);
+  }
+
+  /**
+   * @description Calls an allowlisted GET path through Portfolio_API with a fresh
+   *              X-Request-Id and the X-API-Version the visitor chose. The path keeps
+   *              its v1 spelling for both versions, because the version is a header.
+   * @param path API path, e.g. /sapi/v1/skills.
+   * @param params Query parameters (at most 10; names alphanumeric).
+   * @param apiVersion v1 or v2. Blank means v2.
+   * @return InvokeResult Status, latency, headers (version and deprecation headers
+   *         included when present), body and the Named Credential name.
+   * @throws AuraHandledException When the version, path or a parameter is not allowed, or
+   *         the callout fails.
+   */
+  @AuraEnabled
+  public static InvokeResult invokeVersioned(
+    String path,
+    Map<String, String> params,
+    String apiVersion
+  ) {
+    String chosen = String.isBlank(apiVersion)
+      ? API_VERSION_2
+      : apiVersion.trim();
+    if (chosen != API_VERSION && chosen != API_VERSION_2) {
+      throw auraError('Version is not available in the API Lab');
+    }
+    return call(path, params, chosen);
+  }
+
+  private static InvokeResult call(
+    String path,
+    Map<String, String> params,
+    String apiVersion
+  ) {
     String normalised = String.isBlank(path) ? '' : path.trim().toLowerCase();
     if (!allowedPaths().contains(normalised)) {
       throw auraError('Path is not available in the API Lab: ' + path);
@@ -284,7 +325,7 @@ public with sharing class ApiLabController {
     req.setMethod('GET');
     req.setTimeout(20000);
     req.setHeader('X-Request-Id', requestId);
-    req.setHeader('X-API-Version', API_VERSION);
+    req.setHeader('X-API-Version', apiVersion);
     req.setHeader('Accept', 'application/json');
 
     Long started = System.currentTimeMillis();
@@ -514,7 +555,8 @@ public with sharing class ApiLabController {
     req.setMethod('POST');
     req.setTimeout(agentforceTimeoutMs());
     req.setHeader('X-Request-Id', UUID.randomUUID().toString());
-    req.setHeader('X-API-Version', API_VERSION);
+    // The site's own call moves to v2 first, so v1's sunset cannot reach it.
+    req.setHeader('X-API-Version', API_VERSION_2);
     req.setHeader('Content-Type', 'application/json');
     req.setHeader('Accept', 'application/json');
     req.setBody(

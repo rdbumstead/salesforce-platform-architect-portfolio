@@ -1,5 +1,7 @@
 /**
- * @description       : Transformation utilities for SAPI to PAPI field mappings.
+ * @description       : Transformation utilities for SAPI to PAPI field mappings. The
+ *                      transform methods build the v1 shape, with id and key. toV2 turns a
+ *                      built body into the v2 shape, keys only.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -28,6 +30,16 @@ public with sharing class PAPITransformer {
       return '';
     Datetime dt = Datetime.newInstance(d.year(), d.month(), d.day());
     return dt.format('MMM yyyy');
+  }
+
+  /**
+   * @description Shapes a PAPI body to v2: no `id` in any map, keys only. The rule is the
+   *              one SAPI uses, so it lives in SAPITransformer.toV2.
+   * @param body A map, a list, or any other value.
+   * @return Object The shaped copy.
+   */
+  public static Object toV2(Object body) {
+    return SAPITransformer.toV2(body);
   }
 
   /**

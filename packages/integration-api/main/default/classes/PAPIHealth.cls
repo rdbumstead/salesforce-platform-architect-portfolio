@@ -97,7 +97,7 @@ global with sharing class PAPIHealth {
     req.setMethod('GET');
     req.setTimeout(credentialTimeoutMs());
     req.setHeader('X-Request-Id', UUID.randomUUID().toString());
-    req.setHeader('X-API-Version', ApiRequestContext.SUPPORTED_VERSION);
+    req.setHeader('X-API-Version', ApiRequestContext.VERSION_2);
     req.setHeader('Accept', 'application/json');
     try {
       HttpResponse res = new Http().send(req);

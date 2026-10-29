@@ -168,15 +168,15 @@ private class ApiLabOptionsControllerTest {
   }
 
   @isTest
-  static void pairsEachIdWithItsRecordName() {
+  static void pairsEachKeyWithItsRecordName() {
     Map<Id, Project__c> projects = new Map<Id, Project__c>(
-      [SELECT Id, Name FROM Project__c]
+      [SELECT Id, Name, Public_Key__c FROM Project__c]
     );
     Map<Id, Certification__c> certifications = new Map<Id, Certification__c>(
-      [SELECT Id, Name FROM Certification__c]
+      [SELECT Id, Name, Public_Key__c FROM Certification__c]
     );
     Map<Id, Experience__c> roles = new Map<Id, Experience__c>(
-      [SELECT Id, Name FROM Experience__c]
+      [SELECT Id, Name, Public_Key__c FROM Experience__c]
     );
 
     Test.startTest();
@@ -200,11 +200,15 @@ private class ApiLabOptionsControllerTest {
       options.size(),
       'One option per record, the archived project included'
     );
+    Map<String, SObject> recordsByKey = new Map<String, SObject>();
+    for (SObject record : records.values()) {
+      recordsByKey.put((String) record.get('Public_Key__c'), record);
+    }
     for (ApiLabOptionsController.Option option : options) {
-      SObject record = records.get(option.value);
+      SObject record = recordsByKey.get(option.value);
       Assert.isNotNull(
         record,
-        'The value is a real record Id: ' + option.value
+        'The value is the public key of a real record: ' + option.value
       );
       Assert.areEqual(
         record.get('Name'),
@@ -392,9 +396,10 @@ private class ApiLabOptionsControllerTest {
           kind == Schema.DisplayType.ID ||
             kind == Schema.DisplayType.REFERENCE ||
             field.isNameField() ||
+            path == 'Public_Key__c' ||
             (kind == Schema.DisplayType.PICKLIST &&
             path == 'Status__c'),
-          'Only an Id, a lookup, a record name or the project status: ' +
+          'Only an Id, a public key, a lookup, a record name or the project status: ' +
             read.objectName +
             '.' +
             path

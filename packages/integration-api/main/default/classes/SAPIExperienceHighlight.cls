@@ -47,13 +47,16 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
       if (String.isNotBlank(experienceId)) {
         experienceIdRef = SAPITransformer.resolveReference(
           Experience__c.SObjectType,
-          experienceId
+          experienceId,
+          ctx.isV2()
         );
         if (experienceIdRef == null) {
           ctx.error(
             400,
             'BAD_REQUEST',
-            'experienceId must be a Salesforce Id or a public key.'
+            ctx.isV2()
+              ? 'experienceId must be a public key.'
+              : 'experienceId must be a Salesforce Id or a public key.'
           );
           return;
         }

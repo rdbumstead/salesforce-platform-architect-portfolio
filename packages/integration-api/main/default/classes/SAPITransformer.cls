@@ -2,6 +2,8 @@
  * @description       : Field mapping from Salesforce records to the SAPI response schemas
  *                      (salesforce-sapi.yaml). Every SAPI resource other than experience, projects, skills and
  *                      testimonials maps its records here so the schema keys live in one place.
+ *                      Also shapes any response body to the v2 form (toV2): no id, and each
+ *                      reference Id field dropped for the key beside it (ADR-038).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -47,7 +49,24 @@ public with sharing class SAPITransformer {
     Schema.SObjectType objectType,
     String value
   ) {
-    if (isSalesforceId(value)) {
+    return resolveReference(objectType, value, false);
+  }
+
+  /**
+   * @description As resolveReference, and in v2 an Id is not accepted: it is treated as a
+   *              key that no record holds, so it ends in the answer any unknown key gets.
+   * @param objectType The object the parameter refers to.
+   * @param value Raw parameter value.
+   * @param keysOnly True for a v2 request.
+   * @return String An Id, NO_MATCH_ID for a key with no record, or null when the value is
+   *         not usable (the caller answers 400).
+   */
+  public static String resolveReference(
+    Schema.SObjectType objectType,
+    String value,
+    Boolean keysOnly
+  ) {
+    if (keysOnly != true && isSalesforceId(value)) {
       return value.trim();
     }
     if (!PublicKeyService.isKey(value)) {
@@ -55,6 +74,39 @@ public with sharing class SAPITransformer {
     }
     Id found = PublicKeyService.findId(objectType, value);
     return found == null ? NO_MATCH_ID : String.valueOf(found);
+  }
+
+  /**
+   * @description Shapes a response body to v2. In every map, recursively, the `id` entry is
+   *              removed and so is each `xId` entry that has an `xKey` entry beside it, so
+   *              the key is the only identifier left. Bodies with no such entries pass
+   *              through unchanged. v1 never calls this.
+   * @param body A map, a list, or any other value.
+   * @return Object The shaped copy.
+   */
+  public static Object toV2(Object body) {
+    if (body instanceof Map<String, Object>) {
+      Map<String, Object> source = (Map<String, Object>) body;
+      Map<String, Object> shaped = new Map<String, Object>();
+      for (String name : source.keySet()) {
+        Boolean isReferenceId =
+          name.length() > 2 &&
+          name.endsWith('Id') &&
+          source.containsKey(name.removeEnd('Id') + 'Key');
+        if (name != 'id' && !isReferenceId) {
+          shaped.put(name, toV2(source.get(name)));
+        }
+      }
+      return shaped;
+    }
+    if (body instanceof List<Object>) {
+      List<Object> shaped = new List<Object>();
+      for (Object item : (List<Object>) body) {
+        shaped.add(toV2(item));
+      }
+      return shaped;
+    }
+    return body;
   }
 
   /**

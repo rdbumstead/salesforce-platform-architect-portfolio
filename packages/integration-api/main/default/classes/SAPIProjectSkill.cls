@@ -36,13 +36,16 @@ global with sharing class SAPIProjectSkill implements QueryDefinitions.Provider 
       if (String.isNotBlank(projectId)) {
         projectIdRef = SAPITransformer.resolveReference(
           Project__c.SObjectType,
-          projectId
+          projectId,
+          ctx.isV2()
         );
         if (projectIdRef == null) {
           ctx.error(
             400,
             'BAD_REQUEST',
-            'projectId must be a Salesforce Id or a public key.'
+            ctx.isV2()
+              ? 'projectId must be a public key.'
+              : 'projectId must be a Salesforce Id or a public key.'
           );
           return;
         }

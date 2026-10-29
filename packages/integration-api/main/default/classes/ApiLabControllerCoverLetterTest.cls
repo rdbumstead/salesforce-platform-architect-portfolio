@@ -453,7 +453,7 @@ private class ApiLabControllerCoverLetterTest {
       allowed.contains('/papi/v1/ai/generate'),
       'The AI path is not in the GET allowlist'
     );
-    Assert.areEqual(6, ApiLabController.RETURNED_HEADERS.size(), 'Headers');
+    Assert.areEqual(10, ApiLabController.RETURNED_HEADERS.size(), 'Headers');
   }
 
   /**

@@ -36,13 +36,16 @@ global with sharing class SAPICertificationSkill implements QueryDefinitions.Pro
       if (String.isNotBlank(certificationId)) {
         certificationIdRef = SAPITransformer.resolveReference(
           Certification__c.SObjectType,
-          certificationId
+          certificationId,
+          ctx.isV2()
         );
         if (certificationIdRef == null) {
           ctx.error(
             400,
             'BAD_REQUEST',
-            'certificationId must be a Salesforce Id or a public key.'
+            ctx.isV2()
+              ? 'certificationId must be a public key.'
+              : 'certificationId must be a Salesforce Id or a public key.'
           );
           return;
         }
