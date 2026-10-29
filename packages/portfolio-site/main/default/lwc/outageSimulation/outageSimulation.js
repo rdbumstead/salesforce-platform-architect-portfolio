@@ -1,6 +1,8 @@
 /**
  * @description       : The Delivery page's "Simulate an outage" switch, kept in one place so one
- *                      switch drives every panel that reads a cached feed. The roadmap holds the
+ *                      switch drives every panel that reads a cached feed. When it is on, each
+ *                      panel shows c-outage-compare above its content once its feed comes back
+ *                      SIMULATED. The roadmap holds the
  *                      switch, and the roadmap and Latest Updates both listen. The value lives
  *                      for the page view only and starts off. A listener that throws never stops
  *                      the others.

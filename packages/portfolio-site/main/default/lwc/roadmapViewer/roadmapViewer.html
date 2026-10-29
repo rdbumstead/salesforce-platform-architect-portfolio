@@ -41,6 +41,15 @@
       {statusNote}
     </p>
 
+    <template lwc:if={showCompare}>
+      <c-outage-compare
+        source="Jira"
+        subject="the roadmap"
+        fetched-at={fetchedAt}
+        age-minutes={ageMinutes}
+      ></c-outage-compare>
+    </template>
+
     <template lwc:if={isLoading}>
       <p class="roadmap-message" data-id="loading">Loading the roadmap</p>
     </template>

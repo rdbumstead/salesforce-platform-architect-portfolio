@@ -25,6 +25,15 @@
       {statusNote}
     </p>
 
+    <template lwc:if={showCompare}>
+      <c-outage-compare
+        source="GitHub"
+        subject="Latest Updates"
+        fetched-at={fetchedAt}
+        age-minutes={ageMinutes}
+      ></c-outage-compare>
+    </template>
+
     <template lwc:if={isLoading}>
       <p class="changelog-message" data-id="loading">Loading recent updates</p>
     </template>
