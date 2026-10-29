@@ -10,7 +10,11 @@
  * @Created           : 10/23/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import ViewSource from "c/viewSource";
+import ViewSource, {
+  COMPONENT_LABELS,
+  GUIDE_SECTIONS,
+  describeFile
+} from "c/viewSource";
 import getSourceFiles from "@salesforce/apex/SourceController.getSourceFiles";
 
 jest.mock(
@@ -129,6 +133,22 @@ describe("c-view-source", () => {
     expect($(element, ".dialog-body")).toBeNull();
   });
 
+  it("labels the button View source by default and by a custom label", async () => {
+    const element = create();
+    element.label = "   ";
+    getSourceFiles.emit(FILES);
+    await flush();
+    expect($(element, ".view-source-button").textContent.trim()).toBe(
+      "View source"
+    );
+
+    element.label = "View analytics source";
+    await flush();
+    expect($(element, ".view-source-button").textContent.trim()).toBe(
+      "View analytics source"
+    );
+  });
+
   it("opens a labelled modal dialog and moves focus into it", async () => {
     const element = create();
     getSourceFiles.emit(FILES);
@@ -200,10 +220,9 @@ describe("c-view-source", () => {
     await openDialog(element);
 
     const tabs = $$(element, "[role='tab']");
-    expect(tabs.map((tab) => tab.textContent.trim())).toEqual([
-      "apiTester.js",
-      "ApiLabController.cls"
-    ]);
+    expect(
+      tabs.map((tab) => tab.querySelector(".tab-label").textContent.trim())
+    ).toEqual(["apiTester.js", "ApiLabController.cls"]);
     expect(tabs[0].getAttribute("aria-selected")).toBe("true");
     expect(tabs[1].getAttribute("aria-selected")).toBe("false");
     expect(tabs[1].getAttribute("tabindex")).toBe("-1");
@@ -379,6 +398,163 @@ describe("c-view-source", () => {
 
     expect($(element, ".dialog-body")).toBeNull();
     expect($(element, ".view-source-button")).toBeNull();
+  });
+
+  describe("describeFile", () => {
+    const all = [
+      "p/lwc/resumeBuilder/resumeBuilder.html",
+      "p/lwc/resumeBuilder/resumeBuilder.js",
+      "p/lwc/graphEngine/graphEngine.js"
+    ];
+
+    it("tags an HTML template with the kebab case component", () => {
+      expect(describeFile(all[0], all)).toEqual({
+        tag: "LWC · HTML",
+        name: "c-resume-builder",
+        line: "Component c-resume-builder"
+      });
+    });
+
+    it("tags JavaScript beside a template as LWC JavaScript", () => {
+      const result = describeFile(all[1], all);
+      expect(result.tag).toBe("LWC · JavaScript");
+      expect(result.name).toBe("c-resume-builder");
+    });
+
+    it("tags JavaScript with no template as an API module with its import", () => {
+      expect(describeFile(all[2], all)).toEqual({
+        tag: "LWC · API module",
+        name: "c/graphEngine",
+        line: "API module c/graphEngine"
+      });
+      expect(describeFile(all[2]).tag).toBe("LWC · API module");
+      expect(describeFile(all[2], null).tag).toBe("LWC · API module");
+    });
+
+    it("ignores a template in another folder and a null entry", () => {
+      const result = describeFile(all[2], [null, all[0], all[2]]);
+      expect(result.tag).toBe("LWC · API module");
+    });
+
+    it("tags CSS and leaves other LWC files untagged", () => {
+      expect(describeFile("p/lwc/footer/footer.css", []).tag).toBe("LWC · CSS");
+      expect(describeFile("p/lwc/footer/footer.css", []).name).toBe("c-footer");
+      expect(describeFile("p/lwc/footer/footer.js-meta.xml", [])).toEqual({
+        tag: "",
+        name: "",
+        line: ""
+      });
+    });
+
+    it("tags Apex classes and triggers", () => {
+      expect(describeFile("p/classes/FooterController.cls")).toEqual({
+        tag: "Apex class",
+        name: "FooterController",
+        line: "Apex class FooterController"
+      });
+      expect(describeFile("p/triggers/AccountTrigger.trigger")).toEqual({
+        tag: "Apex trigger",
+        name: "AccountTrigger",
+        line: "Apex trigger AccountTrigger"
+      });
+    });
+
+    it("gives nothing for other paths, no /lwc/ folder and an empty path", () => {
+      const none = { tag: "", name: "", line: "" };
+      expect(describeFile("docs/guides/x.md")).toEqual(none);
+      expect(describeFile("a/b/thing.js", [])).toEqual(none);
+      expect(describeFile("")).toEqual(none);
+      expect(describeFile(undefined)).toEqual(none);
+    });
+  });
+
+  describe("tags, name line and guide link", () => {
+    const TREE = [
+      { ...FILES[0], path: "p/lwc/footer/footer.html", label: "footer.html" },
+      { ...FILES[0], path: "p/lwc/footer/footer.js", label: "footer.js" },
+      {
+        ...FILES[1],
+        path: "p/classes/FooterController.cls",
+        label: "FooterController.cls"
+      },
+      {
+        ...FILES[0],
+        path: "p/lwc/graphEngine/graphEngine.js",
+        label: "graphEngine.js"
+      },
+      { ...FILES[0], path: "docs/readme.md", label: "readme.md" }
+    ];
+
+    async function openTree(key) {
+      const element = create(key);
+      getSourceFiles.emit(TREE);
+      await flush();
+      await openDialog(element);
+      return element;
+    }
+
+    it("shows the tag under each label inside the tab, in cache order", async () => {
+      const element = await openTree("footer");
+      const tabs = $$(element, "[role='tab']");
+      expect(
+        tabs.map((tab) =>
+          Array.from(tab.querySelectorAll("span"))
+            .map((span) => span.textContent)
+            .join(" ")
+        )
+      ).toEqual([
+        "footer.html LWC · HTML",
+        "footer.js LWC · JavaScript",
+        "FooterController.cls Apex class",
+        "graphEngine.js LWC · API module",
+        "readme.md"
+      ]);
+      expect(tabs[4].querySelector(".tab-tag")).toBeNull();
+    });
+
+    it("shows the Component, Apex class and API module lines", async () => {
+      const element = await openTree("footer");
+      const line = () => $(element, ".file-line");
+      expect(line().textContent.trim()).toBe("Component c-footer");
+      $$(element, "[role='tab']")[2].click();
+      await flush();
+      expect(line().textContent.trim()).toBe("Apex class FooterController");
+      $$(element, "[role='tab']")[3].click();
+      await flush();
+      expect(line().textContent.trim()).toBe("API module c/graphEngine");
+      $$(element, "[role='tab']")[4].click();
+      await flush();
+      expect(line()).toBeNull();
+    });
+
+    it("links to the guide section for every mapped key, in the same tab", async () => {
+      for (const key of Object.keys(GUIDE_SECTIONS)) {
+        const element = await openTree(key);
+        const link = $(element, ".guide-link");
+        expect(link.textContent.trim()).toBe("How it's built");
+        expect(link.getAttribute("href")).toBe(
+          `/portfolio/docs?doc=technical-guide#${GUIDE_SECTIONS[key]}`
+        );
+        expect(link.hasAttribute("target")).toBe(false);
+        document.body.removeChild(element);
+      }
+      expect(Object.keys(GUIDE_SECTIONS)).toHaveLength(9);
+    });
+
+    it("shows no guide link for a key not in the map", async () => {
+      const element = await openTree("customKey");
+      expect($(element, ".guide-link")).toBeNull();
+    });
+
+    it("has a heading label for every mapped key and siteAnalytics", async () => {
+      Object.keys(GUIDE_SECTIONS).forEach((key) => {
+        expect(COMPONENT_LABELS[key]).toBeTruthy();
+      });
+      const element = await openTree("siteAnalytics");
+      expect($(element, ".dialog-heading").textContent.trim()).toBe(
+        "Source: Site analytics"
+      );
+    });
   });
 
   describe("analytics", () => {

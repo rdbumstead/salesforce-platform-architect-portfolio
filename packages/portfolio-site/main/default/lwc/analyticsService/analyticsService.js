@@ -8,6 +8,12 @@
  *                      Jest), trackEvent calls window.gtag directly if one is there. It does
  *                      nothing when neither is present and never throws, so analytics can never
  *                      break a component. New events are appended to EVENTS.
+ *                      Every call also leaves a record in a short in page list for this visit: the
+ *                      name, a copy of the params, the local time and how it went ("head_script",
+ *                      "gtag" or "not_sent"). The list holds the last 100 and is gone on reload.
+ *                      recentEvents() returns copies of it, and onAnalyticsEvent(listener) tells a
+ *                      listener about each new record and returns a function that stops it. A
+ *                      listener that throws is ignored. c/analyticsEvents shows the list.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -65,11 +71,91 @@ export const EVENTS = Object.freeze({
   POSTMAN_RUN_CLICKED: "postman_run_clicked", // source: api_lab or reference
   POSTMAN_COLLECTION_DOWNLOADED: "postman_collection_downloaded", // source: api_lab or reference
   CURL_COPIED: "curl_copied", // example: token, health or data
-  STORAGE_PANEL_OPENED: "storage_panel_opened" // none
+  STORAGE_PANEL_OPENED: "storage_panel_opened", // none
+  ANALYTICS_EVENTS_OPENED: "analytics_events_opened" // count: events listed when it opened
 });
 
 /** The document event the site's head script listens for and passes to gtag. */
 export const BRIDGE_EVENT = "portfolio-analytics";
+
+/** How an event went. */
+export const OUTCOMES = Object.freeze({
+  HEAD_SCRIPT: "head_script",
+  GTAG: "gtag",
+  NOT_SENT: "not_sent"
+});
+
+/** The most events kept for this visit. The oldest is dropped past it. */
+export const MAX_RECENT_EVENTS = 100;
+
+const recent = [];
+const listeners = new Set();
+
+function copyRecord(entry) {
+  return {
+    id: entry.id,
+    name: entry.name,
+    params: { ...entry.params },
+    time: new Date(entry.time.getTime()),
+    outcome: entry.outcome
+  };
+}
+
+let nextId = 1;
+
+/**
+ * Keeps one record of an event and tells the listeners. Never throws.
+ * @param {string} name The event name.
+ * @param {object} payload The event parameters, already copied.
+ * @param {string} outcome One of OUTCOMES.
+ */
+function record(name, payload, outcome) {
+  try {
+    recent.push({
+      id: nextId++,
+      name,
+      params: { ...payload },
+      time: new Date(),
+      outcome
+    });
+    while (recent.length > MAX_RECENT_EVENTS) {
+      recent.shift();
+    }
+    const latest = recent[recent.length - 1];
+    Array.from(listeners).forEach((listener) => {
+      try {
+        listener(copyRecord(latest));
+      } catch {
+        // A listener cannot break analytics or another listener.
+      }
+    });
+  } catch {
+    // Recording is a convenience and never stops an event.
+  }
+}
+
+/**
+ * The events this page has sent since it loaded, oldest first.
+ * @returns {Array<{id: number, name: string, params: object, time: Date, outcome: string}>} Copies.
+ */
+export function recentEvents() {
+  return recent.map(copyRecord);
+}
+
+/**
+ * Calls the listener with a copy of each event recorded from now on.
+ * @param {Function} listener Called with one record.
+ * @returns {Function} Stops the listening. Safe to call twice.
+ */
+export function onAnalyticsEvent(listener) {
+  if (typeof listener !== "function") {
+    return () => {};
+  }
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
 
 /**
  * Hands the event to the head script's listener.
@@ -104,13 +190,16 @@ export function trackEvent(name, params) {
         ? { ...params }
         : {};
     if (sendThroughBridge(name, payload)) {
+      record(name, payload, OUTCOMES.HEAD_SCRIPT);
       return true;
     }
     const gtag = typeof window === "undefined" ? undefined : window.gtag;
     if (typeof gtag !== "function") {
+      record(name, payload, OUTCOMES.NOT_SENT);
       return false;
     }
     gtag("event", name, payload);
+    record(name, payload, OUTCOMES.GTAG);
     return true;
   } catch {
     return false;

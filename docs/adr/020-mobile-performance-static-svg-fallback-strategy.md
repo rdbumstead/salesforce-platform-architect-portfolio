@@ -24,7 +24,7 @@ Requires FORM_FACTOR detection in the c-skill-network LWC.
 
 ## Amendment (2026-10-22): matrix first, the graph on open, d3-force as the engine
 
-The owner replaced the static SVG fallback and the AntV graph on 2026-10-22. The ERD on the Pillar A page follows the same rule.
+I replaced the static SVG fallback and the AntV graph on 2026-10-22. The ERD on the Pillar A page follows the same rule.
 
 **Decision.**
 
@@ -36,7 +36,7 @@ The owner replaced the static SVG fallback and the AntV graph on 2026-10-22. The
 
 **Why.**
 
-- With the 59 skills production held in October 2026, the AntV force layout packed every skill into one tangle (owner feedback, 2026-10-21). A matrix reads at a glance on any screen, and the graph clusters skills by category with the roles and projects on a ring, drawing edges only for the hovered or selected node.
+- With the 59 skills production held in October 2026, the AntV force layout packed every skill into one tangle (my feedback, 2026-10-21). A matrix reads at a glance on any screen, and the graph clusters skills by category with the roles and projects on a ring, drawing edges only for the hovered or selected node.
 - Size. `D3_Library` was 18,544 bytes on 2026-10-22 against 1.57 MB for the AntV library (81,502 bytes since 2026-10-23, see the amendment below).
 - One engine draws both diagrams, the skills graph and the ERD.
 - A build-time SVG of live data goes stale, which the ERD must not do, and the matrix already serves phones from live data.
@@ -49,7 +49,7 @@ The graph view gains pan, zoom and node drag. `D3_Library` appends the official 
 
 ## Amendment (2026-10-23): the wheel scrolls the page, and the graph pans at every zoom
 
-A plain mouse wheel over the graph now scrolls the page at every zoom level, and only Ctrl with the wheel, or a trackpad pinch, zooms, one step at a time. Before, a wheel up at 100% zoomed in. The owner chose that the wheel keeps scrolling the page at rest. A background drag or the arrow keys on the focused graph pan it at any zoom, 100% included, up to 120 units past the graph's edge, with a visible hint while it has focus. The buttons stay, and Reset view also returns dragged nodes. The mobile rule is unchanged: phones never request `D3_Library` (Technical Guide §2.1).
+A plain mouse wheel over the graph now scrolls the page at every zoom level, and only Ctrl with the wheel, or a trackpad pinch, zooms, one step at a time. Before, a wheel up at 100% zoomed in. I chose that the wheel keeps scrolling the page at rest. A background drag or the arrow keys on the focused graph pan it at any zoom, 100% included, up to 120 units past the graph's edge, with a visible hint while it has focus. The buttons stay, and Reset view also returns dragged nodes. The mobile rule is unchanged: phones never request `D3_Library` (Technical Guide §2.1).
 
 ## Amendment (2026-10-26): evidence, a fitted view and an eased zoom on a button press
 

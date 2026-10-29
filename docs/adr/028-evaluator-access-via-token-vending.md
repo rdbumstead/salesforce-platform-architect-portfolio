@@ -9,7 +9,7 @@ Accepted (2026-10-01). Depends on [ADR-027](027-platform-native-api-authenticati
 The portfolio's Evidence Matrix invites reviewers to call the APIs and compare live responses against the OpenAPI contracts. Under [ADR-027](027-platform-native-api-authentication.md) every endpoint requires an OAuth 2.0 Bearer token obtained with the External Client App's consumer secret. A single External Client App cannot mint per-person credentials, so an external evaluator with `curl` has no way in unless one of the following is true:
 
 - the secret is published (rejected in ADR-027),
-- the evaluator asks the owner for credentials by email (manual, slow, and invisible to the portfolio),
+- the evaluator asks me for credentials by email (manual, slow, and invisible to the portfolio),
 - or the platform issues them a token on request.
 
 The data behind the APIs is public portfolio content. The assets worth protecting are the consumer secret, the integration user's session, and the Developer Edition org's daily API request quota.
@@ -19,11 +19,11 @@ The data behind the APIs is public portfolio content. The assets worth protectin
 Expose one unauthenticated endpoint, `POST /papi/v1/auth/token`, that performs the client-credentials exchange **server-side** and returns a **short-lived access token** to the caller. The consumer secret never leaves the org.
 
 Request: `{ "email": string, "purpose": string }`.
-Response: `{ "access_token", "token_type": "Bearer", "instance_url", "docs" }`. (The original response also carried `expires_in`. The owner dropped it on 2026-10-21, see the second amendment below.)
+Response: `{ "access_token", "token_type": "Bearer", "instance_url", "docs" }`. (The original response also carried `expires_in`. I dropped it on 2026-10-21, see the second amendment below.)
 
 Behaviour:
 
-1. Validate the email format and reject malformed addresses with `400`. (The original text also rejected disposable addresses. The owner dropped that on 2026-10-21, see the second amendment below.)
+1. Validate the email format and reject malformed addresses with `400`. (The original text also rejected disposable addresses. I dropped that on 2026-10-21, see the second amendment below.)
 2. Apply the shared rate limiter keyed by email and source IP; reject with `429` and `Retry-After`.
 3. Enforce a daily issuance cap (default 50 tokens/day) with `503` once exhausted.
 4. Write an `API_Access_Request__c` audit record (email, purpose, timestamp, source IP, correlation ID).
@@ -74,16 +74,16 @@ The API Lab's `ApiLabController.requestEvaluatorToken` runs the same service, th
 
 ## Amendment (2026-10-21): a shared token pool, no expiry, no disposable list
 
-**Every evaluator shares one token pool and one rate limit** (owner decision, 2026-10-21).
+**Every evaluator shares one token pool and one rate limit** (my decision, 2026-10-21).
 
 - Two token exchanges in a row return the same access token. The platform hands back the integration user's current session for the same client while that session is valid, instead of opening a new one. So every evaluator who asks for a token in that window gets the same token. This was proven twice in production on 2026-10-21: two exchanges compared equal by hash, and two separately vended tokens landed on the same `RateWindowLimiter` key.
 - `RateWindowLimiter` keys SAPI and PAPI requests by a hash of the session id, so all evaluators count against one bucket per tier: SAPI 120, PAPI 15 and `/papi/v1/ai/` 10 requests per minute, shared. One busy evaluator can use up the minute for everyone, and a 429 with `Retry-After` is the answer until the minute ends.
-- The owner accepted this for launch. The data is public, the tiers are small, and the daily cap and the kill switch still bound the worst case. Nothing in the docs or the specs describes a per-evaluator limit.
+- I accepted this for launch. The data is public, the tiers are small, and the daily cap and the kill switch still bound the worst case. Nothing in the docs or the specs describes a per-evaluator limit.
 - The token request itself is still limited per email and source IP (`papi-token` key, item 2 of the 2026-10-21 amendment), because that key does not depend on the session.
 
-**No `expires_in`** (owner decision, 2026-10-21). The token endpoint reports no expiry for a client credentials grant, and the token is the integration user's shared session, which ends after 30 minutes without use (the integration profile's idle timeout). A fixed number would describe neither, so the response leaves the field out and the specs and docs say how the session ends instead.
+**No `expires_in`** (my decision, 2026-10-21). The token endpoint reports no expiry for a client credentials grant, and the token is the integration user's shared session, which ends after 30 minutes without use (the integration profile's idle timeout). A fixed number would describe neither, so the response leaves the field out and the specs and docs say how the session ends instead.
 
-**Disposable addresses.** The owner dropped "reject disposable addresses" from item 1 of the decision on 2026-10-21. No list of disposable domains is kept, and the audit row plus the daily cap are the controls.
+**Disposable addresses.** I dropped "reject disposable addresses" from item 1 of the decision on 2026-10-21. No list of disposable domains is kept, and the audit row plus the daily cap are the controls.
 
 ## Note (2026-10-23)
 

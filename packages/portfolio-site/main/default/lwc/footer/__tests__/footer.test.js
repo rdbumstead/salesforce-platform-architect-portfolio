@@ -81,8 +81,16 @@ jest.mock(
     EVENTS: {
       FINOPS_QUOTA_VISIBILITY: "finops_quota_visibility",
       BACK_TO_TOP_USED: "back_to_top_used",
-      STORAGE_PANEL_OPENED: "storage_panel_opened"
+      STORAGE_PANEL_OPENED: "storage_panel_opened",
+      ANALYTICS_EVENTS_OPENED: "analytics_events_opened"
     },
+    OUTCOMES: {
+      HEAD_SCRIPT: "head_script",
+      GTAG: "gtag",
+      NOT_SENT: "not_sent"
+    },
+    recentEvents: () => [],
+    onAnalyticsEvent: () => () => {},
     trackEvent: jest.fn()
   }),
   { virtual: true }
@@ -811,6 +819,21 @@ describe("c-footer", () => {
     );
   });
 
+  it("offers the analytics events list and its source beside the caption", () => {
+    const element = createComponent();
+    const caption = q(element, '[data-id="metrics-caption"]').parentElement;
+    const events = q(element, "c-analytics-events");
+    expect(events.parentElement).toBe(caption);
+    const keys = Array.from(caption.querySelectorAll("c-view-source")).map(
+      (el) => el.sourceKey
+    );
+    expect(keys).toEqual(["footer", "siteAnalytics"]);
+    const labels = Array.from(caption.querySelectorAll("c-view-source")).map(
+      (el) => el.label
+    );
+    expect(labels).toEqual([undefined, "View analytics source"]);
+  });
+
   it("declares c-view-source with the footer key in the template", () => {
     const html = readFileSync(
       join(__dirname, "..", "footer.html"),
@@ -819,7 +842,10 @@ describe("c-footer", () => {
     expect(html).toMatch(
       /<c-view-source\s+source-key="footer"\s*><\/c-view-source>/
     );
-    expect(html.match(/<c-view-source/g)).toHaveLength(1);
+    expect(html).toMatch(
+      /<c-view-source\s+source-key="siteAnalytics"\s+label="View analytics source"\s*><\/c-view-source>/
+    );
+    expect(html.match(/<c-view-source/g)).toHaveLength(2);
   });
 
   it("drops the bare deploy word beside the badge", () => {

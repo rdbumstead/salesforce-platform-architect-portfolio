@@ -5,7 +5,10 @@
  *                      beside its "Last updated" label, and drives both panels through
  *                      c/outageSimulation. This panel listens and re-reads the feed with
  *                      simulate=true, which returns the same cached commits marked
- *                      SIMULATED. DEGRADED means the GitHub circuit breaker is open. A commit
+ *                      SIMULATED. While the feed is SIMULATED, c-outage-compare shows above the
+ *                      list what the panel would show without resilience and what it does
+ *                      with it. DEGRADED means the GitHub circuit breaker is open and does
+ *                      not show it. A commit
  *                      link click sends changelog_commit_clicked with its sha.
  *                      An empty feed says "No recent updates found." and a failed read says the
  *                      updates could not be loaded, so an outage never reads as a quiet week.
@@ -192,6 +195,19 @@ export default class Changelog extends LightningElement {
 
   get ageClass() {
     return this.status === "STALE" ? "age-label age-stale" : "age-label";
+  }
+
+  // The before and after shows only while the feed itself is SIMULATED, never for DEGRADED.
+  get showCompare() {
+    return this.status === "SIMULATED";
+  }
+
+  get fetchedAt() {
+    return this.feed ? this.feed.fetchedAt : undefined;
+  }
+
+  get ageMinutes() {
+    return this.feed ? this.feed.ageMinutes : undefined;
   }
 
   get statusBadge() {
