@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Signatory__c</fullName>
-    <description>The person at the employer who signs the letter.</description>
+    <description
+  >The person at the employer who signs the endorsement.</description>
     <inlineHelpText>Pick the contact who will sign.</inlineHelpText>
     <label>Signatory</label>
     <deleteConstraint>SetNull</deleteConstraint>
     <referenceTo>Contact</referenceTo>
-    <relationshipLabel>Letters of Support</relationshipLabel>
-    <relationshipName>EH_Letters_of_Support</relationshipName>
+    <relationshipLabel>Endorsement Requests</relationshipLabel>
+    <relationshipName>EH_Endorsement_Requests</relationshipName>
     <required>false</required>
     <type>Lookup</type>
 </CustomField>

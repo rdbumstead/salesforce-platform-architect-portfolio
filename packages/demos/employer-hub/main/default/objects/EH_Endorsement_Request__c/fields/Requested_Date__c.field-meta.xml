@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Requested_Date__c</fullName>
     <description
-  >The date the education provider asked for the letter.</description>
+  >The date the education provider asked for the endorsement.</description>
     <inlineHelpText>Enter the date of the request.</inlineHelpText>
     <label>Requested Date</label>
     <required>false</required>

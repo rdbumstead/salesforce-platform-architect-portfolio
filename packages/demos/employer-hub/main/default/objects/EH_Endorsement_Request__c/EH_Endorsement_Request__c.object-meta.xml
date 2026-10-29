@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >The Endorsement Request object tracks an endorsement an employer partner gives for an education provider's grant or program, linked to the request Case and the signing Contact. It holds the status, requested and due dates and a summary. Inert demo schema for the Employer Hub ERD.</description>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>Endorsement Request</label>
+    <nameField>
+        <label>Endorsement Request Name</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>Endorsement Requests</pluralLabel>
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

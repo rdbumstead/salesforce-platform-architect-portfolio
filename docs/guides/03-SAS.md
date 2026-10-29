@@ -1080,15 +1080,15 @@ Media gallery assets, read by `c-project-asset-gallery`.
 
 #### D.11 Picklist Value Enumeration
 
-| Field                       | Object                    | Values                                                                               |
-| :-------------------------- | :------------------------ | :----------------------------------------------------------------------------------- |
-| `Persona_Tag__c`            | `Experience_Highlight__c` | Admin, Developer, Architect (multi-select, no General value)                         |
-| `Relationship_Type__c`      | `Testimonial__c`          | Manager, Peer, Client, Recruiter, Fan                                                |
-| `Vibe_Mode__c`              | `Testimonial__c`          | Professional (Clean/Corporate), Casual (Fun/Raw)                                     |
-| `Status__c`                 | `Project__c`              | Live - In Production, Live - Demo / Reference, Active Development, On Hold, Archived |
-| `Pillar__c`                 | `Project__c`              | A, B, C, D, E (Business, Solution Architecture, Integration, AI, DevOps)             |
-| `Type__c`                   | `Project_Asset__c`        | Image, Video, Link, Document                                                         |
-| `EH_Academic_Focus_Area__c` | `Account`                 | Business, Health Sciences, Information Technology, Skilled Trades, General Studies   |
+| Field                   | Object                    | Values                                                                               |
+| :---------------------- | :------------------------ | :----------------------------------------------------------------------------------- |
+| `Persona_Tag__c`        | `Experience_Highlight__c` | Admin, Developer, Architect (multi-select, no General value)                         |
+| `Relationship_Type__c`  | `Testimonial__c`          | Manager, Peer, Client, Recruiter, Fan                                                |
+| `Vibe_Mode__c`          | `Testimonial__c`          | Professional (Clean/Corporate), Casual (Fun/Raw)                                     |
+| `Status__c`             | `Project__c`              | Live - In Production, Live - Demo / Reference, Active Development, On Hold, Archived |
+| `Pillar__c`             | `Project__c`              | A, B, C, D, E (Business, Solution Architecture, Integration, AI, DevOps)             |
+| `Type__c`               | `Project_Asset__c`        | Image, Video, Link, Document                                                         |
+| `EH_Industry_Sector__c` | `Account`                 | Healthcare, Manufacturing, Technology, Business Services, Construction               |
 
 #### D.12 Index & Query Optimization
 
@@ -1167,7 +1167,7 @@ A monorepo of five package directories, declared in `sfdx-project.json` and depl
 - `/packages/portfolio-site`: Configurations, declarative, and programmatic resources focused on adding features to the Salesforce Architect Portfolio. Every pillar component and class lives here too (`SchemaService`, `DecisionMatrixController`, `c-schema-visualizer`, `c-project-asset-gallery`, `c-decision-matrix`, `c-pillar-b-story`), because Jest runs only on this package.
 - `/packages/integration-api`: the OpenAPI specifications (`specs/`), the Apex REST classes for the SAPI and PAPI, and the integration user's profile.
 - `/packages/shared-modules`: a placeholder for modules shared across packages. Today it holds only `main/default/lwc/jsconfig.json`, and no component lives there.
-- `/packages/demos/employer-hub`: the inert Employer Hub data model of a demonstration built for an education provider: `EH_Partner_Engagement__c`, `EH_Job_Posting__c` (master-detail to Partner Engagement), `EH_Sponsorship__c` and `EH_Letter_of_Support__c`, with lookups to Account, Contact, Case, Opportunity and Contract, and the Account picklist `EH_Academic_Focus_Area__c`. No automation, tabs, layouts or records. Also the `EH_Demo_Read` permission set (read on the four objects, optional for administrators) and the `EH_Assets` static resource (two process flows and two dashboards, redrawn from the original demo with no names and sample values).
+- `/packages/demos/employer-hub`: the inert Employer Hub data model of a demonstration built for an education provider: `EH_Partner_Engagement__c`, `EH_Job_Posting__c` (master-detail to Partner Engagement), `EH_Partner_Investment__c` and `EH_Endorsement_Request__c`, with lookups to Account, Contact, Case, Opportunity and Contract, and the Account picklist `EH_Industry_Sector__c`, which picks the queue a request goes to. No automation, tabs, layouts or records. Also the `EH_Demo_Read` permission set (read on the four objects, optional for administrators) and the `EH_Assets` static resource (two process flows and two dashboards, redrawn from the original demo with no names and sample values).
 - `/packages/demos/nonprofit-literacy`: the analysis of a platform choice for a regional adult literacy nonprofit: the three decision matrix Custom Metadata Types (`Decision_Option__mdt`, `Decision_Criterion__mdt`, `Decision_Score__mdt`), their 43 records, and the `NL_Assets` static resource with the redrawn object model. It references no managed package, so it deploys to production and to CI's scratch orgs unchanged.
 
 ### Appendix J: Cloud FinOps Strategy (Phase 8 - 2027-2028)

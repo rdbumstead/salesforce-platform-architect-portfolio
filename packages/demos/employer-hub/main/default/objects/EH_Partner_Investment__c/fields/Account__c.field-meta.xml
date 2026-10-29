@@ -2,12 +2,12 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Account__c</fullName>
     <description>The employer partner giving the support.</description>
-    <inlineHelpText>Pick the sponsoring partner's account.</inlineHelpText>
+    <inlineHelpText>Pick the investing partner's account.</inlineHelpText>
     <label>Account</label>
     <deleteConstraint>SetNull</deleteConstraint>
     <referenceTo>Account</referenceTo>
-    <relationshipLabel>Sponsorships</relationshipLabel>
-    <relationshipName>EH_Sponsorships</relationshipName>
+    <relationshipLabel>Partner Investments</relationshipLabel>
+    <relationshipName>EH_Partner_Investments</relationshipName>
     <required>false</required>
     <type>Lookup</type>
 </CustomField>
