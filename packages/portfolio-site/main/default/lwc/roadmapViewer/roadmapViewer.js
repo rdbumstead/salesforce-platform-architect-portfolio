@@ -7,6 +7,9 @@
  *                      one switch for this board and for Latest Updates, shared through
  *                      c/outageSimulation. It re-reads the feed with
  *                      simulate=true, which returns the same cached board marked SIMULATED.
+ *                      While the feed is SIMULATED, c-outage-compare shows above the board
+ *                      what the panel would show without resilience and what it does with it.
+ *                      DEGRADED does not show it.
  *                      DEGRADED means the Jira circuit breaker is open. roadmap_viewed is sent
  *                      once when the board is first shown on the page, and turning the switch
  *                      on sends resilience_test_triggered. Epic
@@ -384,6 +387,19 @@ export default class RoadmapViewer extends LightningElement {
 
   get ageClass() {
     return this.status === "STALE" ? "age-label age-stale" : "age-label";
+  }
+
+  // The before and after shows only while the feed itself is SIMULATED, never for DEGRADED.
+  get showCompare() {
+    return this.status === "SIMULATED";
+  }
+
+  get fetchedAt() {
+    return this.feed ? this.feed.fetchedAt : undefined;
+  }
+
+  get ageMinutes() {
+    return this.feed ? this.feed.ageMinutes : undefined;
   }
 
   get statusBadge() {

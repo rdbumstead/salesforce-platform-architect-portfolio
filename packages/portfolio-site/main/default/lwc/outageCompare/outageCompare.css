@@ -1,0 +1,85 @@
+/*
+ * Colours, fonts, radii and spacing come only from the --pf- design tokens, so the compare
+ * follows the light and dark themes. Every element that sets a background also sets its text
+ * colour. Two parts side by side from 768 px, stacked below that. No motion.
+ */
+:host {
+  display: block;
+}
+
+.compare {
+  background-color: var(--pf-surface);
+  color: var(--pf-text);
+  font-family: var(--pf-font-sans);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  padding: var(--pf-space-3);
+  margin-bottom: var(--pf-space-3);
+}
+
+.compare-heading {
+  color: var(--pf-text);
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 var(--pf-space-3);
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--pf-space-3);
+}
+
+@media (min-width: 768px) {
+  .compare-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.part {
+  min-width: 0;
+}
+
+.part-title {
+  color: var(--pf-text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 var(--pf-space-2);
+}
+
+.illustration-label {
+  color: var(--pf-muted);
+  font-size: 0.8rem;
+  font-style: italic;
+  margin: 0 0 var(--pf-space-2);
+}
+
+.illustration {
+  background-color: var(--pf-chip);
+  color: var(--pf-muted);
+  border: 1px dashed var(--pf-border);
+  border-radius: var(--pf-radius);
+  padding: var(--pf-space-3);
+  min-height: 6rem;
+}
+
+.illustration-error {
+  color: var(--pf-muted);
+  margin: 0 0 var(--pf-space-3);
+}
+
+.illustration-body {
+  margin: 0;
+  min-height: 2.5rem;
+}
+
+.steps {
+  margin: 0;
+  padding-left: var(--pf-space-4);
+  color: var(--pf-text);
+}
+
+.step {
+  margin-bottom: var(--pf-space-2);
+  line-height: 1.5;
+}
