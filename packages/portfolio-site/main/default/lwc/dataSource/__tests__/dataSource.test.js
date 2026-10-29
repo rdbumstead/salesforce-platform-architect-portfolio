@@ -2,7 +2,8 @@
  * @description       : Unit tests for c-data-source. Both DataSourceController methods are
  *                      mocked wire adapters. The tests cover the marker with counts, with
  *                      objects only, with an empty read and with a failed read, the panel's
- *                      content and link, aria-expanded, Escape and Close returning focus, and
+ *                      content and links, the How it's built link for each mapped source
+ *                      key, the objects lookup and the fallback, aria-expanded, Escape and Close returning focus, and
  *                      the wording block.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -10,7 +11,14 @@
  * @Created           : 10/28/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import DataSource, { WORDING, MODEL_PATH, countText } from "c/dataSource";
+import DataSource, {
+  WORDING,
+  MODEL_PATH,
+  GUIDE_PATH,
+  GUIDE_SECTIONS,
+  guideSectionId,
+  countText
+} from "c/dataSource";
 import getSources from "@salesforce/apex/DataSourceController.getSources";
 import getObjectSources from "@salesforce/apex/DataSourceController.getObjectSources";
 
@@ -153,6 +161,69 @@ describe("c-data-source", () => {
     const link = el.shadowRoot.querySelector(".model-link");
     expect(link.getAttribute("href")).toBe("/portfolio/business-architecture");
     expect(link.textContent).toBe(WORDING.modelLinkText);
+  });
+
+  describe("How it's built link", () => {
+    const guideLink = (el) => el.shadowRoot.querySelector(".guide-link");
+    const open = async (props) => {
+      const el = create(props);
+      await flush();
+      button(el).click();
+      await flush();
+      return el;
+    };
+
+    it("has the exact text in the wording block and follows the data model link", async () => {
+      expect(WORDING.guideLinkText).toBe("How it's built");
+      const el = await open({ sourceKeys: "ResumeController_Roles" });
+      const links = [...el.shadowRoot.querySelectorAll(".panel-footer a")];
+      expect(links.map((a) => a.textContent)).toEqual([
+        WORDING.modelLinkText,
+        WORDING.guideLinkText
+      ]);
+      expect(guideLink(el).getAttribute("target")).toBeNull();
+    });
+
+    it.each(Object.entries(GUIDE_SECTIONS.sourceKeys))(
+      "opens the section for source key %s",
+      async (key, id) => {
+        const el = await open({ sourceKeys: `${key},Another_Key` });
+        expect(guideLink(el).getAttribute("href")).toBe(
+          `/portfolio/docs?doc=technical-guide#${id}`
+        );
+      }
+    );
+
+    it("looks up the first source key only, then the objects, then the fallback", async () => {
+      const first = await open({
+        sourceKeys: "Unmapped_Key,ResumeController_Roles",
+        objects: "Skill__c"
+      });
+      expect(guideLink(first).getAttribute("href")).toBe(
+        `${GUIDE_PATH}#${GUIDE_SECTIONS.objects.Skill__c}`
+      );
+      const objectsOnly = await open({ objects: "Skill__c,Other__c" });
+      expect(guideLink(objectsOnly).getAttribute("href")).toBe(
+        `${GUIDE_PATH}#2-1-c-skill-network-visualization`
+      );
+      const fallback = await open({ sourceKeys: "Unmapped_Key" });
+      expect(guideLink(fallback).getAttribute("href")).toBe(
+        `${GUIDE_PATH}#2-24-live-data-marker-c-data-source`
+      );
+      const nothing = await open({});
+      expect(guideLink(nothing).getAttribute("href")).toBe(
+        `${GUIDE_PATH}#${GUIDE_SECTIONS.fallback}`
+      );
+    });
+
+    it("freezes the map and ignores inherited names", () => {
+      expect(Object.isFrozen(GUIDE_SECTIONS)).toBe(true);
+      expect(Object.isFrozen(GUIDE_SECTIONS.sourceKeys)).toBe(true);
+      expect(Object.isFrozen(GUIDE_SECTIONS.objects)).toBe(true);
+      expect(guideSectionId("constructor", "toString")).toBe(
+        GUIDE_SECTIONS.fallback
+      );
+    });
   });
 
   it("shows the label the server sends and keeps the object name on each row", async () => {

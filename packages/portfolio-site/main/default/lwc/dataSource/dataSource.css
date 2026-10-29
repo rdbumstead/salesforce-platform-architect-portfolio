@@ -147,6 +147,12 @@
   margin: var(--pf-space-3) 0 0;
 }
 
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-3);
+}
+
 .model-link {
   color: var(--pf-accent);
   text-decoration: underline;
