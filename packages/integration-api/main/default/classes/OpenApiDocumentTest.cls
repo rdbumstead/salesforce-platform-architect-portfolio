@@ -11,11 +11,18 @@
 @IsTest
 private class OpenApiDocumentTest {
   private static RestResponse call(String spec) {
+    return call(spec, null);
+  }
+
+  private static RestResponse call(String spec, String version) {
     RestRequest request = new RestRequest();
     request.requestURI = '/services/apexrest/openapi.json';
     request.httpMethod = 'GET';
     if (spec != null) {
       request.addParameter('spec', spec);
+    }
+    if (version != null) {
+      request.addParameter('version', version);
     }
     RestContext.request = request;
     RestContext.response = new RestResponse();
@@ -65,6 +72,62 @@ private class OpenApiDocumentTest {
     Map<String, Object> paths = (Map<String, Object>) bodyOf(response)
       .get('paths');
     Assert.isTrue(paths.containsKey('/skills'), 'The SAPI paths');
+  }
+
+  @IsTest
+  static void shouldServeV2WhenNoVersionIsGiven() {
+    Test.startTest();
+    RestResponse defaulted = call('sapi');
+    RestResponse explicit = call('sapi', ' V2 ');
+    Test.stopTest();
+
+    Assert.areEqual(200, defaulted.statusCode, 'OK');
+    Assert.areEqual(
+      explicit.responseBody.toString(),
+      defaulted.responseBody.toString(),
+      'No version is v2'
+    );
+    Assert.isFalse(
+      defaulted.responseBody.toString().contains('"accomplishments"'),
+      'v2 holds no accomplishments'
+    );
+  }
+
+  @IsTest
+  static void shouldServeV1WhenAsked() {
+    Test.startTest();
+    RestResponse v1 = call('sapi', 'v1');
+    Test.stopTest();
+
+    Assert.areEqual(200, v1.statusCode, 'OK');
+    Assert.isTrue(
+      v1.responseBody.toString().contains('"accomplishments"'),
+      'v1 still holds the deprecated field'
+    );
+  }
+
+  @IsTest
+  static void shouldReturn400WhenVersionIsUnknown() {
+    Test.startTest();
+    RestResponse response = call('papi', 'v3');
+    Test.stopTest();
+
+    Assert.areEqual(400, response.statusCode, 'Bad request');
+    Map<String, Object> error = bodyOf(response);
+    Assert.areEqual('BAD_REQUEST', error.get('errorCode'), 'Error code');
+    Assert.areEqual(400, error.get('httpStatus'), 'Status in the body');
+    Assert.areEqual(false, error.get('retryable'), 'Not retryable');
+  }
+
+  @IsTest
+  static void shouldReturn503WhenV2ResourceIsMissing() {
+    OpenApiDocument.RESOURCE_BY_SPEC_V2.put('papi', 'No_Such_OpenAPI_V2');
+
+    Test.startTest();
+    RestResponse response = call('papi', 'v2');
+    Test.stopTest();
+
+    Assert.areEqual(503, response.statusCode, 'Unavailable');
   }
 
   @IsTest

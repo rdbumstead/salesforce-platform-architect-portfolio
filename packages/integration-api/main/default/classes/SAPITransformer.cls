@@ -79,8 +79,9 @@ public with sharing class SAPITransformer {
   /**
    * @description Shapes a response body to v2. In every map, recursively, the `id` entry is
    *              removed and so is each `xId` entry that has an `xKey` entry beside it, so
-   *              the key is the only identifier left. Bodies with no such entries pass
-   *              through unchanged. v1 never calls this.
+   *              the key is the only identifier left. The `accomplishments` entry is removed
+   *              too, because v1 promised to drop that deprecated HTML field in v2. Bodies
+   *              with no such entries pass through unchanged. v1 never calls this.
    * @param body A map, a list, or any other value.
    * @return Object The shaped copy.
    */
@@ -93,7 +94,7 @@ public with sharing class SAPITransformer {
           name.length() > 2 &&
           name.endsWith('Id') &&
           source.containsKey(name.removeEnd('Id') + 'Key');
-        if (name != 'id' && !isReferenceId) {
+        if (name != 'id' && name != 'accomplishments' && !isReferenceId) {
           shaped.put(name, toV2(source.get(name)));
         }
       }

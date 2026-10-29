@@ -542,6 +542,20 @@ private class ApiVersionTest {
   }
 
   @IsTest
+  static void shouldDropAccomplishmentsInV2AndKeepItInV1() {
+    send(SAPI + 'experience/', 'v2', null);
+    SAPIExperience.getExperiences();
+    Map<String, Object> v2Row = (Map<String, Object>) ((List<Object>) body())[0];
+    Assert.isFalse(v2Row.containsKey('accomplishments'), 'v2 drops it');
+    Assert.isTrue(v2Row.containsKey('key'), 'v2 keeps the key');
+
+    send(SAPI + 'experience/', 'v1', null);
+    SAPIExperience.getExperiences();
+    Map<String, Object> v1Row = (Map<String, Object>) ((List<Object>) body())[0];
+    Assert.isTrue(v1Row.containsKey('accomplishments'), 'v1 keeps it');
+  }
+
+  @IsTest
   static void shouldShapeTransformerOutputAsKeysOnly() {
     Map<String, Object> shaped = (Map<String, Object>) SAPITransformer.toV2(
       new Map<String, Object>{
