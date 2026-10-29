@@ -77,6 +77,10 @@ const CATALOG_TEXT = readFileSync(
 const PROJECT_ID = "a0Xdh000001AbCdEAF";
 
 const OPTIONS = {
+  projectKey: [
+    { label: "Platform Architect Portfolio", value: PROJECT_ID },
+    { label: "Literacy Pilot", value: "a0Xdh000002AbCdEAF" }
+  ],
   projectId: [
     { label: "Platform Architect Portfolio", value: PROJECT_ID },
     { label: "Literacy Pilot", value: "a0Xdh000002AbCdEAF" }
@@ -195,6 +199,84 @@ describe("c-api-tester filter options", () => {
       path: "/sapi/v1/project-assets",
       params: { projectKey: PROJECT_ID },
       apiVersion: "v2"
+    });
+  });
+
+  describe.each([
+    ["projectId", "projectKey", "/sapi/v1/project-assets", "prj_a1b2c3d4e5"],
+    [
+      "experienceId",
+      "experienceKey",
+      "/sapi/v1/experience-highlights",
+      "exp_a1b2c3d4e5"
+    ],
+    [
+      "certificationId",
+      "certificationKey",
+      "/sapi/v1/certification-skills",
+      "crt_a1b2c3d4e5"
+    ]
+  ])("the %s filter", (idName, keyName, path, key) => {
+    const LISTS = {
+      [idName]: [{ label: "Record one", value: "a0Xdh000009IdOnlyAA" }],
+      [keyName]: [{ label: "Record one", value: key }]
+    };
+
+    async function run(version) {
+      invoke.mockResolvedValue({
+        statusCode: 200,
+        latencyMs: 10,
+        headers: {},
+        body: "[]"
+      });
+      const element = create(LISTS);
+      await flush();
+      await choosePath(element, path);
+      if (version === "v1") {
+        const versionSelect = $(element, "select.version-picker");
+        versionSelect.value = "v1";
+        versionSelect.dispatchEvent(new CustomEvent("change"));
+        await flush();
+      }
+      return element;
+    }
+
+    it("is a picker filled from the key list under v2 and sends the key", async () => {
+      const element = await run("v2");
+      expect($(element, `select[data-name="${keyName}"]`)).not.toBeNull();
+      expect($(element, `input[data-name="${keyName}"]`)).toBeNull();
+      expect($(element, `[data-name="${idName}"]`)).toBeNull();
+      pick(element, keyName, key);
+      await flush();
+      $(element, "button.execute-button").click();
+      await flush();
+      expect(invoke).toHaveBeenLastCalledWith({
+        path,
+        params: { [keyName]: key },
+        apiVersion: "v2"
+      });
+    });
+
+    it("is a picker filled from the Id list under v1 and sends the v1 name", async () => {
+      const element = await run("v1");
+      const select = $(element, `select[data-name="${idName}"]`);
+      expect(select).not.toBeNull();
+      expect($(element, `input[data-name="${idName}"]`)).toBeNull();
+      expect($(element, `[data-name="${keyName}"]`)).toBeNull();
+      expect(
+        Array.from(select.querySelectorAll("option")).map(
+          (option) => option.value
+        )
+      ).toEqual(["", "a0Xdh000009IdOnlyAA"]);
+      pick(element, idName, "a0Xdh000009IdOnlyAA");
+      await flush();
+      $(element, "button.execute-button").click();
+      await flush();
+      expect(invoke).toHaveBeenLastCalledWith({
+        path,
+        params: { [idName]: "a0Xdh000009IdOnlyAA" },
+        apiVersion: "v1"
+      });
     });
   });
 

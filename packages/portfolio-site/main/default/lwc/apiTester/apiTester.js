@@ -329,23 +329,16 @@ export function parseCatalog(text) {
 }
 
 /**
- * The picker values for a parameter. The options come keyed by the version 2 name
- * (projectKey) or the version 1 name (projectId), and either one is found.
+ * The picker values for a parameter. getOptions returns one list per parameter name, the
+ * version 1 names (projectId) and the version 2 names (projectKey) both, so the list is the
+ * one whose name is the picked version's parameter.
  * @param {object} options the map getOptions returned
  * @param {string} name the parameter's name for the picked version
  * @returns {Array|undefined} the options, when there are any
  */
 export function optionsFor(options, name) {
-  if (!options) {
-    return undefined;
-  }
-  const other = /Key$/.test(name)
-    ? name.replace(/Key$/, "Id")
-    : name.replace(/Id$/, "Key");
-  const found = [name, other]
-    .map((candidate) => options[candidate])
-    .find((list) => Array.isArray(list) && list.length);
-  return found;
+  const list = options && options[name];
+  return Array.isArray(list) && list.length ? list : undefined;
 }
 
 /**

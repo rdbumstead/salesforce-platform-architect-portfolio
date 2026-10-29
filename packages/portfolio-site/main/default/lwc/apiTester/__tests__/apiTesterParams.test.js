@@ -628,10 +628,10 @@ describe("c-api-tester version picker", () => {
     expect($(element, 'input[data-name="projectKey"]')).not.toBeNull();
   });
 
-  it("finds the picker values under either parameter name", () => {
+  it("takes the picker values from the list named for the parameter", () => {
     const list = [{ label: "Portfolio", value: "prj_8f3k2m9qtz" }];
-    expect(optionsFor({ projectKey: list }, "projectId")).toBe(list);
-    expect(optionsFor({ projectId: list }, "projectKey")).toBe(list);
+    expect(optionsFor({ projectKey: list }, "projectId")).toBeUndefined();
+    expect(optionsFor({ projectId: list }, "projectKey")).toBeUndefined();
     expect(optionsFor({ projectKey: list }, "projectKey")).toBe(list);
     expect(optionsFor({}, "projectKey")).toBeUndefined();
     expect(optionsFor(undefined, "projectKey")).toBeUndefined();
