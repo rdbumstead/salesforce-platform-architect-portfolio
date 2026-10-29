@@ -16,7 +16,7 @@ private class ApiVersionTest {
   // 2026-11-01 00:00 UTC, a Sunday.
   private static final String DEPRECATION_VALUE = '@1793491200';
   private static final String SUNSET_VALUE = 'Sun, 01 Nov 2026 00:00:00 GMT';
-  private static final String SUCCESSOR = '<https://ryanbumstead.com/api-reference?version=v2>; rel="successor-version"';
+  private static final String SUCCESSOR = '<https://ryanbumstead.com/api-lab/reference?version=v2>; rel="successor-version"';
 
   @TestSetup
   static void setup() {
@@ -426,8 +426,8 @@ private class ApiVersionTest {
     Assert.areEqual(SUNSET_VALUE, header('Sunset'), 'RFC 8594 date');
     Assert.areEqual(
       SUCCESSOR +
-        ', <https://ryanbumstead.com/api-reference?version=v2>; rel="deprecation"' +
-        ', <https://ryanbumstead.com/api-reference?version=v2>; rel="sunset"',
+        ', <https://ryanbumstead.com/api-lab/reference?version=v2>; rel="deprecation"' +
+        ', <https://ryanbumstead.com/api-lab/reference?version=v2>; rel="sunset"',
       header('Link'),
       'All three relations'
     );
@@ -498,7 +498,7 @@ private class ApiVersionTest {
     Assert.isTrue(
       ((String) error.get('message')).contains('v2') &&
       ((String) error.get('message'))
-        .contains('https://ryanbumstead.com/api-reference?version=v2'),
+        .contains('https://ryanbumstead.com/api-lab/reference?version=v2'),
       'The message names v2 and the link'
     );
     Assert.areEqual(SUNSET_VALUE, header('Sunset'), 'Sunset on the 410');

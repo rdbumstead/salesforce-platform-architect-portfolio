@@ -34,7 +34,7 @@ public with sharing class ApiRequestContext {
 
   public static final String SUPPORTED_VERSION = 'v1';
   public static final String VERSION_2 = 'v2';
-  public static final String V2_REFERENCE_URL = 'https://ryanbumstead.com/api-reference?version=v2';
+  public static final String V2_REFERENCE_URL = 'https://ryanbumstead.com/api-lab/reference?version=v2';
   // Portfolio_Setting__mdt records holding a date as text, yyyy-MM-dd, read as 00:00 UTC.
   // Both ship blank. Blank deprecation date: no Deprecation header. Blank sunset date: no
   // Sunset header and no 410.
