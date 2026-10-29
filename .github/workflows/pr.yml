@@ -165,6 +165,7 @@ jobs:
       # only in production then stops the PR before the merge. It deploys nothing. In fallback
       # mode the fallback step already runs this check, so this step runs in scratch mode only.
       - name: Validate Delta Against Production (Check Only)
+        id: prod_validate
         if: env.ORG_TYPE == 'scratch'
         run: |
           mkdir -p prod-delta
@@ -197,6 +198,146 @@ jobs:
              echo "::error::The PR's delta does not validate against production."
              exit 1
           fi
+
+      # Shadow mode for GlassOps, the governance CLI I am building to deploy this site later.
+      # After the check above has run, pass or fail, GlassOps plans and validates the same delta
+      # against production, check only, and the two results are compared by component and test
+      # name. Built from a pinned commit, never a branch or tag. It never blocks the PR. The check
+      # after it does, if anything other than a check only deploy reached production.
+      - name: Checkout GlassOps (Shadow)
+        id: glassops_src
+        if: ${{ !cancelled() && env.ORG_TYPE == 'scratch' && (steps.prod_validate.outcome == 'success' || steps.prod_validate.outcome == 'failure') }}
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: glassops-platform/glassops
+          ref: 20459158b4f16da4cddc816ac7c1d695177af196
+          path: glassops-src
+          persist-credentials: false
+
+      # The container runs as root, so .glassops/ is root owned. Later steps read it and never
+      # write into it.
+      - name: GlassOps Shadow Validate (Non Blocking)
+        id: glassops_shadow
+        if: ${{ !cancelled() && steps.glassops_src.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
+          SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
+          SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+          SF_PORTFOLIO_ORG_ID: ${{ secrets.SF_PORTFOLIO_ORG_ID }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # The guard's expected org Id comes from a secret, never from a login result, or the
+          # guard would compare the org with itself.
+          if [ -z "$SF_PORTFOLIO_ORG_ID" ]; then
+             echo "::warning::The SF_PORTFOLIO_ORG_ID secret is not set. The GlassOps shadow run is skipped."
+             exit 0
+          fi
+          docker build -q -t glassops:shadow glassops-src > /dev/null
+
+          # Quoted, so the runner leaves the names alone. GlassOps reads them from its own environment.
+          cat > "$RUNNER_TEMP/glassops-shadow.yaml" <<'EOF'
+          version: 1
+          provider: salesforce
+          targets:
+            prod:
+              id: $SF_PORTFOLIO_ORG_ID
+              tier: prod
+              auth: { method: jwt, username: $SFDX_USERNAME, client_id: $SFDX_CLIENT_ID, key: $SFDX_JWT_KEY }
+          salesforce:
+            test_level: { prod: RunLocalTests }
+          EOF
+
+          # Bounds the window the blocking check below searches for a real deploy.
+          echo "GLASSOPS_SHADOW_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          G=(docker run --rm -e SFDX_JWT_KEY -e SFDX_CLIENT_ID -e SFDX_USERNAME -e SF_PORTFOLIO_ORG_ID
+             -v "$GITHUB_WORKSPACE:/work" -v "$RUNNER_TEMP/glassops-shadow.yaml:/cfg/glassops.yaml:ro" -w /work glassops:shadow)
+          set +e
+          "${G[@]}" plan --config /cfg/glassops.yaml --from "origin/$BASE_REF" --to HEAD --ci local
+          PLAN_EXIT=$?
+          VALIDATE_EXIT=none
+          if [ $PLAN_EXIT -eq 0 ]; then
+             "${G[@]}" validate --target prod --config /cfg/glassops.yaml --ci local
+             VALIDATE_EXIT=$?
+          fi
+          set -e
+          echo "GLASSOPS_SHADOW_END=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+          # Exit 0 is a pass, 1 a validate that ran and failed, 2 a tool, login, guard or check only error.
+          if [ $PLAN_EXIT -ne 0 ] || [ "$VALIDATE_EXIT" = "2" ] || [ ! -f .glassops/results/validate.json ]; then
+             echo "::warning::GlassOps did not finish: plan exit $PLAN_EXIT, validate exit $VALIDATE_EXIT."
+             echo "**GlassOps shadow validate**: did not finish (plan exit $PLAN_EXIT, validate exit $VALIDATE_EXIT)" >> $GITHUB_STEP_SUMMARY
+             exit 1
+          fi
+          THEIRS=$(jq -r '.status' .glassops/results/validate.json)
+
+          # The check above reads the failures from its own deploy start body, which can hold only
+          # the deploy Id when it fails. Deploy report gives the full details for the comparison.
+          OUR_ID=$(jq -r '(.result // .data // {}) | (.id // .deployId // empty)' prod-validate.json 2>/dev/null || true)
+          OURS=empty
+          : > ours.txt
+          if [ -n "$OUR_ID" ]; then
+             sf project deploy report --job-id "$OUR_ID" --target-org portfolio --json > prod-report.json || true
+             case "$(jq -r '(.result // .data // {}).status // empty' prod-report.json)" in
+                Succeeded) OURS=pass ;;
+                Failed) OURS=fail ;;
+                *) OURS=error ;;
+             esac
+             jq -r '(.result // .data // {}).details as $d
+               | ([$d.componentFailures] | flatten | map(select(. != null)) | .[] | "\(.componentType) \(.fullName)"),
+                 ([$d.runTestResult.failures] | flatten | map(select(. != null)) | .[] | "\(.name).\(.methodName)")' prod-report.json | sort -u > ours.txt
+          fi
+          jq -r '.checks[]? | select(.name | startswith("problem.")) | .detail // "" | select(contains(": ")) | split(": ")[0]' .glassops/results/validate.json | sort -u > theirs.txt
+
+          ONLY_OURS=$(comm -23 ours.txt theirs.txt)
+          ONLY_THEIRS=$(comm -13 ours.txt theirs.txt)
+          echo "Check above: $OURS. GlassOps: $THEIRS, deploy $(jq -r '.facts["salesforce.deploy_id"] // "none"' .glassops/results/validate.json), tests $(jq -r '.facts["salesforce.tests_total"] // 0' .glassops/results/validate.json), failed $(jq -r '.facts["salesforce.tests_failed"] // 0' .glassops/results/validate.json)."
+          [ -n "$ONLY_OURS" ] && echo "Failed only in the check above:" && echo "$ONLY_OURS"
+          [ -n "$ONLY_THEIRS" ] && echo "Failed only in GlassOps:" && echo "$ONLY_THEIRS"
+          if [ "$OURS" = "$THEIRS" ] && [ -z "$ONLY_OURS" ] && [ -z "$ONLY_THEIRS" ]; then
+             echo "**GlassOps shadow validate**: $THEIRS, matches the check above" >> $GITHUB_STEP_SUMMARY
+          else
+             echo "::warning::GlassOps and the check above disagree. See this step's log."
+             echo "**GlassOps shadow validate**: $THEIRS, the check above was $OURS. They disagree" >> $GITHUB_STEP_SUMMARY
+             exit 1
+          fi
+
+      # Blocking. Fails the PR if any deploy to production that is not check only started while
+      # GlassOps ran, under any Id, including one GlassOps never reported. deploy.yml signs in as
+      # the same user, so a merge to main that deploys inside the window trips this too. Read the
+      # listed Id in Setup, Deployment Status, before you rerun.
+      - name: Check GlassOps Deployed Nothing
+        if: ${{ always() && env.GLASSOPS_SHADOW_START != '' }}
+        run: |
+          END=${GLASSOPS_SHADOW_END:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
+          sf data query --use-tooling-api --target-org portfolio --json \
+            --query "SELECT Id, Status, CreatedDate FROM DeployRequest WHERE CheckOnly = false AND CreatedDate >= $GLASSOPS_SHADOW_START AND CreatedDate <= $END" > shadow-deploys.json || true
+          COUNT=$(jq -r '.result.totalSize // empty' shadow-deploys.json)
+          if [ -z "$COUNT" ]; then
+             jq -r '.message // empty' shadow-deploys.json
+             echo "::error::Could not read DeployRequest, so a real deploy by GlassOps cannot be ruled out."
+             exit 1
+          fi
+          if [ "$COUNT" != "0" ]; then
+             jq -r '.result.records[] | "real deploy: \(.Id) \(.Status) \(.CreatedDate)"' shadow-deploys.json
+             echo "::error::A deploy that was not check only reached production while GlassOps ran."
+             exit 1
+          fi
+
+          GID=$(jq -r '.facts["salesforce.deploy_id"] // empty' .glassops/results/validate.json 2>/dev/null || true)
+          if [ -n "$GID" ]; then
+             if ! [[ "$GID" =~ ^0Af[A-Za-z0-9]{12,15}$ ]]; then
+                echo "::error::GlassOps reported a deploy Id that is not a DeployRequest Id: $GID"
+                exit 1
+             fi
+             CHECK_ONLY=$(sf data query --use-tooling-api --target-org portfolio --json --query "SELECT CheckOnly FROM DeployRequest WHERE Id = '$GID'" | jq -r '.result.records[0].CheckOnly // empty')
+             if [ "$CHECK_ONLY" != "true" ]; then
+                echo "::error::GlassOps deploy $GID is not check only in production (CheckOnly '$CHECK_ONLY')."
+                exit 1
+             fi
+          fi
+          echo "Production shows no real deploy from $GLASSOPS_SHADOW_START to $END. GlassOps deploy ${GID:-none} is check only."
 
       - name: Deploy & Test (Fallback Mode - DELTA)
         if: env.ORG_TYPE == 'fallback'
