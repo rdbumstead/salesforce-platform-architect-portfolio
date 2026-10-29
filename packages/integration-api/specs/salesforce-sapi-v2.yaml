@@ -14,7 +14,7 @@ info:
 
     ### Architecture & Governance
     - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
-    - **ID Strategy** (ADR-038): Every record carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the only identifier. Version 2 returns no `id` field and no Salesforce Id anywhere. Each reference is a key field named for its Id field in version 1 with `Id` replaced by `Key` (`projectKey`, `contactKey`). Every parameter that takes a record (`projectId`, `experienceId` and `certificationId`) takes the key only, and a Salesforce Id is treated as an unknown key. A key is set once, never changes, and never carries a name.
+    - **ID Strategy** (ADR-038): Every record carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the only identifier. Version 2 returns no `id` field and no Salesforce Id anywhere. Each reference is a key field named for its Id field in version 1 with `Id` replaced by `Key` (`projectKey`, `contactKey`). Every filter that takes a record is named for its key (`projectKey`, `experienceKey` and `certificationKey`) and takes the key only, and a Salesforce Id is treated as an unknown key. The version 1 names (`projectId`, `experienceId`, `certificationId`) are not accepted in version 2 and return `400 BAD_REQUEST`. A key is set once, never changes, and never carries a name.
     - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
     ### Non-Functional Requirements (NFRs)
@@ -178,17 +178,17 @@ components:
       schema:
         type: boolean
 
-    projectIdParam:
-      name: projectId
+    projectKeyParam:
+      name: projectKey
       in: query
-      description: Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.
+      description: Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.
       schema:
         type: string
 
-    experienceIdParam:
-      name: experienceId
+    experienceKeyParam:
+      name: experienceKey
       in: query
-      description: Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.
+      description: Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.
       schema:
         type: string
 
@@ -241,10 +241,10 @@ components:
       schema:
         type: string
 
-    certificationIdParam:
-      name: certificationId
+    certificationKeyParam:
+      name: certificationKey
       in: query
-      description: Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.
+      description: Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `certificationId` returns 400.
       schema:
         type: string
 
@@ -1191,12 +1191,12 @@ paths:
     get:
       tags: [Profile]
       summary: Get Experience Highlights
-      description: Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unknown `persona` value returns 400. An `experienceId` that is not a known key, a Salesforce Id included, is treated as an unknown key.
+      description: Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unknown `persona` value returns 400. An `experienceKey` that is not a known key, a Salesforce Id included, is treated as an unknown key. The version 1 name `experienceId` is not accepted in version 2 and returns `400 BAD_REQUEST`.
       operationId: getExperienceHighlights
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
-        - $ref: "#/components/parameters/experienceIdParam"
+        - $ref: "#/components/parameters/experienceKeyParam"
         - $ref: "#/components/parameters/personaParam"
         - $ref: "#/components/parameters/limitParam"
         - $ref: "#/components/parameters/offsetParam"
@@ -1274,7 +1274,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
-        - $ref: "#/components/parameters/projectIdParam"
+        - $ref: "#/components/parameters/projectKeyParam"
         - $ref: "#/components/parameters/limitParam"
         - $ref: "#/components/parameters/offsetParam"
       responses:
@@ -1521,7 +1521,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
-        - $ref: "#/components/parameters/projectIdParam"
+        - $ref: "#/components/parameters/projectKeyParam"
         - $ref: "#/components/parameters/limitParam"
         - $ref: "#/components/parameters/offsetParam"
       responses:
@@ -1557,7 +1557,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
-        - $ref: "#/components/parameters/experienceIdParam"
+        - $ref: "#/components/parameters/experienceKeyParam"
         - $ref: "#/components/parameters/limitParam"
         - $ref: "#/components/parameters/offsetParam"
       responses:
@@ -1593,7 +1593,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
         - $ref: "#/components/parameters/requestIdParam"
-        - $ref: "#/components/parameters/certificationIdParam"
+        - $ref: "#/components/parameters/certificationKeyParam"
         - $ref: "#/components/parameters/limitParam"
         - $ref: "#/components/parameters/offsetParam"
       responses:

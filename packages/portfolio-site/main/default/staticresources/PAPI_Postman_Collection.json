@@ -4461,7 +4461,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unknown `persona` value returns 400. An `experienceId` that is not a known key, a Salesforce Id included, is treated as an unknown key.",
+                  "content": "Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unknown `persona` value returns 400. An `experienceKey` that is not a known key, a Salesforce Id included, is treated as an unknown key. The version 1 name `experienceId` is not accepted in version 2 and returns `400 BAD_REQUEST`.",
                   "type": "text/plain"
                 },
                 "header": [
@@ -4493,9 +4493,9 @@
                   ],
                   "query": [
                     {
-                      "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.",
+                      "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.",
                       "disabled": true,
-                      "key": "experienceId",
+                      "key": "experienceKey",
                       "value": "<string>"
                     },
                     {
@@ -4596,7 +4596,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -4612,7 +4612,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -4674,7 +4674,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -4690,7 +4690,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -4752,7 +4752,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -4768,7 +4768,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -4830,7 +4830,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -4846,7 +4846,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -4914,7 +4914,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -4930,7 +4930,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -4992,7 +4992,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -5008,7 +5008,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -5690,9 +5690,9 @@
                   ],
                   "query": [
                     {
-                      "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.",
+                      "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.",
                       "disabled": true,
-                      "key": "projectId",
+                      "key": "projectKey",
                       "value": "<string>"
                     },
                     {
@@ -5787,7 +5787,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -5799,7 +5799,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -5861,7 +5861,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -5873,7 +5873,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -5935,7 +5935,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -5947,7 +5947,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -6009,7 +6009,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -6021,7 +6021,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -6089,7 +6089,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -6101,7 +6101,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -6163,7 +6163,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -6175,7 +6175,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -8959,9 +8959,9 @@
                   ],
                   "query": [
                     {
-                      "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.",
+                      "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.",
                       "disabled": true,
-                      "key": "projectId",
+                      "key": "projectKey",
                       "value": "<string>"
                     },
                     {
@@ -9056,7 +9056,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9068,7 +9068,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -9130,7 +9130,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9142,7 +9142,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -9204,7 +9204,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9216,7 +9216,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -9278,7 +9278,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9290,7 +9290,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -9358,7 +9358,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9370,7 +9370,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -9432,7 +9432,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9444,7 +9444,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -9492,9 +9492,9 @@
                   ],
                   "query": [
                     {
-                      "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.",
+                      "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.",
                       "disabled": true,
-                      "key": "experienceId",
+                      "key": "experienceKey",
                       "value": "<string>"
                     },
                     {
@@ -9589,7 +9589,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9601,7 +9601,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -9663,7 +9663,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9675,7 +9675,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -9737,7 +9737,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9749,7 +9749,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -9811,7 +9811,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9823,7 +9823,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -9891,7 +9891,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9903,7 +9903,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -9965,7 +9965,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9977,7 +9977,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -10025,9 +10025,9 @@
                   ],
                   "query": [
                     {
-                      "description": "Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.",
+                      "description": "Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `certificationId` returns 400.",
                       "disabled": true,
-                      "key": "certificationId",
+                      "key": "certificationKey",
                       "value": "<string>"
                     },
                     {
@@ -10122,7 +10122,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10134,7 +10134,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -10196,7 +10196,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10208,7 +10208,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -10270,7 +10270,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10282,7 +10282,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -10344,7 +10344,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10356,7 +10356,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -10424,7 +10424,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10436,7 +10436,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -10498,7 +10498,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10510,7 +10510,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"

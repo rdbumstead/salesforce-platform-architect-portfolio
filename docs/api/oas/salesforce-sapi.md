@@ -7,7 +7,7 @@ System API exposing core Salesforce objects for the Portfolio.
 ### Deprecation of version 1
 **Version 1 is deprecated and has a sunset date.** Use version 2 (`X-API-Version: v2`, documented in `salesforce-sapi-v2.yaml`), which returns public keys only. The sunset date is 30 days after version 2 reaches production.
 - **Before the sunset date**: every version 1 response carries a `Deprecation` header (RFC 9745), a `Link` header pointing at the version 2 reference, `https://ryanbumstead.com/api-lab/reference?version=v2`, and, once the sunset date is set, a `Sunset` header (RFC 8594) with that date. The body is unchanged.
-- **After the sunset date**: every version 1 call returns `410 Gone` in the standard error envelope, with a short message and the link to the version 2 reference. No data is returned.
+- **After the sunset date**: every version 1 call returns `410 Gone` in the standard error envelope with `errorCode` `GONE`, a short message and the link to the version 2 reference. No data is returned.
 
 ### Authentication (ADR-027)
 1. **Inbound**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App. Every request carries `Authorization: Bearer <access_token>`. The platform rejects missing, expired or invalid tokens before any Apex executes.
@@ -2034,6 +2034,7 @@ Standard Error Response Schema.
 |errorCode|INTERNAL_SERVER_ERROR|
 |errorCode|SALESFORCE_UNAVAILABLE|
 |errorCode|GATEWAY_TIMEOUT|
+|errorCode|GONE|
 
 <h2 id="tocS_Persona">Persona</h2>
 <!-- backwards compatibility -->

@@ -15,8 +15,9 @@
  *   API_Lab_Catalog.json   the API Lab's GET paths, their query parameters and the top level
  *                          keys of each JSON response, read by ApiLabController and apiTester.
  *                          Paths, parameters and "responses" come from the version 2 specs.
- *                          "v1Responses" holds the same shapes from the version 1 specs, for a
- *                          call the Lab sends as version 1.
+ *                          "v1Params" and "v1Responses" hold the parameters and response shapes
+ *                          from the version 1 specs, for a call the Lab sends as version 1
+ *                          (the filters are named projectId there and projectKey in version 2).
  * and docs/api/postman/portfolio-api.postman_collection.json, a Postman collection of every
  * operation in both version 2 specs, sent with X-API-Version v2.
  * The YAML copies are compared byte for byte. The JSON files are compared by content, so
@@ -433,12 +434,14 @@ function build() {
   const paths = [];
   const specDocs = [];
   const v1Shapes = {};
+  const v1Params = {};
   V1_SPECS.forEach((spec) => {
     const { raw, doc } = readSpec(spec);
     outputs.yaml[resource(spec.yamlResource)] = raw;
     outputs.json[resource(spec.jsonResource)] = doc;
     catalogEntries(doc, spec).forEach((entry) => {
       v1Shapes[entry.path] = entry.responses;
+      v1Params[entry.path] = entry.params;
     });
   });
   SPECS.forEach((spec) => {
@@ -447,7 +450,11 @@ function build() {
     outputs.yaml[resource(spec.yamlResource)] = raw;
     outputs.json[resource(spec.jsonResource)] = doc;
     catalogEntries(doc, spec).forEach((entry) => {
-      paths.push({ ...entry, v1Responses: v1Shapes[entry.path] || {} });
+      paths.push({
+        ...entry,
+        v1Params: v1Params[entry.path] || [],
+        v1Responses: v1Shapes[entry.path] || {}
+      });
     });
   });
   outputs.json[resource(CATALOG_RESOURCE)] = {

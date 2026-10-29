@@ -13,7 +13,7 @@ System API exposing core Salesforce objects for the Portfolio. This is **version
 
 ### Architecture & Governance
 - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
-- **ID Strategy** (ADR-038): Every record carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the only identifier. Version 2 returns no `id` field and no Salesforce Id anywhere. Each reference is a key field named for its Id field in version 1 with `Id` replaced by `Key` (`projectKey`, `contactKey`). Every parameter that takes a record (`projectId`, `experienceId` and `certificationId`) takes the key only, and a Salesforce Id is treated as an unknown key. A key is set once, never changes, and never carries a name.
+- **ID Strategy** (ADR-038): Every record carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the only identifier. Version 2 returns no `id` field and no Salesforce Id anywhere. Each reference is a key field named for its Id field in version 1 with `Id` replaced by `Key` (`projectKey`, `contactKey`). Every filter that takes a record is named for its key (`projectKey`, `experienceKey` and `certificationKey`) and takes the key only, and a Salesforce Id is treated as an unknown key. The version 1 names (`projectId`, `experienceId`, `certificationId`) are not accepted in version 2 and return `400 BAD_REQUEST`. A key is set once, never changes, and never carries a name.
 - **Traceability**: Each API resource maps 1:1 to an Apex `@RestResource` class (`SAPI<Resource>`), and every class runs through the shared `ApiRequestContext`.
 
 ### Non-Functional Requirements (NFRs)
@@ -454,7 +454,7 @@ fetch('https://{domain}/services/apexrest/sapi/v1/experience-highlights',
 
 *Get Experience Highlights*
 
-Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unknown `persona` value returns 400. An `experienceId` that is not a known key, a Salesforce Id included, is treated as an unknown key.
+Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unknown `persona` value returns 400. An `experienceKey` that is not a known key, a Salesforce Id included, is treated as an unknown key. The version 1 name `experienceId` is not accepted in version 2 and returns `400 BAD_REQUEST`.
 
 <h3 id="getexperiencehighlights-parameters">Parameters</h3>
 
@@ -462,7 +462,7 @@ Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unk
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|experienceId|query|string|false|Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.|
+|experienceKey|query|string|false|Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.|
 |persona|query|string|false|Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
@@ -769,7 +769,7 @@ Retrieves assets (images, links) associated with a project. A filter that is not
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|projectId|query|string|false|Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.|
+|projectKey|query|string|false|Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 
@@ -1570,7 +1570,7 @@ Retrieves junction records linking Projects to Skills. A filter that is not a kn
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|projectId|query|string|false|Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.|
+|projectKey|query|string|false|Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 
@@ -1698,7 +1698,7 @@ Retrieves junction records linking Experiences to Skills. A filter that is not a
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|experienceId|query|string|false|Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.|
+|experienceKey|query|string|false|Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 
@@ -1826,7 +1826,7 @@ Retrieves junction records linking Certifications to Skills. A filter that is no
 |---|---|---|---|---|
 |X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
-|certificationId|query|string|false|Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key.|
+|certificationKey|query|string|false|Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `certificationId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return.|
 |offset|query|integer|false|Pagination offset.|
 

@@ -329,6 +329,26 @@ export function parseCatalog(text) {
 }
 
 /**
+ * The picker values for a parameter. The options come keyed by the version 2 name
+ * (projectKey) or the version 1 name (projectId), and either one is found.
+ * @param {object} options the map getOptions returned
+ * @param {string} name the parameter's name for the picked version
+ * @returns {Array|undefined} the options, when there are any
+ */
+export function optionsFor(options, name) {
+  if (!options) {
+    return undefined;
+  }
+  const other = /Key$/.test(name)
+    ? name.replace(/Key$/, "Id")
+    : name.replace(/Id$/, "Key");
+  const found = [name, other]
+    .map((candidate) => options[candidate])
+    .find((list) => Array.isArray(list) && list.length);
+  return found;
+}
+
+/**
  * Which control a spec parameter becomes. A free text or Id parameter becomes a picklist of
  * the values that exist when the org returned options for it, and stays a text box when not.
  */
@@ -346,7 +366,7 @@ export function controlKind(param, options) {
   if (Array.isArray(known) && known.length) {
     return KIND_OPTIONS;
   }
-  if (/Id$/.test(param.name)) {
+  if (/(Id|Key)$/.test(param.name)) {
     return KIND_ID;
   }
   return KIND_TEXT;
@@ -686,6 +706,17 @@ export default class ApiTester extends LightningElement {
     return V1_NOTICE;
   }
 
+  /** The path's parameters as the picked version names them. v1 uses the catalog's v1Params. */
+  get currentParams() {
+    const entry = this.currentEntry;
+    if (!entry) {
+      return [];
+    }
+    return this.isDeprecatedVersion && entry.v1Params
+      ? entry.v1Params
+      : entry.params;
+  }
+
   get currentEntry() {
     return this.catalogPaths.find((entry) => entry.path === this.selectedPath);
   }
@@ -695,18 +726,19 @@ export default class ApiTester extends LightningElement {
     if (!entry) {
       return [];
     }
-    return entry.params.map((param) => this.controlFor(entry, param));
+    return this.currentParams.map((param) => this.controlFor(entry, param));
   }
 
   controlFor(entry, param) {
-    const kind = controlKind(param, this.options);
+    const known = optionsFor(this.options, param.name);
+    const kind = controlKind(param, known ? { [param.name]: known } : {});
     const value = this.paramValues[param.name];
     let hint = param.description;
     if (kind === KIND_NUMBER) {
       hint = numberHint(param);
     } else if (kind === KIND_ID) {
       hint = ID_HINT;
-    } else if (kind === KIND_OPTIONS && /Id$/.test(param.name)) {
+    } else if (kind === KIND_OPTIONS && /(Id|Key)$/.test(param.name)) {
       hint = ID_OPTION_HINT;
     }
     const control = {
@@ -744,7 +776,7 @@ export default class ApiTester extends LightningElement {
     if (kind === KIND_OPTIONS) {
       control.options = [
         { value: "", label: "Any", key: `${param.name}-any`, selected: !value },
-        ...this.options[param.name].map((option) => ({
+        ...known.map((option) => ({
           value: option.value,
           label: option.label,
           key: `${param.name}-${option.value}`,
@@ -891,7 +923,9 @@ export default class ApiTester extends LightningElement {
     const entry = this.currentEntry;
     return (
       String(headers["X-Has-More"]).toLowerCase() === "true" &&
-      Boolean(entry && entry.params.some((param) => param.name === "offset"))
+      Boolean(
+        entry && this.currentParams.some((param) => param.name === "offset")
+      )
     );
   }
 
@@ -1036,6 +1070,9 @@ export default class ApiTester extends LightningElement {
     this.apiVersion = API_VERSIONS.some((option) => option.value === value)
       ? value
       : DEFAULT_VERSION;
+    // The filters are named per version (projectKey, projectId), so a value set under one
+    // version does not carry to the other.
+    this.paramValues = {};
     // The shown answer belongs to the version that made it.
     this.result = undefined;
     this.invokeError = "";
@@ -1165,7 +1202,9 @@ export default class ApiTester extends LightningElement {
   handleNextPage() {
     const entry = this.currentEntry;
     const merged = this.mergedParams;
-    const limitParam = entry.params.find((param) => param.name === "limit");
+    const limitParam = this.currentParams.find(
+      (param) => param.name === "limit"
+    );
     const body = this.lastBody;
     const limit =
       Number(merged.limit) ||

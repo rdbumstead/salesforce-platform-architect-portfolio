@@ -17,6 +17,7 @@ import ApiTester, {
   checkAgainstSchema,
   controlKind,
   numberHint,
+  optionsFor,
   parseCatalog,
   ID_HINT,
   KIND_ID,
@@ -247,9 +248,9 @@ describe("c-api-tester v2 controls", () => {
     expect($(element, 'input[data-name="offset"]').getAttribute("min")).toBe(
       "0"
     );
-    const projectId = $(element, 'input[data-name="projectId"]');
-    expect(projectId.type).toBe("text");
-    expect(projectId.closest("label").textContent).toContain(ID_HINT);
+    const projectKey = $(element, 'input[data-name="projectKey"]');
+    expect(projectKey.type).toBe("text");
+    expect(projectKey.closest("label").textContent).toContain(ID_HINT);
   });
 
   it("lets the Advanced text win on a shared name and keeps it across paths", async () => {
@@ -584,6 +585,34 @@ describe("c-api-tester version picker", () => {
     await flush();
     await choosePath(element, "/sapi/v1/project-skills");
 
+    setField(element, 'input[data-name="projectKey"]', "prj_8f3k2m9qtz");
+    await flush();
+    $(element, "button.execute-button").click();
+    await flush();
+    expect(invoke).toHaveBeenLastCalledWith({
+      path: "/sapi/v1/project-skills",
+      params: { projectKey: "prj_8f3k2m9qtz" },
+      apiVersion: "v2"
+    });
+    expect(ID_HINT).toContain("key");
+  });
+
+  it("names the filter projectKey for v2 and projectId for v1, and sends the name of the picked version", async () => {
+    invoke.mockResolvedValue(result([]));
+    const element = create();
+    await flush();
+    await choosePath(element, "/sapi/v1/project-skills");
+
+    expect($(element, 'input[data-name="projectKey"]')).not.toBeNull();
+    expect($(element, 'input[data-name="projectId"]')).toBeNull();
+
+    // A value typed under v2 does not carry to v1, whose filter has another name.
+    setField(element, 'input[data-name="projectKey"]', "prj_8f3k2m9qtz");
+    chooseVersion(element, "v1");
+    await flush();
+    expect($(element, 'input[data-name="projectKey"]')).toBeNull();
+    expect($(element, 'input[data-name="projectId"]').value).toBe("");
+
     setField(element, 'input[data-name="projectId"]', "prj_8f3k2m9qtz");
     await flush();
     $(element, "button.execute-button").click();
@@ -591,8 +620,20 @@ describe("c-api-tester version picker", () => {
     expect(invoke).toHaveBeenLastCalledWith({
       path: "/sapi/v1/project-skills",
       params: { projectId: "prj_8f3k2m9qtz" },
-      apiVersion: "v2"
+      apiVersion: "v1"
     });
-    expect(ID_HINT).toContain("key");
+
+    chooseVersion(element, "v2");
+    await flush();
+    expect($(element, 'input[data-name="projectKey"]')).not.toBeNull();
+  });
+
+  it("finds the picker values under either parameter name", () => {
+    const list = [{ label: "Portfolio", value: "prj_8f3k2m9qtz" }];
+    expect(optionsFor({ projectKey: list }, "projectId")).toBe(list);
+    expect(optionsFor({ projectId: list }, "projectKey")).toBe(list);
+    expect(optionsFor({ projectKey: list }, "projectKey")).toBe(list);
+    expect(optionsFor({}, "projectKey")).toBeUndefined();
+    expect(optionsFor(undefined, "projectKey")).toBeUndefined();
   });
 });

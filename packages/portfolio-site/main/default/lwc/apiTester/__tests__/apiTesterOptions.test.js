@@ -171,9 +171,9 @@ describe("c-api-tester filter options", () => {
     await flush();
     await choosePath(element, "/sapi/v1/project-assets");
 
-    const select = $(element, 'select[data-name="projectId"]');
+    const select = $(element, 'select[data-name="projectKey"]');
     expect(select).not.toBeNull();
-    expect($(element, 'input[data-name="projectId"]')).toBeNull();
+    expect($(element, 'input[data-name="projectKey"]')).toBeNull();
     const options = Array.from(select.querySelectorAll("option"));
     expect(options.map((option) => option.textContent.trim())).toEqual([
       "Any",
@@ -182,10 +182,10 @@ describe("c-api-tester filter options", () => {
     ]);
     expect(options[0].value).toBe("");
 
-    pick(element, "projectId", PROJECT_ID);
+    pick(element, "projectKey", PROJECT_ID);
     await flush();
     expect($(element, "code.query-string").textContent).toBe(
-      `?projectId=${PROJECT_ID}`
+      `?projectKey=${PROJECT_ID}`
     );
     expect($(element, "button.disclosure")).toBeNull();
 
@@ -193,7 +193,7 @@ describe("c-api-tester filter options", () => {
     await flush();
     expect(invoke).toHaveBeenCalledWith({
       path: "/sapi/v1/project-assets",
-      params: { projectId: PROJECT_ID },
+      params: { projectKey: PROJECT_ID },
       apiVersion: "v2"
     });
   });
@@ -203,8 +203,8 @@ describe("c-api-tester filter options", () => {
     await flush();
     await choosePath(element, "/sapi/v1/project-assets");
 
-    const label = $(element, 'select[data-name="projectId"]').closest("label");
-    expect(label.querySelector(".param-label").textContent).toBe("projectId");
+    const label = $(element, 'select[data-name="projectKey"]').closest("label");
+    expect(label.querySelector(".param-label").textContent).toBe("projectKey");
     const hint = label.querySelector(".param-hint");
     expect(hint.textContent).toBe(ID_OPTION_HINT);
     expect(hint.parentElement).toBe(label);
@@ -246,7 +246,7 @@ describe("c-api-tester filter options", () => {
     await flush();
     await choosePath(element, "/sapi/v1/project-assets");
 
-    expect($(element, 'input[data-name="projectId"]').type).toBe("text");
+    expect($(element, 'input[data-name="projectKey"]').type).toBe("text");
     expect($(element, "p.catalog-error")).toBeNull();
   });
 

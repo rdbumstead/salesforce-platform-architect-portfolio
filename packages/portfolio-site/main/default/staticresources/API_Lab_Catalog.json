@@ -29,6 +29,7 @@
           "required": []
         }
       },
+      "v1Params": [],
       "v1Responses": {
         "200": {
           "type": "object",
@@ -167,6 +168,28 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -401,6 +424,38 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "employerName",
+          "type": "string",
+          "description": "Filter by Employer Name."
+        },
+        {
+          "name": "currentlyEmployed",
+          "type": "boolean",
+          "description": "Filter by active employment status."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -511,9 +566,9 @@
       "summary": "Get Experience Highlights",
       "params": [
         {
-          "name": "experienceId",
+          "name": "experienceKey",
           "type": "string",
-          "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key."
+          "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `expe."
         },
         {
           "name": "persona",
@@ -633,6 +688,33 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "experienceId",
+          "type": "string",
+          "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated."
+        },
+        {
+          "name": "persona",
+          "type": "string",
+          "description": "Filters records where the target field (Multi-Select Picklist) includes the specified persona(s)."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -885,6 +967,50 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "status",
+          "type": "string",
+          "description": "Filter by Project Status.",
+          "enum": [
+            "Live – In Production",
+            "Live – Demo / Reference",
+            "Active Development",
+            "On Hold",
+            "Archived"
+          ]
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        },
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "projectName",
+          "type": "string",
+          "description": "Filter by Project Name."
+        },
+        {
+          "name": "isFeatured",
+          "type": "boolean",
+          "description": "Filter only featured projects."
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -998,9 +1124,9 @@
       "summary": "Get Project Assets",
       "params": [
         {
-          "name": "projectId",
+          "name": "projectKey",
           "type": "string",
-          "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key."
+          "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `project."
         },
         {
           "name": "limit",
@@ -1116,6 +1242,28 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "projectId",
+          "type": "string",
+          "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -1334,6 +1482,23 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -1517,6 +1682,7 @@
           ]
         }
       },
+      "v1Params": [],
       "v1Responses": {
         "200": {
           "type": "object",
@@ -1718,6 +1884,28 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "accountName",
+          "type": "string",
+          "description": "Filter by Account Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -1937,6 +2125,28 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "category",
+          "type": "string",
+          "description": "Filter skills by Category, one of the Skill Category picklist values, for example 'Backend', 'Frontend' or 'Integration'."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -2169,6 +2379,38 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "issuerName",
+          "type": "string",
+          "description": "Filter by Issuer Name."
+        },
+        {
+          "name": "certificationName",
+          "type": "string",
+          "description": "Filter by Certification Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -2398,6 +2640,33 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "issuerName",
+          "type": "string",
+          "description": "Filter by Issuer Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -2505,9 +2774,9 @@
       "summary": "Get Project-Skill Links",
       "params": [
         {
-          "name": "projectId",
+          "name": "projectKey",
           "type": "string",
-          "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key."
+          "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `project."
         },
         {
           "name": "limit",
@@ -2622,6 +2891,28 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "projectId",
+          "type": "string",
+          "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -2727,9 +3018,9 @@
       "summary": "Get Experience-Skill Links",
       "params": [
         {
-          "name": "experienceId",
+          "name": "experienceKey",
           "type": "string",
-          "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key."
+          "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `expe."
         },
         {
           "name": "limit",
@@ -2844,6 +3135,28 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "experienceId",
+          "type": "string",
+          "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -2949,9 +3262,9 @@
       "summary": "Get Certification-Skill Links",
       "params": [
         {
-          "name": "certificationId",
+          "name": "certificationKey",
           "type": "string",
-          "description": "Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key."
+          "description": "Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `c."
         },
         {
           "name": "limit",
@@ -3066,6 +3379,28 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "certificationId",
+          "type": "string",
+          "description": "Filter by Certification public key (for example `crt_6q2v8d4nhz`) or Salesforce ID. The Salesforce ID is deprecated."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -3183,6 +3518,7 @@
           "required": []
         }
       },
+      "v1Params": [],
       "v1Responses": {
         "200": {
           "type": "object",
@@ -3301,6 +3637,7 @@
           ]
         }
       },
+      "v1Params": [],
       "v1Responses": {
         "200": {
           "type": "object",
@@ -3499,6 +3836,7 @@
           ]
         }
       },
+      "v1Params": [],
       "v1Responses": {
         "200": {
           "type": "object",
@@ -3697,6 +4035,18 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "persona",
+          "type": "string",
+          "description": "Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.",
+          "enum": [
+            "Admin",
+            "Developer",
+            "Architect"
+          ]
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "object",
@@ -3886,6 +4236,7 @@
           ]
         }
       },
+      "v1Params": [],
       "v1Responses": {
         "200": {
           "type": "array",
@@ -4090,6 +4441,18 @@
           ]
         }
       },
+      "v1Params": [
+        {
+          "name": "mode",
+          "type": "string",
+          "description": "Filter testimonials by vibe",
+          "enum": [
+            "professional",
+            "casual"
+          ],
+          "default": "professional"
+        }
+      ],
       "v1Responses": {
         "200": {
           "type": "array",
