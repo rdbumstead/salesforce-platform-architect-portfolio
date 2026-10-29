@@ -116,7 +116,7 @@ The Developer Edition org shares space with Trailhead challenges and standard Sa
 ### 2.1 Organization Rules
 
 - **Authorized Code:** Only metadata present in `packages/` is authorized.
-- **Standard Sites:** Authenticated users are out of scope, so no portfolio feature uses a login. The site template's own routes (`/login`, `/SelfRegister`, `/ForgotPassword`, `/news`) and their standard controllers (for example `LightningLoginFormController` and `CommunitiesSelfRegController`) are still in source and on the site. The owner chose to leave them in place (2026-10-23).
+- **Standard Sites:** Authenticated users are out of scope, so no portfolio feature uses a login. The site template's own routes (`/login`, `/SelfRegister`, `/ForgotPassword`, `/news`) and their standard controllers (for example `LightningLoginFormController` and `CommunitiesSelfRegController`) are still in source and on the site. I chose to leave them in place (2026-10-23).
 
 ### 2.2 Emergency Cleanup Protocol
 
@@ -199,16 +199,16 @@ The portfolio's content reads (the SAPI lists, the Process API, the API Lab opti
 
 ### 3.7 Site Content the Owner Edits
 
-- **The title line and the value sentence.** Edit **Hero Line** (the title line under the name) and **Value Sentence** (one sentence on the value delivered) on the portfolio owner's Contact. Each shows on the home page only while it is set.
+- **The title line and the value sentence.** Edit **Hero Line** (the title line under the name) and **Value Sentence** (one sentence on the value delivered) on my Contact. Each shows on the home page only while it is set.
 - **The proof strip.** "On Salesforce since 2017" and the active certification count are one list, `PROOF_POINTS` in `c/pillarData`. Check both every quarter, and change the count and its test in the same commit.
-- **A home case study.** The home page shows up to three `Project__c` rows that have **Home Sort** set, lowest first. To add one, create the row with its Home Title (optional), Client Line, Case Tags, headline number and label, Challenge, Solution, Business Value and link, and give it a Home Sort. To reorder, change the Home Sort numbers. To retire one, clear its Home Sort. Clear every Home Sort and the section disappears with no empty heading. A row with a Home Sort and no Pillar never appears as a pillar card. The featured flag is not used here and changing it does not move a card. The text reaches production through an owner run script, not through CI. A card's number can be computed from a live source (Technical Guide §2.12), which is better than a typed number that goes stale.
+- **A home case study.** The home page shows up to three `Project__c` rows that have **Home Sort** set, lowest first. To add one, create the row with its Home Title (optional), Client Line, Case Tags, headline number and label, Challenge, Solution, Business Value and link, and give it a Home Sort. To reorder, change the Home Sort numbers. To retire one, clear its Home Sort. Clear every Home Sort and the section disappears with no empty heading. A row with a Home Sort and no Pillar never appears as a pillar card. The featured flag is not used here and changing it does not move a card. The text reaches production through a script I run, not through CI. A card's number can be computed from a live source (Technical Guide §2.12), which is better than a typed number that goes stale.
 - **When home testimonials appear.** Edit **Home testimonials minimum** in Portfolio Setting (§3.5). The home page shows up to three approved testimonials once that many are approved.
 - **The cover letter instruction.** Edit **Instruction** on the **Cover Letter** record of the AI Prompt custom metadata type, and commit the same text to `AI_Prompt.Cover_Letter.md-meta.xml`. A blank or missing record falls back to the text in `ContentGenerationController`. The word range is the `Cover_Letter_Min_Words` and `Cover_Letter_Max_Words` settings, and the prompt turns them into a word limit line with the maximum as a hard limit and a fixed five paragraph shape. Keep the line from starting with "Length": the Published `Portfolio_Cover_Letter` template adds its own sentence for a `Length` line, and a changed template needs a new version made in Prompt Builder, not a deploy.
 - **A document on `/docs`.** Each listed document is a `Source_File__mdt` record with `Source_Key__c` `docs`, its `Path__c` in the repository, its `Label__c` and its `Sort_Order__c`. The daily source refresh reads it from `main`, and a push that changes `docs/**` refreshes every listed document after the deploy (§3.2), so a changed document shows soon after its merge. A new document needs its record deployed first. The doc key in the address comes from the record name: `docs_sas` gives `sas` and `docs_adr_027` gives `adr-027`. Keep the SAS headings 5.1 to 5.5 as they are, because each pillar page's "Read the design" link uses their slugs.
 
 ### 3.8 Owner Emails and Testimonial Approvals
 
-- **A new contact message.** The Lead owner gets one email with the visitor's name, company, email, full message and a link to the Lead. While the Lead has no internal user as its owner, for example while the assignment rule leaves it with the Automated Process user, the email goes to the `Portfolio_Admin` users instead. A Lead rule entry that assigns "Portfolio Website" leads to the owner, with no template, is optional. With it the in app reply reminders reach the owner as well.
+- **A new contact message.** The Lead owner gets one email with the visitor's name, company, email, full message and a link to the Lead. While the Lead has no internal user as its owner, for example while the assignment rule leaves it with the Automated Process user, the email goes to the `Portfolio_Admin` users instead. A Lead rule entry that assigns "Portfolio Website" leads to me, with no template, is optional. With it the in app reply reminders reach me as well.
 - **A new testimonial.** It is submitted to the Testimonial Approval process for you, and the request email shows the quote, the author, title, relationship and vibe. Reply with APPROVE, APPROVED or YES on the first line to publish it, or REJECT, REJECTED or NO to keep it off the site, or open the request in Salesforce. Approval sets **Approved** and the testimonial shows on the site. A rejected one stays saved and hidden.
 - **A testimonial saved before the hand off.** It was never submitted, so submit it for approval from the record, or tick **Approved** by hand.
 - **Who gets the emails.** Both go to a user, never to an address in source. The approval goes to the testimonial's owner, the site's default owner for guest records.
@@ -266,7 +266,7 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 
 ### 5.1 Quota Monitoring (Not Built)
 
-The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed the owner above a threshold. **It is not built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
+The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed me above a threshold. **It is not built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
 
 - The Gemini API key's own limits for Gemini 2.5 Flash, as recorded on 2026-10-20 (AI Studio): 5 requests per minute and 20 requests per day. Read the current figures before relying on them. Past them, `/papi/v1/ai/generate` falls back to the local template for cover letters and answers 503 `ALL_PROVIDERS_UNAVAILABLE` otherwise.
 - The `papi-ai` rate tier, 10 requests per minute (`RateWindowLimiter`). The site cover letter has its own bucket, `papi-ai:site-cover-letter`, shared by every site visitor. `/papi/v1/ai/generate` keys by session, and every evaluator token is the same session, so evaluators share one bucket too.
@@ -279,6 +279,6 @@ The design was a scheduled job that read a Gemini usage counter from a Platform 
 ### 5.2 Logging
 
 - **Where logs go.** Apex logs through `PortfolioLog` (one line per API request: path, status, correlation id, elapsed time). With Nebula Logger installed, the lines are Nebula log entries tagged `portfolio`. Without it, they are ordinary debug logs, visible only while a trace flag is set.
-- **Nebula is optional and owner-installed.** Install its unlocked, no-namespace package in production by hand. No deploy installs or needs it, and removing it changes nothing but where the lines land.
+- **Nebula is optional and I install it myself.** Install its unlocked, no-namespace package in production by hand. No deploy installs or needs it, and removing it changes nothing but where the lines land.
 - **Retention.** Set Nebula's log retention to 2 days, to protect the Developer Edition's 5 MB of data storage.
 - **What is never logged:** a request or response body, a header value, a token or a query string ([Technical Guide §1.5](./04-Technical-Guide.md#15-logging-nebula-logger-optional)).
