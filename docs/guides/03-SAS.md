@@ -687,9 +687,9 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 - **Contract-First Design:** OpenAPI 3.0 specification defines the interface before implementation
 - **Explicit Caching:** `Cache-Control` headers distinguish between cacheable configuration (`max-age=300`) and dynamic data (`no-store`)
 - **Rate Limiting:** `RateWindowLimiter` allows 120 requests per minute per caller key, with no burst allowance. Every evaluator token is the same session, so all evaluators share that one limit ([ADR-028 amendment on the shared token pool](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-a-shared-token-pool-no-expiry-no-disposable-list))
-- **Versioning:** `X-API-Version` is optional and selects the contract ([ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)). A request without it is served as `v1`, which is deprecated. `v2` returns public keys only. Any other value gets 400 `Unsupported X-API-Version`, and every response Apex writes carries `X-API-Version` with the version served and `Vary: X-API-Version` (`ApiRequestContext.applyRequestRules`, `SUPPORTED_VERSION`, `VERSION_2`)
-- **v2 shape:** no `id`, no `xId` that has an `xKey` beside it, and no `accomplishments` (`SAPITransformer.toV2`, which `PAPITransformer.toV2` calls). The filters are `projectKey`, `experienceKey` and `certificationKey`, each a public key only. An Id there gets 400 "<parameter> must be a public key.", and an old `*Id` name gets 400 "Use projectKey in v2.". The `/projects/{id}` path takes a key and answers 404 for anything else
-- **v1 deprecation and sunset:** every v1 response carries `Link` with `rel="successor-version"` to `https://ryanbumstead.com/api-lab/reference?version=v2`, `Deprecation` (RFC 9745) once `Api_V1_Deprecation_Date` is set and `Sunset` (RFC 8594) once `Api_V1_Sunset_Date` is set. From 00:00 UTC on the sunset date every v1 call, with or without the header, gets 410 with `errorCode` `GONE`. Both settings ship blank, so nothing is deprecated or retired until I set them
+- **Versioning:** `X-API-Version` is optional and selects the contract ([ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)). A request without it is served as `v1`, which is deprecated. `v2` returns public keys only. The value is matched without regard to letter case, so `V2` works. Any other value gets 400 `Unsupported X-API-Version`, and every response Apex writes carries `X-API-Version` in lower case with the version served and `Vary: X-API-Version`. The version and sunset checks run before the rate limiter, so a request they refuse spends none of the rate limit quota (`ApiRequestContext.applyRequestRules`, `SUPPORTED_VERSION`, `VERSION_2`)
+- **v2 shape:** on the record endpoints, no `id`, no `xId` that has an `xKey` beside it, and no `accomplishments` (`SAPITransformer.toV2`, which `PAPITransformer.toV2` calls). The token, health, AI generate, resume generate and portfolio config bodies are not shaped. The filters are `projectKey`, `experienceKey` and `certificationKey`, each a public key only. An Id there gets 400 "<parameter> must be a public key.", and an old `*Id` name gets 400 "Use projectKey in v2.". The `/projects/{id}` path takes a key and answers 404 for anything else
+- **v1 deprecation and sunset:** every v1 response carries `Link` with `rel="successor-version"` to `https://ryanbumstead.com/api-lab/reference?version=v2`, `Deprecation` (RFC 9745) once `Api_V1_Deprecation_Date` is set and `Sunset` (RFC 8594) once `Api_V1_Sunset_Date` is set. From 00:00 UTC on the sunset date every v1 call, with or without the header, gets 410 with `errorCode` `GONE`, except `POST /papi/v1/auth/token`, `/sapi/v1/health` and `/papi/v1/health`. They keep their deprecation headers and are answered normally, so a client can still get a token and check that the API is up. Both settings ship blank, so nothing is deprecated or retired until I set them
 
 **Core Endpoints:**
 
@@ -721,15 +721,15 @@ All list endpoints support:
 
 **Error Handling:**
 
-| Status Code | Meaning                                       | Retryable | Response Header               |
-| :---------- | :-------------------------------------------- | :-------- | :---------------------------- |
-| 400         | Bad Request (Invalid parameters)              | No        | `X-Request-Id`                |
-| 401         | Unauthorized (Missing/invalid token)          | No        | `X-Request-Id`                |
-| 403         | Forbidden (Integration user lacks permission) | No        | `X-Request-Id`                |
-| 404         | Not Found (Invalid record ID)                 | No        | `X-Request-Id`                |
-| 410         | Gone (v1 after its sunset date)               | No        | `X-Request-Id`                |
-| 429         | Too Many Requests (Rate limit exceeded)       | Yes       | `X-Request-Id`, `Retry-After` |
-| 500         | Internal Server Error (Apex/Platform fault)   | Yes       | `X-Request-Id`                |
+| Status Code | Meaning                                              | Retryable | Response Header               |
+| :---------- | :--------------------------------------------------- | :-------- | :---------------------------- |
+| 400         | Bad Request (Invalid parameters)                     | No        | `X-Request-Id`                |
+| 401         | Unauthorized (Missing/invalid token)                 | No        | `X-Request-Id`                |
+| 403         | Forbidden (Integration user lacks permission)        | No        | `X-Request-Id`                |
+| 404         | Not Found (Invalid record ID)                        | No        | `X-Request-Id`                |
+| 410         | Gone (v1 after its sunset date, not token or health) | No        | `X-Request-Id`                |
+| 429         | Too Many Requests (Rate limit exceeded)              | Yes       | `X-Request-Id`, `Retry-After` |
+| 500         | Internal Server Error (Apex/Platform fault)          | Yes       | `X-Request-Id`                |
 
 **Schema Highlights:**
 
