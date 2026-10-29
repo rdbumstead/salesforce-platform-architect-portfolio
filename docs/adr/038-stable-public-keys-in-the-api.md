@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-10-28). Written against the branch `r14/ws3-publickeys`. The Apex has not been run yet, so every statement about its behaviour is [unverified] until the integration scratch org runs `PublicKeyServiceTest`, `SAPIPublicKeyTest`, `PAPIPublicKeyTest` and the existing SAPI and PAPI tests.
+Accepted and built (2026-10-28). In a scratch org `PublicKeyServiceTest`, `SAPIPublicKeyTest` and `PAPIPublicKeyTest` passed 55 of 55, and every local test, the existing SAPI and PAPI tests among them, passed 1292 of 1292. Rows that existed before the field get their keys when `scripts/backfill-public-keys.apex` runs once in production.
 
 ## Context
 
