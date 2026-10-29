@@ -6,7 +6,7 @@
       aria-haspopup="dialog"
       onclick={handleOpen}
     >
-      View source
+      {buttonLabel}
     </button>
     <dialog
       class="dialog"
@@ -46,7 +46,8 @@
                 tabindex={tab.tabIndex}
                 onclick={handleTabClick}
               >
-                {tab.label}
+                <span class="tab-label">{tab.label}</span>
+                <span lwc:if={tab.tag} class="tab-tag">{tab.tag}</span>
               </button>
             </template>
           </div>
@@ -56,6 +57,7 @@
             role="tabpanel"
             aria-label={panelLabel}
           >
+            <p lwc:if={selectedLine} class="file-line">{selectedLine}</p>
             <c-code-viewer
               title={selected.label}
               code={selected.content}
@@ -66,6 +68,9 @@
               shown. GitHub has all of it.
             </p>
             <p class="source-meta">
+              <a lwc:if={guideHref} class="guide-link" href={guideHref}
+                >How it's built</a
+              >
               <template lwc:if={hasGithubLink}>
                 <a
                   class="github-link"

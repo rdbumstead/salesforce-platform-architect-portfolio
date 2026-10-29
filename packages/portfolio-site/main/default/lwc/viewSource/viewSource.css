@@ -45,6 +45,7 @@
 .close-button:focus-visible,
 .tab:focus-visible,
 .github-link:focus-visible,
+.guide-link:focus-visible,
 .dialog-heading:focus-visible {
   outline: 2px solid var(--pf-focus, var(--pf-accent));
   outline-offset: 2px;
@@ -112,6 +113,34 @@
   font-family: var(--pf-font-mono);
 }
 
+/* The file label on top and the type tag under it. At 320 px a long name wraps inside its
+   tab instead of widening the row. */
+.tab {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  max-width: 100%;
+  padding-block: var(--pf-space-1, 0.25rem);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.tab-tag {
+  font-family: var(--pf-font-sans);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.file-line {
+  margin: 0 0 var(--pf-space-2);
+  color: var(--pf-body);
+  font-family: var(--pf-font-mono);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
 .tab_selected {
   background-color: var(--pf-chip);
   color: var(--pf-chip-text);
@@ -136,6 +165,7 @@
   gap: 0.3em;
 }
 
+.guide-link,
 .github-link {
   color: var(--pf-accent);
   text-decoration: underline;

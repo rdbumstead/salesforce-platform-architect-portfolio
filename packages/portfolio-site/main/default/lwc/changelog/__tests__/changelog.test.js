@@ -378,4 +378,50 @@ describe("c-changelog live data marker", () => {
     expect(marker[1]).not.toMatch(/objects=/);
     expect(marker[1]).toMatch(/\shide-counts[\s>]/);
   });
+
+  describe("outage compare", () => {
+    it("shows above the list while SIMULATED, with GitHub wording and the feed's age", async () => {
+      const element = createComponent();
+      getRecentCommits.emit(feed("SIMULATED", { ageMinutes: 21 }));
+      await flushPromises();
+      const compare = q(element, "c-outage-compare");
+      expect(compare).not.toBeNull();
+      expect(compare.source).toBe("GitHub");
+      expect(compare.subject).toBe("Latest Updates");
+      expect(compare.ageMinutes).toBe(21);
+      expect(compare.fetchedAt).toBe("2026-10-21T08:05:00.000Z");
+      const position = compare.compareDocumentPosition(
+        q(element, ".commit-list")
+      );
+      expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(q(element, '[data-id="status-badge"]').textContent).toBe(
+        "Simulated"
+      );
+    });
+
+    it.each(["FRESH", "STALE", "DEGRADED", "EMPTY"])(
+      "is hidden for %s",
+      async (status) => {
+        const element = createComponent();
+        getRecentCommits.emit(feed(status));
+        await flushPromises();
+        expect(q(element, "c-outage-compare")).toBeNull();
+      }
+    );
+
+    it("follows the shared switch state in both panels", async () => {
+      const element = createComponent();
+      getRecentCommits.emit(feed("FRESH"));
+      await flushPromises();
+      setSimulating(true);
+      await flushPromises();
+      expect(getRecentCommits.getLastConfig()).toEqual({ simulate: true });
+      getRecentCommits.emit(feed("SIMULATED"));
+      await flushPromises();
+      expect(q(element, "c-outage-compare")).not.toBeNull();
+      setSimulating(false);
+      await flushPromises();
+      expect(getRecentCommits.getLastConfig()).toEqual({ simulate: false });
+    });
+  });
 });

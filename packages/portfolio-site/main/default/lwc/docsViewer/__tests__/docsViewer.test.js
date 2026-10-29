@@ -4,7 +4,7 @@
  *                      Marked_Library supplies the lexer. The tests cover the list, a document
  *                      with its title, contents, tables and Mermaid block, the back link, a
  *                      missing document, contents links and a hash on load moving focus to
- *                      their heading, the event with the doc key, and a fixture full of
+ *                      their heading (including a Technical Guide deep link), the event with the doc key, and a fixture full of
  *                      script, event handlers and unsafe links that never reaches the DOM.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -414,6 +414,35 @@ describe("c-docs-viewer document", () => {
     expect(shadow(el).activeElement).toBe(heading);
   });
 
+  it("lands on a Technical Guide section named by a live data marker link on a fresh load", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/portfolio/docs?doc=technical-guide#2-6-c-footer-glass-box-telemetry"
+    );
+    const guide = [
+      "# Technical Guide",
+      "",
+      "## 2. Components",
+      "",
+      "### 2.5 `c-other` (Something Else)",
+      "",
+      "Text.",
+      "",
+      "### 2.6 `c-footer` (Glass Box Telemetry)",
+      "",
+      "Text."
+    ].join("\n");
+    const el = await openDoc("technical-guide", guide);
+    await flush();
+    const heading = shadow(el).querySelector(
+      '[id="2-6-c-footer-glass-box-telemetry"]'
+    );
+    expect(heading).not.toBeNull();
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(shadow(el).activeElement).toBe(heading);
+  });
+
   it("says the document is not on the site when the read returns nothing", async () => {
     const el = await create({ doc: "adr-999" });
     getDoc.emit(null);
@@ -509,6 +538,7 @@ describe("docsViewer helpers", () => {
     expect(groupFor("program-charter")).toBe("start");
     expect(groupFor("sas")).toBe("specifications");
     expect(groupFor("guardrails")).toBe("specifications");
+    expect(groupFor("technical-guide")).toBe("specifications");
     expect(groupFor("something-new")).toBe("specifications");
   });
 
@@ -524,6 +554,7 @@ describe("docsViewer helpers", () => {
     expect(badgeFor("executive-overview")).toBe("OVERVIEW");
     expect(badgeFor("program-charter")).toBe("CHARTER");
     expect(badgeFor("guardrails")).toBe("GUARDRAILS");
+    expect(badgeFor("technical-guide")).toBe("TECH GUIDE");
     expect(badgeFor("sas")).toBe("SAS");
     expect(badgeFor("adr-033")).toBe("ADR-033");
     expect(badgeFor("some-new-doc")).toBe("SOME-NEW-DOC");

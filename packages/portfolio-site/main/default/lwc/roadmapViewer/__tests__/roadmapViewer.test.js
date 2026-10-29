@@ -744,6 +744,21 @@ describe("c-roadmap-viewer", () => {
       expect(tabs(element)[1].hasAttribute("data-tour-anchor")).toBe(true);
     });
 
+    it("stop E still opens In Progress while the outage switch is on", async () => {
+      mockPhone(true);
+      const element = createComponent();
+      setSimulating(true);
+      getRoadmap.emit(feed("SIMULATED"));
+      await flushPromises();
+      tabs(element)[0].click();
+      await flushPromises();
+      showMe("E");
+      await flushPromises();
+      expect(q(element, "c-outage-compare")).not.toBeNull();
+      expect(tabs(element)[1].getAttribute("aria-selected")).toBe("true");
+      expect(element.shadowRoot.activeElement).toBe(tabs(element)[1]);
+    });
+
     it("ignores the other stops", async () => {
       mockPhone(true);
       const element = createComponent();
@@ -867,5 +882,58 @@ describe("c-roadmap-viewer live data marker", () => {
     expect(marker[1]).toMatch(/source-keys="DeliveryController_JiraCache"/);
     expect(marker[1]).not.toMatch(/objects=/);
     expect(marker[1]).toMatch(/\shide-counts[\s>]/);
+  });
+
+  describe("outage compare", () => {
+    it("shows above the board while SIMULATED, with Jira wording and the feed's age", async () => {
+      const element = createComponent();
+      getRoadmap.emit(feed("SIMULATED", { ageMinutes: 9 }));
+      await flushPromises();
+      const compare = q(element, "c-outage-compare");
+      expect(compare).not.toBeNull();
+      expect(compare.source).toBe("Jira");
+      expect(compare.subject).toBe("the roadmap");
+      expect(compare.ageMinutes).toBe(9);
+      expect(compare.fetchedAt).toBe("2026-10-21T08:05:00.000Z");
+      // It sits above the board, and the board and badge stay.
+      const position = compare.compareDocumentPosition(
+        q(element, ".roadmap-board")
+      );
+      expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(q(element, '[data-id="status-badge"]').textContent).toBe(
+        "Simulated"
+      );
+      expect(element.shadowRoot.querySelectorAll("li")).toHaveLength(4);
+    });
+
+    it.each(["FRESH", "STALE", "DEGRADED", "EMPTY"])(
+      "is hidden for %s",
+      async (status) => {
+        const element = createComponent();
+        getRoadmap.emit(feed(status));
+        await flushPromises();
+        expect(q(element, "c-outage-compare")).toBeNull();
+      }
+    );
+
+    it("appears when the switch turns the feed to SIMULATED and goes when it is off", async () => {
+      const element = createComponent();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+      expect(q(element, "c-outage-compare")).toBeNull();
+      q(element, '[data-id="simulate-switch"]').click();
+      await flushPromises();
+      expect(trackEvent).toHaveBeenCalledWith("resilience_test_triggered", {
+        source: "roadmap"
+      });
+      getRoadmap.emit(feed("SIMULATED"));
+      await flushPromises();
+      expect(q(element, "c-outage-compare")).not.toBeNull();
+      setSimulating(false);
+      await flushPromises();
+      getRoadmap.emit(feed("FRESH"));
+      await flushPromises();
+      expect(q(element, "c-outage-compare")).toBeNull();
+    });
   });
 });

@@ -22,7 +22,7 @@ Requires a provisioned Data 360 instance and manual configuration of data stream
 
 ## Amendment (2026-10-22): deferred
 
-The owner deferred this decision on 2026-10-22 (in the Pillar D design). The decision above is the target design. None of it is built, and nothing in the site or the API reads Data 360.
+I deferred this decision on 2026-10-22 (in the Pillar D design). The decision above is the target design. None of it is built, and nothing in the site or the API reads Data 360.
 
 **What is built.** Grounding stays in Apex and reads the CRM directly. `PortfolioGroundingService.build(jobTitle, jobDescription)` selects featured `Project__c` rows and `Experience_Highlight__c` text through a `without sharing` selector with a fixed field list, ranks them by keywords from the job title and description, strips anything shaped like an email address or phone number, and returns at most 8,000 characters of JSON for the prompt. The cover letter page (`ApiLabController`) and `/papi/v1/ai/generate` (`PAPIAiGenerate`) both reach it through `ContentGenerationController.groundingSection` (SAS section 5.4.1).
 

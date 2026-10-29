@@ -8,7 +8,15 @@
  * @portfolio         : https://ryanbumstead.com
  * @Created           : 10/21/2026
  **/
-import { BRIDGE_EVENT, EVENTS, trackEvent } from "c/analyticsService";
+import {
+  BRIDGE_EVENT,
+  EVENTS,
+  MAX_RECENT_EVENTS,
+  OUTCOMES,
+  onAnalyticsEvent,
+  recentEvents,
+  trackEvent
+} from "c/analyticsService";
 
 const L4_NAMES = [
   "api_test_executed",
@@ -90,6 +98,9 @@ const PRE_LAUNCH_NAMES = [
   "storage_panel_opened"
 ];
 
+// Appended for the footer's analytics events list.
+const ANALYTICS_LIST_NAMES = ["analytics_events_opened"];
+
 describe("c/analyticsService", () => {
   afterEach(() => {
     delete window.gtag;
@@ -107,7 +118,8 @@ describe("c/analyticsService", () => {
         ...CASE_STUDY_GRAPH_NAMES,
         ...CAREER_NAMES,
         ...TIMELINE_TOUR_NAMES,
-        ...PRE_LAUNCH_NAMES
+        ...PRE_LAUNCH_NAMES,
+        ...ANALYTICS_LIST_NAMES
       ].sort()
     );
   });
@@ -119,7 +131,8 @@ describe("c/analyticsService", () => {
       ...CASE_STUDY_GRAPH_NAMES,
       ...CAREER_NAMES,
       ...TIMELINE_TOUR_NAMES,
-      ...PRE_LAUNCH_NAMES
+      ...PRE_LAUNCH_NAMES,
+      ...ANALYTICS_LIST_NAMES
     ];
     expect(Object.values(EVENTS).slice(-newest.length)).toEqual(newest);
   });
@@ -280,5 +293,100 @@ describe("c/analyticsService", () => {
     expect(trackEvent("")).toBe(false);
     expect(trackEvent(undefined)).toBe(false);
     expect(window.gtag).not.toHaveBeenCalled();
+  });
+
+  describe("the record of this visit", () => {
+    function flush() {
+      // Send enough events to push every earlier one out of the list.
+      for (let i = 0; i < MAX_RECENT_EVENTS; i += 1) {
+        trackEvent("flush_event");
+      }
+    }
+
+    beforeEach(flush);
+
+    it("records the name, a copy of the params, the time and the outcome", () => {
+      window.gtag = jest.fn();
+      const params = { theme: "dark" };
+      trackEvent(EVENTS.THEME_CHANGED, params);
+      const last = recentEvents().pop();
+      expect(last.name).toBe("theme_changed");
+      expect(last.params).toEqual({ theme: "dark" });
+      expect(last.params).not.toBe(params);
+      expect(last.time).toBeInstanceOf(Date);
+      expect(last.outcome).toBe(OUTCOMES.GTAG);
+    });
+
+    it("records not_sent when there is no tag", () => {
+      trackEvent(EVENTS.ROADMAP_VIEWED);
+      expect(recentEvents().pop().outcome).toBe(OUTCOMES.NOT_SENT);
+    });
+
+    it("records head_script when the head script takes the event", () => {
+      const take = (event) => event.preventDefault();
+      document.addEventListener(BRIDGE_EVENT, take);
+      try {
+        trackEvent(EVENTS.ROADMAP_VIEWED);
+      } finally {
+        document.removeEventListener(BRIDGE_EVENT, take);
+      }
+      expect(recentEvents().pop().outcome).toBe(OUTCOMES.HEAD_SCRIPT);
+    });
+
+    it("does not record a call without a name", () => {
+      const before = recentEvents().length;
+      trackEvent("");
+      trackEvent(42);
+      expect(recentEvents()).toHaveLength(before);
+    });
+
+    it("keeps at most 100 entries and drops the oldest", () => {
+      for (let i = 0; i < 130; i += 1) {
+        trackEvent("cap_event", { n: i });
+      }
+      const events = recentEvents();
+      expect(events).toHaveLength(100);
+      expect(events[0].params.n).toBe(30);
+      expect(events[99].params.n).toBe(129);
+    });
+
+    it("returns copies that cannot change the record", () => {
+      trackEvent("copy_event", { a: 1 });
+      const first = recentEvents();
+      first.pop().params.a = 99;
+      first.pop();
+      expect(recentEvents().pop().params.a).toBe(1);
+    });
+
+    it("tells a listener about each new event until it is stopped", () => {
+      const listener = jest.fn();
+      const stop = onAnalyticsEvent(listener);
+      trackEvent("heard_event", { x: "y" });
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener.mock.calls[0][0].name).toBe("heard_event");
+      expect(listener.mock.calls[0][0].params).toEqual({ x: "y" });
+      stop();
+      stop();
+      trackEvent("unheard_event");
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it("survives a listener that throws and still reaches the next one", () => {
+      const bad = onAnalyticsEvent(() => {
+        throw new Error("listener failed");
+      });
+      const good = jest.fn();
+      const stopGood = onAnalyticsEvent(good);
+      expect(() => trackEvent("throw_event")).not.toThrow();
+      expect(good).toHaveBeenCalledTimes(1);
+      bad();
+      stopGood();
+    });
+
+    it("ignores a listener that is not a function", () => {
+      const stop = onAnalyticsEvent("nope");
+      expect(typeof stop).toBe("function");
+      expect(() => stop()).not.toThrow();
+    });
   });
 });

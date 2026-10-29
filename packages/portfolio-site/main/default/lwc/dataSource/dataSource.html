@@ -41,7 +41,12 @@
         {wording.sectionModelButton}
       </button>
       <p class="panel-footer">
-        <a class="model-link" href={modelPath}>{wording.modelLinkText}</a>
+        <span class="footer-links">
+          <a class="model-link" href={modelPath}>{wording.modelLinkText}</a>
+          <a class="model-link guide-link" href={guidePath}
+            >{wording.guideLinkText}</a
+          >
+        </span>
         <button type="button" class="close-button" onclick={handleClose}>
           {wording.closeButton}
         </button>

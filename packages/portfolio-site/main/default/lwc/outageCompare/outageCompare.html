@@ -1,0 +1,41 @@
+<template>
+  <section class="compare" aria-labelledby="compare-heading" data-id="compare">
+    <h3 id="compare-heading" class="compare-heading">{wording.heading}</h3>
+    <div class="compare-grid">
+      <div class="part part-without" data-id="without">
+        <h4 class="part-title">{wording.withoutHeading}</h4>
+        <p class="illustration-label" data-id="illustration-label">
+          {wording.withoutLabel}
+        </p>
+        <div
+          class="illustration"
+          role="img"
+          aria-label={wording.withoutLabelSr}
+          data-id="illustration"
+        >
+          <p
+            class="illustration-error"
+            data-id="failure-line"
+            aria-hidden="true"
+          >
+            {failureLine}
+          </p>
+          <p class="illustration-body" aria-hidden="true"></p>
+        </div>
+      </div>
+      <div class="part part-with" data-id="with">
+        <h4 class="part-title">{wording.withHeading}</h4>
+        <ol class="steps" role="list" data-id="steps">
+          <template for:each={steps} for:item="step">
+            <li key={step.id} class="step" data-id={step.id}>
+              <span class="step-number" data-id="step-number" aria-hidden="true"
+                >{step.number}</span
+              >
+              <span class="step-text" data-id="step-text">{step.text}</span>
+            </li>
+          </template>
+        </ol>
+      </div>
+    </div>
+  </section>
+</template>
