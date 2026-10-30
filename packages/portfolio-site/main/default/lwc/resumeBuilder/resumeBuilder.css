@@ -177,6 +177,30 @@
   margin-top: var(--resume-item-gap);
 }
 
+/* The two include toggles: a native checkbox inside its label, so the whole 44 px row is the
+   target. The 24 px box matches the outage switch on the roadmap. */
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  min-height: 44px;
+  color: var(--pf-text);
+  cursor: pointer;
+}
+
+.toggle-input {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--pf-accent);
+  cursor: pointer;
+}
+
+.toggle-input:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
 .employer-heading {
   margin-bottom: var(--resume-item-gap);
 }

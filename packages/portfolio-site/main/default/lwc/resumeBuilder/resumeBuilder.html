@@ -47,20 +47,26 @@
             </div>
 
             <div class="slds-form-element slds-m-bottom_medium">
-              <lightning-input
-                type="checkbox"
-                label="Include header"
-                checked={includeHeader}
-                onchange={handleToggle}
-                data-field="includeHeader"
-              ></lightning-input>
-              <lightning-input
-                type="checkbox"
-                label="Include skills"
-                checked={includeSkills}
-                onchange={handleToggle}
-                data-field="includeSkills"
-              ></lightning-input>
+              <label class="toggle">
+                <input
+                  type="checkbox"
+                  class="toggle-input"
+                  checked={includeHeader}
+                  onchange={handleToggle}
+                  data-field="includeHeader"
+                />
+                <span class="toggle-label">Include header</span>
+              </label>
+              <label class="toggle">
+                <input
+                  type="checkbox"
+                  class="toggle-input"
+                  checked={includeSkills}
+                  onchange={handleToggle}
+                  data-field="includeSkills"
+                />
+                <span class="toggle-label">Include skills</span>
+              </label>
             </div>
 
             <div class="actions">
