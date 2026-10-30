@@ -137,13 +137,13 @@ describe("c-pillar-b-story", () => {
     expect(link.rel).toBe("noopener noreferrer");
   });
 
-  it("opens section 2 by framing the work as pre-sales", () => {
+  it("opens section 2 with the two parts: pre-sales, then the paid build I led", () => {
     const element = createComponent();
     const discovery = q(element, '[data-section="discovery"]');
     const first = discovery.querySelector("p");
     expect(first.dataset.id).toBe("framing");
     expect(text(first)).toBe(
-      "This work was done in pre-sales, before the nonprofit chose a platform and before any build began."
+      "I ran this in two parts. First a pre-sales cycle: discovery, a demo and the decision matrix below, before the nonprofit chose a platform. Then a paid engagement, in which I led the build."
     );
   });
 
@@ -203,6 +203,7 @@ describe("c-pillar-b-story", () => {
     const outcome = text(q(element, '[data-section="outcome"] p'));
     expect(outcome.match(/\./g)).toHaveLength(2);
     expect(outcome).toContain("user acceptance testing");
+    expect(outcome).toContain("I led the build");
   });
 
   it("labels every cost table cell for the phone card layout", () => {
