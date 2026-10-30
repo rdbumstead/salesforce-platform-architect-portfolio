@@ -61,6 +61,17 @@
   color: var(--pf-accent);
 }
 
+/* The title line and the value sentence arrive with the header read. Their slots hold the
+   height they take once filled (measured at 1400 and 390 wide), so the proof strip, the
+   buttons and the sections below do not move when the text lands. A floor, never a cap. */
+.hero-line-slot {
+  min-height: 27px;
+}
+
+.hero-value-slot {
+  min-height: 56px;
+}
+
 .hero-value {
   margin: 0;
   max-width: 58ch;
@@ -139,6 +150,7 @@
 }
 
 .profile-links {
+  min-height: 32px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px 12px;
@@ -217,5 +229,26 @@
 
   .hero-value {
     font-size: 16px;
+  }
+}
+
+/* A phone: the line runs to two rows, the sentence to three and the links to two rows. */
+@media (max-width: 420px) {
+  .hero-line-slot {
+    min-height: 49px;
+  }
+
+  .hero-value-slot {
+    min-height: 79px;
+  }
+
+  .proof {
+    min-height: 67px;
+    align-content: flex-start;
+  }
+
+  .profile-links {
+    min-height: 68px;
+    align-content: flex-start;
   }
 }

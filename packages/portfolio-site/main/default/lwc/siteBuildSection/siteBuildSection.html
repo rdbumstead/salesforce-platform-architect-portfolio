@@ -17,6 +17,9 @@
               <template lwc:if={pillar.stat}>
                 <p class="build-stat" data-id="pillar-stat">{pillar.stat}</p>
               </template>
+              <template lwc:else>
+                <p class="build-stat build-stat_reserve" aria-hidden="true"></p>
+              </template>
               <template lwc:if={pillar.hasCaseStudy}>
                 <div class="case-study" data-id="case-study">
                   <button

@@ -238,6 +238,17 @@ describe("c-site-build-section", () => {
       ).toBeNull();
     });
 
+    it("holds an empty hidden line where the stat will go until the card read lands", async () => {
+      const element = render();
+      const row = item(element, "delivery");
+      expect(row.querySelector(".build-stat_reserve")).not.toBeNull();
+      expect(row.querySelector(".build-stat_reserve").textContent).toBe("");
+      getPillarCards.emit([CASE_E]);
+      await flush();
+      expect(row.querySelector(".build-stat_reserve")).toBeNull();
+      expect(row.querySelector('[data-id="pillar-stat"]')).not.toBeNull();
+    });
+
     it("keeps the list as drawn when the read fails or is empty", async () => {
       const element = render();
       getPillarCards.error();

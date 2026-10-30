@@ -213,9 +213,12 @@ describe("c-hero-banner", () => {
         "I design Salesforce solutions and build them end to end."
       );
       const name = element.shadowRoot.querySelector("h1");
-      expect(name.nextElementSibling).toBe(line);
-      expect(line.nextElementSibling).toBe(value);
-      expect(value.nextElementSibling).toBe(byId(element, "proof-strip"));
+      // Each sits in a slot that holds its height before the read lands.
+      expect(name.nextElementSibling).toBe(line.parentElement);
+      expect(line.parentElement.nextElementSibling).toBe(value.parentElement);
+      expect(value.parentElement.nextElementSibling).toBe(
+        byId(element, "proof-strip")
+      );
     });
 
     it("never shows the resume summary in the hero", async () => {
@@ -259,9 +262,20 @@ describe("c-hero-banner", () => {
       getHeader.emit({ ...HEADER, heroLine: null });
       await flush();
       expect(byId(element, "hero-line")).toBeNull();
-      expect(element.shadowRoot.querySelector("h1").nextElementSibling).toBe(
-        byId(element, "hero-value")
-      );
+      expect(
+        byId(element, "hero-value").parentElement.previousElementSibling
+          .previousElementSibling
+      ).toBe(element.shadowRoot.querySelector("h1"));
+    });
+
+    it("keeps the title line and value slots in place, empty, before the header lands", () => {
+      const element = render();
+      const lineSlot = element.shadowRoot.querySelector(".hero-line-slot");
+      const valueSlot = element.shadowRoot.querySelector(".hero-value-slot");
+      expect(lineSlot.children).toHaveLength(0);
+      expect(valueSlot.children).toHaveLength(0);
+      expect(byId(element, "hero-line")).toBeNull();
+      expect(byId(element, "hero-value")).toBeNull();
     });
   });
 
