@@ -85,6 +85,28 @@
   color: var(--pf-body);
 }
 
+/* Holds the stat line's height until the card read lands, so the rows below do not move. A
+   pillar with no stat keeps the same quiet gap. */
+.build-stat_reserve {
+  min-height: 21px;
+}
+
+/* The counts link arrives with its own read and the links wrap around it. The foot holds the
+   height it takes once filled, two rows wide and three on a phone. */
+.build-foot {
+  min-height: 92px;
+}
+
+@media (max-width: 420px) {
+  .build-stat_reserve {
+    min-height: 42px;
+  }
+
+  .build-foot {
+    min-height: 142px;
+  }
+}
+
 /* The site's a:link rule outranks a plain class, so :link and :visited are matched too. */
 .build-go,
 .build-go:link,

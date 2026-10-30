@@ -123,7 +123,7 @@ We enforce "Green Builds" through automated gatekeeping in our GitHub Actions pi
 ### LCP Target (2.5 seconds)
 
 **What is LCP?** Largest Contentful Paint: the time until the main content appears on screen. Google uses this for search ranking.  
-**Our target:** 2.5 seconds (Google's "good" threshold). On mobile, render delay in the LWR framework's own script keeps LCP above it, so the gate is the best the LWR shell allows: mobile LCP medians of 7.5 to 9.6 s on the six main routes, measured with Lighthouse 11 mobile on a scratch copy of the site ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)).  
+**Our target:** 2.5 seconds (Google's "good" threshold). On mobile, render delay in the LWR framework's own script keeps LCP above it, so the gate is the best the LWR shell allows: mobile LCP medians of 7.5 to 9.6 s on the six main routes, measured with Lighthouse 11 mobile on a scratch copy of the site ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)). In October 2026 I measured production at 7.6 to 10.6 s. The first site component renders at about 5 s, after about 850 KB of framework scripts, so site changes alone cannot reach 2.5 s.  
 **How we enforce:** Lighthouse runs on demand (`performance.yml`, started by hand with a target URL, which runs `npm run test:lighthouse`) and as a launch gate. It does not run on every commit, and no build fails on it automatically.  
 **Why it matters:** Slow sites lose users, and LCP is one of the signals Google uses for search ranking.
 

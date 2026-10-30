@@ -1,5 +1,8 @@
 <template>
   <div class="portfolio-layout-wrapper" style={wrapperStyle}>
+    <a class="skip-link" href={skipHref} onclick={handleSkipClick}
+      >Skip to content</a
+    >
     <header class={headerClass} onkeydown={handleKeydown}>
       <div class={barClass}>
         <a class="site-brand" href={homeHref}>Ryan Bumstead</a>
@@ -286,9 +289,9 @@
       ontourspace={handleTourSpace}
     ></c-tour-bar>
 
-    <div class="region-content" tabindex="-1" data-id="main-content">
+    <main class="region-content" tabindex="-1" data-id="main-content">
       <slot></slot>
-    </div>
+    </main>
 
     <div class="region-footer">
       <slot name="footer"></slot>

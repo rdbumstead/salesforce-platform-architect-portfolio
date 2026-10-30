@@ -1840,4 +1840,42 @@ describe("c-portfolio-theme-layout", () => {
       expect(jest.getTimerCount()).toBe(0);
     });
   });
+
+  describe("main landmark and skip link", () => {
+    it("renders one main element holding the content slot", () => {
+      const element = render();
+      const mains = element.shadowRoot.querySelectorAll("main");
+      expect(mains).toHaveLength(1);
+      expect(mains[0].getAttribute("data-id")).toBe("main-content");
+      expect(mains[0].getAttribute("tabindex")).toBe("-1");
+      expect(mains[0].querySelector("slot")).not.toBeNull();
+    });
+
+    it("puts the skip link before everything else that takes focus", () => {
+      const element = render();
+      const focusable = element.shadowRoot.querySelectorAll(
+        "a[href], button, [tabindex]:not([tabindex='-1'])"
+      );
+      expect(focusable[0].classList.contains("skip-link")).toBe(true);
+      expect(focusable[0].textContent.trim()).toBe("Skip to content");
+      expect(
+        element.shadowRoot.querySelector("header").contains(focusable[0])
+      ).toBe(false);
+    });
+
+    it("moves focus to the main region when the skip link is activated", async () => {
+      const element = render();
+      const link = element.shadowRoot.querySelector(".skip-link");
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true
+      });
+      link.dispatchEvent(event);
+      await flush();
+      expect(event.defaultPrevented).toBe(true);
+      expect(element.shadowRoot.activeElement).toBe(
+        element.shadowRoot.querySelector("main")
+      );
+    });
+  });
 });

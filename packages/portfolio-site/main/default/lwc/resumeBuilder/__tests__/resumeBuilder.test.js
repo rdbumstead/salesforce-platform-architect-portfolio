@@ -492,8 +492,10 @@ describe("c-resume-builder", () => {
     getResume.emit(RESUME);
     await flushPromises();
 
-    const toggles = queryAll(element, "lightning-input");
+    const toggles = queryAll(element, "input.toggle-input");
+    expect(toggles).toHaveLength(2);
     toggles.forEach((toggle) => {
+      expect(toggle.checked).toBe(true);
       toggle.checked = false;
       toggle.dispatchEvent(new CustomEvent("change"));
     });
@@ -502,6 +504,43 @@ describe("c-resume-builder", () => {
     expect(query(element, ".resume-name")).toBeNull();
     expect(query(element, ".resume-skills")).toBeNull();
     expect(queryAll(element, ".resume-role")).toHaveLength(2);
+  });
+
+  it("labels each include toggle with a native label around its checkbox", async () => {
+    const element = createComponent();
+    getResume.emit(RESUME);
+    await flushPromises();
+
+    const labels = queryAll(element, "label.toggle");
+    expect(labels.map((label) => label.textContent.trim())).toEqual([
+      "Include header",
+      "Include skills"
+    ]);
+    labels.forEach((label) =>
+      expect(label.querySelector('input[type="checkbox"]')).not.toBeNull()
+    );
+    expect(queryAll(element, "lightning-input")).toHaveLength(0);
+  });
+
+  it("brings the header and skills back when the toggles are switched on again", async () => {
+    const element = createComponent();
+    getResume.emit(RESUME);
+    await flushPromises();
+
+    const toggles = queryAll(element, "input.toggle-input");
+    toggles.forEach((toggle) => {
+      toggle.checked = false;
+      toggle.dispatchEvent(new CustomEvent("change"));
+    });
+    await flushPromises();
+    expect(query(element, ".resume-name")).toBeNull();
+    toggles.forEach((toggle) => {
+      toggle.checked = true;
+      toggle.dispatchEvent(new CustomEvent("change"));
+    });
+    await flushPromises();
+    expect(query(element, ".resume-name")).not.toBeNull();
+    expect(query(element, ".resume-skills")).not.toBeNull();
   });
 
   it("does not load jsPDF or the fonts until the download button is clicked", async () => {
@@ -591,7 +630,7 @@ describe("c-resume-builder", () => {
 
     const skillsToggle = query(
       element,
-      'lightning-input[data-field="includeSkills"]'
+      'input.toggle-input[data-field="includeSkills"]'
     );
     skillsToggle.checked = false;
     skillsToggle.dispatchEvent(new CustomEvent("change"));

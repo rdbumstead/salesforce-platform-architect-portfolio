@@ -187,6 +187,30 @@
   outline: none;
 }
 
+/* The first tab stop. Off screen until it has focus, then pinned at the top left above the header. */
+.skip-link,
+.skip-link:link,
+.skip-link:visited {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--pf-btn);
+  color: var(--pf-btn-text);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: none;
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
 /* Slim sticky header */
 .site-header {
   position: sticky;

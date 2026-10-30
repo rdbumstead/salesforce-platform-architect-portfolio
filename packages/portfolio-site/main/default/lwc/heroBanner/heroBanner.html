@@ -12,12 +12,16 @@
       <div class="hero-body">
         <p class="hero-meta" data-id="hero-meta">{title} · {location}</p>
         <h1 id="hero-name" class="hero-name">{name}</h1>
-        <template lwc:if={heroLine}>
-          <p class="hero-line" data-id="hero-line">{heroLine}</p>
-        </template>
-        <template lwc:if={valueSentence}>
-          <p class="hero-value" data-id="hero-value">{valueSentence}</p>
-        </template>
+        <div class="hero-line-slot">
+          <template lwc:if={heroLine}>
+            <p class="hero-line" data-id="hero-line">{heroLine}</p>
+          </template>
+        </div>
+        <div class="hero-value-slot">
+          <template lwc:if={valueSentence}>
+            <p class="hero-value" data-id="hero-value">{valueSentence}</p>
+          </template>
+        </div>
         <ul class="proof" aria-label="At a glance" data-id="proof-strip">
           <template for:each={proofPoints} for:item="point">
             <li key={point.key} class="proof-item">{point.text}</li>

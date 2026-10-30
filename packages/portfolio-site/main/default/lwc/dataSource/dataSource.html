@@ -4,6 +4,7 @@
       type="button"
       class="marker-button"
       aria-expanded={expanded}
+      aria-controls={panelId}
       aria-label={buttonLabel}
       onclick={handleToggle}
     >
@@ -15,6 +16,7 @@
     </button>
     <div
       lwc:if={isOpen}
+      id={panelId}
       class={panelClass}
       role="group"
       aria-label={wording.panelHeading}
@@ -78,7 +80,19 @@
         </button>
       </header>
       <div class="dialog-scroll">
-        <c-schema-visualizer highlight={modelObjects}></c-schema-visualizer>
+        <p lwc:if={modelLoading} class="model-loading" role="status">
+          {wording.modelLoading}
+        </p>
+        <p lwc:if={modelFailed} class="model-loading" role="alert">
+          {wording.modelFailed}
+        </p>
+        <template lwc:if={visualizerConstructor}>
+          <lwc:component
+            lwc:is={visualizerConstructor}
+            data-id="schema-visualizer"
+            highlight={modelObjects}
+          ></lwc:component>
+        </template>
       </div>
     </div>
   </dialog>

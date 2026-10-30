@@ -97,6 +97,28 @@ describe("c-view-source", () => {
     jest.clearAllMocks();
   });
 
+  it("shows the fetch time in a time element from Intl, not lightning-formatted-date-time", async () => {
+    const element = create();
+    getSourceFiles.emit(FILES);
+    await flush();
+    await openDialog(element);
+
+    const time = $(element, ".fetched-at time");
+    expect(time.getAttribute("datetime")).toBe("2026-10-23T06:00:00.000Z");
+    const expected = new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(new Date("2026-10-23T06:00:00.000Z"));
+    expect(time.textContent).toBe(expected);
+    expect($(element, ".fetched-at").textContent).toContain(
+      "Read from GitHub on"
+    );
+    expect($(element, "lightning-formatted-date-time")).toBeNull();
+  });
+
   it("passes its key to the wire and renders nothing before data", async () => {
     const element = create("apiTester");
     await flush();

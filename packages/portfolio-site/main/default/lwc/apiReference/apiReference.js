@@ -282,6 +282,75 @@ export const REDOC_OPTIONS = {
 const SECTION_HASH = /^(tag|operation|section|schema)\//;
 
 /**
+ * A visible ring on every control Redoc draws (Expand all, Collapse all, Copy, the expand
+ * toggles, menu rows, tabs, permalinks and links). Redoc removes the browser outline on most
+ * of them. The ring is the site's own token. The panel is light in both themes and
+ * .redoc-panel points --pf-accent at --pf-btn, so one rule serves both.
+ */
+export const REDOC_FOCUS_RULE = [
+  ".redoc-target a:focus-visible, .redoc-target button:focus-visible,",
+  ".redoc-target [role=button]:focus-visible, .redoc-target [role=tab]:focus-visible,",
+  ".redoc-target [role=menuitem]:focus-visible, .redoc-target [tabindex]:focus-visible,",
+  ".redoc-target input:focus-visible, .redoc-target select:focus-visible,",
+  ".redoc-target textarea:focus-visible, .redoc-target summary:focus-visible",
+  " { outline: 2px solid var(--pf-accent, #2563eb) !important; outline-offset: 2px !important; }"
+].join("\n");
+
+const HEADING_SELECTOR = "h1, h2, h3, h4, h5, h6";
+
+/**
+ * Brings Redoc's headings into a sequence under the page's own h1. Redoc has no option for
+ * heading levels and draws its own h1 for the spec title. Each heading is read one level
+ * deeper than the heading that holds it (h1 as 2, h2 as 3 and so on, to a ceiling of 6)
+ * and may rise no more than one level above the heading before it, so no level is skipped. aria-level is set rather than
+ * rewriting Redoc's elements, because React owns them.
+ * @param {Element} root the Redoc target
+ * @param {number} parentLevel level of the component's own heading, 1 on the page, 2 embedded
+ */
+export function normaliseHeadingLevels(root, parentLevel = 1) {
+  if (!root) {
+    return;
+  }
+  let previous = parentLevel;
+  root.querySelectorAll(HEADING_SELECTOR).forEach((heading) => {
+    const native = Number(heading.tagName.charAt(1));
+    const level = Math.min(Math.min(native + parentLevel, 6), previous + 1);
+    if (heading.getAttribute("aria-level") !== String(level)) {
+      heading.setAttribute("aria-level", String(level));
+    }
+    previous = level;
+  });
+}
+
+/**
+ * Redoc's permalink anchors carry aria-label set to their own id ("tag/Monitoring"). Each
+ * sits inside the heading it points at, so the heading text is the readable name. The
+ * anchor stays in the tab order as a permalink.
+ * @param {Element} root the Redoc target
+ */
+export function nameSectionLinks(root) {
+  if (!root) {
+    return;
+  }
+  root.querySelectorAll('a[href^="#"][aria-label]').forEach((link) => {
+    let id = "";
+    try {
+      id = decodeURIComponent(link.getAttribute("href").slice(1));
+    } catch {
+      return;
+    }
+    if (link.getAttribute("aria-label") !== id) {
+      return;
+    }
+    const heading = link.closest(HEADING_SELECTOR);
+    const title = heading ? (heading.textContent || "").trim() : "";
+    if (title) {
+      link.setAttribute("aria-label", `Link to ${title}`);
+    }
+  });
+}
+
+/**
  * Rules added after Redoc's own: a link inside Redoc's text, such as the licence link, is
  * underlined, because colour alone does not mark it (axe link-in-text-block).
  * The :link and :visited forms outrank the site platform's own link rule, specificity
@@ -294,6 +363,7 @@ const SECTION_HASH = /^(tag|operation|section|schema)\//;
  */
 export const REDOC_STYLE_OVERRIDES = [
   ".redoc-target a[href]:link, .redoc-target a[href]:visited { text-decoration: underline; }",
+  REDOC_FOCUS_RULE,
   "@media (min-width: 50rem) { .redoc-panel_full .menu-content {",
   " top: var(--reference-menu-top, 0px) !important;",
   " height: calc(100vh - var(--reference-menu-top, 0px)) !important; } }"
@@ -600,6 +670,10 @@ export default class ApiReference extends LightningElement {
   disconnectedCallback() {
     this.clearRenderTimeout();
     announceReference(false);
+    if (this.redocObserver) {
+      this.redocObserver.disconnect();
+      this.redocObserver = undefined;
+    }
     if (this.boundHashChange) {
       window.removeEventListener("hashchange", this.boundHashChange);
     }
@@ -883,6 +957,26 @@ export default class ApiReference extends LightningElement {
       }
     });
     this.adoptRedocStyles(this.styleBaseline);
+    this.watchRedocAccessibility(target);
+  }
+
+  /**
+   * Heading levels and link names are set after Redoc draws, and again when it draws more
+   * (an operation opens). Only attributes are written, which the observer does not watch.
+   */
+  watchRedocAccessibility(target) {
+    const apply = () => {
+      normaliseHeadingLevels(target, this.fullWidth ? 1 : 2);
+      nameSectionLinks(target);
+    };
+    apply();
+    if (this.redocObserver) {
+      this.redocObserver.disconnect();
+    }
+    if (typeof MutationObserver === "function") {
+      this.redocObserver = new MutationObserver(apply);
+      this.redocObserver.observe(target, { childList: true, subtree: true });
+    }
   }
 
   /**

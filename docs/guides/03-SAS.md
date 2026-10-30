@@ -123,7 +123,7 @@ graph LR
 Live MVP (Door 1)
 
 - `@AuraEnabled` Apex controllers, the main path for site components (resume and timeline, home case studies and pillar cards, footer, Delivery page, ERD, decision matrix, API Lab and cover letter)
-- Native Salesforce GraphQL through the `lightning/uiGraphQLApi` wire adapter, used by three components only: `c-skill-network`, `c-project-asset-gallery` and the footer's `c-graphql-probe` ([ADR-021 amendment](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-23-scope))
+- Native Salesforce GraphQL through the `lightning/uiGraphQLApi` wire adapter, used by three components only: `c-skill-network`, `c-project-asset-gallery-data` (the lazy child of `c-project-asset-gallery`) and the footer's `c-graphql-probe` ([ADR-021 amendments](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-30-the-galleries-read-moved-to-a-lazy-child))
 - Apex REST services (the SAPI and PAPI), for outside callers and the API Lab
 - Direct integrations (GitHub, Jira via Named Credentials)
 
@@ -211,7 +211,7 @@ Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Disciplin
 
 - **Availability:** Organization persistence maintained via external CI/CD "Keep-Alive" heartbeat (GitHub Actions).
 - **Maintainability:** Codebase governed by automated quality gates (Prettier/PMD) ensuring architectural standards.
-- **Performance:** LCP target 2.5 s, pursued through Static Resource caching and a minimal DOM footprint. The gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, measured 2026-10-22) on the six main routes ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)).
+- **Performance:** LCP target 2.5 s, pursued through Static Resource caching and a minimal DOM footprint. The gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, measured 2026-10-22) on the six main routes ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)). The production baseline (2026-10-29) is wider, 7.57 to 10.62 s. In the lab profile the first site component renders at about 5 s, after about 850 KB of framework scripts and styles, so the 2.5 s target is not reachable by site changes alone. I keep it as the target and say so.
   - **Latency:** measured with the Lighthouse mobile profile, which simulates a slow 4G network.
   - **AI Generation Timeout:** 60 seconds for the Gemini callout, read from the `Gemini` record of `AI_Provider_Config__mdt` (`Timeout_Ms__c`, my decision 2026-10-21). A reasoning model can take most of that time to answer a full cover letter prompt, and the earlier 2 second hard stop was dropped for that reason. Gemini 2.5 Flash answered one in about 11 seconds in a scratch org.
   - **Total CPU Budget:** < 5000ms per request (Allocating 50% of the 10,000ms Synchronous Limit to ensure headroom for platform overhead).
@@ -569,8 +569,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-017](../adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | System API Security & Dual-Sided Auth Pattern                   | Superseded (ADR-027)     |
 | [ADR-018](../adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | FinOps Constraint – AWS Lambda Function URLs vs. API Gateway    | Deferred (2026-10-23)    |
 | [ADR-019](../adr/019-executable-governance-platform-events-for-documentation-logic.md) | Executable Governance – Platform Events for Documentation Logic | Accepted                 |
-| [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Amended 2026-10-22       |
-| [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Amended 2026-10-23       |
+| [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Amended 2026-10-30       |
+| [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Amended 2026-10-30       |
 | [ADR-022](../adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Engineering – Resilience Simulation Toggle           | Accepted                 |
 | [ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF) for MVP                      | Accepted (Transitionary) |
 | [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern – Contract-First Parity                        | Amended 2026-10-23       |
@@ -586,7 +586,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-034](../adr/034-recruiter-first-home-page.md)                                     | A Recruiter First Home Page                                     | Accepted (2026-10-26)    |
 | [ADR-035](../adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams Rendered in CI                                         | Accepted (2026-10-26)    |
 | [ADR-036](../adr/036-portfolio-guide-agent.md)                                         | The Portfolio Guide Agent                                       | Accepted (2026-10-27)    |
-| [ADR-037](../adr/037-native-form-controls-site-wide.md)                                | Native Form Controls Site Wide                                  | Accepted (2026-10-27)    |
+| [ADR-037](../adr/037-native-form-controls-site-wide.md)                                | Native Form Controls Site Wide                                  | Amended 2026-10-30       |
 | [ADR-038](../adr/038-stable-public-keys-in-the-api.md)                                 | Stable Public Keys in the API                                   | Accepted (2026-10-28)    |
 | [ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 Sunset                                        | Accepted (2026-10-29)    |
 
@@ -1104,7 +1104,7 @@ Media gallery assets, read by `c-project-asset-gallery`.
 
 No custom index is defined in source or requested from Salesforce Support. The portfolio objects hold one person's portfolio, so they stay small and no query has needed one.
 
-- **Pillar filters:** two reads filter `Project__c` by `Pillar__c`: `ProjectCardController` (`WHERE Pillar__c IN :PILLAR_LETTERS`) and `c-project-asset-gallery` (GraphQL `where: { Pillar__c: { eq: $pillar } }`). The API tester does not filter by pillar.
+- **Pillar filters:** two reads filter `Project__c` by `Pillar__c`: `ProjectCardController` (`WHERE Pillar__c IN :PILLAR_LETTERS`) and `c-project-asset-gallery-data`, the gallery's lazy child (GraphQL `where: { Pillar__c: { eq: $pillar } }`). The API tester does not filter by pillar.
 - **Status values:** the `Status__c` picklist values use an en dash, for example `Live – In Production` and `Live – Demo / Reference`, so a query must use that character exactly.
 - **Testimonials:** reads filter on `Approved__c = true`, and `Context__c` is never filtered.
 - **When to revisit:** if a table grew to thousands of rows, a custom index on `Project__c.Pillar__c` would be the first request.
@@ -1158,9 +1158,15 @@ One prompt instruction per record. `Cover_Letter` holds the cover letter instruc
 
 - **G.1 The "Shadow Structure" Pattern:** every graph has a list beside it that holds the same content. On the skills page the graph's SVG is `aria-hidden` and a visually hidden list names every node and its connections, so its length equals the node count. On the Pillar A page the object list mirrors every node and edge, and on phones it is the visible view. The skills matrix itself is native buttons (`aria-pressed`) in rows by category.
 - **G.2 Motion Sensitivity:** the graphs never move on their own: the d3-force layout runs to completion before anything is drawn. The view eases for about 250 ms only after the visitor presses Fit, Reset layout, Zoom in or Zoom out, and moves at once under "reduce motion". The site has no motion button: the smooth scrolls, the menus, the count up on the numbers panel, the case study and tour openings and the timeline's reveal follow the visitor's system "reduce motion" setting alone (`c/motionPreference`).
-- **G.3 Keyboard Navigation:** the "Matrix | Graph" switch is two 44 px buttons in a labelled group. Skill chips, the ERD's object list, the scope toggle and the gallery links are reachable by keyboard. Skip links function normally.
+- **G.3 Keyboard Navigation:** the "Matrix | Graph" switch is two 44 px buttons in a labelled group. Skill chips, the ERD's object list, the scope toggle and the gallery links are reachable by keyboard. The site layout renders a "Skip to content" link as the first stop on every route, and it moves focus to the page's `main` landmark.
 - **G.4 Decision matrix:** a table with a caption, `scope` on every header, and a labelled range slider per criterion ("Weight for" and the criterion, 0 to 10). The ranking and the sensitivity line are text, not colour.
 - **G.5 Compliance Checklist:** (WCAG 2.1 AA compliant).
+- **G.6 Fixes of 2026-10-30, from the audit of 2026-10-29.** The audit ran axe on the 12 page routes at 1400 and 390 px, forty Tab stops each, and found these gaps. Each fix is built and covered by Jest tests. I reran the audit on a scratch copy of the fixed code on 2026-10-30. axe found no A or AA violations on the 24 route and width pairs, every page has one `main` landmark with the skip link as its first Tab stop, opening a document on `/docs` moves focus to its heading, and the API reference has one level 1 heading and no skipped level (31 before). The contrast of text over gradients and overlaps is still undecided (axe could not compute it), so I do not read zero axe violations as a pass.
+  - **Landmark and skip link.** `c-portfolio-theme-layout` renders its content region as a `main` and puts a skip to content link before the header, so a keyboard visitor no longer passes eight header stops on every page (WCAG 1.3.1, 2.4.1).
+  - **API reference.** `c-api-reference` rings the Redoc controls that had no visible focus (Expand all, Collapse all, Copy and the toggles), gives each permalink anchor the name of its heading in place of a URL fragment, and orders Redoc's headings under the page's `h1` by setting `aria-level` (WCAG 2.4.7, 2.4.6, 1.3.1).
+  - **Docs.** `c-docs-viewer` moves focus to the document heading when a document opens or the list returns, and announces "{title} opened" or "Document list" in a live region (WCAG 2.4.3, 4.1.3). A deep link to a heading keeps focusing that heading.
+  - **Live data marker.** The marker's button has `aria-controls` pointing at its panel.
+  - **Checks for a person.** With NVDA on Windows and VoiceOver on iPhone: the landmarks list on each page (expect banner, navigation, main, contentinfo), the headings list on `/api-lab/reference`, where the cursor lands and what is spoken when a document opens on `/docs`, the status read after Execute GET in the API Lab, the name of each image link on `/business-architecture`, and the contrast of the hero meta line and page eyebrows in both themes with the Colour Contrast Analyser. These are not done.
 
 ### Appendix H: Deployment Architecture View
 
@@ -1200,14 +1206,14 @@ A monorepo of five package directories, declared in `sfdx-project.json` and depl
 
 ### Appendix M: Cross-Cutting Pattern - Dual-Door Integration Strategy
 
-| Feature               | Door 1: Native Salesforce GraphQL (lightning/uiGraphQLApi)                                                                                                                       | Door 2: AWS Lambda Polyglot BFF (Function URL)          |
-| :-------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------ |
-| **Timeline**          | Live                                                                                                                                                                             | Phase 8, 2027 to 2028 (design only, not built)          |
-| **Primary Consumers** | Three components: `c-skill-network`, `c-project-asset-gallery` and the footer's `c-graphql-probe`. Every other component reads through `@AuraEnabled` Apex, the roadmap included | Future API Lab mode and mobile apps (none built)        |
-| **Technology**        | lightning/uiGraphQLApi wire adapter                                                                                                                                              | Single Lambda Function URL + in-function governance     |
-| **Latency**           | Lowest possible (LDS + UI cache)                                                                                                                                                 | Single external round-trip                              |
-| **Caching**           | Automatic via Lightning Data Service                                                                                                                                             | In-memory or DynamoDB inside Lambda                     |
-| **Governance**        | Platform-managed                                                                                                                                                                 | Full enterprise policies (keys, rate limits, analytics) |
-| **Payload Reduction** | Platform-optimized                                                                                                                                                               | Not measured, since nothing is built                    |
-| **Cost**              | $0                                                                                                                                                                               | $0.00 forever (no API Gateway, no VPC)                  |
-| **Current Status**    | Live on the three components above ([ADR-021 amendment](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-23-scope))                                     | Designed, not built. Activation in Phase 8              |
+| Feature               | Door 1: Native Salesforce GraphQL (lightning/uiGraphQLApi)                                                                                                                                                       | Door 2: AWS Lambda Polyglot BFF (Function URL)          |
+| :-------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------ |
+| **Timeline**          | Live                                                                                                                                                                                                             | Phase 8, 2027 to 2028 (design only, not built)          |
+| **Primary Consumers** | Three components: `c-skill-network`, `c-project-asset-gallery-data` (the gallery's lazy child) and the footer's `c-graphql-probe`. Every other component reads through `@AuraEnabled` Apex, the roadmap included | Future API Lab mode and mobile apps (none built)        |
+| **Technology**        | lightning/uiGraphQLApi wire adapter                                                                                                                                                                              | Single Lambda Function URL + in-function governance     |
+| **Latency**           | Lowest possible (LDS + UI cache)                                                                                                                                                                                 | Single external round-trip                              |
+| **Caching**           | Automatic via Lightning Data Service                                                                                                                                                                             | In-memory or DynamoDB inside Lambda                     |
+| **Governance**        | Platform-managed                                                                                                                                                                                                 | Full enterprise policies (keys, rate limits, analytics) |
+| **Payload Reduction** | Platform-optimized                                                                                                                                                                                               | Not measured, since nothing is built                    |
+| **Cost**              | $0                                                                                                                                                                                                               | $0.00 forever (no API Gateway, no VPC)                  |
+| **Current Status**    | Live on the three components above ([ADR-021 amendments](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md#amendment-2026-10-30-the-galleries-read-moved-to-a-lazy-child))                                 | Designed, not built. Activation in Phase 8              |

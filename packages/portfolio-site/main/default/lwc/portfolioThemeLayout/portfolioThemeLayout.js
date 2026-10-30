@@ -355,6 +355,24 @@ export default class PortfolioThemeLayout extends LightningElement {
     }
   };
 
+  /**
+   * The skip link's address. A plain fragment is not followed into the shadow root, so the
+   * click handler moves focus instead. The address keeps the link a real link.
+   * @returns {string} the href
+   */
+  get skipHref() {
+    return `${basePath || ""}/#main-content`;
+  }
+
+  /**
+   * Moves focus to the main region instead of following the link.
+   * @param {Event} event the click
+   */
+  handleSkipClick(event) {
+    event.preventDefault();
+    this.focusContent();
+  }
+
   connectedCallback() {
     this._query = darkQuery();
     this.systemDark = Boolean(this._query && this._query.matches);

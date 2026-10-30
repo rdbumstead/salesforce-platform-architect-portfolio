@@ -122,3 +122,8 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* Holds the height of one row of cards (16:9 image and caption) while the read is pending. */
+.skeleton {
+  min-height: 15rem;
+}

@@ -39,6 +39,14 @@ jest.mock(
   { virtual: true }
 );
 
+// The factory runs the first time the component's dynamic import asks for the module, so the
+// counter shows when c/schemaVisualizer arrives.
+let mockVisualizerLoads = 0;
+jest.mock("c/schemaVisualizer", () => {
+  mockVisualizerLoads += 1;
+  return jest.requireActual("c/schemaVisualizer");
+});
+
 const ROLES = {
   name: "ResumeController_Roles",
   label: "Roles",
@@ -64,6 +72,11 @@ const HIGHLIGHTS = {
 };
 
 const flush = () => Promise.resolve();
+const settle = async () => {
+  for (let i = 0; i < 6; i++) {
+    await flush();
+  }
+};
 
 function create(props = {}) {
   const element = createElement("c-data-source", { is: DataSource });
@@ -260,7 +273,7 @@ describe("c-data-source", () => {
     const modelButton = (el) => el.shadowRoot.querySelector(".model-button");
     const dialog = (el) => el.shadowRoot.querySelector("dialog");
     const visualizer = (el) =>
-      el.shadowRoot.querySelector("c-schema-visualizer");
+      el.shadowRoot.querySelector("[data-id=schema-visualizer]");
 
     async function openPanel(rows) {
       const el = create({ sourceKeys: "a" });
@@ -286,6 +299,19 @@ describe("c-data-source", () => {
       );
     });
 
+    it("loads the visualizer module when the dialog opens and not before", async () => {
+      const el = await openPanel([SKILLS_IN]);
+      expect(mockVisualizerLoads).toBe(0);
+      expect(button(el).getAttribute("aria-expanded")).toBe("true");
+      modelButton(el).click();
+      await flush();
+      expect(el.shadowRoot.querySelector(".model-loading")).not.toBeNull();
+      await settle();
+      expect(mockVisualizerLoads).toBe(1);
+      expect(visualizer(el)).not.toBeNull();
+      expect(el.shadowRoot.querySelector(".model-loading")).toBeNull();
+    });
+
     it("renders no visualizer while closed", async () => {
       const el = await openPanel([SKILLS_IN]);
       expect(dialog(el)).toBeNull();
@@ -300,7 +326,7 @@ describe("c-data-source", () => {
         { ...SKILLS_IN, name: "again", label: "More skills" }
       ]);
       modelButton(el).click();
-      await flush();
+      await settle();
       expect(dialog(el).getAttribute("aria-modal")).toBe("true");
       expect(visualizer(el).highlight).toBe("Skill__c,Experience__c");
       expect(visualizer(el).objects).toBeFalsy();
@@ -308,6 +334,22 @@ describe("c-data-source", () => {
         el.shadowRoot.querySelector(".dialog-heading").textContent
       ).toContain(WORDING.sectionModelHeading);
       expect(el.shadowRoot.activeElement.className).toContain("dialog-heading");
+    });
+
+    it("points aria-controls at the panel only while the panel exists", async () => {
+      const el = create({ sourceKeys: "a" });
+      getSources.emit([SKILLS_IN]);
+      await flush();
+      expect(button(el).hasAttribute("aria-controls")).toBe(false);
+      button(el).click();
+      await flush();
+      const id = button(el).getAttribute("aria-controls");
+      expect(id).toBeTruthy();
+      expect(panel(el).getAttribute("id")).toBe(id);
+      button(el).click();
+      await flush();
+      expect(panel(el)).toBeNull();
+      expect(button(el).hasAttribute("aria-controls")).toBe(false);
     });
 
     it("closes on Escape and returns focus to the marker button", async () => {

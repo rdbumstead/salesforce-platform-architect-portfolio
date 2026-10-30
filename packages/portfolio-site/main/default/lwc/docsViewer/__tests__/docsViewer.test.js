@@ -761,3 +761,92 @@ describe("Mermaid drawings", () => {
     document.documentElement.removeAttribute("data-theme");
   });
 });
+
+describe("c-docs-viewer focus and announcement", () => {
+  const announced = (el) =>
+    shadow(el).querySelector(".docs-announcer").textContent;
+
+  function docPayload(key, content) {
+    return {
+      key,
+      title: "Fallback title",
+      path: "docs/guides/03-SAS.md",
+      content,
+      htmlUrl: "https://github.com/o/r/blob/main/docs/guides/03-SAS.md",
+      fetchedAt: "2026-10-24T06:00:00.000Z",
+      truncated: false
+    };
+  }
+
+  async function pick(el, key, content) {
+    // eslint-disable-next-line @lwc/lwc/no-unexpected-wire-adapter-usages
+    CurrentPageReference.emit({ state: { doc: key } });
+    getDoc.emit(docPayload(key, content));
+    await flush();
+    await flush();
+    await flush();
+  }
+
+  it("says nothing and moves no focus on the first load", async () => {
+    const list = await create({});
+    expect(announced(list)).toBe("");
+    expect(shadow(list).activeElement).toBeNull();
+    document.body.removeChild(list);
+    const doc = await openDoc("sas", SAS);
+    expect(announced(doc)).toBe("");
+    expect(shadow(doc).activeElement).toBeNull();
+  });
+
+  it("focuses the document heading and announces it after a document is picked", async () => {
+    const el = await create({});
+    await pick(el, "sas", SAS);
+    const h1 = shadow(el).querySelector("h1");
+    expect(h1.getAttribute("tabindex")).toBe("-1");
+    expect(shadow(el).activeElement).toBe(h1);
+    expect(announced(el)).toBe(
+      "Systems Architecture Specification (SAS) opened"
+    );
+  });
+
+  it("keeps the deep link heading focus when the address carries a hash, and still announces", async () => {
+    const el = await create({});
+    window.history.replaceState(
+      null,
+      "",
+      "/portfolio/docs?doc=sas#11-architectural-north-star"
+    );
+    await pick(el, "sas", SAS);
+    const heading = shadow(el).querySelector(
+      '[id="1-1-architectural-north-star"]'
+    );
+    expect(shadow(el).activeElement).toBe(heading);
+    expect(announced(el)).toBe(
+      "Systems Architecture Specification (SAS) opened"
+    );
+  });
+
+  it("focuses the list heading and announces the list when going back", async () => {
+    const el = await create({});
+    await pick(el, "sas", SAS);
+    // eslint-disable-next-line @lwc/lwc/no-unexpected-wire-adapter-usages
+    CurrentPageReference.emit({ state: {} });
+    await flush();
+    await flush();
+    const h1 = shadow(el).querySelector("h1");
+    expect(h1.textContent).toBe("Architecture docs");
+    expect(shadow(el).activeElement).toBe(h1);
+    expect(announced(el)).toBe("Document list");
+  });
+
+  it("behaves the same on browser back to the list", async () => {
+    const el = await create({});
+    await pick(el, "sas", SAS);
+    window.history.replaceState(null, "", "/portfolio/docs");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await flush();
+    await flush();
+    const h1 = shadow(el).querySelector("h1");
+    expect(shadow(el).activeElement).toBe(h1);
+    expect(announced(el)).toBe("Document list");
+  });
+});

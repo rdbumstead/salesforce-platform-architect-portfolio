@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Amended 2026-10-22, see the amendment below. Note added 2026-10-22 on the Lighthouse claim.
+Accepted. Amended 2026-10-22, see the amendment below. Note added 2026-10-22 on the Lighthouse claim, and a second note on 2026-10-30.
 
 ## Context
 
@@ -17,6 +17,8 @@ Implement a Static SVG Fallback for small viewports.
 Prevents heavy canvas rendering on mobile, ensuring the site passes Lighthouse performance audits on 4G networks.
 
 > **Note, 2026-10-22.** The site does not pass the 2.5 s mobile LCP target. Removing the graph from phones took the graph engine off the mobile critical path, but most of the mobile LCP is render delay in the LWR framework's own script, which the site's files do not control, and it stays above 2.5 s. The gate is now the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, measured 2026-10-22) on the six main routes ([Technical Guide §2.11](../guides/04-Technical-Guide.md#211-mobile-performance)).
+
+> **Note, 2026-10-30.** The production baseline of 2026-10-29 is wider, 7.57 to 10.62 s. A throttled trace shows the first site component rendering at about 5 s, after about 850 KB of framework scripts and styles, so the 2.5 s target is not reachable by site changes alone. I keep it as the target and it is not met. The October 2026 changes (lazy data model dialog, lazy gallery read, reserved space on home) proved one gain, home layout shift from 0.33 to 0. Removing the platform stylesheets was tried and not shipped because it broke the card styling on four pages (Technical Guide §2.11).
 
 ## Implications
 
