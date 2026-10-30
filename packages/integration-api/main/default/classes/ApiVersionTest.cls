@@ -53,10 +53,12 @@ private class ApiVersionTest {
   // never as the date deployed to the org.
   private static void setting(String name, String text) {
     ApiRequestContext.readConfiguredDates = true;
-    for (String dateSetting : new List<String>{
-      'Api_V1_Deprecation_Date',
-      'Api_V1_Sunset_Date'
-    }) {
+    for (
+      String dateSetting : new List<String>{
+        'Api_V1_Deprecation_Date',
+        'Api_V1_Sunset_Date'
+      }
+    ) {
       if (!PortfolioSettings.overrides.containsKey(dateSetting)) {
         PortfolioSettings.overrides.put(
           dateSetting,
