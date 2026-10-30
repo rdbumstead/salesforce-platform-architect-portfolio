@@ -120,7 +120,7 @@ export default class CaseStudyGrid extends LightningElement {
         headlineLabel: label ? ` ${label}` : null,
         href,
         buttonClass: index === 0 ? "btn btn-primary" : "btn btn-secondary",
-        buttonLabel: `Read the case study: ${title}`,
+        buttonLabel: `Read the case study: ${title}`
       };
     });
   }
@@ -139,7 +139,7 @@ export default class CaseStudyGrid extends LightningElement {
     if (typeof heading.scrollIntoView === "function") {
       heading.scrollIntoView({
         behavior: reduced ? "auto" : "smooth",
-        block: "start",
+        block: "start"
       });
     }
     heading.focus({ preventScroll: true });

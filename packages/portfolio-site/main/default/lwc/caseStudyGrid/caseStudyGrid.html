@@ -1,5 +1,5 @@
 <template>
-  <template lwc:if="{hasCards}">
+  <template lwc:if={hasCards}>
     <div class="case-studies">
       <section class="section" aria-labelledby="case-studies-heading">
         <div class="heading-row">
@@ -21,10 +21,10 @@
           this site. Client names are left out.
         </p>
         <ul class="cards" data-id="cards">
-          <template for:each="{cards}" for:item="card">
-            <li key="{card.key}" class="card" data-id="card">
+          <template for:each={cards} for:item="card">
+            <li key={card.key} class="card" data-id="card">
               <article class="card-body">
-                <template lwc:if="{card.hasHeadline}">
+                <template lwc:if={card.hasHeadline}>
                   <p class="metric" data-id="metric">
                     <span class="metric-number">{card.headlineMetric}</span>
                     <span class="metric-label">{card.headlineLabel}</span>
@@ -38,21 +38,17 @@
                   ></p>
                 </template>
                 <h3 class="card-title">{card.title}</h3>
-                <template lwc:if="{card.clientLine}">
+                <template lwc:if={card.clientLine}>
                   <p class="client" data-id="client">{card.clientLine}</p>
                 </template>
                 <div class="card-action">
                   <a
-                    class="{card.buttonClass}"
-                    href="{card.href}"
-                    aria-label="{card.buttonLabel}"
+                    class={card.buttonClass}
+                    href={card.href}
+                    aria-label={card.buttonLabel}
                     data-id="card-button"
-                    data-name="{card.title}"
-                    onclick="
-                      {
-                        handleLinkClick;
-                      }
-                    "
+                    data-name={card.title}
+                    onclick={handleLinkClick}
                     >Read the case study <span aria-hidden="true">→</span></a
                   >
                 </div>

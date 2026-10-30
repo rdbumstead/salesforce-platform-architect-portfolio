@@ -20,13 +20,13 @@ jest.mock(
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
   },
-  { virtual: true },
+  { virtual: true }
 );
 
 jest.mock(
   "@salesforce/community/basePath",
   () => ({ __esModule: true, default: "/portfolio" }),
-  { virtual: true },
+  { virtual: true }
 );
 
 jest.mock(
@@ -34,9 +34,9 @@ jest.mock(
   () => ({
     __esModule: true,
     trackEvent: jest.fn(),
-    EVENTS: { CASE_STUDY_LINK_FOLLOWED: "case_study_link_followed" },
+    EVENTS: { CASE_STUDY_LINK_FOLLOWED: "case_study_link_followed" }
   }),
-  { virtual: true },
+  { virtual: true }
 );
 
 const CARDS = [
@@ -50,7 +50,7 @@ const CARDS = [
     solution: "Chose donated licences.",
     businessValue: "Ten staff users on donated licences.",
     liveUrl: "https://ryanbumstead.com/nonprofit-solutions",
-    tags: ["NPSP", " Platform selection ", "", "Cost"],
+    tags: ["NPSP", " Platform selection ", "", "Cost"]
   },
   {
     key: "a",
@@ -62,7 +62,7 @@ const CARDS = [
     solution: null,
     businessValue: "One home per partner.",
     liveUrl: "/business-architecture",
-    tags: [],
+    tags: []
   },
   {
     key: "e",
@@ -74,8 +74,8 @@ const CARDS = [
     solution: "This site is its own delivery evidence.",
     businessValue: "The numbers change when the pipeline does.",
     liveUrl: "/delivery",
-    tags: null,
-  },
+    tags: null
+  }
 ];
 
 // The script URL is the input under test, proving a card with no safe link never shows.
@@ -83,7 +83,7 @@ const UNSAFE = {
   key: "u",
   title: "A card with an unsafe link",
   // eslint-disable-next-line no-script-url
-  liveUrl: "javascript:alert(1)",
+  liveUrl: "javascript:alert(1)"
 };
 
 function render() {
@@ -155,14 +155,14 @@ describe("c-case-study-grid", () => {
     const root = element.shadowRoot;
     expect(text(root.querySelector("h2"))).toBe("Case studies");
     expect(text(root.querySelector(".section-intro"))).toBe(
-      "A selection of my work: two client engagements and the build behind this site. Client names are left out.",
+      "A selection of my work: two client engagements and the build behind this site. Client names are left out."
     );
     expect(
-      cards(element).map((card) => text(card.querySelector("h3"))),
+      cards(element).map((card) => text(card.querySelector("h3")))
     ).toEqual([
       "Choosing the right platform for a literacy nonprofit",
       "An employer hub for an education provider",
-      "Building this site as a production org",
+      "Building this site as a production org"
     ]);
   });
 
@@ -171,12 +171,12 @@ describe("c-case-study-grid", () => {
     getHomeCaseStudies.emit([
       { key: "x", title: "  " },
       ...CARDS,
-      { key: "z", title: "A fourth", liveUrl: "/delivery" },
+      { key: "z", title: "A fourth", liveUrl: "/delivery" }
     ]);
     await flush();
     expect(cards(element)).toHaveLength(3);
     expect(text(cards(element)[0].querySelector("h3"))).toBe(
-      "Choosing the right platform for a literacy nonprofit",
+      "Choosing the right platform for a literacy nonprofit"
     );
   });
 
@@ -199,7 +199,7 @@ describe("c-case-study-grid", () => {
     await flush();
     expect(cards(element)).toHaveLength(3);
     expect(text(cards(element)[0].querySelector("h3"))).toBe(
-      "Choosing the right platform for a literacy nonprofit",
+      "Choosing the right platform for a literacy nonprofit"
     );
     getHomeCaseStudies.emit([UNSAFE]);
     await flush();
@@ -222,14 +222,14 @@ describe("c-case-study-grid", () => {
     await flush();
     const [first, second, third] = cards(element);
     expect(text(first.querySelector('[data-id="metric"]'))).toBe(
-      "$0 software licence cost for 10 staff users",
+      "$0 software licence cost for 10 staff users"
     );
     expect(second.querySelector('[data-id="metric"]')).toBeNull();
     expect(text(third.querySelector('[data-id="metric"]'))).toBe(
-      "1000 Apex tests passing at the last successful deploy",
+      "1000 Apex tests passing at the last successful deploy"
     );
     expect(text(first.querySelector('[data-id="client"]'))).toBe(
-      "Regional adult literacy nonprofit · freelance",
+      "Regional adult literacy nonprofit · freelance"
     );
     expect(second.querySelector('[data-id="client"]')).toBeNull();
   });
@@ -252,17 +252,17 @@ describe("c-case-study-grid", () => {
     const [first, second, third] = cards(element);
     const link = first.querySelector('[data-id="card-button"]');
     expect(link.getAttribute("href")).toBe(
-      "https://ryanbumstead.com/nonprofit-solutions",
+      "https://ryanbumstead.com/nonprofit-solutions"
     );
     expect(text(link)).toBe("Read the case study →");
     expect(link.getAttribute("aria-label")).toBe(
-      "Read the case study: Choosing the right platform for a literacy nonprofit",
+      "Read the case study: Choosing the right platform for a literacy nonprofit"
     );
     expect(
-      second.querySelector('[data-id="card-button"]').getAttribute("href"),
+      second.querySelector('[data-id="card-button"]').getAttribute("href")
     ).toBe("/portfolio/business-architecture");
     expect(
-      third.querySelector('[data-id="card-button"]').getAttribute("href"),
+      third.querySelector('[data-id="card-button"]').getAttribute("href")
     ).toBe("/portfolio/delivery");
   });
 
@@ -271,16 +271,16 @@ describe("c-case-study-grid", () => {
     getHomeCaseStudies.emit(CARDS);
     await flush();
     const buttons = Array.from(
-      element.shadowRoot.querySelectorAll('[data-id="card-button"]'),
+      element.shadowRoot.querySelectorAll('[data-id="card-button"]')
     );
     expect(buttons.map((b) => b.classList.contains("btn-primary"))).toEqual([
       true,
       false,
-      false,
+      false
     ]);
     expect(element.shadowRoot.querySelectorAll(".btn-primary")).toHaveLength(1);
     expect(element.shadowRoot.querySelectorAll(".btn-secondary")).toHaveLength(
-      2,
+      2
     );
   });
 
@@ -293,7 +293,7 @@ describe("c-case-study-grid", () => {
     link.click();
     expect(trackEvent).toHaveBeenCalledTimes(1);
     expect(trackEvent).toHaveBeenCalledWith("case_study_link_followed", {
-      name: "An employer hub for an education provider",
+      name: "An employer hub for an education provider"
     });
   });
 
@@ -303,19 +303,19 @@ describe("c-case-study-grid", () => {
     getHomeCaseStudies.emit(CARDS);
     await flush();
     const heading = element.shadowRoot.querySelector(
-      '[data-id="case-heading"]',
+      '[data-id="case-heading"]'
     );
     heading.scrollIntoView = jest.fn();
     expect(element.revealHeading(false)).toBe(true);
     expect(heading.scrollIntoView).toHaveBeenCalledWith({
       behavior: "smooth",
-      block: "start",
+      block: "start"
     });
     expect(element.shadowRoot.activeElement).toBe(heading);
     element.revealHeading(true);
     expect(heading.scrollIntoView).toHaveBeenLastCalledWith({
       behavior: "auto",
-      block: "start",
+      block: "start"
     });
   });
 
@@ -323,20 +323,20 @@ describe("c-case-study-grid", () => {
     window.matchMedia = jest.fn(() => ({
       matches: true,
       addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
+      removeEventListener: jest.fn()
     }));
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
     const heading = element.shadowRoot.querySelector(
-      '[data-id="case-heading"]',
+      '[data-id="case-heading"]'
     );
     heading.scrollIntoView = jest.fn();
     window.location.hash = "case-studies";
     window.dispatchEvent(new HashChangeEvent("hashchange"));
     expect(heading.scrollIntoView).toHaveBeenCalledWith({
       behavior: "auto",
-      block: "start",
+      block: "start"
     });
     expect(element.shadowRoot.activeElement).toBe(heading);
   });
@@ -353,7 +353,7 @@ describe("c-case-study-grid", () => {
       await flush();
       expect(scroll).toHaveBeenCalledTimes(1);
       expect(element.shadowRoot.activeElement).toBe(
-        element.shadowRoot.querySelector('[data-id="case-heading"]'),
+        element.shadowRoot.querySelector('[data-id="case-heading"]')
       );
     } finally {
       window.HTMLElement.prototype.scrollIntoView = original;
@@ -367,12 +367,12 @@ describe("c-case-study-grid live data marker", () => {
     const { join } = require("path");
     const html = readFileSync(
       join(__dirname, "..", "caseStudyGrid.html"),
-      "utf8",
+      "utf8"
     );
     const marker = html.match(/<c-data-source\s([^>]*)>\s*<\/c-data-source>/);
     expect(marker).not.toBeNull();
     expect(marker[1]).toMatch(
-      /source-keys="ProjectCardController_HomeCaseStudies"/,
+      /source-keys="ProjectCardController_HomeCaseStudies"/
     );
     expect(marker[1]).not.toMatch(/objects=/);
     expect(marker[1]).not.toMatch(/hide-counts/);

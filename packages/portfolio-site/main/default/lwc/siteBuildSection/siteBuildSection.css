@@ -1,14 +1,14 @@
 /*
- * "How this site is built", on the --pf- site tokens only, in the hero's column. Every element
- * that sets a background also sets its text colour. The opening motion uses transform and
- * opacity only and is off under reduce motion, both from c/motionPreference and the media query.
+ * "How this site is built", on the --pf- site tokens only, in the case study card style: the
+ * same border, radius, padding, big number and button sizes. Every element that sets a
+ * background also sets its text colour.
  */
 :host {
   display: block;
 }
 
 .build {
-  max-width: 1024px;
+  max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
   padding: 0 var(--pf-space-4) 48px;
   color: var(--pf-text);
@@ -34,252 +34,193 @@
 /* A one or two sentence intro runs to the section's width, like the page leads. */
 .section-intro {
   margin: var(--pf-space-2) 0 var(--pf-space-6);
-  max-width: 64rem;
+  max-width: var(--portfolio-content-width, 1024px);
   color: var(--pf-muted);
   text-wrap: pretty;
 }
 
-.build-list {
+.cards {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--pf-border);
-}
-
-.build-item {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: baseline;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--pf-border);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--pf-space-4);
 }
 
-.letter {
-  font-family: var(--pf-font-mono);
-  font-weight: 500;
-  color: var(--pf-accent);
+@media (min-width: 980px) {
+  .cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
-.build-main {
+.card {
+  position: relative;
   min-width: 0;
-}
-
-.build-name {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.4;
-  font-weight: 600;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-lg);
+  background: var(--pf-surface);
   color: var(--pf-text);
 }
 
-.build-text {
-  margin: 2px 0 0;
-  font-size: 14px;
-  color: var(--pf-muted);
-}
-
-.build-stat {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--pf-body);
-}
-
-/* Holds the stat line's height until the card read lands, so the rows below do not move. A
-   pillar with no stat keeps the same quiet gap. */
-.build-stat_reserve {
-  min-height: 21px;
-}
-
-/* The counts link arrives with its own read and the links wrap around it. The foot holds the
-   height it takes once filled, two rows wide and three on a phone. */
-.build-foot {
-  min-height: 92px;
-}
-
-@media (max-width: 420px) {
-  .build-stat_reserve {
-    min-height: 42px;
-  }
-
-  .build-foot {
-    min-height: 142px;
-  }
-}
-
-/* The site's a:link rule outranks a plain class, so :link and :visited are matched too. */
-.build-go,
-.build-go:link,
-.build-go:visited,
-.foot-link,
-.foot-link:link,
-.foot-link:visited {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  color: var(--pf-accent);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.build-go {
-  white-space: nowrap;
-}
-
-.build-go:hover,
-.build-go:link:hover,
-.build-go:visited:hover,
-.foot-link:hover,
-.foot-link:link:hover,
-.foot-link:visited:hover {
-  text-decoration: underline;
-}
-
-.coming-note {
-  margin: var(--pf-space-4) 0 0;
-  font-size: 14px;
-  color: var(--pf-muted);
-}
-
-.build-foot {
+.card-body {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 24px;
-  margin-top: var(--pf-space-4);
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 18px;
+  box-sizing: border-box;
 }
 
-.live,
-.live:link,
-.live:visited {
-  color: var(--pf-ok);
-  font-family: var(--pf-font-mono);
-  font-size: 13px;
-  font-weight: 500;
+.metric {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Case study disclosure */
-.case-study {
-  margin-top: var(--pf-space-2);
+/* Where the cards sit side by side, each card shares four row tracks with the cards beside it
+   (metric, title, client, button). Titles then start level whether or not a card has a metric,
+   and whatever height a wrapped label takes. A card with no metric keeps its empty slot. */
+.metric-spacer {
+  display: none;
 }
 
-.case-toggle {
+@media (min-width: 980px) {
+  .cards {
+    row-gap: 0;
+  }
+
+  .card {
+    display: grid;
+    grid-row: span 4;
+    grid-template-rows: subgrid;
+    margin-bottom: var(--pf-space-4);
+  }
+
+  .card-body {
+    display: grid;
+    grid-row: 1 / -1;
+    grid-template-rows: subgrid;
+    gap: 0;
+  }
+
+  .card-body > .metric {
+    grid-row: 1;
+    margin-bottom: 8px;
+  }
+
+  .card-body > .letter {
+    font-family: var(--pf-font-mono);
+    font-weight: 500;
+    color: var(--pf-accent);
+    margin-inline-end: 6px;
+  }
+
+  .card-title {
+    grid-row: 2;
+    margin-bottom: 8px;
+  }
+
+  .card-body > .card-text {
+    grid-row: 3;
+    margin-bottom: 8px;
+  }
+
+  .card-body > .card-action {
+    grid-row: 4;
+    align-self: end;
+  }
+
+  .metric-spacer {
+    display: block;
+    visibility: hidden;
+  }
+}
+
+.card-action {
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* One button look across the three home card sections. Primary is the hero button. Secondary
+   is a surface fill with a 1px border. The site link rule outranks a plain class, so :link and
+   :visited are matched too. */
+.btn,
+.btn:link,
+.btn:visited {
   display: inline-flex;
   align-items: center;
   gap: var(--pf-space-2);
   min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.btn-primary,
+.btn-primary:link,
+.btn-primary:visited {
+  background: var(--pf-btn);
+  color: var(--pf-btn-text);
+  border: 1px solid var(--pf-btn);
+}
+
+.btn-primary:hover,
+.btn-primary:link:hover,
+.btn-primary:visited:hover {
+  background: var(--pf-btn-hover);
+  color: var(--pf-btn-text);
+}
+
+.btn-secondary,
+.btn-secondary:link,
+.btn-secondary:visited {
+  background: var(--pf-surface);
   color: var(--pf-text);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
+  border: 1px solid var(--pf-border);
 }
 
-.case-toggle:hover {
-  color: var(--pf-accent);
-}
-
-.case-chevron {
-  font-family: var(--pf-font-mono);
-  font-size: 16px;
-}
-
-.case-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pf-space-3);
-  padding: var(--pf-space-2) 0 var(--pf-space-3);
-}
-
-.case-body[hidden] {
-  display: none;
-}
-
-.case-heading {
-  margin: 0 0 2px;
-  font-size: 13px;
-  font-weight: 600;
+.btn-secondary:hover,
+.btn-secondary:link:hover,
+.btn-secondary:visited:hover {
+  border-color: var(--pf-accent);
   color: var(--pf-text);
 }
 
-.case-text {
-  margin: 0;
-  font-size: 14px;
-  color: var(--pf-body);
-  white-space: pre-line;
-}
-
-.case-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pf-space-2) var(--pf-space-4);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.case-link,
-.case-link:link,
-.case-link:visited {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--pf-accent);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.assistive-text {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.build-go:focus-visible,
-.foot-link:focus-visible,
-.case-toggle:focus-visible,
-.case-link:focus-visible {
+.btn:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
-/* A short fade and slide when a case study opens. */
-@keyframes reveal-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.metric-number {
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--pf-text);
+  font-variant-numeric: tabular-nums;
 }
 
-.reveal:not([hidden]) {
-  animation: reveal-in 0.2s ease-out;
+.metric-label {
+  font-size: 12px;
+  color: var(--pf-muted);
 }
 
-.motion-reduced .reveal:not([hidden]) {
-  animation: none;
+.card-title {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--pf-text);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .reveal:not([hidden]) {
-    animation: none;
-  }
+.card-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--pf-muted);
 }
 
 @media (max-width: 767.98px) {
@@ -288,12 +229,21 @@
   }
 }
 
-@media (max-width: 559.98px) {
-  .build-item {
-    grid-template-columns: 24px minmax(0, 1fr);
-  }
+.inline-link,
+.inline-link:link,
+.inline-link:visited {
+  color: var(--pf-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
-  .build-go {
-    grid-column: 2;
-  }
+.inline-link:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
+}
+
+.coming-note {
+  margin: var(--pf-space-4) 0 0;
+  font-size: 14px;
+  color: var(--pf-muted);
 }
