@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-10-26), amended the same day (see the last section). Checked against the merged home page: the view's component order, `ProjectCardController.getHomeCaseStudies`, the `Project__c` and `Contact` fields, the proof strip list, the credentials strip, the header and footer, and the head markup. The case study text, the title line and the value sentence are records I load with scripts after the deploy, so until then the cards and the value sentence stay hidden by design.
+Accepted (2026-10-26), amended on 2026-10-26, 2026-10-27 and 2026-10-30 (see the amendment sections). Checked against the merged home page: the view's component order, `ProjectCardController.getHomeCaseStudies`, the `Project__c` and `Contact` fields, the proof strip list, the credentials strip, the header and footer, and the head markup. The case study text, the title line and the value sentence are records I load with scripts after the deploy, so until then the cards and the value sentence stay hidden by design.
 
 ## Context
 
@@ -75,3 +75,14 @@ This changes the header list in item 10. The other items stand.
 
 - **The header reads Home, Resume, Skills, How it's built, Testimonials and Contact.** Skills and Testimonials left the header on 2026-10-26 for the footer, and I want both one click from any page again: Skills is the evidence a recruiter looks for first, and Testimonials is where a reference can leave a quote. The footer keeps its links too.
 - **Fit.** Six items and the menu fit on one line from 768 px only with the links a little closer, so the link padding narrows from 12 to 8 px between 768 and 899 px. The brand, the divider, the Back to top arrow and the theme button do not move. Phones keep the menu button, which lists the same six.
+
+## Amendment (2026-10-30): separate card numbers and the deploy success rate
+
+This changes item 5 and the card number rule. The other items stand.
+
+- **The home cards have their own number.** The three case study cards on the home page used to share the Headline fields with the pillar cards in "How this site is built", so the same three numbers showed twice on one page. `Project__c` now has `Case_Metric__c`, `Case_Metric_Label__c` and `Case_Metric_Source__c`. `getHomeCaseStudies` reads them, and `getPillarCards` keeps reading the Headline fields. The source rule is the same for both.
+- **A blank Case metric shows no number.** It never falls back to the Headline metric. A card with no number still shows its title and client line.
+- **Item 5, the live number.** Item 5 says the platform card takes its number from the newest successful deploy run. That still holds for the pillar cards, which keep reading the Headline fields. The home case card for the delivery work reads the Case fields and uses the new source value "Production deploys", a live success rate over the retained `deploy` runs in `Pipeline_Run__c`. The label fills `{n}` with the successful runs, `{total}` with every retained deploy run and `{recovery}` with a clause on how fast failures were fixed. The clause is empty when nothing failed or the latest failure has no later successful deploy. Like every live source, it is never typed into the record, because a typed number goes stale.
+- **The values.** My data script sets them after the deploy: the Employer Hub card reads "8 steps of a partner inquiry, mapped end to end from the web form to the leadership dashboard", the Nonprofit card keeps "$0", and the Delivery card shows the live rate. The build section's nonprofit row reads "3 platforms scored on 10 weighted criteria in a live decision matrix".
+- **The tour line.** The hero's link now reads "Have 10 minutes? Take the guided tour", with the minutes computed from `TOUR_MINUTES`. The header menu row keeps "Take the 10 minute tour".
+- **Detail.** [Technical Guide 2.12](../guides/04-Technical-Guide.md#212-home-page).

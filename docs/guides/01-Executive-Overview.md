@@ -62,7 +62,7 @@ sequenceDiagram
     participant S as View source
 
     R->>H: Lands on Portfolio
-    H-->>R: "Take the 10 minute tour"
+    H-->>R: "Have 10 minutes? Take the guided tour"
     R->>A: A process mapped to its live data model
     R->>B: The reasoning behind a platform choice
     R->>C: A real API call with its headers

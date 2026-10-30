@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Amended 2026-10-21 (see below).
+Accepted. Amended 2026-10-21, 2026-10-29 and 2026-10-30 (see below).
 
 ## Context
 
@@ -37,3 +37,12 @@ The decision stands. The switch now shows a before and after beside the panel it
 - It sets a static, labelled illustration of a panel with no saved copy and no breaker beside a three step trace of what the panel really does. Step one says no call was made to the source. Step two says the breaker counts a failed refresh and opens at 3 in a row for 30 minutes. Step three says the panel shows the last saved copy with its age.
 - `DEGRADED`, a real open breaker, does not show it.
 - **The numbers are text, not settings.** The 3 and the 30 are the `CircuitBreaker` defaults and the values of the `Circuit_Failure_Threshold` and `Circuit_Open_Minutes` settings, but they are written into the component's wording. If I change either setting, I change the wording too.
+
+## Amendment (2026-10-30): the outage text reads the settings
+
+This replaces the last bullet of the 2026-10-29 amendment. The decision and the rest stand.
+
+- **The numbers come from the settings.** `DeliveryController.getRoadmap` and `getChangelog` return `failureThreshold` and `openMinutes` on the feed, read from `CircuitBreaker.failureThreshold()` and `openMinutes()`. Those read the `Circuit_Failure_Threshold` and `Circuit_Open_Minutes` settings and fall back to the code defaults of 3 and 30.
+- **The components pass them on.** `c-roadmap-viewer` and `c-changelog` hand both numbers to `c-outage-compare`. The component holds no default of its own.
+- **A missing number is left out.** When the threshold is missing the step reads "After repeated failures in a row it opens". When the open minutes are missing it leaves out the "for N minutes" part. It never shows a made up number.
+- **Why.** The 2026-10-29 wording typed the 3 and the 30, so a change to either setting left the page telling visitors something untrue. Now the page changes with the setting and I edit nothing.
