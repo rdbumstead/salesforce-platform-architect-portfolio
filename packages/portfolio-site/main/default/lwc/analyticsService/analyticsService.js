@@ -58,7 +58,7 @@ export const EVENTS = Object.freeze({
   API_LAB_SECTION_TOGGLED: "api_lab_section_toggled", // section, expanded
   CASE_STUDY_LINK_FOLLOWED: "case_study_link_followed", // name
   GRAPH_LAYOUT_CHANGED: "graph_layout_changed", // action: drag, fit or reset_layout
-  CAREER_ROLE_OPENED: "career_role_opened", // position: 1 is the newest role
+  CAREER_ROLE_OPENED: "career_role_opened", // position: 1 is the newest role. Kept for past data, the career line no longer sends it
   CAREER_TIMELINE_TOGGLED: "career_timeline_toggled", // expanded
   CAREER_TIMELINE_FILTERED: "career_timeline_filtered", // kind: all, work, education or certifications
   TOUR_OPENED: "tour_opened", // source: hero or section. Kept for past data, the tour journey no longer sends it
