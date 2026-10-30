@@ -1,20 +1,21 @@
 /**
- * @description       : The home page case studies: up to three compact cards from
- *                      ProjectCardController.getHomeCaseStudies, each with its headline number
- *                      and label (only when both are set), the title and the client line. The
- *                      full story lives on the page each card links to. The title is the card's
- *                      one link, stretched over the whole card, so a screen reader hears one link
- *                      per card. A card shows only with a title and a link, and a link is an http
- *                      or https address or a path on this site (isShownCase, which the hero's
- *                      "See the case studies" button uses too). Following a link sends
- *                      case_study_link_followed with the card's title.
+ * @description       : The home page case studies: a framing line, then up to three cards from
+ *                      ProjectCardController.getHomeCaseStudies. Each card has its headline number
+ *                      and label (only when both are set), the title, the engagement line
+ *                      (Client_Line__c) and a "Read the case study" button. The first card's
+ *                      button is the section's one primary button and the others are secondary.
+ *                      No status pill is shown. A card shows only with a title and a link, and a
+ *                      link is an http or https address or a path on this site (isShownCase,
+ *                      which the hero's "See the case studies" button uses too). Following a
+ *                      link sends case_study_link_followed with the card's title.
  *                      Renders nothing at all before the read returns, when no card can show or
  *                      when it fails, so there is never an empty heading.
  *                      While it shows cards its host element carries the id "case-studies", so
- *                      the hero button can reach it. revealHeading
- *                      scrolls to the heading and moves focus to it, and an address ending in
- *                      #case-studies does the same, on load or later. Scrolling is smooth
- *                      unless the system "reduce motion" setting is on (c/motionPreference).
+ *                      the hero button can reach it. revealHeading scrolls to the heading and
+ *                      moves focus to it, and an address ending in #case-studies does the same,
+ *                      on load or later. Scrolling is smooth unless the system "reduce motion"
+ *                      setting is on (c/motionPreference). The width follows
+ *                      --portfolio-content-width, with 1024px as the fallback.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -117,7 +118,9 @@ export default class CaseStudyGrid extends LightningElement {
         headlineMetric: metric,
         // The leading space keeps "$0 software licence cost" apart when read as one line.
         headlineLabel: label ? ` ${label}` : null,
-        href
+        href,
+        buttonClass: index === 0 ? "btn btn-primary" : "btn btn-secondary",
+        buttonLabel: `Read the case study: ${title}`,
       };
     });
   }
@@ -136,7 +139,7 @@ export default class CaseStudyGrid extends LightningElement {
     if (typeof heading.scrollIntoView === "function") {
       heading.scrollIntoView({
         behavior: reduced ? "auto" : "smooth",
-        block: "start"
+        block: "start",
       });
     }
     heading.focus({ preventScroll: true });
