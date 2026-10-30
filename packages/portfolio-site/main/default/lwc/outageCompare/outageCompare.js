@@ -22,12 +22,13 @@
 import { LightningElement, api } from "lwc";
 
 /**
- * Every visible string. The facts in the breaker step come from the Apex. CircuitBreaker
- * FAILURE_THRESHOLD is 3 and OPEN_MINUTES is 30 (code defaults, lines 38 and 39, and no
- * setting record in the repo overrides them). recordFailure counts a failed refresh and opens
- * the circuit at the threshold (lines 116 to 131). The refresh jobs skip their callout while
- * the circuit is open (JiraCacheRefreshJob line 41, GitHubCacheRefreshJob line 45), and a
- * failed call inserts nothing, so the newest good cache row keeps serving.
+ * Every visible string. The breaker step reads its numbers from the feed, which takes them
+ * from CircuitBreaker.failureThreshold() and openMinutes() (the Circuit_Failure_Threshold and
+ * Circuit_Open_Minutes settings, code defaults 3 and 30). This component holds no default of
+ * its own, so a missing number is left out of the sentence. recordFailure counts a failed
+ * refresh and opens the circuit at the threshold. The refresh jobs skip their callout while
+ * the circuit is open (JiraCacheRefreshJob, GitHubCacheRefreshJob), and a failed call inserts
+ * nothing, so the newest good cache row keeps serving.
  */
 export const WORDING = Object.freeze({
   heading: "What the outage switch shows",
@@ -38,8 +39,12 @@ export const WORDING = Object.freeze({
   failureLine: "Couldn't load {subject}. {source} didn't answer.",
   withHeading: "With resilience",
   stepNoCall: "The switch is on, so no call was made to {source}.",
-  stepBreaker:
-    "In a real outage, the refresh that calls {source} fails and the breaker counts it. After 3 failures in a row it opens for 30 minutes, and the refresh stops calling {source} until then.",
+  stepBreakerStart:
+    "In a real outage, the refresh that calls {source} fails and the breaker counts it.",
+  stepBreakerAfter: "After {threshold} failures in a row it opens",
+  stepBreakerAfterUnknown: "After repeated failures in a row it opens",
+  stepBreakerFor: " for {minutes} minutes",
+  stepBreakerEnd: ", and the refresh stops calling {source} until then.",
   stepCopy: "{Subject} shows the copy saved {age}.",
   ageUnknown: "earlier",
   fallbackSubject: "this panel",
@@ -80,6 +85,22 @@ export function formatAge(ageMinutes, fetchedAt) {
   return WORDING.ageUnknown;
 }
 
+/**
+ * A whole number of 1 or more, else null so the sentence leaves it out.
+ * @param {*} value a count from the feed
+ * @returns {number|null} the count, or null
+ */
+export function countOf(value) {
+  const number = Number(value);
+  return value !== null &&
+    value !== undefined &&
+    value !== "" &&
+    Number.isInteger(number) &&
+    number >= 1
+    ? number
+    : null;
+}
+
 export default class OutageCompare extends LightningElement {
   /** "Jira" or "GitHub". */
   @api source;
@@ -87,6 +108,10 @@ export default class OutageCompare extends LightningElement {
   @api subject;
   @api fetchedAt;
   @api ageMinutes;
+  /** Failures in a row that open the breaker, from the feed. */
+  @api failureThreshold;
+  /** Minutes the breaker stays open, from the feed. */
+  @api openMinutes;
 
   wording = WORDING;
 
@@ -100,6 +125,25 @@ export default class OutageCompare extends LightningElement {
     };
   }
 
+  get breakerText() {
+    const values = this.values;
+    const threshold = countOf(this.failureThreshold);
+    const minutes = countOf(this.openMinutes);
+    const after =
+      threshold === null
+        ? WORDING.stepBreakerAfterUnknown
+        : fill(WORDING.stepBreakerAfter, { threshold });
+    const duration =
+      minutes === null ? "" : fill(WORDING.stepBreakerFor, { minutes });
+    return [
+      fill(WORDING.stepBreakerStart, values),
+      " ",
+      after,
+      duration,
+      fill(WORDING.stepBreakerEnd, values)
+    ].join("");
+  }
+
   get failureLine() {
     return fill(WORDING.failureLine, this.values);
   }
@@ -108,7 +152,7 @@ export default class OutageCompare extends LightningElement {
     const values = this.values;
     return [
       { id: "no-call", text: fill(WORDING.stepNoCall, values) },
-      { id: "breaker", text: fill(WORDING.stepBreaker, values) },
+      { id: "breaker", text: this.breakerText },
       { id: "copy", text: fill(WORDING.stepCopy, values) }
     ].map((step, index) => ({ ...step, number: String(index + 1) }));
   }

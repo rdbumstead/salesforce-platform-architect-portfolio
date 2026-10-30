@@ -887,13 +887,21 @@ describe("c-roadmap-viewer live data marker", () => {
   describe("outage compare", () => {
     it("shows above the board while SIMULATED, with Jira wording and the feed's age", async () => {
       const element = createComponent();
-      getRoadmap.emit(feed("SIMULATED", { ageMinutes: 9 }));
+      getRoadmap.emit(
+        feed("SIMULATED", {
+          ageMinutes: 9,
+          failureThreshold: 5,
+          openMinutes: 45
+        })
+      );
       await flushPromises();
       const compare = q(element, "c-outage-compare");
       expect(compare).not.toBeNull();
       expect(compare.source).toBe("Jira");
       expect(compare.subject).toBe("the roadmap");
       expect(compare.ageMinutes).toBe(9);
+      expect(compare.failureThreshold).toBe(5);
+      expect(compare.openMinutes).toBe(45);
       expect(compare.fetchedAt).toBe("2026-10-21T08:05:00.000Z");
       // It sits above the board, and the board and badge stay.
       const position = compare.compareDocumentPosition(

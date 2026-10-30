@@ -382,13 +382,21 @@ describe("c-changelog live data marker", () => {
   describe("outage compare", () => {
     it("shows above the list while SIMULATED, with GitHub wording and the feed's age", async () => {
       const element = createComponent();
-      getRecentCommits.emit(feed("SIMULATED", { ageMinutes: 21 }));
+      getRecentCommits.emit(
+        feed("SIMULATED", {
+          ageMinutes: 21,
+          failureThreshold: 5,
+          openMinutes: 45
+        })
+      );
       await flushPromises();
       const compare = q(element, "c-outage-compare");
       expect(compare).not.toBeNull();
       expect(compare.source).toBe("GitHub");
       expect(compare.subject).toBe("Latest Updates");
       expect(compare.ageMinutes).toBe(21);
+      expect(compare.failureThreshold).toBe(5);
+      expect(compare.openMinutes).toBe(45);
       expect(compare.fetchedAt).toBe("2026-10-21T08:05:00.000Z");
       const position = compare.compareDocumentPosition(
         q(element, ".commit-list")

@@ -7,7 +7,7 @@
  * @Created           : 10/29/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import OutageCompare, { WORDING, formatAge } from "c/outageCompare";
+import OutageCompare, { WORDING, formatAge, countOf } from "c/outageCompare";
 
 const flushPromises = () => new Promise((resolve) => process.nextTick(resolve));
 
@@ -44,7 +44,9 @@ describe("c-outage-compare", () => {
     const element = await mount({
       source: "Jira",
       subject: "the roadmap",
-      ageMinutes: 12
+      ageMinutes: 12,
+      failureThreshold: 3,
+      openMinutes: 30
     });
     expect(q(element, '[data-id="failure-line"]').textContent.trim()).toBe(
       "Couldn't load the roadmap. Jira didn't answer."
@@ -63,7 +65,9 @@ describe("c-outage-compare", () => {
     const element = await mount({
       source: "GitHub",
       subject: "Latest Updates",
-      ageMinutes: 4
+      ageMinutes: 4,
+      failureThreshold: 3,
+      openMinutes: 30
     });
     expect(q(element, '[data-id="failure-line"]').textContent.trim()).toBe(
       "Couldn't load Latest Updates. GitHub didn't answer."
@@ -72,6 +76,59 @@ describe("c-outage-compare", () => {
     expect(steps[0]).toBe("The switch is on, so no call was made to GitHub.");
     expect(steps[1]).toContain("calls GitHub");
     expect(steps[2]).toBe("Latest Updates shows the copy saved 4 min ago.");
+  });
+
+  it("builds step two from the numbers the feed carries", async () => {
+    const element = await mount({
+      source: "Jira",
+      subject: "the roadmap",
+      failureThreshold: 5,
+      openMinutes: 45
+    });
+    expect(stepTexts(element)[1]).toBe(
+      "In a real outage, the refresh that calls Jira fails and the breaker counts it. After 5 failures in a row it opens for 45 minutes, and the refresh stops calling Jira until then."
+    );
+  });
+
+  it("reads step two without the numbers when the feed has none", async () => {
+    const element = await mount({ source: "Jira", subject: "the roadmap" });
+    const text = stepTexts(element)[1];
+    expect(text).toBe(
+      "In a real outage, the refresh that calls Jira fails and the breaker counts it. After repeated failures in a row it opens, and the refresh stops calling Jira until then."
+    );
+    expect(text).not.toMatch(/\d/);
+  });
+
+  it("leaves out only the number that is missing or not a whole count", async () => {
+    const noMinutes = await mount({
+      source: "GitHub",
+      subject: "Latest Updates",
+      failureThreshold: 4
+    });
+    expect(stepTexts(noMinutes)[1]).toContain(
+      "After 4 failures in a row it opens, and the refresh"
+    );
+    const noThreshold = await mount({
+      source: "GitHub",
+      subject: "Latest Updates",
+      failureThreshold: 0,
+      openMinutes: 20
+    });
+    expect(stepTexts(noThreshold)[1]).toContain(
+      "After repeated failures in a row it opens for 20 minutes, and"
+    );
+  });
+
+  it("countOf accepts whole counts of 1 or more only", () => {
+    expect(countOf(3)).toBe(3);
+    expect(countOf("30")).toBe(30);
+    expect(countOf(0)).toBeNull();
+    expect(countOf(-1)).toBeNull();
+    expect(countOf(2.5)).toBeNull();
+    expect(countOf(null)).toBeNull();
+    expect(countOf(undefined)).toBeNull();
+    expect(countOf("")).toBeNull();
+    expect(countOf("abc")).toBeNull();
   });
 
   it("takes the age from ageMinutes first, then from fetchedAt", async () => {
