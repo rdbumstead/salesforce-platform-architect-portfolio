@@ -80,17 +80,10 @@
                   >{githubLabel}</a
                 >
               </template>
-              <span class="fetched-at"
+              <span lwc:if={fetchedText} class="fetched-at"
                 >Read from GitHub on
-                <lightning-formatted-date-time
-                  value={selected.fetchedAt}
-                  year="numeric"
-                  month="short"
-                  day="numeric"
-                  hour="2-digit"
-                  minute="2-digit"
-                ></lightning-formatted-date-time
-              ></span>
+                <time datetime={fetchedIso}>{fetchedText}</time></span
+              >
             </p>
           </div>
         </div>

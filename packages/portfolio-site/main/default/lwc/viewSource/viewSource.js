@@ -53,6 +53,15 @@ export const GUIDE_SECTIONS = Object.freeze({
   coverLetterGenerator: "2-22-the-cover-letter-page-and-pdf"
 });
 
+/** Intl.DateTimeFormat instead of lightning-formatted-date-time, which pulls the i18n library into every page. */
+const FETCHED_FORMAT = new Intl.DateTimeFormat(undefined, {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit"
+});
+
 const LWC_PATH = /\/lwc\/([^/]+)\/([^/]+)$/;
 
 /** resumeBuilder becomes resume-builder. */
@@ -195,6 +204,26 @@ export default class ViewSource extends LightningElement {
 
   get panelLabel() {
     return `${this.selectedLabel} source`;
+  }
+
+  /** The cache's fetch time as a Date, or null when it is missing or unreadable. */
+  get fetchedDate() {
+    const value = this.selected && this.selected.fetchedAt;
+    if (!value) {
+      return null;
+    }
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  get fetchedIso() {
+    return this.fetchedDate ? this.fetchedDate.toISOString() : "";
+  }
+
+  /** Short month, day, year and time in the visitor's locale and time zone. */
+  get fetchedText() {
+    const date = this.fetchedDate;
+    return date ? FETCHED_FORMAT.format(date) : "";
   }
 
   get hasGithubLink() {
