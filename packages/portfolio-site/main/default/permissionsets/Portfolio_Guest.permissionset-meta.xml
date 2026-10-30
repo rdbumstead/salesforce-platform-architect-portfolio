@@ -97,6 +97,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Experience__c.Is_Part_Time__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Experience__c.Start_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>

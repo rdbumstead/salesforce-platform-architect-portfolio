@@ -69,6 +69,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Certification__c.Badge_File__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Certification__c.Earned_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -184,6 +189,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Experience_Highlight__c.Timeline_Text__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Experience__c.Accomplishments__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -210,6 +220,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Experience__c.Is_Remote__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Experience__c.Is_Part_Time__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

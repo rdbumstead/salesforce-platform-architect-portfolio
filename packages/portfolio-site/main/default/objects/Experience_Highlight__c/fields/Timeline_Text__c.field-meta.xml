@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Timeline_Text__c</fullName>
+    <description
+  >Short version of the accomplishment for the home timeline, which holds each bullet to one line. Blank means the timeline uses Description instead.</description>
+    <inlineHelpText
+  >70 characters at most, plain past tense. Leave blank to show the full Description on the timeline.</inlineHelpText>
+    <label>Timeline Text</label>
+    <length>70</length>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackHistory>false</trackHistory>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
