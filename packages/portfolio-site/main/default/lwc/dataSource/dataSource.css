@@ -231,6 +231,12 @@
   overflow: auto;
 }
 
+.model-loading {
+  margin: 0;
+  padding: var(--pf-space-4);
+  color: var(--pf-text);
+}
+
 /* On a phone the panel opens in the flow under the button, so it never leaves the screen. */
 @media (max-width: 600px) {
   .panel {

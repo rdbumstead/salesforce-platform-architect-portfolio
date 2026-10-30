@@ -37,6 +37,9 @@ export const WORDING = Object.freeze({
   sectionModelButton: "See this section's data model",
   sectionModelHeading: "This section's data model",
   closeButton: "Close",
+  modelLoading: "Loading the data model",
+  modelFailed:
+    "The data model could not be loaded. Use the full data model link instead.",
   countSeparator: ", "
 });
 
@@ -109,6 +112,8 @@ export function guideSectionId(sourceKeys, objects) {
   return GUIDE_SECTIONS.fallback;
 }
 
+let panelCount = 0;
+
 export default class DataSource extends LightningElement {
   /** Comma separated Query_Definition__mdt developer names. */
   @api sourceKeys;
@@ -124,6 +129,10 @@ export default class DataSource extends LightningElement {
   panelAtEnd = false;
   panelPlaced = false;
   focusOnRender;
+  visualizerConstructor;
+  modelLoading = false;
+  modelFailed = false;
+  panelUid = `data-source-panel-${++panelCount}`;
 
   @wire(getSources, { names: "$definitionNames" })
   wiredDefinitions({ data, error }) {
@@ -213,6 +222,11 @@ export default class DataSource extends LightningElement {
     return `${GUIDE_PATH}#${guideSectionId(this.sourceKeys, this.objects)}`;
   }
 
+  /** The panel's id while it exists, and nothing otherwise, so aria-controls never dangles. */
+  get panelId() {
+    return this.isOpen ? this.panelUid : undefined;
+  }
+
   get expanded() {
     return this.isOpen ? "true" : "false";
   }
@@ -265,6 +279,27 @@ export default class DataSource extends LightningElement {
     this.isOpen = false;
     this.isModelOpen = true;
     this.focusOnRender = ".dialog-heading";
+    this.loadVisualizer();
+  }
+
+  /**
+   * Fetches c/schemaVisualizer the first time the dialog opens. The import is literal and the
+   * bundle declares lightning__dynamicComponent, as c-footer does for c/graphqlProbe, so the
+   * module is not part of the first load.
+   */
+  async loadVisualizer() {
+    if (this.visualizerConstructor) {
+      return;
+    }
+    this.modelLoading = true;
+    this.modelFailed = false;
+    try {
+      const { default: visualizer } = await import("c/schemaVisualizer");
+      this.visualizerConstructor = visualizer;
+    } catch {
+      this.modelFailed = true;
+    }
+    this.modelLoading = false;
   }
 
   handleCloseModel() {
