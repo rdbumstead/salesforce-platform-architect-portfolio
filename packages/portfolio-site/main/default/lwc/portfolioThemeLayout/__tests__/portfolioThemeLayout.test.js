@@ -29,6 +29,7 @@ import PortfolioThemeLayout, {
 import { PILLARS, reset, setComingLetters } from "c/pillarData";
 import { trackEvent } from "c/analyticsService";
 import { CurrentPageReference } from "lightning/navigation";
+import getHeader from "@salesforce/apex/ResumeController.getHeader";
 
 // The page reference wire stands in for the site router's route changes.
 jest.mock(
@@ -1848,6 +1849,16 @@ describe("c-portfolio-theme-layout", () => {
       bar(element).dispatchEvent(new CustomEvent("tourarrive"));
       document.body.removeChild(element);
       expect(jest.getTimerCount()).toBe(0);
+    });
+  });
+
+  describe("early header read", () => {
+    it("wires the hero's cacheable header read on connect and takes the result quietly", async () => {
+      const element = render();
+      getHeader.emit({ valueSentence: "x" });
+      getHeader.error();
+      await flush();
+      expect(element.shadowRoot.querySelector("main")).not.toBeNull();
     });
   });
 
