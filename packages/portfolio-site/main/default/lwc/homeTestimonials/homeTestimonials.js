@@ -9,8 +9,8 @@
  *                      /testimonials. The section has no primary button and no big number.
  *                      The width follows --portfolio-content-width, with 1024px as the fallback.
  *                      While there are no quotes to show (before the read, when it is empty or
- *                      when it fails) nothing renders. The certifications and their verify link
- *                      live on the career timeline, and "References available on request" in
+ *                      when it fails) nothing renders. The certifications and their verify button
+ *                      live in the credentials band, and "References available on request" in
  *                      the contact call.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead

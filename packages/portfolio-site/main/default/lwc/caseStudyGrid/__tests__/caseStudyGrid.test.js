@@ -43,7 +43,7 @@ const CARDS = [
   {
     key: "b",
     title: "  Choosing the right platform for a literacy nonprofit  ",
-    clientLine: "Regional adult literacy nonprofit · freelance",
+    clientLine: "Adult literacy nonprofit · freelance",
     headlineMetric: "$0",
     headlineLabel: "software licence cost for 10 staff users",
     challenge: "  A small staff needed one system.  ",
@@ -229,7 +229,7 @@ describe("c-case-study-grid", () => {
       "1000 Apex tests passing at the last successful deploy"
     );
     expect(text(first.querySelector('[data-id="client"]'))).toBe(
-      "Regional adult literacy nonprofit · freelance"
+      "Adult literacy nonprofit · freelance"
     );
     expect(second.querySelector('[data-id="client"]')).toBeNull();
   });

@@ -42,7 +42,7 @@ const SOURCE = [
     sasName: "Solution Architecture",
     url: "nonprofit-solutions",
     summary:
-      "A solution design, decision matrix and cost comparison for a regional adult literacy nonprofit.",
+      "A solution design, decision matrix and cost comparison for an adult literacy nonprofit.",
     tour: "Move one weight in the matrix and watch the ranking change.",
     tourMinutes: 3,
     tags: ["Solution design", "Decision matrix"],

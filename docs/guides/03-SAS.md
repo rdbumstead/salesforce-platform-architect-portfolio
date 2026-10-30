@@ -365,7 +365,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.2 Pillar B: Solution Architecture (Nonprofit Literacy Platform)
 
 > [!NOTE]
-> **Live on the site.** I reviewed every score and set the starting weights on 2026-10-22, so no placeholder banner shows. I describe the client as "a regional adult literacy nonprofit" and never name it. Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production.
+> **Live on the site.** I reviewed every score and set the starting weights on 2026-10-22, so no placeholder banner shows. I describe the client as "an adult literacy nonprofit" and never name it. Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production.
 
 - **Objective:** Demonstrate ROI analysis and Solution Design.
 - **Page:** `/nonprofit-solutions`. `c-pillar-b-story` tells the story in seven sections (the client, discovery, the decision matrix, ROI and cost, solution design, the outcome, what I would revisit), then `c-decision-matrix`, then `c-project-asset-gallery` for the Pillar B media, which renders nothing while Pillar B has no published assets.
@@ -1195,7 +1195,7 @@ A monorepo of five package directories, declared in `sfdx-project.json` and depl
 - `/packages/integration-api`: the OpenAPI specifications (`specs/`), the Apex REST classes for the SAPI and PAPI, and the integration user's profile.
 - `/packages/shared-modules`: a placeholder for modules shared across packages. Today it holds only `main/default/lwc/jsconfig.json`, and no component lives there.
 - `/packages/demos/employer-hub`: the inert Employer Hub data model of a demonstration built for an education provider: `EH_Partner_Engagement__c`, `EH_Job_Posting__c` (master-detail to Partner Engagement), `EH_Partner_Investment__c` and `EH_Endorsement_Request__c`, with lookups to Account, Contact, Case, Opportunity and Contract, and the Account picklist `EH_Industry_Sector__c`, which picks the queue a request goes to. No automation, tabs, layouts or records. Also the `EH_Demo_Read` permission set (read on the four objects, optional for administrators) and the `EH_Assets` static resource (two process flows and two dashboards, redrawn from the original demo with no names and sample values).
-- `/packages/demos/nonprofit-literacy`: the analysis of a platform choice for a regional adult literacy nonprofit: the three decision matrix Custom Metadata Types (`Decision_Option__mdt`, `Decision_Criterion__mdt`, `Decision_Score__mdt`), their 43 records, and the `NL_Assets` static resource with the redrawn object model. It references no managed package, so it deploys to production and to CI's scratch orgs unchanged.
+- `/packages/demos/nonprofit-literacy`: the analysis of a platform choice for an adult literacy nonprofit: the three decision matrix Custom Metadata Types (`Decision_Option__mdt`, `Decision_Criterion__mdt`, `Decision_Score__mdt`), their 43 records, and the `NL_Assets` static resource with the redrawn object model. It references no managed package, so it deploys to production and to CI's scratch orgs unchanged.
 
 ### Appendix J: Cloud FinOps Strategy (Phase 8 - 2027-2028)
 

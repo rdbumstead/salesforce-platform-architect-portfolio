@@ -130,7 +130,7 @@ describe("c/pillarData", () => {
       "How an employer hub for an education provider models a business process and its data."
     );
     expect(pillarByLetter("B").summary).toBe(
-      "A solution design, decision matrix and cost comparison for a regional adult literacy nonprofit."
+      "A solution design, decision matrix and cost comparison for an adult literacy nonprofit."
     );
     expect(pillarByLetter("A").tags).toEqual(["Employer Hub", "Data model"]);
     expect(pillarByLetter("B").tags).toEqual([
