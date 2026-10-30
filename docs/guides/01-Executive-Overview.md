@@ -87,6 +87,6 @@ To clarify Salesforce-specific terms used throughout this portfolio:
 
 ## 5. Success Criteria (Definition of Done)
 
-This project holds itself to functional and technical acceptance criteria. Two of them: performance, where the target is a 2.5 s mobile LCP and the gate is the best the LWR shell allows (mobile LCP medians of 7.5 to 9.6 s across the six main routes, measured with Lighthouse 11 mobile on a scratch copy of the site), and code quality, where org wide Apex coverage must be 90% or more on every pull request.
+This project holds itself to functional and technical acceptance criteria. Two of them: performance, where the target is a 2.5 s mobile LCP and the gate is the best the LWR shell allows (mobile LCP medians of 7.5 to 9.6 s across the six main routes, measured with Lighthouse 11 mobile on a scratch copy of the site, and 7.57 to 10.62 s on production in the Round 17 baseline, where the first site component alone renders at about 5 s), and code quality, where org wide Apex coverage must be 90% or more on every pull request.
 
 For the authoritative definition of all success metrics, quality gates, and "Definition of Done", please refer to the **[Program Charter: Success Criteria](./02-Program-Charter.md#22-success-criteria-definition-of-done)**.

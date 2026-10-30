@@ -17,7 +17,7 @@ The site also had two native looks, not one. The contact forms and the API Lab's
 - **One module.** A component adds `@import "c/nativeControls";` at the top of its CSS and uses the classes `nc-control`, `nc-button`, `nc-field`, `nc-label`, `nc-hint`, `nc-error` and `nc-required`. The module sets the height (44 px), the fill, the edge and the focus ring from the `--pf-` tokens, so a control follows the visitor's theme. A component's own CSS may set layout (width, grid, gaps) and never a control's height, colours, edge or focus.
 - **11 controls moved**, counted from the base component tags in the four components' markup before and after: the API Lab's endpoint combobox, Advanced query text, token Email and Purpose, and the grid's own inputs and selects now use `nc-control`. The AI Lab's Company Name, Job Title and job description. The resume's "Tailor for" combobox and its Download PDF and Copy ATS text buttons. The code viewer's copy button.
 - **Kept from the base components.** A visible label tied to its control by `for` and `id`. A required mark (`required` on the control and an `aria-hidden` asterisk in the label). The email check with `aria-invalid` and `aria-describedby`, announced to screen readers. Keyboard use and a visible focus ring. `color-scheme` comes from a `--pf-color-scheme` token (light or dark) that the theme layout and the site's `styles.css` set in all three theme blocks, so a native `select` and its menu follow the theme.
-- **Left as they are.** The resume's two checkboxes stay as `lightning-input`, and `lightning-card`, `lightning-spinner`, `lightning-icon` and `lightning-formatted-date-time` stay where they are used. The contact and testimonial forms are not moved. They already measure clean.
+- **Left as they are.** The resume's two checkboxes stayed as `lightning-input` when this was accepted (moved on 2026-10-30, see the amendment below). `lightning-card`, `lightning-spinner` and `lightning-icon` stay where they are used. The contact and testimonial forms are not moved. They already measure clean.
 
 ## Alternatives considered
 
@@ -33,3 +33,11 @@ The site also had two native looks, not one. The contact forms and the API Lab's
 - **A CSS only module needs a Jest mapping.** `config/jest.config.js` maps `c/nativeControls` to its CSS file. A second CSS only module needs its own line.
 - **A script that finds a field by its old name misses it.** An AI Lab field's accessible name no longer carries "(required)", so a lookup by that text finds nothing.
 - **Not measured on every device.** The look was checked in Chromium and WebKit on the integration site. A real phone is my check.
+
+## Amendment (2026-10-30): the resume's checkboxes are native
+
+The resume's two include toggles are now native `input type="checkbox"` elements inside a wrapping `label` with a visible focus ring (`.toggle-input:focus-visible`), in place of `lightning-input`. The reason is weight, not alignment. `lightning-input` carried about 240 KB uncompressed of component machinery into the resume view for two checkboxes (Round 17 findings, 2026-10-29).
+
+- **The count changes.** The 11 controls counted above were base component tags. The two checkboxes bring the total moved to 13. The count of 11 stays true for the date it was made.
+- **`lightning-formatted-date-time` is gone as well.** `c-view-source` formats its fetch time with `Intl.DateTimeFormat` in a `time` element, so the site uses that base component nowhere. `lightning-card`, `lightning-spinner` and `lightning-icon` remain, and removing the platform stylesheets they depend on was tried and not shipped (Technical Guide §2.11).
+- **The checkbox look** is the browser's. I did not check it on a real phone. That is my check.
