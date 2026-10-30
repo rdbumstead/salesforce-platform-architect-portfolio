@@ -34,6 +34,11 @@
                 <default>false</default>
                 <label>Apex tests</label>
             </value>
+            <value>
+                <fullName>Production deploys</fullName>
+                <default>false</default>
+                <label>Production deploys</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>
