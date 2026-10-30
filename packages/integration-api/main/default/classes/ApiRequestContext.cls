@@ -105,6 +105,11 @@ public with sharing class ApiRequestContext {
   @TestVisible
   private static Datetime nowOverride;
 
+  // Off while tests run, so the v1 dates read as blank and no test depends on the dates set in
+  // the org, or starts failing once the real sunset passes. A test of the dates turns it on.
+  @TestVisible
+  private static Boolean readConfiguredDates = !Test.isRunningTest();
+
   private static final List<String> WEEKDAYS = new List<String>{
     'Sun',
     'Mon',
@@ -257,6 +262,9 @@ public with sharing class ApiRequestContext {
   }
 
   private static Date settingDate(String developerName) {
+    if (!readConfiguredDates) {
+      return null;
+    }
     String raw = PortfolioSettings.getText(developerName, null);
     if (String.isBlank(raw)) {
       return null;
