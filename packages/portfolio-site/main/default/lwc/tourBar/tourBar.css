@@ -16,7 +16,7 @@
 }
 
 .tour-inner {
-  max-width: 1024px;
+  max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
   padding: var(--pf-space-3) var(--pf-space-4);
   display: flex;
