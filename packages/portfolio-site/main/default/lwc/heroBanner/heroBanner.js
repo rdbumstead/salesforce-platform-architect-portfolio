@@ -23,7 +23,7 @@
  *                      The profile links are GitHub, LinkedIn and Trailhead from the owner
  *                      Contact's stored URLs (each only when set and safe, in a new tab), then
  *                      Resume and API docs.
- *                      Under the buttons a quiet link, "Short on time? Take the 10 minute tour"
+ *                      Under the buttons a quiet link, "Have 10 minutes? Take the guided tour"
  *                      (the minutes from c/pillarData), starts the tour (c/tourBar startTour)
  *                      and goes straight to its first stop as a plain link. If the tour cannot
  *                      start (storage is blocked) the link still opens that page.
@@ -40,11 +40,15 @@ import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import getHomeCaseStudies from "@salesforce/apex/ProjectCardController.getHomeCaseStudies";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import HEADSHOT from "@salesforce/resourceUrl/Portfolio_Headshot";
-import { ACTIVE_CERTIFICATIONS, salesforceSince } from "c/pillarData";
+import {
+  ACTIVE_CERTIFICATIONS,
+  salesforceSince,
+  TOUR_MINUTES
+} from "c/pillarData";
 import { isShownCase } from "c/caseStudyGrid";
 import { toExternalUrl } from "c/externalUrl";
 import { isReduced, onMotionChange } from "c/motionPreference";
-import { startTour, firstStopHref, TOUR_LABEL } from "c/tourBar";
+import { startTour, firstStopHref } from "c/tourBar";
 
 /** The id c-case-study-grid gives its host element, and the address the button falls back to. */
 export const CASE_STUDIES_ANCHOR = "case-studies";
@@ -103,7 +107,7 @@ export default class HeroBanner extends LightningElement {
   // reference inside this component.
   caseStudiesHref = `${basePath || ""}/#${CASE_STUDIES_ANCHOR}`;
   tourHref = firstStopHref();
-  tourLabel = `Short on time? ${TOUR_LABEL}`;
+  tourLabel = `Have ${TOUR_MINUTES} minutes? Take the guided tour`;
   header;
   // Undefined until the timeline read returns, so the strip paints the fallback year at once.
   startYear;
