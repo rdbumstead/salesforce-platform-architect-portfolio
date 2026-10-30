@@ -43,7 +43,6 @@
 import { LightningElement, wire } from "lwc";
 import { CurrentPageReference } from "lightning/navigation";
 import basePath from "@salesforce/community/basePath";
-import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import { PILLARS } from "c/pillarData";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import {
@@ -355,13 +354,6 @@ export default class PortfolioThemeLayout extends LightningElement {
       this.focusControl(".pillars-toggle");
     }
   };
-
-  // Starts the home hero's header read as soon as the layout connects, before the page's own
-  // components have loaded. It is the same cacheable read with the same (empty) parameters as
-  // c-hero-banner's wire, so the hero is served from the one cached result when it mounts.
-  // Nothing here uses the result.
-  @wire(getHeader)
-  wiredHeader() {}
 
   /**
    * The skip link's address. A plain fragment is not followed into the shadow root, so the

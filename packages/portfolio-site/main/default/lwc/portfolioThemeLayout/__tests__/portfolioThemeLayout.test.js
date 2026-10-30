@@ -29,7 +29,6 @@ import PortfolioThemeLayout, {
 import { PILLARS, reset, setComingLetters } from "c/pillarData";
 import { trackEvent } from "c/analyticsService";
 import { CurrentPageReference } from "lightning/navigation";
-import getHeader from "@salesforce/apex/ResumeController.getHeader";
 
 // The page reference wire stands in for the site router's route changes.
 jest.mock(
@@ -42,16 +41,6 @@ jest.mock(
       __esModule: true,
       CurrentPageReference: createTestWireAdapter(jest.fn())
     };
-  },
-  { virtual: true }
-);
-
-// The layout starts the hero's header read early, with the hero's own cacheable read.
-jest.mock(
-  "@salesforce/apex/ResumeController.getHeader",
-  () => {
-    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
-    return { default: createApexTestWireAdapter(jest.fn()) };
   },
   { virtual: true }
 );
@@ -1849,16 +1838,6 @@ describe("c-portfolio-theme-layout", () => {
       bar(element).dispatchEvent(new CustomEvent("tourarrive"));
       document.body.removeChild(element);
       expect(jest.getTimerCount()).toBe(0);
-    });
-  });
-
-  describe("early header read", () => {
-    it("wires the hero's cacheable header read on connect and takes the result quietly", async () => {
-      const element = render();
-      getHeader.emit({ valueSentence: "x" });
-      getHeader.error();
-      await flush();
-      expect(element.shadowRoot.querySelector("main")).not.toBeNull();
     });
   });
 
