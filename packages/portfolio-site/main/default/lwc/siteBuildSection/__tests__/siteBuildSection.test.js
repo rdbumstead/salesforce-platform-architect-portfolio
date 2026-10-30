@@ -169,6 +169,11 @@ describe("c-site-build-section", () => {
     expect(
       element.shadowRoot.querySelector(".section-intro").contains(link)
     ).toBe(true);
+    expect(
+      element.shadowRoot
+        .querySelector(".section-intro")
+        .textContent.replace(/\s+/g, " ")
+    ).toContain("Read how a visitor's request");
   });
 
   it("has no coming line when every pillar is live", () => {
