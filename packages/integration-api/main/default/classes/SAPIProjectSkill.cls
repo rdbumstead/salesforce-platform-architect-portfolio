@@ -31,18 +31,28 @@ global with sharing class SAPIProjectSkill implements QueryDefinitions.Provider 
       if (ctx.isRejected()) {
         return;
       }
-      String projectId = ctx.stringParam('projectId');
+      // v2 names the filter projectKey and takes a key only. v1 keeps projectId.
+      if (ctx.isV2() && String.isNotBlank(ctx.stringParam('projectId'))) {
+        ctx.error(400, 'BAD_REQUEST', 'Use projectKey in v2.');
+        return;
+      }
+      String projectId = ctx.stringParam(
+        ctx.isV2() ? 'projectKey' : 'projectId'
+      );
       String projectIdRef = null;
       if (String.isNotBlank(projectId)) {
         projectIdRef = SAPITransformer.resolveReference(
           Project__c.SObjectType,
-          projectId
+          projectId,
+          ctx.isV2()
         );
         if (projectIdRef == null) {
           ctx.error(
             400,
             'BAD_REQUEST',
-            'projectId must be a Salesforce Id or a public key.'
+            ctx.isV2()
+              ? 'projectKey must be a public key.'
+              : 'projectId must be a Salesforce Id or a public key.'
           );
           return;
         }

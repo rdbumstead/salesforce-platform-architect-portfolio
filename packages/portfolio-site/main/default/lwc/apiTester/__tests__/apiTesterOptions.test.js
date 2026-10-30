@@ -25,7 +25,7 @@ import ApiTester, {
 } from "c/apiTester";
 import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
 import getOptions from "@salesforce/apex/ApiLabOptionsController.getOptions";
-import invoke from "@salesforce/apex/ApiLabController.invoke";
+import invoke from "@salesforce/apex/ApiLabController.invokeVersioned";
 import { trackEvent } from "c/analyticsService";
 
 jest.mock(
@@ -56,7 +56,7 @@ jest.mock(
   { virtual: true }
 );
 jest.mock(
-  "@salesforce/apex/ApiLabController.invoke",
+  "@salesforce/apex/ApiLabController.invokeVersioned",
   () => ({ default: jest.fn() }),
   { virtual: true }
 );
@@ -77,6 +77,10 @@ const CATALOG_TEXT = readFileSync(
 const PROJECT_ID = "a0Xdh000001AbCdEAF";
 
 const OPTIONS = {
+  projectKey: [
+    { label: "Platform Architect Portfolio", value: PROJECT_ID },
+    { label: "Literacy Pilot", value: "a0Xdh000002AbCdEAF" }
+  ],
   projectId: [
     { label: "Platform Architect Portfolio", value: PROJECT_ID },
     { label: "Literacy Pilot", value: "a0Xdh000002AbCdEAF" }
@@ -171,9 +175,9 @@ describe("c-api-tester filter options", () => {
     await flush();
     await choosePath(element, "/sapi/v1/project-assets");
 
-    const select = $(element, 'select[data-name="projectId"]');
+    const select = $(element, 'select[data-name="projectKey"]');
     expect(select).not.toBeNull();
-    expect($(element, 'input[data-name="projectId"]')).toBeNull();
+    expect($(element, 'input[data-name="projectKey"]')).toBeNull();
     const options = Array.from(select.querySelectorAll("option"));
     expect(options.map((option) => option.textContent.trim())).toEqual([
       "Any",
@@ -182,10 +186,10 @@ describe("c-api-tester filter options", () => {
     ]);
     expect(options[0].value).toBe("");
 
-    pick(element, "projectId", PROJECT_ID);
+    pick(element, "projectKey", PROJECT_ID);
     await flush();
     expect($(element, "code.query-string").textContent).toBe(
-      `?projectId=${PROJECT_ID}`
+      `?projectKey=${PROJECT_ID}`
     );
     expect($(element, "button.disclosure")).toBeNull();
 
@@ -193,7 +197,86 @@ describe("c-api-tester filter options", () => {
     await flush();
     expect(invoke).toHaveBeenCalledWith({
       path: "/sapi/v1/project-assets",
-      params: { projectId: PROJECT_ID }
+      params: { projectKey: PROJECT_ID },
+      apiVersion: "v2"
+    });
+  });
+
+  describe.each([
+    ["projectId", "projectKey", "/sapi/v1/project-assets", "prj_a1b2c3d4e5"],
+    [
+      "experienceId",
+      "experienceKey",
+      "/sapi/v1/experience-highlights",
+      "exp_a1b2c3d4e5"
+    ],
+    [
+      "certificationId",
+      "certificationKey",
+      "/sapi/v1/certification-skills",
+      "crt_a1b2c3d4e5"
+    ]
+  ])("the %s filter", (idName, keyName, path, key) => {
+    const LISTS = {
+      [idName]: [{ label: "Record one", value: "a0Xdh000009IdOnlyAA" }],
+      [keyName]: [{ label: "Record one", value: key }]
+    };
+
+    async function run(version) {
+      invoke.mockResolvedValue({
+        statusCode: 200,
+        latencyMs: 10,
+        headers: {},
+        body: "[]"
+      });
+      const element = create(LISTS);
+      await flush();
+      await choosePath(element, path);
+      if (version === "v1") {
+        const versionSelect = $(element, "select.version-picker");
+        versionSelect.value = "v1";
+        versionSelect.dispatchEvent(new CustomEvent("change"));
+        await flush();
+      }
+      return element;
+    }
+
+    it("is a picker filled from the key list under v2 and sends the key", async () => {
+      const element = await run("v2");
+      expect($(element, `select[data-name="${keyName}"]`)).not.toBeNull();
+      expect($(element, `input[data-name="${keyName}"]`)).toBeNull();
+      expect($(element, `[data-name="${idName}"]`)).toBeNull();
+      pick(element, keyName, key);
+      await flush();
+      $(element, "button.execute-button").click();
+      await flush();
+      expect(invoke).toHaveBeenLastCalledWith({
+        path,
+        params: { [keyName]: key },
+        apiVersion: "v2"
+      });
+    });
+
+    it("is a picker filled from the Id list under v1 and sends the v1 name", async () => {
+      const element = await run("v1");
+      const select = $(element, `select[data-name="${idName}"]`);
+      expect(select).not.toBeNull();
+      expect($(element, `input[data-name="${idName}"]`)).toBeNull();
+      expect($(element, `[data-name="${keyName}"]`)).toBeNull();
+      expect(
+        Array.from(select.querySelectorAll("option")).map(
+          (option) => option.value
+        )
+      ).toEqual(["", "a0Xdh000009IdOnlyAA"]);
+      pick(element, idName, "a0Xdh000009IdOnlyAA");
+      await flush();
+      $(element, "button.execute-button").click();
+      await flush();
+      expect(invoke).toHaveBeenLastCalledWith({
+        path,
+        params: { [idName]: "a0Xdh000009IdOnlyAA" },
+        apiVersion: "v1"
+      });
     });
   });
 
@@ -202,8 +285,8 @@ describe("c-api-tester filter options", () => {
     await flush();
     await choosePath(element, "/sapi/v1/project-assets");
 
-    const label = $(element, 'select[data-name="projectId"]').closest("label");
-    expect(label.querySelector(".param-label").textContent).toBe("projectId");
+    const label = $(element, 'select[data-name="projectKey"]').closest("label");
+    expect(label.querySelector(".param-label").textContent).toBe("projectKey");
     const hint = label.querySelector(".param-hint");
     expect(hint.textContent).toBe(ID_OPTION_HINT);
     expect(hint.parentElement).toBe(label);
@@ -245,7 +328,7 @@ describe("c-api-tester filter options", () => {
     await flush();
     await choosePath(element, "/sapi/v1/project-assets");
 
-    expect($(element, 'input[data-name="projectId"]').type).toBe("text");
+    expect($(element, 'input[data-name="projectKey"]').type).toBe("text");
     expect($(element, "p.catalog-error")).toBeNull();
   });
 

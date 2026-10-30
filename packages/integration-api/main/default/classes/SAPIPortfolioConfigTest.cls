@@ -94,7 +94,7 @@ private class SAPIPortfolioConfigTest {
       '/services/apexrest/sapi/v1/portfolio-config/',
       new Map<String, String>{
         'X-Request-Id' => UUID.randomUUID().toString(),
-        'X-API-Version' => 'v2'
+        'X-API-Version' => 'v3'
       },
       null
     );

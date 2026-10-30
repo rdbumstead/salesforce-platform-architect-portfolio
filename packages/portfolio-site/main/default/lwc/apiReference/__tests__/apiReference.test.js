@@ -181,7 +181,7 @@ describe("c-api-reference", () => {
     expect(loadScript.mock.calls[0][1]).toBe("Redoc_Script");
     expect(window.Redoc.init).toHaveBeenCalledTimes(1);
     const [spec, options, target] = window.Redoc.init.mock.calls[0];
-    expect(spec).toBe("SAPI_Spec");
+    expect(spec).toBe("SAPI_Spec_V2");
     expect(options.theme).toBe(REDOC_OPTIONS.theme);
     expect(options.disableSearch).toBe(true);
     expect(typeof options.scrollYOffset).toBe("number");
@@ -190,7 +190,7 @@ describe("c-api-reference", () => {
     expect(options.hideDownloadButton).toBe(true);
     expect(target.classList.contains("redoc-target")).toBe(true);
     expect(query(element, ".redoc-target").textContent).toBe(
-      "rendered SAPI_Spec"
+      "rendered SAPI_Spec_V2"
     );
     expect(query(element, ".reference-error")).toBeNull();
 
@@ -220,12 +220,12 @@ describe("c-api-reference", () => {
 
     openButton(element).click();
     await flushPromises();
-    expect(window.Redoc.init.mock.calls[0][0]).toBe("PAPI_Spec");
+    expect(window.Redoc.init.mock.calls[0][0]).toBe("PAPI_Spec_V2");
 
     specButton(element, "sapi").click();
     await flushPromises();
     expect(window.Redoc.init).toHaveBeenCalledTimes(2);
-    expect(window.Redoc.init.mock.calls[1][0]).toBe("SAPI_Spec");
+    expect(window.Redoc.init.mock.calls[1][0]).toBe("SAPI_Spec_V2");
     expect(loadScript).toHaveBeenCalledTimes(1);
   });
 
@@ -373,7 +373,9 @@ describe("c-api-reference", () => {
     const root = process.cwd();
     const pairs = [
       ["SAPI_Spec.yaml", "salesforce-sapi.yaml"],
-      ["PAPI_Spec.yaml", "portfolio-papi.yaml"]
+      ["PAPI_Spec.yaml", "portfolio-papi.yaml"],
+      ["SAPI_Spec_V2.yaml", "salesforce-sapi-v2.yaml"],
+      ["PAPI_Spec_V2.yaml", "portfolio-papi-v2.yaml"]
     ];
     pairs.forEach(([resource, spec]) => {
       const copy = readFileSync(
@@ -424,7 +426,7 @@ describe("c-api-reference", () => {
     specButton(element, "papi").click();
     await flushPromises();
     expect(window.Redoc.init).toHaveBeenCalledTimes(2);
-    expect(window.Redoc.init.mock.calls[1][0]).toBe("PAPI_Spec");
+    expect(window.Redoc.init.mock.calls[1][0]).toBe("PAPI_Spec_V2");
     expect(trackEvent).toHaveBeenCalledTimes(1);
   });
 
@@ -551,5 +553,82 @@ describe("c-api-reference", () => {
       const ratio = (luminance(color) + 0.05) / (panel + 0.05);
       expect(ratio).toBeGreaterThanOrEqual(4.5);
     }
+  });
+
+  describe("version", () => {
+    function versionButton(element, value) {
+      return query(element, `button[data-version="${value}"]`);
+    }
+
+    afterEach(() => {
+      window.history.replaceState(null, "", "/");
+    });
+
+    it("opens version 2 by default, with v2 pressed and v1 labelled deprecated", async () => {
+      const element = createComponent();
+      await flushPromises();
+
+      expect(versionButton(element, "v2").getAttribute("aria-pressed")).toBe(
+        "true"
+      );
+      expect(versionButton(element, "v1").textContent.trim()).toBe(
+        "v1 (deprecated)"
+      );
+      expect(query(element, "p.version-notice")).toBeNull();
+      openButton(element).click();
+      await flushPromises();
+      expect(window.Redoc.init.mock.calls[0][0]).toBe("SAPI_Spec_V2");
+    });
+
+    it("honours ?version=v1 with the spec switch, and says in one line that v1 is deprecated", async () => {
+      window.history.replaceState(null, "", "/?version=v1&spec=papi");
+      const element = createComponent();
+      await flushPromises();
+
+      expect(versionButton(element, "v1").getAttribute("aria-pressed")).toBe(
+        "true"
+      );
+      const notice = query(element, "p.version-notice").textContent;
+      expect(notice).toContain("v1 is deprecated");
+      expect(notice).toContain("410 Gone");
+      openButton(element).click();
+      await flushPromises();
+      expect(window.Redoc.init.mock.calls[0][0]).toBe("PAPI_Spec");
+    });
+
+    it("honours ?version=v2 and falls back to v2 for an unknown version", async () => {
+      window.history.replaceState(null, "", "/?version=v2&spec=papi");
+      let element = createComponent();
+      await flushPromises();
+      openButton(element).click();
+      await flushPromises();
+      expect(window.Redoc.init.mock.calls[0][0]).toBe("PAPI_Spec_V2");
+
+      document.body.removeChild(element);
+      window.Redoc.init.mockClear();
+      window.history.replaceState(null, "", "/?version=v9");
+      element = createComponent();
+      await flushPromises();
+      expect(versionButton(element, "v2").getAttribute("aria-pressed")).toBe(
+        "true"
+      );
+      openButton(element).click();
+      await flushPromises();
+      expect(window.Redoc.init.mock.calls[0][0]).toBe("SAPI_Spec_V2");
+    });
+
+    it("renders again from the other version when the picker changes after opening", async () => {
+      const element = createComponent();
+      await flushPromises();
+      openButton(element).click();
+      await flushPromises();
+      expect(window.Redoc.init.mock.calls[0][0]).toBe("SAPI_Spec_V2");
+
+      versionButton(element, "v1").click();
+      await flushPromises();
+      expect(window.Redoc.init).toHaveBeenCalledTimes(2);
+      expect(window.Redoc.init.mock.calls[1][0]).toBe("SAPI_Spec");
+      expect(query(element, "p.version-notice")).not.toBeNull();
+    });
   });
 });

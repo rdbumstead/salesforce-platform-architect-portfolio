@@ -42,18 +42,28 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
       if (ctx.isRejected()) {
         return;
       }
-      String experienceId = ctx.stringParam('experienceId');
+      // v2 names the filter experienceKey and takes a key only. v1 keeps experienceId.
+      if (ctx.isV2() && String.isNotBlank(ctx.stringParam('experienceId'))) {
+        ctx.error(400, 'BAD_REQUEST', 'Use experienceKey in v2.');
+        return;
+      }
+      String experienceId = ctx.stringParam(
+        ctx.isV2() ? 'experienceKey' : 'experienceId'
+      );
       String experienceIdRef = null;
       if (String.isNotBlank(experienceId)) {
         experienceIdRef = SAPITransformer.resolveReference(
           Experience__c.SObjectType,
-          experienceId
+          experienceId,
+          ctx.isV2()
         );
         if (experienceIdRef == null) {
           ctx.error(
             400,
             'BAD_REQUEST',
-            'experienceId must be a Salesforce Id or a public key.'
+            ctx.isV2()
+              ? 'experienceKey must be a public key.'
+              : 'experienceId must be a Salesforce Id or a public key.'
           );
           return;
         }

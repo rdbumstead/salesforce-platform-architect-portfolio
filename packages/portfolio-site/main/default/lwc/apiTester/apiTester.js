@@ -1,5 +1,9 @@
 /**
- * @description       : API Lab console. The path list, each path's query
+ * @description       : API Lab console. A version picker sends v2 by default, which returns
+ *                      public keys only, or v1, labelled deprecated while it lasts. The call
+ *                      goes through ApiLabController.invokeVersioned, and the response headers
+ *                      include X-API-Version, Deprecation, Sunset and Link, so a v1 call shows
+ *                      its own deprecation notice. The path list, each path's query
  *                      parameters and its response shapes come from ApiLabController.getCatalog,
  *                      which serves the API_Lab_Catalog resource that scripts/sync-specs.js
  *                      builds from the specs, so a new spec path needs no change here. Each
@@ -49,7 +53,7 @@
 import { LightningElement, wire } from "lwc";
 import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
 import getOptions from "@salesforce/apex/ApiLabOptionsController.getOptions";
-import invoke from "@salesforce/apex/ApiLabController.invoke";
+import invoke from "@salesforce/apex/ApiLabController.invokeVersioned";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
 import getPostmanRunUrl from "@salesforce/apex/ApiLabController.getPostmanRunUrl";
 import POSTMAN_COLLECTION from "@salesforce/resourceUrl/PAPI_Postman_Collection";
@@ -72,6 +76,18 @@ export const ANALYTICS_SOURCE = "api_lab";
 export const TOKEN_ENDPOINT_PATH =
   "/portfoliovforcesite/services/apexrest/papi/v1/auth/token";
 export const API_PATH = "/services/apexrest/papi/v1";
+
+/** The API versions the Lab can send, in the picker's order. v2 is the default. */
+export const API_VERSIONS = [
+  { value: "v2", label: "v2" },
+  { value: "v1", label: "v1 (deprecated)" }
+];
+export const DEFAULT_VERSION = "v2";
+export const DEPRECATED_VERSION = "v1";
+
+/** One plain line shown while v1 is picked. */
+export const V1_NOTICE =
+  "v1 is deprecated. It stays for one month after v2 reaches production, then answers 410 Gone. Its responses carry the Deprecation, Sunset and Link headers listed below.";
 export const PLACEHOLDER_INSTANCE_URL = "<instance_url>";
 export const PLACEHOLDER_TOKEN = "<access_token>";
 
@@ -171,13 +187,14 @@ export function isPostmanRunUrl(value) {
  * @param {object} [token] the issued token body, with access_token and instance_url
  * @returns {Array<{key: string, title: string, copyLabel: string, text: string}>}
  */
-export function buildCurlExamples(origin, token) {
+export function buildCurlExamples(origin, token, apiVersion = DEFAULT_VERSION) {
   const instanceUrl = (token && token.instance_url) || PLACEHOLDER_INSTANCE_URL;
   const accessToken = (token && token.access_token) || PLACEHOLDER_TOKEN;
   const call = (path) =>
     [
       `curl "${instanceUrl}${API_PATH}${path}" \\`,
-      `  -H "Authorization: Bearer ${accessToken}"`
+      `  -H "Authorization: Bearer ${accessToken}" \\`,
+      `  -H "X-API-Version: ${apiVersion}"`
     ].join("\n");
   return [
     {
@@ -218,6 +235,17 @@ export const DISPLAYED_HEADERS = [
   "X-Has-More"
 ];
 
+/**
+ * The version headers, shown after DISPLAYED_HEADERS. ApiLabController returns them after
+ * its own RETURNED_HEADERS list, in this order.
+ */
+export const VERSION_HEADERS = [
+  "X-API-Version",
+  "Deprecation",
+  "Sunset",
+  "Link"
+];
+
 /** An enum with this many values or fewer shows as pills, more as a picklist. */
 export const MAX_PILL_VALUES = 4;
 
@@ -244,9 +272,9 @@ export const SECTIONS = [
 ];
 
 export const ID_HINT =
-  "Paste an Id from an earlier response, for example from /sapi/v1/projects.";
+  "Paste a key from an earlier response, for example from /sapi/v1/projects.";
 
-export const ID_OPTION_HINT = "Pick a name. Its Id is what the call sends.";
+export const ID_OPTION_HINT = "Pick a name. Its key is what the call sends.";
 
 const NOT_RETURNED = "(not returned)";
 
@@ -301,6 +329,19 @@ export function parseCatalog(text) {
 }
 
 /**
+ * The picker values for a parameter. getOptions returns one list per parameter name, the
+ * version 1 names (projectId) and the version 2 names (projectKey) both, so the list is the
+ * one whose name is the picked version's parameter.
+ * @param {object} options the map getOptions returned
+ * @param {string} name the parameter's name for the picked version
+ * @returns {Array|undefined} the options, when there are any
+ */
+export function optionsFor(options, name) {
+  const list = options && options[name];
+  return Array.isArray(list) && list.length ? list : undefined;
+}
+
+/**
  * Which control a spec parameter becomes. A free text or Id parameter becomes a picklist of
  * the values that exist when the org returned options for it, and stays a text box when not.
  */
@@ -318,7 +359,7 @@ export function controlKind(param, options) {
   if (Array.isArray(known) && known.length) {
     return KIND_OPTIONS;
   }
-  if (/Id$/.test(param.name)) {
+  if (/(Id|Key)$/.test(param.name)) {
     return KIND_ID;
   }
   return KIND_TEXT;
@@ -463,6 +504,7 @@ export default class ApiTester extends LightningElement {
   catalog;
   catalogError = "";
   selectedPath;
+  apiVersion = DEFAULT_VERSION;
   paramValues = {};
   queryText = "";
   isLoading = false;
@@ -642,6 +684,32 @@ export default class ApiTester extends LightningElement {
     }));
   }
 
+  get versionOptions() {
+    return API_VERSIONS.map((option) => ({
+      ...option,
+      selected: option.value === this.apiVersion
+    }));
+  }
+
+  get isDeprecatedVersion() {
+    return this.apiVersion === DEPRECATED_VERSION;
+  }
+
+  get versionNotice() {
+    return V1_NOTICE;
+  }
+
+  /** The path's parameters as the picked version names them. v1 uses the catalog's v1Params. */
+  get currentParams() {
+    const entry = this.currentEntry;
+    if (!entry) {
+      return [];
+    }
+    return this.isDeprecatedVersion && entry.v1Params
+      ? entry.v1Params
+      : entry.params;
+  }
+
   get currentEntry() {
     return this.catalogPaths.find((entry) => entry.path === this.selectedPath);
   }
@@ -651,18 +719,19 @@ export default class ApiTester extends LightningElement {
     if (!entry) {
       return [];
     }
-    return entry.params.map((param) => this.controlFor(entry, param));
+    return this.currentParams.map((param) => this.controlFor(entry, param));
   }
 
   controlFor(entry, param) {
-    const kind = controlKind(param, this.options);
+    const known = optionsFor(this.options, param.name);
+    const kind = controlKind(param, known ? { [param.name]: known } : {});
     const value = this.paramValues[param.name];
     let hint = param.description;
     if (kind === KIND_NUMBER) {
       hint = numberHint(param);
     } else if (kind === KIND_ID) {
       hint = ID_HINT;
-    } else if (kind === KIND_OPTIONS && /Id$/.test(param.name)) {
+    } else if (kind === KIND_OPTIONS && /(Id|Key)$/.test(param.name)) {
       hint = ID_OPTION_HINT;
     }
     const control = {
@@ -700,7 +769,7 @@ export default class ApiTester extends LightningElement {
     if (kind === KIND_OPTIONS) {
       control.options = [
         { value: "", label: "Any", key: `${param.name}-any`, selected: !value },
-        ...this.options[param.name].map((option) => ({
+        ...known.map((option) => ({
           value: option.value,
           label: option.label,
           key: `${param.name}-${option.value}`,
@@ -819,7 +888,7 @@ export default class ApiTester extends LightningElement {
 
   get headerRows() {
     const headers = (this.result && this.result.headers) || {};
-    const rows = DISPLAYED_HEADERS.map((name) => ({
+    const rows = [...DISPLAYED_HEADERS, ...VERSION_HEADERS].map((name) => ({
       name,
       value: headers[name] !== undefined ? headers[name] : NOT_RETURNED
     }));
@@ -847,7 +916,9 @@ export default class ApiTester extends LightningElement {
     const entry = this.currentEntry;
     return (
       String(headers["X-Has-More"]).toLowerCase() === "true" &&
-      Boolean(entry && entry.params.some((param) => param.name === "offset"))
+      Boolean(
+        entry && this.currentParams.some((param) => param.name === "offset")
+      )
     );
   }
 
@@ -861,8 +932,12 @@ export default class ApiTester extends LightningElement {
       return { summary: "The body is not JSON, so it was not checked." };
     }
     const entry = this.currentEntry;
-    const shape =
-      entry && entry.responses ? entry.responses[status] : undefined;
+    // A v1 call is checked against the v1 shapes, which still hold id, when the catalog has them.
+    const shapes =
+      entry && this.isDeprecatedVersion && entry.v1Responses
+        ? entry.v1Responses
+        : entry && entry.responses;
+    const shape = shapes ? shapes[status] : undefined;
     const check = checkAgainstSchema(parsed, shape);
     if (check.status === "noSchema") {
       return {
@@ -981,6 +1056,21 @@ export default class ApiTester extends LightningElement {
       .filter((field) => field.value !== undefined && field.value !== null)
       .map((field) => ({ name: field.name, value: String(field.value) }));
     return withKeys(fields);
+  }
+
+  handleVersionChange(event) {
+    const value = event.target.value;
+    this.apiVersion = API_VERSIONS.some((option) => option.value === value)
+      ? value
+      : DEFAULT_VERSION;
+    // The filters are named per version (projectKey, projectId), so a value set under one
+    // version does not carry to the other. That covers the Advanced text as well, where a
+    // name typed under v1 would be refused by v2.
+    this.paramValues = {};
+    this.queryText = "";
+    // The shown answer belongs to the version that made it.
+    this.result = undefined;
+    this.invokeError = "";
   }
 
   handleEndpointChange(event) {
@@ -1105,9 +1195,10 @@ export default class ApiTester extends LightningElement {
 
   /** Moves offset on by one page, keeps the limit, and calls again. */
   handleNextPage() {
-    const entry = this.currentEntry;
     const merged = this.mergedParams;
-    const limitParam = entry.params.find((param) => param.name === "limit");
+    const limitParam = this.currentParams.find(
+      (param) => param.name === "limit"
+    );
     const body = this.lastBody;
     const limit =
       Number(merged.limit) ||
@@ -1135,7 +1226,11 @@ export default class ApiTester extends LightningElement {
     const params = this.mergedParams;
     const paramCount = Object.keys(params).length;
     try {
-      this.result = await invoke({ path, params });
+      this.result = await invoke({
+        path,
+        params,
+        apiVersion: this.apiVersion
+      });
       trackEvent(EVENTS.API_TEST_EXECUTED, {
         path,
         status: this.result?.statusCode,

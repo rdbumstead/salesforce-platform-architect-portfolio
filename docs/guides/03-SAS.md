@@ -381,7 +381,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 - **Design:** OpenAPI Specification (OAS 3.0) hosted on GitHub.
 - **Implementation:** Native Apex REST Class (`SAPIExperience`).
 - **Query definitions:** each content read of the SAPI, the Process API, the API Lab and the site is a `Query_Definition__mdt` record checked against the query in its class, so an edit to a record can narrow a read and never widen it ([ADR-033](../adr/033-queries-in-custom-metadata.md)).
-- **API Lab:** each name and Id filter is a picklist of values read from the org on page load, with the free text Advanced field kept. On phones the Lab opens with the endpoint and Execute showing, and the filters, Advanced, the response details and the token form are closed sections ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
+- **API Lab:** a version picker offers v2 (the default) and v1 (deprecated), and the Lab sends the picked version's parameter names and shows its `X-API-Version`, `Deprecation`, `Sunset` and `Link` headers. Each name and key filter is a picklist of values read from the org on page load, with the free text Advanced field kept. On phones the Lab opens with the endpoint and Execute showing, and the filters, Advanced, the response details and the token form are closed sections ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
 - **Technical Detail:** For the complete breakdown of the caching strategy, caching patterns, and API tooling, refer to the **[Technical Guide: Integration Service Implementation](./04-Technical-Guide.md#1-integration-service-implementation)**.
 
 ### 5.4 Pillar D: AI & Innovation (Agentforce)
@@ -519,7 +519,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 - **`c-home-testimonials`:** Up to three approved testimonials on the home page, Professional ones first, once the `Home_Testimonials_Min` setting's count is approved, and nothing before that ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
 - **`c-contact-form`:** The contact form on the `/contact` page, saved as a Lead ([ADR-031](../adr/031-native-contact-form.md)).
 - **`c-contact-call`:** The home page's contact call, "Get in touch", with a link to `/contact`. It sends an old `/#contact` address on to `/contact`.
-- **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invoke`, which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3). Under the token form it offers a download of the generated Process API Postman collection (`PAPI_Postman_Collection`), a Run in Postman button that shows once `Portfolio_Setting.Postman_Run_Url` holds a postman.com link, and three copyable curl examples built in the page ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
+- **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invokeVersioned` with the version the visitor picked (v2 by default), which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3). Under the token form it offers a download of the generated Process API Postman collection (`PAPI_Postman_Collection`), a Run in Postman button that shows once `Portfolio_Setting.Postman_Run_Url` holds a postman.com link, and three copyable curl examples built in the page ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
 - **`c-changelog`:** "Latest Updates" on the Delivery page: recent commits from the GitHub cache (`DeliveryController.getRecentCommits`) as plain updates, merge commits left out and a leading type such as "feat(lwc):" shown as a tag, with the cache's age.
 - **`c-skill-network`:** The skills page. A matrix by category with "years used" from linked roles, and a graph view drawn with d3-force that loads only when opened on desktop or tablet. Certifications are nodes beside roles and projects, and a skill backed by more kinds of evidence draws a heavier ring and heavier lines. The graph opens fitted to its content with no label on another label or node ([ADR-020 amendment](../adr/020-mobile-performance-static-svg-fallback-strategy.md#amendment-2026-10-22-matrix-first-the-graph-on-open-d3-force-as-the-engine)).
 - **`c-docs-viewer`:** Thirty documents at `/docs`, the Executive Overview, the SAS, the Program Charter, the Technical Guide, Guardrails and Executable Governance, then the 25 full ADRs, from the source cache that refreshes daily and after a push that changes the docs, rendered without parsing any HTML ([Technical Guide §2.17](./04-Technical-Guide.md#217-docs-page-c-docs-viewer)).
@@ -587,6 +587,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-035](../adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams Rendered in CI                                         | Accepted (2026-10-26)    |
 | [ADR-036](../adr/036-portfolio-guide-agent.md)                                         | The Portfolio Guide Agent                                       | Accepted (2026-10-27)    |
 | [ADR-037](../adr/037-native-form-controls-site-wide.md)                                | Native Form Controls Site Wide                                  | Accepted (2026-10-27)    |
+| [ADR-038](../adr/038-stable-public-keys-in-the-api.md)                                 | Stable Public Keys in the API                                   | Accepted (2026-10-28)    |
+| [ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 Sunset                                        | Accepted (2026-10-29)    |
 
 </details>
 
@@ -685,7 +687,9 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 - **Contract-First Design:** OpenAPI 3.0 specification defines the interface before implementation
 - **Explicit Caching:** `Cache-Control` headers distinguish between cacheable configuration (`max-age=300`) and dynamic data (`no-store`)
 - **Rate Limiting:** `RateWindowLimiter` allows 120 requests per minute per caller key, with no burst allowance. Every evaluator token is the same session, so all evaluators share that one limit ([ADR-028 amendment on the shared token pool](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-a-shared-token-pool-no-expiry-no-disposable-list))
-- **Versioning:** `X-API-Version` is optional. A request without it is served as `v1`, any value other than `v1` gets 400 `Unsupported X-API-Version`, and every response Apex writes carries `X-API-Version: v1` (`ApiRequestContext.applyRequestRules`, `SUPPORTED_VERSION`)
+- **Versioning:** `X-API-Version` is optional and selects the contract ([ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)). A request without it is served as `v1`, which is deprecated. `v2` returns public keys only. The value is matched without regard to letter case, so `V2` works. Any other value gets 400 `Unsupported X-API-Version`, and every response Apex writes carries `X-API-Version` in lower case with the version served and `Vary: X-API-Version`. The version and sunset checks run before the rate limiter, so a request they refuse spends none of the rate limit quota (`ApiRequestContext.applyRequestRules`, `SUPPORTED_VERSION`, `VERSION_2`)
+- **v2 shape:** on the record endpoints, no `id`, no `xId` that has an `xKey` beside it, and no `accomplishments` (`SAPITransformer.toV2`, which `PAPITransformer.toV2` calls). The token, health, AI generate, resume generate and portfolio config bodies are not shaped. The filters are `projectKey`, `experienceKey` and `certificationKey`, each a public key only. An Id there gets 400 "<parameter> must be a public key.", and an old `*Id` name gets 400 "Use projectKey in v2.". The `/projects/{id}` path takes a key and answers 404 for anything else
+- **v1 deprecation and sunset:** every v1 response carries `Link` with `rel="successor-version"` to `https://ryanbumstead.com/api-lab/reference?version=v2`, `Deprecation` (RFC 9745) once `Api_V1_Deprecation_Date` is set and `Sunset` (RFC 8594) once `Api_V1_Sunset_Date` is set. From 00:00 UTC on the sunset date every v1 call, with or without the header, gets 410 with `errorCode` `GONE`, except `POST /papi/v1/auth/token`, `/sapi/v1/health` and `/papi/v1/health`. They keep their deprecation headers and are answered normally, so a client can still get a token and check that the API is up. Both settings ship blank, so nothing is deprecated or retired until I set them
 
 **Core Endpoints:**
 
@@ -713,18 +717,19 @@ All list endpoints support:
 
 - `limit` (default: 50, max: 200) - Pagination limit
 - `offset` (default: 0) - Pagination offset
-- Domain-specific filters (e.g., `persona`, `status`, `employerName`)
+- Domain-specific filters (e.g., `persona`, `status`, `employerName`). The record filters are `projectId`, `experienceId` and `certificationId` in v1 and `projectKey`, `experienceKey` and `certificationKey` in v2
 
 **Error Handling:**
 
-| Status Code | Meaning                                       | Retryable | Response Header               |
-| :---------- | :-------------------------------------------- | :-------- | :---------------------------- |
-| 400         | Bad Request (Invalid parameters)              | No        | `X-Request-Id`                |
-| 401         | Unauthorized (Missing/invalid token)          | No        | `X-Request-Id`                |
-| 403         | Forbidden (Integration user lacks permission) | No        | `X-Request-Id`                |
-| 404         | Not Found (Invalid record ID)                 | No        | `X-Request-Id`                |
-| 429         | Too Many Requests (Rate limit exceeded)       | Yes       | `X-Request-Id`, `Retry-After` |
-| 500         | Internal Server Error (Apex/Platform fault)   | Yes       | `X-Request-Id`                |
+| Status Code | Meaning                                              | Retryable | Response Header               |
+| :---------- | :--------------------------------------------------- | :-------- | :---------------------------- |
+| 400         | Bad Request (Invalid parameters)                     | No        | `X-Request-Id`                |
+| 401         | Unauthorized (Missing/invalid token)                 | No        | `X-Request-Id`                |
+| 403         | Forbidden (Integration user lacks permission)        | No        | `X-Request-Id`                |
+| 404         | Not Found (Invalid record ID)                        | No        | `X-Request-Id`                |
+| 410         | Gone (v1 after its sunset date, not token or health) | No        | `X-Request-Id`                |
+| 429         | Too Many Requests (Rate limit exceeded)              | Yes       | `X-Request-Id`, `Retry-After` |
+| 500         | Internal Server Error (Apex/Platform fault)          | Yes       | `X-Request-Id`                |
 
 **Schema Highlights:**
 
@@ -785,7 +790,7 @@ Responses are camelCase JSON built field by field in Apex (for example `SAPIExpe
 }
 ```
 
-The role title is the record's `Name`, and `Employer__c` is a lookup to Account, so the employer's name comes from `Employer__r.Name`. The response also carries `contactId`, `contactName` and the deprecated `accomplishments`.
+The role title is the record's `Name`, and `Employer__c` is a lookup to Account, so the employer's name comes from `Employer__r.Name`. The response also carries `contactId`, `contactName` and the deprecated `accomplishments` in v1. v2 drops it, with `id` and each `xId` that has an `xKey` beside it.
 
 **PAPI Response (Frontend-Optimized, `PAPITransformer.transformExperience`):**
 
@@ -835,8 +840,8 @@ The `/testimonials/feed` endpoint applies business logic (`PAPITestimonialFeed.q
 
 #### B.3 API Documentation Access
 
-- **Interactive Documentation:** the Redoc 2.5.4 bundle (`Redoc_Script` static resource) renders both specifications on a full-width page at `/api-lab/reference`, with a SAPI and PAPI switch, linked from the API Lab. Deep links (`#tag/...`, `#operation/...`, `?spec=`) land on their section below the header. On desktop the menu sticks below the header and the switch and scrolls on its own. A tag row opens and closes and keeps focus, and an operation row moves focus to its section (Technical Guide §2.15). Redoc does not render in WebKit (Safari), so after 15 seconds the page says so and links the hosted documentation.
-- **Machine-Readable Spec:** `GET https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/openapi.json` returns the Process API's OpenAPI 3 document, and `?spec=sapi` the System API's (`OpenApiDocument`). It needs no token, answers with `Cache-Control: public, max-age=3600`, and returns 400 for an unknown spec. The Apex mapping is `/openapi`, because Salesforce reads a `.json` suffix as the response format. The body is the `PAPI_OpenAPI` or `SAPI_OpenAPI` static resource, generated from the same YAML the API reference shows
+- **Interactive Documentation:** the Redoc 2.5.4 bundle (`Redoc_Script` static resource) renders both specifications on a full-width page at `/api-lab/reference`, with a SAPI and PAPI switch and a version picker, v2 by default and v1 labelled deprecated, linked from the API Lab. Deep links (`#tag/...`, `#operation/...`, `?spec=`, `?version=v1|v2`) land on their section below the header. On desktop the menu sticks below the header and the switch and scrolls on its own. A tag row opens and closes and keeps focus, and an operation row moves focus to its section (Technical Guide §2.15). Redoc does not render in WebKit (Safari), so after 15 seconds the page says so and links the hosted documentation.
+- **Machine-Readable Spec:** `GET https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/openapi.json` returns the Process API's OpenAPI 3 document, and `?spec=sapi` the System API's (`OpenApiDocument`). `?version=v2` is the default and `?version=v1` returns the deprecated v1 document. It needs no token, answers with `Cache-Control: public, max-age=3600`, and returns 400 for an unknown spec or version and 503 when the resource is missing. The Apex mapping is `/openapi`, because Salesforce reads a `.json` suffix as the response format. The body is the `PAPI_OpenAPI_V2` or `SAPI_OpenAPI_V2` static resource (`PAPI_OpenAPI` or `SAPI_OpenAPI` for v1), generated from the same YAML the API reference shows
 - **Developer Console:** Custom `c-api-tester` LWC component provides live endpoint testing. It calls an Apex proxy (`ApiLabController`) that invokes the APIs through the `Portfolio_API` Named Credential, so no secret reaches the browser. Responses are syntax highlighted and checked against the path's OpenAPI response schema (documented keys present, missing, and not in the spec). Query parameters are controls built from the spec, and the path list comes from the specs' GET operations ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
 - **Evaluator Access:** `POST /papi/v1/auth/token` returns a short-lived Bearer token for external testing ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
 
@@ -903,7 +908,7 @@ curl -s -X POST "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforc
 
 # 2. Call any endpoint on the returned instance_url with the returned token
 curl -s "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
-  -H "Authorization: Bearer <access_token>" -H "X-API-Version: v1" -H "X-Request-Id: $(uuidgen)"
+  -H "Authorization: Bearer <access_token>" -H "X-API-Version: v2" -H "X-Request-Id: $(uuidgen)"
 ```
 
 ```bash

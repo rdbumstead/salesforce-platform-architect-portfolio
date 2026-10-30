@@ -14,7 +14,7 @@ import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ApiTester, { PHONE_QUERY } from "c/apiTester";
 import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
-import invoke from "@salesforce/apex/ApiLabController.invoke";
+import invoke from "@salesforce/apex/ApiLabController.invokeVersioned";
 
 jest.mock(
   "c/analyticsService",
@@ -44,7 +44,7 @@ jest.mock(
   { virtual: true }
 );
 jest.mock(
-  "@salesforce/apex/ApiLabController.invoke",
+  "@salesforce/apex/ApiLabController.invokeVersioned",
   () => ({ default: jest.fn() }),
   { virtual: true }
 );

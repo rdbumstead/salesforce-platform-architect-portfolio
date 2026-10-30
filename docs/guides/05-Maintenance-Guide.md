@@ -18,6 +18,7 @@
   - [3.7 Site Content the Owner Edits](#37-site-content-the-owner-edits)
   - [3.8 Owner Emails and Testimonial Approvals](#38-owner-emails-and-testimonial-approvals)
   - [3.9 The Postman Collection and the Run in Postman Link](#39-the-postman-collection-and-the-run-in-postman-link)
+  - [3.10 Setting the API v1 Dates and Retiring v1](#310-setting-the-api-v1-dates-and-retiring-v1)
 - [4. Disaster Recovery](#4-disaster-recovery)
   - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
   - [4.2 Scenario: Security Misconfiguration (Guest User)](#42-scenario-security-misconfiguration-guest-user)
@@ -215,13 +216,22 @@ The portfolio's content reads (the SAPI lists, the Process API, the API Lab opti
 
 ### 3.9 The Postman Collection and the Run in Postman Link
 
-The API Lab and the API reference offer the Process API (PAPI) collection as a download, the static resource `PAPI_Postman_Collection`. It is generated from `PAPI_OpenAPI.json`, so it follows the spec.
+The API Lab and the API reference offer the Process API (PAPI) collection as a download, the static resource `PAPI_Postman_Collection`. It is generated from the v2 spec, `portfolio-papi-v2.yaml`, so it follows the spec and sends `X-API-Version: v2`.
 
-1. After a change to `packages/integration-api/specs/portfolio-papi.yaml`, run `npm run specs:sync`. The collection is now stale, because it is built from the JSON that command rewrites.
+1. After a change to `packages/integration-api/specs/portfolio-papi-v2.yaml`, run `npm run specs:sync`. The collection is now stale, because it is built from the spec.
 2. Regenerate it. The converter is not a project dependency. Install it outside `package.json`, then run the script with the folder it names: `npm install --prefix "$TMP/o2p" --no-save --no-audit --no-fund openapi-to-postmanv2@6.4.0`, then `OPENAPI_TO_POSTMAN_DIR="$TMP/o2p/node_modules/openapi-to-postmanv2" node scripts/build-postman-collection.js`.
 3. `node scripts/build-postman-collection.js --check` (with the same variable) writes nothing and exits 1 when the committed file is stale. The same spec gives the same bytes. The file must never hold a token.
 4. `docs/api/postman/portfolio-api.postman_collection.json` is a different collection. It holds both specs, comes from `sync-specs.js` and stays in the repository for the System API. The site offers the generated one.
 5. **Run in Postman.** The button shows only while `Portfolio_Setting.Postman_Run_Url` holds an https link on postman.com or getpostman.com. It ships empty, so only the download shows. Fill it in Setup after the public workspace exists, and commit the same value to `Portfolio_Setting.Postman_Run_Url.md-meta.xml`. The Postman Sync workflow pushes the regenerated collection to the workspace after each deploy (section 3.2), so no import by hand is needed.
+
+### 3.10 Setting the API v1 Dates and Retiring v1
+
+API v1 is deprecated and has two dates, both `Portfolio_Setting__mdt` records ([ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)). Both ship empty, so until I set them v1 carries no `Deprecation` or `Sunset` header and nothing answers 410.
+
+1. **The records.** `Api_V1_Deprecation_Date` and `Api_V1_Sunset_Date`, in `packages/portfolio-site/main/default/customMetadata/`. Each holds a date in **Text Value** written `yyyy-MM-dd` and read as 00:00 UTC. Leave **Number Value** empty.
+2. **What they do.** With the deprecation date set, every v1 response carries a `Deprecation` header. With the sunset date set, every v1 response carries a `Sunset` header, and from 00:00 UTC on that day every v1 call, with or without an `X-API-Version` header, gets 410 with `errorCode` `GONE`, except `POST /papi/v1/auth/token`, `/sapi/v1/health` and `/papi/v1/health`. They keep their deprecation headers and are answered normally, so a client can still get a token and check that the API is up. A value that is not a `yyyy-MM-dd` date reads as empty, and so does an empty one. v2 is never affected. The `Link` header to the v2 reference is sent on v1 either way.
+3. **How I set them.** I edit the Text Value in the record's file and deploy the changed record. It is a deploy of one metadata record and needs no code change. After the deploy I call a v1 path and read `Deprecation` and `Sunset` in the response headers, and I call a v2 path and read none. I plan to set the sunset to the deploy date plus 30 days.
+4. **After the sunset.** Once v1 has answered 410 for as long as I want, I clean up in one change: delete `salesforce-sapi.yaml` and `portfolio-papi.yaml`, remove the `V1_SPECS` list and its uses in `scripts/sync-specs.js`, run `npm run specs:sync` and delete the v1 static resources it no longer writes (`SAPI_Spec`, `PAPI_Spec`, `SAPI_OpenAPI` and `PAPI_OpenAPI`, each with its meta file), remove the "v1 (deprecated)" option from the API Lab and API reference pickers, remove the v1 branch of `OpenApiDocument` and the v1 sunset code in `ApiRequestContext`, and regenerate `docs/api`. Then I delete the two date records, or leave them empty.
 
 ## 4. Disaster Recovery
 

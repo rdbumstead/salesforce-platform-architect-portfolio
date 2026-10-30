@@ -45,11 +45,13 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
 
       if (String.isNotBlank(projectId) && projectId != 'projects') {
         // The path segment is a Salesforce Id or a public key (ADR-038). Anything else
-        // goes to the query as it always did and ends in the same 404.
+        // goes to the query as it always did and ends in the same 404. In v2 only a key
+        // is accepted, so an Id (or anything else) reads as a key no record holds.
         String resolvedId = SAPITransformer.resolveReference(
           Project__c.SObjectType,
-          projectId
-        ) ?? projectId;
+          projectId,
+          ctx.isV2()
+        ) ?? (ctx.isV2() ? SAPITransformer.NO_MATCH_ID : projectId);
         projects = (List<Project__c>) QueryDefinitions.run(
           DETAIL_QUERY,
           new Map<String, Object>{ 'projectId' => resolvedId },

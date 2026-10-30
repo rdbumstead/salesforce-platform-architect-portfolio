@@ -47,6 +47,10 @@ private class ApiLabControllerTest {
       'Cache-Control' => 'max-age=300, public',
       'X-Total-Count' => '12',
       'X-Has-More' => 'false',
+      'X-API-Version' => 'v1',
+      'Deprecation' => '@1793491200',
+      'Sunset' => 'Sun, 01 Nov 2026 00:00:00 GMT',
+      'Link' => '<https://ryanbumstead.com/api-lab/reference?version=v2>; rel="successor-version"',
       'Set-Cookie' => 'ignored=1'
     };
   }
@@ -81,6 +85,74 @@ private class ApiLabControllerTest {
     Assert.areEqual('[{"id":"a"}]', result.body, 'Body');
     Assert.areEqual('Portfolio_API', result.namedCredential, 'NC name');
     Assert.isTrue(result.latencyMs >= 0, 'Latency measured');
+  }
+
+  // One call per test: the usage counter writes after the first callout.
+  private static String versionSentFor(String chosen) {
+    PortfolioApiCalloutMock mock = new PortfolioApiCalloutMock()
+      .withRestResponse(200, '[]', apiHeaders());
+    Test.setMock(HttpCalloutMock.class, mock);
+    ApiLabController.invokeVersioned('/sapi/v1/skills', null, chosen);
+    Assert.isTrue(
+      mock.requests[0].getEndpoint().endsWith('/sapi/v1/skills'),
+      'The path keeps its v1 spelling'
+    );
+    return mock.requests[0].getHeader('X-API-Version');
+  }
+
+  @IsTest
+  static void shouldSendV1WhenInvokedVersionedWithV1() {
+    Assert.areEqual('v1', versionSentFor('v1'), 'v1');
+  }
+
+  @IsTest
+  static void shouldSendV2AndTrimWhenInvokedVersionedWithV2() {
+    Assert.areEqual('v2', versionSentFor(' v2 '), 'v2');
+  }
+
+  @IsTest
+  static void shouldDefaultToV2WhenVersionIsNull() {
+    Assert.areEqual('v2', versionSentFor(null), 'Null means v2');
+  }
+
+  @IsTest
+  static void shouldDefaultToV2WhenVersionIsBlank() {
+    Assert.areEqual('v2', versionSentFor('  '), 'Blank means v2');
+  }
+
+  @IsTest
+  static void shouldRejectAnUnknownVersionWhenInvokedVersioned() {
+    try {
+      ApiLabController.invokeVersioned('/sapi/v1/skills', null, 'v3');
+      Assert.fail('v3 must be refused');
+    } catch (AuraHandledException e) {
+      Assert.areEqual(
+        'Version is not available in the API Lab',
+        e.getMessage(),
+        'Message'
+      );
+    }
+  }
+
+  @IsTest
+  static void shouldReturnTheDeprecationHeadersToTheLab() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PortfolioApiCalloutMock().withRestResponse(200, '[]', apiHeaders())
+    );
+
+    ApiLabController.InvokeResult result = ApiLabController.invokeVersioned(
+      '/sapi/v1/skills',
+      null,
+      'v1'
+    );
+
+    Assert.areEqual('@1793491200', result.headers.get('Deprecation'), 'Dep');
+    Assert.isNotNull(result.headers.get('Sunset'), 'Sunset');
+    Assert.isTrue(
+      result.headers.get('Link').contains('successor-version'),
+      'Link'
+    );
   }
 
   @IsTest

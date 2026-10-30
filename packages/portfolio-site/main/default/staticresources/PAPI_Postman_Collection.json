@@ -74,7 +74,7 @@
   "info": {
     "_postman_id": "723f8f0a-c5b7-5df7-8b83-df3b8eb56b0a",
     "description": {
-      "content": "Every request here calls the live API behind ryanbumstead.com.\n\n## Set up once\n\n1. If you opened this on postman.com, fork it first. Click Fork on the collection and pick your own workspace, then carry on in the copy. The copy on postman.com is read only, so its variables cannot be edited. If you imported the downloaded file, skip this step.\n2. Click the collection name, Ryan Bumstead Portfolio API, in the sidebar. Click the name itself, not a folder.\n3. Open the Variables tab.\n4. In the evaluatorEmail row, type an address you can be reached at in the Current value column. Leave Initial value empty, because Current value stays on your machine and Initial value is shared.\n5. Save with Ctrl+S, or Cmd+S on a Mac.\n6. Open any request and press Send. The first send fetches an evaluator token for you and keeps it in accessToken, so there is nothing else to set up.\n\nYou can also run Start here, Get an evaluator token, yourself to fetch the token before anything else.\n\nThe token is shared by every evaluator, shown once, and ends after 30 minutes without use. When it ends the next request answers 401, the collection clears the token, and the send after that fetches a new one.\n\nFor a full tour, run the whole collection with the Collection Runner. Untick Generate AI Content there, because it spends the site's AI budget.\n\nEvery endpoint is described at https://ryanbumstead.com/api-lab/reference.",
+      "content": "Every request here calls the live API behind ryanbumstead.com, as version 2 (the X-API-Version header is v2), which returns public keys only.\n\n## Set up once\n\n1. If you opened this on postman.com, fork it first. Click Fork on the collection and pick your own workspace, then carry on in the copy. The copy on postman.com is read only, so its variables cannot be edited. If you imported the downloaded file, skip this step.\n2. Click the collection name, Ryan Bumstead Portfolio API, in the sidebar. Click the name itself, not a folder.\n3. Open the Variables tab.\n4. In the evaluatorEmail row, type an address you can be reached at in the Current value column. Leave Initial value empty, because Current value stays on your machine and Initial value is shared.\n5. Save with Ctrl+S, or Cmd+S on a Mac.\n6. Open any request and press Send. The first send fetches an evaluator token for you and keeps it in accessToken, so there is nothing else to set up.\n\nYou can also run Start here, Get an evaluator token, yourself to fetch the token before anything else.\n\nThe token is shared by every evaluator, shown once, and ends after 30 minutes without use. When it ends the next request answers 401, the collection clears the token, and the send after that fetches a new one.\n\nFor a full tour, run the whole collection with the Collection Runner. Untick Generate AI Content there, because it spends the site's AI budget.\n\nEvery endpoint is described at https://ryanbumstead.com/api-lab/reference.",
       "type": "text/markdown"
     },
     "name": "Ryan Bumstead Portfolio API",
@@ -132,10 +132,10 @@
                 "value": "{{$guid}}"
               },
               {
-                "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
+                "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
                 "disabled": true,
                 "key": "X-API-Version",
-                "value": "v1"
+                "value": "v2"
               },
               {
                 "key": "Content-Type",
@@ -217,10 +217,10 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Content-Type",
@@ -297,10 +297,10 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Content-Type",
@@ -352,7 +352,7 @@
                   "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait.",
                   "disabled": true,
                   "key": "Retry-After",
-                  "value": "8875"
+                  "value": "700"
                 },
                 {
                   "key": "Content-Type",
@@ -383,10 +383,10 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Content-Type",
@@ -469,10 +469,10 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
+                    "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
                     "disabled": true,
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Content-Type",
@@ -544,14 +544,12 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                    "disabled": true,
-                    "key": "X-API-Version",
-                    "value": "v1"
-                  },
-                  {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "X-API-Version",
+                    "value": "v2"
                   }
                 ],
                 "method": "GET",
@@ -575,7 +573,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "{\n  \"config\": {\n    \"linkedInUrl\": \"https://linkedin.com/in/ryanbumstead\",\n    \"calendlyUrl\": \"https://example.com/schedule\",\n    \"githubUrl\": \"https://example.com/source\",\n    \"trailheadUrl\": \"https://example.com/trailhead\",\n    \"personalWebsiteUrl\": \"https://ryanbumstead.com\",\n    \"careerObjective\": \"Driving digital transformation through architecture.\"\n  },\n  \"contactInfo\": {\n    \"id\": \"0035e00000B2O3DAAV\",\n    \"fullName\": \"Ryan Bumstead\",\n    \"title\": \"Platform Architect\",\n    \"linkedIn\": \"https://linkedin.com/in/ryanbumstead\",\n    \"github\": \"https://example.com/source\",\n    \"trailhead\": \"https://example.com/trailhead\",\n    \"portfolioUrl\": \"https://ryanbumstead.com\",\n    \"bio\": \"Specializing in API-led connectivity...\"\n  },\n  \"summary\": \"Salesforce Platform Architect with nearly a decade on the platform, focused on higher education\",\n  \"skills\": [\n    {\n      \"id\": \"a075e00000B2O3DAAV\",\n      \"name\": \"Apex\",\n      \"displayName\": \"Salesforce Apex\",\n      \"category\": \"Backend\",\n      \"proficiency\": 5,\n      \"iconName\": \"utility:code\",\n      \"colorHex\": \"#0070d2\"\n    },\n    {\n      \"id\": \"a075e00000B2O3DAAX\",\n      \"name\": \"LWC\",\n      \"displayName\": \"Lightning Web Components\",\n      \"category\": \"Frontend\",\n      \"proficiency\": 5,\n      \"iconName\": \"standard:lightning_component\",\n      \"colorHex\": \"#00A1E0\"\n    }\n  ],\n  \"experience\": [\n    {\n      \"id\": \"a025e00000B2O3DAAV\",\n      \"employer\": \"Salesforce\",\n      \"role\": \"Senior Technical Architect\",\n      \"dateRange\": \"Jan 2023 - Present\",\n      \"isCurrent\": true,\n      \"isRemote\": true,\n      \"skillsUsed\": [\n        \"Apex\",\n        \"LWC\",\n        \"Event Bus\"\n      ],\n      \"highlights\": [\n        \"Designed multi-cloud architectures\",\n        \"Led DevOps transformation\"\n      ]\n    }\n  ],\n  \"projects\": [\n    {\n      \"id\": \"a015e00000B2O3DAAV\",\n      \"title\": \"Portfolio Site\",\n      \"challenge\": \"Display skills dynamically\",\n      \"solution\": \"Built on LWR with SAPI/PAPI architecture\",\n      \"businessValue\": \"Increased interview rate by 40%\",\n      \"status\": \"Live – In Production\",\n      \"completionDate\": \"2025-12-01\",\n      \"heroImageUrl\": \"https://example.com/images/hero.png\",\n      \"liveUrl\": \"https://example.com/portfolio\",\n      \"repositoryUrl\": \"https://example.com/source\",\n      \"technologies\": [\n        \"LWR\",\n        \"Apex\"\n      ],\n      \"assets\": []\n    }\n  ],\n  \"certifications\": [\n    {\n      \"id\": \"a105e00000B2O3DAAV\",\n      \"name\": \"Certified Application Architect\",\n      \"issuer\": \"Salesforce\",\n      \"dateEarned\": \"2024-05-15\",\n      \"skillsUsed\": [\n        \"Security\"\n      ]\n    }\n  ],\n  \"education\": [\n    {\n      \"id\": \"a115e00000B2O3DAAV\",\n      \"school\": \"Creighton University\",\n      \"degree\": \"B.S. Computer Science\",\n      \"fieldOfStudy\": \"Computer Science\",\n      \"year\": \"2018\",\n      \"gpa\": 3.8\n    }\n  ],\n  \"testimonials\": [\n    {\n      \"id\": \"a055e00000B2O3DAAV\",\n      \"author\": \"Jane Doe\",\n      \"title\": \"VP of Engineering\",\n      \"relationship\": \"Manager\",\n      \"quote\": \"Ryan is a beast at architecture.\",\n      \"vibe\": \"Professional\",\n      \"avatarUrl\": \"https://example.com/images/avatar.jpg\"\n    }\n  ],\n  \"integrityNote\": \"complete\"\n}",
+                  "body": "{\n  \"config\": {\n    \"linkedInUrl\": \"https://linkedin.com/in/ryanbumstead\",\n    \"calendlyUrl\": \"https://example.com/schedule\",\n    \"githubUrl\": \"https://example.com/source\",\n    \"trailheadUrl\": \"https://example.com/trailhead\",\n    \"personalWebsiteUrl\": \"https://ryanbumstead.com\",\n    \"careerObjective\": \"Driving digital transformation through architecture.\"\n  },\n  \"contactInfo\": {\n    \"key\": \"con_7c5j3w9sfa\",\n    \"fullName\": \"Ryan Bumstead\",\n    \"title\": \"Platform Architect\",\n    \"linkedIn\": \"https://linkedin.com/in/ryanbumstead\",\n    \"github\": \"https://example.com/source\",\n    \"trailhead\": \"https://example.com/trailhead\",\n    \"portfolioUrl\": \"https://ryanbumstead.com\",\n    \"bio\": \"Specializing in API-led connectivity...\"\n  },\n  \"summary\": \"Salesforce Platform Architect with nearly a decade on the platform, focused on higher education\",\n  \"skills\": [\n    {\n      \"key\": \"skl_3m9x5b2rkt\",\n      \"name\": \"Apex\",\n      \"displayName\": \"Salesforce Apex\",\n      \"category\": \"Backend\",\n      \"proficiency\": 5,\n      \"iconName\": \"utility:code\",\n      \"colorHex\": \"#0070d2\"\n    },\n    {\n      \"key\": \"skl_8d2q6v4nwc\",\n      \"name\": \"LWC\",\n      \"displayName\": \"Lightning Web Components\",\n      \"category\": \"Frontend\",\n      \"proficiency\": 5,\n      \"iconName\": \"standard:lightning_component\",\n      \"colorHex\": \"#00A1E0\"\n    }\n  ],\n  \"experience\": [\n    {\n      \"key\": \"exp_4h7n2c8wpd\",\n      \"employer\": \"Salesforce\",\n      \"role\": \"Senior Technical Architect\",\n      \"dateRange\": \"Jan 2023 - Present\",\n      \"isCurrent\": true,\n      \"isRemote\": true,\n      \"skillsUsed\": [\n        \"Apex\",\n        \"LWC\",\n        \"Event Bus\"\n      ],\n      \"highlights\": [\n        \"Designed multi-cloud architectures\",\n        \"Led DevOps transformation\"\n      ]\n    }\n  ],\n  \"projects\": [\n    {\n      \"key\": \"prj_8f3k2m9qtz\",\n      \"title\": \"Portfolio Site\",\n      \"challenge\": \"Display skills dynamically\",\n      \"solution\": \"Built on LWR with SAPI/PAPI architecture\",\n      \"businessValue\": \"Increased interview rate by 40%\",\n      \"status\": \"Live – In Production\",\n      \"completionDate\": \"2025-12-01\",\n      \"heroImageUrl\": \"https://example.com/images/hero.png\",\n      \"liveUrl\": \"https://example.com/portfolio\",\n      \"repositoryUrl\": \"https://example.com/source\",\n      \"technologies\": [\n        \"LWR\",\n        \"Apex\"\n      ],\n      \"assets\": []\n    }\n  ],\n  \"certifications\": [\n    {\n      \"key\": \"crt_6q2v8d4nhz\",\n      \"name\": \"Certified Application Architect\",\n      \"issuer\": \"Salesforce\",\n      \"dateEarned\": \"2024-05-15\",\n      \"skillsUsed\": [\n        \"Security\"\n      ]\n    }\n  ],\n  \"education\": [\n    {\n      \"key\": \"edu_6b4c8j2rvq\",\n      \"school\": \"Creighton University\",\n      \"degree\": \"B.S. Computer Science\",\n      \"fieldOfStudy\": \"Computer Science\",\n      \"year\": \"2018\",\n      \"gpa\": 3.8\n    }\n  ],\n  \"testimonials\": [\n    {\n      \"key\": \"tst_2y7a5d9wmh\",\n      \"author\": \"Jane Doe\",\n      \"title\": \"VP of Engineering\",\n      \"relationship\": \"Manager\",\n      \"quote\": \"Ryan is a beast at architecture.\",\n      \"vibe\": \"Professional\",\n      \"avatarUrl\": \"https://example.com/images/avatar.jpg\"\n    }\n  ],\n  \"integrityNote\": \"complete\"\n}",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -622,14 +620,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -688,14 +684,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -754,14 +748,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -820,14 +812,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -892,14 +882,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -943,14 +931,12 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                    "disabled": true,
-                    "key": "X-API-Version",
-                    "value": "v1"
-                  },
-                  {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "X-API-Version",
+                    "value": "v2"
                   }
                 ],
                 "method": "GET",
@@ -974,7 +960,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "{\n  \"contactInfo\": {\n    \"fullName\": \"Ryan Bumstead\",\n    \"id\": \"0035e00000B2O3DAAV\",\n    \"key\": \"con_7c5j3w9sfa\",\n    \"title\": \"Platform Architect\",\n    \"linkedIn\": \"https://linkedin.com/in/ryanbumstead\",\n    \"github\": \"https://example.com/source\",\n    \"trailhead\": \"https://example.com/trailhead\",\n    \"portfolioUrl\": \"https://ryanbumstead.com\",\n    \"bio\": \"Specializing in API-led connectivity...\"\n  },\n  \"skills\": [\n    {\n      \"id\": \"a075e00000B2O3DAAV\",\n      \"name\": \"Apex\",\n      \"category\": \"Backend\",\n      \"proficiency\": 5,\n      \"key\": \"skl_3m9x5b2rkt\",\n      \"displayName\": \"Salesforce Apex\",\n      \"iconName\": \"utility:code\",\n      \"colorHex\": \"#0070d2\",\n      \"categoryOrder\": 10\n    },\n    {\n      \"id\": \"a075e00000B2O3DAAV\",\n      \"name\": \"Apex\",\n      \"category\": \"Backend\",\n      \"proficiency\": 5,\n      \"key\": \"skl_3m9x5b2rkt\",\n      \"displayName\": \"Salesforce Apex\",\n      \"iconName\": \"utility:code\",\n      \"colorHex\": \"#0070d2\",\n      \"categoryOrder\": 10\n    }\n  ],\n  \"experience\": [\n    {\n      \"id\": \"a025e00000B2O3DAAV\",\n      \"employer\": \"Salesforce\",\n      \"dateRange\": \"Jan 2023 - Present\",\n      \"key\": \"exp_4h7n2c8wpd\",\n      \"role\": \"Senior Technical Architect\",\n      \"isCurrent\": true,\n      \"isRemote\": true,\n      \"skillsUsed\": [\n        \"LWC\",\n        \"LWC\"\n      ],\n      \"highlights\": [\n        \"Implemented CI/CD pipelines using GitHub Actions\",\n        \"Implemented CI/CD pipelines using GitHub Actions\"\n      ]\n    },\n    {\n      \"id\": \"a025e00000B2O3DAAV\",\n      \"employer\": \"Salesforce\",\n      \"dateRange\": \"Jan 2023 - Present\",\n      \"key\": \"exp_4h7n2c8wpd\",\n      \"role\": \"Senior Technical Architect\",\n      \"isCurrent\": true,\n      \"isRemote\": true,\n      \"skillsUsed\": [\n        \"LWC\",\n        \"LWC\"\n      ],\n      \"highlights\": [\n        \"Implemented CI/CD pipelines using GitHub Actions\",\n        \"Implemented CI/CD pipelines using GitHub Actions\"\n      ]\n    }\n  ],\n  \"certifications\": [\n    {\n      \"id\": \"a105e00000B2O3DAAV\",\n      \"name\": \"Certified Application Architect\",\n      \"issuer\": \"Salesforce\",\n      \"dateEarned\": \"2024-05-15\",\n      \"key\": \"crt_6q2v8d4nhz\",\n      \"skillsUsed\": [\n        \"Security\",\n        \"Security\"\n      ]\n    },\n    {\n      \"id\": \"a105e00000B2O3DAAV\",\n      \"name\": \"Certified Application Architect\",\n      \"issuer\": \"Salesforce\",\n      \"dateEarned\": \"2024-05-15\",\n      \"key\": \"crt_6q2v8d4nhz\",\n      \"skillsUsed\": [\n        \"Security\",\n        \"Security\"\n      ]\n    }\n  ],\n  \"education\": [\n    {\n      \"id\": \"a115e00000B2O3DAAV\",\n      \"school\": \"Creighton University\",\n      \"degree\": \"B.S. Computer Science\",\n      \"year\": \"2018\",\n      \"key\": \"edu_6b4c8j2rvq\",\n      \"fieldOfStudy\": \"Computer Science\",\n      \"gpa\": 3.8\n    },\n    {\n      \"id\": \"a115e00000B2O3DAAV\",\n      \"school\": \"Creighton University\",\n      \"degree\": \"B.S. Computer Science\",\n      \"year\": \"2018\",\n      \"key\": \"edu_6b4c8j2rvq\",\n      \"fieldOfStudy\": \"Computer Science\",\n      \"gpa\": 3.8\n    }\n  ],\n  \"summary\": \"Salesforce Platform Architect with nearly a decade on the platform, focused on higher education\",\n  \"integrityNote\": \"complete\"\n}",
+                  "body": "{\n  \"contactInfo\": {\n    \"key\": \"con_7c5j3w9sfa\",\n    \"fullName\": \"Ryan Bumstead\",\n    \"title\": \"Platform Architect\",\n    \"linkedIn\": \"https://linkedin.com/in/ryanbumstead\",\n    \"github\": \"https://example.com/source\",\n    \"trailhead\": \"https://example.com/trailhead\",\n    \"portfolioUrl\": \"https://ryanbumstead.com\",\n    \"bio\": \"Specializing in API-led connectivity...\"\n  },\n  \"skills\": [\n    {\n      \"key\": \"skl_3m9x5b2rkt\",\n      \"name\": \"Apex\",\n      \"category\": \"Backend\",\n      \"proficiency\": 5,\n      \"displayName\": \"Salesforce Apex\",\n      \"iconName\": \"utility:code\",\n      \"colorHex\": \"#0070d2\",\n      \"categoryOrder\": 10\n    },\n    {\n      \"key\": \"skl_3m9x5b2rkt\",\n      \"name\": \"Apex\",\n      \"category\": \"Backend\",\n      \"proficiency\": 5,\n      \"displayName\": \"Salesforce Apex\",\n      \"iconName\": \"utility:code\",\n      \"colorHex\": \"#0070d2\",\n      \"categoryOrder\": 10\n    }\n  ],\n  \"experience\": [\n    {\n      \"key\": \"exp_4h7n2c8wpd\",\n      \"employer\": \"Salesforce\",\n      \"dateRange\": \"Jan 2023 - Present\",\n      \"role\": \"Senior Technical Architect\",\n      \"isCurrent\": true,\n      \"isRemote\": true,\n      \"skillsUsed\": [\n        \"LWC\",\n        \"LWC\"\n      ],\n      \"highlights\": [\n        \"Implemented CI/CD pipelines using GitHub Actions\",\n        \"Implemented CI/CD pipelines using GitHub Actions\"\n      ]\n    },\n    {\n      \"key\": \"exp_4h7n2c8wpd\",\n      \"employer\": \"Salesforce\",\n      \"dateRange\": \"Jan 2023 - Present\",\n      \"role\": \"Senior Technical Architect\",\n      \"isCurrent\": true,\n      \"isRemote\": true,\n      \"skillsUsed\": [\n        \"LWC\",\n        \"LWC\"\n      ],\n      \"highlights\": [\n        \"Implemented CI/CD pipelines using GitHub Actions\",\n        \"Implemented CI/CD pipelines using GitHub Actions\"\n      ]\n    }\n  ],\n  \"certifications\": [\n    {\n      \"key\": \"crt_6q2v8d4nhz\",\n      \"name\": \"Certified Application Architect\",\n      \"issuer\": \"Salesforce\",\n      \"dateEarned\": \"2024-05-15\",\n      \"skillsUsed\": [\n        \"Security\",\n        \"Security\"\n      ]\n    },\n    {\n      \"key\": \"crt_6q2v8d4nhz\",\n      \"name\": \"Certified Application Architect\",\n      \"issuer\": \"Salesforce\",\n      \"dateEarned\": \"2024-05-15\",\n      \"skillsUsed\": [\n        \"Security\",\n        \"Security\"\n      ]\n    }\n  ],\n  \"education\": [\n    {\n      \"key\": \"edu_6b4c8j2rvq\",\n      \"school\": \"Creighton University\",\n      \"degree\": \"B.S. Computer Science\",\n      \"year\": \"2018\",\n      \"fieldOfStudy\": \"Computer Science\",\n      \"gpa\": 3.8\n    },\n    {\n      \"key\": \"edu_6b4c8j2rvq\",\n      \"school\": \"Creighton University\",\n      \"degree\": \"B.S. Computer Science\",\n      \"year\": \"2018\",\n      \"fieldOfStudy\": \"Computer Science\",\n      \"gpa\": 3.8\n    }\n  ],\n  \"summary\": \"Salesforce Platform Architect with nearly a decade on the platform, focused on higher education\",\n  \"integrityNote\": \"complete\"\n}",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -1021,14 +1007,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1087,14 +1071,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1153,14 +1135,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1219,14 +1199,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1291,14 +1269,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1342,14 +1318,12 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                    "disabled": true,
-                    "key": "X-API-Version",
-                    "value": "v1"
-                  },
-                  {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "X-API-Version",
+                    "value": "v2"
                   }
                 ],
                 "method": "GET",
@@ -1373,7 +1347,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a015e00000B2O3DAAV\",\n    \"key\": \"prj_8f3k2m9qtz\",\n    \"title\": \"Portfolio Site\",\n    \"challenge\": \"Display skills dynamically to recruiters\",\n    \"solution\": \"Built on LWR with SAPI/PAPI architecture\",\n    \"businessValue\": \"Increased interview rate by 40%\",\n    \"status\": \"Live – In Production\",\n    \"completionDate\": \"2025-12-01\",\n    \"heroImageUrl\": \"https://example.com/images/hero.png\",\n    \"liveUrl\": \"https://example.com/portfolio\",\n    \"repositoryUrl\": \"https://example.com/source\",\n    \"technologies\": [\n      \"Apex\",\n      \"Apex\"\n    ],\n    \"pillarLabel\": \"Pillar A: Business Architecture\",\n    \"assets\": [\n      {\n        \"type\": \"Image\",\n        \"url\": \"https://example.com/images/diagram.png\",\n        \"caption\": \"System Architecture Diagram\"\n      },\n      {\n        \"type\": \"Image\",\n        \"url\": \"https://example.com/images/diagram.png\",\n        \"caption\": \"System Architecture Diagram\"\n      }\n    ]\n  },\n  {\n    \"id\": \"a015e00000B2O3DAAV\",\n    \"key\": \"prj_8f3k2m9qtz\",\n    \"title\": \"Portfolio Site\",\n    \"challenge\": \"Display skills dynamically to recruiters\",\n    \"solution\": \"Built on LWR with SAPI/PAPI architecture\",\n    \"businessValue\": \"Increased interview rate by 40%\",\n    \"status\": \"Live – In Production\",\n    \"completionDate\": \"2025-12-01\",\n    \"heroImageUrl\": \"https://example.com/images/hero.png\",\n    \"liveUrl\": \"https://example.com/portfolio\",\n    \"repositoryUrl\": \"https://example.com/source\",\n    \"technologies\": [\n      \"Apex\",\n      \"Apex\"\n    ],\n    \"pillarLabel\": \"Pillar A: Business Architecture\",\n    \"assets\": [\n      {\n        \"type\": \"Image\",\n        \"url\": \"https://example.com/images/diagram.png\",\n        \"caption\": \"System Architecture Diagram\"\n      },\n      {\n        \"type\": \"Image\",\n        \"url\": \"https://example.com/images/diagram.png\",\n        \"caption\": \"System Architecture Diagram\"\n      }\n    ]\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"prj_8f3k2m9qtz\",\n    \"title\": \"Portfolio Site\",\n    \"challenge\": \"Display skills dynamically to recruiters\",\n    \"solution\": \"Built on LWR with SAPI/PAPI architecture\",\n    \"businessValue\": \"Increased interview rate by 40%\",\n    \"status\": \"Live – In Production\",\n    \"completionDate\": \"2025-12-01\",\n    \"heroImageUrl\": \"https://example.com/images/hero.png\",\n    \"liveUrl\": \"https://example.com/portfolio\",\n    \"repositoryUrl\": \"https://example.com/source\",\n    \"technologies\": [\n      \"Apex\",\n      \"Apex\"\n    ],\n    \"pillarLabel\": \"Pillar A: Business Architecture\",\n    \"assets\": [\n      {\n        \"type\": \"Image\",\n        \"url\": \"https://example.com/images/diagram.png\",\n        \"caption\": \"System Architecture Diagram\"\n      },\n      {\n        \"type\": \"Image\",\n        \"url\": \"https://example.com/images/diagram.png\",\n        \"caption\": \"System Architecture Diagram\"\n      }\n    ]\n  },\n  {\n    \"key\": \"prj_8f3k2m9qtz\",\n    \"title\": \"Portfolio Site\",\n    \"challenge\": \"Display skills dynamically to recruiters\",\n    \"solution\": \"Built on LWR with SAPI/PAPI architecture\",\n    \"businessValue\": \"Increased interview rate by 40%\",\n    \"status\": \"Live – In Production\",\n    \"completionDate\": \"2025-12-01\",\n    \"heroImageUrl\": \"https://example.com/images/hero.png\",\n    \"liveUrl\": \"https://example.com/portfolio\",\n    \"repositoryUrl\": \"https://example.com/source\",\n    \"technologies\": [\n      \"Apex\",\n      \"Apex\"\n    ],\n    \"pillarLabel\": \"Pillar A: Business Architecture\",\n    \"assets\": [\n      {\n        \"type\": \"Image\",\n        \"url\": \"https://example.com/images/diagram.png\",\n        \"caption\": \"System Architecture Diagram\"\n      },\n      {\n        \"type\": \"Image\",\n        \"url\": \"https://example.com/images/diagram.png\",\n        \"caption\": \"System Architecture Diagram\"\n      }\n    ]\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -1387,7 +1361,7 @@
                       "description": "",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "9278"
+                      "value": "7307"
                     },
                     {
                       "description": "",
@@ -1432,14 +1406,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1498,14 +1470,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1564,14 +1534,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1630,14 +1598,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1702,14 +1668,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1764,14 +1728,12 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                    "disabled": true,
-                    "key": "X-API-Version",
-                    "value": "v1"
-                  },
-                  {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "X-API-Version",
+                    "value": "v2"
                   }
                 ],
                 "method": "GET",
@@ -1802,7 +1764,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "{\n  \"generatedText\": \"Ryan Bumstead\\nSalesforce Platform Architect\\n\\nEXPERIENCE\\n\\nSalesforce | Senior Technical Architect\\nJan 2023 - Present\\n- Designed multi-cloud solutions...\\n- Led DevOps transformation...\\n\",\n  \"persona\": \"Architect\",\n  \"generatedAt\": \"1976-02-11T06:07:05.225Z\",\n  \"integrityNote\": \"complete\"\n}",
+                  "body": "{\n  \"generatedText\": \"Ryan Bumstead\\nSalesforce Platform Architect\\n\\nEXPERIENCE\\n\\nSalesforce | Senior Technical Architect\\nJan 2023 - Present\\n- Designed multi-cloud solutions...\\n- Led DevOps transformation...\\n\",\n  \"persona\": \"Architect\",\n  \"generatedAt\": \"2003-10-06T18:45:33.959Z\",\n  \"integrityNote\": \"complete\"\n}",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -1849,14 +1811,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1920,14 +1880,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -1991,14 +1949,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -2062,14 +2018,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -2139,14 +2093,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -2206,14 +2158,12 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                    "disabled": true,
-                    "key": "X-API-Version",
-                    "value": "v1"
-                  },
-                  {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "X-API-Version",
+                    "value": "v2"
                   }
                 ],
                 "method": "GET",
@@ -2244,7 +2194,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a055e00000B2O3DAAV\",\n    \"author\": \"Jane Doe\",\n    \"quote\": \"Ryan is a beast at architecture\",\n    \"key\": \"tst_2y7a5d9wmh\",\n    \"title\": \"VP of Engineering\",\n    \"relationship\": \"Manager\",\n    \"vibe\": \"Professional\",\n    \"avatarUrl\": \"https://example.com/images/avatar.jpg\"\n  },\n  {\n    \"id\": \"a055e00000B2O3DAAV\",\n    \"author\": \"Jane Doe\",\n    \"quote\": \"Ryan is a beast at architecture\",\n    \"key\": \"tst_2y7a5d9wmh\",\n    \"title\": \"VP of Engineering\",\n    \"relationship\": \"Manager\",\n    \"vibe\": \"Professional\",\n    \"avatarUrl\": \"https://example.com/images/avatar.jpg\"\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"tst_2y7a5d9wmh\",\n    \"author\": \"Jane Doe\",\n    \"quote\": \"Ryan is a beast at architecture\",\n    \"title\": \"VP of Engineering\",\n    \"relationship\": \"Manager\",\n    \"vibe\": \"Professional\",\n    \"avatarUrl\": \"https://example.com/images/avatar.jpg\"\n  },\n  {\n    \"key\": \"tst_2y7a5d9wmh\",\n    \"author\": \"Jane Doe\",\n    \"quote\": \"Ryan is a beast at architecture\",\n    \"title\": \"VP of Engineering\",\n    \"relationship\": \"Manager\",\n    \"vibe\": \"Professional\",\n    \"avatarUrl\": \"https://example.com/images/avatar.jpg\"\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -2258,7 +2208,7 @@
                       "description": "",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "4173"
+                      "value": "4255"
                     },
                     {
                       "description": "",
@@ -2291,14 +2241,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -2362,14 +2310,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -2433,14 +2379,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -2504,14 +2448,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -2581,14 +2523,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -2646,18 +2586,16 @@
                     "value": "{{$guid}}"
                   },
                   {
-                    "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                    "disabled": true,
-                    "key": "X-API-Version",
-                    "value": "v1"
-                  },
-                  {
                     "key": "Content-Type",
                     "value": "application/json"
                   },
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "X-API-Version",
+                    "value": "v2"
                   }
                 ],
                 "method": "POST",
@@ -2681,7 +2619,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "{\n  \"content\": \"Dear Hiring Manager,\\n\\nI am writing to express my strong interest in the Senior Technical Architect position at Acme Financial...\\n\",\n  \"provider\": \"Gemini\",\n  \"generatedAt\": \"1963-10-02T00:49:55.275Z\",\n  \"latencyMs\": 1240,\n  \"attempts\": [\n    {\n      \"provider\": \"Agentforce\",\n      \"outcome\": \"skipped_off\",\n      \"ms\": 0\n    },\n    {\n      \"provider\": \"Gemini\",\n      \"outcome\": \"served\",\n      \"ms\": 1236\n    }\n  ],\n  \"promptShown\": \"Write a cover letter for Ryan Bumstead in a professional tone, no longer than 500 characters.\",\n  \"model\": \"gemini-2.5-flash\",\n  \"type\": \"CoverLetter\",\n  \"tone\": \"Professional\",\n  \"fallbackOccurred\": false\n}",
+                  "body": "{\n  \"content\": \"Dear Hiring Manager,\\n\\nI am writing to express my strong interest in the Senior Technical Architect position at Acme Financial...\\n\",\n  \"provider\": \"Gemini\",\n  \"generatedAt\": \"2015-07-18T23:19:13.407Z\",\n  \"latencyMs\": 1240,\n  \"attempts\": [\n    {\n      \"provider\": \"Agentforce\",\n      \"outcome\": \"skipped_off\",\n      \"ms\": 0\n    },\n    {\n      \"provider\": \"Gemini\",\n      \"outcome\": \"served\",\n      \"ms\": 1236\n    }\n  ],\n  \"promptShown\": \"Write a cover letter for Ryan Bumstead in a professional tone, no longer than 500 characters.\",\n  \"model\": \"gemini-2.5-flash\",\n  \"type\": \"CoverLetter\",\n  \"tone\": \"Professional\",\n  \"fallbackOccurred\": false\n}",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -2742,14 +2680,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "POST",
@@ -2816,14 +2752,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "POST",
@@ -2890,14 +2824,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "POST",
@@ -2970,14 +2902,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "POST",
@@ -3044,14 +2974,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "POST",
@@ -3112,14 +3040,12 @@
                         "value": "{{$guid}}"
                       },
                       {
-                        "description": "API Version. Missing resolves to v1; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
-                        "disabled": true,
-                        "key": "X-API-Version",
-                        "value": "v1"
-                      },
-                      {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "POST",
@@ -3170,6 +3096,10 @@
                   {
                     "key": "Accept",
                     "value": "application/json"
+                  },
+                  {
+                    "key": "X-API-Version",
+                    "value": "v2"
                   }
                 ],
                 "method": "GET",
@@ -3192,7 +3122,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "{\n  \"status\": \"UP\",\n  \"checkType\": \"DEEP\",\n  \"timestamp\": \"1946-01-16T01:16:17.439Z\",\n  \"dependencies\": {\n    \"sapi\": \"UP\",\n    \"credential\": \"UP\",\n    \"jira\": \"UNKNOWN\",\n    \"github\": \"MISSING\",\n    \"gemini\": \"UNKNOWN\"\n  },\n  \"details\": {\n    \"key_0\": \"string\",\n    \"key_1\": \"string\",\n    \"key_2\": \"string\",\n    \"key_3\": \"string\"\n  }\n}",
+                  "body": "{\n  \"status\": \"UP\",\n  \"checkType\": \"DEEP\",\n  \"timestamp\": \"2000-07-12T22:02:03.092Z\",\n  \"dependencies\": {\n    \"sapi\": \"UP\",\n    \"credential\": \"UP\",\n    \"jira\": \"UNKNOWN\",\n    \"github\": \"UNKNOWN\",\n    \"gemini\": \"MISSING\"\n  },\n  \"details\": {\n    \"key_0\": \"string\",\n    \"key_1\": \"string\"\n  }\n}",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -3229,6 +3159,10 @@
                       {
                         "key": "Accept",
                         "value": "application/json"
+                      },
+                      {
+                        "key": "X-API-Version",
+                        "value": "v2"
                       }
                     ],
                     "method": "GET",
@@ -3287,7 +3221,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -3314,7 +3248,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "{\n  \"status\": \"UP\",\n  \"checkType\": \"SHALLOW\",\n  \"timestamp\": \"2004-07-05T23:51:15.953Z\",\n  \"orgTimeZone\": \"America/Chicago\",\n  \"dependencies\": {\n    \"salesforce\": \"UP\"\n  },\n  \"limits\": {\n    \"queries\": {\n      \"used\": 1,\n      \"limit\": 100\n    },\n    \"dmlStatements\": {\n      \"used\": 1,\n      \"limit\": 100\n    },\n    \"callouts\": {\n      \"used\": 1,\n      \"limit\": 100\n    },\n    \"cpuTimeMs\": {\n      \"used\": 1,\n      \"limit\": 100\n    },\n    \"heapBytes\": {\n      \"used\": 1,\n      \"limit\": 100\n    }\n  }\n}",
+                  "body": "{\n  \"status\": \"UP\",\n  \"checkType\": \"SHALLOW\",\n  \"timestamp\": \"1975-07-28T12:29:59.320Z\",\n  \"orgTimeZone\": \"America/Chicago\",\n  \"dependencies\": {\n    \"salesforce\": \"UP\"\n  },\n  \"limits\": {\n    \"queries\": {\n      \"used\": 1,\n      \"limit\": 100\n    },\n    \"dmlStatements\": {\n      \"used\": 1,\n      \"limit\": 100\n    },\n    \"callouts\": {\n      \"used\": 1,\n      \"limit\": 100\n    },\n    \"cpuTimeMs\": {\n      \"used\": 1,\n      \"limit\": 100\n    },\n    \"heapBytes\": {\n      \"used\": 1,\n      \"limit\": 100\n    }\n  }\n}",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -3346,7 +3280,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -3411,7 +3345,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -3457,7 +3391,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"0035e00000B2O3DAAV\",\n    \"key\": \"con_7c5j3w9sfa\",\n    \"name\": \"Ryan Bumstead\",\n    \"title\": \"Platform Architect\",\n    \"trailhead\": \"https://trailblazer.me/id/rbumstead\",\n    \"careerObjective\": \"Driving digital transformation...\",\n    \"linkedIn\": \"https://linkedin.com/in/ryanbumstead\",\n    \"portfolio\": \"https://ryanbumstead.com\"\n  },\n  {\n    \"id\": \"0035e00000B2O3DAAV\",\n    \"key\": \"con_7c5j3w9sfa\",\n    \"name\": \"Ryan Bumstead\",\n    \"title\": \"Platform Architect\",\n    \"trailhead\": \"https://trailblazer.me/id/rbumstead\",\n    \"careerObjective\": \"Driving digital transformation...\",\n    \"linkedIn\": \"https://linkedin.com/in/ryanbumstead\",\n    \"portfolio\": \"https://ryanbumstead.com\"\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"con_7c5j3w9sfa\",\n    \"name\": \"Ryan Bumstead\",\n    \"title\": \"Platform Architect\",\n    \"trailhead\": \"https://trailblazer.me/id/rbumstead\",\n    \"careerObjective\": \"Driving digital transformation...\",\n    \"linkedIn\": \"https://linkedin.com/in/ryanbumstead\",\n    \"portfolio\": \"https://ryanbumstead.com\"\n  },\n  {\n    \"key\": \"con_7c5j3w9sfa\",\n    \"name\": \"Ryan Bumstead\",\n    \"title\": \"Platform Architect\",\n    \"trailhead\": \"https://trailblazer.me/id/rbumstead\",\n    \"careerObjective\": \"Driving digital transformation...\",\n    \"linkedIn\": \"https://linkedin.com/in/ryanbumstead\",\n    \"portfolio\": \"https://ryanbumstead.com\"\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -3471,7 +3405,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -3501,7 +3435,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -3575,7 +3509,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -3649,7 +3583,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -3723,7 +3657,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -3785,7 +3719,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -3803,7 +3737,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -3877,7 +3811,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -3944,7 +3878,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -4002,7 +3936,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a025e00000B2O3DAAV\",\n    \"key\": \"exp_4h7n2c8wpd\",\n    \"employerName\": \"Salesforce\",\n    \"employerId\": \"0015e00000A1O3DAAV\",\n    \"employerKey\": \"acc_2t8e6y4mgb\",\n    \"name\": \"Technical Architect\",\n    \"startDate\": \"2023-01-01\",\n    \"endDate\": \"2025-01-01\",\n    \"isCurrentRole\": true,\n    \"isRemote\": true,\n    \"accomplishments\": \"<ul><li>Led 5 successful deployments</li></ul>\",\n    \"contactId\": \"0035e00000B2O3DAAV\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"sortOrder\": 10\n  },\n  {\n    \"id\": \"a025e00000B2O3DAAV\",\n    \"key\": \"exp_4h7n2c8wpd\",\n    \"employerName\": \"Salesforce\",\n    \"employerId\": \"0015e00000A1O3DAAV\",\n    \"employerKey\": \"acc_2t8e6y4mgb\",\n    \"name\": \"Technical Architect\",\n    \"startDate\": \"2023-01-01\",\n    \"endDate\": \"2025-01-01\",\n    \"isCurrentRole\": true,\n    \"isRemote\": true,\n    \"accomplishments\": \"<ul><li>Led 5 successful deployments</li></ul>\",\n    \"contactId\": \"0035e00000B2O3DAAV\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"sortOrder\": 10\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"exp_4h7n2c8wpd\",\n    \"employerName\": \"Salesforce\",\n    \"employerKey\": \"acc_2t8e6y4mgb\",\n    \"name\": \"Technical Architect\",\n    \"startDate\": \"2023-01-01\",\n    \"endDate\": \"2025-01-01\",\n    \"isCurrentRole\": true,\n    \"isRemote\": true,\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"sortOrder\": 10\n  },\n  {\n    \"key\": \"exp_4h7n2c8wpd\",\n    \"employerName\": \"Salesforce\",\n    \"employerKey\": \"acc_2t8e6y4mgb\",\n    \"name\": \"Technical Architect\",\n    \"startDate\": \"2023-01-01\",\n    \"endDate\": \"2025-01-01\",\n    \"isCurrentRole\": true,\n    \"isRemote\": true,\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"sortOrder\": 10\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -4016,13 +3950,13 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
                       "disabled": true,
                       "key": "X-Has-More",
-                      "value": "false"
+                      "value": "true"
                     },
                     {
                       "description": "Directive to prevent caching of sensitive/dynamic data.",
@@ -4046,7 +3980,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4128,7 +4062,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4210,7 +4144,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4292,7 +4226,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4362,7 +4296,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -4380,7 +4314,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4462,7 +4396,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4527,7 +4461,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Fetches resume bullets. Supports Persona filtering for PAPI optimization. A malformed `experienceId` or an unknown `persona` value returns 400.",
+                  "content": "Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unknown `persona` value returns 400. An `experienceKey` that is not a known key, a Salesforce Id included, is treated as an unknown key. The version 1 name `experienceId` is not accepted in version 2 and returns `400 BAD_REQUEST`.",
                   "type": "text/plain"
                 },
                 "header": [
@@ -4537,7 +4471,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -4559,9 +4493,9 @@
                   ],
                   "query": [
                     {
-                      "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated.",
+                      "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.",
                       "disabled": true,
-                      "key": "experienceId",
+                      "key": "experienceKey",
                       "value": "<string>"
                     },
                     {
@@ -4589,7 +4523,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a035e00000B2O3DAAV\",\n    \"key\": \"hlt_9d3p7k5vxn\",\n    \"experienceId\": \"a025e00000B2O3DAAV\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"name\": \"DevOps Transformation\",\n    \"description\": \"Implemented CI/CD pipelines reducing deployment time by 80%.\",\n    \"sortOrder\": 1,\n    \"personaTag\": \"Developer;Architect\"\n  },\n  {\n    \"id\": \"a035e00000B2O3DAAV\",\n    \"key\": \"hlt_9d3p7k5vxn\",\n    \"experienceId\": \"a025e00000B2O3DAAV\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"name\": \"DevOps Transformation\",\n    \"description\": \"Implemented CI/CD pipelines reducing deployment time by 80%.\",\n    \"sortOrder\": 1,\n    \"personaTag\": \"Developer;Architect\"\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"hlt_9d3p7k5vxn\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"name\": \"DevOps Transformation\",\n    \"description\": \"Implemented CI/CD pipelines reducing deployment time by 80%.\",\n    \"sortOrder\": 1,\n    \"personaTag\": \"Developer;Architect\"\n  },\n  {\n    \"key\": \"hlt_9d3p7k5vxn\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"name\": \"DevOps Transformation\",\n    \"description\": \"Implemented CI/CD pipelines reducing deployment time by 80%.\",\n    \"sortOrder\": 1,\n    \"personaTag\": \"Developer;Architect\"\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -4603,7 +4537,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -4633,7 +4567,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4662,7 +4596,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -4678,7 +4612,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -4711,7 +4645,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4740,7 +4674,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -4756,7 +4690,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -4789,7 +4723,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4818,7 +4752,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -4834,7 +4768,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -4867,7 +4801,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4896,7 +4830,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -4912,7 +4846,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -4933,7 +4867,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -4951,7 +4885,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -4980,7 +4914,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -4996,7 +4930,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -5029,7 +4963,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -5058,7 +4992,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -5074,7 +5008,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceId=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -5111,7 +5045,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -5175,7 +5109,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a015e00000B2O3DAAV\",\n    \"key\": \"prj_8f3k2m9qtz\",\n    \"name\": \"Global CRM Migration\",\n    \"challenge\": \"Legacy system had 5M duplicate records.\",\n    \"solution\": \"Implemented MDM strategy using Data Cloud.\",\n    \"businessValue\": \"Reduced data storage costs by 40%.\",\n    \"status\": \"Active Development\",\n    \"dateCompleted\": \"2025-12-01\",\n    \"heroImageUrl\": \"https://example.com/images/hero.jpg\",\n    \"liveUrl\": \"https://example.com/demo\",\n    \"repositoryUrl\": \"https://github.com/rdbumstead/project\",\n    \"pillar\": \"A\",\n    \"pillarLabel\": \"Pillar A: Business Architecture\",\n    \"isFeatured\": true,\n    \"contactName\": \"Ryan Bumstead\",\n    \"contactId\": \"0035e00000B2O3DAAV\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"sortOrder\": 10\n  },\n  {\n    \"id\": \"a015e00000B2O3DAAV\",\n    \"key\": \"prj_8f3k2m9qtz\",\n    \"name\": \"Global CRM Migration\",\n    \"challenge\": \"Legacy system had 5M duplicate records.\",\n    \"solution\": \"Implemented MDM strategy using Data Cloud.\",\n    \"businessValue\": \"Reduced data storage costs by 40%.\",\n    \"status\": \"Active Development\",\n    \"dateCompleted\": \"2025-12-01\",\n    \"heroImageUrl\": \"https://example.com/images/hero.jpg\",\n    \"liveUrl\": \"https://example.com/demo\",\n    \"repositoryUrl\": \"https://github.com/rdbumstead/project\",\n    \"pillar\": \"A\",\n    \"pillarLabel\": \"Pillar A: Business Architecture\",\n    \"isFeatured\": true,\n    \"contactName\": \"Ryan Bumstead\",\n    \"contactId\": \"0035e00000B2O3DAAV\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"sortOrder\": 10\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"prj_8f3k2m9qtz\",\n    \"name\": \"Global CRM Migration\",\n    \"challenge\": \"Legacy system had 5M duplicate records.\",\n    \"solution\": \"Implemented MDM strategy using Data Cloud.\",\n    \"businessValue\": \"Reduced data storage costs by 40%.\",\n    \"status\": \"Active Development\",\n    \"dateCompleted\": \"2025-12-01\",\n    \"heroImageUrl\": \"https://example.com/images/hero.jpg\",\n    \"liveUrl\": \"https://example.com/demo\",\n    \"repositoryUrl\": \"https://github.com/rdbumstead/project\",\n    \"pillar\": \"A\",\n    \"pillarLabel\": \"Pillar A: Business Architecture\",\n    \"isFeatured\": true,\n    \"contactName\": \"Ryan Bumstead\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"sortOrder\": 10\n  },\n  {\n    \"key\": \"prj_8f3k2m9qtz\",\n    \"name\": \"Global CRM Migration\",\n    \"challenge\": \"Legacy system had 5M duplicate records.\",\n    \"solution\": \"Implemented MDM strategy using Data Cloud.\",\n    \"businessValue\": \"Reduced data storage costs by 40%.\",\n    \"status\": \"Active Development\",\n    \"dateCompleted\": \"2025-12-01\",\n    \"heroImageUrl\": \"https://example.com/images/hero.jpg\",\n    \"liveUrl\": \"https://example.com/demo\",\n    \"repositoryUrl\": \"https://github.com/rdbumstead/project\",\n    \"pillar\": \"A\",\n    \"pillarLabel\": \"Pillar A: Business Architecture\",\n    \"isFeatured\": true,\n    \"contactName\": \"Ryan Bumstead\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"sortOrder\": 10\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -5189,7 +5123,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -5219,7 +5153,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -5305,7 +5239,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -5391,7 +5325,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -5477,7 +5411,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -5551,7 +5485,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -5569,7 +5503,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -5655,7 +5589,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -5724,7 +5658,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Retrieves assets (images, links) associated with a project. A malformed Salesforce Id filter returns 400.",
+                  "content": "Retrieves assets (images, links) associated with a project. A filter that is not a known key, a Salesforce Id included, is treated as an unknown key.",
                   "type": "text/plain"
                 },
                 "header": [
@@ -5734,7 +5668,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -5756,9 +5690,9 @@
                   ],
                   "query": [
                     {
-                      "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated.",
+                      "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.",
                       "disabled": true,
-                      "key": "projectId",
+                      "key": "projectKey",
                       "value": "<string>"
                     },
                     {
@@ -5780,7 +5714,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a045e00000B2O3DAAV\",\n    \"key\": \"pas_4n7s3f9tdk\",\n    \"name\": \"Architecture Diagram\",\n    \"projectId\": \"a015e00000B2O3DAAV\",\n    \"projectKey\": \"prj_8f3k2m9qtz\",\n    \"projectName\": \"Global CRM Migration\",\n    \"type\": \"Image\",\n    \"externalUrl\": \"https://example.com/images/diagram.png\",\n    \"altText\": \"C4 Model System Context Diagram\",\n    \"sortOrder\": 1\n  },\n  {\n    \"id\": \"a045e00000B2O3DAAV\",\n    \"key\": \"pas_4n7s3f9tdk\",\n    \"name\": \"Architecture Diagram\",\n    \"projectId\": \"a015e00000B2O3DAAV\",\n    \"projectKey\": \"prj_8f3k2m9qtz\",\n    \"projectName\": \"Global CRM Migration\",\n    \"type\": \"Image\",\n    \"externalUrl\": \"https://example.com/images/diagram.png\",\n    \"altText\": \"C4 Model System Context Diagram\",\n    \"sortOrder\": 1\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"pas_4n7s3f9tdk\",\n    \"name\": \"Architecture Diagram\",\n    \"projectKey\": \"prj_8f3k2m9qtz\",\n    \"projectName\": \"Global CRM Migration\",\n    \"type\": \"Image\",\n    \"externalUrl\": \"https://example.com/images/diagram.png\",\n    \"altText\": \"C4 Model System Context Diagram\",\n    \"sortOrder\": 1\n  },\n  {\n    \"key\": \"pas_4n7s3f9tdk\",\n    \"name\": \"Architecture Diagram\",\n    \"projectKey\": \"prj_8f3k2m9qtz\",\n    \"projectName\": \"Global CRM Migration\",\n    \"type\": \"Image\",\n    \"externalUrl\": \"https://example.com/images/diagram.png\",\n    \"altText\": \"C4 Model System Context Diagram\",\n    \"sortOrder\": 1\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -5794,7 +5728,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -5824,7 +5758,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -5853,7 +5787,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -5865,7 +5799,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -5898,7 +5832,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -5927,7 +5861,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -5939,7 +5873,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -5972,7 +5906,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6001,7 +5935,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -6013,7 +5947,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -6046,7 +5980,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6075,7 +6009,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -6087,7 +6021,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -6108,7 +6042,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -6126,7 +6060,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6155,7 +6089,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -6167,7 +6101,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -6200,7 +6134,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6229,7 +6163,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -6241,7 +6175,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -6267,7 +6201,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -6307,7 +6241,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a055e00000B2O3DAAV\",\n    \"key\": \"tst_2y7a5d9wmh\",\n    \"name\": \"Testimonial from Jane Doe\",\n    \"authorName\": \"Jane Doe\",\n    \"authorTitle\": \"CTO, Tech Corp\",\n    \"avatarUrl\": \"https://example.com/images/avatar.jpg\",\n    \"relationshipType\": \"Manager\",\n    \"vibeMode\": \"Professional\",\n    \"context\": \"Worked together on the Q1 digital transformation.\"\n  },\n  {\n    \"id\": \"a055e00000B2O3DAAV\",\n    \"key\": \"tst_2y7a5d9wmh\",\n    \"name\": \"Testimonial from Jane Doe\",\n    \"authorName\": \"Jane Doe\",\n    \"authorTitle\": \"CTO, Tech Corp\",\n    \"avatarUrl\": \"https://example.com/images/avatar.jpg\",\n    \"relationshipType\": \"Manager\",\n    \"vibeMode\": \"Professional\",\n    \"context\": \"Worked together on the Q1 digital transformation.\",\n    \"key_0\": 9769\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"tst_2y7a5d9wmh\",\n    \"name\": \"Testimonial from Jane Doe\",\n    \"authorName\": \"Jane Doe\",\n    \"authorTitle\": \"CTO, Tech Corp\",\n    \"avatarUrl\": \"https://example.com/images/avatar.jpg\",\n    \"relationshipType\": \"Manager\",\n    \"vibeMode\": \"Professional\",\n    \"context\": \"Worked together on the Q1 digital transformation.\"\n  },\n  {\n    \"key\": \"tst_2y7a5d9wmh\",\n    \"name\": \"Testimonial from Jane Doe\",\n    \"authorName\": \"Jane Doe\",\n    \"authorTitle\": \"CTO, Tech Corp\",\n    \"avatarUrl\": \"https://example.com/images/avatar.jpg\",\n    \"relationshipType\": \"Manager\",\n    \"vibeMode\": \"Professional\",\n    \"context\": \"Worked together on the Q1 digital transformation.\"\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -6321,7 +6255,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -6351,7 +6285,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6421,7 +6355,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6491,7 +6425,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6561,7 +6495,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6619,7 +6553,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -6637,7 +6571,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6707,7 +6641,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6770,7 +6704,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -6816,7 +6750,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"0015e00000A1O3DAAV\",\n    \"key\": \"acc_2t8e6y4mgb\",\n    \"name\": \"Salesforce\",\n    \"industry\": \"Technology\",\n    \"abbreviation\": \"SFDC\"\n  },\n  {\n    \"id\": \"0015e00000A1O3DAAV\",\n    \"key\": \"acc_2t8e6y4mgb\",\n    \"name\": \"Salesforce\",\n    \"industry\": \"Technology\",\n    \"abbreviation\": \"SFDC\"\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"acc_2t8e6y4mgb\",\n    \"name\": \"Salesforce\",\n    \"industry\": \"Technology\",\n    \"abbreviation\": \"SFDC\"\n  },\n  {\n    \"key\": \"acc_2t8e6y4mgb\",\n    \"name\": \"Salesforce\",\n    \"industry\": \"Technology\",\n    \"abbreviation\": \"SFDC\"\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -6830,7 +6764,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -6860,7 +6794,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -6934,7 +6868,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7008,7 +6942,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7082,7 +7016,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7144,7 +7078,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -7162,7 +7096,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7236,7 +7170,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7303,7 +7237,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -7349,7 +7283,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a075e00000B2O3DAAV\",\n    \"key\": \"skl_3m9x5b2rkt\",\n    \"name\": \"Apex\",\n    \"displayName\": \"Salesforce Apex\",\n    \"category\": \"Development\",\n    \"proficiencyScore\": 5,\n    \"iconName\": \"utility:code\",\n    \"svgPathData\": \"M10...\",\n    \"colorHex\": \"#0070d2\",\n    \"categoryOrder\": 10\n  },\n  {\n    \"id\": \"a075e00000B2O3DAAV\",\n    \"key\": \"skl_3m9x5b2rkt\",\n    \"name\": \"Apex\",\n    \"displayName\": \"Salesforce Apex\",\n    \"category\": \"Development\",\n    \"proficiencyScore\": 5,\n    \"iconName\": \"utility:code\",\n    \"svgPathData\": \"M10...\",\n    \"colorHex\": \"#0070d2\",\n    \"categoryOrder\": 10\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"skl_3m9x5b2rkt\",\n    \"name\": \"Apex\",\n    \"displayName\": \"Salesforce Apex\",\n    \"category\": \"Development\",\n    \"proficiencyScore\": 5,\n    \"iconName\": \"utility:code\",\n    \"svgPathData\": \"M10...\",\n    \"colorHex\": \"#0070d2\",\n    \"categoryOrder\": 10\n  },\n  {\n    \"key\": \"skl_3m9x5b2rkt\",\n    \"name\": \"Apex\",\n    \"displayName\": \"Salesforce Apex\",\n    \"category\": \"Development\",\n    \"proficiencyScore\": 5,\n    \"iconName\": \"utility:code\",\n    \"svgPathData\": \"M10...\",\n    \"colorHex\": \"#0070d2\",\n    \"categoryOrder\": 10\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -7363,7 +7297,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -7393,7 +7327,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7467,7 +7401,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7541,7 +7475,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7615,7 +7549,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7677,7 +7611,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -7695,7 +7629,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7769,7 +7703,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -7836,7 +7770,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -7894,7 +7828,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a105e00000B2O3DAAV\",\n    \"key\": \"crt_6q2v8d4nhz\",\n    \"name\": \"Application Architect\",\n    \"contactId\": \"0035e00000B2O3DAAV\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"issuerId\": \"0015e00000A1O3DAAV\",\n    \"issuerKey\": \"acc_2t8e6y4mgb\",\n    \"issuerName\": \"Salesforce\",\n    \"earnedDate\": \"2024-05-15\",\n    \"key_0\": 2017.613579519093,\n    \"key_1\": \"string\",\n    \"key_2\": 5265,\n    \"key_3\": true\n  },\n  {\n    \"id\": \"a105e00000B2O3DAAV\",\n    \"key\": \"crt_6q2v8d4nhz\",\n    \"name\": \"Application Architect\",\n    \"contactId\": \"0035e00000B2O3DAAV\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"issuerId\": \"0015e00000A1O3DAAV\",\n    \"issuerKey\": \"acc_2t8e6y4mgb\",\n    \"issuerName\": \"Salesforce\",\n    \"earnedDate\": \"2024-05-15\"\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"crt_6q2v8d4nhz\",\n    \"name\": \"Application Architect\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"issuerKey\": \"acc_2t8e6y4mgb\",\n    \"issuerName\": \"Salesforce\",\n    \"earnedDate\": \"2024-05-15\"\n  },\n  {\n    \"key\": \"crt_6q2v8d4nhz\",\n    \"name\": \"Application Architect\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"issuerKey\": \"acc_2t8e6y4mgb\",\n    \"issuerName\": \"Salesforce\",\n    \"earnedDate\": \"2024-05-15\"\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -7908,7 +7842,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -7938,7 +7872,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8020,7 +7954,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8102,7 +8036,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8184,7 +8118,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8254,7 +8188,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -8272,7 +8206,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8354,7 +8288,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8429,7 +8363,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -8481,7 +8415,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a115e00000B2O3DAAV\",\n    \"key\": \"edu_6b4c8j2rvq\",\n    \"name\": \"Bachelor of Science\",\n    \"contactId\": \"0035e00000B2O3DAAV\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"issuerId\": \"0015e00000A1O3DAAV\",\n    \"issuerKey\": \"acc_2t8e6y4mgb\",\n    \"issuerName\": \"University of Technology\",\n    \"fieldOfStudy\": \"Computer Science\",\n    \"graduationDate\": \"2018-05-01\",\n    \"gpa\": 3.8\n  },\n  {\n    \"id\": \"a115e00000B2O3DAAV\",\n    \"key\": \"edu_6b4c8j2rvq\",\n    \"name\": \"Bachelor of Science\",\n    \"contactId\": \"0035e00000B2O3DAAV\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"issuerId\": \"0015e00000A1O3DAAV\",\n    \"issuerKey\": \"acc_2t8e6y4mgb\",\n    \"issuerName\": \"University of Technology\",\n    \"fieldOfStudy\": \"Computer Science\",\n    \"graduationDate\": \"2018-05-01\",\n    \"gpa\": 3.8\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"edu_6b4c8j2rvq\",\n    \"name\": \"Bachelor of Science\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"issuerKey\": \"acc_2t8e6y4mgb\",\n    \"issuerName\": \"University of Technology\",\n    \"fieldOfStudy\": \"Computer Science\",\n    \"graduationDate\": \"2018-05-01\",\n    \"gpa\": 3.8\n  },\n  {\n    \"key\": \"edu_6b4c8j2rvq\",\n    \"name\": \"Bachelor of Science\",\n    \"contactKey\": \"con_7c5j3w9sfa\",\n    \"contactName\": \"Ryan Bumstead\",\n    \"issuerKey\": \"acc_2t8e6y4mgb\",\n    \"issuerName\": \"University of Technology\",\n    \"fieldOfStudy\": \"Computer Science\",\n    \"graduationDate\": \"2018-05-01\",\n    \"gpa\": 3.8\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -8495,7 +8429,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -8525,7 +8459,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8603,7 +8537,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8681,7 +8615,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8759,7 +8693,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8825,7 +8759,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -8843,7 +8777,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8921,7 +8855,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -8993,7 +8927,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Retrieves junction records linking Projects to Skills. A malformed Salesforce Id filter returns 400.",
+                  "content": "Retrieves junction records linking Projects to Skills. A filter that is not a known key, a Salesforce Id included, is treated as an unknown key.",
                   "type": "text/plain"
                 },
                 "header": [
@@ -9003,7 +8937,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -9025,9 +8959,9 @@
                   ],
                   "query": [
                     {
-                      "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated.",
+                      "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.",
                       "disabled": true,
-                      "key": "projectId",
+                      "key": "projectKey",
                       "value": "<string>"
                     },
                     {
@@ -9049,7 +8983,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a065e00000B2O3DAAV\",\n    \"key\": \"prs_8w2m6g4bha\",\n    \"projectId\": \"a015e00000B2O3DAAV\",\n    \"projectKey\": \"prj_8f3k2m9qtz\",\n    \"projectName\": \"Global CRM Migration\",\n    \"skillId\": \"a075e00000B2O3DAAV\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"Apex\",\n    \"skillCategory\": \"Backend Development\",\n    \"skillProficiencyScore\": 5\n  },\n  {\n    \"id\": \"a065e00000B2O3DAAV\",\n    \"key\": \"prs_8w2m6g4bha\",\n    \"projectId\": \"a015e00000B2O3DAAV\",\n    \"projectKey\": \"prj_8f3k2m9qtz\",\n    \"projectName\": \"Global CRM Migration\",\n    \"skillId\": \"a075e00000B2O3DAAV\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"Apex\",\n    \"skillCategory\": \"Backend Development\",\n    \"skillProficiencyScore\": 5\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"prs_8w2m6g4bha\",\n    \"projectKey\": \"prj_8f3k2m9qtz\",\n    \"projectName\": \"Global CRM Migration\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"Apex\",\n    \"skillCategory\": \"Backend Development\",\n    \"skillProficiencyScore\": 5\n  },\n  {\n    \"key\": \"prs_8w2m6g4bha\",\n    \"projectKey\": \"prj_8f3k2m9qtz\",\n    \"projectName\": \"Global CRM Migration\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"Apex\",\n    \"skillCategory\": \"Backend Development\",\n    \"skillProficiencyScore\": 5\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -9063,7 +8997,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -9093,7 +9027,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9122,7 +9056,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9134,7 +9068,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -9167,7 +9101,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9196,7 +9130,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9208,7 +9142,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -9241,7 +9175,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9270,7 +9204,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9282,7 +9216,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -9315,7 +9249,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9344,7 +9278,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9356,7 +9290,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -9377,7 +9311,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -9395,7 +9329,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9424,7 +9358,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9436,7 +9370,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -9469,7 +9403,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9498,7 +9432,7 @@
                       ],
                       "query": [
                         {
-                          "key": "projectId",
+                          "key": "projectKey",
                           "value": "<string>"
                         },
                         {
@@ -9510,7 +9444,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -9526,7 +9460,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Retrieves junction records linking Experiences to Skills. A malformed Salesforce Id filter returns 400.",
+                  "content": "Retrieves junction records linking Experiences to Skills. A filter that is not a known key, a Salesforce Id included, is treated as an unknown key.",
                   "type": "text/plain"
                 },
                 "header": [
@@ -9536,7 +9470,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -9558,9 +9492,9 @@
                   ],
                   "query": [
                     {
-                      "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated.",
+                      "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.",
                       "disabled": true,
-                      "key": "experienceId",
+                      "key": "experienceKey",
                       "value": "<string>"
                     },
                     {
@@ -9582,7 +9516,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a085e00000B2O3DAAV\",\n    \"key\": \"exs_5r8h2q6cjw\",\n    \"experienceId\": \"a025e00000B2O3DAAV\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"skillId\": \"a075e00000B2O3DAAV\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"LWC\",\n    \"skillCategory\": \"Frontend Development\",\n    \"skillProficiencyScore\": 4\n  },\n  {\n    \"id\": \"a085e00000B2O3DAAV\",\n    \"key\": \"exs_5r8h2q6cjw\",\n    \"experienceId\": \"a025e00000B2O3DAAV\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"skillId\": \"a075e00000B2O3DAAV\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"LWC\",\n    \"skillCategory\": \"Frontend Development\",\n    \"skillProficiencyScore\": 4,\n    \"key_0\": 3502\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"exs_5r8h2q6cjw\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"LWC\",\n    \"skillCategory\": \"Frontend Development\",\n    \"skillProficiencyScore\": 4\n  },\n  {\n    \"key\": \"exs_5r8h2q6cjw\",\n    \"experienceKey\": \"exp_4h7n2c8wpd\",\n    \"experienceName\": \"Technical Architect\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"LWC\",\n    \"skillCategory\": \"Frontend Development\",\n    \"skillProficiencyScore\": 4\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -9596,7 +9530,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -9626,7 +9560,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9655,7 +9589,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9667,7 +9601,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -9700,7 +9634,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9729,7 +9663,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9741,7 +9675,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -9774,7 +9708,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9803,7 +9737,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9815,7 +9749,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -9848,7 +9782,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9877,7 +9811,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9889,7 +9823,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -9910,7 +9844,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -9928,7 +9862,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -9957,7 +9891,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -9969,7 +9903,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -10002,7 +9936,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10031,7 +9965,7 @@
                       ],
                       "query": [
                         {
-                          "key": "experienceId",
+                          "key": "experienceKey",
                           "value": "<string>"
                         },
                         {
@@ -10043,7 +9977,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -10059,7 +9993,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Retrieves junction records linking Certifications to Skills. A malformed Salesforce Id filter returns 400.",
+                  "content": "Retrieves junction records linking Certifications to Skills. A filter that is not a known key, a Salesforce Id included, is treated as an unknown key.",
                   "type": "text/plain"
                 },
                 "header": [
@@ -10069,7 +10003,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -10091,9 +10025,9 @@
                   ],
                   "query": [
                     {
-                      "description": "Filter by Certification public key (for example `crt_6q2v8d4nhz`) or Salesforce ID. The Salesforce ID is deprecated.",
+                      "description": "Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `certificationId` returns 400.",
                       "disabled": true,
-                      "key": "certificationId",
+                      "key": "certificationKey",
                       "value": "<string>"
                     },
                     {
@@ -10115,7 +10049,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "[\n  {\n    \"id\": \"a095e00000B2O3DAAV\",\n    \"key\": \"cks_3k9z5x7pne\",\n    \"certificationId\": \"a105e00000B2O3DAAV\",\n    \"certificationKey\": \"crt_6q2v8d4nhz\",\n    \"certificationName\": \"Salesforce Certified Application Architect\",\n    \"skillId\": \"a075e00000B2O3DAAV\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"Security\",\n    \"skillCategory\": \"Architecture\",\n    \"skillProficiencyScore\": 5\n  },\n  {\n    \"id\": \"a095e00000B2O3DAAV\",\n    \"key\": \"cks_3k9z5x7pne\",\n    \"certificationId\": \"a105e00000B2O3DAAV\",\n    \"certificationKey\": \"crt_6q2v8d4nhz\",\n    \"certificationName\": \"Salesforce Certified Application Architect\",\n    \"skillId\": \"a075e00000B2O3DAAV\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"Security\",\n    \"skillCategory\": \"Architecture\",\n    \"skillProficiencyScore\": 5\n  }\n]",
+                  "body": "[\n  {\n    \"key\": \"cks_3k9z5x7pne\",\n    \"certificationKey\": \"crt_6q2v8d4nhz\",\n    \"certificationName\": \"Salesforce Certified Application Architect\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"Security\",\n    \"skillCategory\": \"Architecture\",\n    \"skillProficiencyScore\": 5\n  },\n  {\n    \"key\": \"cks_3k9z5x7pne\",\n    \"certificationKey\": \"crt_6q2v8d4nhz\",\n    \"certificationName\": \"Salesforce Certified Application Architect\",\n    \"skillKey\": \"skl_3m9x5b2rkt\",\n    \"skillName\": \"Security\",\n    \"skillCategory\": \"Architecture\",\n    \"skillProficiencyScore\": 5\n  }\n]",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -10129,7 +10063,7 @@
                       "description": "Total number of records that match the request, so a filtered list reports the filtered total. With no filter it is every record the resource can return. The total is the same on every page of one request.",
                       "disabled": true,
                       "key": "X-Total-Count",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "description": "Boolean indicator if more records exist beyond the current offset.",
@@ -10159,7 +10093,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10188,7 +10122,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10200,7 +10134,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -10233,7 +10167,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10262,7 +10196,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10274,7 +10208,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -10307,7 +10241,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10336,7 +10270,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10348,7 +10282,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -10381,7 +10315,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10410,7 +10344,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10422,7 +10356,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -10443,7 +10377,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -10461,7 +10395,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10490,7 +10424,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10502,7 +10436,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -10535,7 +10469,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10564,7 +10498,7 @@
                       ],
                       "query": [
                         {
-                          "key": "certificationId",
+                          "key": "certificationKey",
                           "value": "<string>"
                         },
                         {
@@ -10576,7 +10510,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationId=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -10613,7 +10547,7 @@
                   },
                   {
                     "key": "X-API-Version",
-                    "value": "v1"
+                    "value": "v2"
                   },
                   {
                     "key": "Accept",
@@ -10640,7 +10574,7 @@
               "response": [
                 {
                   "_postman_previewlanguage": "json",
-                  "body": "{\n  \"linkedInUrl\": \"https://linkedin.com/in/ryanbumstead\",\n  \"gitHubProfileUrl\": \"https://example.com/source\",\n  \"calendlyUrl\": \"https://example.com/schedule\",\n  \"trailblazerProfileUrl\": \"https://trailblazer.me/id/rbumstead\",\n  \"personalWebsiteUrl\": \"https://ryanbumstead.com\",\n  \"careerObjective\": \"Looking for Principal Architect roles.\",\n  \"jiraProjectKey\": \"SPAP\",\n  \"gitHubRepoPath\": \"rdbumstead/salesforce-portfolio\",\n  \"key_0\": 1712.7961269579828,\n  \"key_1\": \"string\",\n  \"key_2\": 4071\n}",
+                  "body": "{\n  \"linkedInUrl\": \"https://linkedin.com/in/ryanbumstead\",\n  \"gitHubProfileUrl\": \"https://example.com/source\",\n  \"calendlyUrl\": \"https://example.com/schedule\",\n  \"trailblazerProfileUrl\": \"https://trailblazer.me/id/rbumstead\",\n  \"personalWebsiteUrl\": \"https://ryanbumstead.com\",\n  \"careerObjective\": \"Looking for Principal Architect roles.\",\n  \"jiraProjectKey\": \"SPAP\",\n  \"gitHubRepoPath\": \"rdbumstead/salesforce-portfolio\",\n  \"key_0\": \"string\",\n  \"key_1\": \"string\"\n}",
                   "code": 200,
                   "cookie": [],
                   "header": [
@@ -10672,7 +10606,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10733,7 +10667,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10794,7 +10728,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10843,7 +10777,7 @@
                       "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).",
                       "disabled": true,
                       "key": "Retry-After",
-                      "value": "2980"
+                      "value": "4372"
                     },
                     {
                       "key": "Content-Type",
@@ -10861,7 +10795,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {
@@ -10922,7 +10856,7 @@
                       },
                       {
                         "key": "X-API-Version",
-                        "value": "v1"
+                        "value": "v2"
                       },
                       {
                         "description": {

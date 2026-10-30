@@ -1,8 +1,10 @@
 /**
  * @description       : Serves the machine readable API specs at
  *                      /services/apexrest/openapi.json. ?spec=papi (the default) returns the
- *                      Experience API, ?spec=sapi the System API. The body is the PAPI_OpenAPI or
- *                      SAPI_OpenAPI static resource, which scripts/sync-specs.js generates from
+ *                      Experience API, ?spec=sapi the System API. ?version=v2 (the default)
+ *                      returns the v2 document, ?version=v1 the deprecated v1 one. The body is
+ *                      the PAPI_OpenAPI_V2, SAPI_OpenAPI_V2, PAPI_OpenAPI or SAPI_OpenAPI static
+ *                      resource, which scripts/sync-specs.js generates from
  *                      packages/integration-api/specs, so it always matches the API reference.
  *                      Open to the site guest, read only, no DML and no callout.
  * @author            : Ryan Bumstead
@@ -17,6 +19,7 @@
 @RestResource(urlMapping='/openapi')
 global with sharing class OpenApiDocument {
   public static final String DEFAULT_SPEC = 'papi';
+  public static final String DEFAULT_VERSION = 'v2';
   public static final String CACHE_CONTROL = 'public, max-age=3600';
 
   /** Query value to static resource name. */
@@ -25,9 +28,16 @@ global with sharing class OpenApiDocument {
     'sapi' => 'SAPI_OpenAPI'
   };
 
+  /** Query value to the v2 static resource name. */
+  public static final Map<String, String> RESOURCE_BY_SPEC_V2 = new Map<String, String>{
+    'papi' => 'PAPI_OpenAPI_V2',
+    'sapi' => 'SAPI_OpenAPI_V2'
+  };
+
   /**
-   * @description GET /openapi.json?spec=papi|sapi. 200 with the OpenAPI document, 400 for an
-   *              unknown spec, 503 when the resource is missing.
+   * @description GET /openapi.json?spec=papi|sapi&version=v1|v2. 200 with the OpenAPI
+   *              document, 400 for an unknown spec or version, 503 when the resource is
+   *              missing. The version defaults to v2.
    */
   @HttpGet
   global static void getDocument() {
@@ -35,6 +45,10 @@ global with sharing class OpenApiDocument {
     RestResponse response = RestContext.response;
     String spec = request?.params?.get('spec');
     spec = String.isBlank(spec) ? DEFAULT_SPEC : spec.trim().toLowerCase();
+    String version = request?.params?.get('version');
+    version = String.isBlank(version)
+      ? DEFAULT_VERSION
+      : version.trim().toLowerCase();
     response.addHeader('Content-Type', 'application/json');
 
     if (!RESOURCE_BY_SPEC.containsKey(spec)) {
@@ -46,7 +60,19 @@ global with sharing class OpenApiDocument {
       );
       return;
     }
-    Blob body = resourceBody(RESOURCE_BY_SPEC.get(spec));
+    if (version != 'v1' && version != 'v2') {
+      writeError(
+        response,
+        400,
+        'BAD_REQUEST',
+        'Unknown version. Use version=v1 or version=v2.'
+      );
+      return;
+    }
+    String resourceName = version == 'v2'
+      ? RESOURCE_BY_SPEC_V2.get(spec)
+      : RESOURCE_BY_SPEC.get(spec);
+    Blob body = resourceBody(resourceName);
     if (body == null) {
       writeError(
         response,

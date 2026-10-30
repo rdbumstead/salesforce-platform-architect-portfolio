@@ -384,7 +384,7 @@ private class ApiRequestContextTest {
 
   @IsTest
   static void unsupportedApiVersionRejected() {
-    RestTestUtil.initGetRaw(SAPI_URI, headers(VALID_ID, 'v2'), null);
+    RestTestUtil.initGetRaw(SAPI_URI, headers(VALID_ID, 'v3'), null);
 
     Test.startTest();
     SAPISkill.getSkills();
@@ -392,9 +392,9 @@ private class ApiRequestContextTest {
     Test.stopTest();
 
     Assert.areEqual(
-      LIMITER_QUERIES,
+      0,
       queries,
-      'Only the window read of the rate limiter runs before rejection'
+      'The version check runs before the rate limiter, so no query runs'
     );
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(

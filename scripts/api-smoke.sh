@@ -4,7 +4,7 @@
 #
 # 1. Requests a short-lived token from POST /papi/v1/auth/token on the Experience Cloud
 #    site domain, where Apex REST is served to the guest user.
-# 2. Calls every GET path in salesforce-sapi.yaml and portfolio-papi.yaml on the
+# 2. Calls every GET path in salesforce-sapi-v2.yaml and portfolio-papi-v2.yaml on the
 #    instance_url returned with the token, with the token as a Bearer credential.
 # 3. Prints the status and the key headers for each path.
 # 4. Calls /papi/v1/resume/generate once more with Accept: text/plain and prints the
@@ -16,6 +16,9 @@
 #
 # Optional environment:
 #   SITE_API_BASE  Apex REST base on the site domain (default below).
+#   API_VERSION    The X-API-Version to send, v2 (default, public keys only) or v1 (deprecated,
+#                  its responses carry Deprecation, Sunset and Link headers, and after the
+#                  sunset date it answers 410). The URL paths keep their /v1 segment.
 #
 # This file holds no token, key or secret. The token lives only in this process's memory.
 # Exit status: 1 when the token request fails, 2 when any GET call is not 200, 0 otherwise.
@@ -25,6 +28,12 @@ set -euo pipefail
 EMAIL="${1:-${EVALUATOR_EMAIL:-}}"
 PURPOSE="${2:-${EVALUATOR_PURPOSE:-}}"
 SITE_API_BASE="${SITE_API_BASE:-https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest}"
+API_VERSION="${API_VERSION:-v2}"
+
+if [[ "$API_VERSION" != "v1" && "$API_VERSION" != "v2" ]]; then
+  echo "API_VERSION must be v2 or v1, not $API_VERSION." >&2
+  exit 64
+fi
 
 if [[ -z "$EMAIL" || -z "$PURPOSE" ]]; then
   echo "Usage: $0 <email> \"<purpose>\"  (or set EVALUATOR_EMAIL and EVALUATOR_PURPOSE)" >&2
@@ -63,7 +72,7 @@ PAPI_PATHS=(
   /papi/v1/testimonials/feed
 )
 
-KEY_HEADERS="x-request-id|x-api-version|x-ratelimit-limit|x-ratelimit-remaining|retry-after|cache-control|x-total-count|x-has-more"
+KEY_HEADERS="x-request-id|x-api-version|x-ratelimit-limit|x-ratelimit-remaining|retry-after|cache-control|x-total-count|x-has-more|deprecation|sunset|link"
 
 new_uuid() {
   if command -v uuidgen >/dev/null 2>&1; then
@@ -98,11 +107,12 @@ TOKEN_URL="$SITE_API_BASE/papi/v1/auth/token"
 TOKEN_REQUEST_ID="$(new_uuid)"
 BODY="{\"email\":\"$(json_escape "$EMAIL")\",\"purpose\":\"$(json_escape "$PURPOSE")\"}"
 
+echo "Sending X-API-Version $API_VERSION"
 echo "POST $TOKEN_URL"
 TOKEN_STATUS="$(curl -sS -o "$WORK_DIR/token.json" -D "$WORK_DIR/token.headers" -w '%{http_code}' \
   -X POST "$TOKEN_URL" \
   -H "Content-Type: application/json" \
-  -H "X-API-Version: v1" \
+  -H "X-API-Version: $API_VERSION" \
   -H "X-Request-Id: $TOKEN_REQUEST_ID" \
   --data "$BODY")" || TOKEN_STATUS="000"
 
@@ -147,7 +157,7 @@ call_path() {
   status="$(curl -sS -o "$WORK_DIR/body.json" -D "$WORK_DIR/headers.txt" -w '%{http_code}' \
     "$API_BASE$path" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -H "X-API-Version: v1" \
+    -H "X-API-Version: $API_VERSION" \
     -H "X-Request-Id: $request_id")" || status="000"
 
   echo "GET $path"
@@ -172,7 +182,7 @@ PLAIN_STATUS="$(curl -sS -o "$WORK_DIR/resume.txt" -D "$WORK_DIR/resume.headers"
   "$API_BASE$PLAIN_PATH" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Accept: text/plain" \
-  -H "X-API-Version: v1" \
+  -H "X-API-Version: $API_VERSION" \
   -H "X-Request-Id: $PLAIN_REQUEST_ID")" || PLAIN_STATUS="000"
 
 echo "GET $PLAIN_PATH (Accept: text/plain)"

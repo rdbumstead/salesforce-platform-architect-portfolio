@@ -47,6 +47,27 @@
     </header>
     <div class={bodyClass}>
       <div
+        class="version-toggle slds-m-bottom_small"
+        role="group"
+        aria-label="API version"
+      >
+        <template for:each={versionButtons} for:item="version">
+          <button
+            key={version.value}
+            type="button"
+            class={version.cssClass}
+            aria-pressed={version.pressed}
+            data-version={version.value}
+            onclick={handleVersionClick}
+          >
+            {version.label}
+          </button>
+        </template>
+      </div>
+      <p lwc:if={isDeprecatedVersion} class="version-notice" role="note">
+        {versionNotice}
+      </p>
+      <div
         class="spec-toggle slds-m-bottom_small"
         role="group"
         aria-label="Specification"

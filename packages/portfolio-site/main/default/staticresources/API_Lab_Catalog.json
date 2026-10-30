@@ -1,5 +1,7 @@
 {
   "source": [
+    "packages/integration-api/specs/salesforce-sapi-v2.yaml",
+    "packages/integration-api/specs/portfolio-papi-v2.yaml",
     "packages/integration-api/specs/salesforce-sapi.yaml",
     "packages/integration-api/specs/portfolio-papi.yaml"
   ],
@@ -14,6 +16,21 @@
       "summary": "Health Check",
       "params": [],
       "responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "status",
+            "checkType",
+            "timestamp",
+            "orgTimeZone",
+            "dependencies",
+            "limits"
+          ],
+          "required": []
+        }
+      },
+      "v1Params": [],
+      "v1Responses": {
         "200": {
           "type": "object",
           "properties": [
@@ -55,6 +72,125 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "name",
+            "title",
+            "trailhead",
+            "careerObjective",
+            "linkedIn",
+            "portfolio"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -191,6 +327,139 @@
         "200": {
           "type": "array",
           "properties": [
+            "key",
+            "employerName",
+            "employerKey",
+            "name",
+            "startDate",
+            "endDate",
+            "isCurrentRole",
+            "isRemote",
+            "contactKey",
+            "contactName",
+            "sortOrder"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "employerName",
+          "type": "string",
+          "description": "Filter by Employer Name."
+        },
+        {
+          "name": "currentlyEmployed",
+          "type": "boolean",
+          "description": "Filter by active employment status."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "v1Responses": {
+        "200": {
+          "type": "array",
+          "properties": [
             "id",
             "key",
             "employerName",
@@ -297,6 +566,130 @@
       "summary": "Get Experience Highlights",
       "params": [
         {
+          "name": "experienceKey",
+          "type": "string",
+          "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `expe."
+        },
+        {
+          "name": "persona",
+          "type": "string",
+          "description": "Filters records where the target field (Multi-Select Picklist) includes the specified persona(s)."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "experienceKey",
+            "experienceName",
+            "name",
+            "description",
+            "sortOrder",
+            "personaTag"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
           "name": "experienceId",
           "type": "string",
           "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated."
@@ -322,7 +715,7 @@
           "default": 0
         }
       ],
-      "responses": {
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -472,6 +865,156 @@
         "200": {
           "type": "array",
           "properties": [
+            "key",
+            "name",
+            "challenge",
+            "solution",
+            "businessValue",
+            "status",
+            "dateCompleted",
+            "heroImageUrl",
+            "liveUrl",
+            "repositoryUrl",
+            "pillar",
+            "pillarLabel",
+            "isFeatured",
+            "contactName",
+            "contactKey",
+            "sortOrder"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
+          "name": "status",
+          "type": "string",
+          "description": "Filter by Project Status.",
+          "enum": [
+            "Live – In Production",
+            "Live – Demo / Reference",
+            "Active Development",
+            "On Hold",
+            "Archived"
+          ]
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        },
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "projectName",
+          "type": "string",
+          "description": "Filter by Project Name."
+        },
+        {
+          "name": "isFeatured",
+          "type": "boolean",
+          "description": "Filter only featured projects."
+        }
+      ],
+      "v1Responses": {
+        "200": {
+          "type": "array",
+          "properties": [
             "id",
             "key",
             "name",
@@ -581,6 +1124,126 @@
       "summary": "Get Project Assets",
       "params": [
         {
+          "name": "projectKey",
+          "type": "string",
+          "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `project."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "name",
+            "projectKey",
+            "projectName",
+            "type",
+            "externalUrl",
+            "altText",
+            "sortOrder"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
           "name": "projectId",
           "type": "string",
           "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated."
@@ -601,7 +1264,7 @@
           "default": 0
         }
       ],
-      "responses": {
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -722,6 +1385,121 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "name",
+            "authorName",
+            "authorTitle",
+            "avatarUrl",
+            "relationshipType",
+            "vibeMode",
+            "context"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -903,6 +1681,87 @@
             "httpStatus"
           ]
         }
+      },
+      "v1Params": [],
+      "v1Responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "linkedInUrl",
+            "gitHubProfileUrl",
+            "calendlyUrl",
+            "trailblazerProfileUrl",
+            "personalWebsiteUrl",
+            "careerObjective",
+            "jiraProjectKey",
+            "gitHubRepoPath"
+          ],
+          "required": []
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
       }
     },
     {
@@ -932,6 +1791,122 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "name",
+            "industry",
+            "abbreviation"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
+          "name": "accountName",
+          "type": "string",
+          "description": "Filter by Account Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -1052,6 +2027,127 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "name",
+            "displayName",
+            "category",
+            "proficiencyScore",
+            "iconName",
+            "svgPathData",
+            "colorHex",
+            "categoryOrder"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
+          "name": "category",
+          "type": "string",
+          "description": "Filter skills by Category, one of the Skill Category picklist values, for example 'Backend', 'Frontend' or 'Integration'."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -1190,6 +2286,135 @@
         "200": {
           "type": "array",
           "properties": [
+            "key",
+            "name",
+            "contactKey",
+            "contactName",
+            "issuerKey",
+            "issuerName",
+            "earnedDate"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "issuerName",
+          "type": "string",
+          "description": "Filter by Issuer Name."
+        },
+        {
+          "name": "certificationName",
+          "type": "string",
+          "description": "Filter by Certification Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "v1Responses": {
+        "200": {
+          "type": "array",
+          "properties": [
             "id",
             "key",
             "name",
@@ -1320,6 +2545,132 @@
         "200": {
           "type": "array",
           "properties": [
+            "key",
+            "name",
+            "contactKey",
+            "contactName",
+            "issuerKey",
+            "issuerName",
+            "fieldOfStudy",
+            "graduationDate",
+            "gpa"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
+          "name": "contactName",
+          "type": "string",
+          "description": "Filter by Contact Name."
+        },
+        {
+          "name": "issuerName",
+          "type": "string",
+          "description": "Filter by Issuer Name."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "v1Responses": {
+        "200": {
+          "type": "array",
+          "properties": [
             "id",
             "key",
             "name",
@@ -1423,6 +2774,125 @@
       "summary": "Get Project-Skill Links",
       "params": [
         {
+          "name": "projectKey",
+          "type": "string",
+          "description": "Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `project."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "projectKey",
+            "projectName",
+            "skillKey",
+            "skillName",
+            "skillCategory",
+            "skillProficiencyScore"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
           "name": "projectId",
           "type": "string",
           "description": "Filter by Project public key (for example `prj_8f3k2m9qtz`) or Salesforce ID. The Salesforce ID is deprecated."
@@ -1443,7 +2913,7 @@
           "default": 0
         }
       ],
-      "responses": {
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -1548,6 +3018,125 @@
       "summary": "Get Experience-Skill Links",
       "params": [
         {
+          "name": "experienceKey",
+          "type": "string",
+          "description": "Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `expe."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "experienceKey",
+            "experienceName",
+            "skillKey",
+            "skillName",
+            "skillCategory",
+            "skillProficiencyScore"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
           "name": "experienceId",
           "type": "string",
           "description": "Filter by Experience public key (for example `exp_4h7n2c8wpd`) or Salesforce ID. The Salesforce ID is deprecated."
@@ -1568,7 +3157,7 @@
           "default": 0
         }
       ],
-      "responses": {
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -1673,6 +3262,125 @@
       "summary": "Get Certification-Skill Links",
       "params": [
         {
+          "name": "certificationKey",
+          "type": "string",
+          "description": "Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `c."
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "description": "Maximum number of records to return.",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "description": "Pagination offset.",
+          "minimum": 0,
+          "default": 0
+        }
+      ],
+      "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "certificationKey",
+            "certificationName",
+            "skillKey",
+            "skillName",
+            "skillCategory",
+            "skillProficiencyScore"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "403": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "retryable",
+            "correlationId"
+          ],
+          "required": [
+            "errorCode",
+            "message",
+            "correlationId",
+            "httpStatus"
+          ]
+        }
+      },
+      "v1Params": [
+        {
           "name": "certificationId",
           "type": "string",
           "description": "Filter by Certification public key (for example `crt_6q2v8d4nhz`) or Salesforce ID. The Salesforce ID is deprecated."
@@ -1693,7 +3401,7 @@
           "default": 0
         }
       ],
-      "responses": {
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -1809,6 +3517,20 @@
           ],
           "required": []
         }
+      },
+      "v1Params": [],
+      "v1Responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "status",
+            "checkType",
+            "timestamp",
+            "dependencies",
+            "details"
+          ],
+          "required": []
+        }
       }
     },
     {
@@ -1817,6 +3539,106 @@
       "summary": "Get Complete Portfolio State",
       "params": [],
       "responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "config",
+            "contactInfo",
+            "summary",
+            "skills",
+            "experience",
+            "projects",
+            "certifications",
+            "education",
+            "testimonials",
+            "integrityNote"
+          ],
+          "required": [
+            "config",
+            "contactInfo",
+            "skills",
+            "experience",
+            "projects",
+            "certifications",
+            "education",
+            "testimonials"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      },
+      "v1Params": [],
+      "v1Responses": {
         "200": {
           "type": "object",
           "properties": [
@@ -2013,6 +3835,100 @@
             "retryable"
           ]
         }
+      },
+      "v1Params": [],
+      "v1Responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "contactInfo",
+            "summary",
+            "skills",
+            "experience",
+            "certifications",
+            "education",
+            "integrityNote"
+          ],
+          "required": [
+            "contactInfo",
+            "skills",
+            "experience",
+            "certifications",
+            "education"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
       }
     },
     {
@@ -2118,6 +4034,106 @@
             "retryable"
           ]
         }
+      },
+      "v1Params": [
+        {
+          "name": "persona",
+          "type": "string",
+          "description": "Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.",
+          "enum": [
+            "Admin",
+            "Developer",
+            "Architect"
+          ]
+        }
+      ],
+      "v1Responses": {
+        "200": {
+          "type": "object",
+          "properties": [
+            "integrityNote",
+            "generatedText",
+            "persona",
+            "generatedAt"
+          ],
+          "required": [
+            "generatedText",
+            "persona",
+            "generatedAt"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
       }
     },
     {
@@ -2126,6 +4142,102 @@
       "summary": "Get Featured Projects (Enriched)",
       "params": [],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "title",
+            "challenge",
+            "solution",
+            "businessValue",
+            "status",
+            "completionDate",
+            "heroImageUrl",
+            "liveUrl",
+            "repositoryUrl",
+            "technologies",
+            "pillarLabel",
+            "assets"
+          ],
+          "required": [
+            "key"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      },
+      "v1Params": [],
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
@@ -2239,6 +4351,109 @@
         }
       ],
       "responses": {
+        "200": {
+          "type": "array",
+          "properties": [
+            "key",
+            "author",
+            "title",
+            "relationship",
+            "quote",
+            "vibe",
+            "avatarUrl"
+          ],
+          "required": [
+            "key",
+            "author",
+            "quote"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "503": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "details"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        }
+      },
+      "v1Params": [
+        {
+          "name": "mode",
+          "type": "string",
+          "description": "Filter testimonials by vibe",
+          "enum": [
+            "professional",
+            "casual"
+          ],
+          "default": "professional"
+        }
+      ],
+      "v1Responses": {
         "200": {
           "type": "array",
           "properties": [
