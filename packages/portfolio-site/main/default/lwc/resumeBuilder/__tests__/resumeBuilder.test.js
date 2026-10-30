@@ -17,7 +17,13 @@ import ResumeBuilder, {
 import getResume from "@salesforce/apex/ResumeController.getResume";
 import { loadScript } from "lightning/platformResourceLoader";
 import { trackEvent } from "c/analyticsService";
-import { buildViewModel, writePdf } from "../resumeFormat";
+import {
+  buildViewModel,
+  buildLines,
+  toAtsText,
+  writePdf,
+  shortCertName
+} from "../resumeFormat";
 import {
   RESUME_LAYOUT,
   PREVIEW_PX_PER_PT,
@@ -330,7 +336,7 @@ describe("c-resume-builder", () => {
 
     expect(query(element, ".skill-group").textContent).toContain("Apex, LWC");
     expect(query(element, ".certification").textContent.trim()).toBe(
-      "Application Architect, Salesforce, Jun 2024"
+      "Application Architect (2024)"
     );
     expect(query(element, ".education").textContent).toBe(
       "BSc, Computer Science, State University, May 2015"
@@ -652,13 +658,11 @@ describe("c-resume-builder", () => {
         "Design platforms that last.",
         "",
         "EXPERIENCE",
-        "Technical Architect, Acme",
-        "Apr 2023 - Present | Remote",
+        "Technical Architect | Acme | Apr 2023 - Present | Remote",
         "- Led the integration layer.",
         "- Built the CI pipeline.",
         "",
-        "Developer, Globex",
-        "Jan 2020 - Mar 2023",
+        "Developer | Globex | Jan 2020 - Mar 2023",
         "- Shipped Lightning components.",
         "",
         "SKILLS",
@@ -785,14 +789,19 @@ describe("c-resume-builder", () => {
       expect(link.textContent).toContain("Verify on Trailhead");
     });
 
-    it("lists current certifications newest first with issuer and month", async () => {
+    it("lists current certifications newest first as short name and year", async () => {
       const element = await render({ ...RESUME, certifications: CERTS });
       expect(
         queryAll(element, ".certification").map((li) => li.textContent.trim())
       ).toEqual([
-        "Salesforce Certified Data 360 Consultant, Salesforce, Mar 2025",
-        "Salesforce Certified Platform Administrator, Salesforce, Jun 2024"
+        "Data 360 Consultant (2025)",
+        "Platform Administrator (2024)"
       ]);
+      expect(
+        queryAll(element, ".issuer-label").map((node) =>
+          node.textContent.trim()
+        )
+      ).toEqual(["Salesforce"]);
     });
 
     it("puts the retired list after the link, outside the current list", async () => {
@@ -1140,5 +1149,228 @@ describe("c-resume-builder", () => {
   it("keeps the card body free of the pair on a wide screen", () => {
     const element = createComponent();
     expect(query(element, ".card-actions_body")).toBeNull();
+  });
+});
+
+describe("grouping by employer and issuer", () => {
+  const OPTIONS = { includeHeader: false, includeSkills: false };
+  const role = (id, title, employer, start, end, extra = {}) => ({
+    id,
+    title,
+    employer,
+    startDate: start,
+    endDate: end,
+    isCurrent: false,
+    isRemote: false,
+    highlights: [`${title} highlight.`],
+    ...extra
+  });
+  const build = (roles, certifications = []) =>
+    buildViewModel({ roles, certifications }, OPTIONS);
+
+  it("stacks two consecutive roles at one employer under one span, newest first", () => {
+    const model = build([
+      role(
+        "a1",
+        "Application Administrator",
+        "Creighton",
+        "2021-06-01",
+        "2025-08-01"
+      ),
+      role("a2", "CRM Developer", "Creighton", "2025-08-01", "2026-04-01")
+    ]);
+    expect(model.employers).toHaveLength(1);
+    const [group] = model.employers;
+    expect(group.employer).toBe("Creighton");
+    expect(group.isStacked).toBe(true);
+    expect(group.spanText).toBe("Jun 2021 - Apr 2026");
+    expect(group.roles.map((entry) => entry.title)).toEqual([
+      "CRM Developer",
+      "Application Administrator"
+    ]);
+    expect(group.roles[0].datesText).toBe("Aug 2025 - Apr 2026");
+  });
+
+  it("orders two roles held at once by start date and spans all of them", () => {
+    const model = build([
+      role("b1", "CAET Specialist", "MCC", "2017-07-01", "2021-06-01"),
+      role("b2", "Instructor", "MCC", "2017-12-01", "2021-06-01"),
+      role("b3", "Project Assistant", "MCC", "2017-01-01", "2017-07-01")
+    ]);
+    const [group] = model.employers;
+    expect(group.roles.map((entry) => entry.title)).toEqual([
+      "Instructor",
+      "CAET Specialist",
+      "Project Assistant"
+    ]);
+    expect(group.spanText).toBe("Jan 2017 - Jun 2021");
+  });
+
+  it("writes Present on the employer span when any role is current", () => {
+    const model = build([
+      role("c1", "Consultant", "TELUS", "2026-01-01", null, {
+        isCurrent: true
+      }),
+      role("c2", "Analyst", "TELUS", "2022-01-01", "2025-12-01")
+    ]);
+    expect(model.employers[0].spanText).toBe("Jan 2022 - Present");
+  });
+
+  it("keeps a single role employer as one Title, Employer block", () => {
+    const model = build([
+      role("d1", "Architect", "Solo", "2021-10-01", "2022-10-01")
+    ]);
+    const [group] = model.employers;
+    expect(group.isStacked).toBe(false);
+    expect(group.roles[0].heading).toBe("Architect, Solo");
+  });
+
+  it("keeps highlights under their own title and never merges them", () => {
+    const model = build([
+      role("e1", "Admin", "Acme", "2020-01-01", "2021-01-01", {
+        highlights: ["Admin one.", "Admin two."]
+      }),
+      role("e2", "Developer", "Acme", "2021-01-01", "2022-01-01", {
+        highlights: ["Developer one."]
+      })
+    ]);
+    const roles = model.employers[0].roles;
+    expect(roles[0].title).toBe("Developer");
+    expect(roles[0].highlights.map((entry) => entry.text)).toEqual([
+      "Developer one."
+    ]);
+    expect(roles[1].highlights.map((entry) => entry.text)).toEqual([
+      "Admin one.",
+      "Admin two."
+    ]);
+  });
+
+  it("leaves the Earlier roles line as it was", () => {
+    const model = build([
+      role("f1", "Developer", "Acme", "2021-01-01", "2022-01-01"),
+      role("f2", "Technician", "Fiserv", "2016-01-01", "2016-10-03", {
+        highlights: []
+      })
+    ]);
+    expect(model.earlierRoles.text).toBe("Technician, Fiserv (2016)");
+    expect(model.employers).toHaveLength(1);
+  });
+
+  it("renders the employer heading and titles on the page, one block for a single role", async () => {
+    const element = createElement("c-resume-builder", { is: ResumeBuilder });
+    document.body.appendChild(element);
+    getResume.emit({
+      roles: [
+        role("g1", "Admin", "Acme", "2020-01-01", "2021-01-01"),
+        role("g2", "Developer", "Acme", "2021-01-01", "2022-01-01"),
+        role("g3", "Solo Role", "Alone", "2019-01-01", "2019-12-01")
+      ],
+      certifications: []
+    });
+    await new Promise((resolve) => process.nextTick(resolve));
+    const groups = Array.from(
+      element.shadowRoot.querySelectorAll(".resume-employer")
+    );
+    expect(groups).toHaveLength(2);
+    expect(
+      groups[0].querySelector(".employer-heading").textContent.trim()
+    ).toBe("Acme");
+    expect(
+      Array.from(groups[0].querySelectorAll(".role-title")).map((node) =>
+        node.textContent.trim()
+      )
+    ).toEqual(["Developer", "Admin"]);
+    expect(groups[1].querySelector(".employer-heading")).toBeNull();
+    expect(groups[1].querySelector(".role-heading").textContent.trim()).toBe(
+      "Solo Role, Alone"
+    );
+  });
+
+  it("lists certifications flat, newest first, as short name and year under the issuer", () => {
+    const model = build(
+      [],
+      [
+        {
+          name: "Salesforce Certified Platform App Builder",
+          issuer: "Salesforce",
+          dateValue: "2024-03-01"
+        },
+        {
+          name: "Salesforce Certified Data 360 Consultant",
+          issuer: "Salesforce",
+          dateValue: "2025-03-17"
+        }
+      ]
+    );
+    expect(model.certificationGroups).toHaveLength(1);
+    expect(model.certificationGroups[0].issuer).toBe("Salesforce");
+    expect(
+      model.certificationGroups[0].certifications.map((cert) => cert.text)
+    ).toEqual(["Data 360 Consultant (2025)", "Platform App Builder (2024)"]);
+  });
+
+  it("gives a second issuer its own label and keeps an unprefixed name whole", () => {
+    const model = build(
+      [],
+      [
+        {
+          name: "Salesforce Certified Data 360 Consultant",
+          issuer: "Salesforce",
+          dateValue: "2025-03-17"
+        },
+        {
+          name: "Certified Kubernetes Administrator",
+          issuer: "CNCF",
+          dateValue: "2025-01-10"
+        }
+      ]
+    );
+    expect(model.certificationGroups.map((group) => group.issuer)).toEqual([
+      "Salesforce",
+      "CNCF"
+    ]);
+    expect(model.certificationGroups[1].certifications[0].text).toBe(
+      "Certified Kubernetes Administrator (2025)"
+    );
+    expect(shortCertName("Salesforce Certified X", "Salesforce")).toBe("X");
+    expect(shortCertName("Other Name", "Salesforce")).toBe("Other Name");
+  });
+
+  it("writes one ATS line per role with the employer repeated and full certification names", () => {
+    const model = build(
+      [
+        role(
+          "h1",
+          "Application Administrator",
+          "Creighton University",
+          "2021-06-01",
+          "2025-08-01"
+        ),
+        role(
+          "h2",
+          "CRM Developer",
+          "Creighton University",
+          "2025-08-01",
+          "2026-04-01"
+        )
+      ],
+      [
+        {
+          name: "Salesforce Certified Platform App Builder",
+          issuer: "Salesforce",
+          dateValue: "2024-03-01"
+        }
+      ]
+    );
+    const text = toAtsText(buildLines(model));
+    expect(text).toContain(
+      "CRM Developer | Creighton University | Aug 2025 - Apr 2026\n- CRM Developer highlight."
+    );
+    expect(text).toContain(
+      "Application Administrator | Creighton University | Jun 2021 - Aug 2025\n- Application Administrator highlight."
+    );
+    expect(text).toContain(
+      "Salesforce Certified Platform App Builder, Salesforce, Mar 2024"
+    );
   });
 });

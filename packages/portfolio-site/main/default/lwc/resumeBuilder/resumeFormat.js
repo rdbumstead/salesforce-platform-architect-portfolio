@@ -3,10 +3,18 @@
  *                      payload into one view model. The preview renders that model, the ATS text
  *                      export reads it as typed lines (buildLines), and the PDF writer (writePdf)
  *                      draws it through c/documentPdf's block writer with the sizes, spacing,
- *                      colours and section order in resumeLayout.js, which the preview reads too. So the preview, the PDF and
- *                      the ATS text carry the same sections, roles and certification groups.
- *                      Past roles with no highlights for the persona fold into one "Earlier roles"
- *                      line at the end of Experience.
+ *                      colours and section order in resumeLayout.js, which the preview reads too.
+ *                      So the preview and the PDF carry the same sections, employers and
+ *                      certification groups. Experience groups roles by employer name (the read
+ *                      carries no employer Id). An employer with several roles is a heading with
+ *                      its overall span and each title under it, newest first, with its own dates
+ *                      and highlights. An employer with one role reads as one "Title, Employer"
+ *                      block. Certifications on the page and the PDF are one flat list per
+ *                      issuer, newest first, as the short name and the year under the issuer
+ *                      label. The ATS text does not stack: one line per role with the employer
+ *                      repeated ("Title | Employer | dates") and certifications by their full
+ *                      names. Past roles with no highlights for the persona fold into one
+ *                      "Earlier roles" line at the end of Experience.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -139,9 +147,64 @@ function certificationBlock(list) {
   return { current, retired };
 }
 
+/**
+ * The certification name without the issuer's own prefix: "Salesforce Certified Data 360
+ * Consultant" under the issuer "Salesforce" becomes "Data 360 Consultant". A name that does not
+ * start with the issuer is kept whole.
+ */
+export function shortCertName(name, issuer) {
+  const full = clean(name);
+  const vendor = clean(issuer);
+  if (!vendor || !full.toLowerCase().startsWith(vendor.toLowerCase() + " ")) {
+    return full;
+  }
+  const rest = full
+    .slice(vendor.length)
+    .trim()
+    .replace(/^certified\s+/i, "")
+    .trim();
+  return rest || full;
+}
+
+/**
+ * The current certifications grouped by issuer, in order of first appearance (so newest first),
+ * each group one flat list "Short Name (Year)" newest first.
+ */
+function certificationGroupsByIssuer(list) {
+  const groups = [];
+  const byKey = new Map();
+  (list || [])
+    .filter((credential) => credential.isRetired !== true)
+    .sort(byNewestDate)
+    .forEach((credential, index) => {
+      const issuer = clean(credential.issuer);
+      const groupKey = issuer.toLowerCase();
+      if (!byKey.has(groupKey)) {
+        const group = {
+          key: `cert-group-${groups.length}`,
+          issuer,
+          hasIssuer: issuer !== "",
+          certifications: []
+        };
+        byKey.set(groupKey, group);
+        groups.push(group);
+      }
+      const year = yearOf(credential.dateValue);
+      const short = shortCertName(credential.name, issuer);
+      byKey.get(groupKey).certifications.push({
+        key: `cert-${index}`,
+        text: year ? `${short} (${year})` : short
+      });
+    });
+  return groups;
+}
+
 function toRole(role, roleIndex) {
   const dateRange = formatDateRange(role);
   const isRemote = role.isRemote === true;
+  const datesText = isRemote
+    ? `${dateRange} | ${RESUME_LAYOUT.labels.remote}`
+    : dateRange;
   return {
     key: role.id || `role-${roleIndex}`,
     title: clean(role.title),
@@ -150,11 +213,14 @@ function toRole(role, roleIndex) {
       .filter((part) => part)
       .join(", "),
     dateRange,
-    datesText: isRemote
-      ? `${dateRange} | ${RESUME_LAYOUT.labels.remote}`
-      : dateRange,
+    datesText,
     isRemote,
     isCurrent: role.isCurrent === true,
+    startDate: role.startDate ? String(role.startDate) : "",
+    endDate: role.endDate ? String(role.endDate) : "",
+    atsLine: [clean(role.title), clean(role.employer), datesText]
+      .filter((part) => part)
+      .join(" | "),
     yearRange: formatYearRange(role),
     highlights: (role.highlights || [])
       .map((text, index) => ({
@@ -163,6 +229,68 @@ function toRole(role, roleIndex) {
       }))
       .filter((highlight) => highlight.text)
   };
+}
+
+function byNewestRole(left, right) {
+  if (left.startDate !== right.startDate) {
+    return left.startDate < right.startDate ? 1 : -1;
+  }
+  const leftEnd = left.isCurrent ? "9999-99" : left.endDate;
+  const rightEnd = right.isCurrent ? "9999-99" : right.endDate;
+  if (leftEnd === rightEnd) {
+    return 0;
+  }
+  return leftEnd < rightEnd ? 1 : -1;
+}
+
+/**
+ * Groups roles by employer name, in order of first appearance. Inside a group the roles run
+ * newest first. A group of several roles carries the overall span, earliest start to latest
+ * end, or "Present" when any role in it is current or has no end. A role with no employer
+ * stands alone. Highlights stay on their own role.
+ */
+function groupByEmployer(roles) {
+  const groups = [];
+  const byKey = new Map();
+  roles.forEach((role, index) => {
+    const name = role.employer;
+    const groupKey = name ? name.toLowerCase() : `none-${index}`;
+    if (!byKey.has(groupKey)) {
+      const group = {
+        key: `employer-${groups.length}`,
+        employer: name,
+        roles: []
+      };
+      byKey.set(groupKey, group);
+      groups.push(group);
+    }
+    byKey.get(groupKey).roles.push(role);
+  });
+  return groups.map((group) => {
+    const members = group.roles.slice().sort(byNewestRole);
+    const starts = members
+      .map((role) => role.startDate)
+      .filter(Boolean)
+      .sort();
+    const ends = members
+      .map((role) => role.endDate)
+      .filter(Boolean)
+      .sort();
+    const open = members.some((role) => role.isCurrent || !role.endDate);
+    const spanText = formatDateRange({
+      startDate: starts[0],
+      endDate: open ? null : ends[ends.length - 1],
+      isCurrent: open
+    });
+    return {
+      key: group.key,
+      employer: group.employer,
+      spanText,
+      isSingle: members.length === 1,
+      isStacked: members.length > 1,
+      roles: members
+    };
+  });
 }
 
 /**
@@ -249,6 +377,7 @@ export function buildViewModel(resume, options) {
   const model = {
     header,
     roles,
+    employers: groupByEmployer(roles),
     earlierRoles: earlier.length
       ? {
           label: RESUME_LAYOUT.labels.earlierRoles,
@@ -259,6 +388,7 @@ export function buildViewModel(resume, options) {
       : null,
     skillGroups,
     currentCertifications: certificationGroups.current,
+    certificationGroups: certificationGroupsByIssuer(resume.certifications),
     retiredCertifications: certificationGroups.retired,
     verificationUrl: verifyUrl,
     verifyLabel: RESUME_LAYOUT.labels.verify,
@@ -325,8 +455,7 @@ export function buildLines(model) {
         if (index > 0) {
           push("spacer", "");
         }
-        push("entry", role.heading);
-        push("detail", role.datesText);
+        push("entry", role.atsLine);
         role.highlights.forEach((highlight) => push("bullet", highlight.text));
       });
       if (model.earlierRoles) {
@@ -426,47 +555,79 @@ export function writePdf(doc, model, options = {}) {
     block([titleRow], space.sectionTitleAfter, true);
 
     if (entry.isExperience) {
-      model.roles.forEach((role) => {
-        const datesWidth = measure(role.datesText, type.roleDates);
-        writer.setType(type.roleHeading);
-        const rows = wrapText(
-          doc,
-          role.heading,
-          width - datesWidth - space.linkGap * 2,
-          width
-        ).map((part, index) =>
-          textRow(
-            index === 0
-              ? [
-                  { kind: "role", text: part, x: margin },
-                  {
-                    kind: "dates",
-                    text: role.datesText,
-                    x: margin + width - datesWidth,
-                    style: type.roleDates
-                  }
-                ]
-              : [{ kind: "role", text: part, x: margin }],
-            type.roleHeading
-          )
-        );
-        role.highlights.forEach((highlight) => {
-          const bulletRows = paragraph(
-            "bullet",
-            highlight.text,
-            type.bullet,
-            space.bulletIndent
+      model.employers.forEach((group) => {
+        if (group.isStacked) {
+          const spanWidth = measure(group.spanText, type.roleDates);
+          writer.setType(type.roleHeading);
+          const employerRows = wrapText(
+            doc,
+            group.employer || "",
+            width - spanWidth - space.linkGap * 2,
+            width
+          ).map((part, index) =>
+            textRow(
+              index === 0
+                ? [
+                    { kind: "employer", text: part, x: margin },
+                    {
+                      kind: "dates",
+                      text: group.spanText,
+                      x: margin + width - spanWidth,
+                      style: type.roleDates
+                    }
+                  ]
+                : [{ kind: "employer", text: part, x: margin }],
+              type.roleHeading
+            )
           );
-          bulletRows[0].pieces.unshift({
-            kind: "marker",
-            text: marks.bullet,
-            x: margin + space.bulletMarker,
-            style: type.bullet
+          block(employerRows, space.itemGap, true);
+        }
+        group.roles.forEach((role) => {
+          const heading = group.isStacked ? role.title : role.heading;
+          const datesWidth = measure(role.datesText, type.roleDates);
+          writer.setType(type.roleHeading);
+          const rows = wrapText(
+            doc,
+            heading,
+            width - datesWidth - space.linkGap * 2,
+            width
+          ).map((part, index) =>
+            textRow(
+              index === 0
+                ? [
+                    { kind: "role", text: part, x: margin },
+                    {
+                      kind: "dates",
+                      text: role.datesText,
+                      x: margin + width - datesWidth,
+                      style: type.roleDates
+                    }
+                  ]
+                : [{ kind: "role", text: part, x: margin }],
+              type.roleHeading
+            )
+          );
+          role.highlights.forEach((highlight) => {
+            const bulletRows = paragraph(
+              "bullet",
+              highlight.text,
+              type.bullet,
+              space.bulletIndent
+            );
+            bulletRows[0].pieces.unshift({
+              kind: "marker",
+              text: marks.bullet,
+              x: margin + space.bulletMarker,
+              style: type.bullet
+            });
+            bulletRows[bulletRows.length - 1].height += space.itemGap;
+            rows.push(...bulletRows);
           });
-          bulletRows[bulletRows.length - 1].height += space.itemGap;
-          rows.push(...bulletRows);
+          block(rows, group.isStacked ? space.itemGap : space.roleAfter);
         });
-        block(rows, space.roleAfter);
+        if (group.isStacked) {
+          writer.spacer(space.roleAfter - space.itemGap);
+        }
       });
       if (model.earlierRoles) {
         block(
@@ -496,9 +657,29 @@ export function writePdf(doc, model, options = {}) {
         );
       });
     } else if (entry.isCertifications) {
-      model.currentCertifications.forEach((cert) =>
-        block(paragraph("cert", cert.text, type.text), space.itemGap)
-      );
+      model.certificationGroups.forEach((group) => {
+        if (group.hasIssuer) {
+          block(
+            [
+              textRow(
+                [
+                  {
+                    kind: "cert-issuer",
+                    text: shown(group.issuer, type.label),
+                    x: margin
+                  }
+                ],
+                type.label
+              )
+            ],
+            space.itemGap,
+            true
+          );
+        }
+        group.certifications.forEach((cert) =>
+          block(paragraph("cert", cert.text, type.text), space.itemGap)
+        );
+      });
       if (model.hasVerificationLink) {
         block(
           [
