@@ -1256,6 +1256,57 @@ describe("grouping by employer and issuer", () => {
     expect(model.employers).toHaveLength(1);
   });
 
+  it("keeps a past role with no highlights under an employer that has another role", () => {
+    const model = build([
+      role("k1", "Instructor", "MCC", "2017-12-01", "2021-06-01"),
+      role("k2", "CAET Specialist", "MCC", "2017-07-01", "2021-06-01", {
+        highlights: []
+      }),
+      role("k3", "Project Assistant", "MCC", "2016-01-01", "2017-07-01", {
+        highlights: []
+      })
+    ]);
+    const [group] = model.employers;
+    expect(model.employers).toHaveLength(1);
+    expect(group.isStacked).toBe(true);
+    expect(group.roles.map((entry) => entry.title)).toEqual([
+      "Instructor",
+      "CAET Specialist",
+      "Project Assistant"
+    ]);
+    expect(group.roles[1].highlights).toHaveLength(0);
+    expect(group.spanText).toBe("Jan 2016 - Jun 2021");
+    expect(model.earlierRoles).toBeNull();
+  });
+
+  it("still folds a no highlight role whose employer has no other role", () => {
+    const model = build([
+      role("m1", "Developer", "Acme", "2021-01-01", "2022-01-01"),
+      role("m2", "Technician", "Fiserv", "2016-01-01", "2016-10-03", {
+        highlights: []
+      })
+    ]);
+    expect(model.earlierRoles.text).toBe("Technician, Fiserv (2016)");
+    expect(model.employers).toHaveLength(1);
+  });
+
+  it("writes an ATS line with no bullets for a kept role and leaves it out of Earlier roles", () => {
+    const model = build([
+      role("n1", "Instructor", "MCC", "2017-12-01", "2021-06-01"),
+      role("n2", "CAET Specialist", "MCC", "2017-07-01", "2021-06-01", {
+        highlights: []
+      }),
+      role("n3", "Technician", "Fiserv", "2016-01-01", "2016-10-03", {
+        highlights: []
+      })
+    ]);
+    const text = toAtsText(buildLines(model));
+    expect(text).toContain(
+      "Instructor | MCC | Dec 2017 - Jun 2021\n- Instructor highlight.\n\nCAET Specialist | MCC | Jul 2017 - Jun 2021\n\nEarlier roles: Technician, Fiserv (2016)"
+    );
+    expect(text).not.toContain("Earlier roles: CAET");
+  });
+
   it("renders the employer heading and titles on the page, one block for a single role", async () => {
     const element = createElement("c-resume-builder", { is: ResumeBuilder });
     document.body.appendChild(element);

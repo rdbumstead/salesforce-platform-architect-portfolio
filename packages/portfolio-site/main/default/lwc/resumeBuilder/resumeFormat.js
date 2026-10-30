@@ -13,8 +13,10 @@
  *                      issuer, newest first, as the short name and the year under the issuer
  *                      label. The ATS text does not stack: one line per role with the employer
  *                      repeated ("Title | Employer | dates") and certifications by their full
- *                      names. Past roles with no highlights for the persona fold into one
- *                      "Earlier roles" line at the end of Experience.
+ *                      names. A past role with no highlights for the persona stays under its
+ *                      employer, as a title with dates and no bullets, when that employer has
+ *                      another role in Experience. Otherwise it folds into one "Earlier roles"
+ *                      line at the end of Experience.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -349,11 +351,24 @@ export function buildViewModel(resume, options) {
       : null;
 
   const allRoles = (resume.roles || []).map(toRole);
-  const roles = allRoles.filter(
+  const anchored = allRoles.filter(
     (role) => role.isCurrent || role.highlights.length > 0
   );
+  const anchoredEmployers = new Set(
+    anchored
+      .filter((role) => role.employer)
+      .map((role) => role.employer.toLowerCase())
+  );
+  const isKept = (role) =>
+    !role.isCurrent &&
+    role.highlights.length === 0 &&
+    role.employer !== "" &&
+    anchoredEmployers.has(role.employer.toLowerCase());
+  const roles = allRoles.filter(
+    (role) => role.isCurrent || role.highlights.length > 0 || isKept(role)
+  );
   const earlier = allRoles.filter(
-    (role) => !role.isCurrent && role.highlights.length === 0
+    (role) => !role.isCurrent && role.highlights.length === 0 && !isKept(role)
   );
 
   const skillGroups = options.includeSkills
@@ -451,13 +466,17 @@ export function buildLines(model) {
   model.sections.forEach((entry) => {
     section(entry.title);
     if (entry.isExperience) {
-      model.roles.forEach((role, index) => {
-        if (index > 0) {
-          push("spacer", "");
-        }
-        push("entry", role.atsLine);
-        role.highlights.forEach((highlight) => push("bullet", highlight.text));
-      });
+      model.employers
+        .flatMap((group) => group.roles)
+        .forEach((role, index) => {
+          if (index > 0) {
+            push("spacer", "");
+          }
+          push("entry", role.atsLine);
+          role.highlights.forEach((highlight) =>
+            push("bullet", highlight.text)
+          );
+        });
       if (model.earlierRoles) {
         if (model.roles.length > 0) {
           push("spacer", "");
