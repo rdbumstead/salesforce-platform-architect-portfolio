@@ -12,17 +12,19 @@
     </values>
     <values>
         <field>Fields__c</field>
-        <value xsi:type="xsd:string">Id</value>
+        <value
+      xsi:type="xsd:string"
+    >Status__c, Completed_At__c, CreatedDate</value>
     </values>
     <values>
         <field>Filter__c</field>
-        <value
-      xsi:type="xsd:string"
-    >Workflow__c = :workflow AND Status__c = :status</value>
+        <value xsi:type="xsd:string">Workflow__c = :workflow</value>
     </values>
     <values>
         <field>Order_By__c</field>
-        <value xsi:nil="true" />
+        <value
+      xsi:type="xsd:string"
+    >Completed_At__c ASC NULLS LAST, CreatedDate ASC, Id ASC</value>
     </values>
     <values>
         <field>Row_Limit__c</field>
@@ -40,6 +42,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >The successful deploy runs of the production workflow, for the Production deploys metric source.</value>
+    >The retained deploy runs of the production workflow, oldest first, for the Production deploys metric source.</value>
     </values>
 </CustomMetadata>

@@ -500,6 +500,193 @@ private class ProjectCardControllerHomeTest {
     Assert.areEqual('1 production deploys', card.headlineLabel, 'Token filled');
   }
 
+  private static Pipeline_Run__c deployRunAt(
+    String runId,
+    String status,
+    Datetime completedAt
+  ) {
+    Pipeline_Run__c row = deployRun(runId, status);
+    row.Completed_At__c = completedAt;
+    return row;
+  }
+
+  private static ProjectCardController.CaseStudy deliveryCard(String label) {
+    Project__c row = homeProject('Delivery', 1, false);
+    row.Case_Metric_Label__c = label;
+    row.Case_Metric_Source__c = ProjectCardController.SOURCE_PRODUCTION_DEPLOYS;
+    insert row;
+    return ProjectCardController.getHomeCaseStudies()[0];
+  }
+
+  private static final String RATE_LABEL = 'of the last {total} production deploys succeeded{recovery}';
+  private static final Datetime T0 = Datetime.newInstanceGmt(
+    2026,
+    10,
+    20,
+    8,
+    0,
+    0
+  );
+
+  @IsTest
+  static void shouldAddNoRecoveryClauseWhenNoDeployFailed() {
+    insert new List<Pipeline_Run__c>{
+      deployRunAt('1', 'Success', T0),
+      deployRunAt('2', 'Success', T0.addMinutes(30))
+    };
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = deliveryCard(RATE_LABEL);
+    Test.stopTest();
+
+    Assert.areEqual('2', card.headlineMetric, 'Two successes');
+    Assert.areEqual(
+      'of the last 2 production deploys succeeded',
+      card.headlineLabel,
+      'No clause'
+    );
+  }
+
+  @IsTest
+  static void shouldNameTheMinutesWhenOneFailureWasFixedByTheNextDeploy() {
+    insert new List<Pipeline_Run__c>{
+      deployRunAt('1', 'Success', T0),
+      deployRunAt('2', 'Failure', T0.addMinutes(60)),
+      deployRunAt('3', 'Success', T0.addMinutes(69)),
+      deployRunAt('4', 'Success', T0.addMinutes(600))
+    };
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = deliveryCard(RATE_LABEL);
+    Test.stopTest();
+
+    Assert.areEqual('3', card.headlineMetric, 'Three of four');
+    Assert.areEqual(
+      'of the last 4 production deploys succeeded, and the one failure was fixed by the next deploy 9 minutes later',
+      card.headlineLabel,
+      'One failure, nine minutes'
+    );
+  }
+
+  @IsTest
+  static void shouldNameTheSlowestFixInHoursWhenSeveralFailuresWereFixed() {
+    insert new List<Pipeline_Run__c>{
+      deployRunAt('1', 'Failure', T0),
+      deployRunAt('2', 'Success', T0.addMinutes(5)),
+      deployRunAt('3', 'Failure', T0.addMinutes(100)),
+      deployRunAt('4', 'Failure', T0.addMinutes(110)),
+      deployRunAt('5', 'Success', T0.addMinutes(290))
+    };
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = deliveryCard(RATE_LABEL);
+    Test.stopTest();
+
+    Assert.areEqual('2', card.headlineMetric, 'Two successes');
+    Assert.areEqual(
+      'of the last 5 production deploys succeeded, and every failure was fixed by the next deploy, the slowest in 3 hours',
+      card.headlineLabel,
+      'The slowest wait is 190 minutes, three hours rounded'
+    );
+  }
+
+  @IsTest
+  static void shouldStateOnlyTheRateWhenTheLatestFailureIsNotFixed() {
+    insert new List<Pipeline_Run__c>{
+      deployRunAt('1', 'Failure', T0),
+      deployRunAt('2', 'Success', T0.addMinutes(5)),
+      deployRunAt('3', 'Failure', T0.addMinutes(50))
+    };
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = deliveryCard(RATE_LABEL);
+    Test.stopTest();
+
+    Assert.areEqual('1', card.headlineMetric, 'One success');
+    Assert.areEqual(
+      'of the last 3 production deploys succeeded',
+      card.headlineLabel,
+      'No claim of a fix'
+    );
+  }
+
+  @IsTest
+  static void shouldCountOnlyDeployRowsForTheRate() {
+    insert new List<Pipeline_Run__c>{
+      deployRunAt('1', 'Success', T0),
+      new Pipeline_Run__c(
+        Run_Key__c = 'smoke:9',
+        Workflow__c = 'smoke',
+        Status__c = 'Failure',
+        Run_Id__c = '9',
+        Completed_At__c = T0.addMinutes(1)
+      ),
+      new Pipeline_Run__c(
+        Run_Key__c = 'heartbeat:8',
+        Workflow__c = 'heartbeat',
+        Status__c = 'Success',
+        Run_Id__c = '8',
+        Completed_At__c = T0.addMinutes(2)
+      )
+    };
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = deliveryCard(RATE_LABEL);
+    Test.stopTest();
+
+    Assert.areEqual('1', card.headlineMetric, 'Only the deploy row');
+    Assert.areEqual(
+      'of the last 1 production deploys succeeded',
+      card.headlineLabel,
+      'Total is deploys only'
+    );
+  }
+
+  @IsTest
+  static void shouldFillTheRateTokensOnAHeadlineMetricToo() {
+    insert new List<Pipeline_Run__c>{
+      deployRunAt('1', 'Failure', T0),
+      deployRunAt('2', 'Success', T0.addMinutes(1))
+    };
+    insert new Project__c(
+      Name = 'Delivery pillar',
+      Pillar__c = 'E',
+      Sort_Order__c = 1,
+      Headline_Metric_Label__c = RATE_LABEL,
+      Headline_Metric_Source__c = ProjectCardController.SOURCE_PRODUCTION_DEPLOYS
+    );
+
+    Test.startTest();
+    ProjectCardController.PillarCard card = ProjectCardController.getPillarCards()[0];
+    Test.stopTest();
+
+    Assert.areEqual('1', card.headlineMetric, 'One success');
+    Assert.areEqual(
+      'of the last 2 production deploys succeeded, and the one failure was fixed by the next deploy 1 minute later',
+      card.headlineLabel,
+      'Tokens filled, singular minute'
+    );
+  }
+
+  @IsTest
+  static void shouldWriteTheRecoveryClauseInMinutesUnder120AndHoursFrom() {
+    Assert.areEqual(
+      ', and the one failure was fixed by the next deploy 119 minutes later',
+      ProjectCardController.recoveryClause(1, 119),
+      '119 stays in minutes'
+    );
+    Assert.areEqual(
+      ', and the one failure was fixed by the next deploy 2 hours later',
+      ProjectCardController.recoveryClause(1, 120),
+      '120 is two hours'
+    );
+    Assert.areEqual(
+      ', and every failure was fixed by the next deploy, the slowest in 1 minute',
+      ProjectCardController.recoveryClause(2, 1),
+      'Singular minute'
+    );
+  }
+
   @IsTest
   static void shouldShipTheHomeRecordEqualToItsDefault() {
     Test.startTest();
