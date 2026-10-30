@@ -196,6 +196,31 @@
   outline-offset: 2px;
 }
 
+/* An employer or an issuer and year with every title or name under it, each its own button. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 6px var(--pf-space-3) 0 0;
+  box-sizing: border-box;
+}
+
+.titles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.title-item + .title-item {
+  border-top: 1px solid var(--pf-border);
+}
+
+.title-button[aria-expanded="true"] .point-second {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .point-first {
   font-size: 14px;
   font-weight: 600;

@@ -59,7 +59,98 @@
                 data-type={point.type}
               >
                 <span class="dot" aria-hidden="true"></span>
-                <template lwc:if={point.hasPanel}>
+                <template lwc:if={point.isGroup}>
+                  <div class="group">
+                    <span class="point-first"
+                      >{point.first}<span class="visually-hidden"
+                        >{comma}</span
+                      ></span
+                    >
+                    <template lwc:if={point.showGroupYears}>
+                      <span class="years group-years"
+                        ><span aria-hidden="true">{point.years}</span
+                        ><span class="visually-hidden"
+                          >{point.yearsSpoken}</span
+                        ></span
+                      >
+                    </template>
+                    <ul class="titles">
+                      <template for:each={point.titles} for:item="title">
+                        <li
+                          key={title.key}
+                          class="title-item"
+                          data-id="line-title"
+                        >
+                          <template lwc:if={title.hasPanel}>
+                            <button
+                              type="button"
+                              class="point-body point-button title-button"
+                              aria-expanded={title.expanded}
+                              aria-controls={title.controls}
+                              data-point-button="true"
+                              data-list="line"
+                              data-key={title.key}
+                              onclick={handlePointClick}
+                            >
+                              <span class="point-second"
+                                >{title.label}<span class="visually-hidden"
+                                  >{comma}</span
+                                ></span
+                              >
+                              <span class="years"
+                                ><template lwc:if={title.showYears}
+                                  ><span aria-hidden="true">{title.years}</span
+                                  ><span class="visually-hidden"
+                                    >{title.yearsSpoken}</span
+                                  ><template lwc:if={title.isCurrent}
+                                    ><span class="active-tag" aria-hidden="true"
+                                      >Active</span
+                                    ></template
+                                  ></template
+                                >
+                                <svg
+                                  class="point-chevron"
+                                  aria-hidden="true"
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                >
+                                  <polyline
+                                    points="6 9 12 15 18 9"
+                                  ></polyline></svg
+                              ></span>
+                            </button>
+                          </template>
+                          <template lwc:else>
+                            <div class="point-body title-row">
+                              <span class="point-second"
+                                >{title.label}<span class="visually-hidden"
+                                  >{comma}</span
+                                ></span
+                              >
+                              <span class="years"
+                                ><span aria-hidden="true">{title.years}</span
+                                ><span class="visually-hidden"
+                                  >{title.yearsSpoken}</span
+                                ><template lwc:if={title.isCurrent}
+                                  ><span class="active-tag" aria-hidden="true"
+                                    >Active</span
+                                  ></template
+                                ></span
+                              >
+                            </div>
+                          </template>
+                        </li>
+                      </template>
+                    </ul>
+                  </div>
+                </template>
+                <template lwc:elseif={point.hasPanel}>
                   <button
                     type="button"
                     class="point-body point-button"
@@ -186,7 +277,124 @@
               data-type={point.type}
             >
               <span class="dot" aria-hidden="true"></span>
-              <template lwc:if={point.hasPanel}>
+              <template lwc:if={point.isGroup}>
+                <div class="group">
+                  <span class="point-first"
+                    >{point.first}<span class="visually-hidden"
+                      >{comma}</span
+                    ></span
+                  >
+                  <template lwc:if={point.showGroupYears}>
+                    <span class="years group-years"
+                      ><span aria-hidden="true">{point.years}</span
+                      ><span class="visually-hidden"
+                        >{point.yearsSpoken}</span
+                      ></span
+                    >
+                  </template>
+                  <ul class="titles">
+                    <template for:each={point.titles} for:item="title">
+                      <li
+                        key={title.key}
+                        class="title-item"
+                        data-id="stack-title"
+                      >
+                        <template lwc:if={title.hasPanel}>
+                          <button
+                            type="button"
+                            class="point-body point-button title-button"
+                            aria-expanded={title.expanded}
+                            aria-controls={title.controls}
+                            data-point-button="true"
+                            data-list="stack"
+                            data-key={title.key}
+                            onclick={handlePointClick}
+                          >
+                            <span class="point-second"
+                              >{title.label}<span class="visually-hidden"
+                                >{comma}</span
+                              ></span
+                            >
+                            <span class="years"
+                              ><template lwc:if={title.showYears}
+                                ><span aria-hidden="true">{title.years}</span
+                                ><span class="visually-hidden"
+                                  >{title.yearsSpoken}</span
+                                ><template lwc:if={title.isCurrent}
+                                  ><span class="active-tag" aria-hidden="true"
+                                    >Active</span
+                                  ></template
+                                ></template
+                              >
+                              <svg
+                                class="point-chevron"
+                                aria-hidden="true"
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              >
+                                <polyline
+                                  points="6 9 12 15 18 9"
+                                ></polyline></svg
+                            ></span>
+                          </button>
+                        </template>
+                        <template lwc:else>
+                          <div class="point-body title-row">
+                            <span class="point-second"
+                              >{title.label}<span class="visually-hidden"
+                                >{comma}</span
+                              ></span
+                            >
+                            <span class="years"
+                              ><span aria-hidden="true">{title.years}</span
+                              ><span class="visually-hidden"
+                                >{title.yearsSpoken}</span
+                              ><template lwc:if={title.isCurrent}
+                                ><span class="active-tag" aria-hidden="true"
+                                  >Active</span
+                                ></template
+                              ></span
+                            >
+                          </div>
+                        </template>
+                      </li>
+                    </template>
+                  </ul>
+                  <div
+                    id={point.stackPanelId}
+                    class={point.stackPanelClass}
+                    data-id="stack-panel"
+                    hidden={point.stackPanelHidden}
+                  >
+                    <ul class="highlights">
+                      <template for:each={point.openItems} for:item="item">
+                        <li key={item.key}>{item.text}</li>
+                      </template>
+                    </ul>
+                    <template lwc:if={point.hasVerify}>
+                      <p class="panel-verify">
+                        <a
+                          class="verify-link"
+                          href={point.verifyHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-id="panel-verify-link"
+                          >Verify on Trailhead<span class="visually-hidden"
+                            >{newTabNote}</span
+                          ></a
+                        >
+                      </p>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <template lwc:elseif={point.hasPanel}>
                 <button
                   type="button"
                   class="point-body point-button"
