@@ -8,14 +8,20 @@
  *                      getHomeCaseStudies returns at most three case study cards, the projects
  *                      with Home_Sort__c set, lowest first. It never reads Is_Featured__c, so a
  *                      home card never changes the featured projects the API and the cover
- *                      letters use. Each card gets the same headline rule as a pillar card.
+ *                      letters use. A case study card reads the Case_Metric__c fields and a
+ *                      pillar card reads the Headline_Metric__c fields, each with the same
+ *                      source rule. A case study card with no Case_Metric__c shows no number,
+ *                      never the Headline one.
  *                      getBuildCounts returns the newest successful run's passed Apex tests, its
  *                      coverage and its passed Jest tests, for the "How this site is built" line.
- *                      A card whose Headline_Metric_Source__c is set gets its number computed
- *                      from a live source: the Employer Hub object count from
- *                      the ERD's describe, the paths in the SAPI_Spec and PAPI_Spec resources,
- *                      the providers the AI fallback chain has switched on, or the passed test
- *                      count of the newest successful Pipeline_Run__c with a test count. The computed number
+ *                      A card whose Headline_Metric_Source__c (or Case_Metric_Source__c) is set
+ *                      gets its number computed from a live source: the Employer Hub object
+ *                      count from the ERD's describe, the paths in the SAPI_Spec and PAPI_Spec
+ *                      resources, the providers the AI fallback chain has switched on, the
+ *                      passed test count of the newest successful Pipeline_Run__c with a test
+ *                      count, or the count of successful deploy runs (the deploy runs
+ *                      PortfolioStatsController counts as deploys recorded, failures left
+ *                      out). The computed number
  *                      replaces the first number in the stored metric and fills the label's
  *                      {n} token ({coverage} too for Apex tests). When a source fails, the
  *                      stored text is shown, and a label whose token cannot be filled hides the
@@ -31,11 +37,13 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   private static final String CARDS_QUERY = 'ProjectCardController_Cards';
   private static final String TEST_RUN_QUERY = 'ProjectCardController_LatestTestRun';
   private static final String HOME_QUERY = 'ProjectCardController_HomeCaseStudies';
+  private static final String DEPLOYS_QUERY = 'ProjectCardController_ProductionDeploys';
   private static final Integer HOME_CARD_LIMIT = 3;
   public static final String SOURCE_EMPLOYER_HUB_OBJECTS = 'Employer Hub objects';
   public static final String SOURCE_API_PATHS = 'API paths';
   public static final String SOURCE_AI_PROVIDERS = 'AI providers';
   public static final String SOURCE_APEX_TESTS = 'Apex tests';
+  public static final String SOURCE_PRODUCTION_DEPLOYS = 'Production deploys';
   /** headlineSource when the card shows its stored text. */
   public static final String SOURCE_STORED = 'stored';
 
@@ -233,7 +241,13 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
       card.businessValue = valueOrNull(project.Business_Value__c);
       card.liveUrl = valueOrNull(project.Live_URL__c);
       card.tags = splitTags(project.Case_Tags__c);
-      Headline headline = headlineOf(project, computedBySource);
+      // The home cards read the Case fields only. A blank Case metric shows no number.
+      Headline headline = headlineOf(
+        project.Case_Metric__c,
+        project.Case_Metric_Label__c,
+        project.Case_Metric_Source__c,
+        computedBySource
+      );
       card.headlineMetric = headline.metric;
       card.headlineLabel = headline.label;
       card.headlineSource = headline.source;
@@ -298,20 +312,27 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
     Project__c project,
     Map<String, Computed> computedBySource
   ) {
-    Headline headline = headlineOf(project, computedBySource);
+    Headline headline = headlineOf(
+      project.Headline_Metric__c,
+      project.Headline_Metric_Label__c,
+      project.Headline_Metric_Source__c,
+      computedBySource
+    );
     card.headlineMetric = headline.metric;
     card.headlineLabel = headline.label;
     card.headlineSource = headline.source;
   }
 
   private static Headline headlineOf(
-    Project__c project,
+    String metricText,
+    String labelText,
+    String sourceName,
     Map<String, Computed> computedBySource
   ) {
     Headline headline = new Headline();
-    String storedMetric = valueOrNull(project.Headline_Metric__c);
-    String storedLabel = valueOrNull(project.Headline_Metric_Label__c);
-    String source = valueOrNull(project.Headline_Metric_Source__c);
+    String storedMetric = valueOrNull(metricText);
+    String storedLabel = valueOrNull(labelText);
+    String source = valueOrNull(sourceName);
     Computed computed = null;
     if (source != null) {
       if (!computedBySource.containsKey(source)) {
@@ -363,6 +384,8 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
         computed.n = countProvidersOn();
       } else if (source == SOURCE_APEX_TESTS) {
         computed = latestTestRun();
+      } else if (source == SOURCE_PRODUCTION_DEPLOYS) {
+        computed.n = countProductionDeploys();
       } else {
         return null;
       }
@@ -428,6 +451,17 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
       }
     }
     return count;
+  }
+
+  /**
+   * @description Counts the successful production deploy runs. PortfolioStatsController counts
+   *              deploys recorded as the Pipeline_Run__c rows whose Workflow__c is deploy, the
+   *              workflow that deploys to production. This counts the same rows with
+   *              Status__c Success, so a failed run is left out.
+   * @return Integer The number of successful deploy runs.
+   */
+  private static Integer countProductionDeploys() {
+    return new ProjectCardSelector().selectProductionDeploys().size();
   }
 
   private static Computed latestTestRun() {
@@ -516,6 +550,14 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
       ];
     }
 
+    private List<Pipeline_Run__c> selectProductionDeploys() {
+      return (List<Pipeline_Run__c>) QueryDefinitions.run(
+        DEPLOYS_QUERY,
+        deployBinds(),
+        deploysDefault()
+      );
+    }
+
     private List<Pipeline_Run__c> selectLatestTestRun(String status) {
       return (List<Pipeline_Run__c>) QueryDefinitions.run(
         TEST_RUN_QUERY,
@@ -557,7 +599,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
   private static QueryDefinitions.QueryDefault homeDefault() {
     return new QueryDefinitions.QueryDefault(
         'Project__c',
-        'Name, Home_Title__c, Client_Line__c, Case_Tags__c, Headline_Metric__c, Headline_Metric_Label__c, Headline_Metric_Source__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c'
+        'Name, Home_Title__c, Client_Line__c, Case_Tags__c, Case_Metric__c, Case_Metric_Label__c, Case_Metric_Source__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c'
       )
       .filter('Home_Sort__c != NULL')
       .orderBy('Home_Sort__c ASC, Name ASC')
@@ -588,6 +630,27 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
       .binds(testRunBinds(PIPELINE_SUCCESS));
   }
 
+  /**
+   * @description The successful production deploy runs as code: the Id only, system mode.
+   *              It is PortfolioStatsController's deploy runs read with the status added.
+   *              Query_Definition.ProjectCardController_ProductionDeploys ships equal to it.
+   * @return QueryDefinitions.QueryDefault The default.
+   */
+  @TestVisible
+  private static QueryDefinitions.QueryDefault deploysDefault() {
+    return new QueryDefinitions.QueryDefault('Pipeline_Run__c', 'Id')
+      .filter('Workflow__c = :workflow AND Status__c = :status')
+      .mode(QueryDefinitions.Mode.SYSTEM_MODE)
+      .binds(deployBinds());
+  }
+
+  private static Map<String, Object> deployBinds() {
+    return new Map<String, Object>{
+      'workflow' => GovernanceEventHandler.WORKFLOW_DEPLOY,
+      'status' => GovernanceEventHandler.STATUS_SUCCESS
+    };
+  }
+
   private static Map<String, Object> testRunBinds(String status) {
     return new Map<String, Object>{ 'status' => status };
   }
@@ -600,6 +663,7 @@ public with sharing class ProjectCardController implements QueryDefinitions.Prov
     return new Map<String, QueryDefinitions.QueryDefault>{
       CARDS_QUERY => cardsDefault(),
       TEST_RUN_QUERY => testRunDefault(),
+      DEPLOYS_QUERY => deploysDefault(),
       HOME_QUERY => homeDefault()
     };
   }

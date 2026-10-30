@@ -1,7 +1,8 @@
 /**
  * @description       : Tests for ProjectCardController's home page reads: getHomeCaseStudies
  *                      (the case study cards chosen by Home_Sort__c alone) and getBuildCounts
- *                      (the newest successful run's Apex, coverage and Jest numbers).
+ *                      (the newest successful run's Apex, coverage and Jest numbers). The Case
+ *                      Metric fields and the Production deploys source are covered here too.
  *                      Builds its own Project__c and Pipeline_Run__c rows, because TestFactory
  *                      is shared and stays unchanged. Every read here runs in system mode, so
  *                      the guest test proves the site guest needs no field grant.
@@ -134,8 +135,8 @@ private class ProjectCardControllerHomeTest {
     row.Home_Title__c = '  Choosing the right platform  ';
     row.Client_Line__c = 'Regional adult literacy nonprofit, freelance';
     row.Case_Tags__c = 'NPSP, Platform selection , ,npsp, Cost';
-    row.Headline_Metric__c = '$0';
-    row.Headline_Metric_Label__c = 'software licence cost for 10 staff users';
+    row.Case_Metric__c = '$0';
+    row.Case_Metric_Label__c = 'software licence cost for 10 staff users';
     row.Challenge__c = 'The problem.';
     row.Solution__c = 'The call.';
     row.Business_Value__c = 'The result.';
@@ -207,9 +208,9 @@ private class ProjectCardControllerHomeTest {
   static void shouldShowTheLiveApexCountInPlaceOfTheStoredNumber() {
     insert run('7', 1000, 98.6, 747);
     Project__c row = homeProject('Building this site', 3, true);
-    row.Headline_Metric__c = '646 Apex tests';
-    row.Headline_Metric_Label__c = TESTS_LABEL;
-    row.Headline_Metric_Source__c = ProjectCardController.SOURCE_APEX_TESTS;
+    row.Case_Metric__c = '646 Apex tests';
+    row.Case_Metric_Label__c = TESTS_LABEL;
+    row.Case_Metric_Source__c = ProjectCardController.SOURCE_APEX_TESTS;
     insert row;
 
     Test.startTest();
@@ -236,9 +237,9 @@ private class ProjectCardControllerHomeTest {
   @IsTest
   static void shouldHideTheHeadlineWhenTheLiveCountIsMissingForItsToken() {
     Project__c row = homeProject('Building this site', 1, false);
-    row.Headline_Metric__c = '646 Apex tests';
-    row.Headline_Metric_Label__c = TESTS_LABEL;
-    row.Headline_Metric_Source__c = ProjectCardController.SOURCE_APEX_TESTS;
+    row.Case_Metric__c = '646 Apex tests';
+    row.Case_Metric_Label__c = TESTS_LABEL;
+    row.Case_Metric_Source__c = ProjectCardController.SOURCE_APEX_TESTS;
     insert row;
 
     Test.startTest();
@@ -253,8 +254,8 @@ private class ProjectCardControllerHomeTest {
   static void shouldReturnTheSameCardsForTheSiteGuest() {
     insert run('7', 1000, 98, null);
     Project__c row = homeProject('Building this site', 1, false);
-    row.Headline_Metric__c = '646 Apex tests';
-    row.Headline_Metric_Source__c = ProjectCardController.SOURCE_APEX_TESTS;
+    row.Case_Metric__c = '646 Apex tests';
+    row.Case_Metric_Source__c = ProjectCardController.SOURCE_APEX_TESTS;
     row.Client_Line__c = 'Personal project, open source';
     row.Case_Tags__c = 'Experience Cloud, CI/CD';
     insert row;
@@ -335,6 +336,170 @@ private class ProjectCardControllerHomeTest {
     Assert.areEqual(747, counts.jestPassed, 'The guest reads the Jest count');
   }
 
+  private static Pipeline_Run__c deployRun(String runId, String status) {
+    return new Pipeline_Run__c(
+      Run_Key__c = 'deploy:' + runId,
+      Workflow__c = 'deploy',
+      Status__c = status,
+      Run_Id__c = runId,
+      Completed_At__c = Datetime.now()
+    );
+  }
+
+  @IsTest
+  static void shouldShowNoNumberOnACardWhoseCaseMetricIsBlankEvenWithAHeadline() {
+    Project__c row = homeProject('Has a headline only', 1, false);
+    row.Headline_Metric__c = '9 objects';
+    row.Headline_Metric_Label__c = 'in the data model';
+    row.Headline_Metric_Source__c = ProjectCardController.SOURCE_APEX_TESTS;
+    insert row;
+    insert run('7', 1000, 98, null);
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = ProjectCardController.getHomeCaseStudies()[0];
+    Test.stopTest();
+
+    Assert.isNull(
+      card.headlineMetric,
+      'The Headline number never reaches a card'
+    );
+    Assert.isNull(
+      card.headlineLabel,
+      'The Headline label never reaches a card'
+    );
+    Assert.isNull(card.headlineSource, 'No source');
+  }
+
+  @IsTest
+  static void shouldKeepTheHeadlineFieldsOnThePillarCards() {
+    Project__c row = new Project__c(
+      Name = 'Pillar row',
+      Pillar__c = 'A',
+      Sort_Order__c = 1,
+      Home_Sort__c = 1,
+      Headline_Metric__c = '9 objects',
+      Headline_Metric_Label__c = 'in the data model',
+      Case_Metric__c = '8',
+      Case_Metric_Label__c = 'steps of an inquiry'
+    );
+    insert row;
+
+    Test.startTest();
+    ProjectCardController.PillarCard pillar = ProjectCardController.getPillarCards()[0];
+    ProjectCardController.CaseStudy home = ProjectCardController.getHomeCaseStudies()[0];
+    Test.stopTest();
+
+    Assert.areEqual(
+      '9 objects',
+      pillar.headlineMetric,
+      'The pillar keeps the Headline number'
+    );
+    Assert.areEqual(
+      'in the data model',
+      pillar.headlineLabel,
+      'The pillar keeps the Headline label'
+    );
+    Assert.areEqual(
+      '8',
+      home.headlineMetric,
+      'The home card shows the Case number'
+    );
+    Assert.areEqual(
+      'steps of an inquiry',
+      home.headlineLabel,
+      'The home card shows the Case label'
+    );
+  }
+
+  @IsTest
+  static void shouldCountOnlySuccessfulDeployRunsForTheProductionDeploysSource() {
+    insert new List<Pipeline_Run__c>{
+      deployRun('1', 'Success'),
+      deployRun('2', 'Success'),
+      deployRun('3', 'Success'),
+      deployRun('4', 'Failure'),
+      new Pipeline_Run__c(
+        Run_Key__c = 'smoke:5',
+        Workflow__c = 'smoke',
+        Status__c = 'Success',
+        Run_Id__c = '5',
+        Completed_At__c = Datetime.now()
+      )
+    };
+    Project__c row = homeProject('Delivery', 1, false);
+    row.Case_Metric_Label__c = 'production deploys recorded by the CI pipeline';
+    row.Case_Metric_Source__c = ProjectCardController.SOURCE_PRODUCTION_DEPLOYS;
+    insert row;
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = ProjectCardController.getHomeCaseStudies()[0];
+    Test.stopTest();
+
+    Assert.areEqual(
+      '3',
+      card.headlineMetric,
+      'Three successes, the failure and the smoke run left out'
+    );
+    Assert.areEqual(
+      'production deploys recorded by the CI pipeline',
+      card.headlineLabel,
+      'The label is kept'
+    );
+    Assert.areEqual(
+      ProjectCardController.SOURCE_PRODUCTION_DEPLOYS,
+      card.headlineSource,
+      'Named source'
+    );
+  }
+
+  @IsTest
+  static void shouldFallBackToTheStoredCaseTextWhenNoDeployRunSucceeded() {
+    insert deployRun('1', 'Failure');
+    Project__c row = homeProject('Delivery', 1, false);
+    row.Case_Metric__c = '12';
+    row.Case_Metric_Label__c = 'production deploys';
+    row.Case_Metric_Source__c = ProjectCardController.SOURCE_PRODUCTION_DEPLOYS;
+    insert row;
+
+    Test.startTest();
+    ProjectCardController.CaseStudy card = ProjectCardController.getHomeCaseStudies()[0];
+    Test.stopTest();
+
+    Assert.areEqual(
+      '12',
+      card.headlineMetric,
+      'No successful run, so the stored text shows'
+    );
+    Assert.areEqual(
+      ProjectCardController.SOURCE_STORED,
+      card.headlineSource,
+      'Stored source'
+    );
+  }
+
+  @IsTest
+  static void shouldServeTheProductionDeploysSourceOnAPillarHeadlineToo() {
+    insert new List<Pipeline_Run__c>{
+      deployRun('1', 'Success'),
+      deployRun('2', 'Failure')
+    };
+    Project__c row = new Project__c(
+      Name = 'Delivery pillar',
+      Pillar__c = 'E',
+      Sort_Order__c = 1,
+      Headline_Metric_Label__c = '{n} production deploys',
+      Headline_Metric_Source__c = ProjectCardController.SOURCE_PRODUCTION_DEPLOYS
+    );
+    insert row;
+
+    Test.startTest();
+    ProjectCardController.PillarCard card = ProjectCardController.getPillarCards()[0];
+    Test.stopTest();
+
+    Assert.areEqual('1', card.headlineMetric, 'One success counted');
+    Assert.areEqual('1 production deploys', card.headlineLabel, 'Token filled');
+  }
+
   @IsTest
   static void shouldShipTheHomeRecordEqualToItsDefault() {
     Test.startTest();
@@ -353,6 +518,12 @@ private class ProjectCardControllerHomeTest {
         .queryDefaults()
         .containsKey('ProjectCardController_HomeCaseStudies'),
       'The home read has a code default'
+    );
+    Assert.isTrue(
+      new ProjectCardController()
+        .queryDefaults()
+        .containsKey('ProjectCardController_ProductionDeploys'),
+      'The deploy count has a code default'
     );
   }
 }

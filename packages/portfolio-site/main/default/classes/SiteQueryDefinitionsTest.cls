@@ -25,7 +25,10 @@ private class SiteQueryDefinitionsTest {
       Status__c = 'Active Development',
       Pillar__c = 'E',
       Headline_Metric_Source__c = ProjectCardController.SOURCE_APEX_TESTS,
-      Headline_Metric_Label__c = '{n} tests'
+      Headline_Metric_Label__c = '{n} tests',
+      Home_Sort__c = 1,
+      Case_Metric_Source__c = ProjectCardController.SOURCE_PRODUCTION_DEPLOYS,
+      Case_Metric_Label__c = '{n} deploys'
     );
   }
 
@@ -70,7 +73,7 @@ private class SiteQueryDefinitionsTest {
     Map<String, QueryDefinitions.QueryDefault> defaults = siteDefaults();
     Map<String, Query_Definition__mdt> records = Query_Definition__mdt.getAll();
 
-    Assert.areEqual(22, defaults.size(), 'Twenty two site content reads');
+    Assert.areEqual(23, defaults.size(), 'Twenty three site content reads');
     for (String name : defaults.keySet()) {
       Assert.isTrue(records.containsKey(name), 'Record ships for ' + name);
       Assert.isTrue(records.get(name).Active__c, name + ' ships active');
@@ -250,7 +253,7 @@ private class SiteQueryDefinitionsTest {
     Test.stopTest();
 
     Assert.areEqual(1, cards.size(), 'One pillar card');
-    Assert.areEqual(0, caseStudies.size(), 'No project has a home sort');
+    Assert.areEqual(1, caseStudies.size(), 'One project has a home sort');
     Assert.isNotNull(counts, 'The build counts come back');
     assertReadFromRecords(
       new List<String>(new ProjectCardController().queryDefaults().keySet())
