@@ -87,6 +87,9 @@ const HEADER = {
   gitHubUrl: "https://github.com/example"
 };
 
+const FALLBACK =
+  "If you're hiring a Salesforce architect for education or nonprofit work, start with the three case studies below. Each shows the problem, the call I made and how it turned out.";
+
 function render() {
   const element = createElement("c-hero-banner", { is: HeroBanner });
   document.body.appendChild(element);
@@ -211,7 +214,7 @@ describe("c-hero-banner", () => {
     it("shows the title line and the value sentence trimmed, in order under the name", async () => {
       const element = render();
       expect(byId(element, "hero-line")).toBeNull();
-      expect(byId(element, "hero-value")).toBeNull();
+      expect(text(byId(element, "hero-value"))).toBe(FALLBACK);
       getHeader.emit(HEADER);
       await flush();
       const line = byId(element, "hero-line");
@@ -227,9 +230,6 @@ describe("c-hero-banner", () => {
       expect(name.nextElementSibling).toBe(line.parentElement);
       expect(line.parentElement.nextElementSibling).toBe(value.parentElement);
       expect(value.parentElement.nextElementSibling).toBe(
-        byId(element, "hero-why")
-      );
-      expect(byId(element, "hero-why").nextElementSibling).toBe(
         byId(element, "proof-strip")
       );
     });
@@ -244,11 +244,11 @@ describe("c-hero-banner", () => {
       expect(element.shadowRoot.querySelector(".hero-bio")).toBeNull();
     });
 
-    it("shows no title line and no value sentence when blank, not text, null or failed", async () => {
+    it("shows no title line and the fallback why line when blank, not text, null or failed", async () => {
       const element = render();
       const none = () =>
         byId(element, "hero-line") === null &&
-        byId(element, "hero-value") === null;
+        text(byId(element, "hero-value")) === FALLBACK;
       getHeader.emit({ ...HEADER, heroLine: "   ", valueSentence: "" });
       await flush();
       expect(none()).toBe(true);
@@ -281,14 +281,14 @@ describe("c-hero-banner", () => {
       ).toBe(element.shadowRoot.querySelector("h1"));
     });
 
-    it("keeps the title line and value slots in place, empty, before the header lands", () => {
+    it("keeps the title line slot empty and the why line on the fallback before the header lands", () => {
       const element = render();
       const lineSlot = element.shadowRoot.querySelector(".hero-line-slot");
       const valueSlot = element.shadowRoot.querySelector(".hero-value-slot");
       expect(lineSlot.children).toHaveLength(0);
-      expect(valueSlot.children).toHaveLength(0);
+      expect(valueSlot.children).toHaveLength(1);
       expect(byId(element, "hero-line")).toBeNull();
-      expect(byId(element, "hero-value")).toBeNull();
+      expect(text(byId(element, "hero-value"))).toBe(FALLBACK);
     });
   });
 
@@ -622,10 +622,26 @@ describe("c-hero-banner", () => {
   });
 
   describe("why line and proof panel", () => {
-    it("shows the why line under the headline", () => {
+    it("shows the record's value sentence as the one why line, and the fallback when it is blank", async () => {
       const element = render();
-      expect(text(byId(element, "hero-why"))).toBe(
-        "If you're hiring a Salesforce architect for education or nonprofit work, start with the three case studies below. Each shows the problem, the call I made and how it turned out."
+      getHeader.emit({ ...HEADER, valueSentence: "  Tuned in the record.  " });
+      await flush();
+      expect(text(byId(element, "hero-value"))).toBe("Tuned in the record.");
+      getHeader.emit({ ...HEADER, valueSentence: "   " });
+      await flush();
+      expect(text(byId(element, "hero-value"))).toBe(FALLBACK);
+      getHeader.emit({ ...HEADER, valueSentence: undefined });
+      await flush();
+      expect(text(byId(element, "hero-value"))).toBe(FALLBACK);
+    });
+
+    it("renders only one line under the headline", async () => {
+      const element = render();
+      getHeader.emit(HEADER);
+      await flush();
+      expect(byId(element, "hero-why")).toBeNull();
+      expect(element.shadowRoot.querySelectorAll(".hero-value")).toHaveLength(
+        1
       );
     });
 

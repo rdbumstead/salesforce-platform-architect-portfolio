@@ -9,8 +9,9 @@
  *                      Salesforce_Start_Year setting), the same cacheable read the career line
  *                      makes, so both show one year. The title line (heroLine) and the value
  *                      sentence (valueSentence) come from ResumeController.getHeader, which
- *                      reads only the owner Contact, and each shows only when it is set: never
- *                      a placeholder, and nothing extra when the read fails.
+ *                      reads only the owner Contact. The title line shows only when it is set,
+ *                      and nothing extra shows when the read fails. The value sentence falls
+ *                      back to the constant below.
  *                      "See the case studies" shows only once
  *                      ProjectCardController.getHomeCaseStudies returns at least one card that
  *                      c-case-study-grid would show (a title and a usable link, isShownCase),
@@ -28,7 +29,9 @@
  *                      button next to the case studies button. It starts the tour (c/tourBar startTour) and goes
  *                      straight to its first stop as a plain link. If the tour cannot start
  *                      (storage is blocked) the link still opens that page.
- *                      A "why you are here" line sits under the headline. The proof strip's
+ *                      One "why you are here" line sits under the headline: the value sentence
+ *                      from the header read, so the owner tunes it in the record, or the
+ *                      WHY_FALLBACK constant when it is blank or missing. The proof strip's
  *                      certification count is the number of certifications in the same
  *                      getTimeline read, which leaves retired ones out, and shows the
  *                      c/pillarData constant until that read returns, or when it fails or
@@ -61,6 +64,10 @@ import { isShownCase } from "c/caseStudyGrid";
 import { toExternalUrl } from "c/externalUrl";
 import { isReduced, onMotionChange } from "c/motionPreference";
 import { startTour, firstStopHref } from "c/tourBar";
+
+/** The why line shown when the owner Contact's value sentence is blank or not yet read. */
+export const WHY_FALLBACK =
+  "If you're hiring a Salesforce architect for education or nonprofit work, start with the three case studies below. Each shows the problem, the call I made and how it turned out.";
 
 /** The id c-case-study-grid gives its host element, and the address the button falls back to. */
 export const CASE_STUDIES_ANCHOR = "case-studies";
@@ -131,8 +138,6 @@ export default class HeroBanner extends LightningElement {
   caseStudiesHref = `${basePath || ""}/#${CASE_STUDIES_ANCHOR}`;
   tourHref = firstStopHref();
   tourLabel = `Take the ${TOUR_MINUTES} minute tour`;
-  whyLine =
-    "If you're hiring a Salesforce architect for education or nonprofit work, start with the three case studies below. Each shows the problem, the call I made and how it turned out.";
   proofIntro =
     "This site runs on Salesforce. Every case study, stat and timeline entry on it is a record served through my own API.";
   header;
@@ -197,7 +202,7 @@ export default class HeroBanner extends LightningElement {
   }
 
   get valueSentence() {
-    return textOrNull(this.header && this.header.valueSentence);
+    return textOrNull(this.header && this.header.valueSentence) || WHY_FALLBACK;
   }
 
   get proofPoints() {

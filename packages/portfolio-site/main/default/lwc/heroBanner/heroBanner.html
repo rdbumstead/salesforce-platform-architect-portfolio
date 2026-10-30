@@ -18,11 +18,8 @@
           </template>
         </div>
         <div class="hero-value-slot">
-          <template lwc:if={valueSentence}>
-            <p class="hero-value" data-id="hero-value">{valueSentence}</p>
-          </template>
+          <p class="hero-value" data-id="hero-value">{valueSentence}</p>
         </div>
-        <p class="hero-why" data-id="hero-why">{whyLine}</p>
         <ul class="proof" aria-label="At a glance" data-id="proof-strip">
           <template for:each={proofPoints} for:item="point">
             <li key={point.key} class="proof-item">{point.text}</li>
