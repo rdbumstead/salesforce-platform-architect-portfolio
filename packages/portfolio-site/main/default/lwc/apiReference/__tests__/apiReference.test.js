@@ -14,6 +14,8 @@ import ApiReference, {
   HOSTED_REFERENCE_URL,
   REDOC_OPTIONS,
   REDOC_STYLE_OVERRIDES,
+  REDOC_FOCUS_RULE,
+  normaliseHeadingLevels,
   REDOC_LINK_COLOR,
   REDOC_TAB_COLORS,
   REFERENCE_EVENT,
@@ -630,5 +632,95 @@ describe("c-api-reference", () => {
       expect(window.Redoc.init.mock.calls[1][0]).toBe("SAPI_Spec");
       expect(query(element, "p.version-notice")).not.toBeNull();
     });
+  });
+});
+
+describe("c-api-reference accessibility of the generated markup", () => {
+  const FIXTURE = `
+    <h1>Salesforce System API</h1>
+    <h3>Authentication</h3>
+    <h2>Monitoring <a href="#tag/Monitoring" aria-label="tag/Monitoring"></a></h2>
+    <h2>Health Check <a href="#tag/Monitoring/operation/getHealth" aria-label="tag/Monitoring/operation/getHealth"></a></h2>
+    <h5>Authorizations:</h5>
+    <h3>Responses</h3>
+    <h5>Response Schema</h5>
+    <a href="#top" aria-label="Back to the top">Top</a>`;
+
+  function fixtureNodes() {
+    const doc = new DOMParser().parseFromString(FIXTURE, "text/html");
+    return Array.from(doc.body.childNodes);
+  }
+
+  function rendered() {
+    window.Redoc = {
+      init: jest.fn((spec, options, element, callback) => {
+        fixtureNodes().forEach((node) => element.appendChild(node));
+        callback();
+      })
+    };
+    loadScript.mockReset();
+    loadScript.mockResolvedValue();
+    const element = createElement("c-api-reference", { is: ApiReference });
+    element.fullWidth = true;
+    document.body.appendChild(element);
+    return element;
+  }
+
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+    delete window.Redoc;
+  });
+
+  it("rings every kind of generated control in the site accent", () => {
+    ["a", "button", "[role=button]", "[role=tab]", "[role=menuitem]"].forEach(
+      (kind) => {
+        expect(REDOC_FOCUS_RULE).toContain(
+          `.redoc-target ${kind}:focus-visible`
+        );
+      }
+    );
+    expect(REDOC_FOCUS_RULE).toContain("var(--pf-accent");
+    expect(REDOC_STYLE_OVERRIDES).toContain(REDOC_FOCUS_RULE);
+  });
+
+  it("names a permalink by its heading and leaves other labels alone", async () => {
+    const element = rendered();
+    await flushPromises();
+    element.shadowRoot.querySelector("button.open-reference").click();
+    await flushPromises();
+    const target = element.shadowRoot.querySelector(".redoc-target");
+    const links = Array.from(target.querySelectorAll("a")).map((a) =>
+      a.getAttribute("aria-label")
+    );
+    expect(links).toEqual([
+      "Link to Monitoring",
+      "Link to Health Check",
+      "Back to the top"
+    ]);
+  });
+
+  it("leaves one h1 and skips no heading level", async () => {
+    const element = rendered();
+    await flushPromises();
+    element.shadowRoot.querySelector("button.open-reference").click();
+    await flushPromises();
+    const levels = [
+      element.shadowRoot.querySelector("h1"),
+      ...element.shadowRoot.querySelectorAll(".redoc-target h1,h2,h3,h4,h5,h6")
+    ].map((h) => Number(h.getAttribute("aria-level") || h.tagName.charAt(1)));
+    expect(levels[0]).toBe(1);
+    expect(levels.slice(1).every((l) => l >= 2)).toBe(true);
+    levels.slice(1).forEach((level, i) => {
+      expect(level - levels[i]).toBeLessThanOrEqual(1);
+    });
+  });
+
+  it("works from an embedded h2 down", () => {
+    const root = document.createElement("div");
+    fixtureNodes().forEach((node) => root.appendChild(node));
+    normaliseHeadingLevels(root, 2);
+    expect(root.querySelector("h1").getAttribute("aria-level")).toBe("3");
   });
 });
