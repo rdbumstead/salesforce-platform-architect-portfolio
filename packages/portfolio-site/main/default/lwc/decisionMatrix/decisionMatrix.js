@@ -22,7 +22,7 @@ import { onShowMe, revealAnchor } from "c/tourShowMe";
 export const MIN_WEIGHT = 0;
 export const MAX_WEIGHT = 10;
 export const PLACEHOLDER_BANNER =
-  "Scores and weights are provisional placeholders pending the owner's review.";
+  "Scores and weights are provisional placeholders until I review them.";
 
 const scoreKey = (optionName, criterionName) =>
   `${optionName}|${criterionName}`;

@@ -167,9 +167,23 @@
   text-transform: uppercase;
 }
 
-.resume-role + .resume-role,
-.resume-role + .earlier-roles {
+.resume-employer + .resume-employer,
+.resume-employer + .earlier-roles {
   margin-top: var(--resume-role-after);
+}
+
+/* Titles under one employer sit close together, the employer is the heading above them. */
+.resume-employer .resume-role + .resume-role {
+  margin-top: var(--resume-item-gap);
+}
+
+.employer-heading {
+  margin-bottom: var(--resume-item-gap);
+}
+
+.issuer-label {
+  margin-bottom: var(--resume-item-gap);
+  font-weight: var(--resume-label-weight);
 }
 
 /* Title and dates on one row. The dates wrap under the title when the row is too narrow. */

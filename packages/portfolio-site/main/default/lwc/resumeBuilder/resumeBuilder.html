@@ -150,22 +150,44 @@
                   <h3 class="section-title">{section.title}</h3>
 
                   <template lwc:if={section.isExperience}>
-                    <template for:each={model.roles} for:item="role">
-                      <div key={role.key} class="resume-role">
-                        <div class="role-row">
-                          <strong class="role-heading">{role.heading}</strong>
-                          <span class="role-dates">{role.datesText}</span>
-                        </div>
-                        <ul lwc:if={role.highlights.length} class="role-list">
-                          <template
-                            for:each={role.highlights}
-                            for:item="highlight"
+                    <template for:each={model.employers} for:item="group">
+                      <div key={group.key} class="resume-employer">
+                        <div lwc:if={group.isStacked} class="role-row">
+                          <strong class="role-heading employer-heading"
+                            >{group.employer}</strong
                           >
-                            <li key={highlight.key} class="role-highlight">
-                              {highlight.text}
-                            </li>
-                          </template>
-                        </ul>
+                          <span class="role-dates">{group.spanText}</span>
+                        </div>
+                        <template for:each={group.roles} for:item="role">
+                          <div key={role.key} class="resume-role">
+                            <div class="role-row">
+                              <template lwc:if={group.isStacked}>
+                                <strong class="role-heading role-title"
+                                  >{role.title}</strong
+                                >
+                              </template>
+                              <template lwc:else>
+                                <strong class="role-heading"
+                                  >{role.heading}</strong
+                                >
+                              </template>
+                              <span class="role-dates">{role.datesText}</span>
+                            </div>
+                            <ul
+                              lwc:if={role.highlights.length}
+                              class="role-list"
+                            >
+                              <template
+                                for:each={role.highlights}
+                                for:item="highlight"
+                              >
+                                <li key={highlight.key} class="role-highlight">
+                                  {highlight.text}
+                                </li>
+                              </template>
+                            </ul>
+                          </div>
+                        </template>
                       </div>
                     </template>
                     <p lwc:if={model.hasEarlierRoles} class="earlier-roles">
@@ -186,19 +208,26 @@
                   </template>
 
                   <template lwc:if={section.isCertifications}>
-                    <ul
-                      lwc:if={model.hasCurrentCertifications}
-                      class="current-certifications plain-list"
+                    <template
+                      for:each={model.certificationGroups}
+                      for:item="group"
                     >
-                      <template
-                        for:each={model.currentCertifications}
-                        for:item="cert"
-                      >
-                        <li key={cert.key} class="certification">
-                          {cert.text}
-                        </li>
-                      </template>
-                    </ul>
+                      <div key={group.key} class="certification-group">
+                        <p lwc:if={group.hasIssuer} class="issuer-label">
+                          {group.issuer}
+                        </p>
+                        <ul class="current-certifications plain-list">
+                          <template
+                            for:each={group.certifications}
+                            for:item="cert"
+                          >
+                            <li key={cert.key} class="certification">
+                              {cert.text}
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </template>
                     <p lwc:if={model.hasVerificationLink} class="verify">
                       <a
                         class="verify-link"

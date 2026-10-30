@@ -494,4 +494,57 @@ private class DeliveryControllerTest {
     Assert.areEqual(4, feed.columnLimit, 'Served even with an empty feed');
     Assert.areEqual(DeliveryController.STATUS_EMPTY, feed.status, 'Status');
   }
+
+  @isTest
+  static void feedsCarryTheBreakerDefaults() {
+    Test.startTest();
+    DeliveryController.RoadmapFeed roadmap = DeliveryController.getRoadmap(
+      null
+    );
+    DeliveryController.CommitFeed commits = DeliveryController.getRecentCommits(
+      null
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      CircuitBreaker.failureThreshold(),
+      roadmap.failureThreshold,
+      'Roadmap threshold is the breaker value'
+    );
+    Assert.areEqual(
+      CircuitBreaker.openMinutes(),
+      roadmap.openMinutes,
+      'Roadmap open minutes is the breaker value'
+    );
+    Assert.areEqual(
+      CircuitBreaker.failureThreshold(),
+      commits.failureThreshold,
+      'Commits threshold is the breaker value'
+    );
+    Assert.areEqual(
+      CircuitBreaker.openMinutes(),
+      commits.openMinutes,
+      'Commits open minutes is the breaker value'
+    );
+  }
+
+  @isTest
+  static void feedsServeTheBreakerSettings() {
+    PortfolioSettings.overrideNumber('Circuit_Failure_Threshold', 5);
+    PortfolioSettings.overrideNumber('Circuit_Open_Minutes', 45);
+
+    Test.startTest();
+    DeliveryController.RoadmapFeed roadmap = DeliveryController.getRoadmap(
+      null
+    );
+    DeliveryController.CommitFeed commits = DeliveryController.getRecentCommits(
+      null
+    );
+    Test.stopTest();
+
+    Assert.areEqual(5, roadmap.failureThreshold, 'Roadmap threshold override');
+    Assert.areEqual(45, roadmap.openMinutes, 'Roadmap open minutes override');
+    Assert.areEqual(5, commits.failureThreshold, 'Commits threshold override');
+    Assert.areEqual(45, commits.openMinutes, 'Commits open minutes override');
+  }
 }

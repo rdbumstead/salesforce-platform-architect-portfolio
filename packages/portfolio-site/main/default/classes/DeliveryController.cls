@@ -43,12 +43,15 @@ public with sharing class DeliveryController implements QueryDefinitions.Provide
    * @description The latest commits from the newest GitHub cache row.
    * @param simulate True for the resilience toggle: the cached data comes back as SIMULATED.
    *                 Null or false is the normal read.
-   * @return CommitFeed The items, the row time, its age in minutes and the status.
+   * @return CommitFeed The items, the row time, its age in minutes, the status and the
+   *                     breaker's failure threshold and open minutes as the breaker reads them.
    */
   @AuraEnabled(cacheable=true)
   public static CommitFeed getRecentCommits(Boolean simulate) {
     CommitFeed feed = new CommitFeed();
     feed.items = new List<CommitItem>();
+    feed.failureThreshold = CircuitBreaker.failureThreshold();
+    feed.openMinutes = CircuitBreaker.openMinutes();
     Snapshot row = new CacheSelector().newestGithubRow();
     CommitPayload payload = row == null
       ? null
@@ -73,12 +76,15 @@ public with sharing class DeliveryController implements QueryDefinitions.Provide
    * @param simulate True for the resilience toggle: the cached data comes back as SIMULATED.
    *                 Null or false is the normal read.
    * @return RoadmapFeed The items, the row time, its age in minutes, the status and the
-   *                     number of cards each column shows before its Show all button.
+   *                     number of cards each column shows before its Show all button, and the
+   *                     breaker's failure threshold and open minutes as the breaker reads them.
    */
   @AuraEnabled(cacheable=true)
   public static RoadmapFeed getRoadmap(Boolean simulate) {
     RoadmapFeed feed = new RoadmapFeed();
     feed.items = new List<RoadmapItem>();
+    feed.failureThreshold = CircuitBreaker.failureThreshold();
+    feed.openMinutes = CircuitBreaker.openMinutes();
     feed.columnLimit = PortfolioSettings.getInteger(
       'Roadmap_Column_Limit',
       ROADMAP_COLUMN_LIMIT
@@ -322,6 +328,10 @@ public with sharing class DeliveryController implements QueryDefinitions.Provide
     public Integer ageMinutes;
     @AuraEnabled
     public String status;
+    @AuraEnabled
+    public Integer failureThreshold;
+    @AuraEnabled
+    public Integer openMinutes;
   }
 
   /**
@@ -338,5 +348,9 @@ public with sharing class DeliveryController implements QueryDefinitions.Provide
     public String status;
     @AuraEnabled
     public Integer columnLimit;
+    @AuraEnabled
+    public Integer failureThreshold;
+    @AuraEnabled
+    public Integer openMinutes;
   }
 }

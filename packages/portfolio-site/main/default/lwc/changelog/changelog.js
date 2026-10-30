@@ -210,6 +210,14 @@ export default class Changelog extends LightningElement {
     return this.feed ? this.feed.ageMinutes : undefined;
   }
 
+  get failureThreshold() {
+    return this.feed ? this.feed.failureThreshold : undefined;
+  }
+
+  get openMinutes() {
+    return this.feed ? this.feed.openMinutes : undefined;
+  }
+
   get statusBadge() {
     return STATUS_BADGES[this.status] || null;
   }

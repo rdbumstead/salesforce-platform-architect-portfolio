@@ -522,7 +522,7 @@ describe("c-hero-banner", () => {
       expect(link.getAttribute("href")).toBe(
         "/portfolio/business-architecture"
       );
-      expect(text(link)).toBe("Short on time? Take the 10 minute tour →");
+      expect(text(link)).toBe("Have 10 minutes? Take the guided tour →");
       expect(link.querySelector('[aria-hidden="true"]').textContent).toBe("→");
       const actions = element.shadowRoot.querySelector(".hero-actions");
       expect(actions.contains(link)).toBe(false);

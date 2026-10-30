@@ -4,7 +4,8 @@
  *                      highlights from getResume for the Architect persona, the selector and its
  *                      event, opening and closing a point (aria-expanded, one at a time, Escape
  *                      with focus back), the verify link, the phone list of every point, and
- *                      nothing on an error or with no points.
+ *                      nothing on an error or with no points. The grouping block covers employers
+ *                      and issuer and year groups, the titles that open, and the phone list.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -14,6 +15,7 @@ import { createElement } from "@lwc/engine-dom";
 import CareerLine, {
   HIGHLIGHT_PERSONA,
   buildPoints,
+  employerYears,
   foldYears,
   foldsAway,
   formatMonthYear,
@@ -21,6 +23,7 @@ import CareerLine, {
   highlightsById,
   isCurrentRole,
   mergeByDate,
+  shortCertificationName,
   spokenYears,
   toStartYear
 } from "c/careerLine";
@@ -162,15 +165,17 @@ const RESUME = {
   ]
 };
 
-// The order the line draws TIMELINE in: roles in server order, the certifications and the
-// school by date among them, the fold last.
+// The order the line draws TIMELINE in: one point per employer in server order, one per issuer
+// and year for the certifications, the school by date among them, the fold last.
+const CERTS_2025 = "certifications-salesforce-2025";
+const CERTS_2024 = "certifications-salesforce-2024";
 const ORDER = [
   "a01",
   "a02",
   "a03",
   "e01",
-  "c01",
-  "c02",
+  CERTS_2025,
+  CERTS_2024,
   "a05",
   "earlier-roles"
 ];
@@ -477,14 +482,12 @@ describe("c-career-line", () => {
       );
       const certification = linePoints(element)[4];
       expect(text(certification.querySelector(".point-first"))).toBe(
-        "Certification,"
+        "Salesforce \u00b7 2025,"
       );
       expect(text(certification.querySelector(".point-second"))).toBe(
         "Data 360 Consultant,"
       );
-      expect(text(certification.querySelector(".years .visually-hidden"))).toBe(
-        "earned 2025"
-      );
+      expect(certification.querySelector(".years .visually-hidden")).toBeNull();
     });
 
     it("draws the fold as Earlier roles with its years", async () => {
@@ -579,7 +582,7 @@ describe("c-career-line", () => {
       expect(keysOf(linePoints(element))).toEqual(["e01"]);
       filter(element, "certifications").click();
       await flush();
-      expect(keysOf(linePoints(element))).toEqual(["c01", "c02"]);
+      expect(keysOf(linePoints(element))).toEqual([CERTS_2025, CERTS_2024]);
       filter(element, "all").click();
       await flush();
       expect(keysOf(linePoints(element))).toEqual(ORDER);
@@ -884,6 +887,437 @@ describe("c-career-line", () => {
       expect(element.shadowRoot.activeElement).toBe(
         stackButton(element, "c01")
       );
+    });
+  });
+
+  describe("grouping", () => {
+    const GROUPED = {
+      work: [
+        {
+          key: "t1",
+          title: "Senior Solution Consultant",
+          employer: "TELUS Digital",
+          startDate: "2026-04-14",
+          endDate: null,
+          isCurrent: true
+        },
+        {
+          key: "i1",
+          title: "Salesforce Application Architect",
+          employer: "Independent Consultant (part time)",
+          startDate: "2021-10-01",
+          endDate: null,
+          isCurrent: true
+        },
+        {
+          key: "c2",
+          title: "CRM Developer",
+          employer: "Creighton University",
+          startDate: "2025-08-01",
+          endDate: "2026-04-10",
+          isCurrent: false
+        },
+        {
+          key: "c1",
+          title: "Application Administrator",
+          employer: "Creighton University",
+          startDate: "2021-06-01",
+          endDate: "2025-08-01",
+          isCurrent: false
+        },
+        {
+          key: "m2",
+          title: "CAET Services Specialist II",
+          employer: "Metropolitan Community College",
+          startDate: "2017-07-02",
+          endDate: "2021-06-01",
+          isCurrent: false
+        },
+        {
+          key: "m3",
+          title: "Non-Credit Instructor",
+          employer: "Metropolitan Community College",
+          startDate: "2017-12-01",
+          endDate: "2021-06-01",
+          isCurrent: false
+        },
+        {
+          key: "m1",
+          title: "IT Project Assistant",
+          employer: "Metropolitan Community College",
+          startDate: "2017-01-02",
+          endDate: "2017-07-02",
+          isCurrent: false
+        },
+        {
+          key: "f1",
+          title: "POS Technician",
+          employer: "Fiserv, Inc",
+          startDate: "2016-01-01",
+          endDate: "2016-10-03",
+          isCurrent: false
+        }
+      ],
+      certifications: [
+        {
+          id: "k1",
+          name: "Salesforce Certified Agentforce Specialist",
+          issuer: "Salesforce",
+          earnedDate: "2025-06-01"
+        },
+        {
+          id: "k2",
+          name: "Salesforce Certified Data 360 Consultant",
+          issuer: "Salesforce",
+          earnedDate: "2025-03-17"
+        },
+        {
+          id: "k3",
+          name: "Salesforce Certified Platform Administrator",
+          issuer: "Salesforce",
+          earnedDate: "2024-06-01"
+        },
+        {
+          id: "k4",
+          name: "Other Vendor Practitioner",
+          issuer: "Other Vendor",
+          earnedDate: "2025-02-01"
+        },
+        {
+          id: "k5",
+          name: "Retired Thing",
+          issuer: "Salesforce",
+          earnedDate: "2024-01-01",
+          isRetired: true
+        }
+      ],
+      verificationUrl: VERIFY,
+      salesforceStartYear: 2017
+    };
+
+    function titleLabels(element, pointKey) {
+      const point = element.shadowRoot.querySelector(
+        `[data-id="line-point"][data-key="${pointKey}"]`
+      );
+      return Array.from(point.querySelectorAll(".title-item")).map((item) =>
+        text(item.querySelector(".point-second")).replace(/,$/, "")
+      );
+    }
+
+    function groupYears(element, pointKey) {
+      const node = element.shadowRoot.querySelector(
+        `[data-id="line-point"][data-key="${pointKey}"] .group-years [aria-hidden="true"]`
+      );
+      return node ? text(node) : null;
+    }
+
+    async function grouped() {
+      const element = render();
+      getTimeline.emit(GROUPED);
+      getResume.emit({
+        roles: [
+          { id: "c2", highlights: ["Built the CRM."] },
+          { id: "c1", highlights: ["Ran the org."] },
+          { id: "m3", highlights: ["Taught it."] },
+          { id: "i1", highlights: ["Built a site."] }
+        ]
+      });
+      await flush();
+      return element;
+    }
+
+    it("makes one point per employer, certifications by issuer and year, folded roles last", async () => {
+      const element = await grouped();
+      expect(keysOf(linePoints(element))).toEqual([
+        "t1",
+        "i1",
+        "employer-creighton-university",
+        "certifications-salesforce-2025",
+        "certifications-other-vendor-2025",
+        "certifications-salesforce-2024",
+        "employer-metropolitan-community-college",
+        "earlier-roles"
+      ]);
+    });
+
+    it("lists every title at an employer, newest first, with its own years", async () => {
+      const element = await grouped();
+      expect(titleLabels(element, "employer-creighton-university")).toEqual([
+        "CRM Developer",
+        "Application Administrator"
+      ]);
+      const creighton = element.shadowRoot.querySelector(
+        '[data-id="line-point"][data-key="employer-creighton-university"]'
+      );
+      expect(
+        Array.from(creighton.querySelectorAll(".title-item .years")).map(
+          (node) => text(node.querySelector('[aria-hidden="true"]'))
+        )
+      ).toEqual(["2025 to 2026", "2021 to 2025"]);
+    });
+
+    it("keeps two roles held at once, the later start first", async () => {
+      const element = await grouped();
+      expect(
+        titleLabels(element, "employer-metropolitan-community-college")
+      ).toEqual([
+        "Non-Credit Instructor",
+        "CAET Services Specialist II",
+        "IT Project Assistant"
+      ]);
+    });
+
+    it("gives an employer its earliest start to its latest end", async () => {
+      const element = await grouped();
+      expect(groupYears(element, "employer-creighton-university")).toBe(
+        "2021 to 2026"
+      );
+      expect(
+        groupYears(element, "employer-metropolitan-community-college")
+      ).toBe("2017 to 2021");
+    });
+
+    it("writes a plus on the earliest start year when any role at the employer is current", () => {
+      const points = buildPoints({
+        work: [
+          {
+            key: "x2",
+            title: "Lead",
+            employer: "Acme",
+            startDate: "2024-01-01",
+            endDate: null,
+            isCurrent: true
+          },
+          {
+            key: "x1",
+            title: "Analyst",
+            employer: "Acme",
+            startDate: "2019-01-01",
+            endDate: "2023-12-31",
+            isCurrent: false
+          }
+        ]
+      });
+      expect(points).toHaveLength(1);
+      expect(points[0].years).toBe("2019+");
+      expect(points[0].yearsSpoken).toBe("since 2019, active");
+      expect(points[0].isCurrent).toBe(true);
+      expect(points[0].titles.map((title) => title.key)).toEqual(["x2", "x1"]);
+      expect(employerYears([{ isCurrent: true }])).toBe("");
+    });
+
+    it("draws an employer with one role like a role point, with its title shown", async () => {
+      const element = await grouped();
+      const point = element.shadowRoot.querySelector(
+        '[data-id="line-point"][data-key="t1"]'
+      );
+      expect(text(point.querySelector(".point-first"))).toBe("TELUS Digital,");
+      expect(titleLabels(element, "t1")).toEqual([
+        "Senior Solution Consultant"
+      ]);
+      expect(point.querySelector(".group-years")).toBeNull();
+      expect(text(point.querySelector('.years [aria-hidden="true"]'))).toBe(
+        "2026+"
+      );
+      expect(point.querySelector(".active-tag")).not.toBeNull();
+    });
+
+    it("draws a title with no highlights as plain text", async () => {
+      const element = await grouped();
+      expect(lineButton(element, "c2")).not.toBeNull();
+      expect(lineButton(element, "m2")).toBeNull();
+      expect(lineButton(element, "t1")).toBeNull();
+    });
+
+    it("folds the roles before the Salesforce start year as before", async () => {
+      const element = await grouped();
+      lineButton(element, "earlier-roles").click();
+      await flush();
+      expect(panelItems(element)).toEqual([
+        "Fiserv, Inc, POS Technician, 2016"
+      ]);
+      expect(text(linePanel(element).querySelector(".panel-meta"))).toBe(
+        "2016"
+      );
+    });
+
+    it("groups certifications by issuer and earned year, newest first, prefix dropped", async () => {
+      const element = await grouped();
+      const heading = (key) =>
+        text(
+          element.shadowRoot.querySelector(
+            `[data-id="line-point"][data-key="${key}"] .point-first`
+          )
+        );
+      expect(heading("certifications-salesforce-2025")).toBe(
+        "Salesforce · 2025,"
+      );
+      expect(heading("certifications-other-vendor-2025")).toBe(
+        "Other Vendor · 2025,"
+      );
+      expect(titleLabels(element, "certifications-salesforce-2025")).toEqual([
+        "Agentforce Specialist",
+        "Data 360 Consultant"
+      ]);
+      expect(titleLabels(element, "certifications-salesforce-2024")).toEqual([
+        "Platform Administrator"
+      ]);
+      expect(titleLabels(element, "certifications-other-vendor-2025")).toEqual([
+        "Other Vendor Practitioner"
+      ]);
+    });
+
+    it("hides a retired certification", async () => {
+      const element = await grouped();
+      expect(lineButton(element, "k5")).toBeNull();
+      expect(element.shadowRoot.textContent).not.toContain("Retired Thing");
+    });
+
+    it("drops the prefix only when it is the issuer's own", () => {
+      expect(
+        shortCertificationName(
+          "Salesforce Certified Platform App Builder",
+          "Salesforce"
+        )
+      ).toBe("Platform App Builder");
+      expect(shortCertificationName("Data 360 Consultant", "Salesforce")).toBe(
+        "Data 360 Consultant"
+      );
+      expect(
+        shortCertificationName("Salesforce Certified Admin", "Other Vendor")
+      ).toBe("Salesforce Certified Admin");
+      expect(
+        shortCertificationName("Salesforce Certified ", "Salesforce")
+      ).toBe("Salesforce Certified");
+      expect(shortCertificationName(" X ", "")).toBe("X");
+    });
+
+    it("opens a certification to its full name, issuer, earned date and verify link", async () => {
+      const element = await grouped();
+      lineButton(element, "k2").click();
+      await flush();
+      expect(text(linePanel(element).querySelector(".panel-title"))).toBe(
+        "Salesforce Certified Data 360 Consultant"
+      );
+      expect(panelItems(element)).toEqual(["Salesforce, earned Mar 2025"]);
+      expect(
+        linePanel(element)
+          .querySelector('[data-id="panel-verify-link"]')
+          .getAttribute("href")
+      ).toBe(VERIFY);
+    });
+
+    it("keeps every name visible under every filter", async () => {
+      const element = await grouped();
+      filter(element, "work").click();
+      await flush();
+      expect(keysOf(linePoints(element))).toEqual([
+        "t1",
+        "i1",
+        "employer-creighton-university",
+        "employer-metropolitan-community-college",
+        "earlier-roles"
+      ]);
+      expect(titleLabels(element, "employer-creighton-university")).toEqual([
+        "CRM Developer",
+        "Application Administrator"
+      ]);
+      filter(element, "certifications").click();
+      await flush();
+      expect(keysOf(linePoints(element))).toEqual([
+        "certifications-salesforce-2025",
+        "certifications-other-vendor-2025",
+        "certifications-salesforce-2024"
+      ]);
+      expect(titleLabels(element, "certifications-salesforce-2025")).toEqual([
+        "Agentforce Specialist",
+        "Data 360 Consultant"
+      ]);
+    });
+
+    it("opens a title with aria-expanded, its highlights, Escape and focus back", async () => {
+      const element = await grouped();
+      const button = lineButton(element, "c1");
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      button.click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+      expect(lineButton(element, "c2").getAttribute("aria-expanded")).toBe(
+        "false"
+      );
+      expect(text(linePanel(element).querySelector(".panel-title"))).toBe(
+        "Application Administrator"
+      );
+      expect(text(linePanel(element).querySelector(".panel-meta"))).toBe(
+        "Creighton University, 2021 to 2025"
+      );
+      expect(panelItems(element)).toEqual(["Ran the org."]);
+      lineButton(element, "c2").click();
+      await flush();
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+      expect(panelItems(element)).toEqual(["Built the CRM."]);
+      escape(element);
+      await flush();
+      expect(linePanel(element).hidden).toBe(true);
+      expect(element.shadowRoot.activeElement).toBe(lineButton(element, "c2"));
+    });
+
+    it("sends career_role_opened with the role's place among all roles", async () => {
+      const element = await grouped();
+      // Order on the line: t1, i1, c2, c1, m3, m2, m1.
+      lineButton(element, "c1").click();
+      await flush();
+      expect(trackEvent).toHaveBeenLastCalledWith("career_role_opened", {
+        position: 4
+      });
+      lineButton(element, "m3").click();
+      await flush();
+      expect(trackEvent).toHaveBeenLastCalledWith("career_role_opened", {
+        position: 5
+      });
+      lineButton(element, "k1").click();
+      await flush();
+      expect(trackEvent).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps newest 4 points then Show all on the phone list", async () => {
+      const element = await grouped();
+      const keys = () => keysOf(all(element, '[data-id="stack-point"]'));
+      expect(keys()).toEqual([
+        "t1",
+        "i1",
+        "employer-creighton-university",
+        "certifications-salesforce-2025"
+      ]);
+      const toggle = element.shadowRoot.querySelector(
+        '[data-id="stack-toggle"]'
+      );
+      expect(text(toggle)).toBe("Show all 8");
+      toggle.click();
+      await flush();
+      expect(keys()).toHaveLength(8);
+    });
+
+    it("opens a title in place on the phone list, one at a time, Escape returns focus", async () => {
+      const element = await grouped();
+      stackButton(element, "c1").click();
+      await flush();
+      const panels = all(element, '[data-id="stack-panel"]').filter(
+        (panel) => !panel.hidden
+      );
+      expect(panels).toHaveLength(1);
+      expect(text(panels[0])).toBe("Ran the org.");
+      expect(stackButton(element, "c1").getAttribute("aria-controls")).toBe(
+        panels[0].id
+      );
+      stackButton(element, "c2").click();
+      await flush();
+      expect(stackButton(element, "c1").getAttribute("aria-expanded")).toBe(
+        "false"
+      );
+      escape(element);
+      await flush();
+      expect(element.shadowRoot.activeElement).toBe(stackButton(element, "c2"));
     });
   });
 

@@ -14,7 +14,7 @@
         <field>Fields__c</field>
         <value
       xsi:type="xsd:string"
-    >Name, Home_Title__c, Client_Line__c, Case_Tags__c, Headline_Metric__c, Headline_Metric_Label__c, Headline_Metric_Source__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c</value>
+    >Name, Home_Title__c, Client_Line__c, Case_Tags__c, Case_Metric__c, Case_Metric_Label__c, Case_Metric_Source__c, Challenge__c, Solution__c, Business_Value__c, Live_URL__c</value>
     </values>
     <values>
         <field>Filter__c</field>
@@ -40,7 +40,7 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >Home page case study cards: the projects with Home Sort set, lowest first, never filtered on Is Featured.</value>
+    >Home page case study cards: the projects with Home Sort set, lowest first, never filtered on Is Featured. Each reads the Case Study Metric fields.</value>
     </values>
     <values>
         <field>Visitor_Label__c</field>

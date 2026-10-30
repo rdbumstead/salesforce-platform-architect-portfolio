@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Case_Metric_Source__c</fullName>
+    <description
+  >Where the case study card's number on the home page is computed from when the card loads. The case study cards read the Case Metric fields and the "How this site is built" section reads the Headline Metric fields. Blank means the stored Case Study Metric text is shown as it is. When a source is set, the first number in Case Study Metric is replaced by the computed one and the {n} token in Case Study Metric Label is filled. The stored text stays as the fallback when the source cannot be read.</description>
+    <inlineHelpText
+  >Pick the live source for this case study card's number, or leave blank to show the stored text. The label may hold {n} for the number, and {coverage} for the org coverage when the source is Apex tests.</inlineHelpText>
+    <label>Case Study Metric Source</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Employer Hub objects</fullName>
+                <default>false</default>
+                <label>Employer Hub objects</label>
+            </value>
+            <value>
+                <fullName>API paths</fullName>
+                <default>false</default>
+                <label>API paths</label>
+            </value>
+            <value>
+                <fullName>AI providers</fullName>
+                <default>false</default>
+                <label>AI providers</label>
+            </value>
+            <value>
+                <fullName>Apex tests</fullName>
+                <default>false</default>
+                <label>Apex tests</label>
+            </value>
+            <value>
+                <fullName>Production deploys</fullName>
+                <default>false</default>
+                <label>Production deploys</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

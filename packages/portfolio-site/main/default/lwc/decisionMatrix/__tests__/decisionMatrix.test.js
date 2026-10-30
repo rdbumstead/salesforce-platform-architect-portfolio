@@ -388,7 +388,7 @@ describe("c-decision-matrix", () => {
     expect(banner).not.toBeNull();
     expect(banner.textContent.trim()).toBe(PLACEHOLDER_BANNER);
     expect(PLACEHOLDER_BANNER).toBe(
-      "Scores and weights are provisional placeholders pending the owner's review."
+      "Scores and weights are provisional placeholders until I review them."
     );
   });
 
