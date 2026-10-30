@@ -1,6 +1,6 @@
 /* Home page hero, built on the --pf- site tokens only. */
 .home {
-  max-width: 1024px;
+  max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
   padding: 64px var(--pf-space-4) 0;
   color: var(--pf-text);
@@ -136,6 +136,52 @@
   color: var(--pf-btn-text);
 }
 
+/* Secondary: white fill, 1px border from the border token, same height and radius as primary. */
+.btn-secondary,
+.btn-secondary:link,
+.btn-secondary:visited {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  color: var(--pf-text);
+}
+
+.btn-secondary:hover,
+.btn-secondary:link:hover,
+.btn-secondary:visited:hover {
+  background: var(--pf-surface);
+  border-color: var(--pf-muted);
+  color: var(--pf-text);
+}
+
+.proof-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  padding: var(--pf-space-4);
+  border: 1px solid var(--pf-border);
+  border-radius: 12px;
+}
+
+.proof-intro {
+  margin: 0;
+  font-size: 14px;
+  color: var(--pf-body);
+}
+
+.proof-stats {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: var(--pf-text);
+}
+
+.proof-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .profile-links {
   min-height: 32px;
   display: flex;
@@ -159,31 +205,7 @@
   text-decoration: underline;
 }
 
-/* The quiet second way in for a technical reviewer, under the buttons. The site's a:link rule
-   outranks a plain class, so :link and :visited are matched too. */
-.hero-tour {
-  margin: 0;
-  font-size: 14px;
-}
-
-.tour-link,
-.tour-link:link,
-.tour-link:visited {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  color: var(--pf-body);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.tour-link:hover {
-  color: var(--pf-text);
-}
-
 .btn:focus-visible,
-.tour-link:focus-visible,
 .profile-link:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
