@@ -280,17 +280,15 @@ describe("c-hero-banner", () => {
   });
 
   describe("buttons and profile links", () => {
-    it("offers See the case studies first and View the resume second, with their classes", async () => {
+    it("offers See the case studies as the one button, and leaves the resume to the profile links", async () => {
       const element = await renderWithCases();
       const actions = element.shadowRoot.querySelectorAll(".hero-actions a");
       expect(Array.from(actions).map((a) => text(a))).toEqual([
-        "See the case studies ↓",
-        "View the resume →"
+        "See the case studies ↓"
       ]);
       expect(actions[0].getAttribute("href")).toBe("/portfolio/#case-studies");
       expect(actions[0].classList.contains("btn-primary")).toBe(true);
-      expect(actions[1].getAttribute("href")).toBe("/portfolio/resume");
-      expect(actions[1].classList.contains("btn-ghost")).toBe(true);
+      expect(byId(element, "resume-button")).toBeNull();
     });
 
     it("shows Resume and API docs links before the wire, and GitHub and LinkedIn once it returns", async () => {
@@ -413,21 +411,22 @@ describe("c-hero-banner", () => {
       expect(getHomeCaseStudies.getLastConfig()).toEqual({});
     });
 
-    it("shows only View the resume before the read returns", () => {
+    it("keeps an empty button row before the read returns, so its height is held", () => {
       const element = render();
       expect(caseButton(element)).toBeNull();
-      expect(actionKeys(element)).toEqual(["resume-button"]);
+      expect(element.shadowRoot.querySelector(".hero-actions")).not.toBeNull();
+      expect(actionKeys(element)).toEqual([]);
     });
 
-    it("shows only View the resume when there are no case studies", async () => {
+    it("shows no button when there are no case studies", async () => {
       const element = render();
       getHomeCaseStudies.emit([]);
       await flush();
       expect(caseButton(element)).toBeNull();
-      expect(actionKeys(element)).toEqual(["resume-button"]);
+      expect(actionKeys(element)).toEqual([]);
     });
 
-    it("shows only View the resume when the read fails or no card has a title", async () => {
+    it("shows no button when the read fails or no card has a title", async () => {
       const element = render();
       getHomeCaseStudies.error();
       await flush();
@@ -437,7 +436,7 @@ describe("c-hero-banner", () => {
       expect(caseButton(element)).toBeNull();
     });
 
-    it("shows only View the resume when no card has a link the grid would show", async () => {
+    it("shows no button when no card has a link the grid would show", async () => {
       const element = render();
       getHomeCaseStudies.emit([
         { key: "a", title: "No link" },
@@ -448,15 +447,12 @@ describe("c-hero-banner", () => {
       expect(caseButton(element)).toBeNull();
     });
 
-    it("shows See the case studies first once one card comes back", async () => {
+    it("shows See the case studies once one card comes back", async () => {
       const element = render();
       getHomeCaseStudies.emit([CASE]);
       await flush();
       expect(caseButton(element)).not.toBeNull();
-      expect(actionKeys(element)).toEqual([
-        "case-studies-button",
-        "resume-button"
-      ]);
+      expect(actionKeys(element)).toEqual(["case-studies-button"]);
       getHomeCaseStudies.emit([]);
       await flush();
       expect(caseButton(element)).toBeNull();

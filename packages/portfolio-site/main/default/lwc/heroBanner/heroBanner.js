@@ -2,7 +2,7 @@
  * @description       : Home page hero, written for a recruiter's first look: the photo, the
  *                      name as the page's h1, the meta line (employer title and location), the
  *                      title line, one value sentence, a short proof strip, "See the case
- *                      studies" and "View the resume", and the profile links.
+ *                      studies", and the profile links, where Resume sits.
  *                      Name, meta line, location, proof strip and photo are static so they paint
  *                      without waiting on Apex. The proof strip's "On Salesforce since 2017"
  *                      then takes its year from ResumeController.getTimeline (the
@@ -15,9 +15,10 @@
  *                      ProjectCardController.getHomeCaseStudies returns at least one card that
  *                      c-case-study-grid would show (a title and a usable link, isShownCase),
  *                      the same read and cache the grid uses, so it never points at a section
- *                      that is not there. With no card only "View the resume"
- *                      shows. The button scrolls to c-case-study-grid's heading and moves focus
- *                      there, smoothly unless the system "reduce motion" setting is on
+ *                      that is not there. Its row keeps the button's height from the first
+ *                      paint, so nothing below moves when it appears. The button scrolls to
+ *                      c-case-study-grid's heading and moves focus there, smoothly unless the
+ *                      system "reduce motion" setting is on
  *                      (c/motionPreference). If the section cannot be found the link falls back
  *                      to the home page address ending in #case-studies.
  *                      The profile links are GitHub, LinkedIn and Trailhead from the owner
