@@ -49,7 +49,23 @@ private class ApiVersionTest {
     RestTestUtil.initGetRaw(uri, headers, params);
   }
 
+  // Turns on the v1 date settings for this test. A date the test does not set reads as blank,
+  // never as the date deployed to the org.
   private static void setting(String name, String text) {
+    ApiRequestContext.readConfiguredDates = true;
+    for (
+      String dateSetting : new List<String>{
+        'Api_V1_Deprecation_Date',
+        'Api_V1_Sunset_Date'
+      }
+    ) {
+      if (!PortfolioSettings.overrides.containsKey(dateSetting)) {
+        PortfolioSettings.overrides.put(
+          dateSetting,
+          new Portfolio_Setting__mdt(DeveloperName = dateSetting)
+        );
+      }
+    }
     PortfolioSettings.overrides.put(
       name,
       new Portfolio_Setting__mdt(DeveloperName = name, Text_Value__c = text)
@@ -757,5 +773,33 @@ private class ApiVersionTest {
       'PAPITransformer delegates'
     );
     Assert.areEqual(7, SAPITransformer.toV2(7), 'A scalar passes through');
+  }
+
+  @IsTest
+  static void shouldIgnoreTheOrgDatesUnlessATestTurnsThemOn() {
+    PortfolioSettings.overrides.put(
+      'Api_V1_Deprecation_Date',
+      new Portfolio_Setting__mdt(
+        DeveloperName = 'Api_V1_Deprecation_Date',
+        Text_Value__c = '2026-01-01'
+      )
+    );
+    PortfolioSettings.overrides.put(
+      'Api_V1_Sunset_Date',
+      new Portfolio_Setting__mdt(
+        DeveloperName = 'Api_V1_Sunset_Date',
+        Text_Value__c = '2026-02-01'
+      )
+    );
+    send(SAPI + 'skills/', 'v1', null);
+
+    Test.startTest();
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    Test.stopTest();
+
+    Assert.isFalse(ctx.isRejected(), 'A past sunset is not applied');
+    Assert.isNull(header('Deprecation'), 'No Deprecation');
+    Assert.isNull(header('Sunset'), 'No Sunset');
+    Assert.isFalse(ApiRequestContext.isV1Gone(), 'Not gone');
   }
 }

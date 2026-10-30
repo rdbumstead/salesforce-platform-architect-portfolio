@@ -26,9 +26,10 @@
  * request that sends it sends a fresh UUID, and every SAPI request sends it with X-API-Version.
  */
 const fs = require("fs");
-const yaml = require("js-yaml");
 const path = require("path");
 const crypto = require("crypto");
+const { createRequire } = require("module");
+const yaml = loadYaml();
 
 const ROOT = path.resolve(__dirname, "..");
 const RESOURCE_DIR = path.join(
@@ -605,6 +606,24 @@ function loadConverter() {
   };
   const dir = process.env.OPENAPI_TO_POSTMAN_DIR;
   return require(dir ? path.resolve(dir) : "openapi-to-postmanv2");
+}
+
+/**
+ * js-yaml from the repository's packages, or else from beside the converter, which depends on
+ * it. The Postman Sync workflow installs only the converter, outside the repository.
+ */
+function loadYaml() {
+  try {
+    return require("js-yaml");
+  } catch (error) {
+    const dir = process.env.OPENAPI_TO_POSTMAN_DIR;
+    if (!dir) {
+      throw error;
+    }
+    return createRequire(path.join(path.resolve(dir), "package.json"))(
+      "js-yaml"
+    );
+  }
 }
 
 /** A YAML spec file as the JSON text the converter reads. */

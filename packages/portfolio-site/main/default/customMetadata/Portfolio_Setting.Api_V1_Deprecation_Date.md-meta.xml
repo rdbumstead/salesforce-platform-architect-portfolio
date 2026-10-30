@@ -12,7 +12,7 @@
     </values>
     <values>
         <field>Text_Value__c</field>
-        <value xsi:nil="true" />
+        <value xsi:type="xsd:string">2026-10-30</value>
     </values>
     <values>
         <field>Min_Value__c</field>

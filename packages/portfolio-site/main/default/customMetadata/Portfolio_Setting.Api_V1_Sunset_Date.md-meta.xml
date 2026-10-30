@@ -12,7 +12,7 @@
     </values>
     <values>
         <field>Text_Value__c</field>
-        <value xsi:nil="true" />
+        <value xsi:type="xsd:string">2026-11-29</value>
     </values>
     <values>
         <field>Min_Value__c</field>
@@ -26,6 +26,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >The day API v1 is retired, written yyyy-MM-dd and read as 00:00 UTC. v1 responses carry a Sunset header, and on that day every v1 call answers 410 Gone. Empty sends no Sunset header and never answers 410. Set it in the Text value field.</value>
+    >The day API v1 is retired, as yyyy-MM-dd read at 00:00 UTC. v1 responses carry a Sunset header, and from that day v1 calls answer 410 Gone, except the token and health paths. Empty sends no Sunset header and no 410. Set it in the Text value field.</value>
     </values>
 </CustomMetadata>
