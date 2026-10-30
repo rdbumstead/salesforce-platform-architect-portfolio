@@ -569,8 +569,8 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-017](../adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | System API Security & Dual-Sided Auth Pattern                   | Superseded (ADR-027)     |
 | [ADR-018](../adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | FinOps Constraint – AWS Lambda Function URLs vs. API Gateway    | Deferred (2026-10-23)    |
 | [ADR-019](../adr/019-executable-governance-platform-events-for-documentation-logic.md) | Executable Governance – Platform Events for Documentation Logic | Accepted                 |
-| [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Amended 2026-10-22       |
-| [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Amended 2026-10-23       |
+| [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Amended 2026-10-30       |
+| [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Amended 2026-10-30       |
 | [ADR-022](../adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Engineering – Resilience Simulation Toggle           | Accepted                 |
 | [ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF) for MVP                      | Accepted (Transitionary) |
 | [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern – Contract-First Parity                        | Amended 2026-10-23       |
@@ -586,7 +586,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-034](../adr/034-recruiter-first-home-page.md)                                     | A Recruiter First Home Page                                     | Accepted (2026-10-26)    |
 | [ADR-035](../adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams Rendered in CI                                         | Accepted (2026-10-26)    |
 | [ADR-036](../adr/036-portfolio-guide-agent.md)                                         | The Portfolio Guide Agent                                       | Accepted (2026-10-27)    |
-| [ADR-037](../adr/037-native-form-controls-site-wide.md)                                | Native Form Controls Site Wide                                  | Accepted (2026-10-27)    |
+| [ADR-037](../adr/037-native-form-controls-site-wide.md)                                | Native Form Controls Site Wide                                  | Amended 2026-10-30       |
 | [ADR-038](../adr/038-stable-public-keys-in-the-api.md)                                 | Stable Public Keys in the API                                   | Accepted (2026-10-28)    |
 | [ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 Sunset                                        | Accepted (2026-10-29)    |
 
@@ -1104,7 +1104,7 @@ Media gallery assets, read by `c-project-asset-gallery`.
 
 No custom index is defined in source or requested from Salesforce Support. The portfolio objects hold one person's portfolio, so they stay small and no query has needed one.
 
-- **Pillar filters:** two reads filter `Project__c` by `Pillar__c`: `ProjectCardController` (`WHERE Pillar__c IN :PILLAR_LETTERS`) and `c-project-asset-gallery` (GraphQL `where: { Pillar__c: { eq: $pillar } }`). The API tester does not filter by pillar.
+- **Pillar filters:** two reads filter `Project__c` by `Pillar__c`: `ProjectCardController` (`WHERE Pillar__c IN :PILLAR_LETTERS`) and `c-project-asset-gallery-data`, the gallery's lazy child (GraphQL `where: { Pillar__c: { eq: $pillar } }`). The API tester does not filter by pillar.
 - **Status values:** the `Status__c` picklist values use an en dash, for example `Live – In Production` and `Live – Demo / Reference`, so a query must use that character exactly.
 - **Testimonials:** reads filter on `Approved__c = true`, and `Context__c` is never filtered.
 - **When to revisit:** if a table grew to thousands of rows, a custom index on `Project__c.Pillar__c` would be the first request.
