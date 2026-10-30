@@ -202,4 +202,29 @@ describe("c-home-testimonials", () => {
     expect(link.getAttribute("target")).toBeNull();
     expect(text(link)).toBe("Read every testimonial →");
   });
+
+  it("shows one card per quote, up to three, with no big number", async () => {
+    const element = render();
+    getHomeTestimonials.emit(QUOTES);
+    await flush();
+    const root = element.shadowRoot;
+    expect(root.querySelectorAll(".card")).toHaveLength(
+      Math.min(QUOTES.length, 3)
+    );
+    expect(root.querySelector(".metric-number")).toBeNull();
+  });
+
+  it("has one secondary button and no primary button", async () => {
+    const element = render();
+    getHomeTestimonials.emit(QUOTES);
+    await flush();
+    const root = element.shadowRoot;
+    expect(root.querySelectorAll(".btn")).toHaveLength(1);
+    expect(root.querySelectorAll(".btn-primary")).toHaveLength(0);
+    expect(
+      root
+        .querySelector('[data-id="wall-link"]')
+        .classList.contains("btn-secondary")
+    ).toBe(true);
+  });
 });

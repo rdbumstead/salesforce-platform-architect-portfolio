@@ -4,8 +4,10 @@
  *                      fewer than the Home_Testimonials_Min setting are approved, and up to three
  *                      quotes once there are enough: the professional ones first, by the wall's
  *                      rule. So the quotes ship hidden and turn on by themselves. Each quote
- *                      keeps its tone, as on the wall, and a link leads to every testimonial on
- *                      /testimonials.
+ *                      is a card in the same style as the case study cards and keeps its tone, as
+ *                      on the wall. One secondary button leads to every testimonial on
+ *                      /testimonials. The section has no primary button and no big number.
+ *                      The width follows --portfolio-content-width, with 1024px as the fallback.
  *                      While there are no quotes to show (before the read, when it is empty or
  *                      when it fails) nothing renders. The certifications and their verify link
  *                      live on the career timeline, and "References available on request" in
