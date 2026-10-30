@@ -1,23 +1,20 @@
 /**
  * @description       : "How this site is built", above the contact call on the home page, for
- *                      a technical reviewer. A compact list of the live pillars from
- *                      c/pillarData (letter, page name, summary, a link to the page), then
- *                      a footer row: the newest successful deploy's test counts
- *                      linking to /delivery and a link to the design docs.
- *                      Pillars that are coming are named once in a plain line.
+ *                      a technical reviewer. One card per live pillar from c/pillarData, in the
+ *                      case study card style: the pillar's stat as the big number with its label
+ *                      when it has one, then the letter and page name, the summary and one
+ *                      secondary "Open" button to the pillar page. A pillar with no stat shows
+ *                      its card without a number. The section intro carries a plain link to the
+ *                      spec's section on how a visitor's request reaches the data. Pillars that
+ *                      are coming are named once in a plain line. The section has no primary
+ *                      button. The build counts and the two architecture links are in the hero,
+ *                      not here, and the case study text lives on the pillar pages.
  *                      The tour is not here: it starts from the hero and the header menu and
  *                      runs in c-tour-bar.
- *                      Each pillar can gain a small stat line and a case study from
- *                      ProjectCardController.getPillarCards, merged in by letter. The stat shows
- *                      only with its label. A pillar with Challenge, Solution or Business Value
- *                      text gets a case study disclosure, a real button with aria-expanded,
- *                      showing those blocks and the Live and Source links that are set and safe.
- *                      Opening one sends case_study_opened with the pillar letter. A failed or
- *                      empty read leaves the list as the static data draws it.
- *                      The counts come from ProjectCardController.getBuildCounts and show only
- *                      when the read returns a number, never a placeholder.
- *                      A case study fades and slides in when opened. That motion is off when the
- *                      system "reduce motion" setting is on (c/motionPreference).
+ *                      The stat comes from ProjectCardController.getPillarCards, merged in by
+ *                      letter, and shows only when both the number and its label are set. A failed
+ *                      or empty read leaves the cards as the static data draws them. The width
+ *                      follows --portfolio-content-width, with 1024px as the fallback.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -27,11 +24,7 @@
 import { LightningElement, wire } from "lwc";
 import basePath from "@salesforce/community/basePath";
 import getPillarCards from "@salesforce/apex/ProjectCardController.getPillarCards";
-import getBuildCounts from "@salesforce/apex/ProjectCardController.getBuildCounts";
 import { LIVE_PILLARS, COMING_PILLARS } from "c/pillarData";
-import { toExternalUrl } from "c/externalUrl";
-import { trackEvent, EVENTS } from "c/analyticsService";
-import { isReduced, onMotionChange } from "c/motionPreference";
 
 /**
  * Trimmed text, or null when the value is not a non blank string.
@@ -64,89 +57,29 @@ function joinNames(names) {
 }
 
 /**
- * A whole number with thousands separators, or null when it is not a positive number.
- * @param {*} value a count from the wire
- * @returns {string|null} the formatted count
- */
-function countText(value) {
-  return typeof value === "number" && Number.isFinite(value) && value > 0
-    ? Math.trunc(value).toLocaleString("en-US")
-    : null;
-}
-
-/**
- * The extras one Project__c row adds to its pillar: the stat line only when both the number
- * and its label are set, and the case study blocks and links that are set and safe.
+ * The stat one Project__c row gives its pillar card: the number and its label, only when both
+ * are set.
  * @param {object} row a ProjectCardController.PillarCard
- * @returns {object} the extras
+ * @returns {object} hasStat, statNumber and statLabel
  */
-function toExtras(row) {
-  const caseBlocks = [
-    ["challenge", "Challenge"],
-    ["solution", "Solution"],
-    ["businessValue", "Business value"]
-  ]
-    .map(([field, heading]) => ({
-      key: field,
-      heading,
-      text: textOrNull(row && row[field])
-    }))
-    .filter((block) => block.text);
-  const caseLinks = [
-    ["live", "Live site", toExternalUrl(row && row.liveUrl)],
-    ["source", "Source code", toExternalUrl(row && row.repositoryUrl)]
-  ]
-    .filter(([, , href]) => href)
-    .map(([key, label, href]) => ({ key, label, href }));
-  const metric = textOrNull(row && row.headlineMetric);
+function toStat(row) {
+  const number = textOrNull(row && row.headlineMetric);
   const label = textOrNull(row && row.headlineLabel);
+  const hasStat = Boolean(number && label);
   return {
-    stat: metric && label ? `${metric} ${label}` : null,
-    caseBlocks,
-    caseLinks,
-    hasCaseLinks: caseLinks.length > 0,
-    // Links alone are no case study: the disclosure needs at least one text block.
-    hasCaseStudy: caseBlocks.length > 0
+    hasStat,
+    statNumber: hasStat ? number : null,
+    statLabel: hasStat ? ` ${label}` : null
   };
 }
 
 export default class SiteBuildSection extends LightningElement {
   cardRows = [];
-  counts;
-  expandedKeys = {};
-  newTabNote = ", opens in a new tab";
-  motionReduced = isReduced();
-  stopMotionListener;
-
-  connectedCallback() {
-    this.motionReduced = isReduced();
-    this.stopMotionListener = onMotionChange((reduced) => {
-      this.motionReduced = reduced;
-    });
-  }
-
-  disconnectedCallback() {
-    if (typeof this.stopMotionListener === "function") {
-      this.stopMotionListener();
-    }
-    this.stopMotionListener = undefined;
-  }
 
   @wire(getPillarCards)
   wiredPillarCards({ data }) {
     // An error or an empty result leaves every pillar exactly as the static data draws it.
     this.cardRows = Array.isArray(data) ? data : [];
-  }
-
-  @wire(getBuildCounts)
-  wiredBuildCounts({ data }) {
-    // An error or no run shows no counts line.
-    this.counts = data || undefined;
-  }
-
-  // The opening motion follows the same preference through this class.
-  get sectionClass() {
-    return this.motionReduced ? "build motion-reduced" : "build";
   }
 
   get pillars() {
@@ -156,54 +89,20 @@ export default class SiteBuildSection extends LightningElement {
         rowsByLetter.set(row.pillar, row);
       }
     });
-    return LIVE_PILLARS.map((pillar) => {
-      const expanded = Boolean(this.expandedKeys[pillar.key]);
-      return {
-        ...toExtras(rowsByLetter.get(pillar.letter)),
-        key: pillar.key,
-        letter: pillar.letter,
-        name: pillar.pageLabel,
-        summary: pillar.summary,
-        href: pillar.href,
-        linkAriaLabel: `Open ${pillar.pageLabel}`,
-        caseId: `case-${pillar.key}`,
-        expandedText: expanded ? "true" : "false",
-        caseHidden: !expanded,
-        caseChevron: expanded ? "−" : "+",
-        caseToggleLabel: expanded
-          ? "Hide the case study"
-          : "Read the case study"
-      };
-    });
-  }
-
-  get deliveryHref() {
-    return toHref("delivery");
-  }
-
-  get docsHref() {
-    return toHref("docs");
+    return LIVE_PILLARS.map((pillar) => ({
+      ...toStat(rowsByLetter.get(pillar.letter)),
+      key: pillar.key,
+      letter: pillar.letter,
+      name: pillar.pageLabel,
+      summary: pillar.summary,
+      href: pillar.href,
+      linkAriaLabel: `Open ${pillar.pageLabel}`
+    }));
   }
 
   /** The architecture spec's section on how the site guest reaches Apex and data. */
   get guestAccessHref() {
     return `${toHref("docs")}?doc=sas#3-2-how-a-guest-reaches-apex`;
-  }
-
-  get countsText() {
-    const apex = countText(this.counts && this.counts.apexPassed);
-    if (!apex) {
-      return null;
-    }
-    const coverage = countText(this.counts.coverage);
-    const jest = countText(this.counts.jestPassed);
-    return [
-      `${apex} Apex tests passing`,
-      coverage ? `${coverage}% coverage` : null,
-      jest ? `${jest} Jest tests passing` : null
-    ]
-      .filter(Boolean)
-      .join(" · ");
   }
 
   get hasComing() {
@@ -216,20 +115,5 @@ export default class SiteBuildSection extends LightningElement {
     const noun = COMING_PILLARS.length === 1 ? "Pillar" : "Pillars";
     const verb = COMING_PILLARS.length === 1 ? "is" : "are";
     return `${noun} ${letters}, ${names}, ${verb} coming.`;
-  }
-
-  handleCaseToggle(event) {
-    const key = event.currentTarget.dataset.key;
-    const opening = !this.expandedKeys[key];
-    this.expandedKeys = {
-      ...this.expandedKeys,
-      [key]: opening
-    };
-    if (opening) {
-      const pillar = LIVE_PILLARS.find((entry) => entry.key === key);
-      if (pillar) {
-        trackEvent(EVENTS.CASE_STUDY_OPENED, { pillar: pillar.letter });
-      }
-    }
   }
 }

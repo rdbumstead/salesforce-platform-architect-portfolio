@@ -1,7 +1,7 @@
 /**
- * @description       : Unit tests for caseStudyGrid: three compact cards in order, each with
- *                      the number only with its label, the title as the card's one link and
- *                      the client line, a card with no safe link hidden, the
+ * @description       : Unit tests for caseStudyGrid: the framing line, three compact cards in
+ *                      order, each with the number only with its label, the title, the engagement
+ *                      line, no status pill and one button (the first primary, the rest secondary), a card with no safe link hidden, the
  *                      case_study_link_followed event, nothing at all on an empty or failed
  *                      read, and the case-studies anchor with its scroll and focus.
  * @author            : Ryan Bumstead
@@ -148,14 +148,14 @@ describe("c-case-study-grid", () => {
     expect(empty()).toBe(true);
   });
 
-  it("shows the heading and intro once, then three cards in the order sent", async () => {
+  it("shows the heading and framing line once, then three cards in the order sent", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
     const root = element.shadowRoot;
     expect(text(root.querySelector("h2"))).toBe("Case studies");
     expect(text(root.querySelector(".section-intro"))).toBe(
-      "Client names are left out. Pick one for the problem, the call I made and how it turned out."
+      "A selection of my work: two client engagements and the build behind this site. Client names are left out."
     );
     expect(
       cards(element).map((card) => text(card.querySelector("h3")))
@@ -180,7 +180,7 @@ describe("c-case-study-grid", () => {
     );
   });
 
-  it("shows no blocks, no topic chips and no second link on a card", async () => {
+  it("shows no blocks, no topic chips, no status pill and one button on a card", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
@@ -188,6 +188,8 @@ describe("c-case-study-grid", () => {
       expect(card.querySelector("dl")).toBeNull();
       expect(card.querySelector(".tags")).toBeNull();
       expect(card.querySelectorAll("a")).toHaveLength(1);
+      expect(card.querySelector(".status")).toBeNull();
+      expect(text(card)).not.toMatch(/Live – Demo|Active Development/);
     });
   });
 
@@ -243,27 +245,42 @@ describe("c-case-study-grid", () => {
     expect(spacer.getAttribute("aria-hidden")).toBe("true");
   });
 
-  it("makes the title the card's one link, to an https address or a site path", async () => {
+  it("gives each card one Read the case study button, to an https address or a site path", async () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
     const [first, second, third] = cards(element);
-    const link = first.querySelector('h3 [data-id="card-link"]');
+    const link = first.querySelector('[data-id="card-button"]');
     expect(link.getAttribute("href")).toBe(
       "https://ryanbumstead.com/nonprofit-solutions"
     );
-    expect(text(link)).toBe(
-      "Choosing the right platform for a literacy nonprofit"
+    expect(text(link)).toBe("Read the case study →");
+    expect(link.getAttribute("aria-label")).toBe(
+      "Read the case study: Choosing the right platform for a literacy nonprofit"
     );
-    expect(link.getAttribute("aria-label")).toBeNull();
     expect(
-      second.querySelector('[data-id="card-link"]').getAttribute("href")
+      second.querySelector('[data-id="card-button"]').getAttribute("href")
     ).toBe("/portfolio/business-architecture");
     expect(
-      third.querySelector('[data-id="card-link"]').getAttribute("href")
+      third.querySelector('[data-id="card-button"]').getAttribute("href")
     ).toBe("/portfolio/delivery");
-    expect(first.querySelector(".card-go").getAttribute("aria-hidden")).toBe(
-      "true"
+  });
+
+  it("makes the first button primary and the others secondary, one primary at most", async () => {
+    const element = render();
+    getHomeCaseStudies.emit(CARDS);
+    await flush();
+    const buttons = Array.from(
+      element.shadowRoot.querySelectorAll('[data-id="card-button"]')
+    );
+    expect(buttons.map((b) => b.classList.contains("btn-primary"))).toEqual([
+      true,
+      false,
+      false
+    ]);
+    expect(element.shadowRoot.querySelectorAll(".btn-primary")).toHaveLength(1);
+    expect(element.shadowRoot.querySelectorAll(".btn-secondary")).toHaveLength(
+      2
     );
   });
 
@@ -271,7 +288,7 @@ describe("c-case-study-grid", () => {
     const element = render();
     getHomeCaseStudies.emit(CARDS);
     await flush();
-    const link = cards(element)[1].querySelector('[data-id="card-link"]');
+    const link = cards(element)[1].querySelector('[data-id="card-button"]');
     link.addEventListener("click", (event) => event.preventDefault());
     link.click();
     expect(trackEvent).toHaveBeenCalledTimes(1);

@@ -1,102 +1,61 @@
 <template>
-  <div class={sectionClass}>
+  <div class="build">
     <section class="section" aria-labelledby="build-heading">
       <h2 id="build-heading" class="section-heading">How this site is built</h2>
-      <p class="section-intro">
+      <p class="section-intro" data-id="intro">
         This site runs on a Salesforce org I designed, built and deploy myself.
         Each part below is live, so a technical reviewer can check the work
-        instead of taking my word for it.
+        instead of taking my word for it. Read
+        <a
+          class="inline-link"
+          href={guestAccessHref}
+          data-id="guest-access-link"
+          >how a visitor's request reaches the data, and what limits it</a
+        >.
       </p>
-      <ul class="build-list" data-id="pillar-list">
+      <ul class="cards" data-id="pillar-list">
         <template for:each={pillars} for:item="pillar">
-          <li key={pillar.key} class="build-item" data-key={pillar.key}>
-            <span class="letter" aria-hidden="true">{pillar.letter}</span>
-            <div class="build-main">
-              <h3 class="build-name">{pillar.name}</h3>
-              <p class="build-text">{pillar.summary}</p>
-              <template lwc:if={pillar.stat}>
-                <p class="build-stat" data-id="pillar-stat">{pillar.stat}</p>
+          <li
+            key={pillar.key}
+            class="card"
+            data-id="pillar-card"
+            data-key={pillar.key}
+          >
+            <article class="card-body">
+              <template lwc:if={pillar.hasStat}>
+                <p class="metric" data-id="pillar-stat">
+                  <span class="metric-number">{pillar.statNumber}</span>
+                  <span class="metric-label">{pillar.statLabel}</span>
+                </p>
               </template>
               <template lwc:else>
-                <p class="build-stat build-stat_reserve" aria-hidden="true"></p>
+                <p
+                  class="metric metric-spacer"
+                  data-id="metric-spacer"
+                  aria-hidden="true"
+                ></p>
               </template>
-              <template lwc:if={pillar.hasCaseStudy}>
-                <div class="case-study" data-id="case-study">
-                  <button
-                    type="button"
-                    class="case-toggle"
-                    aria-expanded={pillar.expandedText}
-                    aria-controls={pillar.caseId}
-                    data-key={pillar.key}
-                    onclick={handleCaseToggle}
-                  >
-                    <span>{pillar.caseToggleLabel}</span>
-                    <span class="case-chevron" aria-hidden="true"
-                      >{pillar.caseChevron}</span
-                    >
-                  </button>
-                  <div
-                    id={pillar.caseId}
-                    class="case-body reveal"
-                    data-id="case-body"
-                    hidden={pillar.caseHidden}
-                  >
-                    <template for:each={pillar.caseBlocks} for:item="block">
-                      <div key={block.key} class="case-block">
-                        <h4 class="case-heading">{block.heading}</h4>
-                        <p class="case-text">{block.text}</p>
-                      </div>
-                    </template>
-                    <template lwc:if={pillar.hasCaseLinks}>
-                      <ul class="case-links" aria-label="Links">
-                        <template for:each={pillar.caseLinks} for:item="link">
-                          <li key={link.key}>
-                            <a
-                              class="case-link"
-                              href={link.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              data-key={link.key}
-                              >{link.label}<span class="assistive-text"
-                                >{newTabNote}</span
-                              ></a
-                            >
-                          </li>
-                        </template>
-                      </ul>
-                    </template>
-                  </div>
-                </div>
-              </template>
-            </div>
-            <a
-              class="build-go"
-              href={pillar.href}
-              aria-label={pillar.linkAriaLabel}
-              data-id="pillar-link"
-              >Open <span aria-hidden="true">→</span></a
-            >
+              <h3 class="card-title">
+                <span class="letter" aria-hidden="true">{pillar.letter}</span
+                ><span class="card-name">{pillar.name}</span>
+              </h3>
+              <p class="card-text">{pillar.summary}</p>
+              <div class="card-action">
+                <a
+                  class="btn btn-secondary"
+                  href={pillar.href}
+                  aria-label={pillar.linkAriaLabel}
+                  data-id="pillar-link"
+                  >Open <span aria-hidden="true">→</span></a
+                >
+              </div>
+            </article>
           </li>
         </template>
       </ul>
       <template lwc:if={hasComing}>
         <p class="coming-note" data-id="coming-note">{comingText}</p>
       </template>
-      <div class="build-foot">
-        <template lwc:if={countsText}>
-          <a class="foot-link live" href={deliveryHref} data-id="counts-link"
-            >{countsText} <span aria-hidden="true">→</span></a
-          >
-        </template>
-        <a class="foot-link" href={docsHref} data-id="docs-link"
-          >Read the design: the architecture spec and the decision records
-          <span aria-hidden="true">→</span></a
-        >
-        <a class="foot-link" href={guestAccessHref} data-id="guest-access-link"
-          >How a visitor's request reaches the data, and what limits it
-          <span aria-hidden="true">→</span></a
-        >
-      </div>
     </section>
   </div>
 </template>

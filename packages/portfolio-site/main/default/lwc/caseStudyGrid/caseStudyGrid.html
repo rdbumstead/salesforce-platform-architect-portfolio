@@ -16,9 +16,9 @@
             class="card-source"
           ></c-data-source>
         </div>
-        <p class="section-intro">
-          Client names are left out. Pick one for the problem, the call I made
-          and how it turned out.
+        <p class="section-intro" data-id="framing">
+          A selection of my work: two client engagements and the build behind
+          this site. Client names are left out.
         </p>
         <ul class="cards" data-id="cards">
           <template for:each={cards} for:item="card">
@@ -37,20 +37,21 @@
                     aria-hidden="true"
                   ></p>
                 </template>
-                <h3 class="card-title">
-                  <a
-                    class="card-link"
-                    href={card.href}
-                    data-id="card-link"
-                    data-name={card.title}
-                    onclick={handleLinkClick}
-                    >{card.title}</a
-                  >
-                </h3>
+                <h3 class="card-title">{card.title}</h3>
                 <template lwc:if={card.clientLine}>
                   <p class="client" data-id="client">{card.clientLine}</p>
                 </template>
-                <span class="card-go" aria-hidden="true">→</span>
+                <div class="card-action">
+                  <a
+                    class={card.buttonClass}
+                    href={card.href}
+                    aria-label={card.buttonLabel}
+                    data-id="card-button"
+                    data-name={card.title}
+                    onclick={handleLinkClick}
+                    >Read the case study <span aria-hidden="true">→</span></a
+                  >
+                </div>
               </article>
             </li>
           </template>
