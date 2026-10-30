@@ -166,6 +166,11 @@
   border-radius: 4px;
 }
 
+/* The ending has one line of text and no task line, so Close centres on it. */
+.tour-bar_ending .tour-inner {
+  align-items: center;
+}
+
 /* On a phone the bar is pinned to the bottom of the screen, above the page, and the layout
    pads the page by its height so it covers nothing. */
 @media screen and (max-width: 767.98px) {
@@ -196,5 +201,18 @@
 
   .tour-actions > .tour-end {
     margin-left: auto;
+  }
+
+  /* The ending's one line and Close share a row, as they fit. */
+  .tour-bar_ending .tour-inner {
+    flex-wrap: nowrap;
+  }
+
+  .tour-bar_ending .tour-text {
+    flex-basis: auto;
+  }
+
+  .tour-bar_ending .tour-actions {
+    width: auto;
   }
 }
