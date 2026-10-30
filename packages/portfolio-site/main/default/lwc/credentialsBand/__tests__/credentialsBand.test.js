@@ -298,3 +298,18 @@ describe("c-credentials-band", () => {
     });
   });
 });
+
+describe("c-credentials-band source badge", () => {
+  afterEach(() => {
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  it("hides row counts, because the certification count includes retired certs", async () => {
+    const element = await renderWith();
+    const source = element.shadowRoot.querySelector("c-data-source");
+    expect(source).not.toBeNull();
+    expect(source.hideCounts).toBe(true);
+  });
+});
