@@ -179,24 +179,7 @@
   box-sizing: border-box;
 }
 
-.point-button {
-  cursor: pointer;
-}
-
-.point-button:hover .point-second,
-.point-open .point-second,
-.point-button:hover .point-first,
-.point-open .point-first {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.point-button:focus-visible {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 2px;
-}
-
-/* An employer or an issuer and year with every title or name under it, each its own button. */
+/* An employer, an issuer and year, or the earlier roles, with every title or name under it. */
 .group {
   display: flex;
   flex-direction: column;
@@ -216,11 +199,6 @@
   border-top: 1px solid var(--pf-border);
 }
 
-.title-button[aria-expanded="true"] .point-second {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 .point-first {
   font-size: 14px;
   font-weight: 600;
@@ -237,7 +215,6 @@
   color: var(--pf-muted);
 }
 
-/* The chevron says a role opens, and turns while it is open. */
 .years {
   display: inline-flex;
   align-items: center;
@@ -252,15 +229,6 @@
   color: var(--pf-chip-text);
   font-size: 12px;
   font-weight: 600;
-}
-
-.point-chevron {
-  flex: 0 0 auto;
-  color: var(--pf-accent);
-}
-
-.point-button[aria-expanded="true"] .point-chevron {
-  transform: rotate(180deg);
 }
 
 /* The fade at an edge that has more roles beyond it. */
@@ -288,51 +256,6 @@
 .line-wrap_more-before::before,
 .line-wrap_more-after::after {
   opacity: 1;
-}
-
-/* An opened role. */
-.panel {
-  margin-top: var(--pf-space-3);
-  padding: var(--pf-space-4);
-  border: 1px solid var(--pf-border);
-  border-radius: var(--pf-radius);
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
-}
-
-.panel[hidden] {
-  display: none;
-}
-
-.panel-head {
-  margin: 0 0 var(--pf-space-2);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px var(--pf-space-2);
-  align-items: baseline;
-}
-
-.panel-title {
-  font-weight: 600;
-  color: var(--pf-text);
-}
-
-.panel-meta {
-  font-size: 14px;
-  color: var(--pf-muted);
-}
-
-.highlights {
-  margin: 0;
-  padding-left: 1.25em;
-  list-style: disc outside;
-  color: var(--pf-body);
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-.highlights li + li {
-  margin-top: var(--pf-space-1);
 }
 
 /* The phone list, below 768 px. */
@@ -380,31 +303,25 @@
   top: 7px;
 }
 
-.stack .panel {
-  margin: 0 0 var(--pf-space-3);
-}
-
-/* The one quiet verify link, under the line and in an opened certification. */
+/* The resume link and the verify link, side by side under the line. */
 .career-foot {
-  margin: var(--pf-space-2) 0 0;
-  font-size: 14px;
-}
-
-.panel-verify {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-space-1) var(--pf-space-4);
   margin: var(--pf-space-2) 0 0;
   font-size: 14px;
 }
 
 /* The site's a:link rule outranks a plain class, so :link and :visited are matched too. */
-.verify-link,
-.verify-link:link,
-.verify-link:visited {
+.foot-link,
+.foot-link:link,
+.foot-link:visited {
   color: var(--pf-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.verify-link:focus-visible {
+.foot-link:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
@@ -437,35 +354,12 @@
     display: block;
   }
 
-  .line-wrap,
-  .panel[data-id="line-panel"] {
+  .line-wrap {
     display: none;
   }
 
   .stack {
     display: block;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .panel-reveal {
-    animation: career-in 200ms ease-out;
-  }
-
-  .point-chevron {
-    transition: transform 150ms ease;
-  }
-}
-
-@keyframes career-in {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

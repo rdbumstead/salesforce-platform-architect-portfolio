@@ -17,23 +17,17 @@
  *                      Every role that ended before the year the owner started on Salesforce
  *                      (the Salesforce_Start_Year setting the timeline read returns, 2017 when it
  *                      sends nothing usable) folds into one last point, "Earlier roles, 2012 to
- *                      2016", its years taken from the roles in it.
+ *                      2016", its years taken from the roles in it, with each of those roles
+ *                      listed under it by employer, title and years.
  *                      A selector (All, Work, Education, Certifications) narrows the line in
  *                      place. It opens on All, shows only the kinds that have points, and each
  *                      change sends career_timeline_filtered with the kind.
- *                      What opens is a button with aria-expanded and aria-controls: a title with
- *                      highlights (ResumeController.getResume for the Architect persona, matched
- *                      by Experience Id), a certification name its full name, issuer, earned date
- *                      and verify link, the school its name and completion, and the fold each
- *                      earlier role's employer, title and years. A title with no highlights is
- *                      plain text. One thing is open at a time, pressing it again closes it, and
- *                      Escape closes it and puts focus back on its button.
- *                      Opening a title sends career_role_opened with the role's position among
- *                      all roles as they sit on the line (1 is the newest).
- *                      With the certifications in view (All or Certifications), one quiet
- *                      "Verify on Trailhead" link sits under the line when the read sends a
- *                      verification link starting http or https, used exactly as sent, in a new
- *                      tab.
+ *                      Nothing on the line opens. Every point is plain text, and the detail
+ *                      lives on the resume page.
+ *                      Under the line sits "View full details on my resume", and beside it,
+ *                      with the certifications in view (All or Certifications), "Verify on
+ *                      Trailhead" when the read sends a verification link starting http or
+ *                      https, used exactly as sent, in a new tab.
  *                      At 768 px and up the points sit on one horizontal line that scrolls
  *                      sideways inside its own region, with a fade at an edge that has more.
  *                      Below 768 px the points show in a compact vertical list: the newest 4
@@ -41,10 +35,7 @@
  *                      rest in place. It becomes "Show fewer", keeps focus, and sends
  *                      career_timeline_show_all with the kind. The filters count against the
  *                      full list, and changing the filter folds the list back to 4.
- *                      Openings fade and slide in for about 200 ms, and appear at once when the
- *                      visitor asks for reduced motion (c/motionPreference).
- *                      Renders nothing when the timeline read fails or has no points. When only
- *                      the highlight read fails, the roles show as plain text.
+ *                      Renders nothing when the timeline read fails or has no points.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -52,14 +43,10 @@
  * @Created           : 10/26/2026
  **/
 import { LightningElement, wire } from "lwc";
+import basePath from "@salesforce/community/basePath";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
-import getResume from "@salesforce/apex/ResumeController.getResume";
-import { isReduced } from "c/motionPreference";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { SALESFORCE_START_YEAR } from "c/pillarData";
-
-/** The persona whose highlights a role opens: the resume page's default view. */
-export const HIGHLIGHT_PERSONA = "Architect";
 
 export const ALL = "all";
 export const WORK = "work";
@@ -82,30 +69,11 @@ const SCHOOL = "school";
 /** Points the phone list shows before "Show all". */
 export const STACK_PREVIEW = 4;
 
-const LINE = "line";
-const STACK = "stack";
-const LINE_PANEL_ID = "career-panel";
-const ACTIVE_LABEL = "Active";
 const FOLD_KEY = "earlier-roles";
 const FOLD_TITLE = "Earlier roles";
 const HTTP_URL = /^https?:\/\//i;
 // A role held now sorts after every real date when the dated points are placed.
 const HELD_NOW = "9999-12-31";
-
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec"
-];
 
 function clean(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -123,21 +91,6 @@ function dateText(value) {
 function yearOf(value) {
   const match = /^(\d{4})/.exec(asText(value));
   return match ? match[1] : "";
-}
-
-/**
- * Formats an Apex Date ("YYYY-MM-DD") as "Mon YYYY" without the browser time zone, which can
- * move a first of the month date into the previous month.
- * @param {string} value Apex Date
- * @returns {string} "Mon YYYY", or "" when there is no date
- */
-export function formatMonthYear(value) {
-  const date = dateText(value);
-  if (!date) {
-    return "";
-  }
-  const month = MONTHS[Number(date.slice(5, 7)) - 1];
-  return month ? `${month} ${date.slice(0, 4)}` : date.slice(0, 4);
 }
 
 /**
@@ -180,26 +133,6 @@ export function spokenYears(role) {
   }
   const start = yearOf(role.startDate);
   return start ? `since ${start}, active` : "active";
-}
-
-/**
- * Highlights by role Id from a getResume result. Every other part of the resume is ignored.
- * @param {object} resume the ResumeData
- * @returns {Map<string, string[]>} the highlights of each role
- */
-export function highlightsById(resume) {
-  const byId = new Map();
-  const roles = resume && Array.isArray(resume.roles) ? resume.roles : [];
-  roles.forEach((role) => {
-    if (!role || !role.id) {
-      return;
-    }
-    const highlights = Array.isArray(role.highlights)
-      ? role.highlights.map(clean).filter((text) => text)
-      : [];
-    byId.set(String(role.id), highlights);
-  });
-  return byId;
 }
 
 /**
@@ -393,22 +326,31 @@ export function groupRoles(roles) {
   });
 }
 
+// The fold lists each earlier role under it like the titles under an employer, with the
+// employer named in the line because the roles come from several.
 function toFoldPoint(roles) {
   const years = foldYears(roles);
   return {
     key: FOLD_KEY,
     type: FOLD,
     kind: WORK,
+    isGroup: true,
     first: FOLD_TITLE,
     second: "",
+    showGroupYears: Boolean(years),
     years,
     yearsSpoken: years,
     isCurrent: false,
-    foldRoles: roles.map((role, index) => ({
+    titles: roles.map((role, index) => ({
       key: clean(role.key) || `earlier-${index}`,
-      text: [clean(role.employer), clean(role.title), formatYears(role)]
+      type: FOLD,
+      label: [clean(role.employer), clean(role.title)]
         .filter((part) => part)
-        .join(", ")
+        .join(", "),
+      years: formatYears(role),
+      yearsSpoken: spokenYears(role),
+      showYears: true,
+      isCurrent: false
     }))
   };
 }
@@ -440,15 +382,11 @@ function toCertificationTitle(certification, index) {
   return {
     key: clean(certification.id) || `certification-${index}`,
     type: CERTIFICATION,
-    first: "Certification",
-    second: name,
     label: shortCertificationName(name, issuer),
     years: "",
     yearsSpoken: "",
     showYears: false,
     isCurrent: false,
-    issuer,
-    earned: formatMonthYear(certification.earnedDate),
     when: dateText(certification.earnedDate)
   };
 }
@@ -517,8 +455,6 @@ function toSchoolPoint(school, index) {
     years: year ? `Completed ${year}` : "",
     yearsSpoken: year ? `completed ${year}` : "",
     isCurrent: false,
-    fieldOfStudy: clean(school.fieldOfStudy),
-    completed: formatMonthYear(school.completedDate),
     when: dateText(school.completedDate)
   };
 }
@@ -556,14 +492,7 @@ export default class CareerLine extends LightningElement {
   newTabNote = ", opens in a new tab";
   points = [];
   verificationUrl = null;
-  highlights = new Map();
   filter = ALL;
-  openKey = null;
-  openList = null;
-  revealKey = null;
-  focusAfterRender = null;
-  highlightPersona;
-  observer;
   stackExpanded = false;
   scrollToStart = false;
   edgeStart = false;
@@ -586,50 +515,12 @@ export default class CareerLine extends LightningElement {
     }
   }
 
-  // The highlights only open on a press, so their read waits until the section nears the
-  // screen. A browser with no IntersectionObserver reads them at once.
-  @wire(getResume, { persona: "$highlightPersona" })
-  wiredResume({ data, error }) {
-    if (data) {
-      this.highlights = highlightsById(data);
-    } else if (error) {
-      // Without highlights the roles still show, as plain points.
-      this.highlights = new Map();
-    }
-  }
-
   connectedCallback() {
     window.addEventListener("resize", this.resizeListener);
-    this.waitForScreen();
   }
 
   disconnectedCallback() {
     window.removeEventListener("resize", this.resizeListener);
-    this.stopWaiting();
-  }
-
-  waitForScreen() {
-    if (typeof IntersectionObserver !== "function") {
-      this.highlightPersona = HIGHLIGHT_PERSONA;
-      return;
-    }
-    this.observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          this.highlightPersona = HIGHLIGHT_PERSONA;
-          this.stopWaiting();
-        }
-      },
-      { rootMargin: "800px 0px" }
-    );
-    this.observer.observe(this.template.host);
-  }
-
-  stopWaiting() {
-    if (this.observer) {
-      this.observer.disconnect();
-      this.observer = undefined;
-    }
   }
 
   get hasPoints() {
@@ -671,132 +562,18 @@ export default class CareerLine extends LightningElement {
       : this.points.filter((point) => point.kind === active);
   }
 
-  // The role's place among all roles, for career_role_opened (1 is the newest). The roles are
-  // counted as they sit on the line, employer by employer, newest first inside each.
-  rolePosition(key) {
-    const roles = [];
-    this.points
-      .filter((point) => point.type === ROLE)
-      .forEach((point) => roles.push(...point.titles));
-    return roles.findIndex((title) => title.key === key) + 1;
-  }
-
-  // The keys of everything in a point that can open: its titles, or the point itself.
-  entryKeys(point) {
-    return point.isGroup ? point.titles.map((title) => title.key) : [point.key];
-  }
-
-  panelOf(point) {
-    if (point.type === ROLE) {
-      const items = this.highlights.get(point.key) || [];
-      return {
-        hasPanel: items.length > 0,
-        items: items.map((text, position) => ({
-          key: `${point.key}-${position}`,
-          text
-        }))
-      };
-    }
-    if (point.type === FOLD) {
-      return { hasPanel: point.foldRoles.length > 0, items: point.foldRoles };
-    }
-    if (point.type === CERTIFICATION) {
-      const earned = point.earned ? `earned ${point.earned}` : "";
-      return {
-        hasPanel: true,
-        items: [
-          {
-            key: `${point.key}-detail`,
-            text: [point.issuer, earned].filter((part) => part).join(", ")
-          }
-        ].filter((item) => item.text),
-        verifyHref: this.verificationUrl
-      };
-    }
-    const completed = point.completed ? `completed ${point.completed}` : "";
+  decorate(point) {
     return {
-      hasPanel: true,
-      items: [
-        { key: `${point.key}-field`, text: point.fieldOfStudy },
-        {
-          key: `${point.key}-school`,
-          text: [point.first, completed].filter((part) => part).join(", ")
-        }
-      ].filter((item) => item.text)
-    };
-  }
-
-  metaOf(point) {
-    if (point.type === ROLE) {
-      return [point.first, point.years, point.isCurrent ? ACTIVE_LABEL : ""]
-        .filter((part) => part)
-        .join(", ");
-    }
-    return point.type === FOLD ? point.years : "";
-  }
-
-  // One thing that opens, with its panel and whether it is open in this list.
-  entryState(entry, list, stackPanelId) {
-    const panel = this.panelOf(entry);
-    const open = this.openKey === entry.key && this.openList === list;
-    return {
-      ...entry,
-      ...panel,
-      hasSecond: Boolean(entry.second),
-      hasVerify: Boolean(panel.verifyHref),
-      panelTitle:
-        entry.type === FOLD ? entry.first : entry.second || entry.first,
-      meta: this.metaOf(entry),
-      expanded: String(open),
-      controls: list === LINE ? LINE_PANEL_ID : stackPanelId,
-      open
-    };
-  }
-
-  decorate(point, index, list) {
-    const stackPanelId = `career-stack-panel-${index}`;
-    if (point.isGroup) {
-      const titles = point.titles.map((title) =>
-        this.entryState(title, list, stackPanelId)
-      );
-      const opened = titles.find((title) => title.open);
-      return {
-        ...point,
-        titles,
-        hasPanel: titles.some((title) => title.hasPanel),
-        stackPanelId,
-        stackPanelHidden: !(opened && list === STACK),
-        stackPanelClass: this.panelClass(opened ? opened.key : "", STACK),
-        openItems: opened ? opened.items : [],
-        hasVerify: Boolean(opened && opened.hasVerify),
-        verifyHref: opened ? opened.verifyHref : null,
-        pointClass: `point point-${point.type}${
-          point.isCurrent ? " point-current" : ""
-        }`
-      };
-    }
-    const state = this.entryState(point, list, stackPanelId);
-    return {
-      ...state,
-      stackPanelId,
-      stackPanelHidden: !(state.open && list === STACK),
-      stackPanelClass: this.panelClass(point.key, STACK),
+      ...point,
+      hasSecond: Boolean(point.second),
       pointClass: `point point-${point.type}${
         point.isCurrent ? " point-current" : ""
-      }${state.open ? " point-open" : ""}`
+      }`
     };
-  }
-
-  panelClass(key, list) {
-    return this.revealKey === key && this.openList === list
-      ? "panel panel-reveal"
-      : "panel";
   }
 
   get linePoints() {
-    return this.shownPoints.map((point, index) =>
-      this.decorate(point, index, LINE)
-    );
+    return this.shownPoints.map((point) => this.decorate(point));
   }
 
   // The phone list shows the newest few points of the active filter until the visitor asks for
@@ -804,7 +581,7 @@ export default class CareerLine extends LightningElement {
   get stackPoints() {
     const shown = this.shownPoints;
     const visible = this.stackExpanded ? shown : shown.slice(0, STACK_PREVIEW);
-    return visible.map((point, index) => this.decorate(point, index, STACK));
+    return visible.map((point) => this.decorate(point));
   }
 
   get showStackToggle() {
@@ -821,39 +598,6 @@ export default class CareerLine extends LightningElement {
       : `Show all ${this.shownPoints.length}`;
   }
 
-  get openPoint() {
-    if (!this.openKey || this.openList !== LINE) {
-      return null;
-    }
-    const shown = this.shownPoints;
-    for (const point of shown) {
-      if (!point.isGroup) {
-        if (point.key === this.openKey) {
-          return this.entryState(point, LINE, "");
-        }
-      } else {
-        const title = point.titles.find((entry) => entry.key === this.openKey);
-        if (title) {
-          return this.entryState(title, LINE, "");
-        }
-      }
-    }
-    return null;
-  }
-
-  get linePanelHidden() {
-    return this.openPoint === null;
-  }
-
-  get linePanelClass() {
-    return this.panelClass(this.openKey, LINE);
-  }
-
-  // A scroll region needs a tab stop when nothing inside it can take focus.
-  get lineTabIndex() {
-    return this.linePoints.some((point) => point.hasPanel) ? undefined : "0";
-  }
-
   get lineWrapClass() {
     let name = "line-wrap";
     if (this.edgeStart) {
@@ -863,6 +607,10 @@ export default class CareerLine extends LightningElement {
       name += " line-wrap_more-after";
     }
     return name;
+  }
+
+  get resumeHref() {
+    return `${basePath || ""}/resume`;
   }
 
   get showVerify() {
@@ -881,66 +629,17 @@ export default class CareerLine extends LightningElement {
     }
     this.filter = kind;
     this.stackExpanded = false;
-    if (this.openList === STACK) {
-      this.openKey = null;
-      this.openList = null;
-      this.revealKey = null;
-    }
-    const stillShown = this.shownPoints.some((point) =>
-      this.entryKeys(point).includes(this.openKey)
-    );
-    if (!stillShown) {
-      this.openKey = null;
-      this.openList = null;
-      this.revealKey = null;
-    }
     // After the new points render, the line starts from its newest point again. Doing it after
     // the render keeps a browser from snapping back to the point it last rested on.
     this.scrollToStart = true;
     trackEvent(EVENTS.CAREER_TIMELINE_FILTERED, { kind });
   }
 
-  handlePointClick(event) {
-    const { key, list } = event.currentTarget.dataset;
-    if (this.openKey === key && this.openList === list) {
-      this.closePoint(false);
-      return;
-    }
-    this.openKey = key;
-    this.openList = list;
-    this.revealKey = isReduced() ? null : key;
-    const position = this.rolePosition(key);
-    if (position > 0) {
-      trackEvent(EVENTS.CAREER_ROLE_OPENED, { position });
-    }
-  }
-
-  closePoint(moveFocus) {
-    const key = this.openKey;
-    const list = this.openList;
-    this.openKey = null;
-    this.openList = null;
-    this.revealKey = null;
-    if (moveFocus && key) {
-      this.focusAfterRender = `[data-point-button][data-list="${list}"][data-key="${key}"]`;
-    }
-  }
-
   handleStackToggle() {
     this.stackExpanded = !this.stackExpanded;
     if (this.stackExpanded) {
       trackEvent(EVENTS.CAREER_TIMELINE_SHOW_ALL, { kind: this.activeFilter });
-    } else if (this.openList === STACK) {
-      this.closePoint(false);
     }
-  }
-
-  handleKeydown(event) {
-    if (event.key !== "Escape" || !this.openKey) {
-      return;
-    }
-    event.preventDefault();
-    this.closePoint(true);
   }
 
   handleLineScroll() {
@@ -972,14 +671,5 @@ export default class CareerLine extends LightningElement {
       }
     }
     this.updateEdges();
-    if (!this.focusAfterRender) {
-      return;
-    }
-    const selector = this.focusAfterRender;
-    this.focusAfterRender = null;
-    const target = this.template.querySelector(selector);
-    if (target) {
-      target.focus();
-    }
   }
 }

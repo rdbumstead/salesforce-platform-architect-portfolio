@@ -1,11 +1,10 @@
 /**
  * @description       : Unit tests for careerLine LWC: every role, certification and school on
- *                      one line from getTimeline, the earlier roles fold by the start year, the
- *                      highlights from getResume for the Architect persona, the selector and its
- *                      event, opening and closing a point (aria-expanded, one at a time, Escape
- *                      with focus back), the verify link, the phone list of every point, and
- *                      nothing on an error or with no points. The grouping block covers employers
- *                      and issuer and year groups, the titles that open, and the phone list.
+ *                      one line from getTimeline, the earlier roles fold by the start year and
+ *                      list under it, every point plain with nothing that opens, the selector
+ *                      and its event, the resume and verify links under the line, the phone list
+ *                      of every point, and nothing on an error or with no points. The grouping
+ *                      block covers employers and issuer and year groups and the phone list.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -13,14 +12,11 @@
  **/
 import { createElement } from "@lwc/engine-dom";
 import CareerLine, {
-  HIGHLIGHT_PERSONA,
   buildPoints,
   employerYears,
   foldYears,
   foldsAway,
-  formatMonthYear,
   formatYears,
-  highlightsById,
   isCurrentRole,
   mergeByDate,
   shortCertificationName,
@@ -28,7 +24,6 @@ import CareerLine, {
   toStartYear
 } from "c/careerLine";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
-import getResume from "@salesforce/apex/ResumeController.getResume";
 import { trackEvent } from "c/analyticsService";
 
 jest.mock(
@@ -43,7 +38,6 @@ jest.mock(
     __esModule: true,
     trackEvent: jest.fn(),
     EVENTS: {
-      CAREER_ROLE_OPENED: "career_role_opened",
       CAREER_TIMELINE_FILTERED: "career_timeline_filtered",
       CAREER_TIMELINE_SHOW_ALL: "career_timeline_show_all"
     }
@@ -53,15 +47,6 @@ jest.mock(
 
 jest.mock(
   "@salesforce/apex/ResumeController.getTimeline",
-  () => {
-    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
-    return { default: createApexTestWireAdapter(jest.fn()) };
-  },
-  { virtual: true }
-);
-
-jest.mock(
-  "@salesforce/apex/ResumeController.getResume",
   () => {
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
@@ -156,15 +141,6 @@ const TIMELINE = {
   salesforceStartYear: 2017
 };
 
-const RESUME = {
-  roles: [
-    { id: "a01", highlights: [" Led the design. ", "Shipped it."] },
-    { id: "a02", highlights: ["Built a site."] },
-    { id: "a03", highlights: ["Moved the data."] },
-    { id: "a05", highlights: [] }
-  ]
-};
-
 // The order the line draws TIMELINE in: one point per employer in server order, one per issuer
 // and year for the certifications, the school by date among them, the fold last.
 const CERTS_2025 = "certifications-salesforce-2025";
@@ -197,7 +173,6 @@ function text(node) {
 async function renderWithData(timeline = TIMELINE) {
   const element = render();
   getTimeline.emit(timeline);
-  getResume.emit(RESUME);
   await flush();
   return element;
 }
@@ -210,38 +185,8 @@ function linePoints(element) {
   return all(element, '[data-id="line-point"]');
 }
 
-function lineButton(element, key) {
-  return element.shadowRoot.querySelector(
-    `[data-list="line"][data-point-button][data-key="${key}"]`
-  );
-}
-
-function stackButton(element, key) {
-  return element.shadowRoot.querySelector(
-    `[data-list="stack"][data-point-button][data-key="${key}"]`
-  );
-}
-
-function linePanel(element) {
-  return element.shadowRoot.querySelector('[data-id="line-panel"]');
-}
-
-function panelItems(element) {
-  return all(element, '[data-id="line-panel"] .highlights li').map((node) =>
-    text(node)
-  );
-}
-
 function filter(element, kind) {
   return element.shadowRoot.querySelector(`[data-kind="${kind}"]`);
-}
-
-function escape(element) {
-  element.shadowRoot
-    .querySelector("section")
-    .dispatchEvent(
-      new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
-    );
 }
 
 function keysOf(nodes) {
@@ -273,24 +218,6 @@ describe("c-career-line", () => {
       expect(spokenYears({ isCurrent: true })).toBe("active");
       expect(spokenYears(WORK[2])).toBe("2025 to 2026");
       expect(isCurrentRole({ startDate: "2017-01-02" })).toBe(true);
-    });
-
-    it("keys highlights by role Id, trimmed, and ignores rows with no Id", () => {
-      const byId = highlightsById({
-        roles: [
-          { id: "x", highlights: [" a ", "", null] },
-          { highlights: ["b"] }
-        ]
-      });
-      expect(byId.get("x")).toEqual(["a"]);
-      expect(byId.size).toBe(1);
-      expect(highlightsById(null).size).toBe(0);
-    });
-
-    it("writes a date as month and year without the time zone", () => {
-      expect(formatMonthYear("2025-03-01")).toBe("Mar 2025");
-      expect(formatMonthYear("")).toBe("");
-      expect(formatMonthYear(null)).toBe("");
     });
 
     it("takes the start year from the server, else 2017", () => {
@@ -346,7 +273,7 @@ describe("c-career-line", () => {
     it("folds by the year the server sends", () => {
       const points = buildPoints({ ...TIMELINE, salesforceStartYear: 2018 });
       const fold = points[points.length - 1];
-      expect(fold.foldRoles.map((role) => role.key)).toEqual([
+      expect(fold.titles.map((role) => role.key)).toEqual([
         "a05",
         "a04",
         "a06"
@@ -365,40 +292,10 @@ describe("c-career-line", () => {
   });
 
   describe("reads", () => {
-    it("reads getTimeline and getResume for the Architect persona", async () => {
+    it("reads getTimeline only, with nothing else to load", async () => {
       render();
       await flush();
-      expect(getResume.getLastConfig()).toEqual({
-        persona: HIGHLIGHT_PERSONA
-      });
-      expect(HIGHLIGHT_PERSONA).toBe("Architect");
-    });
-
-    it("holds the highlights read until the section nears the screen", async () => {
-      const original = global.IntersectionObserver;
-      let notify;
-      const disconnect = jest.fn();
-      global.IntersectionObserver = jest.fn((callback) => {
-        notify = callback;
-        return { observe: jest.fn(), disconnect };
-      });
-      try {
-        render();
-        await flush();
-        // The test adapter passes an unset parameter through. The platform holds the read.
-        expect(getResume.getLastConfig().persona).toBeUndefined();
-        notify([{ isIntersecting: false }]);
-        await flush();
-        expect(getResume.getLastConfig().persona).toBeUndefined();
-        notify([{ isIntersecting: true }]);
-        await flush();
-        expect(getResume.getLastConfig()).toEqual({
-          persona: HIGHLIGHT_PERSONA
-        });
-        expect(disconnect).toHaveBeenCalled();
-      } finally {
-        global.IntersectionObserver = original;
-      }
+      expect(getTimeline.getLastConfig()).toEqual({});
     });
 
     it("renders nothing before the read, on an error or with no points", async () => {
@@ -490,36 +387,40 @@ describe("c-career-line", () => {
       expect(certification.querySelector(".years .visually-hidden")).toBeNull();
     });
 
-    it("draws the fold as Earlier roles with its years", async () => {
+    it("draws the fold as Earlier roles with its years and each role listed under it", async () => {
       const element = await renderWithData();
       const fold = linePoints(element)[7];
       expect(text(fold.querySelector(".point-first"))).toBe("Earlier roles,");
-      expect(fold.querySelector(".point-second")).toBeNull();
-      expect(text(fold.querySelector('.years [aria-hidden="true"]'))).toBe(
-        "2012 to 2016"
-      );
-    });
-
-    it("makes a role a button only when it has highlights, and every other point a button", async () => {
-      const element = await renderWithData();
-      expect(lineButton(element, "a01")).not.toBeNull();
-      expect(lineButton(element, "a05")).toBeNull();
-      expect(lineButton(element, "c01")).not.toBeNull();
-      expect(lineButton(element, "e01")).not.toBeNull();
-      expect(lineButton(element, "earlier-roles")).not.toBeNull();
       expect(
-        element.shadowRoot
-          .querySelector('[data-id="line"]')
-          .getAttribute("tabindex")
-      ).toBeNull();
+        text(fold.querySelector('.group-years [aria-hidden="true"]'))
+      ).toBe("2012 to 2016");
+      const titles = Array.from(
+        fold.querySelectorAll('[data-id="line-title"]')
+      );
+      expect(
+        titles.map((node) => text(node.querySelector(".point-second")))
+      ).toEqual([
+        "Fiserv, Inc, POS Technician,",
+        "Walmart Stores, Inc, Customer Service Manager,"
+      ]);
+      expect(
+        titles.map((node) =>
+          text(node.querySelector('.years [aria-hidden="true"]'))
+        )
+      ).toEqual(["2016", "2012 to 2014"]);
     });
 
-    it("shows plain roles when the highlight read fails, with a tab stop on the line", async () => {
-      const element = render();
-      getTimeline.emit({ work: WORK.slice(0, 3) });
-      getResume.error();
-      await flush();
+    it("draws every point as plain text, with nothing that opens and a tab stop on the line", async () => {
+      const element = await renderWithData();
+      expect(
+        all(element, "button[aria-expanded]").filter(
+          (node) => node.dataset.id !== "stack-toggle"
+        )
+      ).toHaveLength(0);
       expect(all(element, "[data-point-button]")).toHaveLength(0);
+      expect(
+        element.shadowRoot.querySelector('[data-id="line-panel"]')
+      ).toBeNull();
       expect(
         element.shadowRoot
           .querySelector('[data-id="line"]')
@@ -612,163 +513,32 @@ describe("c-career-line", () => {
       await flush();
       expect(trackEvent).not.toHaveBeenCalled();
     });
-
-    it("closes an open point the new kind hides, and keeps one it still shows", async () => {
-      const element = await renderWithData();
-      lineButton(element, "c01").click();
-      await flush();
-      filter(element, "certifications").click();
-      await flush();
-      expect(linePanel(element).hidden).toBe(false);
-      filter(element, "work").click();
-      await flush();
-      expect(linePanel(element).hidden).toBe(true);
-    });
   });
 
-  describe("opening a point", () => {
-    it("opens a role's highlights under the line with aria-expanded and aria-controls", async () => {
+  describe("the links under the line", () => {
+    it("always offers the resume for the full details, beside the verify link", async () => {
       const element = await renderWithData();
-      const button = lineButton(element, "a01");
-      expect(button.getAttribute("aria-expanded")).toBe("false");
-      expect(button.getAttribute("aria-controls")).toBe(linePanel(element).id);
-      expect(linePanel(element).hidden).toBe(true);
-      button.click();
-      await flush();
-      expect(button.getAttribute("aria-expanded")).toBe("true");
-      expect(linePanel(element).hidden).toBe(false);
-      expect(text(linePanel(element).querySelector(".panel-title"))).toBe(
-        "Senior Solution Consultant"
+      const resume = element.shadowRoot.querySelector(
+        '[data-id="resume-link"]'
       );
-      expect(text(linePanel(element).querySelector(".panel-meta"))).toBe(
-        "TELUS Digital, 2026+, Active"
-      );
-      expect(panelItems(element)).toEqual(["Led the design.", "Shipped it."]);
-    });
-
-    it("sends career_role_opened with the role's position, and nothing for other points", async () => {
-      const element = await renderWithData();
-      lineButton(element, "a03").click();
-      await flush();
-      expect(trackEvent).toHaveBeenCalledWith("career_role_opened", {
-        position: 3
-      });
-      lineButton(element, "a03").click();
-      await flush();
-      lineButton(element, "c01").click();
-      await flush();
-      lineButton(element, "earlier-roles").click();
-      await flush();
-      expect(trackEvent).toHaveBeenCalledTimes(1);
-    });
-
-    it("opens a certification's issuer, earned date and verify link", async () => {
-      const element = await renderWithData();
-      lineButton(element, "c01").click();
-      await flush();
-      const panel = linePanel(element);
-      expect(text(panel.querySelector(".panel-title"))).toBe(
-        "Data 360 Consultant"
-      );
-      expect(panel.querySelector(".panel-meta")).toBeNull();
-      expect(panelItems(element)).toEqual(["Salesforce, earned Mar 2025"]);
-      const link = panel.querySelector('[data-id="panel-verify-link"]');
-      expect(link.getAttribute("href")).toBe(VERIFY);
-      expect(link.getAttribute("target")).toBe("_blank");
-      expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-      expect(text(link)).toBe("Verify on Trailhead, opens in a new tab");
-    });
-
-    it("opens a certification with no verify link when the server sends none", async () => {
-      const element = await renderWithData({
-        ...TIMELINE,
-        verificationUrl: null
-      });
-      lineButton(element, "c02").click();
+      expect(text(resume)).toBe("View full details on my resume");
+      expect(resume.getAttribute("href")).toBe("/portfolio/resume");
+      expect(resume.getAttribute("target")).toBeNull();
+      const foot = element.shadowRoot.querySelector(".career-foot");
+      expect(
+        Array.from(foot.querySelectorAll("a")).map((a) => a.dataset.id)
+      ).toEqual(["resume-link", "verify-link"]);
+      filter(element, "work").click();
       await flush();
       expect(
-        linePanel(element).querySelector('[data-id="panel-verify-link"]')
+        element.shadowRoot.querySelector('[data-id="resume-link"]')
+      ).not.toBeNull();
+      expect(
+        element.shadowRoot.querySelector('[data-id="verify-link"]')
       ).toBeNull();
     });
 
-    it("opens the school's name and completion", async () => {
-      const element = await renderWithData({
-        ...TIMELINE,
-        education: [{ ...EDUCATION[0], fieldOfStudy: "Information Technology" }]
-      });
-      lineButton(element, "e01").click();
-      await flush();
-      expect(text(linePanel(element).querySelector(".panel-title"))).toBe(
-        "Associate's Degree"
-      );
-      expect(panelItems(element)).toEqual([
-        "Information Technology",
-        "Metropolitan Community College, completed May 2025"
-      ]);
-    });
-
-    it("opens the fold's list of each earlier role's employer, title and years", async () => {
-      const element = await renderWithData();
-      lineButton(element, "earlier-roles").click();
-      await flush();
-      const panel = linePanel(element);
-      expect(text(panel.querySelector(".panel-title"))).toBe("Earlier roles");
-      expect(text(panel.querySelector(".panel-meta"))).toBe("2012 to 2016");
-      expect(panelItems(element)).toEqual([
-        "Fiserv, Inc, POS Technician, 2016",
-        "Walmart Stores, Inc, Customer Service Manager, 2012 to 2014"
-      ]);
-    });
-
-    it("keeps one point open at a time", async () => {
-      const element = await renderWithData();
-      lineButton(element, "a01").click();
-      await flush();
-      lineButton(element, "a02").click();
-      await flush();
-      expect(lineButton(element, "a01").getAttribute("aria-expanded")).toBe(
-        "false"
-      );
-      expect(lineButton(element, "a02").getAttribute("aria-expanded")).toBe(
-        "true"
-      );
-    });
-
-    it("closes when the open point is pressed again", async () => {
-      const element = await renderWithData();
-      lineButton(element, "a01").click();
-      await flush();
-      lineButton(element, "a01").click();
-      await flush();
-      expect(linePanel(element).hidden).toBe(true);
-    });
-
-    it("closes on Escape and puts focus back on the point's button", async () => {
-      const element = await renderWithData();
-      lineButton(element, "c01").click();
-      await flush();
-      escape(element);
-      await flush();
-      expect(linePanel(element).hidden).toBe(true);
-      expect(element.shadowRoot.activeElement).toBe(lineButton(element, "c01"));
-    });
-
-    it("ignores other keys and Escape with nothing open", async () => {
-      const element = await renderWithData();
-      const section = element.shadowRoot.querySelector("section");
-      escape(element);
-      lineButton(element, "a01").click();
-      await flush();
-      section.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
-      );
-      await flush();
-      expect(linePanel(element).hidden).toBe(false);
-    });
-  });
-
-  describe("the verify link", () => {
-    it("shows once under the line with the certifications in view", async () => {
+    it("shows the verify link once under the line with the certifications in view", async () => {
       const element = await renderWithData();
       const link = element.shadowRoot.querySelector('[data-id="verify-link"]');
       expect(link.getAttribute("href")).toBe(VERIFY);
@@ -858,35 +628,6 @@ describe("c-career-line", () => {
       expect(stackKeys(element)).toEqual(ORDER.slice(0, 4));
       expect(text(toggle(element))).toBe("Show all 8");
       expect(toggle(element).getAttribute("aria-expanded")).toBe("false");
-    });
-
-    it("opens a point in place under it, one at a time, and closes on Escape", async () => {
-      const element = await renderWithData();
-      toggle(element).click();
-      await flush();
-      const first = stackButton(element, "a01");
-      expect(first.getAttribute("aria-controls")).toBe(
-        all(element, '[data-id="stack-panel"]')[0].id
-      );
-      first.click();
-      await flush();
-      expect(all(element, '[data-id="stack-panel"]')[0].hidden).toBe(false);
-      expect(linePanel(element).hidden).toBe(true);
-      stackButton(element, "c01").click();
-      await flush();
-      expect(first.getAttribute("aria-expanded")).toBe("false");
-      const openPanels = all(element, '[data-id="stack-panel"]').filter(
-        (panel) => !panel.hidden
-      );
-      expect(openPanels).toHaveLength(1);
-      expect(
-        openPanels[0].querySelector('[data-id="panel-verify-link"]')
-      ).not.toBeNull();
-      escape(element);
-      await flush();
-      expect(element.shadowRoot.activeElement).toBe(
-        stackButton(element, "c01")
-      );
     });
   });
 
@@ -1014,14 +755,6 @@ describe("c-career-line", () => {
     async function grouped() {
       const element = render();
       getTimeline.emit(GROUPED);
-      getResume.emit({
-        roles: [
-          { id: "c2", highlights: ["Built the CRM."] },
-          { id: "c1", highlights: ["Ran the org."] },
-          { id: "m3", highlights: ["Taught it."] },
-          { id: "i1", highlights: ["Built a site."] }
-        ]
-      });
       await flush();
       return element;
     }
@@ -1122,23 +855,12 @@ describe("c-career-line", () => {
       expect(point.querySelector(".active-tag")).not.toBeNull();
     });
 
-    it("draws a title with no highlights as plain text", async () => {
+    it("folds the roles before the Salesforce start year and lists them under the fold", async () => {
       const element = await grouped();
-      expect(lineButton(element, "c2")).not.toBeNull();
-      expect(lineButton(element, "m2")).toBeNull();
-      expect(lineButton(element, "t1")).toBeNull();
-    });
-
-    it("folds the roles before the Salesforce start year as before", async () => {
-      const element = await grouped();
-      lineButton(element, "earlier-roles").click();
-      await flush();
-      expect(panelItems(element)).toEqual([
-        "Fiserv, Inc, POS Technician, 2016"
+      expect(titleLabels(element, "earlier-roles")).toEqual([
+        "Fiserv, Inc, POS Technician"
       ]);
-      expect(text(linePanel(element).querySelector(".panel-meta"))).toBe(
-        "2016"
-      );
+      expect(groupYears(element, "earlier-roles")).toBe("2016");
     });
 
     it("groups certifications by issuer and earned year, newest first, prefix dropped", async () => {
@@ -1169,7 +891,6 @@ describe("c-career-line", () => {
 
     it("hides a retired certification", async () => {
       const element = await grouped();
-      expect(lineButton(element, "k5")).toBeNull();
       expect(element.shadowRoot.textContent).not.toContain("Retired Thing");
     });
 
@@ -1190,21 +911,6 @@ describe("c-career-line", () => {
         shortCertificationName("Salesforce Certified ", "Salesforce")
       ).toBe("Salesforce Certified");
       expect(shortCertificationName(" X ", "")).toBe("X");
-    });
-
-    it("opens a certification to its full name, issuer, earned date and verify link", async () => {
-      const element = await grouped();
-      lineButton(element, "k2").click();
-      await flush();
-      expect(text(linePanel(element).querySelector(".panel-title"))).toBe(
-        "Salesforce Certified Data 360 Consultant"
-      );
-      expect(panelItems(element)).toEqual(["Salesforce, earned Mar 2025"]);
-      expect(
-        linePanel(element)
-          .querySelector('[data-id="panel-verify-link"]')
-          .getAttribute("href")
-      ).toBe(VERIFY);
     });
 
     it("keeps every name visible under every filter", async () => {
@@ -1235,51 +941,6 @@ describe("c-career-line", () => {
       ]);
     });
 
-    it("opens a title with aria-expanded, its highlights, Escape and focus back", async () => {
-      const element = await grouped();
-      const button = lineButton(element, "c1");
-      expect(button.getAttribute("aria-expanded")).toBe("false");
-      button.click();
-      await flush();
-      expect(button.getAttribute("aria-expanded")).toBe("true");
-      expect(lineButton(element, "c2").getAttribute("aria-expanded")).toBe(
-        "false"
-      );
-      expect(text(linePanel(element).querySelector(".panel-title"))).toBe(
-        "Application Administrator"
-      );
-      expect(text(linePanel(element).querySelector(".panel-meta"))).toBe(
-        "Creighton University, 2021 to 2025"
-      );
-      expect(panelItems(element)).toEqual(["Ran the org."]);
-      lineButton(element, "c2").click();
-      await flush();
-      expect(button.getAttribute("aria-expanded")).toBe("false");
-      expect(panelItems(element)).toEqual(["Built the CRM."]);
-      escape(element);
-      await flush();
-      expect(linePanel(element).hidden).toBe(true);
-      expect(element.shadowRoot.activeElement).toBe(lineButton(element, "c2"));
-    });
-
-    it("sends career_role_opened with the role's place among all roles", async () => {
-      const element = await grouped();
-      // Order on the line: t1, i1, c2, c1, m3, m2, m1.
-      lineButton(element, "c1").click();
-      await flush();
-      expect(trackEvent).toHaveBeenLastCalledWith("career_role_opened", {
-        position: 4
-      });
-      lineButton(element, "m3").click();
-      await flush();
-      expect(trackEvent).toHaveBeenLastCalledWith("career_role_opened", {
-        position: 5
-      });
-      lineButton(element, "k1").click();
-      await flush();
-      expect(trackEvent).toHaveBeenCalledTimes(2);
-    });
-
     it("keeps newest 4 points then Show all on the phone list", async () => {
       const element = await grouped();
       const keys = () => keysOf(all(element, '[data-id="stack-point"]'));
@@ -1297,60 +958,6 @@ describe("c-career-line", () => {
       await flush();
       expect(keys()).toHaveLength(8);
     });
-
-    it("opens a title in place on the phone list, one at a time, Escape returns focus", async () => {
-      const element = await grouped();
-      stackButton(element, "c1").click();
-      await flush();
-      const panels = all(element, '[data-id="stack-panel"]').filter(
-        (panel) => !panel.hidden
-      );
-      expect(panels).toHaveLength(1);
-      expect(text(panels[0])).toBe("Ran the org.");
-      expect(stackButton(element, "c1").getAttribute("aria-controls")).toBe(
-        panels[0].id
-      );
-      stackButton(element, "c2").click();
-      await flush();
-      expect(stackButton(element, "c1").getAttribute("aria-expanded")).toBe(
-        "false"
-      );
-      escape(element);
-      await flush();
-      expect(element.shadowRoot.activeElement).toBe(stackButton(element, "c2"));
-    });
-  });
-
-  describe("motion", () => {
-    const originalMatchMedia = window.matchMedia;
-
-    function systemReduces(matches) {
-      window.matchMedia = jest.fn(() => ({
-        matches,
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn()
-      }));
-    }
-
-    afterEach(() => {
-      window.matchMedia = originalMatchMedia;
-    });
-
-    it("fades the opening in under full motion", async () => {
-      systemReduces(false);
-      const element = await renderWithData();
-      lineButton(element, "a01").click();
-      await flush();
-      expect(linePanel(element).classList.contains("panel-reveal")).toBe(true);
-    });
-
-    it("opens at once under reduced motion", async () => {
-      systemReduces(true);
-      const element = await renderWithData();
-      lineButton(element, "a01").click();
-      await flush();
-      expect(linePanel(element).classList.contains("panel-reveal")).toBe(false);
-    });
   });
 });
 
@@ -1362,7 +969,7 @@ describe("c-career-line live data marker", () => {
     const marker = html.match(/<c-data-source\s([^>]*)>\s*<\/c-data-source>/);
     expect(marker).not.toBeNull();
     expect(marker[1]).toMatch(
-      /source-keys="ResumeController_TimelineRoles,ResumeController_Education,ResumeController_Certifications,ResumeController_Highlights"/
+      /source-keys="ResumeController_TimelineRoles,ResumeController_Education,ResumeController_Certifications"/
     );
     expect(marker[1]).not.toMatch(/objects=/);
     expect(marker[1]).not.toMatch(/hide-counts/);

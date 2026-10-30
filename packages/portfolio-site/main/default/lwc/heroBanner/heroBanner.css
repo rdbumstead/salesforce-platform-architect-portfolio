@@ -97,11 +97,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Holds the case studies button's height before its read returns, so nothing below moves. */
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+  min-height: 44px;
   margin-top: 6px;
 }
 
@@ -132,21 +134,6 @@
 .btn-primary:visited:hover {
   background: var(--pf-btn-hover);
   color: var(--pf-btn-text);
-}
-
-.btn-ghost,
-.btn-ghost:link,
-.btn-ghost:visited {
-  color: var(--pf-text);
-  border: 1px solid var(--pf-border);
-  background: var(--pf-surface);
-}
-
-.btn-ghost:hover,
-.btn-ghost:link:hover,
-.btn-ghost:visited:hover {
-  background: var(--pf-chip);
-  color: var(--pf-text);
 }
 
 .profile-links {
