@@ -523,3 +523,24 @@ summary:focus-visible,
     font-size: 1.125rem;
   }
 }
+
+.docs-announcer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.docs-title:focus {
+  outline: none;
+}
+
+.docs-title:focus-visible {
+  outline: 2px solid var(--pf-focus, var(--pf-accent));
+  outline-offset: 4px;
+}

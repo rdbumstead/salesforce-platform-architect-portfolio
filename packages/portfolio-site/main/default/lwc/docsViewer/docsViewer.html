@@ -1,7 +1,15 @@
 <template>
   <div class="docs">
+    <div
+      class="docs-announcer"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {announcement}
+    </div>
     <template lwc:if={showList}>
-      <h1 class="docs-title">Architecture docs</h1>
+      <h1 class="docs-title" tabindex="-1">Architecture docs</h1>
       <p class="docs-lead">
         How this site is designed and why. Start with the Executive Overview.
       </p>
@@ -70,13 +78,15 @@
     <template lwc:if={showDoc}>
       <a class="back-link" href={listHref}>Back to all docs</a>
       <template lwc:if={showDocMissing}>
-        <h1 class="docs-title">Document not found</h1>
+        <h1 class="docs-title" tabindex="-1">Document not found</h1>
         <p class="docs-note">
           That document is not on this site. The list has every one that is.
         </p>
       </template>
       <template lwc:elseif={showRenderError}>
-        <h1 class="docs-title">This document could not be shown</h1>
+        <h1 class="docs-title" tabindex="-1">
+          This document could not be shown
+        </h1>
         <p class="docs-note">
           The page could not load its reader. Try again, or read it on GitHub.
         </p>
@@ -91,7 +101,7 @@
           <p class="docs-note" role="status">Loading the document.</p>
         </template>
         <template lwc:if={pageTitle}>
-          <h1 class="docs-title doc-title">{pageTitle}</h1>
+          <h1 class="docs-title doc-title" tabindex="-1">{pageTitle}</h1>
         </template>
         <template lwc:if={doc}>
           <p class="doc-meta">

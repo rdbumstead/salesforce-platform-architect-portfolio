@@ -191,7 +191,12 @@ export default class DocsViewer extends LightningElement {
   // a link nobody can reach is never in the page.
   openedGroups = {};
 
+  // What the live region says. Empty until the visitor moves between the list and a document.
+  announcement = "";
+
   _painted = null;
+  _wireSeen = false;
+  _focusPending = false;
   _pendingHash = null;
   _trackedKey = null;
   _onPopState;
@@ -201,7 +206,10 @@ export default class DocsViewer extends LightningElement {
 
   @wire(CurrentPageReference)
   wiredPageRef(pageRef) {
-    this.setDocKey(docKeyFrom(pageRef, window.location.search));
+    // The first reading is the page load, which moves no focus and says nothing.
+    const navigated = this._wireSeen;
+    this._wireSeen = true;
+    this.setDocKey(docKeyFrom(pageRef, window.location.search), navigated);
   }
 
   @wire(getDocs)
@@ -232,7 +240,7 @@ export default class DocsViewer extends LightningElement {
   connectedCallback() {
     this.tocOpen = !isPhone();
     this._onPopState = () => {
-      this.setDocKey(docKeyFrom(null, window.location.search));
+      this.setDocKey(docKeyFrom(null, window.location.search), true);
       this._pendingHash = this.currentHash();
       this.scrollToPending();
     };
@@ -287,9 +295,12 @@ export default class DocsViewer extends LightningElement {
     }
   }
 
-  setDocKey(key) {
+  setDocKey(key, navigated = false) {
     if (key === this.docKey) {
       return;
+    }
+    if (navigated) {
+      this._focusPending = true;
     }
     this.docKey = key;
     this.doc = undefined;
@@ -410,6 +421,42 @@ export default class DocsViewer extends LightningElement {
 
   renderedCallback() {
     this.paint();
+    this.settleFocus();
+  }
+
+  /**
+   * After the visitor moved between the list and a document, once the new view has its
+   * heading, moves focus there and says where they are. A hash that names a heading in the
+   * document keeps the deep link behaviour, which focuses that heading instead, but the
+   * move is still announced.
+   */
+  settleFocus() {
+    if (!this._focusPending) {
+      return;
+    }
+    const heading = this.template.querySelector("h1.docs-title");
+    if (!heading) {
+      return;
+    }
+    if (this.showDoc) {
+      const ready =
+        this.docError ||
+        this.renderError ||
+        (this.doc && this._painted === this.doc);
+      if (!ready) {
+        return;
+      }
+    }
+    this._focusPending = false;
+    const hash = this.showDoc ? this.currentHash() : null;
+    const deepLink = Boolean(hash && this.resolveId(hash));
+    if (!deepLink) {
+      heading.focus();
+    }
+    // The title can still be changing to the one in the markdown, so it is read from the state.
+    const name =
+      this.showDoc && this.doc ? this.pageTitle : heading.textContent.trim();
+    this.announcement = this.showDoc ? `${name} opened` : "Document list";
   }
 
   /** Fills the manual DOM body once per document, then scrolls to a pending hash. */
