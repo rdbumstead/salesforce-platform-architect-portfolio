@@ -9,6 +9,7 @@
       "Contact__c": "@SeedOwnerRef",
       "Issuer__c": "@SeedInstituteRef",
       "Earned_Date__c": "2021-06-01",
+      "Badge_File__c": "platform-administrator.webp",
       "Is_Retired__c": false
     },
     {

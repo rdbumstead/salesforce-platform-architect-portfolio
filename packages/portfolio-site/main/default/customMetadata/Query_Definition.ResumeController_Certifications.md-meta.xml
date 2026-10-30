@@ -14,7 +14,7 @@
         <field>Fields__c</field>
         <value
       xsi:type="xsd:string"
-    >Id, Name, Issuer__r.Name, Earned_Date__c, Is_Retired__c</value>
+    >Id, Name, Issuer__r.Name, Earned_Date__c, Is_Retired__c, Badge_File__c</value>
     </values>
     <values>
         <field>Filter__c</field>

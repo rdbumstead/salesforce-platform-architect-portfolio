@@ -14,7 +14,7 @@
         <field>Fields__c</field>
         <value
       xsi:type="xsd:string"
-    >Experience__c, Description__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Developer_Sort_Order__c, Architect_Sort_Order__c, Lock_Sort_Across_Personas__c</value>
+    >Experience__c, Description__c, Timeline_Text__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Developer_Sort_Order__c, Architect_Sort_Order__c, Lock_Sort_Across_Personas__c</value>
     </values>
     <values>
         <field>Filter__c</field>

@@ -392,7 +392,9 @@ private class ResumeControllerTest {
     'employer',
     'startDate',
     'endDate',
-    'isCurrent'
+    'isCurrent',
+    'isPartTime',
+    'highlights'
   };
   private static final Set<String> SCHOOL_KEYS = new Set<String>{
     'key',
@@ -405,7 +407,8 @@ private class ResumeControllerTest {
     'id',
     'name',
     'issuer',
-    'earnedDate'
+    'earnedDate',
+    'badgeFile'
   };
 
   @isTest
@@ -925,6 +928,274 @@ private class ResumeControllerTest {
       new List<String>{ 'LWC' },
       resume.skillGroups[1].skills,
       'And the untagged one'
+    );
+  }
+
+  private static ResumeController.TimelineRole timelineRole(
+    ResumeController.Timeline timeline,
+    String title
+  ) {
+    for (ResumeController.TimelineRole role : timeline.work) {
+      if (role.title == title) {
+        return role;
+      }
+    }
+    Assert.fail('No timeline role titled ' + title);
+    return null;
+  }
+
+  @isTest
+  static void getTimelineIsPartTimeIsFalseByDefaultAndTrueWhenChecked() {
+    update new Experience__c(
+      Id = [SELECT Id FROM Experience__c WHERE Name = 'Past Role']
+      .Id,
+      Is_Part_Time__c = true
+    );
+    User guest = SiteGuestTestSupport.preparedGuest();
+    ResumeController.Timeline timeline;
+
+    Test.startTest();
+    System.runAs(guest) {
+      timeline = ResumeController.getTimeline();
+    }
+    Test.stopTest();
+
+    Assert.isTrue(
+      timelineRole(timeline, 'Past Role').isPartTime,
+      'A checked role is part time'
+    );
+    Assert.areEqual(
+      false,
+      timelineRole(timeline, 'Current Role').isPartTime,
+      'An unchecked role is false, never null'
+    );
+    Assert.areEqual(
+      false,
+      timelineRole(timeline, 'Older Role').isPartTime,
+      'The other unchecked role is false, never null'
+    );
+  }
+
+  @isTest
+  static void getTimelineHighlightsAreCappedAtThreeInSortOrder() {
+    User guest = SiteGuestTestSupport.preparedGuest();
+    ResumeController.Timeline timeline;
+
+    Test.startTest();
+    System.runAs(guest) {
+      timeline = ResumeController.getTimeline();
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      new List<String>{ 'Locked', 'Admin only', 'Dev second' },
+      timelineRole(timeline, 'Current Role').highlights,
+      'The first three of five, by Sort_Order__c, whatever the persona tag'
+    );
+    Assert.areEqual(
+      ResumeController.TIMELINE_HIGHLIGHT_CAP,
+      timelineRole(timeline, 'Current Role').highlights.size(),
+      'The cap'
+    );
+  }
+
+  @isTest
+  static void getTimelineHighlightUsesTimelineTextWhenSetAndDescriptionOtherwise() {
+    Experience_Highlight__c locked = [
+      SELECT Id
+      FROM Experience_Highlight__c
+      WHERE Name = 'Locked'
+    ];
+    locked.Timeline_Text__c = '  Short locked line  ';
+    Experience_Highlight__c blank = [
+      SELECT Id
+      FROM Experience_Highlight__c
+      WHERE Name = 'Admin only'
+    ];
+    blank.Timeline_Text__c = '   ';
+    update new List<Experience_Highlight__c>{ locked, blank };
+    User guest = SiteGuestTestSupport.preparedGuest();
+    ResumeController.Timeline timeline;
+
+    Test.startTest();
+    System.runAs(guest) {
+      timeline = ResumeController.getTimeline();
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      new List<String>{ 'Short locked line', 'Admin only', 'Dev second' },
+      timelineRole(timeline, 'Current Role').highlights,
+      'Timeline_Text__c when set, Description__c when blank'
+    );
+  }
+
+  @isTest
+  static void getTimelineRoleWithNoHighlightsGetsAnEmptyList() {
+    delete [SELECT Id FROM Experience_Highlight__c];
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    for (ResumeController.TimelineRole role : timeline.work) {
+      Assert.isNotNull(role.highlights, 'Never null');
+      Assert.isTrue(role.highlights.isEmpty(), 'No highlights');
+    }
+  }
+
+  @isTest
+  static void getTimelineRoleEndedBeforeTheStartYearGetsNoHighlights() {
+    PortfolioSettings.overrideNumber('Salesforce_Start_Year', 2022);
+    insert new Experience_Highlight__c(
+      Name = 'Older work',
+      Experience__c = [SELECT Id FROM Experience__c WHERE Name = 'Older Role']
+      .Id,
+      Description__c = 'Older work',
+      Persona_Tag__c = 'Admin',
+      Sort_Order__c = 1
+    );
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.isTrue(
+      timelineRole(timeline, 'Older Role').highlights.isEmpty(),
+      'Ended in 2020, before 2022, so no highlights though it has one'
+    );
+    Assert.areEqual(
+      new List<String>{ 'Past work' },
+      timelineRole(timeline, 'Past Role').highlights,
+      'Ended in 2023, so it keeps its highlight'
+    );
+    Assert.areEqual(
+      3,
+      timelineRole(timeline, 'Current Role').highlights.size(),
+      'A current role has not ended'
+    );
+  }
+
+  @isTest
+  static void getTimelineRoleEndedInTheStartYearKeepsItsHighlights() {
+    PortfolioSettings.overrideNumber('Salesforce_Start_Year', 2023);
+
+    Test.startTest();
+    ResumeController.Timeline timeline = ResumeController.getTimeline();
+    Test.stopTest();
+
+    Assert.areEqual(
+      new List<String>{ 'Past work' },
+      timelineRole(timeline, 'Past Role').highlights,
+      'Ended 2023-12-31 in the start year, which is not before it'
+    );
+  }
+
+  @isTest
+  static void getTimelineCertificationBadgeFileIsTheFieldOrNull() {
+    update new Certification__c(
+      Id = [SELECT Id FROM Certification__c WHERE Name = 'Cert New']
+      .Id,
+      Badge_File__c = ' cert-new.webp '
+    );
+    User guest = SiteGuestTestSupport.preparedGuest();
+    ResumeController.Timeline timeline;
+
+    Test.startTest();
+    System.runAs(guest) {
+      timeline = ResumeController.getTimeline();
+    }
+    Test.stopTest();
+
+    Assert.areEqual('Cert New', timeline.certifications[0].name, 'Newest');
+    Assert.areEqual(
+      'cert-new.webp',
+      timeline.certifications[0].badgeFile,
+      'The file name, trimmed'
+    );
+    Assert.isNull(
+      timeline.certifications[1].badgeFile,
+      'Null when the field is blank'
+    );
+  }
+
+  /**
+   * getResume has to stay exactly as it was. The three new fields are set to values and the
+   * serialized resume must not change by a character, and its role and credential shapes
+   * stay what they were before the timeline additions.
+   */
+  @isTest
+  static void getResumeIsUnchangedByTheTimelineFields() {
+    String before = JSON.serialize(ResumeController.getResume(null));
+
+    update new Experience__c(
+      Id = [SELECT Id FROM Experience__c WHERE Name = 'Current Role']
+      .Id,
+      Is_Part_Time__c = true
+    );
+    update new Certification__c(
+      Id = [SELECT Id FROM Certification__c WHERE Name = 'Cert New']
+      .Id,
+      Badge_File__c = 'cert-new.webp'
+    );
+    List<Experience_Highlight__c> rows = [
+      SELECT Id
+      FROM Experience_Highlight__c
+    ];
+    for (Experience_Highlight__c row : rows) {
+      row.Timeline_Text__c = 'Short';
+    }
+    update rows;
+
+    String after = JSON.serialize(ResumeController.getResume(null));
+    Assert.areEqual(before, after, 'getResume output is byte for byte equal');
+
+    Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(
+      after
+    );
+    Assert.areEqual(
+      new Set<String>{
+        'persona',
+        'header',
+        'roles',
+        'skillGroups',
+        'certifications',
+        'education',
+        'credentialVerificationUrl'
+      },
+      payload.keySet(),
+      'Resume top level keys'
+    );
+    for (Object role : (List<Object>) payload.get('roles')) {
+      Assert.areEqual(
+        new Set<String>{
+          'id',
+          'title',
+          'employer',
+          'startDate',
+          'endDate',
+          'isCurrent',
+          'isRemote',
+          'highlights'
+        },
+        ((Map<String, Object>) role).keySet(),
+        'Resume role keys'
+      );
+    }
+    for (Object entry : (List<Object>) payload.get('certifications')) {
+      Assert.areEqual(
+        new Set<String>{ 'name', 'issuer', 'dateValue', 'detail', 'isRetired' },
+        ((Map<String, Object>) entry).keySet(),
+        'Resume credential keys'
+      );
+    }
+    Assert.isFalse(
+      after.contains('Short'),
+      'Timeline_Text__c never reaches it'
+    );
+    Assert.isFalse(
+      after.contains('cert-new.webp'),
+      'Badge_File__c never reaches it'
     );
   }
 }
