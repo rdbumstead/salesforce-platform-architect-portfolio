@@ -15,6 +15,7 @@ import HeroBanner from "c/heroBanner";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
 import getHomeCaseStudies from "@salesforce/apex/ProjectCardController.getHomeCaseStudies";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
+import getBuildCounts from "@salesforce/apex/ProjectCardController.getBuildCounts";
 import { trackEvent } from "c/analyticsService";
 
 jest.mock(
@@ -43,6 +44,15 @@ jest.mock(
 
 jest.mock(
   "@salesforce/apex/ResumeController.getTimeline",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+
+jest.mock(
+  "@salesforce/apex/ProjectCardController.getBuildCounts",
   () => {
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
@@ -217,6 +227,9 @@ describe("c-hero-banner", () => {
       expect(name.nextElementSibling).toBe(line.parentElement);
       expect(line.parentElement.nextElementSibling).toBe(value.parentElement);
       expect(value.parentElement.nextElementSibling).toBe(
+        byId(element, "hero-why")
+      );
+      expect(byId(element, "hero-why").nextElementSibling).toBe(
         byId(element, "proof-strip")
       );
     });
@@ -280,14 +293,16 @@ describe("c-hero-banner", () => {
   });
 
   describe("buttons and profile links", () => {
-    it("offers See the case studies as the one button, and leaves the resume to the profile links", async () => {
+    it("offers See the case studies as the primary button and the tour as the secondary, and leaves the resume to the profile links", async () => {
       const element = await renderWithCases();
       const actions = element.shadowRoot.querySelectorAll(".hero-actions a");
       expect(Array.from(actions).map((a) => text(a))).toEqual([
-        "See the case studies ↓"
+        "See the case studies ↓",
+        "Take the 10 minute tour →"
       ]);
       expect(actions[0].getAttribute("href")).toBe("/portfolio/#case-studies");
       expect(actions[0].classList.contains("btn-primary")).toBe(true);
+      expect(actions[1].classList.contains("btn-secondary")).toBe(true);
       expect(byId(element, "resume-button")).toBeNull();
     });
 
@@ -415,7 +430,7 @@ describe("c-hero-banner", () => {
       const element = render();
       expect(caseButton(element)).toBeNull();
       expect(element.shadowRoot.querySelector(".hero-actions")).not.toBeNull();
-      expect(actionKeys(element)).toEqual([]);
+      expect(actionKeys(element)).toEqual(["tour-link"]);
     });
 
     it("shows no button when there are no case studies", async () => {
@@ -423,7 +438,7 @@ describe("c-hero-banner", () => {
       getHomeCaseStudies.emit([]);
       await flush();
       expect(caseButton(element)).toBeNull();
-      expect(actionKeys(element)).toEqual([]);
+      expect(actionKeys(element)).toEqual(["tour-link"]);
     });
 
     it("shows no button when the read fails or no card has a title", async () => {
@@ -452,7 +467,7 @@ describe("c-hero-banner", () => {
       getHomeCaseStudies.emit([CASE]);
       await flush();
       expect(caseButton(element)).not.toBeNull();
-      expect(actionKeys(element)).toEqual(["case-studies-button"]);
+      expect(actionKeys(element)).toEqual(["case-studies-button", "tour-link"]);
       getHomeCaseStudies.emit([]);
       await flush();
       expect(caseButton(element)).toBeNull();
@@ -525,20 +540,19 @@ describe("c-hero-banner", () => {
       window.sessionStorage.clear();
     });
 
-    it("is a quiet link under the buttons to the first stop, with the tour minutes", () => {
+    it("is a secondary button in the button row to the first stop, with the tour minutes", () => {
       const element = render();
       const link = byId(element, "tour-link");
       expect(link.tagName).toBe("A");
       expect(link.getAttribute("href")).toBe(
         "/portfolio/business-architecture"
       );
-      expect(text(link)).toBe("Have 10 minutes? Take the guided tour →");
+      expect(text(link)).toBe("Take the 10 minute tour →");
+      expect(link.classList.contains("btn-secondary")).toBe(true);
+      expect(link.classList.contains("btn-primary")).toBe(false);
       expect(link.querySelector('[aria-hidden="true"]').textContent).toBe("→");
       const actions = element.shadowRoot.querySelector(".hero-actions");
-      expect(actions.contains(link)).toBe(false);
-      expect(
-        actions.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING
-      ).toBeTruthy();
+      expect(actions.contains(link)).toBe(true);
     });
 
     it("starts the tour and lets the link go to the first stop, sending no tour_opened", () => {
@@ -564,6 +578,113 @@ describe("c-hero-banner", () => {
       setItem.mockRestore();
       expect(event.defaultPrevented).toBe(false);
       expect(window.sessionStorage.getItem("portfolio-tour")).toBeNull();
+    });
+  });
+
+  describe("cert count chip", () => {
+    const certs = (n) =>
+      Array.from({ length: n }, (_, i) => ({ id: `c${i}`, name: `Cert ${i}` }));
+
+    it("shows the constant before the timeline read returns", () => {
+      const element = render();
+      expect(text(byId(element, "proof-strip"))).toContain(
+        "7 active Salesforce certifications"
+      );
+    });
+
+    it("counts the certifications in the read: 7 active from a fixture of 7", async () => {
+      const element = render();
+      getTimeline.emit({ salesforceStartYear: 2017, certifications: certs(7) });
+      await flush();
+      expect(text(byId(element, "proof-strip"))).toContain(
+        "7 active Salesforce certifications"
+      );
+    });
+
+    it("follows the count when it changes, and keeps the constant on zero or an error", async () => {
+      const element = render();
+      getTimeline.emit({ certifications: certs(9) });
+      await flush();
+      expect(text(byId(element, "proof-strip"))).toContain(
+        "9 active Salesforce certifications"
+      );
+      getTimeline.emit({ certifications: [] });
+      await flush();
+      expect(text(byId(element, "proof-strip"))).toContain(
+        "7 active Salesforce certifications"
+      );
+      getTimeline.error();
+      await flush();
+      expect(text(byId(element, "proof-strip"))).toContain(
+        "7 active Salesforce certifications"
+      );
+    });
+  });
+
+  describe("why line and proof panel", () => {
+    it("shows the why line under the headline", () => {
+      const element = render();
+      expect(text(byId(element, "hero-why"))).toBe(
+        "If you're hiring a Salesforce architect for education or nonprofit work, start with the three case studies below. Each shows the problem, the call I made and how it turned out."
+      );
+    });
+
+    it("says the site runs on Salesforce, with no stats line until counts return", () => {
+      const element = render();
+      expect(text(byId(element, "proof-intro"))).toBe(
+        "This site runs on Salesforce. Every case study, stat and timeline entry on it is a record served through my own API."
+      );
+      expect(byId(element, "proof-stats")).toBeNull();
+    });
+
+    it("joins the live counts in one line", async () => {
+      const element = render();
+      getBuildCounts.emit({
+        apexPassed: 1234,
+        coverage: 91,
+        jestPassed: 567
+      });
+      await flush();
+      expect(text(byId(element, "proof-stats"))).toBe(
+        "1,234 Apex tests passing · 91% coverage · 567 Jest tests passing"
+      );
+    });
+
+    it("drops each part whose count is missing, and the line without an Apex count", async () => {
+      const element = render();
+      getBuildCounts.emit({ apexPassed: 40, coverage: 0, jestPassed: 12 });
+      await flush();
+      expect(text(byId(element, "proof-stats"))).toBe(
+        "40 Apex tests passing · 12 Jest tests passing"
+      );
+      getBuildCounts.emit({ coverage: 90, jestPassed: 12 });
+      await flush();
+      expect(byId(element, "proof-stats")).toBeNull();
+      getBuildCounts.error();
+      await flush();
+      expect(byId(element, "proof-stats")).toBeNull();
+    });
+
+    it("holds the two architecture buttons, both secondary", () => {
+      const element = render();
+      const docs = byId(element, "docs-link");
+      const guest = byId(element, "guest-access-link");
+      expect(text(docs)).toBe("Architecture and decisions →");
+      expect(docs.getAttribute("href")).toBe("/portfolio/docs");
+      // The arrow is a flex item spaced by the button gap, so no space sits in the text.
+      expect(text(guest)).toMatch(/^How a request reaches the data\s?→$/);
+      expect(guest.getAttribute("href")).toBe(
+        "/portfolio/docs?doc=sas#3-2-how-a-guest-reaches-apex"
+      );
+      expect(docs.classList.contains("btn-secondary")).toBe(true);
+      expect(guest.classList.contains("btn-secondary")).toBe(true);
+    });
+
+    it("has one primary button only", async () => {
+      const element = await renderWithCases();
+      expect(element.shadowRoot.querySelectorAll(".btn-primary")).toHaveLength(
+        1
+      );
     });
   });
 });

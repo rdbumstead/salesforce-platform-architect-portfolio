@@ -22,6 +22,7 @@
             <p class="hero-value" data-id="hero-value">{valueSentence}</p>
           </template>
         </div>
+        <p class="hero-why" data-id="hero-why">{whyLine}</p>
         <ul class="proof" aria-label="At a glance" data-id="proof-strip">
           <template for:each={proofPoints} for:item="point">
             <li key={point.key} class="proof-item">{point.text}</li>
@@ -37,16 +38,32 @@
               >See the case studies <span aria-hidden="true">↓</span></a
             >
           </template>
-        </div>
-        <p class="hero-tour">
           <a
-            class="tour-link"
+            class="btn btn-secondary"
             href={tourHref}
             data-id="tour-link"
             onclick={handleTourClick}
             >{tourLabel} <span aria-hidden="true">→</span></a
           >
-        </p>
+        </div>
+        <div class="proof-panel" data-id="proof-panel">
+          <p class="proof-intro" data-id="proof-intro">{proofIntro}</p>
+          <template lwc:if={statsText}>
+            <p class="proof-stats" data-id="proof-stats">{statsText}</p>
+          </template>
+          <div class="proof-actions">
+            <a class="btn btn-secondary" href={docsHref} data-id="docs-link"
+              >Architecture and decisions <span aria-hidden="true">→</span></a
+            >
+            <a
+              class="btn btn-secondary"
+              href={guestAccessHref}
+              data-id="guest-access-link"
+              >How a request reaches the data
+              <span aria-hidden="true">→</span></a
+            >
+          </div>
+        </div>
         <nav class="profile-links" aria-label="Profiles">
           <template for:each={profileLinks} for:item="link">
             <a
