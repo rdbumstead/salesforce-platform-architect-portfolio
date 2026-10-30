@@ -7,6 +7,9 @@
   display: block;
   min-height: 100vh;
 
+  /* The one page width. Every section reads it as var(--portfolio-content-width, 1024px). */
+  --portfolio-content-width: 1024px;
+
   --pf-bg: #ffffff;
   --pf-surface: #ffffff;
   --pf-subtle: #f9fafb;
@@ -241,7 +244,7 @@
 }
 
 .site-header__bar {
-  max-width: 1024px;
+  max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
   padding: 10px var(--pf-space-4);
   min-height: 44px;

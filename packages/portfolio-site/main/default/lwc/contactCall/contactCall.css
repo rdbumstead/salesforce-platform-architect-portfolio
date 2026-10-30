@@ -1,6 +1,6 @@
 /*
  * Built on the --pf- site tokens, as contactForm is, so the line follows the light and dark
- * theme. It sits in the home page's 1024 px column, left aligned like every other section,
+ * theme. It sits in the shared page width column, left aligned like every other section,
  * and the link is a filled button, the page's strongest call to action. Every element that
  * sets a background also sets its text colour.
  */
@@ -10,7 +10,7 @@
 
 .contact-call {
   box-sizing: border-box;
-  max-width: 1024px;
+  max-width: var(--portfolio-content-width, 1024px);
   margin: 48px auto 0;
   padding: 0 var(--pf-space-4);
 }
