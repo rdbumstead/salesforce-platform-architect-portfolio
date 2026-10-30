@@ -2,6 +2,9 @@
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>64.0</apiVersion>
     <isExposed>true</isExposed>
+    <capabilities>
+        <capability>lightning__dynamicComponent</capability>
+    </capabilities>
     <masterLabel>Project Asset Gallery</masterLabel>
     <description
   >Images, documents, videos and links from the Project Asset rows of one pillar's projects.</description>

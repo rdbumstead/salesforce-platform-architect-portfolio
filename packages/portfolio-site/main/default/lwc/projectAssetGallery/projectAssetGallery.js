@@ -1,7 +1,10 @@
 /**
  * @description       : Project asset gallery. Reads the projects of
  *                      one pillar and their Project_Asset__c rows through the UI API GraphQL wire adapter,
- *                      ordered by Sort_Order__c. Images open full size in a new tab, documents are download
+ *                      ordered by Sort_Order__c. The read lives in the
+ *                      c/projectAssetGalleryData child, which this component imports dynamically once
+ *                      the page has loaded and the browser is idle, so the GraphQL adapter stack stays
+ *                      out of its bundle. Until the read settles it holds its heading and a skeleton. Images open full size in a new tab, documents are download
  *                      links, videos and links are external links with no embed. A URL is
  *                      used as is when it is http or https, and resource:<Name>/<path> becomes the site's
  *                      static resource path. Generic, so any project page can reuse it.
@@ -13,63 +16,10 @@
  * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 10/22/2026
  **/
-import { LightningElement, api, wire } from "lwc";
-// The site pins lightning/uiGraphQLApi, as skillNetwork does.
-// eslint-disable-next-line @lwc/lwc/newer-version-available
-import { gql, graphql } from "lightning/uiGraphQLApi";
+import { LightningElement, api } from "lwc";
 import basePath from "@salesforce/community/basePath";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { onShowMe, revealAnchor } from "c/tourShowMe";
-
-// Reads only fields the guest can read: Name and the required Alt_Text__c and
-// Sort_Order__c, plus Type__c and External_URL__c from Portfolio_Guest.
-const GALLERY_QUERY = gql`
-  query ProjectAssetGallery($pillar: Picklist) {
-    uiapi {
-      query {
-        Project__c(
-          where: { Pillar__c: { eq: $pillar } }
-          orderBy: { Sort_Order__c: { order: ASC } }
-          first: 10
-        ) {
-          edges {
-            node {
-              Id
-              Name {
-                value
-              }
-              Project_Assets__r(
-                orderBy: { Sort_Order__c: { order: ASC } }
-                first: 50
-              ) {
-                edges {
-                  node {
-                    Id
-                    Name {
-                      value
-                    }
-                    Type__c {
-                      value
-                    }
-                    External_URL__c {
-                      value
-                    }
-                    Alt_Text__c {
-                      value
-                    }
-                    Sort_Order__c {
-                      value
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
 
 const PILLAR_PATTERN = /^[A-E]$/;
 const HTTP_PATTERN = /^https?:\/\//i;
@@ -115,6 +65,35 @@ export function resolveAssetUrl(raw, sitePath) {
   return null;
 }
 
+/**
+ * Runs the callback once the page has loaded and the browser is idle. Safari has no
+ * requestIdleCallback, so it falls back to a single zero delay timeout.
+ * @param {Function} callback Work to defer.
+ * @returns {Function} Cancels the pending work.
+ */
+function whenIdleAfterLoad(callback) {
+  let cancelIdle = () => {};
+  const schedule = () => {
+    if (typeof window.requestIdleCallback === "function") {
+      const handle = window.requestIdleCallback(callback);
+      cancelIdle = () => window.cancelIdleCallback?.(handle);
+    } else {
+      // One deferred call, not a polling loop (ADR-014 fallback for Safari).
+      const handle = setTimeout(callback, 0);
+      cancelIdle = () => clearTimeout(handle);
+    }
+  };
+  if (document.readyState === "complete") {
+    schedule();
+    return () => cancelIdle();
+  }
+  window.addEventListener("load", schedule, { once: true });
+  return () => {
+    window.removeEventListener("load", schedule);
+    cancelIdle();
+  };
+}
+
 export default class ProjectAssetGallery extends LightningElement {
   /** Pillar letter, A to E. */
   @api pillar;
@@ -123,37 +102,81 @@ export default class ProjectAssetGallery extends LightningElement {
 
   assets = [];
   stopShowMe;
+  dataConstructor;
+  settled = false;
+  _cancelDeferred;
+  _loadStarted = false;
+  _revealPending = false;
 
   // The tour's stop A names the first image link. The same gallery sits on the Solution
-  // Architecture page too, and it answers stop A only.
+  // Architecture page too, and it answers stop A only. If the data has not been requested
+  // yet, the stop starts the load and reveals the link once the cards are on the page.
   connectedCallback() {
-    this.stopShowMe = onShowMe("A", () => revealAnchor(this.template));
+    this.stopShowMe = onShowMe("A", () => this.handleShowMe());
+    if (this.validPillar) {
+      this._cancelDeferred = whenIdleAfterLoad(() => this.loadData());
+    }
   }
 
   disconnectedCallback() {
+    if (this._cancelDeferred) {
+      this._cancelDeferred();
+      this._cancelDeferred = undefined;
+    }
     if (this.stopShowMe) {
       this.stopShowMe();
       this.stopShowMe = undefined;
     }
   }
 
-  get variables() {
-    return PILLAR_PATTERN.test(this.pillar || "")
-      ? { pillar: this.pillar }
-      : undefined;
+  renderedCallback() {
+    if (this._revealPending && this.hasAssets) {
+      this._revealPending = false;
+      revealAnchor(this.template);
+    }
   }
 
-  @wire(graphql, { query: GALLERY_QUERY, variables: "$variables" })
-  wiredAssets({ data, errors }) {
-    // A failed read renders nothing, the same as a pillar with no assets.
-    if (errors && errors.length) {
-      this.assets = [];
+  get validPillar() {
+    return PILLAR_PATTERN.test(this.pillar || "");
+  }
+
+  handleShowMe() {
+    if (this.hasAssets) {
+      revealAnchor(this.template);
       return;
     }
-    if (!data) {
+    if (!this.settled && this.validPillar) {
+      this._revealPending = true;
+      this.loadData();
+    }
+  }
+
+  async loadData() {
+    if (this._loadStarted) {
       return;
     }
-    this.assets = this.buildAssets(data);
+    this._loadStarted = true;
+    try {
+      const { default: constructor } =
+        await import("c/projectAssetGalleryData");
+      this.dataConstructor = constructor;
+    } catch {
+      // A failed load renders nothing, the same as a failed read.
+      this.settle([]);
+    }
+  }
+
+  handleRead(event) {
+    const detail = event.detail || {};
+    this.settle(detail.failed ? [] : this.buildAssets(detail.data));
+  }
+
+  settle(assets) {
+    this.assets = assets;
+    this.settled = true;
+    if (!assets.length) {
+      this._revealPending = false;
+    }
   }
 
   buildAssets(data) {
@@ -206,5 +229,14 @@ export default class ProjectAssetGallery extends LightningElement {
   /** The gallery renders only when it has something to show. */
   get hasAssets() {
     return this.assets.length > 0;
+  }
+
+  /** Waiting for the read: the heading and a skeleton hold the space. */
+  get isLoading() {
+    return this.validPillar && !this.settled;
+  }
+
+  get showGallery() {
+    return this.hasAssets || this.isLoading;
   }
 }

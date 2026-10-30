@@ -1,10 +1,19 @@
 <template>
-  <section lwc:if={hasAssets} class="gallery" aria-label={heading}>
+  <template lwc:if={dataConstructor}>
+    <lwc:component
+      lwc:is={dataConstructor}
+      pillar={pillar}
+      ongalleryread={handleRead}
+    ></lwc:component>
+  </template>
+  <section lwc:if={showGallery} class="gallery" aria-label={heading}>
     <template lwc:if={hasHeading}>
       <h2 class="gallery-title">{heading}</h2>
     </template>
 
-    <ul class="assets">
+    <div lwc:if={isLoading} class="skeleton" aria-hidden="true"></div>
+
+    <ul lwc:if={hasAssets} class="assets">
       <template for:each={assets} for:item="asset">
         <li key={asset.key} class="asset">
           <template lwc:if={asset.isImage}>

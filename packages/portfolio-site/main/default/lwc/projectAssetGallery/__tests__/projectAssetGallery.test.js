@@ -1,6 +1,7 @@
 /**
- * @description       : Unit tests for projectAssetGallery, including the rule that it renders nothing when empty. The GraphQL wire adapter,
- *                      the site base path and c/analyticsService are mocked.
+ * @description       : Unit tests for projectAssetGallery, including the rule that it renders nothing when empty.
+ *                      The GraphQL wire adapter (used by the lazily loaded c/projectAssetGalleryData child),
+ *                      the site base path and c/analyticsService are mocked, and the idle callback is driven by hand.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -54,8 +55,26 @@ const PAYLOAD = require("./data/galleryPayload.json");
 
 async function flushPromises() {
   for (let i = 0; i < 5; i++) {
-    await Promise.resolve();
+    await new Promise((resolve) => process.nextTick(resolve));
   }
+}
+
+// The engine renders a lwc:component under the jest stub tag, not the bundle tag name.
+const CHILD = "x-test";
+
+let idleCallbacks = [];
+
+function runIdle() {
+  const pending = idleCallbacks;
+  idleCallbacks = [];
+  pending.forEach((callback) => callback());
+}
+
+async function mountLoaded(props) {
+  const element = mount(props);
+  runIdle();
+  await flushPromises();
+  return element;
 }
 
 function mount(
@@ -110,6 +129,15 @@ describe("resolveAssetUrl", () => {
 });
 
 describe("c-project-asset-gallery", () => {
+  beforeEach(() => {
+    idleCallbacks = [];
+    window.requestIdleCallback = jest.fn((callback) => {
+      idleCallbacks.push(callback);
+      return idleCallbacks.length;
+    });
+    window.cancelIdleCallback = jest.fn();
+  });
+
   afterEach(() => {
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
@@ -118,14 +146,13 @@ describe("c-project-asset-gallery", () => {
   });
 
   it("queries the pillar it is given", async () => {
-    mount();
-    await flushPromises();
+    await mountLoaded();
 
     expect(graphql.getLastConfig().variables).toEqual({ pillar: "A" });
   });
 
   it("renders every type in sort order with the heading", async () => {
-    const element = mount();
+    const element = await mountLoaded();
     graphql.emit({ data: PAYLOAD, errors: undefined });
     await flushPromises();
 
@@ -146,7 +173,7 @@ describe("c-project-asset-gallery", () => {
   });
 
   it("renders images with their alt text, opening full size in a new tab", async () => {
-    const element = mount();
+    const element = await mountLoaded();
     graphql.emit({ data: PAYLOAD, errors: undefined });
     await flushPromises();
 
@@ -170,7 +197,7 @@ describe("c-project-asset-gallery", () => {
   });
 
   it("renders video and link rows as external links with no embed", async () => {
-    const element = mount();
+    const element = await mountLoaded();
     graphql.emit({ data: PAYLOAD, errors: undefined });
     await flushPromises();
 
@@ -190,7 +217,7 @@ describe("c-project-asset-gallery", () => {
   });
 
   it("renders a document with a URL as a download link and one without as plain text", async () => {
-    const element = mount();
+    const element = await mountLoaded();
     graphql.emit({ data: PAYLOAD, errors: undefined });
     await flushPromises();
 
@@ -206,7 +233,7 @@ describe("c-project-asset-gallery", () => {
   });
 
   it("marks only the first image link as the tour anchor and answers stop A only", async () => {
-    const element = mount();
+    const element = await mountLoaded();
     graphql.emit({ data: PAYLOAD, errors: undefined });
     await flushPromises();
 
@@ -225,7 +252,7 @@ describe("c-project-asset-gallery", () => {
   });
 
   it("stops listening for the tour when it leaves the page", async () => {
-    const element = mount();
+    const element = await mountLoaded();
     graphql.emit({ data: PAYLOAD, errors: undefined });
     await flushPromises();
     const anchor = q(element, "[data-tour-anchor]");
@@ -237,7 +264,7 @@ describe("c-project-asset-gallery", () => {
   });
 
   it("tracks gallery_asset_opened with the type and pillar", async () => {
-    const element = mount();
+    const element = await mountLoaded();
     graphql.emit({ data: PAYLOAD, errors: undefined });
     await flushPromises();
 
@@ -252,46 +279,157 @@ describe("c-project-asset-gallery", () => {
   });
 
   it("renders nothing, not even the heading, when the pillar has no assets", async () => {
-    const element = mount();
+    const element = await mountLoaded();
     graphql.emit({
       data: { uiapi: { query: { Project__c: { edges: [] } } } },
       errors: undefined
     });
     await flushPromises();
 
-    expect(element.shadowRoot.childNodes).toHaveLength(0);
+    expect(q(element, ".gallery")).toBeNull();
     expect(q(element, ".gallery-title")).toBeNull();
+    expect(element.shadowRoot.textContent).toBe("");
     expect(element.shadowRoot.textContent).not.toMatch(/No project materials/);
   });
 
   it("renders nothing without a valid pillar", async () => {
-    const element = mount({ pillar: "Z", heading: "Materials" });
-    await flushPromises();
+    const element = await mountLoaded({ pillar: "Z", heading: "Materials" });
 
     expect(element.shadowRoot.childNodes).toHaveLength(0);
   });
 
   it("renders nothing, not even an error line, when the query fails", async () => {
-    const element = mount();
+    const element = await mountLoaded();
     graphql.emit({ data: undefined, errors: [{ message: "boom" }] });
     await flushPromises();
 
-    expect(element.shadowRoot.childNodes).toHaveLength(0);
-    expect(element.shadowRoot.textContent).not.toMatch(/could not be loaded/);
+    expect(q(element, ".gallery")).toBeNull();
+    expect(element.shadowRoot.textContent).toBe("");
   });
 
-  it("renders nothing while loading, then the heading and assets once they arrive", async () => {
+  it("does not load the data child before the page is idle, then loads it once", async () => {
     const element = mount();
     await flushPromises();
-    expect(q(element, ".gallery")).toBeNull();
+    expect(window.requestIdleCallback).toHaveBeenCalledTimes(1);
+    expect(q(element, CHILD)).toBeNull();
 
-    graphql.emit({ data: PAYLOAD, errors: undefined });
+    runIdle();
     await flushPromises();
+    expect(qa(element, CHILD)).toHaveLength(1);
+    expect(q(element, CHILD).pillar).toBe("A");
 
+    // A second request for the same load changes nothing.
+    showMe("A");
+    await flushPromises();
+    expect(qa(element, CHILD)).toHaveLength(1);
+  });
+
+  it("waits for the page load event when the document is still loading", async () => {
+    const original = Object.getOwnPropertyDescriptor(document, "readyState");
+    Object.defineProperty(document, "readyState", {
+      configurable: true,
+      get: () => "loading"
+    });
+    try {
+      const element = mount();
+      await flushPromises();
+      expect(window.requestIdleCallback).not.toHaveBeenCalled();
+      window.dispatchEvent(new CustomEvent("load"));
+      expect(window.requestIdleCallback).toHaveBeenCalledTimes(1);
+      runIdle();
+      await flushPromises();
+      expect(q(element, CHILD)).not.toBeNull();
+    } finally {
+      if (original) {
+        Object.defineProperty(document, "readyState", original);
+      } else {
+        delete document.readyState;
+      }
+    }
+  });
+
+  it("falls back to one timeout where requestIdleCallback does not exist", async () => {
+    delete window.requestIdleCallback;
+    jest.useFakeTimers({ doNotFake: ["nextTick"] });
+    try {
+      const element = mount();
+      await flushPromises();
+      expect(q(element, CHILD)).toBeNull();
+      jest.runAllTimers();
+    } finally {
+      jest.useRealTimers();
+    }
+    await flushPromises();
+    const element = document.body.firstChild;
+    expect(q(element, CHILD)).not.toBeNull();
+  });
+
+  it("holds its heading and a skeleton while loading, then the cards replace it", async () => {
+    const element = mount();
+    await flushPromises();
     expect(q(element, ".gallery-title").textContent).toBe(
       "Process maps and dashboards"
     );
+    expect(q(element, ".skeleton")).not.toBeNull();
+    expect(q(element, "ul.assets")).toBeNull();
+
+    runIdle();
+    await flushPromises();
+    expect(q(element, ".skeleton")).not.toBeNull();
+
+    graphql.emit({ data: PAYLOAD, errors: undefined });
+    await flushPromises();
+    expect(q(element, ".skeleton")).toBeNull();
     expect(qa(element, "li.asset").length).toBeGreaterThan(0);
+  });
+
+  it("collapses to nothing once the read comes back empty", async () => {
+    const element = mount();
+    runIdle();
+    await flushPromises();
+    graphql.emit({
+      data: { uiapi: { query: { Project__c: { edges: [] } } } },
+      errors: undefined
+    });
+    await flushPromises();
+    expect(q(element, ".gallery")).toBeNull();
+    expect(q(element, ".skeleton")).toBeNull();
+  });
+
+  it("collapses to nothing when the data child fails to read", async () => {
+    const element = mount();
+    runIdle();
+    await flushPromises();
+    graphql.emit({ data: undefined, errors: [{ message: "boom" }] });
+    await flushPromises();
+    expect(q(element, ".gallery")).toBeNull();
+  });
+
+  it("starts the load itself when the tour asks for stop A early, then shows the link", async () => {
+    const element = mount();
+    await flushPromises();
+    expect(q(element, CHILD)).toBeNull();
+
+    showMe("A");
+    await flushPromises();
+    expect(q(element, CHILD)).not.toBeNull();
+
+    const scrollIntoView = jest.fn();
+    const focus = jest.fn();
+    const proto = HTMLElement.prototype;
+    const oldScroll = proto.scrollIntoView;
+    const oldFocus = proto.focus;
+    proto.scrollIntoView = scrollIntoView;
+    proto.focus = focus;
+    try {
+      graphql.emit({ data: PAYLOAD, errors: undefined });
+      await flushPromises();
+    } finally {
+      proto.scrollIntoView = oldScroll;
+      proto.focus = oldFocus;
+    }
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
   describe("styles", () => {
