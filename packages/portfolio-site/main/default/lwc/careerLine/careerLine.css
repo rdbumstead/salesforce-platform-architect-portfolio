@@ -1,14 +1,15 @@
 /*
- * The career timeline under the home hero, on the --pf- site tokens only, in the hero's column.
- * Every element that sets a background also sets its text colour. Motion is transform and
- * opacity only, and only when the visitor has not asked for reduced motion.
+ * The work timeline under the home hero, on the --pf- site tokens only. One slim track of
+ * stops, five to a row at 768 px and up, one column with the line on the left below that.
+ * Every element that sets a background also sets its text colour. A panel reveals with a
+ * height change and a fade, and not at all under reduced motion.
  */
 :host {
   display: block;
 }
 
 .career {
-  max-width: 1024px;
+  max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
   padding: 0 var(--pf-space-4);
   color: var(--pf-text);
@@ -21,71 +22,106 @@
   padding: var(--pf-space-5) 0 var(--pf-space-2);
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* The horizontal line, 768 px and up. */
-.line-wrap {
-  position: relative;
-}
-
-.line {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 var(--pf-space-2);
+.intro-row {
   display: flex;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  scrollbar-width: thin;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pf-space-2) var(--pf-space-3);
+  margin: 0 0 var(--pf-space-4);
 }
 
-.line:focus-visible {
+.intro {
+  margin: 0;
+  color: var(--pf-body);
+  font-size: 14px;
+}
+
+/* Buttons. Primary is the hero's fill. Secondary is a white fill with a gray border. */
+.btn,
+.btn:link,
+.btn:visited {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.btn-primary,
+.btn-primary:link,
+.btn-primary:visited {
+  border: 1px solid transparent;
+  background: var(--pf-btn);
+  color: var(--pf-btn-text);
+}
+
+.btn-primary:hover,
+.btn-primary:link:hover,
+.btn-primary:visited:hover {
+  background: var(--pf-btn-hover);
+  color: var(--pf-btn-text);
+}
+
+.btn-secondary,
+.btn-secondary:link,
+.btn-secondary:visited {
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  color: var(--pf-text);
+}
+
+.btn-secondary:hover {
+  background: var(--pf-chip);
+  color: var(--pf-text);
+}
+
+.btn:focus-visible,
+.toggle:focus-visible,
+.panel-link:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }
 
-.line .point {
-  position: relative;
-  flex: 0 0 auto;
-  width: 212px;
-  padding-top: 22px;
-  scroll-snap-align: start;
+/* The track: five columns at 768 px and up. Columns may shrink, so nothing scrolls sideways. */
+.track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--pf-space-4) var(--pf-space-3);
+  align-items: start;
 }
 
-/* The rule through the dots, drawn per point so it runs the full scroll width. */
-.line .point::before {
+.stop {
+  position: relative;
+  min-width: 0;
+  padding-top: 22px;
+}
+
+/* The rule through the dots, drawn per stop so it runs the full row. */
+.stop::before {
   content: "";
   position: absolute;
   top: 6px;
   left: 0;
-  right: 0;
+  right: calc(-1 * var(--pf-space-3));
   height: 1px;
   background-color: var(--pf-border);
-}
-
-.line .point:first-child::before {
-  left: 6px;
-}
-
-.line .point:last-child::before {
-  right: auto;
-  width: 6px;
 }
 
 .dot {
   position: absolute;
   top: 1px;
-  left: 1px;
+  left: 0;
   width: 11px;
   height: 11px;
   border-radius: 50%;
@@ -94,303 +130,193 @@
   box-sizing: border-box;
 }
 
-/* A current role has a filled dot. */
-.point-current .dot {
+.dot-current {
   background-color: var(--pf-accent);
 }
 
-/* A certification is a small badge: a square turned on its corner. */
-.point-certification .dot {
-  top: 2px;
-  left: 2px;
-  width: 9px;
-  height: 9px;
-  border-radius: 1px;
-  transform: rotate(45deg);
+.dot-fold {
+  border-color: var(--pf-muted);
 }
 
-/* The school is a milestone: a ring with a filled centre. */
-.point-school .dot {
-  top: -1px;
-  left: -1px;
-  width: 15px;
-  height: 15px;
-  border-width: 4px;
-  background-color: var(--pf-bg);
-}
-
-/* The earlier roles fold is a dashed ring. */
-.point-fold .dot {
-  border-style: dashed;
-}
-
-/* The selector. */
-.filters {
+.stop-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--pf-space-2);
-  margin: 0 0 var(--pf-space-3);
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.filter {
-  min-height: 44px;
-  padding: 0 var(--pf-space-3);
-  border: 1px solid var(--pf-border);
-  border-radius: 999px;
-  background-color: var(--pf-surface);
-  color: var(--pf-text);
-  font: inherit;
+.stop-employer {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.stop-span {
+  color: var(--pf-muted);
+  font-size: 13px;
+}
+
+.stop-title {
   font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pf-accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
 }
 
-.filter:hover {
-  background-color: var(--pf-chip);
-  color: var(--pf-text);
+.toggle:hover {
+  text-decoration: underline;
 }
 
-.filter-active,
-.filter-active:hover {
-  border-color: var(--pf-accent);
-  background-color: var(--pf-chip);
-  color: var(--pf-chip-text);
-  font-weight: 600;
+/* The panel. Collapsed it has no height and is hidden from the keyboard and screen readers. */
+.panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 180ms ease,
+    opacity 180ms ease,
+    visibility 0s linear 180ms;
 }
 
-.filter:focus-visible {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 2px;
+.panel-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 180ms ease,
+    opacity 180ms ease,
+    visibility 0s;
 }
 
-.point-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  min-height: 44px;
-  margin: 0;
-  padding: 6px var(--pf-space-3) 6px 0;
-  border: 0;
-  border-radius: var(--pf-radius-sm);
-  background: transparent;
-  color: var(--pf-text);
-  font: inherit;
-  text-align: left;
-  box-sizing: border-box;
+.panel-clip {
+  min-height: 0;
+  overflow: hidden;
 }
 
-/* An employer, an issuer and year, or the earlier roles, with every title or name under it. */
-.group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  padding: 6px var(--pf-space-3) 0 0;
-  box-sizing: border-box;
-}
-
-.titles {
+.roles,
+.earlier,
+.highlights {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.title-item + .title-item {
+.role {
+  padding: var(--pf-space-2) 0;
   border-top: 1px solid var(--pf-border);
-}
-
-.point-first {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--pf-text);
-}
-
-.point-second {
-  font-size: 14px;
-  color: var(--pf-body);
-}
-
-.years {
   font-size: 13px;
+}
+
+.role-title {
+  display: block;
+  font-weight: 600;
+}
+
+.role-years {
+  display: block;
   color: var(--pf-muted);
 }
 
-.years {
+.highlights {
+  margin-top: var(--pf-space-1);
+}
+
+/* Each bullet holds to one line. */
+.highlight {
+  position: relative;
+  padding-left: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pf-body);
+}
+
+.highlight::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+}
+
+.earlier-line {
+  padding: var(--pf-space-1) 0;
+  border-top: 1px solid var(--pf-border);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+
+.panel-link,
+.panel-link:link,
+.panel-link:visited {
   display: inline-flex;
   align-items: center;
-  gap: var(--pf-space-1);
-}
-
-/* A role held now: its start year with a plus, then this tag. */
-.active-tag {
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--pf-chip);
-  color: var(--pf-chip-text);
-  font-size: 12px;
+  min-height: 44px;
+  color: var(--pf-accent);
+  font-size: 13px;
   font-weight: 600;
+  text-decoration: none;
 }
 
-/* The fade at an edge that has more roles beyond it. */
-.line-wrap::before,
-.line-wrap::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: var(--pf-space-2);
-  width: 48px;
-  opacity: 0;
-  pointer-events: none;
+.panel-link:hover {
+  text-decoration: underline;
 }
 
-.line-wrap::before {
-  left: 0;
-  background: linear-gradient(to right, var(--pf-bg), transparent);
-}
-
-.line-wrap::after {
-  right: 0;
-  background: linear-gradient(to left, var(--pf-bg), transparent);
-}
-
-.line-wrap_more-before::before,
-.line-wrap_more-after::after {
-  opacity: 1;
-}
-
-/* The phone list, below 768 px. */
-.stack {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: none;
-}
-
-.stack .point {
-  position: relative;
-  padding-left: 24px;
-}
-
-/* The rule down the dots. */
-.stack .point::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 6px;
-  width: 1px;
-  background-color: var(--pf-border);
-}
-
-.stack .point:first-child::before {
-  top: 14px;
-}
-
-.stack .point:last-child::before {
-  bottom: auto;
-  height: 14px;
-}
-
-.stack .dot {
-  top: 9px;
-}
-
-.stack .point-certification .dot {
-  top: 10px;
-}
-
-.stack .point-school .dot {
-  top: 7px;
-}
-
-/* The resume link and the verify link, side by side under the line. */
 .career-foot {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--pf-space-1) var(--pf-space-4);
-  margin: var(--pf-space-2) 0 0;
-  font-size: 14px;
+  margin-top: var(--pf-space-4);
 }
 
-/* The site's a:link rule outranks a plain class, so :link and :visited are matched too. */
-.foot-link,
-.foot-link:link,
-.foot-link:visited {
-  color: var(--pf-accent);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+/* Reduced motion: from the motion preference the class mirrors, or the system setting. */
+.career-still .panel,
+.career-still .panel-open {
+  transition: none;
 }
 
-.foot-link:focus-visible {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 2px;
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .panel-open {
+    transition: none;
+  }
 }
 
-/* The phone list's "Show all" button, shown below 768 px only. */
-.stack-more {
-  display: none;
-  margin: var(--pf-space-2) 0 0;
-}
-
-.stack-toggle {
-  min-height: 44px;
-  padding: 0 var(--pf-space-4);
-  border: 1px solid var(--pf-border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--pf-accent);
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.stack-toggle:focus-visible {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 2px;
-}
-
+/* Phone: one column, the line on the left, each panel under its stop. */
 @media screen and (max-width: 767.98px) {
-  .stack-more {
-    display: block;
+  .track {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    border-left: 1px solid var(--pf-border);
+    margin-left: 5px;
   }
 
-  .line-wrap {
+  .stop {
+    padding: 0 0 var(--pf-space-4) var(--pf-space-4);
+  }
+
+  .stop::before {
     display: none;
   }
 
-  .stack {
-    display: block;
+  .dot {
+    top: 4px;
+    left: -6px;
   }
-}
 
-/* The live data marker sits at the right of the timeline, above the filters. */
-/* The heading and the live data marker share one row, as on the case studies. */
-.heading-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--pf-space-2) var(--pf-space-4);
-  margin: 0 0 var(--pf-space-4);
-}
-
-.section-heading {
-  margin: 0;
-  font-size: 32px;
-  line-height: 1.2;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--pf-text);
-}
-
-/* The live data marker sits at the end of the heading row, as it does in the cards, and
-   under the heading from the start of the line on a phone. */
-.card-source {
-  display: inline-flex;
-  margin-inline-start: auto;
-}
-
-@media (max-width: 600px) {
-  .card-source {
-    margin-inline-start: 0;
+  .career-foot .btn {
+    width: 100%;
   }
 }
