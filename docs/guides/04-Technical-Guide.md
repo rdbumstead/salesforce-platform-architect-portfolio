@@ -474,9 +474,9 @@ A first performance pass measured every change with the Lighthouse CLI (11.4.0, 
 
 - **The gate.** Mobile LCP on the scratch site measured 7.5 to 9.6 s with Lighthouse 11 mobile, which is the best the LWR shell allows, against a 2.5 s target. Accessibility scored 1 on every run. The same code measured twice spreads by up to 3.9 s on one route (`/skills`, 5.71 to 9.71 s), so a single run proves little. These are scratch numbers, not live ones.
 - **A pass on 2026-10-27, and what it showed.** Lighthouse mobile, three runs a route, on the integration site with proof data loaded (the scratch org is slower than production). Before and after one round of lazy rendering below the fold (`content-visibility: auto` on the career line, case study and testimonial wrappers, and the career highlights read waiting until the section nears the screen), medians: `/` LCP 6443 ms before and 6280 ms after, FCP 4931 and 4882, TBT 558 and 562. `/delivery` LCP 6496 and 6537, FCP 5170 and 4998, TBT 620 and 328. CLS read 0 in both. Only the `/delivery` TBT moved by more than run to run noise (LCP runs ranged from 6232 to 8065 ms), so no LCP improvement is claimed. A separate cumulative layout shift fix is in section 2.9. On 2026-10-28 it came off the career line and case study wrappers, because its paint containment clipped the live data marker's panel. The testimonial wrapper keeps it.
-- **Production is not measured in the two passes above.** The figures above are the scratch and integration sites'. The Round 17 baseline below is the first production measurement since.
+- **Production is not measured in the two passes above.** The figures above are the scratch and integration sites'. The 2026-10-29 baseline below is the first production measurement since.
 
-**The Round 17 pass (2026-10-30).** I measured production first, then changed what the site's own files control. Lighthouse 11.4.0, mobile profile, simulated throttling.
+**The October 2026 pass (2026-10-30).** I measured production first, then changed what the site's own files control. Lighthouse 11.4.0, mobile profile, simulated throttling.
 
 - **Baseline on production (2026-10-29).** Five runs on `/` and `/resume`, three on the other four routes, GA left on. Medians, LCP and FCP in seconds:
 

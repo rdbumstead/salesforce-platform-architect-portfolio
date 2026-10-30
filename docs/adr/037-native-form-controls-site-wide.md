@@ -36,7 +36,7 @@ The site also had two native looks, not one. The contact forms and the API Lab's
 
 ## Amendment (2026-10-30): the resume's checkboxes are native
 
-The resume's two include toggles are now native `input type="checkbox"` elements inside a wrapping `label` with a visible focus ring (`.toggle-input:focus-visible`), in place of `lightning-input`. The reason is weight, not alignment. `lightning-input` carried about 240 KB uncompressed of component machinery into the resume view for two checkboxes (Round 17 findings, 2026-10-29).
+The resume's two include toggles are now native `input type="checkbox"` elements inside a wrapping `label` with a visible focus ring (`.toggle-input:focus-visible`), in place of `lightning-input`. The reason is weight, not alignment. `lightning-input` carried about 240 KB uncompressed of component machinery into the resume view for two checkboxes (performance audit, 2026-10-29).
 
 - **The count changes.** The 11 controls counted above were base component tags. The two checkboxes bring the total moved to 13. The count of 11 stays true for the date it was made.
 - **`lightning-formatted-date-time` is gone as well.** `c-view-source` formats its fetch time with `Intl.DateTimeFormat` in a `time` element, so the site uses that base component nowhere. `lightning-card`, `lightning-spinner` and `lightning-icon` remain, and removing the platform stylesheets they depend on was tried and not shipped (Technical Guide §2.11).
