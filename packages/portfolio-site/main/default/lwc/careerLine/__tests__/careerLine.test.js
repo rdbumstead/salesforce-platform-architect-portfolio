@@ -75,7 +75,7 @@ const WORK = [
   {
     key: "a02",
     title: "Solution Architect",
-    employer: "Independent (part time)",
+    employer: "Freelance (part time)",
     startDate: "2021-10-01",
     endDate: null,
     isCurrent: true,
@@ -236,7 +236,7 @@ describe("c-career-line", () => {
     const names = all(element, "stop-employer").map(text);
     expect(names).toEqual([
       "Northwind Digital",
-      "Independent (part time)",
+      "Freelance (part time)",
       "Lakeside College",
       "Earlier roles"
     ]);
