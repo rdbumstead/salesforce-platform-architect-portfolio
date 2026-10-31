@@ -62,12 +62,11 @@ const ROUTES = [
       "c-career-line",
       { tag: "c-case-study-grid", mayBeEmpty: true },
       { tag: "c-home-testimonials", mayBeEmpty: true },
-      "c-site-build-section",
       "c-contact-call"
     ]
   },
   { path: "/contact", components: ["c-contact-form"] },
-  { path: "/docs", components: ["c-docs-viewer"] },
+  { path: "/docs", components: ["c-site-build-section", "c-docs-viewer"] },
   { path: "/resume", components: ["c-resume-builder"] },
   { path: "/skills", components: ["c-skill-network"] },
   {

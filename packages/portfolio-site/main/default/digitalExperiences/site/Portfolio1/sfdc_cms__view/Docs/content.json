@@ -25,6 +25,12 @@
                   "children": [
                     {
                       "attributes": {},
+                      "definition": "c:siteBuildSection",
+                      "id": "2cad5692-4bf6-4ef4-91a6-28862b2ed8e7",
+                      "type": "component"
+                    },
+                    {
+                      "attributes": {},
                       "definition": "c:docsViewer",
                       "id": "ee7a2038-1a2c-49ed-a938-316cc913b625",
                       "type": "component"
