@@ -111,4 +111,55 @@ describe("c-schema-visualizer (Small form factor)", () => {
     expect(getSchemaGraph.getLastConfig()).toEqual({ scope: "portfolio" });
     expect(loadGraphEngine).not.toHaveBeenCalled();
   });
+
+  it("lists only a section's objects and the ones they link to, once, on a phone", async () => {
+    const element = createElement("c-schema-visualizer", {
+      is: SchemaVisualizer
+    });
+    element.highlight = "EH_Partner_Engagement__c";
+    document.body.appendChild(element);
+    getSchemaGraph.emit(PAYLOAD);
+    await flushPromises();
+
+    const root = element.shadowRoot;
+    // The dialog around the visualizer owns the heading on a phone.
+    expect(root.querySelector(".erd-title")).toBeNull();
+    expect(root.querySelector(".caption").textContent).not.toContain(
+      "highlighted"
+    );
+    expect(root.querySelector(".caption").textContent).toContain("listed");
+    // The partner engagement is read by the section and links to both other objects.
+    expect(root.querySelectorAll(".object-item")).toHaveLength(3);
+    expect(root.querySelector(".object-button").getAttribute("data-api")).toBe(
+      "EH_Partner_Engagement__c"
+    );
+  });
+
+  it("leaves out an object the section does not read and does not link to", async () => {
+    const element = createElement("c-schema-visualizer", {
+      is: SchemaVisualizer
+    });
+    element.highlight = "Account";
+    document.body.appendChild(element);
+    getSchemaGraph.emit(PAYLOAD);
+    await flushPromises();
+
+    const listed = Array.from(
+      element.shadowRoot.querySelectorAll(".object-button")
+    ).map((button) => button.getAttribute("data-api"));
+    // Account links to Partner Engagement, which holds the lookup. The job posting is two links away.
+    expect(listed).toEqual(["Account", "EH_Partner_Engagement__c"]);
+    expect(element.shadowRoot.querySelector(".caption").textContent).toBe(
+      "The one object this section reads is listed first, with the one object it links to directly, described live in 142 ms of server CPU."
+    );
+  });
+
+  it("keeps the title and the whole list on a phone without a highlight", async () => {
+    const element = mount();
+    getSchemaGraph.emit(PAYLOAD);
+    await flushPromises();
+
+    expect(element.shadowRoot.querySelector(".erd-title")).not.toBeNull();
+    expect(element.shadowRoot.querySelectorAll(".object-item")).toHaveLength(3);
+  });
 });

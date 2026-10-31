@@ -17,6 +17,13 @@
  *                      employer, as a title with dates and no bullets, when that employer has
  *                      another role in Experience. Otherwise it folds into one "Earlier roles"
  *                      line at the end of Experience.
+ *                      Roles are ordered newest first the way the home timeline orders them:
+ *                      latest end year (a current role last in time, so first on the page),
+ *                      then latest start year, then full time before part time, then the exact
+ *                      end date and the exact start date. So a part time role that started a
+ *                      few months after a full time one in the same years sits under it, not
+ *                      above it, on the page, in the PDF and in the ATS text. The part time
+ *                      flag is isPartTime on each role from getResume, false when missing.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -217,6 +224,7 @@ function toRole(role, roleIndex) {
     dateRange,
     datesText,
     isRemote,
+    isPartTime: role.isPartTime === true,
     isCurrent: role.isCurrent === true,
     startDate: role.startDate ? String(role.startDate) : "",
     endDate: role.endDate ? String(role.endDate) : "",
@@ -233,16 +241,37 @@ function toRole(role, roleIndex) {
   };
 }
 
+/**
+ * Newest role first, the same order as the home timeline. A current role, or one with no end
+ * date, counts as ending last. Then the latest end year, then the latest start year. Roles
+ * with the same years read the same, so the full time role goes ahead of the part time one.
+ * The exact end date and then the exact start date break any tie left, and the server's order
+ * keeps the rest (the sort is stable).
+ */
 function byNewestRole(left, right) {
-  if (left.startDate !== right.startDate) {
-    return left.startDate < right.startDate ? 1 : -1;
+  const endOf = (role) => {
+    return role.isCurrent || !role.endDate ? "9999" : yearOf(role.endDate);
+  };
+  if (endOf(left) !== endOf(right)) {
+    return endOf(left) < endOf(right) ? 1 : -1;
+  }
+  const leftStart = yearOf(left.startDate);
+  const rightStart = yearOf(right.startDate);
+  if (leftStart !== rightStart) {
+    return leftStart < rightStart ? 1 : -1;
+  }
+  if (left.isPartTime !== right.isPartTime) {
+    return left.isPartTime ? 1 : -1;
   }
   const leftEnd = left.isCurrent ? "9999-99" : left.endDate;
   const rightEnd = right.isCurrent ? "9999-99" : right.endDate;
-  if (leftEnd === rightEnd) {
-    return 0;
+  if (leftEnd !== rightEnd) {
+    return leftEnd < rightEnd ? 1 : -1;
   }
-  return leftEnd < rightEnd ? 1 : -1;
+  if (left.startDate !== right.startDate) {
+    return left.startDate < right.startDate ? 1 : -1;
+  }
+  return 0;
 }
 
 /**
@@ -350,7 +379,8 @@ export function buildViewModel(resume, options) {
         }
       : null;
 
-  const allRoles = (resume.roles || []).map(toRole);
+  // Sorted once here, so the page, the PDF and the ATS text all read the same order.
+  const allRoles = (resume.roles || []).map(toRole).sort(byNewestRole);
   const anchored = allRoles.filter(
     (role) => role.isCurrent || role.highlights.length > 0
   );

@@ -171,6 +171,15 @@
   text-decoration: underline;
 }
 
+/* Under 768 px the code takes the dialog's full width: the viewer draws no card (flat), and
+   this margin takes back the dialog body's side padding. */
+@media (max-width: 767px) {
+  c-code-viewer {
+    display: block;
+    margin-inline: calc(-1 * var(--pf-space-4));
+  }
+}
+
 @media (max-width: 600px) {
   .dialog {
     width: 100vw;

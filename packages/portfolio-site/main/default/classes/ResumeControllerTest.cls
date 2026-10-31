@@ -977,6 +977,31 @@ private class ResumeControllerTest {
   }
 
   @isTest
+  static void getResumeRoleIsPartTimeIsFalseByDefaultAndTrueWhenChecked() {
+    update new Experience__c(
+      Id = [SELECT Id FROM Experience__c WHERE Name = 'Past Role']
+      .Id,
+      Is_Part_Time__c = true
+    );
+
+    ResumeController.ResumeData resume = ResumeController.getResume(null);
+
+    Integer partTime = 0;
+    for (ResumeController.Role role : resume.roles) {
+      Assert.isNotNull(role.isPartTime, 'isPartTime is never null');
+      if (role.title == 'Past Role') {
+        Assert.isTrue(role.isPartTime, 'A checked role is part time');
+      } else {
+        Assert.isFalse(role.isPartTime, role.title + ' is not part time');
+      }
+      if (role.isPartTime) {
+        partTime++;
+      }
+    }
+    Assert.areEqual(1, partTime, 'Only the checked role is part time');
+  }
+
+  @isTest
   static void getTimelineHighlightsAreCappedAtThreeInSortOrder() {
     User guest = SiteGuestTestSupport.preparedGuest();
     ResumeController.Timeline timeline;
@@ -1120,19 +1145,15 @@ private class ResumeControllerTest {
   }
 
   /**
-   * getResume has to stay exactly as it was. The three new fields are set to values and the
-   * serialized resume must not change by a character, and its role and credential shapes
-   * stay what they were before the timeline additions.
+   * getResume does not read the timeline only fields. The badge file and the short highlight
+   * text are set to values and the serialized resume must not change by a character. Its role
+   * shape gained isPartTime, which the resume needs to order its roles, and its credential
+   * shape is what it was before the timeline additions.
    */
   @isTest
   static void getResumeIsUnchangedByTheTimelineFields() {
     String before = JSON.serialize(ResumeController.getResume(null));
 
-    update new Experience__c(
-      Id = [SELECT Id FROM Experience__c WHERE Name = 'Current Role']
-      .Id,
-      Is_Part_Time__c = true
-    );
     update new Certification__c(
       Id = [SELECT Id FROM Certification__c WHERE Name = 'Cert New']
       .Id,
@@ -1176,6 +1197,7 @@ private class ResumeControllerTest {
           'endDate',
           'isCurrent',
           'isRemote',
+          'isPartTime',
           'highlights'
         },
         ((Map<String, Object>) role).keySet(),
