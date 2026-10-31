@@ -81,6 +81,11 @@ private class ApiLabControllerTest {
     );
     Assert.areEqual(result.requestId, sent.getHeader('X-Request-Id'), 'Id');
     Assert.areEqual('v1', sent.getHeader('X-API-Version'), 'Version header');
+    Assert.areEqual(
+      'api-lab',
+      sent.getHeader('X-Portfolio-Caller'),
+      'Marks the call as the API Lab, so PAPI health skips its own credential callout'
+    );
     Assert.areEqual(200, result.statusCode, 'Status');
     Assert.areEqual('[{"id":"a"}]', result.body, 'Body');
     Assert.areEqual('Portfolio_API', result.namedCredential, 'NC name');

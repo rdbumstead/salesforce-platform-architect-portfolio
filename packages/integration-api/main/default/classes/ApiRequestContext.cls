@@ -961,7 +961,12 @@ public with sharing class ApiRequestContext {
     return String.join(parts, ' ');
   }
 
-  private String headerValue(String name) {
+  /**
+   * @description A request header's value, matching the name in any letter case.
+   * @param name The header name.
+   * @return String The value, or null when the header is absent.
+   */
+  public String headerValue(String name) {
     if (req == null || req.headers == null) {
       return null;
     }
