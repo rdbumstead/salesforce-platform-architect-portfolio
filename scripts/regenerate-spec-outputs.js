@@ -44,10 +44,19 @@ function generatedPaths() {
 
 function main() {
   GENERATORS.forEach((script) => {
-    execFileSync(process.execPath, [path.join(__dirname, script)], {
-      cwd: ROOT,
-      stdio: "inherit"
-    });
+    try {
+      execFileSync(process.execPath, [path.join(__dirname, script)], {
+        cwd: ROOT,
+        stdio: "inherit"
+      });
+    } catch (error) {
+      // The commit stops here. A missing module usually means npm install has not run since
+      // package.json last changed, for example the pinned openapi-to-postmanv2.
+      console.error(
+        `scripts/${script} failed, so the commit stops. If it could not find a module, run npm install and commit again.`
+      );
+      process.exit(error.status || 1);
+    }
   });
   const paths = generatedPaths().filter((relative) =>
     fs.existsSync(path.join(ROOT, relative))
