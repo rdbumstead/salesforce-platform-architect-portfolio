@@ -762,11 +762,17 @@ public with sharing class ApiLabController {
    *              documented source is the current session's SourceIp attribute
    *              (Auth.SessionManagement.getCurrentSession). When that is unavailable the
    *              key falls back to TokenExchangeService.IP_UNAVAILABLE, which makes the
-   *              Aura limit effectively per email.
+   *              Aura limit effectively per email. The site guest never asks for a session:
+   *              it has none, and for a guest getCurrentSession() throws "Guest users must
+   *              never have a session ID created", which no catch stops, so the API Lab
+   *              token form failed for every visitor. A guest's key is IP_UNAVAILABLE.
    * @return String The source IP or IP_UNAVAILABLE.
    */
   @TestVisible
   private static String auraSourceIp() {
+    if (UserInfo.getUserType() == 'Guest') {
+      return TokenExchangeService.IP_UNAVAILABLE;
+    }
     Map<String, String> session;
     try {
       // getCurrentSession() raises an uncatchable "Current session unavailable" in tests.

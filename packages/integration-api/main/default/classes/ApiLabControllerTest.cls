@@ -554,6 +554,29 @@ private class ApiLabControllerTest {
   }
 
   @IsTest
+  static void shouldNotAskForASessionForTheSiteGuest() {
+    // A guest has no session, and asking for one throws an error no catch can stop, which
+    // broke the API Lab token form for every visitor.
+    ApiLabController.sessionOverride = new Map<String, String>{
+      'SourceIp' => '192.0.2.10'
+    };
+    User guest = SiteGuestTestSupport.preparedGuest();
+    String ip;
+
+    Test.startTest();
+    System.runAs(guest) {
+      ip = ApiLabController.auraSourceIp();
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      TokenExchangeService.IP_UNAVAILABLE,
+      ip,
+      'The guest never reads a session'
+    );
+  }
+
+  @IsTest
   static void shouldUseSessionSourceIpWhenSessionHasOne() {
     ApiLabController.sessionOverride = new Map<String, String>{
       'SourceIp' => '192.0.2.10'
