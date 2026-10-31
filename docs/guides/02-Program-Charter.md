@@ -172,7 +172,7 @@ The delivery is organized into four parallel tracks:
 **Phase 2: Data & API Layer (Completed)**
 
 - **Schema Deployment:** (Completed)
-- **Apex REST Services:** (Completed) 15 SAPI and 8 PAPI paths. Contract v2.0.0 is selected by the `X-API-Version: v2` header and returns public keys only. v1 is deprecated for one month and then answers 410 ([ADR-039](../adr/039-api-v2-and-the-v1-sunset.md).
+- **Apex REST Services:** (Completed) 15 SAPI and 8 PAPI paths. Contract v2.1.0 is selected by the `X-API-Version: v2` header and returns public keys only. v1 is deprecated for one month and then answers 410 ([ADR-039](../adr/039-api-v2-and-the-v1-sunset.md).
 - **Data Loading:** (Completed) seed data in `data/site`.
 
 **Phase 3: UI Framework (Completed)**

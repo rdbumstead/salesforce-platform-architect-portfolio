@@ -174,7 +174,7 @@ graph TD
 - **Experience Cloud (LWR):** High-performance, pixel-perfect frontend.
 - **Apex REST Services:** Custom API layer for external integrations.
 - **Custom Metadata Types:** Configuration management.
-- **Generative AI:** one Apex dispatch (`ContentGenerationController.dispatch`) over Agentforce (a Prompt Builder template), Gemini 2.5 Flash through the Gemini API and a local template. The site reaches Agentforce through `POST /papi/v1/ai/generate` and runs Gemini and the template in process (section 5.4).
+- **Generative AI:** one Apex dispatch (`ContentGenerationController.dispatch`) over Agentforce (a Prompt Builder template), Gemini 2.5 Flash through the Gemini API and a local template. The site reaches Agentforce through `POST /papi/ai/generate` and runs Gemini and the template in process (section 5.4).
 - **Package directories:** the source is split into five package directories in `sfdx-project.json` and deployed as source. No unlocked package is built (Appendix I).
 
 #### 1.3.1 Technology Selection Rationale
@@ -402,7 +402,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 
 - **The Concept:** Instead of a static "About Me," recruiters enter a company name, a job title and, optionally, the job description. The system writes a cover letter explaining why this candidate fits that role.
 - **The Architecture as built:**
-  - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`, which checks the AI tier limit on the key `papi-ai:site-cover-letter` (10 requests per minute, one bucket shared by every site visitor). While the Agentforce switch is on and its breaker is closed, it first posts the letter to `/papi/v1/ai/generate` with `provider` set to `Agentforce` through the `Portfolio_API` Named Credential, so the template runs as the integration user, because a guest may not run generative AI. A 200 is the letter. Anything else runs `ContentGenerationController.dispatch` in process as the site guest, from Gemini on, then the template, and the count is written afterwards. The guest holds the `Gemini_Auth-Gemini_Principal` principal for Gemini and no other AI grant. Gemini is never asked through the API, because a request that arrives as a callout from the same org may not call out again, so Gemini could never answer it ([ADR-015 amendment on the in process dispatch](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-the-site-cover-letter-dispatches-in-process)). `/papi/v1/ai/generate` also serves outside callers.
+  - **Input Layer:** the LWC form `c-cover-letter-generator` calls `ApiLabController.generateCoverLetter`, which checks the AI tier limit on the key `papi-ai:site-cover-letter` (10 requests per minute, one bucket shared by every site visitor). While the Agentforce switch is on and its breaker is closed, it first posts the letter to `/papi/ai/generate` with `provider` set to `Agentforce` through the `Portfolio_API` Named Credential, so the template runs as the integration user, because a guest may not run generative AI. A 200 is the letter. Anything else runs `ContentGenerationController.dispatch` in process as the site guest, from Gemini on, then the template, and the count is written afterwards. The guest holds the `Gemini_Auth-Gemini_Principal` principal for Gemini and no other AI grant. Gemini is never asked through the API, because a request that arrives as a callout from the same org may not call out again, so Gemini could never answer it ([ADR-015 amendment on the in process dispatch](../adr/015-strategy-pattern-for-generative-ai.md#amendment-2026-10-21-the-site-cover-letter-dispatches-in-process)). `/papi/ai/generate` also serves outside callers.
   - **Retrieval Layer:** `PortfolioGroundingService` reads featured `Project__c` records (name, challenge, solution, business value, skills) and `Experience_Highlight__c` text with its role and employer, ranks them by keywords from the job title and description, and adds them to the prompt as JSON. It never selects Email, Phone or an owner field, strips anything shaped like an email address or phone number, and stays under 8,000 characters. Its reads go through a `without sharing` selector with a fixed field list, because the site guest sees only rows shared to it. This is direct CRM retrieval in Apex. No Data 360 index exists (section 5.4).
   - **Prompt Layer:** `ContentGenerationController.coverLetterPrompt` builds the one cover letter prompt for both cover letter paths: the instruction from the `AI_Prompt__mdt` record `Cover_Letter` (the same text in code as the fallback), a word limit line, 250 to 350 words from two settings with 350 as a hard maximum, plus a fixed shape of five paragraphs (an opening of two sentences, three body paragraphs of three sentences each, a closing of two sentences), the job, the persona (Architect, Developer or Admin) inferred from the job, and the grounding. Highlights tagged with that persona rank first. Email and phone shapes are removed from the visitor's text. The letter is never cut.
   - **Generation Layer:** `ContentGenerationController.dispatch`, described below. Agentforce runs a template that adds one line holding the letter to the prompt's word range, on the model `sfdc_ai__DefaultGPT41`. Every Gemini request sends a `generationConfig` with the output token limit and the temperature from two settings.
@@ -430,7 +430,7 @@ sequenceDiagram
     participant Lab as ApiLabController (guest)
     participant Limiter as RateWindowLimiter (papi-ai)
     participant Grounding as Grounding selector (without sharing)
-    participant API as POST /papi/v1/ai/generate (integration user)
+    participant API as POST /papi/ai/generate (integration user)
     participant Agent as AgentforceService (Prompt Builder template)
     participant Dispatcher as ContentGenerationController
     participant Gemini as GeminiService (gemini-2.5-flash)
@@ -590,6 +590,7 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 | [ADR-037](../adr/037-native-form-controls-site-wide.md)                                | Native Form Controls Site Wide                                  | Amended 2026-10-30       |
 | [ADR-038](../adr/038-stable-public-keys-in-the-api.md)                                 | Stable Public Keys in the API                                   | Accepted (2026-10-28)    |
 | [ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 Sunset                                        | Accepted (2026-10-29)    |
+| [ADR-040](../adr/040-versionless-api-urls.md)                                          | Versionless API URLs                                            | Accepted (2026-10-31)    |
 
 </details>
 
@@ -643,7 +644,7 @@ The footer (`c-footer`) shows its telemetry under one caption in labelled groups
 - **Org quotas:** daily API requests and daily async Apex executions against their limits, from `OrgLimits`. A quota the org does not report is left out, never guessed.
 - **Integration breakers:** the GitHub and Jira circuit breakers, closed or open until a time, beside the AI providers.
 - **AI provider health:** each provider's switch and state from `ContentGenerationController.providerStatus()`, including when an open circuit closes again.
-- **AI requests today:** the sum of today's AI tier counts in `API_Rate_Window__c` (the site cover letter and `/papi/v1/ai/generate` both count). It counts requests, not Gemini calls, so it is never labelled as a Gemini quota (my decision, 2026-10-21). Hovering over or focusing it sends the GA4 event `finops_quota_visibility`.
+- **AI requests today:** the sum of today's AI tier counts in `API_Rate_Window__c` (the site cover letter and `/papi/ai/generate` both count). It counts requests, not Gemini calls, so it is never labelled as a Gemini quota (my decision, 2026-10-21). Hovering over or focusing it sends the GA4 event `finops_quota_visibility`.
 - **Deploy status:** the GitHub Actions badge for `deploy.yml` on `main`, with a text link when the image cannot load.
 - **Storage:** one line, such as "Data 1 of 5 MB, Files 5 of 20 MB", that opens a small panel grouped by area (not by object): the data estimate by area, the files by kind and, only when the traffic switch is on, the site's page views. It reads one stored snapshot in `Storage_Snapshot__c`, written by `StorageSnapshotJob` when the 15 minute integration scheduler finds it older than the `Storage_Snapshot_Hours` setting. Only aggregates are stored, and the data by area is an estimate at about 2 KB a record. The footer reads the snapshot and no permission was added for the guest ([Technical Guide §2.23](./04-Technical-Guide.md#223-storage-snapshot-and-site-usage)).
 - **Site usage:** the `Site_Usage_History` report type and the "Site usage, last 30 days" report in my private report folder. Read on production on 2026-10-27, the Visualforce API site showed at most 625,486 origin bandwidth in a day and the LWR site that serves every page showed no rows. **Whether LWR traffic counts toward the Developer Edition's 500 MB a day is open**, and no Salesforce source says. "Site traffic today" is off in the footer.
@@ -675,7 +676,7 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 
 **Purpose:** Provides direct access to Salesforce core objects with minimal transformation.
 
-**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/apexrest/sapi/v1` (My Domain; Bearer-token callers use the `instance_url` returned with their token)
+**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/apexrest/sapi` (My Domain; Bearer-token callers use the `instance_url` returned with their token)
 
 **Version:** 1.3.0
 
@@ -689,8 +690,10 @@ The portfolio implements a layered API architecture following the Anypoint API-l
 - **Explicit Caching:** `Cache-Control` headers distinguish between cacheable configuration (`max-age=300`) and dynamic data (`no-store`)
 - **Rate Limiting:** `RateWindowLimiter` allows 120 requests per minute per caller key, with no burst allowance. Every evaluator token is the same session, so all evaluators share that one limit ([ADR-028 amendment on the shared token pool](../adr/028-evaluator-access-via-token-vending.md#amendment-2026-10-21-a-shared-token-pool-no-expiry-no-disposable-list))
 - **Versioning:** `X-API-Version` is optional and selects the contract ([ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)). A request without it is served as `v1`, which is deprecated. `v2` returns public keys only. The value is matched without regard to letter case, so `V2` works. Any other value gets 400 `Unsupported X-API-Version`, and every response Apex writes carries `X-API-Version` in lower case with the version served and `Vary: X-API-Version`. The version and sunset checks run before the rate limiter, so a request they refuse spends none of the rate limit quota (`ApiRequestContext.applyRequestRules`, `SUPPORTED_VERSION`, `VERSION_2`)
+- **Versionless URLs:** the URL names the resource and the header names the version ([ADR-040](../adr/040-versionless-api-urls.md)). `SAPIRouter` (`/sapi/*`) and `PAPIRouter` (`/papi/*`) read the first route segment and call the existing handler class for the verb. The 23 handler classes keep their `/v1/` mappings, and Apex REST picks the most specific `urlMapping`, so the old `/v1/` URLs are aliases that reach the same code. `ApiRequestContext.canonicalPath` turns either spelling into one versionless path for the exemptions, shaping, the rate tier and the log line. An unknown route is 404 in the error envelope and a verb a route lacks is 405 as the platform words it
 - **v2 shape:** on the record endpoints, no `id`, no `xId` that has an `xKey` beside it, and no `accomplishments` (`SAPITransformer.toV2`, which `PAPITransformer.toV2` calls). The token, health, AI generate, resume generate and portfolio config bodies are not shaped. The filters are `projectKey`, `experienceKey` and `certificationKey`, each a public key only. An Id there gets 400 "<parameter> must be a public key.", and an old `*Id` name gets 400 "Use projectKey in v2.". The `/projects/{id}` path takes a key and answers 404 for anything else
-- **v1 deprecation and sunset:** every v1 response carries `Link` with `rel="successor-version"` to `https://ryanbumstead.com/api-lab/reference?version=v2`, `Deprecation` (RFC 9745) once `Api_V1_Deprecation_Date` is set and `Sunset` (RFC 8594) once `Api_V1_Sunset_Date` is set. From 00:00 UTC on the sunset date every v1 call, with or without the header, gets 410 with `errorCode` `GONE`, except `POST /papi/v1/auth/token`, `/sapi/v1/health` and `/papi/v1/health`. They keep their deprecation headers and are answered normally, so a client can still get a token and check that the API is up. Both settings ship blank, so nothing is deprecated or retired until I set them
+- **v1 deprecation and sunset:** every v1 response carries `Link` with `rel="successor-version"` to `https://ryanbumstead.com/api-lab/reference?version=v2`, `Deprecation` (RFC 9745) once `Api_V1_Deprecation_Date` is set and `Sunset` (RFC 8594) once `Api_V1_Sunset_Date` is set. From 00:00 UTC on the sunset date every v1 call, with or without the header, gets 410 with `errorCode` `GONE`, except `POST /papi/auth/token`, `/sapi/health` and `/papi/health`. They keep their deprecation headers and are answered normally, so a client can still get a token and check that the API is up. Both settings ship blank, so nothing is deprecated or retired until I set them
+- **Old `/v1/` URL retirement:** a response on an old URL carries `Link` with `rel="canonical"` to the same request on the versionless URL. `Api_V1_Path_Deprecation_Date` and `Api_V1_Path_Sunset_Date` work like the two version dates but for the URL spelling, ship blank, and from the sunset date an old URL answers 410 `GONE` naming the versionless URL, with the same three exceptions. When a call is both v1 and on an old URL the response carries the earlier date of each pair ([ADR-040](../adr/040-versionless-api-urls.md))
 
 **Core Endpoints:**
 
@@ -744,9 +747,9 @@ Responses are camelCase JSON built field by field in Apex (for example `SAPIExpe
 
 #### B.2 Process API (PAPI) - portfolio-papi.yaml
 
-**Purpose:** Process layer that combines several portfolio objects into one response shaped for a client. PAPI and SAPI remain distinct logical API layers. PAPI composes the shared data access engine (`QueryDefinitions`) and request framework (`ApiRequestContext`) in process, with its own query definitions and transformer, so its reads are SOQL in one Apex transaction and never HTTP requests to a SAPI path. HTTP loopback was rejected because of the same org callout constraint, the added latency and the shared API capacity it would spend ([ADR-025 amendment of 2026-10-28](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-28-papi-composes-in-process-and-http-fan-out-was-rejected)). The deliberate exception is `PAPIHealth`, which calls `/sapi/v1/health` through `Portfolio_API` once to prove the credential works. The site does not load through the PAPI either: its components call `@AuraEnabled` controllers or GraphQL (section 1.1).
+**Purpose:** Process layer that combines several portfolio objects into one response shaped for a client. PAPI and SAPI remain distinct logical API layers. PAPI composes the shared data access engine (`QueryDefinitions`) and request framework (`ApiRequestContext`) in process, with its own query definitions and transformer, so its reads are SOQL in one Apex transaction and never HTTP requests to a SAPI path. HTTP loopback was rejected because of the same org callout constraint, the added latency and the shared API capacity it would spend ([ADR-025 amendment of 2026-10-28](../adr/025-papi-fan-out-throttling-capacity-planning.md#amendment-2026-10-28-papi-composes-in-process-and-http-fan-out-was-rejected)). The deliberate exception is `PAPIHealth`, which calls `/sapi/health` through `Portfolio_API` once to prove the credential works. The site does not load through the PAPI either: its components call `@AuraEnabled` controllers or GraphQL (section 1.1).
 
-**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/apexrest/papi/v1` (My Domain). `POST /auth/token` alone is served on the site domain: `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.
+**Base URL:** `https://ryan-bumstead-dev-ed.develop.my.salesforce.com/services/apexrest/papi` (My Domain). `POST /auth/token` alone is served on the site domain: `https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.
 
 **Version:** 1.3.0
 
@@ -844,7 +847,7 @@ The `/testimonials/feed` endpoint applies business logic (`PAPITestimonialFeed.q
 - **Interactive Documentation:** the Redoc 2.5.4 bundle (`Redoc_Script` static resource) renders both specifications on a full-width page at `/api-lab/reference`, with a SAPI and PAPI switch and a version picker, v2 by default and v1 labelled deprecated, linked from the API Lab. Deep links (`#tag/...`, `#operation/...`, `?spec=`, `?version=v1|v2`) land on their section below the header. On desktop the menu sticks below the header and the switch and scrolls on its own. A tag row opens and closes and keeps focus, and an operation row moves focus to its section (Technical Guide §2.15). Redoc does not render in WebKit (Safari), so after 15 seconds the page says so and links the hosted documentation.
 - **Machine-Readable Spec:** `GET https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/openapi.json` returns the Process API's OpenAPI 3 document, and `?spec=sapi` the System API's (`OpenApiDocument`). `?version=v2` is the default and `?version=v1` returns the deprecated v1 document. It needs no token, answers with `Cache-Control: public, max-age=3600`, and returns 400 for an unknown spec or version and 503 when the resource is missing. The Apex mapping is `/openapi`, because Salesforce reads a `.json` suffix as the response format. The body is the `PAPI_OpenAPI_V2` or `SAPI_OpenAPI_V2` static resource (`PAPI_OpenAPI` or `SAPI_OpenAPI` for v1), generated from the same YAML the API reference shows
 - **Developer Console:** Custom `c-api-tester` LWC component provides live endpoint testing. It calls an Apex proxy (`ApiLabController`) that invokes the APIs through the `Portfolio_API` Named Credential, so no secret reaches the browser. Responses are syntax highlighted and checked against the path's OpenAPI response schema (documented keys present, missing, and not in the spec). Query parameters are controls built from the spec, and the path list comes from the specs' GET operations ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
-- **Evaluator Access:** `POST /papi/v1/auth/token` returns a short-lived Bearer token for external testing ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
+- **Evaluator Access:** `POST /papi/auth/token` returns a short-lived Bearer token for external testing ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)).
 
 #### B.4 Reference Implementation
 
@@ -862,7 +865,7 @@ Authentication is platform-native on both sides of the API boundary ([ADR-027](.
 | :---------------------- | :------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Provider (inbound)**  | External Client App, OAuth 2.0 Client Credentials flow                                | Issues Bearer tokens; runs API calls as a dedicated integration user holding only `Integration_Access` (read-only)                                                                                                   |
 | **Consumer (outbound)** | External Credential (Client Credentials principal) + `Portfolio_API` Named Credential | Holds the consumer key/secret in the platform vault; used by the API Lab proxy and the PAPI health check                                                                                                             |
-| **Evaluator**           | `POST /papi/v1/auth/token` (`PAPIAuthToken`) + `Portfolio_API_Token` Named Credential | Only REST class the guest user may execute; `TokenExchangeService` performs the exchange server-side with the `Portfolio_API_Token_Auth` principal's `Client_Id` and `Client_Secret` and returns a short-lived token |
+| **Evaluator**           | `POST /papi/auth/token` (`PAPIAuthToken`) + `Portfolio_API_Token` Named Credential    | Only REST class the guest user may execute; `TokenExchangeService` performs the exchange server-side with the `Portfolio_API_Token_Auth` principal's `Client_Id` and `Client_Secret` and returns a short-lived token |
 
 > _What this diagram shows: the three ways a request reaches the APIs. The secret never leaves the org; the only thing that crosses the browser boundary is an expiring Bearer token._
 
@@ -879,13 +882,13 @@ sequenceDiagram
     Proxy->>NC: callout
     NC->>ECA: client_credentials (secret from vault)
     ECA-->>NC: access_token
-    NC->>API: GET /sapi/v1/... Bearer token
+    NC->>API: GET /sapi/... Bearer token
     API-->>LWC: payload + X-Request-Id + X-RateLimit-*
 
     Reviewer->>Proxy: POST /auth/token {email, purpose}
     Proxy->>NC: client_credentials exchange
     NC-->>Reviewer: {access_token, instance_url}
-    Reviewer->>API: GET /sapi/v1/skills Bearer token
+    Reviewer->>API: GET /sapi/skills Bearer token
     API-->>Reviewer: payload
 ```
 
@@ -903,12 +906,12 @@ The token request goes to the Experience Cloud site domain, where Apex REST is s
 
 ```bash
 # 1. Request a token (no credentials required)
-curl -s -X POST "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token" \
+curl -s -X POST "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token" \
   -H "Content-Type: application/json" -H "X-Request-Id: $(uuidgen)" \
   -d '{"email":"<your email address>","purpose":"Evaluating API design"}'
 
 # 2. Call any endpoint on the returned instance_url with the returned token
-curl -s "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
+curl -s "<instance_url>/services/apexrest/sapi/skills?limit=5" \
   -H "Authorization: Bearer <access_token>" -H "X-API-Version: v2" -H "X-Request-Id: $(uuidgen)"
 ```
 

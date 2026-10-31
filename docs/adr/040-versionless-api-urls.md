@@ -1,0 +1,61 @@
+# ADR-040: Versionless API URLs
+
+## Status
+
+Accepted and built (2026-10-31). Amends [ADR-026](026-header-based-api-versioning-strategy.md) and [ADR-039](039-api-v2-and-the-v1-sunset.md). In the integration scratch org `RunLocalTests` passed **TESTS_PASSED** of **TESTS_RAN** with **COVERAGE**% org wide coverage. Both new settings ship blank, so no `/v1/` URL is deprecated or retired in production until I set them after the deploy.
+
+## Context
+
+ADR-026 chose the `X-API-Version` header over a version in the URL, and ADR-039 built v2 on that choice. The URLs still carried `/v1/` (`/services/apexrest/papi/v1/projects`), because the Apex REST classes were mapped there before the header existed. So a client sending `X-API-Version: v2` called a URL that said v1, which reads like a mistake and would have to be explained to every new reader.
+
+I want the URL to name the resource and the header to name the version, as ADR-026 said. I also do not want to break a client that already calls a `/v1/` URL, so those URLs stay as aliases until a date I set.
+
+## Decision
+
+**The API is called at versionless URLs (`/services/apexrest/papi/projects`). The old `/v1/` URLs keep working as aliases, answer the same way with either version header, and retire on a date I set. One router class per API reaches the existing handlers, so the 23 handler classes did not change.**
+
+- **Why the version left the URL.** The header already selects the contract. A URL segment that says `v1` while the header says `v2` is two version switches that disagree. This follows ADR-026 and does not reverse ADR-039, whose rejection of path versioning still holds: a future v3 is selected by the header and moves no URL.
+- **The routers.** `PAPIRouter` is mapped to `/papi/*` and `SAPIRouter` to `/sapi/*`. Each reads the first route segment after the API root and calls the static method of the existing handler for the verb, for example `PAPIProjects.getProjects()`. The handler runs `ApiRequestContext.begin()` itself, so headers, the version rules, the rate limit, shaping and the log line are the same as before. The routers hold a route table and nothing else. `ApiRouting` holds the two answers a router gives itself.
+- **Why this works, and the probe.** Apex REST picks the most specific `urlMapping`. In the integration scratch org I deployed a throwaway class mapped to `/papi/*`. `/papi/health` and `/papi/projects` reached it, while `/papi/v1/health` and `/papi/v1/projects` still reached their existing classes. So the existing classes keep their `/v1/` mappings, which is what makes the old URLs aliases, and the router only ever sees versionless URLs and unknown ones. I then deployed the built routers to the same org and called the routes at both spellings with `sf api request rest`. A versionless URL and its `/v1/` alias returned the same body, and only the alias carried the `Link` header. With a throwaway path sunset date set, the alias answered 410 and the versionless URL, the old token URL and both old health URLs did not.
+- **Wildcards and exact routes.** Profile, projects and resume take anything after the segment, as their old `/*` mappings did. Health, `auth/token`, `ai/generate` and `testimonials/feed` match their segments and nothing after them, as their exact mappings did. The SAPI resources take anything after the segment except health, which is exact.
+- **Unknown routes and verbs.** An unknown route is 404 `NOT_FOUND` in the existing error envelope, after the normal header and rate limit rules. A verb a route lacks is 405 worded as the platform words it for a class without that verb (an `Allow` header and a body of `METHOD_NOT_ALLOWED` with "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"), because I read what the platform returns for the old classes and copied it. SAPI has only GET routes, so `SAPIRouter` has only `@HttpGet` and the platform itself answers any other verb with 405. An old `/v1/` URL that reaches a router matched no existing class, so it is an unknown route.
+- **One canonical path.** `ApiRequestContext.canonicalPath(uri)` turns any request URI into the API root and resource without the version segment, in lower case, with no query and no trailing slash. `/papi/v1/health` and `/papi/health` both give `/papi/health`. Every list that spelled `/v1/` now holds canonical paths and compares for equality: the sunset exceptions (token and both health checks), the unshaped bodies, the AI rate tier check, and the path the request log line records. `endpointSegment()` reads the trailing segment from the versionless spelling, so a handler sees the same value on both. On the platform `RestRequest.requestURI` starts after `/services/apexrest`, so any URL put into a header or a message gets that prefix back.
+- **The guest and the integration user.** Class access is checked on the entry class, not on the classes it calls. The site guest could run `PAPIAuthToken` and nothing else (ADR-028), and the integration user could run every PAPI class except `PAPIAuthToken`. A router the guest may run could reach every PAPI handler, so `PAPIRouter` holds the old matrix itself. A guest reaches the token route only, and every other route answers the guest 404, where the platform used to answer 403 for a class it could not run. An integration user gets 404 on the token route. `Portfolio_Guest` gains `PAPIRouter`, and `Integration_Access` gains both routers.
+
+## The alias retirement
+
+Two `Portfolio_Setting__mdt` records, `Api_V1_Path_Deprecation_Date` and `Api_V1_Path_Sunset_Date`, hold a `yyyy-MM-dd` date in **Text Value**, read as 00:00 UTC, in the same style as the two version dates. Both ship blank. Blank changes nothing, and a value that is not a date reads as blank.
+
+- **A response on an old `/v1/` URL carries `Link: <versionless URL>; rel="canonical"`**, whether or not a date is set. The target is the same request on the versionless URL, with the query string for a GET and none for a POST. I chose `canonical` (RFC 6596, the preferred URI for a resource) over `successor-version` (RFC 5829) because ADR-039 already uses `successor-version` for the v2 reference page, and one relation with two meanings would leave a client guessing. The target is a path on the same host.
+- **`Deprecation` and `Sunset`** (RFC 9745 and RFC 8594) are sent on an old URL once the matching path date is set.
+- **From 00:00 UTC on the path sunset date** an old URL answers 410 `GONE` in the existing envelope, with the message "URLs with /v1/ have been retired. Use /services/apexrest/papi/projects instead." The message names the path and never echoes a query value. The versionless URL is never affected.
+- **How it combines with ADR-039.** The two retirements are independent. The version dates apply to a request served as v1 (a `v1` header or none) and the path dates apply to a request on an old URL, so a request can be one, the other or both. A v2 call to an old URL meets only the path dates, and a v1 call to a versionless URL meets only the version dates. When both apply the response carries the earlier of the two `Deprecation` dates and the earlier of the two `Sunset` dates, because that is the day this exact request first stops working. Its `Link` holds every relation that applies. The 410 comes from either sunset. When only the version is gone the message is the ADR-039 text, unchanged. When only the path is gone it is the message above. When both are gone it is the ADR-039 text followed by the path sentence. The version and path checks run before the rate limiter, so a refused request spends none of the quota.
+- **The three exceptions stay on their old URLs.** `POST /papi/v1/auth/token` and both `/v1/health` URLs keep answering after the path sunset, with their dates and `Link`, as they do after the version sunset. This is the safer reading. A client that hard coded the old token URL can still get a token and read the `Link` to the new one, and a monitor on an old health URL keeps working. These three are the bootstrap paths, and a 410 on them leaves a client with no way to learn the new URL. They answer until I delete the old classes, and that deletion is a separate change.
+
+## Our own callers
+
+The API Lab (`apiTester`: the token path, `API_PATH` and the curl text), `ApiLabController` (`AI_GENERATE_PATH`, and its allowlist, which now reads a path in either spelling as the versionless one and refuses a path with a query), the `PAPIHealth` credential check, the Agentforce cover letter call, `scripts/api-smoke.sh`, the v2 specs and the Postman collection call versionless URLs. The Lab's catalog, the Postman collection and the generated reference docs come from the specs by `scripts/sync-specs.js`, whose catalog now joins the v1 and v2 specs on the versionless path.
+
+## Specs
+
+The v2 specs moved to 2.1.0 with versionless server URLs and a note that the old `/v1/` spellings are aliases. The v1 specs are not changed, they retire with v1. The v2 `Error` enum gains `GONE`, because a v2 call to an old URL can now get it.
+
+## Alternatives considered
+
+| Option                                      | Why not                                                                                                                   |
+| :------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------ |
+| Remap the 23 classes to versionless URLs    | The old URLs would break at once. A class has one `urlMapping`, so it cannot serve both spellings.                        |
+| A copy of every class under a new URL       | 23 duplicated classes to keep in step with the originals.                                                                 |
+| A router that also owns the `/v1/` URLs     | The existing classes already own them, and a more specific mapping wins, so the old URLs cost nothing to keep.            |
+| An HTTP redirect from `/v1/` to the new URL | A redirect on a Bearer token call is dropped by some clients, and a POST would become a GET.                              |
+| `successor-version` for the new URL         | ADR-039 uses it for the v2 reference. One relation with two targets is ambiguous.                                         |
+| One retirement date for version and URLs    | A client can move its URLs and keep v1, or move to v2 and keep its URLs. Separate dates let me retire them one at a time. |
+| Let the guest run the router unchecked      | Class access is checked on the entry class only, so the guest would reach every PAPI handler.                             |
+
+## Implications
+
+- **Two spellings of every URL exist until the aliases go.** Both are tested, and the request log line ends `legacyPath=true` for an old one, so I can see who still uses them before I set a date.
+- **A new route needs two edits.** The handler class and its row in `PAPIRouter` or `SAPIRouter`. The route list in a router must match the spec.
+- **A guest sees 404, not 403,** on any PAPI route but the token. This is a changed status for a call that was refused before.
+- **To retire the aliases** I set the two dates (Maintenance Guide section 3.11). After the sunset I remove the `/v1/` mappings from the handler classes, the `LEGACY_SEGMENT` handling in `ApiRequestContext` and the two settings, in one change, and the routers then own every URL.
+- **Not part of this decision.** The v1 specs, the version dates of ADR-039 and the shape of any response.

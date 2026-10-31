@@ -3,7 +3,7 @@
 **Live App:** [https://ryanbumstead.com](https://ryanbumstead.com), which redirects to the Experience Cloud site and keeps the path
 
 > [!IMPORTANT]
-> **Project Status:** Live since October 2026. 6 enterprise docs and 39 ADRs. This README describes what runs in production.
+> **Project Status:** Live since October 2026. 6 enterprise docs and 40 ADRs. This README describes what runs in production.
 
 > [!TIP]
 > **Non-Salesforce Reader?** This is a public website built on the Salesforce CRM platform. It shows live data from the org, writes cover letters with an AI model, and is deployed by an automated pipeline with quality gates.
@@ -29,7 +29,7 @@ Salesforce platform architecture, including:
 
 - **DevOps Maturity**: delta deployments, automated quality gates, and JWT-based CI/CD.
 - **Contract-First APIs**: OpenAPI 3.0 specs for a System API and a Process API, written before the Apex REST classes that serve them.
-- **Applied AI Governance**: one provider dispatch behind `POST /papi/v1/ai/generate`. Agentforce, which runs a Prompt Builder template, writes the cover letters, with Gemini 2.5 Flash through the Gemini API and a records based Local Template behind it. Cover letters are grounded on portfolio records. The site's cover letter page asks Agentforce through the API and runs Gemini and the template in process, under its own AI rate limit of 10 a minute, and shows which provider wrote each letter.
+- **Applied AI Governance**: one provider dispatch behind `POST /papi/ai/generate`. Agentforce, which runs a Prompt Builder template, writes the cover letters, with Gemini 2.5 Flash through the Gemini API and a records based Local Template behind it. Cover letters are grounded on portfolio records. The site's cover letter page asks Agentforce through the API and runs Gemini and the template in process, under its own AI rate limit of 10 a minute, and shows which provider wrote each letter.
 - **Observability**: the Glass Box footer shows live governor limits, the org's daily quotas, and the AI provider and circuit breaker states.
 
 ### Portfolio Overview
@@ -37,7 +37,7 @@ Salesforce platform architecture, including:
 **By The Numbers:**
 
 - **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
-- **39 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
+- **40 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
 - **15 Core Competencies**: mapped to verifiable artifacts and validation methods.
 - **8 CI/CD Workflows**: delta deploys that also refresh the docs cache after a push that changes the docs, PR gates (including a check only validation against production), an internal reference check for pull requests that change only the docs, a read only live smoke test after each deploy and once a day, a Postman sync that pushes the public collection after each green production deploy, the daily heartbeat, the cache warmer worker deploy, and a Lighthouse audit run on demand.
 
@@ -52,7 +52,7 @@ Salesforce platform architecture, including:
 
 | Core Competency                 | Demonstrated By                                                                                                                           | Artifact/Evidence                                                                                                                                                                                                                                                                                                                           | Verification Method                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | :------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **API Design & Contract-First** | Twin API Pattern with OpenAPI 3.0                                                                                                         | [SAPI v2 Specification](packages/integration-api/specs/salesforce-sapi-v2.yaml) • [PAPI v2 Specification](packages/integration-api/specs/portfolio-papi-v2.yaml) • [ADR-039](docs/adr/039-api-v2-and-the-v1-sunset.md) • [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md) • [`scripts/api-smoke.sh`](scripts/api-smoke.sh) | Review spec vs. Apex parity, then run the [evaluator curl flow](#evaluator-curl-flow): a token from `POST /papi/v1/auth/token`, then every GET path ([ADR-028](docs/adr/028-evaluator-access-via-token-vending.md))                                                                                                                                                                                                                                                                                                                                                                |
+| **API Design & Contract-First** | Twin API Pattern with OpenAPI 3.0                                                                                                         | [SAPI v2 Specification](packages/integration-api/specs/salesforce-sapi-v2.yaml) • [PAPI v2 Specification](packages/integration-api/specs/portfolio-papi-v2.yaml) • [ADR-039](docs/adr/039-api-v2-and-the-v1-sunset.md) • [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md) • [`scripts/api-smoke.sh`](scripts/api-smoke.sh) | Review spec vs. Apex parity, then run the [evaluator curl flow](#evaluator-curl-flow): a token from `POST /papi/auth/token`, then every GET path ([ADR-028](docs/adr/028-evaluator-access-via-token-vending.md))                                                                                                                                                                                                                                                                                                                                                                   |
 | **Enterprise DevOps & CI/CD**   | Delta deployments with quality gates                                                                                                      | [GitHub Actions Workflows](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions) • [ADR-006](docs/adr/006-jwt-bearer-flow-for-ci-cd.md)                                                                                                                                                                            | Check pipeline badges and deployment history: every PR also validates check only against production, and every deploy that changes production is followed by a read only live smoke test ([Maintenance Guide §3.2](docs/guides/05-Maintenance-Guide.md#32-pipeline-triggers))                                                                                                                                                                                                                                                                                                      |
 | **AI/ML Governance**            | One dispatch, Agentforce, Gemini, then the Local Template                                                                                 | [AI Strategy Section](docs/guides/03-SAS.md#541-feature-spotlight-generative-cover-letter-engine) • [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                                                                                                                                                                           | Open `/ai-lab`, generate a letter, and open the panel that shows the provider, the attempts and the prompt that was sent                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | **Security Architecture**       | Zero Trust with Guest User restrictions                                                                                                   | [Data Security Matrix](docs/guides/03-SAS.md#46-data-security-matrix) • [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md) • [ADR-027](docs/adr/027-platform-native-api-authentication.md)                                                                                                                                    | Examine FLS, guest restrictions, and OAuth client-credentials auth                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -76,13 +76,13 @@ Token vending is live, so any reviewer can call the APIs without a shared secret
 
 ```bash
 # 1. Request a short-lived token (no credentials required)
-curl -s -X POST "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token" \
+curl -s -X POST "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token" \
   -H "Content-Type: application/json" -H "X-Request-Id: $(uuidgen)" \
   -d '{"email":"<your email address>","purpose":"Evaluating API design"}'
 
 # 2. Call any path on the returned instance_url with the returned token
 # X-API-Version: v2 returns public keys only. A missing header means v1, which is deprecated.
-curl -si "<instance_url>/services/apexrest/sapi/v1/skills?limit=5" \
+curl -si "<instance_url>/services/apexrest/sapi/skills?limit=5" \
   -H "Authorization: Bearer <access_token>" -H "X-API-Version: v2" -H "X-Request-Id: $(uuidgen)"
 
 # Or run every GET path in both specifications and print status and key headers per path
@@ -97,7 +97,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 
 **Available Now:**
 
-- [Architecture decisions documented with rationale](docs/adr/): 39 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) says whether it is built, superseded, or a design only
+- [Architecture decisions documented with rationale](docs/adr/): 40 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) says whether it is built, superseded, or a design only
 - [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 8 workflows (deploy, PR validation, the docs internal reference check, the live smoke test, the Postman sync, the heartbeat, the cache warmer worker deploy, plus a Lighthouse audit run on demand)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml): Twin API pattern with SAPI + PAPI specifications
 - [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, October 2026) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
@@ -134,7 +134,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 ## Architectural Decision Records
 
 <details>
-<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 39 documented decisions)</summary>
+<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 40 documented decisions)</summary>
 
 | ID                                                                                       | Subject                                  | Strategic Driver                | Status                            |
 | :--------------------------------------------------------------------------------------- | :--------------------------------------- | :------------------------------ | :-------------------------------- |
@@ -177,6 +177,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 | [ADR-037](docs/adr/037-native-form-controls-site-wide.md)                                | Native form controls site wide           | Frontend / Accessibility        | Built                             |
 | [ADR-038](docs/adr/038-stable-public-keys-in-the-api.md)                                 | Stable public keys in the API            | API Design                      | Built                             |
 | [ADR-039](docs/adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 sunset                 | API Design                      | Built                             |
+| [ADR-040](docs/adr/040-versionless-api-urls.md)                                          | Versionless API URLs                     | API Design                      | Built                             |
 
 </details>
 
@@ -188,7 +189,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 | Term          | Meaning                                                                                                                   | Status                          |
 | :------------ | :------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |
 | **LWR**       | Lightning Web Runtime: Modern Salesforce frontend framework                                                               | Live                            |
-| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (39 records). |
+| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (40 records). |
 | **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live                            |
 | **RAG**       | Retrieval-Augmented Generation, an AI grounding technique                                                                 | Apex grounding on cover letters |
 | **SAPI**      | System API: Direct data access layer (API-led connectivity)                                                               | Live                            |
