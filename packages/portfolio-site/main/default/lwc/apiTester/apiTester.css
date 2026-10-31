@@ -163,6 +163,18 @@
   color: var(--pf-code-text);
 }
 
+/* prism.css paints its own light theme on a language- pre (background, padding, margin and a
+   white text shadow). The box already sets the code colours, so the pre and code inside it
+   take none of that, or dark mode shows light text on a light block. */
+.result-box pre,
+.result-box code {
+  margin: 0;
+  padding: 0;
+  background: none;
+  text-shadow: none;
+  overflow: visible;
+}
+
 .header-value,
 .token-value,
 .refusal-value {
