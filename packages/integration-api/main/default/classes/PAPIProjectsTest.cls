@@ -105,6 +105,7 @@ private class PAPIProjectsTest {
       res.responseBody.toString().contains('INTERNAL_SERVER_ERROR'),
       'Should return correct error code'
     );
+    RestTestUtil.assertServerError();
   }
 
   @IsTest

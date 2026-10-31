@@ -120,6 +120,7 @@ private class SAPIExperienceTest {
       res.statusCode,
       'Should return 500 on internal error'
     );
+    RestTestUtil.assertServerError();
   }
 
   @IsTest

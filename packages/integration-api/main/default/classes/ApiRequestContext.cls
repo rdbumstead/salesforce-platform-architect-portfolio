@@ -55,6 +55,11 @@ public with sharing class ApiRequestContext {
   public static final Integer DEFAULT_LIMIT = 50;
   public static final Integer MAX_LIMIT = 200;
   public static final Integer DEFAULT_OFFSET = 0;
+  // The platform allows no SOQL OFFSET above 2000, so a larger value is refused with a 400
+  // instead of reaching the query and coming back as a 500.
+  public static final Integer MAX_OFFSET = 2000;
+  // Seconds a caller is told to wait after a 503 that can recover.
+  public static final Integer DEFAULT_RETRY_AFTER_SECONDS = 60;
   public static final Integer SAPI_LIMIT_PER_MINUTE = 120;
   public static final Integer PAPI_LIMIT_PER_MINUTE = 15;
   public static final Integer PAPI_AI_LIMIT_PER_MINUTE = 10;
@@ -182,6 +187,9 @@ public with sharing class ApiRequestContext {
     public final Integer limitPerMinute;
     public final Integer remaining;
     public final Integer retryAfterSeconds;
+    // True when the decision is a refusal because the counter row stayed locked, not because
+    // the caller used up the limit.
+    public Boolean busy = false;
 
     /**
      * @description Creates a decision.
@@ -229,7 +237,13 @@ public with sharing class ApiRequestContext {
     ctx.modern = ApiRoutes.isVersionless();
     ctx.legacyPath = isLegacyPath(uri) && ctx.modern;
     ctx.shapesRecords = !ctx.isUnshaped();
-    ctx.applyRequestRules();
+    try {
+      ctx.applyRequestRules();
+    } catch (Exception e) {
+      // A failure while the rules run (the rate window row, for one) must not reach the
+      // platform, which would answer with the exception type and stack lines.
+      ctx.serverError(e);
+    }
     return ctx;
   }
 
@@ -584,6 +598,14 @@ public with sharing class ApiRequestContext {
       error(400, 'BAD_REQUEST', 'Offset cannot be negative.');
       return null;
     }
+    if (value > MAX_OFFSET) {
+      error(
+        400,
+        'BAD_REQUEST',
+        'Offset cannot be more than ' + MAX_OFFSET + '.'
+      );
+      return null;
+    }
     return value;
   }
 
@@ -660,7 +682,7 @@ public with sharing class ApiRequestContext {
    * @param body Object to serialise.
    */
   public void ok(Object body) {
-    commitRateCounts();
+    commitCountsSafely();
     res.statusCode = 200;
     res.responseBody = Blob.valueOf(
       JSON.serialize(
@@ -671,15 +693,41 @@ public with sharing class ApiRequestContext {
   }
 
   /**
-   * @description Writes the standard Error payload and marks the request rejected.
+   * @description Writes the standard Error payload and marks the request rejected. The
+   *              error is retryable when it is a 429 or a 5xx.
    * @param status HTTP status code.
    * @param errorCode Code from the SAPI Error enum.
    * @param message Human-readable message.
    */
   public void error(Integer status, String errorCode, String message) {
-    commitRateCounts();
+    error(status, errorCode, message, status >= 500 || status == 429);
+  }
+
+  /**
+   * @description Writes the standard Error payload and marks the request rejected. A 503 that
+   *              is retryable and has no Retry-After yet gets one of 60 seconds.
+   * @param status HTTP status code.
+   * @param errorCode Code from the SAPI Error enum.
+   * @param message Human-readable message.
+   * @param retryable True only when the same request can succeed later with no change.
+   */
+  public void error(
+    Integer status,
+    String errorCode,
+    String message,
+    Boolean retryable
+  ) {
+    commitCountsSafely();
     rejected = true;
     res.statusCode = status;
+    if (
+      status == 503 &&
+      retryable &&
+      res.headers != null &&
+      !res.headers.containsKey('Retry-After')
+    ) {
+      header('Retry-After', String.valueOf(DEFAULT_RETRY_AFTER_SECONDS));
+    }
     res.responseBody = Blob.valueOf(
       JSON.serialize(
         new Map<String, Object>{
@@ -687,12 +735,42 @@ public with sharing class ApiRequestContext {
           'errorCode' => errorCode,
           'message' => message,
           'correlationId' => correlationId,
-          'retryable' => (status >= 500 ||
-          status == 429)
+          'retryable' => retryable
         }
       )
     );
     logRequest();
+  }
+
+  /**
+   * @description Answers an exception nobody planned for with 500. The caller gets a fixed
+   *              message and the correlation id, never the exception's text. The exception
+   *              type and message are logged under that id.
+   * @param e The exception.
+   */
+  public void serverError(Exception e) {
+    if (correlationId == null) {
+      correlationId = UUID.randomUUID().toString();
+    }
+    PortfolioLog.info(
+      'api error correlationId=' +
+        correlationId +
+        ' type=' +
+        e.getTypeName() +
+        ' message=' +
+        String.valueOf(e.getMessage()).left(200)
+    );
+    error(500, 'INTERNAL_SERVER_ERROR', ApiMessages.serverError(correlationId));
+  }
+
+  // The rate counts are bookkeeping. A failure to save them must not turn an answer into an
+  // escaped exception.
+  private static void commitCountsSafely() {
+    try {
+      commitRateCounts();
+    } catch (Exception e) {
+      PortfolioLog.info('api rate count not saved type=' + e.getTypeName());
+    }
   }
 
   /**
@@ -816,8 +894,8 @@ public with sharing class ApiRequestContext {
         429,
         'RATE_LIMIT_EXCEEDED',
         'Rate limit exceeded. Retry after ' +
-          decision.retryAfterSeconds +
-          ' seconds.'
+          ApiMessages.seconds(decision.retryAfterSeconds) +
+          '.'
       );
       return;
     }

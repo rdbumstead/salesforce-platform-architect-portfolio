@@ -102,9 +102,13 @@ export const PLACEHOLDER_TOKEN = "<access_token>";
 
 export const MAX_EMAIL = 254;
 export const MAX_PURPOSE = 280;
+// The same rule as the server's (TokenExchangeService), so the Lab never lets through an
+// address the API would refuse, and never refuses one it accepts.
 export const EMAIL_PATTERN =
-  /^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/;
+  /^[A-Za-z0-9._%+-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/;
 export const EMAIL_ERROR = "Enter an email address like name@example.com.";
+export const PURPOSE_ERROR =
+  "Add a purpose of up to 280 characters, a few words on what you are evaluating.";
 
 export const COPY_DONE = "Copied.";
 export const COPY_FAILED =
@@ -537,6 +541,7 @@ export default class ApiTester extends LightningElement {
   email = "";
   purpose = "";
   emailError = "";
+  purposeError = "";
   isRequestingToken = false;
   tokenResult;
   tokenError = "";
@@ -1142,6 +1147,9 @@ export default class ApiTester extends LightningElement {
     if (field === "email" && this.emailError && !this.emailProblem()) {
       this.emailError = "";
     }
+    if (field === "purpose" && this.purposeError && !this.purposeProblem()) {
+      this.purposeError = "";
+    }
   }
 
   /** Leaving the email field checks it, as the platform's email field did. */
@@ -1150,15 +1158,29 @@ export default class ApiTester extends LightningElement {
     this.emailError = this.emailProblem();
   }
 
-  /** The email error, or "" when the field is empty or reads as an address. */
-  emailProblem() {
+  /**
+   * The email error. An empty field is no error while the visitor is still typing, and an
+   * error once they ask for the token.
+   * @param {boolean} required true when the visitor has asked for the token
+   */
+  emailProblem(required = false) {
     const email = (this.email || "").trim();
     if (!email) {
-      return "";
+      return required ? EMAIL_ERROR : "";
     }
     return email.length > MAX_EMAIL || !EMAIL_PATTERN.test(email)
       ? EMAIL_ERROR
       : "";
+  }
+
+  /** The purpose error, or "" when the field holds some text within the limit. */
+  purposeProblem() {
+    const purpose = (this.purpose || "").trim();
+    return !purpose || purpose.length > MAX_PURPOSE ? PURPOSE_ERROR : "";
+  }
+
+  get purposeInvalid() {
+    return this.purposeError ? "true" : undefined;
   }
 
   get emailInvalid() {
@@ -1284,12 +1306,17 @@ export default class ApiTester extends LightningElement {
     if (this.isTokenDisabled) {
       return;
     }
-    // A mistyped address is answered here, with focus on the field so its message is read.
-    this.emailError = this.emailProblem();
-    if (this.emailError) {
+    // A missing or mistyped answer is stopped here, with focus on the first field that needs
+    // one so its message is read. The server would refuse the same requests.
+    this.emailError = this.emailProblem(true);
+    this.purposeError = this.purposeProblem();
+    if (this.emailError || this.purposeError) {
+      const selector = this.emailError
+        ? "input.token-email"
+        : "input.token-purpose";
       // After the render that adds the message, so the field is read with it.
       Promise.resolve().then(() => {
-        const field = this.template.querySelector("input.token-email");
+        const field = this.template.querySelector(selector);
         if (field) {
           field.focus();
         }

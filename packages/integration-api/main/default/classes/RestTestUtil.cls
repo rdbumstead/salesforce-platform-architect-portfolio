@@ -78,4 +78,27 @@ public class RestTestUtil {
       RestContext.response.responseBody.toString()
     );
   }
+
+  /**
+   * @description Asserts the current response is the 500 an unplanned exception gets: the
+   *              fixed message with the correlation id, retryable, and no part of the
+   *              exception.
+   */
+  public static void assertServerError() {
+    RestResponse res = RestContext.response;
+    Map<String, Object> body = getBodyAsMap();
+    Assert.areEqual(500, res.statusCode, 'Status. Body: ' + body);
+    Assert.areEqual('INTERNAL_SERVER_ERROR', body.get('errorCode'), 'Code');
+    Assert.isNotNull(body.get('correlationId'), 'correlationId present');
+    Assert.areEqual(
+      ApiMessages.serverError((String) body.get('correlationId')),
+      body.get('message'),
+      'The fixed message, not the exception text'
+    );
+    Assert.isFalse(
+      ((String) body.get('message')).contains('Forced Exception'),
+      'No exception text reaches the caller'
+    );
+    Assert.areEqual(true, body.get('retryable'), 'A 500 is retryable');
+  }
 }

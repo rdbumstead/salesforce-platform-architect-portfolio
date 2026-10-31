@@ -383,6 +383,8 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
+    setInput(element, "input.token-email", "eval@example.com");
+    setInput(element, "input.token-purpose", "Review the API");
     query(element, "button.token-button").click();
     await flushPromises();
 
@@ -403,6 +405,8 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
+    setInput(element, "input.token-email", "eval@example.com");
+    setInput(element, "input.token-purpose", "Review the API");
     query(element, "button.token-button").click();
     await flushPromises();
 

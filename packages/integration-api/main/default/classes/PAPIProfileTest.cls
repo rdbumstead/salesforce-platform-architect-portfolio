@@ -180,6 +180,7 @@ private class PAPIProfileTest {
       res.statusCode,
       'Should return 500 Internal Server Error'
     );
+    RestTestUtil.assertServerError();
   }
 
   @IsTest

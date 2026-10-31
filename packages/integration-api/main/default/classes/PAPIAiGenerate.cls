@@ -122,7 +122,7 @@ global with sharing class PAPIAiGenerate {
     } catch (ContentGenerationController.ContentGenerationException e) {
       ctx.error(503, 'ALL_PROVIDERS_UNAVAILABLE', unavailableMessage(e));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

@@ -77,7 +77,7 @@ global with sharing class SAPICertificationSkill implements QueryDefinitions.Pro
       ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
       ctx.ok(SAPITransformer.toCertificationSkills(records));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

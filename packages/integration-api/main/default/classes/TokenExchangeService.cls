@@ -127,6 +127,8 @@ public with sharing class TokenExchangeService {
     public String errorCode;
     public String message;
     public Integer retryAfterSeconds;
+    // True only when the same request can succeed later with no change by the caller.
+    public Boolean retryable = false;
     public ApiRequestContext.RateDecision rateDecision;
     public TokenGrant grant;
     public Outcome outcome;
@@ -179,6 +181,11 @@ public with sharing class TokenExchangeService {
       Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(
         raw
       );
+      if (body == null) {
+        // The text null is valid JSON and reads as no object at all.
+        attempt.parseError = 'Request body must be a JSON object with email and purpose.';
+        return attempt;
+      }
       attempt.email = stringValue(body.get('email'));
       attempt.purpose = stringValue(body.get('purpose'));
     } catch (JSONException e) {
@@ -403,11 +410,12 @@ public with sharing class TokenExchangeService {
       429,
       'RATE_LIMIT_EXCEEDED',
       'Rate limit exceeded. Retry after ' +
-        decision.retryAfterSeconds +
-        ' seconds.',
+        ApiMessages.seconds(decision.retryAfterSeconds) +
+        '.',
       Outcome.RATE_LIMITED
     );
     result.retryAfterSeconds = decision.retryAfterSeconds;
+    result.retryable = true;
     result.rateDecision = decision;
     return result;
   }
@@ -423,6 +431,7 @@ public with sharing class TokenExchangeService {
       Outcome.CAP_REACHED
     );
     result.retryAfterSeconds = secondsUntilTomorrow();
+    result.retryable = true;
     return result;
   }
 
@@ -441,12 +450,14 @@ public with sharing class TokenExchangeService {
         Outcome.CREDENTIAL_MISSING
       );
     } catch (TokenExchangeException e) {
-      return reject(
+      Result result = reject(
         503,
         'SERVICE_UNAVAILABLE',
         'Token issuance is temporarily unavailable.',
         Outcome.FAILED
       );
+      result.retryable = true;
+      return result;
     }
   }
 

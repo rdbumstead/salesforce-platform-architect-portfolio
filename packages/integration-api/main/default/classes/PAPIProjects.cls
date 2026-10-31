@@ -50,7 +50,7 @@ global with sharing class PAPIProjects implements QueryDefinitions.Provider {
         getAllProjects(ctx);
       }
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

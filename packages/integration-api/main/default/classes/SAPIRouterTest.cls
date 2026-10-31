@@ -233,4 +233,85 @@ private class SAPIRouterTest {
       Assert.areEqual(404, error.get('httpStatus'), path);
     }
   }
+
+  @IsTest
+  static void shouldAnswerTheGuest401OnEverySapiRoute() {
+    ApiSite.siteBaseOverride = 'https://example.my.site.com';
+    SAPIRouter.guestOverride = true;
+    List<String> paths = new List<String>{
+      'health',
+      'accounts',
+      'certification-skills',
+      'certifications',
+      'contacts',
+      'education',
+      'experience-highlights',
+      'experience-skills',
+      'experience',
+      'portfolio-config',
+      'project-assets',
+      'project-skills',
+      'projects',
+      'projects/prj_abc',
+      'skills',
+      'testimonials'
+    };
+    for (String path : paths) {
+      viaRouter(path);
+      Assert.areEqual(401, RestContext.response.statusCode, path);
+      Map<String, Object> error = bodyMap();
+      Assert.areEqual('UNAUTHORIZED', error.get('errorCode'), path);
+      Assert.areEqual(false, error.get('retryable'), path);
+      Assert.areEqual(
+        ApiMessages.needsToken(
+          '/sapi/' + path,
+          'https://example.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token'
+        ),
+        error.get('message'),
+        path
+      );
+      Assert.areEqual(
+        'Bearer',
+        RestContext.response.headers.get('WWW-Authenticate'),
+        path
+      );
+      Assert.isFalse(
+        body().contains('"data"') || body().contains('Skill'),
+        'The guest reaches no data on ' + path
+      );
+    }
+    viaRouter('nothing');
+    Assert.areEqual(404, RestContext.response.statusCode, 'Unknown stays 404');
+  }
+
+  @IsTest
+  static void shouldGrantTheRoutersToTheGuestPermissionSet() {
+    List<PermissionSet> sets = [
+      SELECT Id
+      FROM PermissionSet
+      WHERE Name = 'Portfolio_Guest'
+    ];
+    if (sets.isEmpty()) {
+      // The permission set ships in another package and may not be in the org under test.
+      return;
+    }
+    Set<String> granted = new Set<String>();
+    for (SetupEntityAccess access : [
+      SELECT SetupEntityId
+      FROM SetupEntityAccess
+      WHERE ParentId = :sets[0].Id AND SetupEntityType = 'ApexClass'
+    ]) {
+      granted.add(access.SetupEntityId);
+    }
+    for (ApexClass cls : [
+      SELECT Id, Name
+      FROM ApexClass
+      WHERE Name IN ('SAPIRouter', 'PAPIRouter', 'PAPIAuthToken')
+    ]) {
+      Assert.isTrue(
+        granted.contains(cls.Id),
+        'Portfolio_Guest grants ' + cls.Name
+      );
+    }
+  }
 }

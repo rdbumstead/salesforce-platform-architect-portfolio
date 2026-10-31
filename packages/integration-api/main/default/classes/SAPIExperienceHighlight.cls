@@ -98,7 +98,7 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
       ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
       ctx.ok(SAPITransformer.toExperienceHighlights(records));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

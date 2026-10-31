@@ -6,7 +6,8 @@
  *                      specific urlMapping wins, so every existing /sapi/v1/ class still owns
  *                      its own URL. An unknown route is 404. SAPI has only GET routes, so any
  *                      other verb never reaches Apex: the platform answers 405 as it did
- *                      before. The site guest has no access to this class.
+ *                      before. The site guest is granted this class and answered 401 on
+ *                      every route, the same gate PAPIRouter has.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -26,6 +27,8 @@ global with sharing class SAPIRouter {
     String route = routeOf(RestContext.request?.requestURI);
     if (route == null) {
       ApiRouting.notFound();
+    } else if (isGuest()) {
+      ApiRouting.unauthorized();
     } else if (!ApiRoutes.isVersionless()) {
       ApiRouting.switchedOff();
     } else if (route == ROUTE_HEALTH) {
@@ -79,6 +82,19 @@ global with sharing class SAPIRouter {
     }
     return RESOURCES.contains(parts[0]) ? parts[0] : null;
   }
+
+  // Class access is checked on the entry class, so the site guest is granted this class and
+  // turned away here, as PAPIRouter does for the routes it may not reach. The guest is answered
+  // 401 on every SAPI route and reaches no data.
+  private static Boolean isGuest() {
+    return guestOverride != null
+      ? guestOverride
+      : UserInfo.getUserType() == 'Guest';
+  }
+
+  // A test sets this to act as the guest or as anyone else.
+  @TestVisible
+  private static Boolean guestOverride;
 
   private static final Set<String> RESOURCES = new Set<String>{
     'accounts',

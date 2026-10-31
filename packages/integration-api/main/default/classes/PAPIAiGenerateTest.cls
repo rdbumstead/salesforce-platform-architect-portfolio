@@ -404,6 +404,7 @@ private class PAPIAiGenerateTest {
     RestResponse res = post(coverLetter());
 
     Assert.areEqual(500, res.statusCode, 'Unexpected failures are a 500');
+    RestTestUtil.assertServerError();
   }
 
   @IsTest

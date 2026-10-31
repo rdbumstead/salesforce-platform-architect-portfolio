@@ -92,6 +92,7 @@ private class SAPISkillTest {
       res.statusCode,
       'Should return 500 on internal error'
     );
+    RestTestUtil.assertServerError();
   }
 
   // Property names of the Skill schema in salesforce-sapi.yaml.

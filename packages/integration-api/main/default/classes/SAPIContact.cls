@@ -52,7 +52,7 @@ global with sharing class SAPIContact implements QueryDefinitions.Provider {
       ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
       ctx.ok(SAPITransformer.toContacts(records));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

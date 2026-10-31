@@ -290,8 +290,57 @@ private class PAPIAuthTokenTest {
     Test.stopTest();
 
     Assert.areEqual(503, RestContext.response.statusCode, 'Not configured');
-    Assert.areEqual(true, responseBody().get('retryable'), 'Retryable');
+    Assert.areEqual(
+      false,
+      responseBody().get('retryable'),
+      'Retrying cannot fix a missing credential'
+    );
+    Assert.isNull(
+      RestContext.response.headers.get('Retry-After'),
+      'No Retry-After for an error that cannot recover'
+    );
     assertNoStore();
     assertOneRow('Credential_Missing');
+  }
+
+  @IsTest
+  static void shouldReturn400WhenTheBodyIsTheTextNull() {
+    installLimiter();
+    initPost('null');
+
+    Test.startTest();
+    PAPIAuthToken.requestToken();
+    Test.stopTest();
+
+    Assert.areEqual(400, RestContext.response.statusCode, 'null is no object');
+    Assert.areEqual('BAD_REQUEST', responseBody().get('errorCode'), 'Code');
+    Assert.isFalse(
+      RestContext.response.responseBody.toString().contains('NullPointer'),
+      'No exception type reaches the caller'
+    );
+    assertNoStore();
+    assertOneRow('Invalid_Request');
+  }
+
+  @IsTest
+  static void shouldKeepAnRecoverableFailureRetryableWithRetryAfter() {
+    installLimiter();
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PortfolioApiCalloutMock().withTokenResponse(500, 'not json')
+    );
+    initPost(VALID_BODY);
+
+    Test.startTest();
+    PAPIAuthToken.requestToken();
+    Test.stopTest();
+
+    Assert.areEqual(503, RestContext.response.statusCode, 'Exchange failed');
+    Assert.areEqual(true, responseBody().get('retryable'), 'Retryable');
+    Assert.areEqual(
+      String.valueOf(ApiRequestContext.DEFAULT_RETRY_AFTER_SECONDS),
+      RestContext.response.headers.get('Retry-After'),
+      'A 503 that can recover carries Retry-After'
+    );
   }
 }

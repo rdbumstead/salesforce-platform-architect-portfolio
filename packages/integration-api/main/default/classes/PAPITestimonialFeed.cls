@@ -64,7 +64,7 @@ global with sharing class PAPITestimonialFeed implements QueryDefinitions.Provid
       ctx.cache(ApiRequestContext.CachePolicy.PRIVATE_60);
       ctx.ok(feed);
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

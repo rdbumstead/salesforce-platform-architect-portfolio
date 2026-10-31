@@ -16,10 +16,12 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
   private static final String SKILLS_QUERY = 'PAPIResume_Skills';
   private static final String CERTIFICATIONS_QUERY = 'PAPIResume_Certifications';
   private static final String EDUCATION_QUERY = 'PAPIResume_Education';
-  private static final Set<String> VALID_PERSONAS = new Set<String>{
-    'Admin',
-    'Developer',
-    'Architect'
+  // The three personas by lower case, so persona matches in any letter case as it does
+  // on /sapi/experience-highlights.
+  private static final Map<String, String> PERSONAS = new Map<String, String>{
+    'admin' => 'Admin',
+    'developer' => 'Developer',
+    'architect' => 'Architect'
   };
   private static final String HEADER_ACCEPT = 'Accept';
   private static final String MEDIA_TYPE_PLAIN_TEXT = 'text/plain';
@@ -55,7 +57,7 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
         ctx.error(400, 'BAD_REQUEST', 'Invalid endpoint. Use /resume/generate');
       }
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 
@@ -63,8 +65,11 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
    * @description Generates a plain text resume. Cache-Control is the strictest policy of
    *              the upstream resources read (Contact makes it no-store).
    */
-  private static void generateResume(ApiRequestContext ctx, String persona) {
-    if (String.isNotBlank(persona) && !VALID_PERSONAS.contains(persona)) {
+  private static void generateResume(ApiRequestContext ctx, String rawPersona) {
+    String persona = String.isBlank(rawPersona)
+      ? null
+      : PERSONAS.get(rawPersona.trim().toLowerCase());
+    if (String.isNotBlank(rawPersona) && persona == null) {
       ctx.error(
         400,
         'BAD_REQUEST',

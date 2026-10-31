@@ -43,23 +43,33 @@ global with sharing class PAPIHealth {
       return;
     }
 
-    Map<String, Object> details = new Map<String, Object>();
-    Map<String, Object> dependencies = new Map<String, Object>();
-    dependencies.put('sapi', checkSapi(details));
-    dependencies.put('credential', checkCredential(details));
-    dependencies.putAll(checkNamedCredentials());
+    try {
+      if (Test.isRunningTest() && throwException) {
+        throw new CalloutException('Forced Exception');
+      }
+      Map<String, Object> details = new Map<String, Object>();
+      Map<String, Object> dependencies = new Map<String, Object>();
+      dependencies.put('sapi', checkSapi(details));
+      dependencies.put('credential', checkCredential(details));
+      dependencies.putAll(checkNamedCredentials());
 
-    Map<String, Object> healthStatus = new Map<String, Object>{
-      'status' => overallStatus(dependencies),
-      'checkType' => 'DEEP',
-      'timestamp' => Datetime.now().formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\''),
-      'dependencies' => dependencies,
-      'details' => details
-    };
+      Map<String, Object> healthStatus = new Map<String, Object>{
+        'status' => overallStatus(dependencies),
+        'checkType' => 'DEEP',
+        'timestamp' => Datetime.now().formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\''),
+        'dependencies' => dependencies,
+        'details' => details
+      };
 
-    ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
-    ctx.ok(healthStatus);
+      ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
+      ctx.ok(healthStatus);
+    } catch (Exception e) {
+      ctx.serverError(e);
+    }
   }
+
+  @TestVisible
+  private static Boolean throwException = false;
 
   /**
    * @description SAPI health read in-process through SAPIHealth.buildPayload (never its handler).

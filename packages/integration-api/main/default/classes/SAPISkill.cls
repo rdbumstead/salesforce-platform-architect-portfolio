@@ -52,7 +52,7 @@ global with sharing class SAPISkill implements QueryDefinitions.Provider {
       ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
       ctx.ok(transformSkills(skills));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

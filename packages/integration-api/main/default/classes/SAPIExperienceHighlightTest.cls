@@ -163,6 +163,7 @@ private class SAPIExperienceHighlightTest {
     Test.stopTest();
 
     SapiTestData.assertError(500, 'INTERNAL_SERVER_ERROR');
+    RestTestUtil.assertServerError();
   }
 
   private static void assertOk() {

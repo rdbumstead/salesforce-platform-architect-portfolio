@@ -458,11 +458,21 @@
                 type="text"
                 class="nc-control row-control token-purpose"
                 maxlength={maxPurpose}
+                aria-invalid={purposeInvalid}
+                aria-describedby="token-purpose-error"
                 value={purpose}
                 oninput={handleTokenInput}
                 onchange={handleTokenInput}
                 data-field="purpose"
               />
+              <template lwc:if={purposeError}>
+                <p
+                  id="token-purpose-error"
+                  class="nc-error row-message token-purpose-error"
+                >
+                  {purposeError}
+                </p>
+              </template>
             </div>
             <button
               type="button"

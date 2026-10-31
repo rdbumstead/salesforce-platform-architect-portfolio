@@ -6,10 +6,11 @@
  *                      code. The most specific urlMapping wins, so every existing /papi/v1/
  *                      class still owns its own URL and this class only ever sees versionless
  *                      URLs and unknown ones. An unknown route is 404 and a verb the route
- *                      lacks is 405, as the platform words it. Class access is checked on
+ *                      lacks is 405, both in the standard error envelope. Class access is checked on
  *                      this class and not on the ones it calls, so it keeps the old matrix
- *                      itself: the site guest reaches the token route only and the integration
- *                      user everything but the token route (ADR-028, ADR-040).
+ *                      itself: the site guest reaches the token route only and is answered 401 on any other
+ *                      route, and the integration user reaches everything but the token route
+ *                      and is answered 403 there (ADR-028, ADR-040).
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -41,8 +42,10 @@ global with sharing class PAPIRouter {
   @HttpGet
   global static void doGet() {
     String route = routeOf(RestContext.request?.requestURI);
-    if (route == null || isHidden(route)) {
+    if (route == null) {
       ApiRouting.notFound();
+    } else if (isHidden(route)) {
+      refuse();
     } else if (!ApiRoutes.isVersionless()) {
       ApiRouting.switchedOff();
     } else if (route == ROUTE_HEALTH) {
@@ -56,7 +59,7 @@ global with sharing class PAPIRouter {
     } else if (route == ROUTE_TESTIMONIAL_FEED) {
       PAPITestimonialFeed.getFeed();
     } else {
-      ApiRouting.methodNotAllowed('GET', 'POST');
+      ApiRouting.methodNotAllowed('GET', 'POST', route);
     }
   }
 
@@ -66,8 +69,10 @@ global with sharing class PAPIRouter {
   @HttpPost
   global static void doPost() {
     String route = routeOf(RestContext.request?.requestURI);
-    if (route == null || isHidden(route)) {
+    if (route == null) {
       ApiRouting.notFound();
+    } else if (isHidden(route)) {
+      refuse();
     } else if (!ApiRoutes.isVersionless()) {
       ApiRouting.switchedOff();
     } else if (route == ROUTE_AUTH_TOKEN) {
@@ -75,7 +80,7 @@ global with sharing class PAPIRouter {
     } else if (route == ROUTE_AI_GENERATE) {
       PAPIAiGenerate.generate();
     } else {
-      ApiRouting.methodNotAllowed('POST', 'GET,HEAD');
+      ApiRouting.methodNotAllowed('POST', 'GET,HEAD', route);
     }
   }
 
@@ -127,6 +132,16 @@ global with sharing class PAPIRouter {
       return !tokenRoute;
     }
     return tokenRoute && isIntegrationUser();
+  }
+
+  // The guest is told to get a token (401). The integration user is told tokens are issued on
+  // the site (403).
+  private static void refuse() {
+    if (isGuest()) {
+      ApiRouting.unauthorized();
+    } else {
+      ApiRouting.forbidden();
+    }
   }
 
   private static Boolean isGuest() {

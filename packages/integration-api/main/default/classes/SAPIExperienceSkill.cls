@@ -77,7 +77,7 @@ global with sharing class SAPIExperienceSkill implements QueryDefinitions.Provid
       ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
       ctx.ok(SAPITransformer.toExperienceSkills(records));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

@@ -55,7 +55,7 @@ global with sharing class SAPIExperience implements QueryDefinitions.Provider {
       ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
       ctx.ok(transformExperiences(experiences));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

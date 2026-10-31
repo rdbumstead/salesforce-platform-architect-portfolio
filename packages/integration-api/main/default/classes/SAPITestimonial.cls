@@ -54,7 +54,7 @@ global with sharing class SAPITestimonial implements QueryDefinitions.Provider {
       ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
       ctx.ok(transformTestimonials(testimonials));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

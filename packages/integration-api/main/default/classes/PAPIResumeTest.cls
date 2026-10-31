@@ -167,6 +167,7 @@ private class PAPIResumeTest {
       res.responseBody.toString().contains('INTERNAL_SERVER_ERROR'),
       'Should return correct error code'
     );
+    RestTestUtil.assertServerError();
   }
 
   @IsTest
@@ -675,6 +676,7 @@ private class PAPIResumeTest {
     Test.stopTest();
 
     assertJsonError(500, 'INTERNAL_SERVER_ERROR');
+    RestTestUtil.assertServerError();
   }
 
   @IsTest

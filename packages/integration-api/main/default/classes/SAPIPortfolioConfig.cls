@@ -34,7 +34,7 @@ global with sharing class SAPIPortfolioConfig {
         SAPITransformer.toPortfolioConfig(configs.isEmpty() ? null : configs[0])
       );
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

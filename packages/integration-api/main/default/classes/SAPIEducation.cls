@@ -53,7 +53,7 @@ global with sharing class SAPIEducation implements QueryDefinitions.Provider {
       ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
       ctx.ok(SAPITransformer.toEducation(records));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 
