@@ -27,6 +27,105 @@
             "limits"
           ],
           "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "404": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
         }
       },
       "v1Params": [],
@@ -66,8 +165,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -93,46 +193,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -141,14 +274,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -157,14 +292,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -318,8 +455,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -349,46 +487,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -397,14 +568,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -413,14 +586,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -586,8 +761,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -613,46 +789,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -661,14 +870,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -677,14 +888,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -841,8 +1054,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         },
         {
@@ -892,46 +1106,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -940,14 +1187,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -956,14 +1205,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -1139,8 +1390,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -1167,46 +1419,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -1215,14 +1500,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -1231,14 +1518,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -1379,8 +1668,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -1407,46 +1697,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -1455,14 +1778,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -1471,14 +1796,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -1617,36 +1944,85 @@
           ],
           "required": []
         },
-        "401": {
+        "400": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
+        "401": {
+          "type": "object",
+          "properties": [],
+          "required": []
+        },
         "403": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -1655,14 +2031,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -1671,14 +2049,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -1785,8 +2165,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -1809,46 +2190,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -1857,14 +2271,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -1873,14 +2289,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -2021,8 +2439,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -2050,46 +2469,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -2098,14 +2550,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -2114,14 +2568,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -2277,8 +2733,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -2304,46 +2761,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -2352,14 +2842,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -2368,14 +2860,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -2536,8 +3030,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -2565,46 +3060,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -2613,14 +3141,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -2629,14 +3159,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -2789,8 +3321,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -2816,46 +3349,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -2864,14 +3430,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -2880,14 +3448,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -3033,8 +3603,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -3060,46 +3631,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -3108,14 +3712,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -3124,14 +3730,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -3277,8 +3885,9 @@
         {
           "name": "offset",
           "type": "integer",
-          "description": "Pagination offset.",
+          "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
           "minimum": 0,
+          "maximum": 2000,
           "default": 0
         }
       ],
@@ -3304,46 +3913,79 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "array",
           "properties": [
-            "httpStatus",
             "errorCode",
-            "message",
-            "retryable",
-            "correlationId"
+            "message"
           ],
           "required": [
             "errorCode",
-            "message",
-            "correlationId",
-            "httpStatus"
+            "message"
           ]
         },
-        "403": {
+        "404": {
           "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "array",
+          "properties": [
+            "errorCode",
+            "message"
+          ],
+          "required": [
+            "errorCode",
+            "message"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
           ]
         },
         "429": {
@@ -3352,14 +3994,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         },
         "500": {
@@ -3368,14 +4012,16 @@
             "httpStatus",
             "errorCode",
             "message",
+            "correlationId",
             "retryable",
-            "correlationId"
+            "help"
           ],
           "required": [
+            "httpStatus",
             "errorCode",
             "message",
             "correlationId",
-            "httpStatus"
+            "retryable"
           ]
         }
       },
@@ -3516,6 +4162,106 @@
             "details"
           ],
           "required": []
+        },
+        "400": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "401": {
+          "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "404": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "500": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
         }
       },
       "v1Params": [],
@@ -3572,7 +4318,7 @@
             "message",
             "correlationId",
             "retryable",
-            "details"
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -3584,13 +4330,77 @@
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "404": {
+          "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
             "correlationId",
             "retryable",
-            "details"
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -3608,25 +4418,7 @@
             "message",
             "correlationId",
             "retryable",
-            "details"
-          ],
-          "required": [
-            "httpStatus",
-            "errorCode",
-            "message",
-            "correlationId",
-            "retryable"
-          ]
-        },
-        "503": {
-          "type": "object",
-          "properties": [
-            "httpStatus",
-            "errorCode",
-            "message",
-            "correlationId",
-            "retryable",
-            "details"
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -3771,7 +4563,7 @@
             "message",
             "correlationId",
             "retryable",
-            "details"
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -3783,13 +4575,77 @@
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "404": {
+          "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
             "correlationId",
             "retryable",
-            "details"
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -3807,25 +4663,7 @@
             "message",
             "correlationId",
             "retryable",
-            "details"
-          ],
-          "required": [
-            "httpStatus",
-            "errorCode",
-            "message",
-            "correlationId",
-            "retryable"
-          ]
-        },
-        "503": {
-          "type": "object",
-          "properties": [
-            "httpStatus",
-            "errorCode",
-            "message",
-            "correlationId",
-            "retryable",
-            "details"
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -3970,7 +4808,7 @@
             "message",
             "correlationId",
             "retryable",
-            "details"
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -3982,13 +4820,77 @@
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "404": {
+          "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
             "correlationId",
             "retryable",
-            "details"
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -4006,25 +4908,7 @@
             "message",
             "correlationId",
             "retryable",
-            "details"
-          ],
-          "required": [
-            "httpStatus",
-            "errorCode",
-            "message",
-            "correlationId",
-            "retryable"
-          ]
-        },
-        "503": {
-          "type": "object",
-          "properties": [
-            "httpStatus",
-            "errorCode",
-            "message",
-            "correlationId",
-            "retryable",
-            "details"
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -4171,7 +5055,7 @@
             "message",
             "correlationId",
             "retryable",
-            "details"
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -4183,13 +5067,77 @@
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "404": {
+          "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
             "correlationId",
             "retryable",
-            "details"
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -4207,25 +5155,7 @@
             "message",
             "correlationId",
             "retryable",
-            "details"
-          ],
-          "required": [
-            "httpStatus",
-            "errorCode",
-            "message",
-            "correlationId",
-            "retryable"
-          ]
-        },
-        "503": {
-          "type": "object",
-          "properties": [
-            "httpStatus",
-            "errorCode",
-            "message",
-            "correlationId",
-            "retryable",
-            "details"
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -4376,7 +5306,7 @@
             "message",
             "correlationId",
             "retryable",
-            "details"
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -4388,13 +5318,77 @@
         },
         "401": {
           "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "403": {
+          "type": "object",
+          "properties": [],
+          "required": []
+        },
+        "404": {
+          "type": "object",
           "properties": [
             "httpStatus",
             "errorCode",
             "message",
             "correlationId",
             "retryable",
-            "details"
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "405": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "410": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
+          ],
+          "required": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable"
+          ]
+        },
+        "429": {
+          "type": "object",
+          "properties": [
+            "httpStatus",
+            "errorCode",
+            "message",
+            "correlationId",
+            "retryable",
+            "help"
           ],
           "required": [
             "httpStatus",
@@ -4412,25 +5406,7 @@
             "message",
             "correlationId",
             "retryable",
-            "details"
-          ],
-          "required": [
-            "httpStatus",
-            "errorCode",
-            "message",
-            "correlationId",
-            "retryable"
-          ]
-        },
-        "503": {
-          "type": "object",
-          "properties": [
-            "httpStatus",
-            "errorCode",
-            "message",
-            "correlationId",
-            "retryable",
-            "details"
+            "help"
           ],
           "required": [
             "httpStatus",

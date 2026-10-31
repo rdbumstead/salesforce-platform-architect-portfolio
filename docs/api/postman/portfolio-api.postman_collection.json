@@ -98,7 +98,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -156,7 +156,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -208,7 +208,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -254,7 +254,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 },
                 {
@@ -318,7 +318,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -358,7 +358,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -431,7 +431,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -477,7 +477,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -535,7 +535,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -587,7 +587,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -633,7 +633,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -679,7 +679,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]
@@ -725,7 +725,7 @@
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Pagination offset.",
+                  "description": "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how.",
                   "disabled": true
                 }
               ]

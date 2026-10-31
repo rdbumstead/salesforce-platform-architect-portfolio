@@ -2,8 +2,8 @@
   "openapi": "3.0.0",
   "info": {
     "title": "Portfolio Process API (PAPI)",
-    "version": "2.1.0",
-    "description": "**Version 2**, selected with `X-API-Version: v2`, returns public keys only. Version 1 is documented in `portfolio-papi.yaml` and is deprecated (section 2).\n\nA Process API (PAPI) that combines, transforms and filters the portfolio's Salesforce data,\nthe same records the System API (SAPI) serves, into responses shaped for a client. PAPI\nreads them in process, not through SAPI over HTTP (section 3).\n\n### 1. Authentication Strategy\n- **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.\n- **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.\n- **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It is the only unauthenticated path, and the only path served on the Experience Cloud site domain (see its `servers` entry). Every other path is called on My Domain with the Bearer token.\n- **PAPI → SAPI**: in-process Apex in the same transaction, not HTTP. See section 3 and ADR-025 for why fan out callouts were rejected.\n\n### 2. Versioning Strategy\n- **Pattern**: Header-based versioning takes precedence.\n- **Header**: `X-API-Version: v2`. A missing header resolves to `v1`, which is deprecated; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). The URL has no version segment. The old URLs with `/v1/` (for example `/papi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel=\"canonical\"` once their retirement dates are set (ADR-040). Use the URLs in this document.\n- **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a short message and the link to the version 2 reference, `https://ryanbumstead.com/api-lab/reference?version=v2`.\n- **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID, and a present but non-UUID value returns `400 BAD_REQUEST`. On My Domain the platform injects its own 32-character hex id when the caller sends none, and PAPI treats that value as missing. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes whatever `X-Request-Id` the request carries, its own included, and Apex sets the header only when it generated the value and the request carried none, so the header appears once (ADR-026). When the platform injected its id, the header carries that id and an error body's `correlationId` carries the generated UUID. Send your own UUID to get one predictable id.\n- **URL**: Version segments removed from base path to align with SAPI ADR.\n\n### 3. Rate Limiting & Aggregation Math\n- **SAPI Limit**: 120 requests/minute.\n- **PAPI work per request**: PAPI never calls SAPI over HTTP. It reads the same records in process, in the same Apex transaction, through `QueryDefinitions` (ADR-033). One `/profile/full` request runs nine reads (owner, roles, highlights, skills, role skills, projects, certifications, education, testimonials) and builds one response.\n- **PAPI Limit**: **15 requests/minute** (Standard Tier) against SAPI's 120. One PAPI request runs about eight data reads in one transaction, the same records about eight SAPI requests would return. Eight data reads are not eight HTTP requests, but the lower limit keeps one caller's PAPI load in step with what the same data costs through SAPI (ADR-025).\n- **Why not HTTP** (ADR-025): making the reads HTTP requests to SAPI was rejected. The site's API Lab reaches PAPI through the `Portfolio_API` Named Credential, a callout into this same org, and a request that arrived as a same org callout may not call out again (ADR-015), so the fan out would fail on the site's own path. Each SAPI request would also be an inbound REST request counted against the org's daily API request allocation (15,000 on this Developer Edition), the callouts would run one after another inside the 120 second callout time a transaction allows, and they would all run as the one shared evaluator session, spending the SAPI limit every evaluator shares. So PAPI and SAPI stay distinct logical layers: PAPI reads the same records in process, through the query engine (`QueryDefinitions`) and request framework (`ApiRequestContext`) SAPI also uses, with its own query definitions and its own transformer (`PAPITransformer`). The deliberate exception is `/health`, which calls SAPI's `/sapi/health` through `Portfolio_API` to prove the credential works.\n- **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. Every token from `POST /auth/token` is the same session, so all evaluators share one key per tier and one limit (SAPI 120, PAPI 15, `/ai/*` 10 per minute, ADR-028). `POST /auth/token` is also limited to 15 requests per minute per email and source IP.\n\n### 4. Caching Strategy (Aggregation Logic)\n*Note: each section of a PAPI response takes the cache policy its SAPI endpoint sends for the same data (`PAPITransformer`), and the response takes the strictest of its sections.*\n- **Rule**: Strictest policy wins.\n  1. If *any* section's resource is `no-store` (e.g., Contact) → PAPI response is `no-store`.\n  2. If *any* section's resource is `private` → PAPI response is `private`.\n  3. Otherwise → PAPI response is `public` with the minimum `max-age`.\n\n### 5. Identifiers (ADR-038)\nEach record in a response carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the only identifier. Version 2 returns no `id` field and no Salesforce Id anywhere. PAPI takes no Id parameters. SAPI takes the key wherever it takes a record, and only the key in version 2.\n\n### 6. Field Mapping (Transformation Layer)\n| Object | SAPI Field | PAPI Field | Logic |\n| :--- | :--- | :--- | :--- |\n| Contact | `name` | `fullName` | Rename |\n| Experience | `name` | `role` | Semantic Rename |\n| Certification | `earnedDate` | `dateEarned` | JS Convention |\n| Project | `dateCompleted` | `completionDate` | JS Convention |\n| Project | `heroImageUrl` | `heroImageUrl` | Passthrough |\n",
+    "version": "2.2.0",
+    "description": "**Version 2**, selected with `X-API-Version: v2`, returns public keys only. Version 1 is documented in `portfolio-papi.yaml` and is deprecated (section 2).\n\nA Process API (PAPI) that combines, transforms and filters the portfolio's Salesforce data,\nthe same records the System API (SAPI) serves, into responses shaped for a client. PAPI\nreads them in process, not through SAPI over HTTP (section 3).\n\n### 1. Authentication Strategy\n- **Callers → PAPI**: OAuth 2.0 **Client Credentials** issued by the Portfolio API External Client App; `Authorization: Bearer <token>` on every request (ADR-027). The platform rejects unauthenticated calls before Apex executes.\n- **Site (API Lab)**: `c-api-tester` calls an Apex proxy that obtains its token through the `Portfolio_API` Named Credential; no secret reaches the browser.\n- **External evaluators**: `POST /auth/token` vends a short-lived token (ADR-028). It is the only unauthenticated path, and the only path served on the Experience Cloud site domain (see its `servers` entry). Every other path is called on My Domain with the Bearer token.\n- **PAPI → SAPI**: in-process Apex in the same transaction, not HTTP. See section 3 and ADR-025 for why fan out callouts were rejected.\n\n### 2. Versioning Strategy\n- **Pattern**: Header-based versioning takes precedence.\n- **Header**: `X-API-Version: v2`. A missing header resolves to `v1`, which is deprecated; any other value returns `400 BAD_REQUEST` that says to send v1 or v2 (ADR-026). The URL has no version segment. The old URLs with `/v1/` (for example `/papi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel=\"canonical\"` once their retirement dates are set (ADR-040). Use the URLs in this document.\n- **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a message that gives the retirement date and says to send `X-API-Version: v2`, and the `help` field links to the entry in the Errors section.\n- **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID, and a present but non-UUID value returns `400 BAD_REQUEST`. On My Domain the platform injects its own 32-character hex id when the caller sends none, and PAPI treats that value as missing. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes whatever `X-Request-Id` the request carries, its own included, and Apex sets the header only when it generated the value and the request carried none, so the header appears once (ADR-026). When the platform injected its id, the header carries that id and an error body's `correlationId` carries the generated UUID. Send your own UUID to get one predictable id.\n- **URL**: Version segments removed from base path to align with SAPI ADR.\n\n### 3. Rate Limiting & Aggregation Math\n- **SAPI Limit**: 120 requests/minute.\n- **PAPI work per request**: PAPI never calls SAPI over HTTP. It reads the same records in process, in the same Apex transaction, through `QueryDefinitions` (ADR-033). One `/profile/full` request runs nine reads (owner, roles, highlights, skills, role skills, projects, certifications, education, testimonials) and builds one response.\n- **PAPI Limit**: **15 requests/minute** (Standard Tier) against SAPI's 120. One PAPI request runs about eight data reads in one transaction, the same records about eight SAPI requests would return. Eight data reads are not eight HTTP requests, but the lower limit keeps one caller's PAPI load in step with what the same data costs through SAPI (ADR-025).\n- **Why not HTTP** (ADR-025): making the reads HTTP requests to SAPI was rejected. The site's API Lab reaches PAPI through the `Portfolio_API` Named Credential, a callout into this same org, and a request that arrived as a same org callout may not call out again (ADR-015), so the fan out would fail on the site's own path. Each SAPI request would also be an inbound REST request counted against the org's daily API request allocation (15,000 on this Developer Edition), the callouts would run one after another inside the 120 second callout time a transaction allows, and they would all run as the one shared evaluator session, spending the SAPI limit every evaluator shares. So PAPI and SAPI stay distinct logical layers: PAPI reads the same records in process, through the query engine (`QueryDefinitions`) and request framework (`ApiRequestContext`) SAPI also uses, with its own query definitions and its own transformer (`PAPITransformer`). The deliberate exception is `/health`, which calls SAPI's `/sapi/health` through `Portfolio_API` to prove the credential works.\n- **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. Every token from `POST /auth/token` is the same session, so all evaluators share one key per tier and one limit (SAPI 120, PAPI 15, `/ai/*` 10 per minute, ADR-028). `POST /auth/token` is also limited to 15 requests per minute per email and source IP.\n\n### 4. Caching Strategy (Aggregation Logic)\n*Note: each section of a PAPI response takes the cache policy its SAPI endpoint sends for the same data (`PAPITransformer`), and the response takes the strictest of its sections.*\n- **Rule**: Strictest policy wins.\n  1. If *any* section's resource is `no-store` (e.g., Contact) → PAPI response is `no-store`.\n  2. If *any* section's resource is `private` → PAPI response is `private`.\n  3. Otherwise → PAPI response is `public` with the minimum `max-age`.\n\n### 5. Identifiers (ADR-038)\nEach record in a response carries a stable public `key`, for example `prj_8f3k2m9qtz`, and `key` is the only identifier. Version 2 returns no `id` field and no Salesforce Id anywhere. PAPI takes no Id parameters. SAPI takes the key wherever it takes a record, and only the key in version 2.\n\n### 6. Field Mapping (Transformation Layer)\n| Object | SAPI Field | PAPI Field | Logic |\n| :--- | :--- | :--- | :--- |\n| Contact | `name` | `fullName` | Rename |\n| Experience | `name` | `role` | Semantic Rename |\n| Certification | `earnedDate` | `dateEarned` | JS Convention |\n| Project | `dateCompleted` | `completionDate` | JS Convention |\n| Project | `heroImageUrl` | `heroImageUrl` | Passthrough |\n\n## Errors\n\nEvery error this API sends itself is one JSON object with `httpStatus`, `errorCode`, `message`, `correlationId`, `retryable` and `help`. The `message` says what happened, what you need and how to get it. The `help` field links to the entry for the `errorCode` on this page. Program against `errorCode`, because the wording of a message can improve. `retryable` is true only when the same request can succeed later with no change, and every retryable 503 and 429 carries `Retry-After`. The `correlationId` is the `X-Request-Id` of the call, or the id the API made when you sent none. Quote it when you ask for help.\n\n<a id=\"error-bad-request\"></a>\n\n### BAD_REQUEST (400)\nThe request was refused before any data was read. The message names the header, parameter or field to change and often shows a working example. It is not retryable, so send a corrected request. Example: `offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.`\n\n<a id=\"error-unauthorized\"></a>\n\n### UNAUTHORIZED (401)\nThe caller reached the site address with no token. The answer carries `WWW-Authenticate: Bearer` and names the site's token URL: send `POST` to it with a JSON body holding your `email` and a `purpose`, then call the route on the `instance_url` from that answer with `Authorization: Bearer <access_token>`. A token that has ended is different. The platform answers it before our code runs, with a JSON array and the code `INVALID_SESSION_ID` (see Responses from the platform below).\n\n<a id=\"error-forbidden\"></a>\n\n### FORBIDDEN (403)\nA token holder asked the instance address for a token. Tokens are issued on the site address only, and the message gives the exact URL. Not retryable. A user with no access to the class behind a route is refused by the platform instead (see Responses from the platform below).\n\n<a id=\"error-not-found\"></a>\n\n### NOT_FOUND (404)\nThe route does not exist, or the Api_Versionless_Urls switch is off and only the `/v1/` URLs answer. The message names the method and path, or the `/v1/` URL to use. Not retryable.\n\n<a id=\"error-method-not-allowed\"></a>\n\n### METHOD_NOT_ALLOWED (405)\nThe route does not take that HTTP method. The `Allow` header lists the ones it takes, and the message adds the body to send for the two POST routes.\n\n<a id=\"error-gone\"></a>\n\n### GONE (410)\nAPI v1, or the old `/v1/` URL spelling, was retired on the date in the message. Send `X-API-Version: v2`, or call the same URL without `/v1/`. Nothing else about the request changes. The token and health routes are exempt and keep answering. Not retryable.\n\n<a id=\"error-rate-limit-exceeded\"></a>\n\n### RATE_LIMIT_EXCEEDED (429)\nOne of three limits. The shared limit for the tier is used up, and the message names the tier and the limit. One email asked for too many tokens in the last minute. Or the counter row stayed locked for a moment, and the message says the API is busy. All three carry `Retry-After`, and all three are retryable after that many seconds with no change to the request.\n\n<a id=\"error-internal-server-error\"></a>\n\n### INTERNAL_SERVER_ERROR (500)\nSomething failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is ever sent. Retryable: try again in a minute, and if it keeps happening send the id through the contact page.\n\n<a id=\"error-service-unavailable\"></a>\n\n### SERVICE_UNAVAILABLE (503)\nThe token route could not issue a token, or the OpenAPI document is missing from the site. When the day's tokens are all issued the message says how many hours until new ones. When the token credential is missing the message says it is a setup problem on our side and gives the correlation id, and the answer is not retryable and has no `Retry-After`. When the token service did not answer, wait a minute. Every retryable 503 carries `Retry-After`.\n\n<a id=\"error-all-providers-unavailable\"></a>\n\n### ALL_PROVIDERS_UNAVAILABLE (503)\n`POST /ai/generate` got no text from any AI provider. With `provider` left out, wait five minutes (`Retry-After: 300`). With `provider` set to `Agentforce` and its hourly budget spent, `Retry-After` is the seconds to the end of the hour, and the message says to leave `provider` out to let another provider answer. Retryable.\n\n<a id=\"error-platform\"></a>\n\n### Responses from the platform\nTwo refusals come from the platform before any of our code runs, so they cannot carry our fields or wording. Each is a JSON array holding objects with `errorCode` and `message`. A token that has ended or was never valid is `401` with `[{\"message\":\"Session expired or invalid\",\"errorCode\":\"INVALID_SESSION_ID\"}]`. A user with no access to the class behind a route is `403` with `[{\"errorCode\":\"FORBIDDEN\",\"message\":\"You do not have access to the Apex class named: ...\"}]`. An ended token is the usual cause of the first: tokens end after 30 minutes without use, and `POST /papi/auth/token` gives a new one.\n",
     "x-api-layer": "process",
     "contact": {
       "name": "Ryan Bumstead",
@@ -106,7 +106,7 @@
         "name": "X-API-Version",
         "in": "header",
         "required": false,
-        "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).",
+        "description": "API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).",
         "schema": {
           "type": "string",
           "enum": [
@@ -129,7 +129,7 @@
     },
     "responses": {
       "BadRequest": {
-        "description": "Invalid request parameters",
+        "description": "The request was refused before any data was read. The message names the header, parameter or field to change.",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestIdHeader"
@@ -140,89 +140,154 @@
             "schema": {
               "$ref": "#/components/schemas/Error"
             },
-            "example": {
-              "httpStatus": 400,
-              "errorCode": "BAD_REQUEST",
-              "message": "Invalid persona value.",
-              "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-              "retryable": false
+            "examples": {
+              "unsupportedVersion": {
+                "summary": "X-API-Version is not v1 or v2",
+                "value": {
+                  "httpStatus": 400,
+                  "errorCode": "BAD_REQUEST",
+                  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+                }
+              },
+              "badRequestId": {
+                "summary": "X-Request-Id is not a UUID",
+                "value": {
+                  "httpStatus": 400,
+                  "errorCode": "BAD_REQUEST",
+                  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+                }
+              },
+              "badOffset": {
+                "summary": "offset is out of range",
+                "value": {
+                  "httpStatus": 400,
+                  "errorCode": "BAD_REQUEST",
+                  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+                }
+              },
+              "badLimit": {
+                "summary": "limit is out of range",
+                "value": {
+                  "httpStatus": 400,
+                  "errorCode": "BAD_REQUEST",
+                  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+                }
+              },
+              "badPersona": {
+                "summary": "persona is not one of the three",
+                "value": {
+                  "httpStatus": 400,
+                  "errorCode": "BAD_REQUEST",
+                  "message": "persona must be Admin, Developer or Architect.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+                }
+              },
+              "badMode": {
+                "summary": "mode is not professional or casual",
+                "value": {
+                  "httpStatus": 400,
+                  "errorCode": "BAD_REQUEST",
+                  "message": "mode must be professional or casual.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+                }
+              },
+              "badTokenBody": {
+                "summary": "The token body is the wrong shape",
+                "value": {
+                  "httpStatus": 400,
+                  "errorCode": "BAD_REQUEST",
+                  "message": "Send a JSON object with two text fields, email and purpose, for example {\"email\":\"you@example.com\",\"purpose\":\"Evaluating the API\"}.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+                }
+              },
+              "badEmail": {
+                "summary": "The email is not an address",
+                "value": {
+                  "httpStatus": 400,
+                  "errorCode": "BAD_REQUEST",
+                  "message": "Enter a working email address like name@example.com. It is only used to count tokens.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+                }
+              },
+              "badAiField": {
+                "summary": "An AI request field is not allowed",
+                "value": {
+                  "httpStatus": 400,
+                  "errorCode": "BAD_REQUEST",
+                  "message": "type must be one of BioSummary, CoverLetter, SkillDescription.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+                }
+              }
             }
           }
         }
       },
       "Unauthorized": {
-        "description": "Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)",
-        "headers": {
-          "X-Request-Id": {
-            "$ref": "#/components/headers/RequestIdHeader"
-          }
-        },
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            },
-            "example": {
-              "httpStatus": 401,
-              "errorCode": "UNAUTHORIZED",
-              "message": "Missing or invalid Bearer token",
-              "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-              "retryable": false
-            }
-          }
-        }
-      },
-      "TooManyRequests": {
-        "description": "Rate limit exceeded (ADR-025, ADR-028)",
+        "description": "No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestIdHeader"
           },
-          "Retry-After": {
+          "WWW-Authenticate": {
+            "description": "Bearer, when the caller sent no token at all.",
             "schema": {
-              "type": "integer"
-            },
-            "description": "Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait."
-          }
-        },
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            },
-            "example": {
-              "httpStatus": 429,
-              "errorCode": "RATE_LIMIT_EXCEEDED",
-              "message": "Rate limit exceeded. Retry after 42 seconds.",
-              "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-              "retryable": true
+              "type": "string",
+              "example": "Bearer"
             }
           }
-        }
-      },
-      "InternalServerError": {
-        "description": "Internal PAPI error or SAPI communication failure",
-        "headers": {
-          "X-Request-Id": {
-            "$ref": "#/components/headers/RequestIdHeader"
-          }
         },
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/Error"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "$ref": "#/components/schemas/PlatformErrorList"
+                }
+              ]
             },
-            "example": {
-              "httpStatus": 500,
-              "errorCode": "INTERNAL_SERVER_ERROR",
-              "message": "Failed to aggregate profile data. Partial SAPI failure.",
-              "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-              "retryable": true,
-              "details": {
-                "failedSapiCalls": [
+            "examples": {
+              "noToken": {
+                "summary": "A caller on the site address with no token (our envelope)",
+                "value": {
+                  "httpStatus": 401,
+                  "errorCode": "UNAUTHORIZED",
+                  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /papi/projects on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-unauthorized"
+                }
+              },
+              "endedToken": {
+                "summary": "A token that ended or was never valid (the platform answers before our code runs)",
+                "value": [
                   {
-                    "endpoint": "/experience-skills",
-                    "error": "Connection timeout"
+                    "errorCode": "INVALID_SESSION_ID",
+                    "message": "Session expired or invalid"
                   }
                 ]
               }
@@ -230,17 +295,100 @@
           }
         }
       },
-      "ServiceUnavailable": {
-        "description": "PAPI or downstream SAPI is unavailable",
+      "Forbidden": {
+        "description": "The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/Error"
+                },
+                {
+                  "$ref": "#/components/schemas/PlatformErrorList"
+                }
+              ]
+            },
+            "examples": {
+              "tokensNotHere": {
+                "summary": "A token holder asked the instance address for a token (our envelope)",
+                "value": {
+                  "httpStatus": 403,
+                  "errorCode": "FORBIDDEN",
+                  "message": "This address does not issue tokens. Send POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token without an Authorization header to get one.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-forbidden"
+                }
+              },
+              "classAccess": {
+                "summary": "The caller may not run the class that serves the route (the platform answers)",
+                "value": [
+                  {
+                    "errorCode": "FORBIDDEN",
+                    "message": "You do not have access to the Apex class named: PAPIProjects"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The route does not exist.",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "routeNotFound": {
+                "summary": "There is no such route",
+                "value": {
+                  "httpStatus": 404,
+                  "errorCode": "NOT_FOUND",
+                  "message": "There is no GET /papi/nothing in this API. The routes are listed in the API reference.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+                }
+              },
+              "switchedOff": {
+                "summary": "The versionless URLs are switched off (the old /v1/ spelling is the only one)",
+                "value": {
+                  "httpStatus": 404,
+                  "errorCode": "NOT_FOUND",
+                  "message": "Versionless URLs are switched off. Use /services/apexrest/papi/v1/projects.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MethodNotAllowed": {
+        "description": "The route does not take this HTTP method. The Allow header lists the methods it does take.",
         "headers": {
           "X-Request-Id": {
             "$ref": "#/components/headers/RequestIdHeader"
           },
-          "Retry-After": {
-            "description": "Seconds until service may be available",
+          "Allow": {
+            "description": "The methods the route takes.",
             "schema": {
-              "type": "integer",
-              "example": 30
+              "type": "string",
+              "example": "GET,HEAD"
             }
           }
         },
@@ -249,12 +397,197 @@
             "schema": {
               "$ref": "#/components/schemas/Error"
             },
-            "example": {
-              "httpStatus": 503,
-              "errorCode": "SERVICE_UNAVAILABLE",
-              "message": "Downstream SAPI is currently unavailable",
-              "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-              "retryable": true
+            "examples": {
+              "wrongMethod": {
+                "summary": "POST to a GET route",
+                "value": {
+                  "httpStatus": 405,
+                  "errorCode": "METHOD_NOT_ALLOWED",
+                  "message": "/papi/projects takes GET or HEAD, not POST.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-method-not-allowed"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Gone": {
+        "description": "API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "versionRetired": {
+                "summary": "API v1 was retired",
+                "value": {
+                  "httpStatus": 410,
+                  "errorCode": "GONE",
+                  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+                }
+              },
+              "urlRetired": {
+                "summary": "The /v1/ URL spelling was retired",
+                "value": {
+                  "httpStatus": 410,
+                  "errorCode": "GONE",
+                  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/papi/projects instead. Nothing else about the request changes.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+                }
+              }
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          },
+          "Retry-After": {
+            "description": "Seconds to wait before the same request can succeed.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "tierLimit": {
+                "summary": "The shared limit for the tier is used up",
+                "value": {
+                  "httpStatus": 429,
+                  "errorCode": "RATE_LIMIT_EXCEEDED",
+                  "message": "This API allows 15 requests a minute on PAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": true,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+                }
+              },
+              "busy": {
+                "summary": "The counter row stayed locked",
+                "value": {
+                  "httpStatus": 429,
+                  "errorCode": "RATE_LIMIT_EXCEEDED",
+                  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": true,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+                }
+              },
+              "tokenLimit": {
+                "summary": "One email asked for too many tokens",
+                "value": {
+                  "httpStatus": 429,
+                  "errorCode": "RATE_LIMIT_EXCEEDED",
+                  "message": "Too many token requests for this email in the last minute. Wait 42 seconds and try again.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": true,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+                }
+              }
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "unexpected": {
+                "summary": "An unplanned failure",
+                "value": {
+                  "httpStatus": 500,
+                  "errorCode": "INTERNAL_SERVER_ERROR",
+                  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": true,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-internal-server-error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ServiceUnavailable": {
+        "description": "POST /auth/token could not issue a token. Retry-After is set when waiting can help. A missing credential is not retryable.",
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/RequestIdHeader"
+          },
+          "Retry-After": {
+            "description": "Seconds to wait before the same request can succeed.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "capReached": {
+                "summary": "The day's tokens are all issued",
+                "value": {
+                  "httpStatus": 503,
+                  "errorCode": "SERVICE_UNAVAILABLE",
+                  "message": "Today's 50 evaluator tokens are used up. New tokens are available again in about 5 hours. The API Lab on the site still works meanwhile.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": true,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-service-unavailable"
+                }
+              },
+              "notConfigured": {
+                "summary": "The token credential is not set up (not retryable, no Retry-After)",
+                "value": {
+                  "httpStatus": 503,
+                  "errorCode": "SERVICE_UNAVAILABLE",
+                  "message": "Tokens cannot be issued right now because of a setup problem on our side. The API Lab on the site still works, and this has been logged as 123e4567-e89b-12d3-a456-426614174000.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": false,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-service-unavailable"
+                }
+              },
+              "tokenServiceDown": {
+                "summary": "The token endpoint did not answer",
+                "value": {
+                  "httpStatus": 503,
+                  "errorCode": "SERVICE_UNAVAILABLE",
+                  "message": "The token service did not answer. Wait a minute and try again.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": true,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-service-unavailable"
+                }
+              }
             }
           }
         }
@@ -263,6 +596,7 @@
     "schemas": {
       "Error": {
         "type": "object",
+        "description": "The error object this API sends. The platform sends a JSON array instead for two refusals, see PlatformErrorList.",
         "required": [
           "httpStatus",
           "errorCode",
@@ -273,30 +607,67 @@
         "properties": {
           "httpStatus": {
             "type": "integer",
-            "example": 500
+            "example": 400
           },
           "errorCode": {
             "type": "string",
-            "example": "INTERNAL_SERVER_ERROR"
+            "description": "Machine readable code. Program against this, not against the message.",
+            "enum": [
+              "BAD_REQUEST",
+              "UNAUTHORIZED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "METHOD_NOT_ALLOWED",
+              "GONE",
+              "RATE_LIMIT_EXCEEDED",
+              "INTERNAL_SERVER_ERROR",
+              "SERVICE_UNAVAILABLE",
+              "ALL_PROVIDERS_UNAVAILABLE"
+            ],
+            "example": "BAD_REQUEST"
           },
           "message": {
             "type": "string",
-            "example": "An unexpected error occurred"
+            "description": "What happened, what you need and how to get it, in plain sentences.",
+            "example": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are."
           },
           "correlationId": {
             "type": "string",
             "format": "uuid",
+            "description": "Matches X-Request-Id, or the id the API made when none was sent.",
             "example": "123e4567-e89b-12d3-a456-426614174000"
           },
           "retryable": {
             "type": "boolean",
-            "description": "Indicates if the client should retry the request",
-            "example": true
+            "description": "True only when the same request can succeed later with no change by the caller.",
+            "example": false
           },
-          "details": {
-            "type": "object",
-            "description": "Additional error context (optional)",
-            "additionalProperties": true
+          "help": {
+            "type": "string",
+            "format": "uri",
+            "description": "Link to this error code's entry in the Errors section of the API reference.",
+            "example": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+          }
+        }
+      },
+      "PlatformErrorList": {
+        "type": "array",
+        "description": "What the platform sends for a refusal that happens before our code runs: an ended token (401) or no access to the class (403). Not our error object.",
+        "items": {
+          "type": "object",
+          "required": [
+            "errorCode",
+            "message"
+          ],
+          "properties": {
+            "errorCode": {
+              "type": "string",
+              "example": "INVALID_SESSION_ID"
+            },
+            "message": {
+              "type": "string",
+              "example": "Session expired or invalid"
+            }
           }
         }
       },
@@ -378,7 +749,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "Diagnostic per dependency, e.g. credential: \"HTTP 401\" or an exception type name."
+            "description": "Diagnostic per dependency in plain words, for example credential: \"answered HTTP 401\", \"could not connect\" or \"not set up\". No exception type or text is sent."
           }
         }
       },
@@ -445,7 +816,7 @@
           },
           "integrityNote": {
             "type": "string",
-            "description": "\"complete\", or \"partial: <sections> unavailable\" naming each upstream section that could not be read (e.g. \"partial: certifications unavailable\").",
+            "description": "\"complete\", or a sentence that names each section that could not be read, for example \"Some sections could not be read this time: certifications. Everything else is complete. Try again in a minute for the full result.\"",
             "example": "complete"
           }
         }
@@ -494,7 +865,7 @@
           },
           "integrityNote": {
             "type": "string",
-            "description": "\"complete\", or \"partial: <sections> unavailable\" naming each upstream section that could not be read (e.g. \"partial: certifications unavailable\").",
+            "description": "\"complete\", or a sentence that names each section that could not be read, for example \"Some sections could not be read this time: certifications. Everything else is complete. Try again in a minute for the full result.\"",
             "example": "complete"
           }
         }
@@ -1026,6 +1397,27 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           }
         }
       }
@@ -1048,7 +1440,7 @@
       ],
       "post": {
         "summary": "Request an evaluator access token",
-        "description": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
+        "description": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to\n  the next midnight in the running user's time zone. The cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The\n  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot\n  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
         "operationId": "requestEvaluatorToken",
         "security": [],
         "tags": [
@@ -1101,8 +1493,20 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
           },
           "503": {
             "$ref": "#/components/responses/ServiceUnavailable"
@@ -1278,11 +1682,23 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
           "500": {
             "$ref": "#/components/responses/InternalServerError"
-          },
-          "503": {
-            "$ref": "#/components/responses/ServiceUnavailable"
           }
         }
       }
@@ -1340,11 +1756,23 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
           "500": {
             "$ref": "#/components/responses/InternalServerError"
-          },
-          "503": {
-            "$ref": "#/components/responses/ServiceUnavailable"
           }
         }
       }
@@ -1414,7 +1842,7 @@
                   "properties": {
                     "integrityNote": {
                       "type": "string",
-                      "description": "\"complete\", or \"partial: <sections> unavailable\" naming each upstream section that could not be read.",
+                      "description": "\"complete\", or a sentence that names each section that could not be read.",
                       "example": "complete"
                     },
                     "generatedText": {
@@ -1450,11 +1878,23 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
           "500": {
             "$ref": "#/components/responses/InternalServerError"
-          },
-          "503": {
-            "$ref": "#/components/responses/ServiceUnavailable"
           }
         }
       }
@@ -1498,7 +1938,7 @@
                 }
               },
               "X-Integrity-Note": {
-                "description": "Present only when partial; names the failed sub-queries, e.g. \"partial: project-skills unavailable\".",
+                "description": "Present only when partial; names the failed sub-queries in a sentence, for example \"Some sections could not be read this time: project-skills. Everything else is complete. Try again in a minute for the full result.\"",
                 "schema": {
                   "type": "string"
                 }
@@ -1527,11 +1967,23 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
           "500": {
             "$ref": "#/components/responses/InternalServerError"
-          },
-          "503": {
-            "$ref": "#/components/responses/ServiceUnavailable"
           }
         }
       }
@@ -1603,11 +2055,23 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
           "500": {
             "$ref": "#/components/responses/InternalServerError"
-          },
-          "503": {
-            "$ref": "#/components/responses/ServiceUnavailable"
           }
         }
       }
@@ -1618,7 +2082,7 @@
           "Logic"
         ],
         "summary": "Generate AI Content",
-        "description": "Generates content through `PAPIAiGenerate.generate`, which calls the one provider chain,\n`ContentGenerationController.dispatch`.\n\n**Provider chain**:\n1. Agentforce, only when its switch (`AI_Provider_Config__mdt` record `Agentforce`) is on.\n   It ships on and runs a Prompt Builder template as the caller. It has a 20 second\n   timeout and an hourly budget (`Hourly_Budget__c`, 120 calls per UTC hour). Past the\n   budget its attempt is `budget_exhausted` and the chain moves on.\n2. Gemini 2.5 Flash (`gemini-2.5-flash`, the model set on the `Gemini` record) through the Gemini API (`Gemini_API` Named Credential),\n   with a 60 second timeout. The code default model is `gemma-4-31b-it`, used only when the\n   record names none.\n3. Local template (`Local`), CoverLetter only.\n\nA CoverLetter prompt also carries facts from featured projects and experience highlights,\nchosen by keywords from `role` and `jobDescription`. No email address, phone number or\nowner field is ever included. The site's cover letter page calls this endpoint with\n`provider` set to `Agentforce` through the `Portfolio_API` Named Credential, and runs\nGemini and the template in process when it gets no letter, because a request that arrives\nas a callout from the same org may not call out again (ADR-015). Outside callers use it\nwith a Bearer token.\n\n**Asking for Agentforce only**: send `provider` set to `Agentforce`. Only Agentforce is\ntried, with no Gemini and no template. A failure is 503 `ALL_PROVIDERS_UNAVAILABLE` with\nthe message \"Agentforce currently unavailable\", or \"Agentforce hourly budget used\" when\nthe budget is spent. A CoverLetter asked of Agentforce uses the site's cover letter prompt\nand comes back whole unless `maxLength` is sent.\n\n**Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allowed Gemini 2.5 Flash\n5 requests per minute and 20 requests per day when it was read on 2026-10-20, a recorded reading and not a live one. When the Gemini API\nrefuses or fails, CoverLetter falls back to the local template and the other types answer\n503 `ALL_PROVIDERS_UNAVAILABLE`.\n\n**Validation**: `type` and `tone` must be enum values, `provider` only `Agentforce`, `maxLength` an integer 100 to 1000;\nCoverLetter requires `context.companyName` and `context.role`. Content longer than `maxLength` is cut.\n",
+        "description": "Generates content through `PAPIAiGenerate.generate`, which calls the one provider chain,\n`ContentGenerationController.dispatch`.\n\n**Provider chain**:\n1. Agentforce, only when its switch (`AI_Provider_Config__mdt` record `Agentforce`) is on.\n   It ships on and runs a Prompt Builder template as the caller. It has a 20 second\n   timeout and an hourly budget (`Hourly_Budget__c`, 120 calls per UTC hour). Past the\n   budget its attempt is `budget_exhausted` and the chain moves on.\n2. Gemini 2.5 Flash (`gemini-2.5-flash`, the model set on the `Gemini` record) through the Gemini API (`Gemini_API` Named Credential),\n   with a 60 second timeout. The code default model is `gemma-4-31b-it`, used only when the\n   record names none.\n3. Local template (`Local`), CoverLetter only.\n\nA CoverLetter prompt also carries facts from featured projects and experience highlights,\nchosen by keywords from `role` and `jobDescription`. No email address, phone number or\nowner field is ever included. The site's cover letter page calls this endpoint with\n`provider` set to `Agentforce` through the `Portfolio_API` Named Credential, and runs\nGemini and the template in process when it gets no letter, because a request that arrives\nas a callout from the same org may not call out again (ADR-015). Outside callers use it\nwith a Bearer token.\n\n**Asking for Agentforce only**: send `provider` set to `Agentforce`. Only Agentforce is\ntried, with no Gemini and no template. A failure is 503 `ALL_PROVIDERS_UNAVAILABLE` with\na message that says Agentforce did not answer, or that its hourly budget is used. Both say to leave\n`provider` out to let another provider answer. A CoverLetter asked of Agentforce uses the site's cover letter prompt\nand comes back whole unless `maxLength` is sent.\n\n**Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allowed Gemini 2.5 Flash\n5 requests per minute and 20 requests per day when it was read on 2026-10-20, a recorded reading and not a live one. When the Gemini API\nrefuses or fails, CoverLetter falls back to the local template and the other types answer\n503 `ALL_PROVIDERS_UNAVAILABLE`.\n\n**Validation**: `type` and `tone` must be enum values, `provider` only `Agentforce`, `maxLength` an integer 100 to 1000;\nCoverLetter requires `context.companyName` and `context.role`. Content longer than `maxLength` is cut.\n",
         "operationId": "generateAiContent",
         "parameters": [
           {
@@ -1894,16 +2358,35 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "410": {
+            "$ref": "#/components/responses/Gone"
+          },
           "429": {
-            "description": "Rate limit exceeded (ai tier, 10 requests per minute)",
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "description": "No AI provider returned text. Retry-After is 300 seconds when every provider failed, the seconds to the end of the hour when the Agentforce budget is spent, and 60 otherwise.",
             "headers": {
               "X-Request-Id": {
                 "$ref": "#/components/headers/RequestIdHeader"
               },
               "Retry-After": {
+                "description": "Seconds to wait before the same request can succeed.",
                 "schema": {
                   "type": "integer",
-                  "example": 60
+                  "example": 300
                 }
               }
             },
@@ -1912,32 +2395,39 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "httpStatus": 429,
-                  "errorCode": "RATE_LIMIT_EXCEEDED",
-                  "message": "Rate limit exceeded. Retry after 60 seconds.",
-                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-                  "retryable": true
-                }
-              }
-            }
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalServerError"
-          },
-          "503": {
-            "description": "All AI providers unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
+                "examples": null
+              },
+              "allProviders": {
+                "summary": "No provider could write the text",
+                "value": {
                   "httpStatus": 503,
                   "errorCode": "ALL_PROVIDERS_UNAVAILABLE",
-                  "message": "All AI providers currently unavailable",
+                  "message": "No AI provider could write this right now. Wait a few minutes and send it again.",
                   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-                  "retryable": true
+                  "retryable": true,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-all-providers-unavailable"
+                }
+              },
+              "agentforceBudget": {
+                "summary": "provider is Agentforce and its hourly budget is spent",
+                "value": {
+                  "httpStatus": 503,
+                  "errorCode": "ALL_PROVIDERS_UNAVAILABLE",
+                  "message": "Agentforce has used its requests for this hour. Leave out provider to let another provider answer, or try again after the hour.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": true,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-all-providers-unavailable"
+                }
+              },
+              "agentforceDown": {
+                "summary": "provider is Agentforce and it did not answer",
+                "value": {
+                  "httpStatus": 503,
+                  "errorCode": "ALL_PROVIDERS_UNAVAILABLE",
+                  "message": "Agentforce did not answer. Leave out provider to let another provider answer, or try again in a few minutes.",
+                  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+                  "retryable": true,
+                  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-all-providers-unavailable"
                 }
               }
             }

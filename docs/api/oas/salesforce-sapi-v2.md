@@ -1,4 +1,4 @@
-<h1 id="salesforce-system-api-sapi-">Salesforce System API (SAPI) v2.1.0</h1>
+<h1 id="salesforce-system-api-sapi-">Salesforce System API (SAPI) v2.2.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -27,9 +27,58 @@ System API exposing core Salesforce objects for the Portfolio. This is **version
 ### Design Constraints & Trade-offs
 - **Pagination**: Offset-based pagination implemented for simplicity (<200 records). 
   - *Enterprise Note*: For volumes >2,000, this would be refactored to **Keyset/Cursor Pagination** (`WHERE Id > lastSeenId`).
-- **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning. The URL has no version segment. The old URLs with `/v1/` (for example `/sapi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel="canonical"` once their retirement dates are set (ADR-040). Use the URLs in this document. Send `X-API-Version: v2` for this contract. A missing header resolves to `v1`, and any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
-- **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a short message and the link to the version 2 reference, `https://ryanbumstead.com/api-lab/reference?version=v2`.
+- **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning. The URL has no version segment. The old URLs with `/v1/` (for example `/sapi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel="canonical"` once their retirement dates are set (ADR-040). Use the URLs in this document. Send `X-API-Version: v2` for this contract. A missing header resolves to `v1`, and any other value returns `400 BAD_REQUEST` that says to send v1 or v2 (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
+- **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a message that gives the retirement date and says to send `X-API-Version: v2`, and the `help` field links to the entry in the Errors section.
 - **Removed from version 1**: `accomplishments` on `/experience` is not returned in version 2. Read `/experience-highlights` instead.
+
+## Errors
+
+Every error this API sends itself is one JSON object with `httpStatus`, `errorCode`, `message`, `correlationId`, `retryable` and `help`. The `message` says what happened, what you need and how to get it. The `help` field links to the entry for the `errorCode` on this page. Program against `errorCode`, because the wording of a message can improve. `retryable` is true only when the same request can succeed later with no change, and every retryable 503 and 429 carries `Retry-After`. The `correlationId` is the `X-Request-Id` of the call, or the id the API made when you sent none. Quote it when you ask for help.
+
+<a id="error-bad-request"></a>
+
+### BAD_REQUEST (400)
+The request was refused before any data was read. The message names the header, parameter or field to change and often shows a working example. It is not retryable, so send a corrected request. Example: `offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.`
+
+<a id="error-unauthorized"></a>
+
+### UNAUTHORIZED (401)
+The caller reached the site address with no token. The answer carries `WWW-Authenticate: Bearer` and names the site's token URL: send `POST` to it with a JSON body holding your `email` and a `purpose`, then call the route on the `instance_url` from that answer with `Authorization: Bearer <access_token>`. A token that has ended is different. The platform answers it before our code runs, with a JSON array and the code `INVALID_SESSION_ID` (see Responses from the platform below).
+
+<a id="error-forbidden"></a>
+
+### FORBIDDEN (403)
+The caller may not run the class behind the route. The platform refuses it and answers a JSON array (see Responses from the platform below). Not retryable.
+
+<a id="error-not-found"></a>
+
+### NOT_FOUND (404)
+The route does not exist, a project key in the path matches no project, or the Api_Versionless_Urls switch is off and only the `/v1/` URLs answer. The message names the method and path, the key, or the `/v1/` URL to use. Not retryable.
+
+<a id="error-method-not-allowed"></a>
+
+### METHOD_NOT_ALLOWED (405)
+SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array with an `Allow` header (see Responses from the platform below).
+
+<a id="error-gone"></a>
+
+### GONE (410)
+API v1, or the old `/v1/` URL spelling, was retired on the date in the message. Send `X-API-Version: v2`, or call the same URL without `/v1/`. Nothing else about the request changes. The token and health routes are exempt and keep answering. Not retryable.
+
+<a id="error-rate-limit-exceeded"></a>
+
+### RATE_LIMIT_EXCEEDED (429)
+One of three limits. The shared limit for the tier is used up, and the message names the tier and the limit. One email asked for too many tokens in the last minute. Or the counter row stayed locked for a moment, and the message says the API is busy. All three carry `Retry-After`, and all three are retryable after that many seconds with no change to the request.
+
+<a id="error-internal-server-error"></a>
+
+### INTERNAL_SERVER_ERROR (500)
+Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is ever sent. Retryable: try again in a minute, and if it keeps happening send the id through the contact page.
+
+<a id="error-platform"></a>
+
+### Responses from the platform
+Two refusals come from the platform before any of our code runs, so they cannot carry our fields or wording. Each is a JSON array holding objects with `errorCode` and `message`. A token that has ended or was never valid is `401` with `[{"message":"Session expired or invalid","errorCode":"INVALID_SESSION_ID"}]`. A user with no access to the class behind a route is `403` with `[{"errorCode":"FORBIDDEN","message":"You do not have access to the Apex class named: ..."}]`. A POST to a SAPI route is `405` with `[{"errorCode":"METHOD_NOT_ALLOWED","message":"HTTP Method 'POST' not allowed. Allowed are GET,HEAD"}]`. An ended token is the usual cause of the first: tokens end after 30 minutes without use, and `POST /papi/auth/token` gives a new one.
 
 Base URLs:
 
@@ -133,11 +182,239 @@ Shallow check: runtime availability, the current transaction's governor-limit sn
 }
 ```
 
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
+}
+```
+
 <h3 id="gethealth-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Service is UP.|[HealthStatus](#schemahealthstatus)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+<h3 id="gethealth-responseschema">Response Schema</h3>
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -145,6 +422,15 @@ Shallow check: runtime availability, the current transaction's governor-limit sn
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|Cache-Control|string||No-cache for health checks.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
+|403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
+|500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -194,11 +480,11 @@ Retrieves the primary contact details for the portfolio owner. Returns only the 
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -225,15 +511,233 @@ Retrieves the primary contact details for the portfolio owner. Returns only the 
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -242,11 +746,14 @@ Retrieves the primary contact details for the portfolio owner. Returns only the 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Contact records.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getcontacts-responseschema">Response Schema</h3>
 
@@ -263,6 +770,19 @@ Status Code **200**
 |» linkedIn|string(uri)¦null|false|none|LinkedIn Profile URL|
 |» portfolio|string(uri)¦null|false|none|Portfolio Website URL|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -273,9 +793,13 @@ Status Code **200**
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -322,13 +846,13 @@ Retrieves professional experience history.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |employerName|query|string|false|Filter by Employer Name.|
 |currentlyEmployed|query|boolean|false|Filter by active employment status.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -359,15 +883,233 @@ Retrieves professional experience history.
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -376,11 +1118,14 @@ Retrieves professional experience history.
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Experience records.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getexperience-responseschema">Response Schema</h3>
 
@@ -401,6 +1146,19 @@ Status Code **200**
 |» contactName|string|false|none|Contact Name|
 |» sortOrder|number¦null|false|none|Sort Order|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -411,9 +1169,13 @@ Status Code **200**
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -460,12 +1222,12 @@ Fetches resume bullets. Supports Persona filtering for PAPI optimization. An unk
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |experienceKey|query|string|false|Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.|
 |persona|query|string|false|Filters records where the target field (Multi-Select Picklist) includes the specified persona(s).|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Detailed descriptions
 
@@ -501,15 +1263,233 @@ Examples:
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -518,11 +1498,14 @@ Examples:
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Experience Highlights.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getexperiencehighlights-responseschema">Response Schema</h3>
 
@@ -539,6 +1522,19 @@ Status Code **200**
 |» sortOrder|number|false|none|Sort Order|
 |» personaTag|string|false|none|Semicolon-separated Persona values from the Persona_Tag__c multi-select picklist (Admin, Developer, Architect).|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -549,9 +1545,13 @@ Status Code **200**
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -599,15 +1599,19 @@ fetch('https://{domain}/services/apexrest/sapi/projects',
 Retrieves portfolio projects.
 Example Usage: `/projects?isFeatured=true`
 
+Add a project key to the path, as in `/projects/prj_8f3k2m9qtz`, to read one project. A key that
+matches no project returns 404 NOT_FOUND, and the message says that this path takes a key and not
+a Salesforce Id.
+
 <h3 id="getprojects-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |status|query|[ProjectStatus](#schemaprojectstatus)|false|Filter by Project Status.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 |contactName|query|string|false|Filter by Contact Name.|
 |projectName|query|string|false|Filter by Project Name.|
 |isFeatured|query|boolean|false|Filter only featured projects.|
@@ -651,15 +1655,233 @@ Example Usage: `/projects?isFeatured=true`
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -668,11 +1890,14 @@ Example Usage: `/projects?isFeatured=true`
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Project records.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getprojects-responseschema">Response Schema</h3>
 
@@ -708,6 +1933,19 @@ Status Code **200**
 |status|On Hold|
 |status|Archived|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -718,9 +1956,13 @@ Status Code **200**
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -767,11 +2009,11 @@ Retrieves assets (images, links) associated with a project. A filter that is not
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |projectKey|query|string|false|Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -799,15 +2041,233 @@ Retrieves assets (images, links) associated with a project. A filter that is not
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -816,11 +2276,14 @@ Retrieves assets (images, links) associated with a project. A filter that is not
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Project Assets. Returns empty array if none found.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getprojectassets-responseschema">Response Schema</h3>
 
@@ -847,6 +2310,19 @@ Status Code **200**
 |type|Document|
 |type|Link|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -857,9 +2333,13 @@ Status Code **200**
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -906,10 +2386,10 @@ Retrieves received testimonials. Returns only records where Approved__c = true.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -937,15 +2417,233 @@ Retrieves received testimonials. Returns only records where Approved__c = true.
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -954,11 +2652,14 @@ Retrieves received testimonials. Returns only records where Approved__c = true.
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Testimonials. Returns empty array if none found.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="gettestimonials-responseschema">Response Schema</h3>
 
@@ -988,6 +2689,19 @@ Status Code **200**
 |vibeMode|Professional|
 |vibeMode|Casual|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -998,9 +2712,13 @@ Status Code **200**
 |200|Cache-Control|string||Directive to prevent caching of sensitive/dynamic data.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -1047,11 +2765,11 @@ Retrieves related account/employer records.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |accountName|query|string|false|Filter by Account Name.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -1075,15 +2793,233 @@ Retrieves related account/employer records.
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -1092,11 +3028,14 @@ Retrieves related account/employer records.
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Account records.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getaccounts-responseschema">Response Schema</h3>
 
@@ -1110,6 +3049,19 @@ Status Code **200**
 |» industry|string¦null|false|none|Industry|
 |» abbreviation|string¦null|false|none|Abbreviation|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -1120,9 +3072,13 @@ Status Code **200**
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -1169,11 +3125,11 @@ Retrieves technical skills and proficiency scores.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |category|query|string|false|Filter skills by Category, one of the Skill Category picklist values, for example 'Backend', 'Frontend' or 'Integration'.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -1202,15 +3158,233 @@ Retrieves technical skills and proficiency scores.
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -1219,11 +3393,14 @@ Retrieves technical skills and proficiency scores.
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Skill records.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getskills-responseschema">Response Schema</h3>
 
@@ -1242,6 +3419,19 @@ Status Code **200**
 |» colorHex|string¦null|false|none|Category Color Hex|
 |» categoryOrder|number|false|none|Category Order|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -1252,9 +3442,13 @@ Status Code **200**
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -1301,13 +3495,13 @@ Retrieves professional certifications.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |issuerName|query|string|false|Filter by Issuer Name.|
 |certificationName|query|string|false|Filter by Certification Name.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -1334,15 +3528,233 @@ Retrieves professional certifications.
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -1351,11 +3763,14 @@ Retrieves professional certifications.
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Certification records.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getcertifications-responseschema">Response Schema</h3>
 
@@ -1372,6 +3787,19 @@ Status Code **200**
 |» issuerName|string|false|none|Issuer Name|
 |» earnedDate|string(date)|false|none|Date Earned|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -1382,9 +3810,13 @@ Status Code **200**
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -1431,12 +3863,12 @@ Retrieves educational background.
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |contactName|query|string|false|Filter by Contact Name.|
 |issuerName|query|string|false|Filter by Issuer Name.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -1465,15 +3897,233 @@ Retrieves educational background.
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -1482,11 +4132,14 @@ Retrieves educational background.
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Education records.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="geteducation-responseschema">Response Schema</h3>
 
@@ -1505,6 +4158,19 @@ Status Code **200**
 |» graduationDate|string(date)|false|none|Graduation Date|
 |» gpa|number¦null|false|none|GPA|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -1515,9 +4181,13 @@ Status Code **200**
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -1568,11 +4238,11 @@ Retrieves junction records linking Projects to Skills. A filter that is not a kn
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |projectKey|query|string|false|Filter by Project public key, for example `prj_8f3k2m9qtz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `projectId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -1599,15 +4269,233 @@ Retrieves junction records linking Projects to Skills. A filter that is not a kn
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -1616,11 +4504,14 @@ Retrieves junction records linking Projects to Skills. A filter that is not a kn
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Project-Skill junctions.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getprojectskills-responseschema">Response Schema</h3>
 
@@ -1637,6 +4528,19 @@ Status Code **200**
 |» skillCategory|string|false|none|Skill Category|
 |» skillProficiencyScore|number|false|none|Proficiency Score|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -1647,9 +4551,13 @@ Status Code **200**
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -1696,11 +4604,11 @@ Retrieves junction records linking Experiences to Skills. A filter that is not a
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |experienceKey|query|string|false|Filter by Experience public key, for example `exp_4h7n2c8wpd`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `experienceId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -1727,15 +4635,233 @@ Retrieves junction records linking Experiences to Skills. A filter that is not a
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -1744,11 +4870,14 @@ Retrieves junction records linking Experiences to Skills. A filter that is not a
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Experience-Skill junctions.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getexperienceskills-responseschema">Response Schema</h3>
 
@@ -1765,6 +4894,19 @@ Status Code **200**
 |» skillCategory|string|false|none|Skill Category|
 |» skillProficiencyScore|number|false|none|Proficiency Score|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -1775,9 +4917,13 @@ Status Code **200**
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -1824,11 +4970,11 @@ Retrieves junction records linking Certifications to Skills. A filter that is no
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 |certificationKey|query|string|false|Filter by Certification public key, for example `crt_6q2v8d4nhz`. A Salesforce Id is not accepted in v2 and is treated as an unknown key. The version 1 name `certificationId` returns 400.|
 |limit|query|integer|false|Maximum number of records to return.|
-|offset|query|integer|false|Pagination offset.|
+|offset|query|integer|false|Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are.|
 
 #### Enumerated Values
 
@@ -1855,15 +5001,233 @@ Retrieves junction records linking Certifications to Skills. A filter that is no
 ]
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -1872,11 +5236,14 @@ Retrieves junction records linking Certifications to Skills. A filter that is no
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Certification-Skill junctions.|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters or schema validation failure.|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getcertificationskills-responseschema">Response Schema</h3>
 
@@ -1893,6 +5260,19 @@ Status Code **200**
 |» skillCategory|string|false|none|Skill Category|
 |» skillProficiencyScore|number|false|none|Proficiency Score|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -1903,9 +5283,13 @@ Status Code **200**
 |200|Cache-Control|string||Directives for caching mechanisms in both requests and responses.|
 |400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -1956,7 +5340,7 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |X-Request-Id|header|string(uuid)|true|Correlation ID for distributed tracing. Required on SAPI; missing or non-UUID returns 400 BAD_REQUEST (ADR-026).|
 
 #### Enumerated Values
@@ -1983,15 +5367,233 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 }
 ```
 
-> 500 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: SAPISkill"
+  }
+]
+```
+
+> The route does not exist, or the key in the path matches no record.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /sapi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+}
+```
+
+> SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.
+
+```json
+[
+  {
+    "errorCode": "METHOD_NOT_ALLOWED",
+    "message": "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+  }
+]
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Upstream Salesforce processing failed.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -2000,10 +5602,29 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successful retrieval of Global Configuration. Returns an empty object when no configuration record exists.|[PortfolioConfig](#schemaportfolioconfig)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).|[Error](#schemaerror)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The integration user lacks object, field, or Apex class permission for this resource.|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|API rate limit exceeded.|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal platform error (unhandled Apex exception).|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object.|[PlatformErrorList](#schemaplatformerrorlist)|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist, or the key in the path matches no record.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header.|[PlatformErrorList](#schemaplatformerrorlist)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+<h3 id="getportfolioconfig-responseschema">Response Schema</h3>
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
 
 ### Response Headers
 
@@ -2011,10 +5632,15 @@ Returns the singleton Global Configuration object (Metadata-driven). Not pageabl
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |200|Cache-Control|string||Private configuration data; shared caches must not store it.|
+|400|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |401|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
 |403|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|404|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 |429|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value (missing or non-UUID request header).|
 
 <aside class="warning">
@@ -2035,24 +5661,26 @@ OAuth2ClientCredentials ( Scopes: api )
 {
   "httpStatus": 400,
   "errorCode": "BAD_REQUEST",
-  "message": "Offset cannot be negative.",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": false,
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000"
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
 }
 
 ```
 
-Standard Error Response Schema.
+The error object this API sends. The platform sends a JSON array instead for two refusals, see PlatformErrorList.
 
 ### Properties
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|httpStatus|integer|true|read-only|Standard HTTP Status Code.|
-|errorCode|string|true|none|Machine-readable error code constant.|
-|message|string|true|none|Human-readable error message.|
-|retryable|boolean|false|none|Indicates if the client should retry the request.|
-|correlationId|string(uuid)|true|none|Unique ID tracking the request. Matches X-Request-Id.|
+|httpStatus|integer|true|none|none|
+|errorCode|string|true|none|Machine readable code. Program against this, not against the message.|
+|message|string|true|none|What happened, what you need and how to get it, in plain sentences.|
+|correlationId|string(uuid)|true|none|Matches X-Request-Id, or the id the API made when none was sent.|
+|retryable|boolean|true|none|True only when the same request can succeed later with no change by the caller.|
+|help|string(uri)|false|none|Link to this error code's entry in the Errors section of the API reference.|
 
 #### Enumerated Values
 
@@ -2062,11 +5690,36 @@ Standard Error Response Schema.
 |errorCode|UNAUTHORIZED|
 |errorCode|FORBIDDEN|
 |errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
 |errorCode|RATE_LIMIT_EXCEEDED|
 |errorCode|INTERNAL_SERVER_ERROR|
-|errorCode|SALESFORCE_UNAVAILABLE|
-|errorCode|GATEWAY_TIMEOUT|
-|errorCode|GONE|
+
+<h2 id="tocS_PlatformErrorList">PlatformErrorList</h2>
+<!-- backwards compatibility -->
+<a id="schemaplatformerrorlist"></a>
+<a id="schema_PlatformErrorList"></a>
+<a id="tocSplatformerrorlist"></a>
+<a id="tocsplatformerrorlist"></a>
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+
+```
+
+What the platform sends for a refusal that happens before our code runs: an ended token (401) or no access to the class (403). Not our error object.
+
+### Properties
+
+|Name|Type|Required|Restrictions|Description|
+|---|---|---|---|---|
+|errorCode|string|true|none|none|
+|message|string|true|none|none|
 
 <h2 id="tocS_Persona">Persona</h2>
 <!-- backwards compatibility -->

@@ -13,6 +13,7 @@ import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
   REDOC_OPTIONS,
   REDOC_CONSTRAINT_COLOR,
+  errorEntry,
   headerOffset
 } from "c/apiReference";
 import { loadScript } from "lightning/platformResourceLoader";
@@ -82,6 +83,18 @@ function redocStub() {
       link.setAttribute("href", `#${SECTIONS[spec][1]}`);
       link.textContent = "in text link";
       element.appendChild(link);
+      // An error entry as Redoc draws it from the spec's Errors section: an empty anchor in a
+      // paragraph, then the entry's heading.
+      const holder = document.createElement("p");
+      const anchor = document.createElement("a");
+      anchor.id = "error-bad-request";
+      holder.appendChild(anchor);
+      element.appendChild(holder);
+      const heading = document.createElement("h3");
+      heading.id = "bad_request-400";
+      heading.textContent = "BAD_REQUEST (400)";
+      heading.getBoundingClientRect = () => ({ top: 4000 });
+      element.appendChild(heading);
       callback();
     })
   };
@@ -204,6 +217,29 @@ describe("c-api-reference section links", () => {
     expect(element.shadowRoot.activeElement).toBe(
       $(element, '[id="tag/Orchestration/operation/getProfile"]')
     );
+  });
+
+  it("lands on an error entry from a help link and focuses its heading", async () => {
+    setUrl("?spec=papi&version=v2", "#error-bad-request");
+    const element = create({ fullWidth: true, openOnLoad: true });
+    await flush();
+    await flush();
+    await flush();
+
+    expect(window.Redoc.init.mock.calls[0][0]).toBe("PAPI_Spec_V2");
+    const heading = $(element, '[id="bad_request-400"]');
+    expect(element.shadowRoot.activeElement).toBe(heading);
+    expect(heading.getAttribute("tabindex")).toBe("-1");
+  });
+
+  it("keeps the anchor itself when no heading follows it", () => {
+    const holder = document.createElement("p");
+    const anchor = document.createElement("a");
+    anchor.id = "error-gone";
+    holder.appendChild(anchor);
+    expect(errorEntry(anchor)).toBe(anchor);
+    const other = document.createElement("div");
+    expect(errorEntry(other)).toBe(other);
   });
 
   it("switches spec only once for a hash neither spec has", async () => {
