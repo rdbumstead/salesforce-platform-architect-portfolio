@@ -147,7 +147,7 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
 - **`npm run sf:coverage -- --target-org <alias>`**: runs every local Apex test in the named org and fails on a failed test or org wide coverage under 90% (`scripts/coverage-gate.js`).
 - **`npm run specs:sync`** and **`npm run specs:check`**: regenerate every copy of the API specs from `packages/integration-api/specs`, or fail when a copy differs (`scripts/sync-specs.js`). Edit the YAML there, never a copy.
 - **`npm run docs:counts`**: fails when the ADR count in README or STATUS, or an ADR link in the indexes, disagrees with `docs/adr` (`scripts/check-doc-counts.js`).
-- **`npm run refs:check`**: fails when a comment, metadata description or help text under `packages/` names a build process code. It reads only prose and skips vendored bundles. Exceptions go in `scripts/internal-refs-allowlist.json` with a reason ([Technical Guide §3.1](./04-Technical-Guide.md#31-key-verification-items)).
+- **`npm run refs:check`**: fails when a comment, metadata description or help text under `packages/`, or any text in `docs/`, `README.md` or `STATUS.md`, names a build process code. It scans the same paths as CI, and the pre-commit hook runs it on staged files there. It reads only prose and skips vendored bundles. Exceptions go in `scripts/internal-refs-allowlist.json` with a reason ([Technical Guide §3.1](./04-Technical-Guide.md#31-key-verification-items)).
 - **`npm run pre-launch-check -- --target-org <alias>`**: the release checks in one command ([Technical Guide §3](./04-Technical-Guide.md#3-quality-assurance-checklist)).
 
 ### 3.2 Pipeline Triggers
