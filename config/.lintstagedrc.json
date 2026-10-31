@@ -9,7 +9,9 @@
   "**/*.{cls,trigger,js,xml,yaml,yml,md}": [
     "secretlint --secretlintrc config/.secretlintrc.json --maskSecrets"
   ],
-  "packages/integration-api/specs/**/*.yaml": ["npm run docs:api"],
+  "packages/integration-api/specs/**/*.yaml": [
+    "node scripts/regenerate-spec-outputs.js"
+  ],
   "{docs/**/*.md,scripts/render-mermaid-alt.json}": [
     "node scripts/check-mermaid-alt.js"
   ],

@@ -12,6 +12,7 @@ const {
   API_VERSION,
   COLLECTION_NAME,
   COLLECTION_TEST_SCRIPT,
+  CONVERTER_VERSION,
   FIXED_UUID,
   OUTPUT_FILE,
   PAPI_FOLDER,
@@ -22,10 +23,25 @@ const {
   TOKEN_REQUEST_NAME,
   normalizeCollection,
   prerequestScript,
+  converterVersionProblem,
   serialize,
   sortKeys,
   stableId
 } = require("./build-postman-collection");
+
+// package.json is the one place the converter version is written. A range would let npm
+// install another version, and another version can give other bytes for the same spec.
+test("package.json pins the converter to one exact version", () => {
+  assert.match(CONVERTER_VERSION, /^\d+\.\d+\.\d+$/);
+});
+
+test("a converter other than the pinned version stops the build and says to run npm install", () => {
+  assert.strictEqual(converterVersionProblem("6.4.0", "6.4.0"), null);
+  assert.strictEqual(
+    converterVersionProblem("6.5.0", "6.4.0"),
+    "openapi-to-postmanv2 6.5.0 is installed but package.json pins 6.4.0. Run npm install."
+  );
+});
 
 // An obviously fake token. No real token is ever written into a test.
 const FAKE_TOKEN = "FAKE-TOKEN-FOR-TESTS-ONLY";
