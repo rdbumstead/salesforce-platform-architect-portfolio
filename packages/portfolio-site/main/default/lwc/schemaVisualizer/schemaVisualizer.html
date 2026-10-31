@@ -2,7 +2,7 @@
   <section class="erd" aria-label="Data model">
     <div class="erd-header">
       <div class="erd-title-row">
-        <h2 class="erd-title">{title}</h2>
+        <h2 lwc:if={showTitle} class="erd-title">{title}</h2>
         <c-view-source source-key="schemaVisualizer"></c-view-source>
       </div>
       <template lwc:if={showScopeToggle}>

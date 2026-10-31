@@ -336,6 +336,15 @@ describe("c-data-source", () => {
       expect(el.shadowRoot.activeElement.className).toContain("dialog-heading");
     });
 
+    it("keeps a link to the full data model inside the open dialog", async () => {
+      const el = await openPanel([SKILLS_IN]);
+      modelButton(el).click();
+      await settle();
+      const link = dialog(el).querySelector(".dialog-model-link .model-link");
+      expect(link.textContent.trim()).toBe(WORDING.modelLinkText);
+      expect(link.getAttribute("href")).toMatch(/business-architecture/);
+    });
+
     it("points aria-controls at the panel only while the panel exists", async () => {
       const el = create({ sourceKeys: "a" });
       getSources.emit([SKILLS_IN]);

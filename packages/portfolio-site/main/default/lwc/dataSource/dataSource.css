@@ -231,6 +231,17 @@
   overflow: auto;
 }
 
+/* The link to the full model is for phones, where the dialog lists only the section's objects. */
+.dialog-model-link {
+  margin: var(--pf-space-3) 0 0;
+}
+
+@media (min-width: 768px) {
+  .dialog-model-link {
+    display: none;
+  }
+}
+
 .model-loading {
   margin: 0;
   padding: var(--pf-space-4);
