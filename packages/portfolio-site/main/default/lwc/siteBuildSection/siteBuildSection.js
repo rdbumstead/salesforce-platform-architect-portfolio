@@ -1,5 +1,5 @@
 /**
- * @description       : "How this site is built", above the docs viewer on the architecture docs
+ * @description       : "How this site is built", inside the docs viewer on the architecture docs
  *                      page, for a technical reviewer. One card per live pillar from c/pillarData, in the
  *                      case study card style: the pillar's stat as the big number with its label
  *                      when it has one, then the letter and page name, the summary and one
