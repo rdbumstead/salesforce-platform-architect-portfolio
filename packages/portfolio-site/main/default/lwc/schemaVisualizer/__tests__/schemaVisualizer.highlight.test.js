@@ -138,13 +138,12 @@ describe("c-schema-visualizer highlight mode", () => {
     expect(getSchemaGraph.getLastConfig()).toEqual({ scope: "employerHub" });
   });
 
-  it("hides the scope toggle and names both counts in the caption", async () => {
+  it("hides the scope toggle and the title, and names both counts in the caption", async () => {
     const element = await drawn({ highlight: "EH_Job_Posting__c" });
 
     expect(q(element, ".scope-toggle")).toBeNull();
-    expect(q(element, ".erd-title").textContent).toBe(
-      "This section's data model"
-    );
+    // The marker's dialog around the visualizer owns the heading on every screen.
+    expect(q(element, ".erd-title")).toBeNull();
     expect(q(element, ".caption").textContent).toBe(
       "The one object this section reads, highlighted among the 3 in the data model, described live in 142 ms of server CPU."
     );
