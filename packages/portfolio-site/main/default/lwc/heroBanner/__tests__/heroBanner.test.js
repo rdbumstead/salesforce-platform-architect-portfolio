@@ -293,15 +293,18 @@ describe("c-hero-banner", () => {
   });
 
   describe("buttons and profile links", () => {
-    it("offers See the case studies as the primary button and the tour as the secondary, and leaves the resume to the profile links", async () => {
+    it("offers the tour as the primary button first and See the case studies as the secondary, and leaves the resume to the profile links", async () => {
       const element = await renderWithCases();
       const actions = element.shadowRoot.querySelectorAll(".hero-actions a");
       expect(Array.from(actions).map((a) => text(a))).toEqual([
-        "See the case studies ↓",
-        "Take the 10 minute tour →"
+        "Take the 10 minute tour →",
+        "See the case studies ↓"
       ]);
-      expect(actions[0].getAttribute("href")).toBe("/portfolio/#case-studies");
+      expect(actions[0].getAttribute("href")).toBe(
+        "/portfolio/business-architecture"
+      );
       expect(actions[0].classList.contains("btn-primary")).toBe(true);
+      expect(actions[1].getAttribute("href")).toBe("/portfolio/#case-studies");
       expect(actions[1].classList.contains("btn-secondary")).toBe(true);
       expect(byId(element, "resume-button")).toBeNull();
     });
@@ -467,7 +470,7 @@ describe("c-hero-banner", () => {
       getHomeCaseStudies.emit([CASE]);
       await flush();
       expect(caseButton(element)).not.toBeNull();
-      expect(actionKeys(element)).toEqual(["case-studies-button", "tour-link"]);
+      expect(actionKeys(element)).toEqual(["tour-link", "case-studies-button"]);
       getHomeCaseStudies.emit([]);
       await flush();
       expect(caseButton(element)).toBeNull();
@@ -540,7 +543,7 @@ describe("c-hero-banner", () => {
       window.sessionStorage.clear();
     });
 
-    it("is a secondary button in the button row to the first stop, with the tour minutes", () => {
+    it("is the primary button, first in the button row, to the first stop, with the tour minutes", () => {
       const element = render();
       const link = byId(element, "tour-link");
       expect(link.tagName).toBe("A");
@@ -548,8 +551,8 @@ describe("c-hero-banner", () => {
         "/portfolio/business-architecture"
       );
       expect(text(link)).toBe("Take the 10 minute tour →");
-      expect(link.classList.contains("btn-secondary")).toBe(true);
-      expect(link.classList.contains("btn-primary")).toBe(false);
+      expect(link.classList.contains("btn-primary")).toBe(true);
+      expect(link.classList.contains("btn-secondary")).toBe(false);
       expect(link.querySelector('[aria-hidden="true"]').textContent).toBe("→");
       const actions = element.shadowRoot.querySelector(".hero-actions");
       expect(actions.contains(link)).toBe(true);
