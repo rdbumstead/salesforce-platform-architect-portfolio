@@ -1,3 +1,4 @@
+@import "c/sectionHeading";
 /*
  * Home page testimonials, on the --pf- site tokens only, in heroBanner's section style and the
  * wall's card tones. Every element that sets a background also sets its text colour. The two
@@ -24,15 +25,6 @@
 
 .section {
   padding: 64px 0 24px;
-}
-
-.section-heading {
-  margin: 0;
-  font-size: 32px;
-  line-height: 1.2;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--pf-text);
 }
 
 .section-intro {
