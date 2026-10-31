@@ -43,7 +43,7 @@ global with sharing class PAPIRouter {
   global static void doGet() {
     String route = routeOf(RestContext.request?.requestURI);
     if (route == null) {
-      ApiRouting.notFound();
+      ApiRouting.notFound(isGuest());
     } else if (isHidden(route)) {
       refuse();
     } else if (!ApiRoutes.isVersionless()) {
@@ -70,7 +70,7 @@ global with sharing class PAPIRouter {
   global static void doPost() {
     String route = routeOf(RestContext.request?.requestURI);
     if (route == null) {
-      ApiRouting.notFound();
+      ApiRouting.notFound(isGuest());
     } else if (isHidden(route)) {
       refuse();
     } else if (!ApiRoutes.isVersionless()) {

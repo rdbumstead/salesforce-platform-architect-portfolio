@@ -26,7 +26,7 @@ global with sharing class SAPIRouter {
   global static void doGet() {
     String route = routeOf(RestContext.request?.requestURI);
     if (route == null) {
-      ApiRouting.notFound();
+      ApiRouting.notFound(isGuest());
     } else if (isGuest()) {
       ApiRouting.unauthorized();
     } else if (!ApiRoutes.isVersionless()) {

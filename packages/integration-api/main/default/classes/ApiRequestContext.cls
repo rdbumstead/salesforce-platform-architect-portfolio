@@ -248,6 +248,38 @@ public with sharing class ApiRequestContext {
   }
 
   /**
+   * @description Builds a context for a refusal that must not depend on the caller having
+   *              done anything right: the 401 and 403 the routers give before the request
+   *              rules run. It sets Content-Type, takes the correlation id the caller sent
+   *              when it is a UUID (else makes one and sets X-Request-Id), and applies no
+   *              version rule, no X-Request-Id rule and no rate limit, so an anonymous caller
+   *              with no headers is told what to do and not that a header is missing.
+   * @return ApiRequestContext The context. Not rejected until error() is called.
+   */
+  public static ApiRequestContext beginRefusal() {
+    ApiRequestContext ctx = new ApiRequestContext(
+      RestContext.request,
+      RestContext.response
+    );
+    String uri = RestContext.request?.requestURI;
+    ctx.canonical = canonicalPath(uri);
+    ctx.rawUri = uri;
+    ctx.modern = ApiRoutes.isVersionless();
+    ctx.header('Content-Type', 'application/json');
+    String supplied = ctx.headerValue(HEADER_REQUEST_ID);
+    if (
+      String.isNotBlank(supplied) &&
+      UUID_PATTERN.matcher(supplied.trim()).matches()
+    ) {
+      ctx.correlationId = supplied.trim();
+    } else {
+      ctx.correlationId = UUID.randomUUID().toString();
+      ctx.header(HEADER_REQUEST_ID, ctx.correlationId);
+    }
+    return ctx;
+  }
+
+  /**
    * @description True when the request has already been answered with an error.
    * @return Boolean True when the caller must stop processing.
    */

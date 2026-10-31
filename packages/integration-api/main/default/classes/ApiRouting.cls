@@ -53,7 +53,19 @@ public with sharing class ApiRouting {
    *              rules as any other, so it carries the same headers.
    */
   public static void notFound() {
-    ApiRequestContext ctx = ApiRequestContext.begin();
+    notFound(false);
+  }
+
+  /**
+   * @description The same 404 for a caller who may be anonymous. An anonymous caller has not
+   *              got a token and the X-Request-Id rule would answer them first, so the 404 is
+   *              written without the request rules.
+   * @param anonymous True for the site guest.
+   */
+  public static void notFound(Boolean anonymous) {
+    ApiRequestContext ctx = anonymous
+      ? ApiRequestContext.beginRefusal()
+      : ApiRequestContext.begin();
     if (ctx.isRejected()) {
       return;
     }
@@ -92,13 +104,11 @@ public with sharing class ApiRouting {
   /**
    * @description Answers a caller with no token on a route that needs one: 401
    *              UNAUTHORIZED with WWW-Authenticate: Bearer and a message that says where to
-   *              get a token. It runs the normal header and rate limit rules first.
+   *              get a token. It runs no header, version or rate limit rule, so a caller
+   *              with no headers at all is told how to get a token.
    */
   public static void unauthorized() {
-    ApiRequestContext ctx = ApiRequestContext.begin();
-    if (ctx.isRejected()) {
-      return;
-    }
+    ApiRequestContext ctx = ApiRequestContext.beginRefusal();
     ctx.header('WWW-Authenticate', 'Bearer');
     ctx.error(
       401,
@@ -112,13 +122,11 @@ public with sharing class ApiRouting {
 
   /**
    * @description Answers a token holder who asks for a token on the instance address: 403
-   *              FORBIDDEN and a message that gives the site's token URL.
+   *              FORBIDDEN and a message that gives the site's token URL. Like the 401 it
+   *              runs no header, version or rate limit rule.
    */
   public static void forbidden() {
-    ApiRequestContext ctx = ApiRequestContext.begin();
-    if (ctx.isRejected()) {
-      return;
-    }
+    ApiRequestContext ctx = ApiRequestContext.beginRefusal();
     ctx.error(403, 'FORBIDDEN', ApiMessages.tokensNotHere(ApiSite.tokenUrl()));
   }
 

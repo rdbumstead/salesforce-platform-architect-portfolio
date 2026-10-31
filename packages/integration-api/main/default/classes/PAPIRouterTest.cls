@@ -388,6 +388,18 @@ private class PAPIRouterTest {
   }
 
   @IsTest
+  static void shouldAnswerAGuestWithNoHeadersAt401() {
+    PAPIRouter.guestOverride = true;
+    RestTestUtil.initGetRaw(BASE + 'projects', new Map<String, String>(), null);
+
+    PAPIRouter.doGet();
+
+    Assert.areEqual(401, RestContext.response.statusCode, 'No headers needed');
+    Assert.areEqual('Bearer', header('WWW-Authenticate'), 'Challenge');
+    Assert.isNull(header('X-RateLimit-Limit'), 'No shared quota spent');
+  }
+
+  @IsTest
   static void shouldAnswerTheIntegrationUser403OnTheTokenRoute() {
     ApiSite.siteBaseOverride = 'https://example.my.site.com';
     PAPIRouter.guestOverride = false;

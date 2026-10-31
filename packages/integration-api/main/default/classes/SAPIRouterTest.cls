@@ -288,6 +288,57 @@ private class SAPIRouterTest {
   }
 
   @IsTest
+  static void shouldAnswerAGuestWithNoHeadersAt401NotAMissingHeader() {
+    ApiSite.siteBaseOverride = 'https://example.my.site.com';
+    SAPIRouter.guestOverride = true;
+    RestTestUtil.initGetRaw(BASE + 'skills', new Map<String, String>(), null);
+
+    SAPIRouter.doGet();
+
+    Assert.areEqual(401, RestContext.response.statusCode, body());
+    Assert.areEqual(
+      'Bearer',
+      RestContext.response.headers.get('WWW-Authenticate')
+    );
+    Assert.isNotNull(
+      RestContext.response.headers.get('X-Request-Id'),
+      'An id is made and echoed'
+    );
+    Assert.areEqual(
+      RestContext.response.headers.get('X-Request-Id'),
+      bodyMap().get('correlationId'),
+      'The body carries the same id'
+    );
+    Assert.isNull(
+      RestContext.response.headers.get('X-RateLimit-Limit'),
+      'A refusal spends none of the shared quota'
+    );
+
+    RestTestUtil.initGetRaw(BASE + 'nothing', new Map<String, String>(), null);
+    SAPIRouter.doGet();
+    Assert.areEqual(
+      404,
+      RestContext.response.statusCode,
+      'An unknown route is a 404 for a guest, not a missing header'
+    );
+  }
+
+  @IsTest
+  static void shouldKeepAnIdTheGuestSent() {
+    SAPIRouter.guestOverride = true;
+    String sent = UUID.randomUUID().toString();
+    RestTestUtil.initGetRaw(
+      BASE + 'skills',
+      new Map<String, String>{ 'X-Request-Id' => sent },
+      null
+    );
+
+    SAPIRouter.doGet();
+
+    Assert.areEqual(sent, bodyMap().get('correlationId'), 'Sent id kept');
+  }
+
+  @IsTest
   static void shouldGrantTheRoutersToTheGuestPermissionSet() {
     List<PermissionSet> sets = [
       SELECT Id
