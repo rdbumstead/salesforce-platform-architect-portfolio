@@ -48,3 +48,7 @@ I decided that v2 is a breaking contract, selected by header, with keys only. v1
 ## Amendment (2026-10-31)
 
 [ADR-040](040-versionless-api-urls.md) removed the `/v1/` segment from the URLs the API is called at. The old `/v1/` URLs stay as aliases until a date I set, with their own two settings. The behaviour in this ADR is unchanged for every path, old and new: the exceptions are now matched on the versionless path, so each one covers both spellings. The alternatives table above rejected a version in the URL path, and that still holds. The URL now names the resource and the header names the version.
+
+## Amendment (2026-10-31): the v1 dates are set
+
+The dates no longer ship blank. On 2026-10-29 I set `Api_V1_Deprecation_Date` to 2026-10-30 and `Api_V1_Sunset_Date` to 2026-11-29, so v1 responses carry `Deprecation` and `Sunset`, and from 2026-11-29 v1 answers 410 except on the three paths listed above. The "Both dates ship blank" line under Implications describes the state when this ADR was accepted.
