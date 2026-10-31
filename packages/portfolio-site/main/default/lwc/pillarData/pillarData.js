@@ -42,7 +42,7 @@ const SOURCE = [
     sasName: "Solution Architecture",
     url: "nonprofit-solutions",
     summary:
-      "A solution design, decision matrix and cost comparison for a regional adult literacy nonprofit.",
+      "A solution design, decision matrix and cost comparison for an adult literacy nonprofit.",
     tour: "Move one weight in the matrix and watch the ranking change.",
     tourMinutes: 3,
     tags: ["Solution design", "Decision matrix"],
@@ -138,6 +138,15 @@ export function salesforceSince(year) {
  * certifications is here once, so every place that shows it agrees.
  */
 export const ACTIVE_CERTIFICATIONS = "7 active Salesforce certifications";
+
+/**
+ * The chip text for a counted number of active certifications.
+ * @param {number} count the count
+ * @returns {string} the text
+ */
+export function activeCertificationsText(count) {
+  return `${count} active Salesforce certifications`;
+}
 export const PROOF_POINTS = Object.freeze([
   salesforceSince(SALESFORCE_START_YEAR),
   ACTIVE_CERTIFICATIONS

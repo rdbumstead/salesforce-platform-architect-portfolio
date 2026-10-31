@@ -1,6 +1,6 @@
 <template>
-  <template lwc:if={hasPoints}>
-    <div class="career">
+  <template lwc:if={hasStops}>
+    <div class={careerClass} data-id="career">
       <section class="section" aria-labelledby="career-heading">
         <div class="heading-row">
           <h2
@@ -8,251 +8,121 @@
             class="section-heading"
             data-id="career-heading"
           >
-            Career timeline
+            Work
           </h2>
           <c-data-source
-            source-keys="ResumeController_TimelineRoles,ResumeController_Education,ResumeController_Certifications"
+            source-keys="ResumeController_TimelineRoles"
             class="card-source"
           ></c-data-source>
         </div>
 
-        <template lwc:if={showFilters}>
-          <div
-            class="filters"
-            role="group"
-            aria-label="Show on the timeline"
-            data-id="filters"
+        <div class="intro-row">
+          <p class="intro">
+            Open any employer to see each role. Several can be open at once.
+          </p>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-id="expand-all"
+            onclick={handleExpandAll}
           >
-            <template for:each={filters} for:item="option">
-              <button
-                key={option.key}
-                type="button"
-                class={option.className}
-                aria-pressed={option.pressed}
-                data-kind={option.key}
-                onclick={handleFilterClick}
-              >
-                {option.label}
-              </button>
-            </template>
-          </div>
-        </template>
+            {expandAllLabel}
+          </button>
+        </div>
 
-        <div class={lineWrapClass} data-id="line-wrap">
-          <ol
-            class="line"
-            data-id="line"
-            tabindex="0"
-            aria-labelledby="career-heading"
-            onscroll={handleLineScroll}
-          >
-            <template for:each={linePoints} for:item="point">
-              <li
-                key={point.key}
-                class={point.pointClass}
-                data-id="line-point"
-                data-key={point.key}
-                data-type={point.type}
+        <ol class="track" data-id="track" aria-labelledby="career-heading">
+          <template for:each={trackStops} for:item="stop">
+            <li
+              key={stop.key}
+              class={stop.stopClass}
+              data-id="stop"
+              data-key={stop.key}
+            >
+              <span class={stop.dotClass} aria-hidden="true"></span>
+              <div class="stop-head">
+                <span class="stop-employer" data-id="stop-employer"
+                  >{stop.employer}</span
+                >
+                <span class="stop-span" data-id="stop-span">{stop.span}</span>
+                <template lwc:if={stop.hasTitle}>
+                  <span class="stop-title" data-id="stop-title"
+                    >{stop.title}</span
+                  >
+                </template>
+              </div>
+              <button
+                type="button"
+                class="toggle"
+                data-id="toggle"
+                data-key={stop.key}
+                aria-expanded={stop.expanded}
+                aria-controls={stop.panelId}
+                onclick={handleToggle}
               >
-                <span class="dot" aria-hidden="true"></span>
-                <template lwc:if={point.isGroup}>
-                  <div class="group">
-                    <span class="point-first"
-                      >{point.first}<span class="visually-hidden"
-                        >{comma}</span
-                      ></span
-                    >
-                    <template lwc:if={point.showGroupYears}>
-                      <span class="years group-years"
-                        ><span aria-hidden="true">{point.years}</span
-                        ><span class="visually-hidden"
-                          >{point.yearsSpoken}</span
-                        ></span
-                      >
-                    </template>
-                    <ul class="titles">
-                      <template for:each={point.titles} for:item="title">
+                {stop.countText} · {stop.toggleText}
+              </button>
+              <div id={stop.panelId} class={stop.panelClass} data-id="panel">
+                <div class="panel-clip">
+                  <template lwc:if={stop.isFold}>
+                    <ul class="earlier">
+                      <template for:each={stop.roles} for:item="role">
                         <li
-                          key={title.key}
-                          class="title-item"
-                          data-id="line-title"
+                          key={role.key}
+                          class="earlier-line"
+                          data-id="earlier-role"
                         >
-                          <div class="point-body title-row">
-                            <span class="point-second"
-                              >{title.label}<span class="visually-hidden"
-                                >{comma}</span
-                              ></span
-                            >
-                            <template lwc:if={title.showYears}>
-                              <span class="years"
-                                ><span aria-hidden="true">{title.years}</span
-                                ><span class="visually-hidden"
-                                  >{title.yearsSpoken}</span
-                                ><template lwc:if={title.isCurrent}
-                                  ><span class="active-tag" aria-hidden="true"
-                                    >Active</span
-                                  ></template
-                                ></span
-                              >
-                            </template>
-                          </div>
+                          {role.line}
                         </li>
                       </template>
                     </ul>
-                  </div>
-                </template>
-                <template lwc:else>
-                  <div class="point-body">
-                    <span class="point-first"
-                      >{point.first}<span class="visually-hidden"
-                        >{comma}</span
-                      ></span
-                    >
-                    <template lwc:if={point.hasSecond}>
-                      <span class="point-second"
-                        >{point.second}<span class="visually-hidden"
-                          >{comma}</span
-                        ></span
-                      >
-                    </template>
-                    <span class="years"
-                      ><span aria-hidden="true">{point.years}</span
-                      ><span class="visually-hidden">{point.yearsSpoken}</span
-                      ><template lwc:if={point.isCurrent}
-                        ><span class="active-tag" aria-hidden="true"
-                          >Active</span
-                        ></template
-                      ></span
-                    >
-                  </div>
-                </template>
-              </li>
-            </template>
-          </ol>
-        </div>
-
-        <ol
-          id="career-stack"
-          class="stack"
-          data-id="stack"
-          aria-labelledby="career-heading"
-        >
-          <template for:each={stackPoints} for:item="point">
-            <li
-              key={point.key}
-              class={point.pointClass}
-              data-id="stack-point"
-              data-key={point.key}
-              data-type={point.type}
-            >
-              <span class="dot" aria-hidden="true"></span>
-              <template lwc:if={point.isGroup}>
-                <div class="group">
-                  <span class="point-first"
-                    >{point.first}<span class="visually-hidden"
-                      >{comma}</span
-                    ></span
-                  >
-                  <template lwc:if={point.showGroupYears}>
-                    <span class="years group-years"
-                      ><span aria-hidden="true">{point.years}</span
-                      ><span class="visually-hidden"
-                        >{point.yearsSpoken}</span
-                      ></span
+                    <a
+                      class="panel-link"
+                      href={resumeHref}
+                      data-id="fold-resume-link"
+                      >See the full resume →</a
                     >
                   </template>
-                  <ul class="titles">
-                    <template for:each={point.titles} for:item="title">
-                      <li
-                        key={title.key}
-                        class="title-item"
-                        data-id="stack-title"
-                      >
-                        <div class="point-body title-row">
-                          <span class="point-second"
-                            >{title.label}<span class="visually-hidden"
-                              >{comma}</span
-                            ></span
+                  <template lwc:else>
+                    <ul class="roles">
+                      <template for:each={stop.roles} for:item="role">
+                        <li key={role.key} class="role" data-id="role">
+                          <span class="role-title" data-id="role-title"
+                            >{role.title}</span
                           >
-                          <template lwc:if={title.showYears}>
-                            <span class="years"
-                              ><span aria-hidden="true">{title.years}</span
-                              ><span class="visually-hidden"
-                                >{title.yearsSpoken}</span
-                              ><template lwc:if={title.isCurrent}
-                                ><span class="active-tag" aria-hidden="true"
-                                  >Active</span
-                                ></template
-                              ></span
-                            >
+                          <span class="role-years" data-id="role-years"
+                            >{role.yearsText}</span
+                          >
+                          <template lwc:if={role.hasHighlights}>
+                            <ul class="highlights">
+                              <template
+                                for:each={role.highlights}
+                                for:item="highlight"
+                              >
+                                <li
+                                  key={highlight.id}
+                                  class="highlight"
+                                  data-id="highlight"
+                                >
+                                  {highlight.text}
+                                </li>
+                              </template>
+                            </ul>
                           </template>
-                        </div>
-                      </li>
-                    </template>
-                  </ul>
-                </div>
-              </template>
-              <template lwc:else>
-                <div class="point-body">
-                  <span class="point-first"
-                    >{point.first}<span class="visually-hidden"
-                      >{comma}</span
-                    ></span
-                  >
-                  <template lwc:if={point.hasSecond}>
-                    <span class="point-second"
-                      >{point.second}<span class="visually-hidden"
-                        >{comma}</span
-                      ></span
-                    >
+                        </li>
+                      </template>
+                    </ul>
                   </template>
-                  <span class="years"
-                    ><span aria-hidden="true">{point.years}</span
-                    ><span class="visually-hidden">{point.yearsSpoken}</span
-                    ><template lwc:if={point.isCurrent}
-                      ><span class="active-tag" aria-hidden="true"
-                        >Active</span
-                      ></template
-                    ></span
-                  >
                 </div>
-              </template>
+              </div>
             </li>
           </template>
         </ol>
 
-        <template lwc:if={showStackToggle}>
-          <div class="stack-more">
-            <button
-              type="button"
-              class="stack-toggle"
-              data-id="stack-toggle"
-              aria-expanded={stackToggleExpanded}
-              aria-controls="career-stack"
-              onclick={handleStackToggle}
-            >
-              {stackToggleLabel}
-            </button>
-          </div>
-        </template>
-
-        <p class="career-foot">
-          <a class="foot-link" href={resumeHref} data-id="resume-link"
-            >View full details on my resume</a
+        <div class="career-foot">
+          <a class="btn btn-primary" href={resumeHref} data-id="resume-link"
+            >See the full resume →</a
           >
-          <template lwc:if={showVerify}>
-            <a
-              class="foot-link verify-link"
-              href={verificationUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-id="verify-link"
-              >Verify on Trailhead<span class="visually-hidden"
-                >{newTabNote}</span
-              ></a
-            >
-          </template>
-        </p>
+        </div>
       </section>
     </div>
   </template>

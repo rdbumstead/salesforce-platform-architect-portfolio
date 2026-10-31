@@ -40,7 +40,7 @@
  */
 .intro-lead {
   margin: var(--pf-space-4) 0 0;
-  max-width: 64rem;
+  max-width: var(--portfolio-content-width, 1024px);
   color: var(--pf-body);
   font-size: 1.125rem;
   line-height: 1.65;

@@ -15,7 +15,7 @@
   gap: var(--pf-space-4) var(--pf-space-6);
   justify-content: space-between;
   align-items: center;
-  max-width: 1024px;
+  max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
   padding: var(--pf-space-5) var(--pf-space-4) var(--pf-space-6);
 }

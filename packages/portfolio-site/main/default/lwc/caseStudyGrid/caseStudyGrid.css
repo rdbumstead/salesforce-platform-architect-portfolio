@@ -8,7 +8,7 @@
 }
 
 .case-studies {
-  max-width: 1024px;
+  max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
   padding: 0 var(--pf-space-4);
   color: var(--pf-text);
@@ -44,7 +44,7 @@
 /* A one or two sentence intro runs to the section's width, like the page leads. */
 .section-intro {
   margin: var(--pf-space-2) 0 var(--pf-space-6);
-  max-width: 64rem;
+  max-width: var(--portfolio-content-width, 1024px);
   color: var(--pf-muted);
   text-wrap: pretty;
 }
@@ -73,16 +73,6 @@
   color: var(--pf-text);
 }
 
-.card:hover {
-  border-color: var(--pf-accent);
-}
-
-/* The title link is the card's one link. Its focus ring goes around the whole card. */
-.card:has(.card-link:focus-visible) {
-  outline: 2px solid var(--pf-focus);
-  outline-offset: 2px;
-}
-
 .card-body {
   display: flex;
   flex-direction: column;
@@ -99,7 +89,7 @@
 }
 
 /* Where the cards sit side by side, each card shares four row tracks with the cards beside it
-   (metric, title, client, arrow). Titles then start level whether or not a card has a metric,
+   (metric, title, client, button). Titles then start level whether or not a card has a metric,
    and whatever height a wrapped label takes. A card with no metric keeps its empty slot. */
 .metric-spacer {
   display: none;
@@ -139,7 +129,7 @@
     margin-bottom: 8px;
   }
 
-  .card-body > .card-go {
+  .card-body > .card-action {
     grid-row: 4;
     align-self: end;
   }
@@ -148,6 +138,64 @@
     display: block;
     visibility: hidden;
   }
+}
+
+.card-action {
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* One button look across the three home card sections. Primary is the hero button. Secondary
+   is a surface fill with a 1px border. The site link rule outranks a plain class, so :link and
+   :visited are matched too. */
+.btn,
+.btn:link,
+.btn:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.btn-primary,
+.btn-primary:link,
+.btn-primary:visited {
+  background: var(--pf-btn);
+  color: var(--pf-btn-text);
+  border: 1px solid var(--pf-btn);
+}
+
+.btn-primary:hover,
+.btn-primary:link:hover,
+.btn-primary:visited:hover {
+  background: var(--pf-btn-hover);
+  color: var(--pf-btn-text);
+}
+
+.btn-secondary,
+.btn-secondary:link,
+.btn-secondary:visited {
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+}
+
+.btn-secondary:hover,
+.btn-secondary:link:hover,
+.btn-secondary:visited:hover {
+  border-color: var(--pf-accent);
+  color: var(--pf-text);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 2px;
 }
 
 .metric-number {
@@ -172,43 +220,10 @@
   color: var(--pf-text);
 }
 
-/* The site's a:link rule outranks a plain class, so :link and :visited are matched too. */
-.card-link,
-.card-link:link,
-.card-link:visited {
-  color: var(--pf-text);
-  text-decoration: none;
-}
-
-/* The link stretched over the card, so a press anywhere on the card follows it. */
-.card-link::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: var(--pf-radius-lg);
-}
-
-.card:hover .card-link,
-.card-link:focus-visible {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.card-link:focus {
-  outline: none;
-}
-
 .client {
   margin: 0;
   font-size: 12px;
   color: var(--pf-muted);
-}
-
-.card-go {
-  margin-top: auto;
-  color: var(--pf-accent);
-  font-size: 16px;
-  font-weight: 600;
 }
 
 @media (max-width: 767.98px) {

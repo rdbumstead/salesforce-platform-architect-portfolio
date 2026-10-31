@@ -12,7 +12,7 @@
      size is a first guess that the browser replaces with the real one after the first render. */
   content-visibility: auto;
   contain-intrinsic-size: auto 420px;
-  max-width: 1024px;
+  max-width: var(--portfolio-content-width, 1024px);
   margin: 0 auto;
   padding: 0 var(--pf-space-4);
   color: var(--pf-text);
@@ -49,7 +49,7 @@
   gap: var(--pf-space-4);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 980px) {
   .cards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -60,7 +60,9 @@
   color: var(--pf-text);
   border: 1px solid var(--pf-border);
   border-radius: var(--pf-radius-lg);
-  padding: var(--pf-space-4);
+  padding: 18px;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .card-professional {
@@ -119,19 +121,44 @@
   font-size: 0.875rem;
 }
 
-.wall-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  margin-top: var(--pf-space-4);
-  color: var(--pf-text);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.wall-action {
+  margin: var(--pf-space-4) 0 0;
 }
 
-.wall-link:focus-visible {
+/* One button look across the three home card sections. The only button here is secondary: a
+   surface fill with a 1px border, the same height and radius as the primary one elsewhere. The
+   site link rule outranks a plain class, so :link and :visited are matched too. */
+.btn,
+.btn:link,
+.btn:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-space-2);
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.btn-secondary,
+.btn-secondary:link,
+.btn-secondary:visited {
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  border: 1px solid var(--pf-border);
+}
+
+.btn-secondary:hover,
+.btn-secondary:link:hover,
+.btn-secondary:visited:hover {
+  border-color: var(--pf-accent);
+  color: var(--pf-text);
+}
+
+.btn:focus-visible {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
 }

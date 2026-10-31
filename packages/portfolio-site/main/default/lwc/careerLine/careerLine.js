@@ -1,41 +1,32 @@
 /**
- * @description       : The career timeline under the home hero, so a visitor sees the whole arc
- *                      at a glance: every role, current certification and school on one line,
- *                      from ResumeController.getTimeline, newest first.
- *                      Roles are grouped by employer name, which is the only employer field the
- *                      read sends. An employer is one point with its name, its span ("2017 to
- *                      2021", or the earliest start year with a plus, "2021+", when any role in
- *                      it is held now) and every title under it, newest first, each with its own
- *                      years and an Active tag when held now. An employer with one role shows
- *                      just that title and its years. Certifications are grouped by issuer and
- *                      earned year ("Salesforce · 2025") with every name listed and the
- *                      issuer's own "<issuer> Certified " prefix dropped from each. A school is a
- *                      milestone on its completion. All sit among each other by date, and the
- *                      employers keep the server's order of first appearance (current first,
- *                      then newest). The grouping is the same under every filter, and no count
- *                      stands in for names.
- *                      Every role that ended before the year the owner started on Salesforce
- *                      (the Salesforce_Start_Year setting the timeline read returns, 2017 when it
- *                      sends nothing usable) folds into one last point, "Earlier roles, 2012 to
- *                      2016", its years taken from the roles in it, with each of those roles
- *                      listed under it by employer, title and years.
- *                      A selector (All, Work, Education, Certifications) narrows the line in
- *                      place. It opens on All, shows only the kinds that have points, and each
- *                      change sends career_timeline_filtered with the kind.
- *                      Nothing on the line opens. Every point is plain text, and the detail
- *                      lives on the resume page.
- *                      Under the line sits "View full details on my resume", and beside it,
- *                      with the certifications in view (All or Certifications), "Verify on
- *                      Trailhead" when the read sends a verification link starting http or
- *                      https, used exactly as sent, in a new tab.
- *                      At 768 px and up the points sit on one horizontal line that scrolls
- *                      sideways inside its own region, with a fade at an edge that has more.
- *                      Below 768 px the points show in a compact vertical list: the newest 4
- *                      points of the active filter, then a "Show all <n>" button that opens the
- *                      rest in place. It becomes "Show fewer", keeps focus, and sends
- *                      career_timeline_show_all with the kind. The filters count against the
- *                      full list, and changing the filter folds the list back to 4.
- *                      Renders nothing when the timeline read fails or has no points.
+ * @description       : The work timeline under the home hero, from ResumeController.getTimeline.
+ *                      Work only. Roles are grouped by employer name and each employer is one
+ *                      stop on a single slim track, in the server's order of first appearance
+ *                      (current first, then newest). Five stops share a row at 768 px and up
+ *                      with no sideways scroll. Below 768 px the track stacks in one column with
+ *                      the line on the left.
+ *                      A stop shows its employer, its span ("2026 to now", "2021 to 2026"), the
+ *                      title of its newest role that is not part time (the newest role when all
+ *                      are part time) and a "N roles" count with a Details button. A filled dot
+ *                      marks an employer held now, an outlined dot a past one. Every role that
+ *                      ended before the year the owner started on Salesforce
+ *                      (salesforceStartYear from the read, 2017 when it sends nothing usable)
+ *                      folds into one last stop, "Earlier roles", with a gray outlined dot.
+ *                      The button is a real disclosure: aria-expanded flips, aria-controls names
+ *                      the panel that opens under that stop inside its own column, and focus
+ *                      stays on the button. Any number of stops can be open at once. In a
+ *                      panel each role shows its title, its years with " · part time" when the
+ *                      read says so, and its highlights (up to 3), each held to one line. The
+ *                      Earlier roles panel lists each role on one line (title, employer, years),
+ *                      with no bullets, then a "See the full resume" link.
+ *                      "Expand all" beside the intro line opens every panel together and reads
+ *                      "Collapse all" once every stop is open. A panel reveals in 180 ms with a
+ *                      height change and a fade, and not at all when the system asks for reduced
+ *                      motion.
+ *                      Opening a stop sends career_role_opened with its position (1 is the
+ *                      newest). Expand all and Collapse all send career_timeline_toggled with
+ *                      expanded. Under the track sits one primary "See the full resume" button.
+ *                      Renders nothing when the timeline read fails or has no roles.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -47,32 +38,14 @@ import basePath from "@salesforce/community/basePath";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { SALESFORCE_START_YEAR } from "c/pillarData";
-
-export const ALL = "all";
-export const WORK = "work";
-export const EDUCATION = "education";
-export const CERTIFICATIONS = "certifications";
-
-/** The selector's options, in order. The keys are also the analytics kind values. */
-const FILTERS = [
-  [ALL, "All"],
-  [WORK, "Work"],
-  [EDUCATION, "Education"],
-  [CERTIFICATIONS, "Certifications"]
-];
-
-const ROLE = "role";
-const FOLD = "fold";
-const CERTIFICATION = "certification";
-const SCHOOL = "school";
-
-/** Points the phone list shows before "Show all". */
-export const STACK_PREVIEW = 4;
+import { isReduced, onMotionChange } from "c/motionPreference";
 
 const FOLD_KEY = "earlier-roles";
 const FOLD_TITLE = "Earlier roles";
-const HTTP_URL = /^https?:\/\//i;
-// A role held now sorts after every real date when the dated points are placed.
+const MAX_HIGHLIGHTS = 3;
+const CLOSED_LABEL = "Details ▾";
+const OPEN_LABEL = "Hide ▴";
+// A role held now sorts after every real date when roles are ordered.
 const HELD_NOW = "9999-12-31";
 
 function clean(value) {
@@ -93,6 +66,14 @@ function yearOf(value) {
   return match ? match[1] : "";
 }
 
+// A lower case slug for a group key: "Example Employer Inc" gives "example-employer-inc".
+function slug(value) {
+  return clean(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /**
  * Whether a role is held now: a current role, or one with no end date.
  * @param {object} role a TimelineRole
@@ -103,36 +84,21 @@ export function isCurrentRole(role) {
 }
 
 /**
- * The years of a role as shown: "2026+" for a current role, which also carries an Active tag,
- * "2021 to 2025", "2016" when it started and ended in one year, or the one year known when the
- * other is missing. A current role with no start date shows only its tag.
+ * The years of a role as shown: "2026 to now" for a role held now, "2021 to 2025", "2016" when
+ * it started and ended in one year, or the one year known when the other is missing.
  * @param {object} role a TimelineRole
  * @returns {string} the years
  */
 export function formatYears(role) {
   const start = yearOf(role.startDate);
   if (isCurrentRole(role)) {
-    return start ? `${start}+` : "";
+    return start ? `${start} to now` : "now";
   }
   const end = yearOf(role.endDate);
   if (start && end) {
     return start === end ? start : `${start} to ${end}`;
   }
   return start || end;
-}
-
-/**
- * The years as a screen reader hears them, with the Active tag: "since 2026, active" for a
- * current role, otherwise the years as shown.
- * @param {object} role a TimelineRole
- * @returns {string} the spoken years
- */
-export function spokenYears(role) {
-  if (!isCurrentRole(role)) {
-    return formatYears(role);
-  }
-  const start = yearOf(role.startDate);
-  return start ? `since ${start}, active` : "active";
 }
 
 /**
@@ -146,7 +112,7 @@ export function toStartYear(value) {
 
 /**
  * Whether a role folds into "Earlier roles": it is not held now and it ended before the
- * start year. A role that started before the start year and ran past it stays on the line.
+ * start year. A role that started before the start year and ran past it stays on the track.
  * @param {object} role a TimelineRole
  * @param {number} startYear the year roles fold by
  * @returns {boolean} true when the role folds
@@ -160,8 +126,8 @@ export function foldsAway(role, startYear) {
 }
 
 /**
- * The fold's years, from the earliest to the latest year of the roles in it: "2012 to 2016".
- * @param {object[]} roles the folded TimelineRoles
+ * The earliest to the latest year of some roles: "2012 to 2016", or one year when they match.
+ * @param {object[]} roles the TimelineRoles
  * @returns {string} the years
  */
 export function foldYears(roles) {
@@ -182,51 +148,9 @@ export function foldYears(roles) {
   return first === last ? String(first) : `${first} to ${last}`;
 }
 
-// When a role was last held, for placing the certifications and the school among the roles.
-// A role with no end date known gives no place.
-function roleWhen(role) {
-  return isCurrentRole(role) ? HELD_NOW : dateText(role.endDate) || null;
-}
-
 /**
- * Puts the dated points (certifications and schools, newest first) among the roles, which keep
- * their order. Each dated point goes before the first role last held before its date. Dated
- * points older than every role, or with no date, go after the roles.
- * @param {object[]} roles the role points, in the server's order, each with a when
- * @param {object[]} dated the certification and school points, each with a when or ""
- * @returns {object[]} the merged points
- */
-export function mergeByDate(roles, dated) {
-  const pending = [...dated].sort((a, b) => {
-    if (a.when === b.when) {
-      return 0;
-    }
-    return a.when > b.when ? -1 : 1;
-  });
-  const merged = [];
-  roles.forEach((role) => {
-    if (role.when) {
-      while (pending.length && pending[0].when && pending[0].when > role.when) {
-        merged.push(pending.shift());
-      }
-    }
-    merged.push(role);
-  });
-  return merged.concat(pending);
-}
-
-// A lower case slug for a group key: "Metropolitan Community College" gives
-// "metropolitan-community-college".
-function slug(value) {
-  return clean(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-/**
- * The years an employer covers as shown: the earliest start year with a plus when any role in it
- * is held now ("2021+"), otherwise the earliest to the latest year ("2017 to 2021").
+ * The years an employer covers: "2021 to now" when any role in it is held now, otherwise the
+ * earliest to the latest year ("2017 to 2021").
  * @param {object[]} roles the TimelineRoles at one employer
  * @returns {string} the years
  */
@@ -238,18 +162,15 @@ export function employerYears(roles) {
     .map((role) => yearOf(role.startDate))
     .filter((year) => year)
     .map(Number);
-  return starts.length ? `${Math.min(...starts)}+` : "";
+  return starts.length ? `${Math.min(...starts)} to now` : "now";
 }
 
-function employerSpoken(roles) {
-  const years = employerYears(roles);
-  if (!roles.some(isCurrentRole)) {
-    return years;
-  }
-  return years ? `since ${years.replace("+", "")}, active` : "active";
+// When a role was last held. A role with no end date known gives no place.
+function roleWhen(role) {
+  return isCurrentRole(role) ? HELD_NOW : dateText(role.endDate) || null;
 }
 
-// Newest first inside a group: held now first, then the latest end, then the latest start,
+// Newest first inside an employer: held now first, then the latest end, then the latest start,
 // then the server's order.
 function byNewestRole(a, b) {
   const whenA = roleWhen(a.role) || "";
@@ -265,25 +186,54 @@ function byNewestRole(a, b) {
   return a.index - b.index;
 }
 
-function toRoleTitle(role, index) {
+/**
+ * The count line of a stop: "1 role" or "4 roles".
+ * @param {number} count the roles in the stop
+ * @returns {string} the text
+ */
+export function rolesLabel(count) {
+  return count === 1 ? "1 role" : `${count} roles`;
+}
+
+/**
+ * Up to 3 non empty highlight strings from a role.
+ * @param {object} role a TimelineRole
+ * @returns {string[]} the highlights
+ */
+export function highlightsOf(role) {
+  return (Array.isArray(role.highlights) ? role.highlights : [])
+    .map(clean)
+    .filter((text) => text)
+    .slice(0, MAX_HIGHLIGHTS);
+}
+
+function toRole(role, index) {
+  const partTime = role.isPartTime === true;
+  const years = formatYears(role);
+  const key = clean(role.key) || `role-${index}`;
+  const highlights = highlightsOf(role).map((text, at) => ({
+    id: `${key}-h${at}`,
+    text
+  }));
   return {
-    key: clean(role.key) || `role-${index}`,
-    type: ROLE,
-    first: clean(role.employer),
-    second: clean(role.title),
-    label: clean(role.title),
-    years: formatYears(role),
-    yearsSpoken: spokenYears(role),
-    showYears: true,
-    isCurrent: isCurrentRole(role)
+    key,
+    title: clean(role.title),
+    employer: clean(role.employer),
+    years,
+    yearsText: partTime ? `${years} · part time` : years,
+    isPartTime: partTime,
+    isCurrent: isCurrentRole(role),
+    highlights,
+    hasHighlights: highlights.length > 0
   };
 }
 
 /**
- * One point for each employer, in the server's order of first appearance. Every role at it is a
- * title under it, newest first. An employer with one role keeps that role's key.
- * @param {object[]} roles the TimelineRoles that stay on the line, in the server's order
- * @returns {object[]} the role points
+ * One stop for each employer, in the server's order of first appearance. The stop title is the
+ * newest role that is not part time, or the newest role when all are. Roles inside a stop are
+ * newest first.
+ * @param {object[]} roles the TimelineRoles that stay on the track
+ * @returns {object[]} the stops, without positions
  */
 export function groupRoles(roles) {
   const groups = [];
@@ -304,372 +254,157 @@ export function groupRoles(roles) {
   return groups.map((group) => {
     const ordered = [...group.entries].sort(byNewestRole);
     const members = ordered.map((entry) => entry.role);
-    const titles = ordered.map((entry) => toRoleTitle(entry.role, entry.index));
-    const whens = members.map(roleWhen).filter((when) => when);
-    const multiple = titles.length > 1;
+    const roleRows = ordered.map((entry) => toRole(entry.role, entry.index));
+    const lead = roleRows.find((row) => !row.isPartTime) || roleRows[0];
     return {
-      key: multiple
-        ? `employer-${slug(group.employer) || titles[0].key}`
-        : titles[0].key,
-      type: ROLE,
-      kind: WORK,
-      isGroup: true,
-      first: group.employer,
-      second: "",
-      showGroupYears: multiple,
-      years: employerYears(members),
-      yearsSpoken: employerSpoken(members),
+      key: `employer-${slug(group.employer) || roleRows[0].key}`,
+      isFold: false,
+      employer: group.employer,
+      title: lead.title,
+      span: employerYears(members),
       isCurrent: members.some(isCurrentRole),
-      titles,
-      when: whens.length ? whens.sort().pop() : null
+      roleCount: roleRows.length,
+      roles: roleRows
     };
   });
 }
 
-// The fold lists each earlier role under it like the titles under an employer, with the
-// employer named in the line because the roles come from several.
-function toFoldPoint(roles) {
-  const years = foldYears(roles);
+function toFoldStop(roles) {
+  const rows = roles.map((role, index) => {
+    const row = toRole(role, index);
+    const line = [row.title, row.employer, row.years]
+      .filter((part) => part)
+      .join(", ");
+    return { key: `earlier-${row.key}`, line };
+  });
   return {
     key: FOLD_KEY,
-    type: FOLD,
-    kind: WORK,
-    isGroup: true,
-    first: FOLD_TITLE,
-    second: "",
-    showGroupYears: Boolean(years),
-    years,
-    yearsSpoken: years,
+    isFold: true,
+    employer: FOLD_TITLE,
+    title: "",
+    span: foldYears(roles),
     isCurrent: false,
-    titles: roles.map((role, index) => ({
-      key: clean(role.key) || `earlier-${index}`,
-      type: FOLD,
-      label: [clean(role.employer), clean(role.title)]
-        .filter((part) => part)
-        .join(", "),
-      years: formatYears(role),
-      yearsSpoken: spokenYears(role),
-      showYears: true,
-      isCurrent: false
-    }))
+    roleCount: rows.length,
+    roles: rows
   };
 }
 
 /**
- * A certification's name without its issuer's prefix, for use under a heading that names the
- * issuer: "Salesforce Certified Platform Administrator" under "Salesforce" is "Platform
- * Administrator". A name without the prefix is returned as it is.
- * @param {string} name the full name
- * @param {string} issuer the issuer
- * @returns {string} the shorter name
- */
-export function shortCertificationName(name, issuer) {
-  const full = clean(name);
-  const owner = clean(issuer);
-  if (!owner) {
-    return full;
-  }
-  const prefix = `${owner} Certified `.toLowerCase();
-  if (full.toLowerCase().startsWith(prefix) && full.length > prefix.length) {
-    return full.slice(prefix.length).trim();
-  }
-  return full;
-}
-
-function toCertificationTitle(certification, index) {
-  const issuer = clean(certification.issuer);
-  const name = clean(certification.name);
-  return {
-    key: clean(certification.id) || `certification-${index}`,
-    type: CERTIFICATION,
-    label: shortCertificationName(name, issuer),
-    years: "",
-    yearsSpoken: "",
-    showYears: false,
-    isCurrent: false,
-    when: dateText(certification.earnedDate)
-  };
-}
-
-/**
- * One point for each issuer and earned year, such as "Salesforce · 2025", with every name under
- * it, newest first. A retired certification, if one is ever sent, is left out.
- * @param {object[]} certifications the TimelineCertifications
- * @returns {object[]} the certification points, newest first
- */
-export function groupCertifications(certifications) {
-  const groups = [];
-  const byId = new Map();
-  certifications
-    .filter((entry) => entry && clean(entry.name) && entry.isRetired !== true)
-    .forEach((entry, index) => {
-      const issuer = clean(entry.issuer);
-      const year = yearOf(entry.earnedDate);
-      const id = `${slug(issuer)}-${year}`;
-      let group = byId.get(id);
-      if (!group) {
-        group = { issuer, year, id, titles: [] };
-        byId.set(id, group);
-        groups.push(group);
-      }
-      group.titles.push(toCertificationTitle(entry, index));
-    });
-  return groups.map((group) => {
-    const titles = group.titles
-      .map((title, index) => ({ title, index }))
-      .sort((a, b) => {
-        if (a.title.when !== b.title.when) {
-          return a.title.when > b.title.when ? -1 : 1;
-        }
-        return a.index - b.index;
-      })
-      .map((entry) => entry.title);
-    const heading = [group.issuer || "Certifications", group.year]
-      .filter((part) => part)
-      .join(" · ");
-    return {
-      key: `certifications-${group.id}`,
-      type: CERTIFICATION,
-      kind: CERTIFICATIONS,
-      isGroup: true,
-      first: heading,
-      second: "",
-      showGroupYears: false,
-      years: group.year,
-      yearsSpoken: group.year ? `earned ${group.year}` : "",
-      isCurrent: false,
-      titles,
-      when: titles[0].when
-    };
-  });
-}
-
-function toSchoolPoint(school, index) {
-  const year = yearOf(school.completedDate);
-  return {
-    key: clean(school.key) || `school-${index}`,
-    type: SCHOOL,
-    kind: EDUCATION,
-    first: clean(school.school),
-    second: clean(school.credential),
-    years: year ? `Completed ${year}` : "",
-    yearsSpoken: year ? `completed ${year}` : "",
-    isCurrent: false,
-    when: dateText(school.completedDate)
-  };
-}
-
-/**
- * Every point on the line from a getTimeline result, newest first, with the fold last.
+ * Every stop on the track from a getTimeline result, with the Earlier roles stop last. Each stop
+ * has a position (1 is the newest) and the id of its panel.
  * @param {object} data the Timeline
- * @returns {object[]} the points
+ * @returns {object[]} the stops
  */
-export function buildPoints(data) {
+export function buildStops(data) {
   const startYear = toStartYear(data && data.salesforceStartYear);
   const roles = (data && Array.isArray(data.work) ? data.work : []).filter(
     (role) => role && clean(role.title)
   );
   const kept = roles.filter((role) => !foldsAway(role, startYear));
   const folded = roles.filter((role) => foldsAway(role, startYear));
-  const certifications = groupCertifications(
-    data && Array.isArray(data.certifications) ? data.certifications : []
-  );
-  const schools = (data && Array.isArray(data.education) ? data.education : [])
-    .filter(
-      (entry) => entry && (clean(entry.school) || clean(entry.credential))
-    )
-    .map(toSchoolPoint);
-  const points = mergeByDate(groupRoles(kept), [...certifications, ...schools]);
+  const stops = groupRoles(kept);
   if (folded.length) {
-    points.push(toFoldPoint(folded));
+    stops.push(toFoldStop(folded));
   }
-  return points;
+  return stops.map((stop, index) => ({
+    ...stop,
+    position: index + 1,
+    panelId: `stop-panel-${index + 1}`
+  }));
 }
 
 export default class CareerLine extends LightningElement {
-  // Spoken between the parts of a point, which sit on separate lines.
-  comma = ", ";
-  newTabNote = ", opens in a new tab";
-  points = [];
-  verificationUrl = null;
-  filter = ALL;
-  stackExpanded = false;
-  scrollToStart = false;
-  edgeStart = false;
-  edgeEnd = false;
-  resizeListener = () => this.updateEdges();
+  stops = [];
+  openKeys = [];
+  reduced = false;
+  stopMotionListener = null;
 
   @wire(getTimeline)
   wiredTimeline({ data, error }) {
     if (data) {
-      this.points = buildPoints(data);
-      this.verificationUrl =
-        typeof data.verificationUrl === "string" &&
-        HTTP_URL.test(data.verificationUrl)
-          ? data.verificationUrl
-          : null;
+      this.stops = buildStops(data);
+      this.openKeys = this.openKeys.filter((key) =>
+        this.stops.some((stop) => stop.key === key)
+      );
     } else if (error) {
       // An extra under the hero: on an error it stays hidden.
-      this.points = [];
-      this.verificationUrl = null;
+      this.stops = [];
+      this.openKeys = [];
     }
   }
 
   connectedCallback() {
-    window.addEventListener("resize", this.resizeListener);
+    this.reduced = isReduced();
+    this.stopMotionListener = onMotionChange((reduced) => {
+      this.reduced = Boolean(reduced);
+    });
   }
 
   disconnectedCallback() {
-    window.removeEventListener("resize", this.resizeListener);
-  }
-
-  get hasPoints() {
-    return this.points.length > 0;
-  }
-
-  get kindsPresent() {
-    return new Set(this.points.map((point) => point.kind));
-  }
-
-  // The selector shows only when there is more than one kind to choose between.
-  get showFilters() {
-    return this.kindsPresent.size > 1;
-  }
-
-  get activeFilter() {
-    return this.filter === ALL || this.kindsPresent.has(this.filter)
-      ? this.filter
-      : ALL;
-  }
-
-  get filters() {
-    const present = this.kindsPresent;
-    const active = this.activeFilter;
-    return FILTERS.filter(([key]) => key === ALL || present.has(key)).map(
-      ([key, label]) => ({
-        key,
-        label,
-        pressed: String(key === active),
-        className: key === active ? "filter filter-active" : "filter"
-      })
-    );
-  }
-
-  get shownPoints() {
-    const active = this.activeFilter;
-    return active === ALL
-      ? this.points
-      : this.points.filter((point) => point.kind === active);
-  }
-
-  decorate(point) {
-    return {
-      ...point,
-      hasSecond: Boolean(point.second),
-      pointClass: `point point-${point.type}${
-        point.isCurrent ? " point-current" : ""
-      }`
-    };
-  }
-
-  get linePoints() {
-    return this.shownPoints.map((point) => this.decorate(point));
-  }
-
-  // The phone list shows the newest few points of the active filter until the visitor asks for
-  // all of them. The horizontal line, which is the only list on a wide screen, always shows all.
-  get stackPoints() {
-    const shown = this.shownPoints;
-    const visible = this.stackExpanded ? shown : shown.slice(0, STACK_PREVIEW);
-    return visible.map((point) => this.decorate(point));
-  }
-
-  get showStackToggle() {
-    return this.shownPoints.length > STACK_PREVIEW;
-  }
-
-  get stackToggleExpanded() {
-    return String(this.stackExpanded);
-  }
-
-  get stackToggleLabel() {
-    return this.stackExpanded
-      ? "Show fewer"
-      : `Show all ${this.shownPoints.length}`;
-  }
-
-  get lineWrapClass() {
-    let name = "line-wrap";
-    if (this.edgeStart) {
-      name += " line-wrap_more-before";
+    if (typeof this.stopMotionListener === "function") {
+      this.stopMotionListener();
     }
-    if (this.edgeEnd) {
-      name += " line-wrap_more-after";
-    }
-    return name;
+    this.stopMotionListener = null;
+  }
+
+  get hasStops() {
+    return this.stops.length > 0;
+  }
+
+  get allOpen() {
+    return this.stops.length > 0 && this.openKeys.length === this.stops.length;
+  }
+
+  get expandAllLabel() {
+    return this.allOpen ? "Collapse all" : "Expand all";
+  }
+
+  get careerClass() {
+    return this.reduced ? "career career-still" : "career";
+  }
+
+  get trackStops() {
+    return this.stops.map((stop) => {
+      const open = this.openKeys.includes(stop.key);
+      let dotClass = stop.isCurrent ? "dot dot-current" : "dot";
+      if (stop.isFold) {
+        dotClass = "dot dot-fold";
+      }
+      return {
+        ...stop,
+        open,
+        expanded: String(open),
+        dotClass,
+        stopClass: open ? "stop stop-open" : "stop",
+        panelClass: open ? "panel panel-open" : "panel",
+        toggleText: open ? OPEN_LABEL : CLOSED_LABEL,
+        countText: rolesLabel(stop.roleCount),
+        hasTitle: Boolean(stop.title)
+      };
+    });
   }
 
   get resumeHref() {
     return `${basePath || ""}/resume`;
   }
 
-  get showVerify() {
-    const active = this.activeFilter;
-    return (
-      this.verificationUrl !== null &&
-      (active === ALL || active === CERTIFICATIONS) &&
-      this.kindsPresent.has(CERTIFICATIONS)
-    );
-  }
-
-  handleFilterClick(event) {
-    const kind = event.currentTarget.dataset.kind;
-    if (!kind || kind === this.activeFilter) {
+  handleToggle(event) {
+    const key = event.currentTarget.dataset.key;
+    const stop = this.stops.find((entry) => entry.key === key);
+    if (!stop) {
       return;
     }
-    this.filter = kind;
-    this.stackExpanded = false;
-    // After the new points render, the line starts from its newest point again. Doing it after
-    // the render keeps a browser from snapping back to the point it last rested on.
-    this.scrollToStart = true;
-    trackEvent(EVENTS.CAREER_TIMELINE_FILTERED, { kind });
-  }
-
-  handleStackToggle() {
-    this.stackExpanded = !this.stackExpanded;
-    if (this.stackExpanded) {
-      trackEvent(EVENTS.CAREER_TIMELINE_SHOW_ALL, { kind: this.activeFilter });
-    }
-  }
-
-  handleLineScroll() {
-    this.updateEdges();
-  }
-
-  updateEdges() {
-    const line = this.template.querySelector('[data-id="line"]');
-    if (!line) {
+    if (this.openKeys.includes(key)) {
+      this.openKeys = this.openKeys.filter((open) => open !== key);
       return;
     }
-    const room = line.scrollWidth - line.clientWidth;
-    const start = room > 1 && line.scrollLeft > 1;
-    const end = room > 1 && line.scrollLeft < room - 1;
-    if (start !== this.edgeStart) {
-      this.edgeStart = start;
-    }
-    if (end !== this.edgeEnd) {
-      this.edgeEnd = end;
-    }
+    this.openKeys = [...this.openKeys, key];
+    trackEvent(EVENTS.CAREER_ROLE_OPENED, { position: stop.position });
   }
 
-  renderedCallback() {
-    if (this.scrollToStart) {
-      this.scrollToStart = false;
-      const line = this.template.querySelector('[data-id="line"]');
-      if (line) {
-        line.scrollLeft = 0;
-      }
-    }
-    this.updateEdges();
+  handleExpandAll() {
+    const expanded = !this.allOpen;
+    this.openKeys = expanded ? this.stops.map((stop) => stop.key) : [];
+    trackEvent(EVENTS.CAREER_TIMELINE_TOGGLED, { expanded });
   }
 }

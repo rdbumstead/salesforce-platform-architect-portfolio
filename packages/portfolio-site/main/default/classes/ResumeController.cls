@@ -6,6 +6,8 @@
  *                      current certifications, with how many entries each tab shows at first
  *                      and the year the owner started on Salesforce (the Salesforce_Start_Year
  *                      setting), which the career line folds earlier roles by and the hero shows.
+ *                      Each timeline role also carries isPartTime and up to three short
+ *                      highlights, and each certification its badge file name.
  *                      Skills follow the persona: a chosen persona gets the skills tagged for
  *                      it plus every untagged skill, and no persona gets them all.
  *                      getHeader also returns heroLine (the hero's title line) and valueSentence
@@ -47,6 +49,10 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   // or out of its range.
   @TestVisible
   private static final Integer DEFAULT_SALESFORCE_START_YEAR = 2017;
+
+  // The most highlights one role sends to the home timeline.
+  @TestVisible
+  private static final Integer TIMELINE_HIGHLIGHT_CAP = 3;
 
   /**
    * @description Builds the resume for a persona. Highlights and skills both follow it: a
@@ -90,6 +96,11 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
    *              date, the same order as the resume. Schools come newest completion first.
    *              Certifications are the current ones only (retired ones stay on the resume),
    *              newest first. Every list is empty, never null, when there are no rows.
+   *              A role carries isPartTime (never null) and up to three highlights in
+   *              Sort_Order__c order, each Timeline_Text__c when set and Description__c
+   *              otherwise. A role that ended before salesforceStartYear gets an empty list.
+   *              A certification carries badgeFile, the file name inside the
+   *              Certification_Badges static resource, or null.
    *              tabLimit is how many entries each tab shows before "View all", and
    *              verificationUrl is the one certification verification link or null.
    *              salesforceStartYear is the year the owner started on Salesforce.
@@ -101,7 +112,12 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   public static Timeline getTimeline() {
     ResumeSelector selector = new ResumeSelector();
     Timeline timeline = new Timeline();
-    timeline.work = toTimelineRoles(selector.selectTimelineRoles());
+    List<Experience__c> timelineRoles = selector.selectTimelineRoles();
+    timeline.work = toTimelineRoles(
+      timelineRoles,
+      highlightsByRole(selector.selectHighlights(timelineRoles)),
+      salesforceStartYear()
+    );
     timeline.education = toTimelineSchools(selector.selectEducation());
     timeline.certifications = toTimelineCertifications(
       selector.selectCertifications()
@@ -139,13 +155,18 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
       entry.name = certification.Name;
       entry.issuer = certification.Issuer__r?.Name;
       entry.earnedDate = certification.Earned_Date__c;
+      entry.badgeFile = String.isBlank(certification.Badge_File__c)
+        ? null
+        : certification.Badge_File__c.trim();
       entries.add(entry);
     }
     return entries;
   }
 
   private static List<TimelineRole> toTimelineRoles(
-    List<Experience__c> experiences
+    List<Experience__c> experiences,
+    Map<Id, List<Experience_Highlight__c>> highlightsByRole,
+    Integer startYear
   ) {
     List<TimelineRole> roles = new List<TimelineRole>();
     for (Experience__c experience : experiences) {
@@ -156,9 +177,58 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
       role.startDate = experience.Start_Date__c;
       role.endDate = experience.End_Date__c;
       role.isCurrent = experience.Is_Current_Role__c == true;
+      role.isPartTime = experience.Is_Part_Time__c == true;
+      role.highlights = endedBefore(experience, startYear)
+        ? new List<String>()
+        : toTimelineHighlights(
+            highlightsByRole.get(experience.Id) ??
+              new List<Experience_Highlight__c>()
+          );
       roles.add(role);
     }
     return roles;
+  }
+
+  /**
+   * True when the role has an end date in a year before the start year. A role with no end
+   * date has not ended.
+   */
+  private static Boolean endedBefore(
+    Experience__c experience,
+    Integer startYear
+  ) {
+    return experience.End_Date__c != null &&
+      experience.End_Date__c.year() < startYear;
+  }
+
+  /**
+   * The first three highlights in Sort_Order__c order, blanks last. Each shows its
+   * Timeline_Text__c when set and its Description__c otherwise. A highlight with neither is
+   * skipped.
+   */
+  private static List<String> toTimelineHighlights(
+    List<Experience_Highlight__c> rows
+  ) {
+    List<HighlightEntry> entries = new List<HighlightEntry>();
+    for (Experience_Highlight__c row : rows) {
+      HighlightEntry entry = new HighlightEntry(row, null);
+      entry.timelineText = row.Timeline_Text__c;
+      entries.add(entry);
+    }
+    entries.sort();
+    List<String> highlights = new List<String>();
+    for (HighlightEntry sorted : entries) {
+      String text = String.isBlank(sorted.timelineText)
+        ? sorted.description
+        : sorted.timelineText;
+      if (String.isNotBlank(text)) {
+        highlights.add(text.trim());
+      }
+      if (highlights.size() == TIMELINE_HIGHLIGHT_CAP) {
+        break;
+      }
+    }
+    return highlights;
   }
 
   private static List<TimelineSchool> toTimelineSchools(
@@ -497,7 +567,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   private static QueryDefinitions.QueryDefault highlightsDefault() {
     return new QueryDefinitions.QueryDefault(
         'Experience_Highlight__c',
-        'Experience__c, Description__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Developer_Sort_Order__c, Architect_Sort_Order__c, Lock_Sort_Across_Personas__c'
+        'Experience__c, Description__c, Timeline_Text__c, Persona_Tag__c, Sort_Order__c, Admin_Sort_Order__c, Developer_Sort_Order__c, Architect_Sort_Order__c, Lock_Sort_Across_Personas__c'
       )
       .filter('Experience__c IN :experienceIds')
       .orderBy('Sort_Order__c ASC')
@@ -535,7 +605,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   private static QueryDefinitions.QueryDefault certificationsDefault() {
     return new QueryDefinitions.QueryDefault(
         'Certification__c',
-        'Id, Name, Issuer__r.Name, Earned_Date__c, Is_Retired__c'
+        'Id, Name, Issuer__r.Name, Earned_Date__c, Is_Retired__c, Badge_File__c'
       )
       .orderBy('Earned_Date__c DESC NULLS LAST, Name ASC')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE);
@@ -550,7 +620,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   private static QueryDefinitions.QueryDefault timelineRolesDefault() {
     return new QueryDefinitions.QueryDefault(
         'Experience__c',
-        'Id, Name, Employer__r.Name, Start_Date__c, End_Date__c, Is_Current_Role__c'
+        'Id, Name, Employer__r.Name, Start_Date__c, End_Date__c, Is_Current_Role__c, Is_Part_Time__c'
       )
       .orderBy(
         'Is_Current_Role__c DESC, Start_Date__c DESC NULLS LAST, Sort_Order__c ASC, Name ASC'
@@ -596,6 +666,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
    */
   private class HighlightEntry implements Comparable {
     private String description;
+    private String timelineText;
     private Decimal primaryKey;
     private Decimal secondaryKey;
 
@@ -746,7 +817,9 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   }
 
   /**
-   * @description One role on the timeline. No highlights, no contact detail.
+   * @description One role on the timeline. isPartTime is never null. highlights holds up to
+   *              three short lines and is empty for a role that ended before the start year.
+   *              No contact detail.
    */
   public class TimelineRole {
     @AuraEnabled
@@ -761,6 +834,10 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     public Date endDate;
     @AuraEnabled
     public Boolean isCurrent;
+    @AuraEnabled
+    public Boolean isPartTime;
+    @AuraEnabled
+    public List<String> highlights;
   }
 
   /**
@@ -791,5 +868,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     public String issuer;
     @AuraEnabled
     public Date earnedDate;
+    @AuraEnabled
+    public String badgeFile;
   }
 }

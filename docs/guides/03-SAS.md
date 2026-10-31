@@ -365,7 +365,7 @@ The system is segmented into five distinct logical capabilities, each demonstrat
 ### 5.2 Pillar B: Solution Architecture (Nonprofit Literacy Platform)
 
 > [!NOTE]
-> **Live on the site.** I reviewed every score and set the starting weights on 2026-10-22, so no placeholder banner shows. I describe the client as "a regional adult literacy nonprofit" and never name it. Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production.
+> **Live on the site.** I reviewed every score and set the starting weights on 2026-10-22, so no placeholder banner shows. I describe the client as "an adult literacy nonprofit" and never name it. Pillar B is content and analysis: nothing from NPSP, PMM or Education Cloud runs in production.
 
 - **Objective:** Demonstrate ROI analysis and Solution Design.
 - **Page:** `/nonprofit-solutions`. `c-pillar-b-story` tells the story in seven sections (the client, discovery, the decision matrix, ROI and cost, solution design, the outcome, what I would revisit), then `c-decision-matrix`, then `c-project-asset-gallery` for the Pillar B media, which renders nothing while Pillar B has no published assets.
@@ -510,13 +510,14 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 
 ### 6.2 Lightning Web Components (LWC)
 
-- **`c-hero-banner`:** The hero: the name, the employer title and location, the title line, one value sentence, a proof strip and one button, "See the case studies" (shown only when a home case study exists, its row holding the button's height before the read returns), then the GitHub, LinkedIn, Trailhead, Resume and API docs profile links ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page), [ADR-034](../adr/034-recruiter-first-home-page.md)).
-- **`c-career-line`:** Every employer, current certification and the school on one line under the hero from `ResumeController.getTimeline`, newest first. An employer is one point with its overall span and every title listed with its own years, and certifications group by issuer and year with every name shown. Roles that ended before the `Salesforce_Start_Year` setting (2017) folded into "Earlier roles". Each earlier role is listed under that point. A selector (All, Work, Education, Certifications) narrows the line in place with the same grouping. Nothing on the line opens. Under it, "View full details on my resume" links to the resume, with "Verify on Trailhead" beside it while the certifications are in view ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
-- **`c-case-study-grid`:** Up to three case study cards from `ProjectCardController.getHomeCaseStudies`, chosen by `Home_Sort__c` alone and never by the featured flag. Each card shows its own number from the `Case_Metric__c` fields, apart from the Headline fields that the "How this site is built" cards read ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
-- **`c-site-build-section`:** "How this site is built", the last section of the home page: the live pillars with their case studies, the newest deploy's test counts, and a link to the design docs. The tour is not in this section ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
+- **`c-hero-banner`:** The hero: the photo, the name, the employer title and location, the title line, one line under the headline (the owner's value sentence, with a written fallback when it is blank), a proof strip ("On Salesforce since 2017" and the active certification count, counted from `getTimeline` and falling back to a constant until it returns), a primary "See the case studies" button (shown only when a home case study exists, its row holding the button's height before the read returns) and a secondary tour button. Under them a proof panel says the site runs on Salesforce, shows one line of live test counts from `ProjectCardController.getBuildCounts`, and holds the two architecture buttons, "Architecture and decisions" and "How a request reaches the data". The GitHub, LinkedIn, Trailhead, Resume and API docs profile links follow ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page), [ADR-034](../adr/034-recruiter-first-home-page.md)).
+- **`c-career-line`:** The work timeline, under the case studies, from `ResumeController.getTimeline`. Work only: one stop per employer on a single track, each with its span, the title of its newest role that is not part time, and a "N roles" disclosure that opens that stop's roles in place. Each role shows its years (with "part time" when `Is_Part_Time__c` is set) and up to three one line highlights. Several stops can be open at once, and Expand all and Collapse all open and close every stop. Roles that ended before the `Salesforce_Start_Year` setting (2017) fold into a last "Earlier roles" stop that lists each role on one line with a link to the resume. One primary "See the full resume" button sits under the track. Certifications and the school are in `c-credentials-band` ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
+- **`c-credentials-band`:** Education on the left and Certifications on the right, from the same `getTimeline` read. One plain tile with a graduation cap for the degree, and one tile for each current certification, newest first, each with its badge image from the `Certification_Badges` static resource (the file named in `Certification__c.Badge_File__c`) and a caption of the issuer and the year. A certification with no badge file shows a plain tile. One primary "Verify on Trailhead" button sits beside the Certifications heading ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
+- **`c-case-study-grid`:** Up to three case study cards from `ProjectCardController.getHomeCaseStudies`, chosen by `Home_Sort__c` alone and never by the featured flag. Each card shows its own number from the `Case_Metric__c` fields, apart from the Headline fields that the "How this site is built" cards read. A card shows its engagement line (`Client_Line__c`) and a "Read the case study" button, the first of them primary ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
+- **`c-site-build-section`:** "How this site is built", near the end of the home page: one card for each live pillar, with the pillar's stat as the big number when it has one, its summary and an Open button to the pillar page. The test counts and the architecture buttons are in the hero. The tour is not in this section ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
 - **`c-testimonial-submit`:** The accessible "Mad Libs" sentence builder, gated by vibe ([ADR-005 amendment](../adr/005-gamified-testimonial-ui.md)).
 - **`c-testimonial-wall`:** Approved testimonials on `/testimonials` with a "Professional / All" filter. It renders nothing when there are none.
-- **`c-home-testimonials`:** Up to three approved testimonials on the home page, Professional ones first, once the `Home_Testimonials_Min` setting's count is approved, and nothing before that ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
+- **`c-home-testimonials`:** Up to three approved testimonials on the home page as quote cards, Professional ones first, once the `Home_Testimonials_Min` setting's count is approved, and nothing before that ([Technical Guide §2.12](./04-Technical-Guide.md#212-home-page)).
 - **`c-contact-form`:** The contact form on the `/contact` page, saved as a Lead ([ADR-031](../adr/031-native-contact-form.md)).
 - **`c-contact-call`:** The home page's contact call, "Get in touch", with a link to `/contact`. It sends an old `/#contact` address on to `/contact`.
 - **`c-api-tester`:** Developer console LWC. It makes no browser `fetch()`: it calls the Apex proxy `ApiLabController.invokeVersioned` with the version the visitor picked (v2 by default), which calls the APIs through the `Portfolio_API` Named Credential (Appendix B.3). Under the token form it offers a download of the generated Process API Postman collection (`PAPI_Postman_Collection`), a Run in Postman button that shows once `Portfolio_Setting.Postman_Run_Url` holds a postman.com link, and three copyable curl examples built in the page ([Technical Guide §2.15](./04-Technical-Guide.md#215-api-lab-and-api-reference)).
@@ -961,33 +962,35 @@ The following policies were configured in API Manager to demonstrate enterprise 
 
 Represents an employment period.
 
-| Field Label         | API Name             | Type              | Length | Required | Description                                       |
-| :------------------ | :------------------- | :---------------- | :----- | :------- | :------------------------------------------------ |
-| **Position Title**  | `Name`               | Text (name field) | 80     | Yes      | Job title. There is no `Position_Title__c` field. |
-| **Employer**        | `Employer__c`        | Lookup (Account)  | -      | No       | The employer, read as `Employer__r.Name`.         |
-| **Contact**         | `Contact__c`         | Lookup (Contact)  | -      | No       | The person the role belongs to.                   |
-| **Start Date**      | `Start_Date__c`      | Date              | -      | No       | Employment start.                                 |
-| **End Date**        | `End_Date__c`        | Date              | -      | No       | Employment end (Null if current).                 |
-| **Is Current Role** | `Is_Current_Role__c` | Checkbox          | -      | No       | Logic flag for "Present".                         |
-| **Is Remote**       | `Is_Remote__c`       | Checkbox          | -      | No       | Remote work flag.                                 |
-| **Accomplishments** | `Accomplishments__c` | Rich Text         | 131072 | No       | Summary text. (Deprecated)                        |
-| **Sort Order**      | `Sort_Order__c`      | Number            | 3,0    | Yes      | Custom sort logic.                                |
+| Field Label         | API Name             | Type              | Length | Required | Description                                                                                                                                                                       |
+| :------------------ | :------------------- | :---------------- | :----- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Position Title**  | `Name`               | Text (name field) | 80     | Yes      | Job title. There is no `Position_Title__c` field.                                                                                                                                 |
+| **Employer**        | `Employer__c`        | Lookup (Account)  | -      | No       | The employer, read as `Employer__r.Name`.                                                                                                                                         |
+| **Contact**         | `Contact__c`         | Lookup (Contact)  | -      | No       | The person the role belongs to.                                                                                                                                                   |
+| **Start Date**      | `Start_Date__c`      | Date              | -      | No       | Employment start.                                                                                                                                                                 |
+| **End Date**        | `End_Date__c`        | Date              | -      | No       | Employment end (Null if current).                                                                                                                                                 |
+| **Is Current Role** | `Is_Current_Role__c` | Checkbox          | -      | No       | Logic flag for "Present".                                                                                                                                                         |
+| **Is Remote**       | `Is_Remote__c`       | Checkbox          | -      | No       | Remote work flag.                                                                                                                                                                 |
+| **Is Part Time**    | `Is_Part_Time__c`    | Checkbox          | -      | No       | A role held beside a full time one. The home timeline labels it "part time" and never uses it as the stop title when a full time role is at the same employer. Defaults to false. |
+| **Accomplishments** | `Accomplishments__c` | Rich Text         | 131072 | No       | Summary text. (Deprecated)                                                                                                                                                        |
+| **Sort Order**      | `Sort_Order__c`      | Number            | 3,0    | Yes      | Custom sort logic.                                                                                                                                                                |
 
 #### D.2 Object: `Experience_Highlight__c`
 
 Granular bullet points for resume generation.
 
-| Field Label          | API Name                       | Type                  | Length | Required | Description                                                    |
-| :------------------- | :----------------------------- | :-------------------- | :----- | :------- | :------------------------------------------------------------- |
-| **Name**             | `Name`                         | Text (name field)     | 80     | Yes      | Record name.                                                   |
-| **Experience**       | `Experience__c`                | Master-Detail         | -      | Yes      | Parent record.                                                 |
-| **Description**      | `Description__c`               | Long Text             | 5000   | No       | The bullet point text.                                         |
-| **Persona Tag**      | `Persona_Tag__c`               | Multi-select Picklist | -      | Yes      | Target audience filter (Admin, Developer, Architect).          |
-| **Sort (Universal)** | `Sort_Order__c`                | Number                | 3,0    | Yes      | Default order within a role.                                   |
-| **Admin Sort**       | `Admin_Sort_Order__c`          | Number                | 3,0    | No       | Sort order for Admin resume.                                   |
-| **Dev Sort**         | `Developer_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for Dev resume.                                     |
-| **Architect Sort**   | `Architect_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for Architect resume.                               |
-| **Lock Sort**        | `Lock_Sort_Across_Personas__c` | Checkbox              | -      | No       | Field description: changing one persona sort syncs the others. |
+| Field Label          | API Name                       | Type                  | Length | Required | Description                                                                                   |
+| :------------------- | :----------------------------- | :-------------------- | :----- | :------- | :-------------------------------------------------------------------------------------------- |
+| **Name**             | `Name`                         | Text (name field)     | 80     | Yes      | Record name.                                                                                  |
+| **Experience**       | `Experience__c`                | Master-Detail         | -      | Yes      | Parent record.                                                                                |
+| **Description**      | `Description__c`               | Long Text             | 5000   | No       | The bullet point text.                                                                        |
+| **Timeline Text**    | `Timeline_Text__c`             | Text                  | 70     | No       | Short version of the bullet for the home timeline. Blank means the timeline uses Description. |
+| **Persona Tag**      | `Persona_Tag__c`               | Multi-select Picklist | -      | Yes      | Target audience filter (Admin, Developer, Architect).                                         |
+| **Sort (Universal)** | `Sort_Order__c`                | Number                | 3,0    | Yes      | Default order within a role.                                                                  |
+| **Admin Sort**       | `Admin_Sort_Order__c`          | Number                | 3,0    | No       | Sort order for Admin resume.                                                                  |
+| **Dev Sort**         | `Developer_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for Dev resume.                                                                    |
+| **Architect Sort**   | `Architect_Sort_Order__c`      | Number                | 3,0    | No       | Sort order for Architect resume.                                                              |
+| **Lock Sort**        | `Lock_Sort_Across_Personas__c` | Checkbox              | -      | No       | Field description: changing one persona sort syncs the others.                                |
 
 #### D.3 Object: `Project__c`
 
@@ -1146,6 +1149,14 @@ One prompt instruction per record. `Cover_Letter` holds the cover letter instruc
 | **Instruction** | `Instruction__c` | Long Text Area | 8000   | No       | The instruction the prompt starts with. |
 | **Description** | `Description__c` | Text Area      | 255    | No       | What the prompt is for.                 |
 
+#### D.16 Object: `Certification__c` (the field the home page added)
+
+| Field Label    | API Name        | Type | Length | Required | Description                                                                                                                    |
+| :------------- | :-------------- | :--- | :----- | :------- | :----------------------------------------------------------------------------------------------------------------------------- |
+| **Badge File** | `Badge_File__c` | Text | 80     | No       | File name inside the `Certification_Badges` static resource, for example `data-360-consultant.webp`. Blank shows a plain tile. |
+
+`ResumeController.getTimeline` returns it as `certifications[].badgeFile`, with null for a blank value. A new certification needs a record value and a file in the resource, never a code change.
+
 ### Appendix E: Environment Strategy
 
 - **Strategy:** Refer to **[Maintenance & Operations Guide: Environment Hygiene](./05-Maintenance-Guide.md#2-environment-hygiene-the-clean-sweep)** for the comprehensive environment strategy, including org separation and authorized code rules.
@@ -1184,7 +1195,7 @@ A monorepo of five package directories, declared in `sfdx-project.json` and depl
 - `/packages/integration-api`: the OpenAPI specifications (`specs/`), the Apex REST classes for the SAPI and PAPI, and the integration user's profile.
 - `/packages/shared-modules`: a placeholder for modules shared across packages. Today it holds only `main/default/lwc/jsconfig.json`, and no component lives there.
 - `/packages/demos/employer-hub`: the inert Employer Hub data model of a demonstration built for an education provider: `EH_Partner_Engagement__c`, `EH_Job_Posting__c` (master-detail to Partner Engagement), `EH_Partner_Investment__c` and `EH_Endorsement_Request__c`, with lookups to Account, Contact, Case, Opportunity and Contract, and the Account picklist `EH_Industry_Sector__c`, which picks the queue a request goes to. No automation, tabs, layouts or records. Also the `EH_Demo_Read` permission set (read on the four objects, optional for administrators) and the `EH_Assets` static resource (two process flows and two dashboards, redrawn from the original demo with no names and sample values).
-- `/packages/demos/nonprofit-literacy`: the analysis of a platform choice for a regional adult literacy nonprofit: the three decision matrix Custom Metadata Types (`Decision_Option__mdt`, `Decision_Criterion__mdt`, `Decision_Score__mdt`), their 43 records, and the `NL_Assets` static resource with the redrawn object model. It references no managed package, so it deploys to production and to CI's scratch orgs unchanged.
+- `/packages/demos/nonprofit-literacy`: the analysis of a platform choice for an adult literacy nonprofit: the three decision matrix Custom Metadata Types (`Decision_Option__mdt`, `Decision_Criterion__mdt`, `Decision_Score__mdt`), their 43 records, and the `NL_Assets` static resource with the redrawn object model. It references no managed package, so it deploys to production and to CI's scratch orgs unchanged.
 
 ### Appendix J: Cloud FinOps Strategy (Phase 8 - 2027-2028)
 

@@ -81,6 +81,20 @@ test("the alt file has one sentence for every block in the docs", () => {
   }
 });
 
+test("every key in the alt file belongs to a block in the docs", () => {
+  const alt = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "render-mermaid-alt.json"), "utf8")
+  );
+  const found = findDiagrams(path.join(__dirname, "../docs"), loadHash());
+  const used = new Set(found.map((diagram) => diagram.hash));
+  for (const hash of Object.keys(alt)) {
+    assert.ok(
+      used.has(hash),
+      `alt text key ${hash} matches no block in the docs, probably an old hash`
+    );
+  }
+});
+
 test("the dark drawing drops a pinned theme directive and keeps the rest", () => {
   const src = [
     "sequenceDiagram",

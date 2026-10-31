@@ -27,6 +27,7 @@
     "delta:validate": "node scripts/validate.js",
     "docs:api": "node scripts/generate-api-docs.js",
     "docs:counts": "node scripts/check-doc-counts.js",
+    "docs:mermaid-alt": "node scripts/check-mermaid-alt.js",
     "refs:check": "node scripts/check-internal-refs.js",
     "specs:sync": "node scripts/sync-specs.js",
     "specs:check": "node scripts/sync-specs.js --check",

@@ -228,7 +228,8 @@ describe("c-pillar-b-story", () => {
   it("never names the client", () => {
     const element = createComponent();
     const all = text(q(element, "article"));
-    expect(all).toContain("regional adult literacy nonprofit");
+    expect(all).toContain("adult literacy nonprofit");
+    expect(all).not.toMatch(/regional/i);
     expect(all).not.toMatch(/Greenville|GLA\b|Literacy Association/);
   });
 
