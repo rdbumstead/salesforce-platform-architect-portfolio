@@ -42,6 +42,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/testimonials/feed with mode=casual. Every approved testimonial.</value>
+    >GET /papi/testimonials/feed with mode=casual. Every approved testimonial.</value>
     </values>
 </CustomMetadata>

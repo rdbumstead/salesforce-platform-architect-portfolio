@@ -38,6 +38,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/profile. The highlights of the experiences read, in sort order.</value>
+    >GET /papi/profile. The highlights of the experiences read, in sort order.</value>
     </values>
 </CustomMetadata>

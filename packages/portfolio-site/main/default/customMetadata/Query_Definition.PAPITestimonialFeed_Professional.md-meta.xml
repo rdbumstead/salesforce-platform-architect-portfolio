@@ -44,6 +44,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/testimonials/feed, mode professional. Approved testimonials with the Professional vibe from a Manager, Client or Peer.</value>
+    >GET /papi/testimonials/feed, mode professional. Approved testimonials with the Professional vibe from a Manager, Client or Peer.</value>
     </values>
 </CustomMetadata>

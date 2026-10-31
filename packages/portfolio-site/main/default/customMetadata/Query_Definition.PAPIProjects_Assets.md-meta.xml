@@ -40,6 +40,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >The assets of the projects read, for /papi/v1/projects and /papi/v1/profile/full.</value>
+    >The assets of the projects read, for /papi/projects and /papi/profile/full.</value>
     </values>
 </CustomMetadata>

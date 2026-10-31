@@ -40,6 +40,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/resume/generate. The five newest education rows.</value>
+    >GET /papi/resume/generate. The five newest education rows.</value>
     </values>
 </CustomMetadata>

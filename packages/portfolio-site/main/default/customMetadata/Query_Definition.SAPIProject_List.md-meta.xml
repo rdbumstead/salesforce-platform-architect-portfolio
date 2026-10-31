@@ -44,6 +44,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /sapi/v1/projects. Live and in development projects, filtered by status, isFeatured, contactName and projectName.</value>
+    >GET /sapi/projects. Live and in development projects, filtered by status, isFeatured, contactName and projectName.</value>
     </values>
 </CustomMetadata>

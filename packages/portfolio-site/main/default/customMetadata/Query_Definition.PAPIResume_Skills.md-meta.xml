@@ -42,6 +42,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/resume/generate. The skills linked to the printed roles, grouped by category.</value>
+    >GET /papi/resume/generate. The skills linked to the printed roles, grouped by category.</value>
     </values>
 </CustomMetadata>

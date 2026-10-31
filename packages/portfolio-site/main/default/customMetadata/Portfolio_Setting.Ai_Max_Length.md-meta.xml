@@ -26,6 +26,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >Largest maxLength a POST /papi/v1/ai/generate request may ask for. It does not cap the site's cover letter, whose length is set in words by the cover letter min and max words. Keep it above the AI min length. Safe from 50 to 4000.</value>
+    >Largest maxLength a POST /papi/ai/generate request may ask for. It does not cap the site's cover letter, whose length is set in words by the cover letter min and max words. Keep it above the AI min length. Safe from 50 to 4000.</value>
     </values>
 </CustomMetadata>

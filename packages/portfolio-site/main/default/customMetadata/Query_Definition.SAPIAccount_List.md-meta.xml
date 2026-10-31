@@ -42,6 +42,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /sapi/v1/accounts. Employer and issuer accounts, filtered by accountName.</value>
+    >GET /sapi/accounts. Employer and issuer accounts, filtered by accountName.</value>
     </values>
 </CustomMetadata>

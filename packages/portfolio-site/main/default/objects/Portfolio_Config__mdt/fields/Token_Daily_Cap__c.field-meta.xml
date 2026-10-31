@@ -3,7 +3,7 @@
     <fullName>Token_Daily_Cap__c</fullName>
     <defaultValue>50</defaultValue>
     <description
-  >Evaluator tokens /papi/v1/auth/token may issue per day (ADR-028). Blank means 50.</description>
+  >Evaluator tokens /papi/auth/token may issue per day (ADR-028). Blank means 50.</description>
     <fieldManageability>DeveloperControlled</fieldManageability>
     <label>Token Daily Cap</label>
     <precision>5</precision>

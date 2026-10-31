@@ -42,6 +42,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/resume/generate. The ten roles the resume prints, current first.</value>
+    >GET /papi/resume/generate. The ten roles the resume prints, current first.</value>
     </values>
 </CustomMetadata>

@@ -42,6 +42,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/profile. Experiences, current role first, then the most recent.</value>
+    >GET /papi/profile. Experiences, current role first, then the most recent.</value>
     </values>
 </CustomMetadata>

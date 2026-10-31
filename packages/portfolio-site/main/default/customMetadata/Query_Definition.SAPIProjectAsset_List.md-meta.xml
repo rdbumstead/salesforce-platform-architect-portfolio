@@ -44,6 +44,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /sapi/v1/project-assets, filtered by projectId.</value>
+    >GET /sapi/project-assets, filtered by projectId.</value>
     </values>
 </CustomMetadata>
