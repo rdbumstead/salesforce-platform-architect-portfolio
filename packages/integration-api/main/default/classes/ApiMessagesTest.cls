@@ -11,6 +11,13 @@
  **/
 @IsTest
 private class ApiMessagesTest {
+  // Built from code points so this file holds no dash character of its own.
+  private static final String EM_DASH = String.fromCharArray(
+    new List<Integer>{ 8212 }
+  );
+  private static final String EN_DASH = String.fromCharArray(
+    new List<Integer>{ 8211 }
+  );
   private static final String TOKEN_URL = 'https://example.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token';
 
   // Every message the class can build, with sample values.
@@ -97,8 +104,8 @@ private class ApiMessagesTest {
   @IsTest
   static void noMessageHoldsABannedCharacterOrAnInternal() {
     for (String message : allMessages()) {
-      Assert.isFalse(message.contains('—'), 'No em dash: ' + message);
-      Assert.isFalse(message.contains('–'), 'No en dash: ' + message);
+      Assert.isFalse(message.contains(EM_DASH), 'No em dash: ' + message);
+      Assert.isFalse(message.contains(EN_DASH), 'No en dash: ' + message);
       Assert.isFalse(message.contains(';'), 'No semicolon: ' + message);
       Assert.isFalse(
         message.contains(' - '),
