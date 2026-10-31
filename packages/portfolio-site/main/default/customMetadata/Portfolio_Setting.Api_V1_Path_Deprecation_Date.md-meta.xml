@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomMetadata
+  xmlns="http://soap.sforce.com/2006/04/metadata"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+>
+    <label>API v1 URL deprecation date</label>
+    <protected>false</protected>
+    <values>
+        <field>Number_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Text_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Min_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Max_Value__c</field>
+        <value xsi:nil="true" />
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value
+      xsi:type="xsd:string"
+    >The day the old /v1/ URLs are deprecated, as yyyy-MM-dd read at 00:00 UTC. Calls on them then carry a Deprecation header. Empty sends none. Set it in the Text value field.</value>
+    </values>
+</CustomMetadata>

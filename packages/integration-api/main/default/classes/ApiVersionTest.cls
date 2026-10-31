@@ -11,8 +11,8 @@
  **/
 @IsTest
 private class ApiVersionTest {
-  private static final String SAPI = '/services/apexrest/sapi/v1/';
-  private static final String PAPI = '/services/apexrest/papi/v1/';
+  private static final String SAPI = '/services/apexrest/sapi/';
+  private static final String PAPI = '/services/apexrest/papi/';
   // 2026-11-01 00:00 UTC, a Sunday.
   private static final String DEPRECATION_VALUE = '@1793491200';
   private static final String SUNSET_VALUE = 'Sun, 01 Nov 2026 00:00:00 GMT';

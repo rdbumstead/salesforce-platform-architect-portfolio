@@ -4,7 +4,10 @@
  *                      cache directives and rate-limit headers. Reads X-API-Version
  *                      (v1 or v2, missing means v1), shapes v2 bodies to public keys only
  *                      and marks v1 as deprecated, then gone after its sunset date, from
- *                      two Portfolio_Setting__mdt records. Authentication is not
+ *                      two Portfolio_Setting__mdt records. Turns any request URI into one
+ *                      canonical versionless path (canonicalPath), so /papi/v1/health and
+ *                      /papi/health are treated alike, and marks the old /v1/ spellings as
+ *                      aliases with their own retirement dates (ADR-040). Authentication is not
  *                      handled here: the platform rejects unauthenticated callers before
  *                      Apex runs (ADR-027). Writes one log line per request through
  *                      RequestUtil and PortfolioLog once the response is written.
@@ -34,12 +37,19 @@ public with sharing class ApiRequestContext {
 
   public static final String SUPPORTED_VERSION = 'v1';
   public static final String VERSION_2 = 'v2';
+  private static final String APEX_REST_PREFIX = '/services/apexrest';
+  // The version segment the old URL spelling carried.
+  private static final String LEGACY_SEGMENT = 'v1';
   public static final String V2_REFERENCE_URL = 'https://ryanbumstead.com/api-lab/reference?version=v2';
   // Portfolio_Setting__mdt records holding a date as text, yyyy-MM-dd, read as 00:00 UTC.
   // Both ship blank. Blank deprecation date: no Deprecation header. Blank sunset date: no
   // Sunset header and no 410.
   public static final String V1_DEPRECATION_SETTING = 'Api_V1_Deprecation_Date';
   public static final String V1_SUNSET_SETTING = 'Api_V1_Sunset_Date';
+  // The same two settings for the old /v1/ URL spelling (ADR-040), independent of the version
+  // settings above. Both ship blank. Blank changes nothing.
+  public static final String V1_PATH_DEPRECATION_SETTING = 'Api_V1_Path_Deprecation_Date';
+  public static final String V1_PATH_SUNSET_SETTING = 'Api_V1_Path_Sunset_Date';
   // The page sizes and the three tier limits are code defaults. The values in force come
   // from Portfolio_Setting__mdt through the accessors below.
   public static final Integer DEFAULT_LIMIT = 50;
@@ -49,27 +59,29 @@ public with sharing class ApiRequestContext {
   public static final Integer PAPI_LIMIT_PER_MINUTE = 15;
   public static final Integer PAPI_AI_LIMIT_PER_MINUTE = 10;
 
-  // Paths a v1 caller can still reach after the sunset date, so a client with no version
-  // header can get a token and see whether the API is up. They keep their deprecation
-  // headers and are answered 200, never 410. Matched on the end of the path.
+  // Canonical paths (see canonicalPath) a caller can still reach after the version sunset or
+  // the path sunset, so a client with no version header, or one still on a /v1/ URL, can get
+  // a token and see whether the API is up. They keep their deprecation headers and are
+  // answered 200, never 410. The old /v1/ spelling of each is the same path.
   @TestVisible
   private static final Set<String> SUNSET_EXEMPT_PATHS = new Set<String>{
-    '/papi/v1/auth/token',
-    '/sapi/v1/health',
-    '/papi/v1/health'
+    '/papi/auth/token',
+    '/sapi/health',
+    '/papi/health'
   };
 
   // Paths whose body is not a list of records, so v2 leaves it as the resource wrote it.
   // Every other path returns records and has `id`, `xId` and `accomplishments` removed in v2.
   // A future field with those names on one of these paths would survive, on purpose.
+  // Canonical paths, so the /v1/ spelling of each is unshaped too.
   @TestVisible
   private static final Set<String> UNSHAPED_PATHS = new Set<String>{
-    '/papi/v1/auth/token',
-    '/sapi/v1/health',
-    '/papi/v1/health',
-    '/papi/v1/ai/generate',
-    '/papi/v1/resume/generate',
-    '/sapi/v1/portfolio-config'
+    '/papi/auth/token',
+    '/sapi/health',
+    '/papi/health',
+    '/papi/ai/generate',
+    '/papi/resume/generate',
+    '/sapi/portfolio-config'
   };
 
   private static final String HEADER_REQUEST_ID = 'X-Request-Id';
@@ -100,6 +112,8 @@ public with sharing class ApiRequestContext {
   private Boolean logged = false;
   private String servedVersion = SUPPORTED_VERSION;
   private Boolean shapesRecords = true;
+  private String canonical;
+  private Boolean legacyPath = false;
 
   // Tests set the clock here to cross the sunset date.
   @TestVisible
@@ -180,10 +194,10 @@ public with sharing class ApiRequestContext {
       RestContext.request,
       RestContext.response
     );
-    ctx.shapesRecords = !pathIn(
-      UNSHAPED_PATHS,
-      RestContext.request?.requestURI
-    );
+    String uri = RestContext.request?.requestURI;
+    ctx.canonical = canonicalPath(uri);
+    ctx.legacyPath = isLegacyPath(uri);
+    ctx.shapesRecords = !UNSHAPED_PATHS.contains(ctx.canonical);
     ctx.applyRequestRules();
     return ctx;
   }
@@ -214,18 +228,99 @@ public with sharing class ApiRequestContext {
     return VERSION_2.equals(servedVersion);
   }
 
-  // True when the path ends with one of the given paths, ignoring case and a trailing slash.
-  private static Boolean pathIn(Set<String> paths, String uri) {
-    if (String.isBlank(uri)) {
-      return false;
+  /**
+   * @description Turns a request URI into its canonical path: the API root (sapi or papi),
+   *              then the resource, with any version segment right after the root removed,
+   *              lower case, no query and no trailing slash. /services/apexrest/papi/v1/health
+   *              and /services/apexrest/papi/health both give /papi/health. A URI with no
+   *              sapi or papi segment is lower cased and trimmed only.
+   * @param uri A request URI, for example RestRequest.requestURI.
+   * @return String The canonical path, or null when the URI is blank.
+   */
+  public static String canonicalPath(String uri) {
+    List<String> parts = uriSegments(uri, true);
+    if (parts.isEmpty()) {
+      return null;
     }
-    String path = uri.toLowerCase().removeEnd('/');
-    for (String candidate : paths) {
-      if (path.endsWith(candidate)) {
-        return true;
+    Integer root = rootIndex(parts);
+    List<String> kept = new List<String>();
+    for (Integer i = Math.max(root, 0); i < parts.size(); i++) {
+      if (!(root != -1 && i == root + 1 && LEGACY_SEGMENT == parts[i])) {
+        kept.add(parts[i]);
       }
     }
-    return false;
+    return '/' + String.join(kept, '/');
+  }
+
+  /**
+   * @description True when the URI is an old /v1/ spelling: the segment right after sapi
+   *              or papi is v1, in any letter case.
+   * @param uri A request URI.
+   * @return Boolean True for an old URL, false for a versionless one or a blank URI.
+   */
+  public static Boolean isLegacyPath(String uri) {
+    List<String> parts = uriSegments(uri, true);
+    Integer root = rootIndex(parts);
+    return root != -1 &&
+      root + 1 < parts.size() &&
+      LEGACY_SEGMENT == parts[root + 1];
+  }
+
+  /**
+   * @description The versionless spelling of a request URI: the same URI with the v1
+   *              segment after sapi or papi removed, the prefix and letter case kept.
+   *              A URI that is already versionless comes back without a trailing slash.
+   * @param uri A request URI.
+   * @return String For example /services/apexrest/papi/projects, or null when blank.
+   */
+  public static String versionlessUri(String uri) {
+    List<String> parts = uriSegments(uri, false);
+    if (parts.isEmpty()) {
+      return null;
+    }
+    Integer root = rootIndex(parts);
+    if (
+      root != -1 &&
+      root + 1 < parts.size() &&
+      LEGACY_SEGMENT == parts[root + 1].toLowerCase()
+    ) {
+      parts.remove(root + 1);
+    }
+    return '/' + String.join(parts, '/');
+  }
+
+  // On the platform RestRequest.requestURI starts after /services/apexrest (for example
+  // /sapi/v1/skills), so a link built from it would not be a working URL. This puts the prefix
+  // back, with the site's path prefix when the call came through the Experience Cloud site.
+  // A URI that already carries it (a test sets one that does) is left alone.
+  private static String withPlatformPrefix(String path) {
+    if (path == null || path.toLowerCase().contains(APEX_REST_PREFIX)) {
+      return path;
+    }
+    return (Site.getPathPrefix() ?? '') + APEX_REST_PREFIX + path;
+  }
+
+  private static List<String> uriSegments(String uri, Boolean lowerCase) {
+    List<String> parts = new List<String>();
+    if (String.isBlank(uri)) {
+      return parts;
+    }
+    for (String part : uri.substringBefore('?').split('/')) {
+      if (String.isNotBlank(part)) {
+        parts.add(lowerCase ? part.trim().toLowerCase() : part.trim());
+      }
+    }
+    return parts;
+  }
+
+  private static Integer rootIndex(List<String> parts) {
+    for (Integer i = 0; i < parts.size(); i++) {
+      String part = parts[i].toLowerCase();
+      if (part == 'sapi' || part == 'papi') {
+        return i;
+      }
+    }
+    return -1;
   }
 
   /**
@@ -253,6 +348,31 @@ public with sharing class ApiRequestContext {
     return isGone(v1SunsetDate());
   }
 
+  /**
+   * @description The path deprecation date from the Api_V1_Path_Deprecation_Date setting.
+   * @return Date The date, or null when blank or not a yyyy-MM-dd date.
+   */
+  public static Date v1PathDeprecationDate() {
+    return settingDate(V1_PATH_DEPRECATION_SETTING);
+  }
+
+  /**
+   * @description The path sunset date from the Api_V1_Path_Sunset_Date setting.
+   * @return Date The date, or null when blank or not a yyyy-MM-dd date.
+   */
+  public static Date v1PathSunsetDate() {
+    return settingDate(V1_PATH_SUNSET_SETTING);
+  }
+
+  /**
+   * @description True when the old /v1/ URL spelling has reached its sunset date (00:00 UTC),
+   *              so a call on it is answered 410. Always false while the setting is blank.
+   * @return Boolean True when the /v1/ URLs are gone.
+   */
+  public static Boolean isV1PathGone() {
+    return isGone(v1PathSunsetDate());
+  }
+
   private static Boolean isGone(Date sunset) {
     if (sunset == null) {
       return false;
@@ -277,29 +397,94 @@ public with sharing class ApiRequestContext {
   }
 
   /**
-   * @description Adds Deprecation, Sunset and Link to a v1 response. Deprecation is a
-   *              structured field date, @ and unix seconds (RFC 9745). Sunset is an HTTP
-   *              date (RFC 8594). Link always names the v2 reference as successor-version,
-   *              and as deprecation and sunset when those dates are set.
+   * @description Adds Deprecation, Sunset and Link to a response that is retiring something.
+   *              Two things can retire: API v1 (a v1 version header or none, ADR-039) and the
+   *              old /v1/ URL spelling (ADR-040). Each has its own dates. Deprecation is a
+   *              structured field date, @ and unix seconds (RFC 9745). Sunset is an HTTP date
+   *              (RFC 8594). When both apply the response carries the earlier date of each,
+   *              because that is the day this exact request first stops working. Link names
+   *              the v2 reference as successor-version (and as deprecation and sunset when
+   *              those version dates are set) when the version applies, and the versionless
+   *              URL as canonical (RFC 6596) when the old spelling was used.
    */
-  private void addDeprecationHeaders(Date deprecation, Date sunset) {
-    List<String> links = new List<String>{
-      '<' +
-      V2_REFERENCE_URL +
-      '>; rel="successor-version"'
-    };
+  private void addRetirementHeaders(
+    Boolean versionApplies,
+    Date versionDeprecation,
+    Date versionSunset,
+    Date pathDeprecation,
+    Date pathSunset
+  ) {
+    List<String> links = new List<String>();
+    if (versionApplies) {
+      links.add('<' + V2_REFERENCE_URL + '>; rel="successor-version"');
+      if (versionDeprecation != null) {
+        links.add('<' + V2_REFERENCE_URL + '>; rel="deprecation"');
+      }
+      if (versionSunset != null) {
+        links.add('<' + V2_REFERENCE_URL + '>; rel="sunset"');
+      }
+    }
+    if (legacyPath) {
+      links.add('<' + versionlessTarget() + '>; rel="canonical"');
+    }
+    Date deprecation = earlier(
+      versionApplies ? versionDeprecation : null,
+      legacyPath ? pathDeprecation : null
+    );
+    Date sunset = earlier(
+      versionApplies ? versionSunset : null,
+      legacyPath ? pathSunset : null
+    );
     if (deprecation != null) {
       Long seconds =
         Datetime.newInstanceGmt(deprecation, Time.newInstance(0, 0, 0, 0))
           .getTime() / 1000;
       header('Deprecation', '@' + seconds);
-      links.add('<' + V2_REFERENCE_URL + '>; rel="deprecation"');
     }
     if (sunset != null) {
       header('Sunset', httpDate(sunset));
-      links.add('<' + V2_REFERENCE_URL + '>; rel="sunset"');
     }
-    appendHeader('Link', String.join(links, ', '));
+    if (!links.isEmpty()) {
+      appendHeader('Link', String.join(links, ', '));
+    }
+  }
+
+  private static Date earlier(Date first, Date second) {
+    if (first == null || second == null) {
+      return first != null ? first : second;
+    }
+    return first < second ? first : second;
+  }
+
+  /**
+   * @description The same request on the versionless URL: the path with the v1 segment
+   *              removed, and for a GET the query string rebuilt from the parameters, keys
+   *              in order. Only a GET carries its query, because a POST's parameters can
+   *              come from a form body.
+   */
+  private String versionlessTarget() {
+    String target = withPlatformPrefix(versionlessUri(req?.requestURI));
+    if (
+      target == null ||
+      req == null ||
+      req.params == null ||
+      req.params.isEmpty() ||
+      req.httpMethod != 'GET'
+    ) {
+      return target;
+    }
+    List<String> names = new List<String>(req.params.keySet());
+    names.sort();
+    List<String> pairs = new List<String>();
+    for (String name : names) {
+      String value = req.params.get(name);
+      pairs.add(
+        EncodingUtil.urlEncode(name, 'UTF-8') +
+          '=' +
+          EncodingUtil.urlEncode(value == null ? '' : value, 'UTF-8')
+      );
+    }
+    return target + '?' + String.join(pairs, '&');
   }
 
   // IMF-fixdate, for example Sun, 06 Nov 1994 00:00:00 GMT. Names are spelled here so the
@@ -490,38 +675,25 @@ public with sharing class ApiRequestContext {
     }
     logged = true;
     RequestUtil.logRequest(
-      req?.requestURI,
+      canonical,
       res?.statusCode,
       correlationId,
-      System.currentTimeMillis() - startedAt
+      System.currentTimeMillis() - startedAt,
+      legacyPath
     );
   }
 
   /**
-   * @description Last non-empty path segment after the mapped resource prefix
-   *              (/sapi|papi/v1/{resource}/...). Null when the URI has nothing after the resource.
-   * @return String The trailing segment, e.g. "full" for /papi/v1/profile/full.
+   * @description Last non-empty path segment after the resource
+   *              (/sapi|papi/{resource}/...), the same for the versionless URL and its /v1/
+   *              alias, letter case kept. Null when the URI has nothing after the resource.
+   * @return String The trailing segment, e.g. "full" for /papi/profile/full.
    */
   public String endpointSegment() {
-    String uri = req?.requestURI;
-    if (String.isBlank(uri)) {
-      return null;
-    }
-    List<String> parts = new List<String>();
-    for (String part : uri.split('/')) {
-      if (String.isNotBlank(part)) {
-        parts.add(part);
-      }
-    }
-    Integer root = -1;
-    for (Integer i = 0; i < parts.size(); i++) {
-      if (parts[i] == 'sapi' || parts[i] == 'papi') {
-        root = i;
-        break;
-      }
-    }
-    // root, version, resource: the endpoint segment starts after these three.
-    if (root == -1 || parts.size() <= root + 3) {
+    List<String> parts = uriSegments(versionlessUri(req?.requestURI), false);
+    Integer root = rootIndex(parts);
+    // root, resource: the endpoint segment starts after these two.
+    if (root == -1 || parts.size() <= root + 2) {
       return null;
     }
     return parts[parts.size() - 1];
@@ -566,18 +738,27 @@ public with sharing class ApiRequestContext {
       error(400, 'BAD_REQUEST', 'Unsupported X-API-Version');
       return;
     }
-    if (!isV2()) {
-      // Each date is read and parsed once for this request.
-      Date deprecation = v1DeprecationDate();
-      Date sunset = v1SunsetDate();
-      addDeprecationHeaders(deprecation, sunset);
-      if (isGone(sunset) && !pathIn(SUNSET_EXEMPT_PATHS, uri)) {
-        error(
-          410,
-          'GONE',
-          'API v1 has been retired. Send X-API-Version: v2. See ' +
-          V2_REFERENCE_URL
-        );
+    Boolean versionApplies = !isV2();
+    if (versionApplies || legacyPath) {
+      // Each date is read and parsed once for this request. The version dates apply to a v1
+      // call and the path dates to an old /v1/ URL. A call can be both.
+      Date versionDeprecation = versionApplies ? v1DeprecationDate() : null;
+      Date versionSunset = versionApplies ? v1SunsetDate() : null;
+      Date pathDeprecation = legacyPath ? v1PathDeprecationDate() : null;
+      Date pathSunset = legacyPath ? v1PathSunsetDate() : null;
+      addRetirementHeaders(
+        versionApplies,
+        versionDeprecation,
+        versionSunset,
+        pathDeprecation,
+        pathSunset
+      );
+      Boolean versionGone = isGone(versionSunset);
+      Boolean pathGone = isGone(pathSunset);
+      if (
+        (versionGone || pathGone) && !SUNSET_EXEMPT_PATHS.contains(canonical)
+      ) {
+        error(410, 'GONE', goneMessage(versionGone, pathGone));
         return;
       }
     }
@@ -591,7 +772,7 @@ public with sharing class ApiRequestContext {
     );
 
     RateDecision decision = rateLimiter()
-      .check(tierKeyOf(family, uri), tierLimitOf(family, uri));
+      .check(tierKeyOf(family, canonical), tierLimitOf(family, canonical));
     header('X-RateLimit-Limit', String.valueOf(decision.limitPerMinute));
     header(
       'X-RateLimit-Remaining',
@@ -617,6 +798,25 @@ public with sharing class ApiRequestContext {
       error(400, 'BAD_REQUEST', 'X-Request-Id must be a UUID.');
       return;
     }
+  }
+
+  // The version message is the ADR-039 text, unchanged. The path message names the versionless
+  // URL without its query, so no parameter value is echoed back.
+  private String goneMessage(Boolean versionGone, Boolean pathGone) {
+    String message = '';
+    if (versionGone) {
+      message =
+        'API v1 has been retired. Send X-API-Version: v2. See ' +
+        V2_REFERENCE_URL;
+    }
+    if (pathGone) {
+      message +=
+        (versionGone ? ' ' : '') +
+        'URLs with /v1/ have been retired. Use ' +
+        withPlatformPrefix(versionlessUri(req?.requestURI)) +
+        ' instead.';
+    }
+    return message;
   }
 
   private String headerValue(String name) {
@@ -736,8 +936,8 @@ public with sharing class ApiRequestContext {
     return ApiFamily.UNKNOWN;
   }
 
-  private static Boolean isAiPath(String uri) {
-    return String.isNotBlank(uri) && uri.toLowerCase().contains('/papi/v1/ai/');
+  private static Boolean isAiPath(String canonicalUri) {
+    return canonicalUri != null && canonicalUri.startsWith('/papi/ai/');
   }
 
   private static String tierKeyOf(ApiFamily family, String uri) {
