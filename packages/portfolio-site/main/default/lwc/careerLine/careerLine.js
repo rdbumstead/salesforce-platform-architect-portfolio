@@ -2,8 +2,8 @@
  * @description       : The work timeline under the home hero, from ResumeController.getTimeline.
  *                      Work only. Roles are grouped by employer name and each employer is one
  *                      stop on a single slim track, in the server's order of first appearance
- *                      (current first, then newest). Five stops share a row at 768 px and up
- *                      with no sideways scroll. Below 768 px the track stacks in one column with
+ *                      (current first, then newest). Five stops share a row at 900 px and up
+ *                      with no sideways scroll. Below 900 px the track stacks in one column with
  *                      the line on the left.
  *                      A stop shows its employer, its span ("2026 to now", "2021 to 2026"), the
  *                      title of its newest role that is not part time (the newest role when all
