@@ -84,6 +84,28 @@ public with sharing class ApiRequestContext {
     '/sapi/portfolio-config'
   };
 
+  // REMOVE WITH THE SWITCH. The request handling as it was before the versionless URLs
+  // (ADR-040), taken from main 1c7a577d. While Api_Versionless_Urls is Off every decision below
+  // goes through it, so Off behaves as that build did. Cleanup condition: after the v1 sunset on
+  // 2026-11-29, once the versionless URLs have run cleanly, remove the switch, this block, the
+  // legacy* methods and their tests in one change.
+  @TestVisible
+  private static final Set<String> LEGACY_SUNSET_EXEMPT_PATHS = new Set<String>{
+    '/papi/v1/auth/token',
+    '/sapi/v1/health',
+    '/papi/v1/health'
+  };
+
+  @TestVisible
+  private static final Set<String> LEGACY_UNSHAPED_PATHS = new Set<String>{
+    '/papi/v1/auth/token',
+    '/sapi/v1/health',
+    '/papi/v1/health',
+    '/papi/v1/ai/generate',
+    '/papi/v1/resume/generate',
+    '/sapi/v1/portfolio-config'
+  };
+
   private static final String HEADER_REQUEST_ID = 'X-Request-Id';
   private static final String HEADER_API_VERSION = 'X-API-Version';
   private static final Pattern UUID_PATTERN = Pattern.compile(
@@ -113,6 +135,10 @@ public with sharing class ApiRequestContext {
   private String servedVersion = SUPPORTED_VERSION;
   private Boolean shapesRecords = true;
   private String canonical;
+  private String rawUri;
+  // REMOVE WITH THE SWITCH. True while Api_Versionless_Urls is not Off. False sends every path
+  // decision through the legacy logic.
+  private Boolean modern = true;
   private Boolean legacyPath = false;
 
   // Tests set the clock here to cross the sunset date.
@@ -196,10 +222,13 @@ public with sharing class ApiRequestContext {
     );
     String uri = RestContext.request?.requestURI;
     ctx.canonical = canonicalPath(uri);
-    // While the Api_Versionless_Urls switch is Off the /v1/ URLs are the only URLs, so none of
-    // them is an alias: no canonical Link, no path dates and no path 410 (ADR-040).
-    ctx.legacyPath = isLegacyPath(uri) && ApiRoutes.isVersionless();
-    ctx.shapesRecords = !UNSHAPED_PATHS.contains(ctx.canonical);
+    ctx.rawUri = uri;
+    // The one place the switch is read for the shared path handling. Off, the /v1/ URLs are the
+    // only URLs, so none is an alias (no canonical Link, no path dates, no path 410) and every
+    // path decision below uses the legacy logic (ADR-040).
+    ctx.modern = ApiRoutes.isVersionless();
+    ctx.legacyPath = isLegacyPath(uri) && ctx.modern;
+    ctx.shapesRecords = !ctx.isUnshaped();
     ctx.applyRequestRules();
     return ctx;
   }
@@ -677,7 +706,7 @@ public with sharing class ApiRequestContext {
     }
     logged = true;
     RequestUtil.logRequest(
-      canonical,
+      logPath(),
       res?.statusCode,
       correlationId,
       System.currentTimeMillis() - startedAt,
@@ -692,6 +721,9 @@ public with sharing class ApiRequestContext {
    * @return String The trailing segment, e.g. "full" for /papi/profile/full.
    */
   public String endpointSegment() {
+    if (!modern) {
+      return legacyEndpointSegment();
+    }
     List<String> parts = uriSegments(versionlessUri(req?.requestURI), false);
     Integer root = rootIndex(parts);
     // root, resource: the endpoint segment starts after these two.
@@ -757,9 +789,7 @@ public with sharing class ApiRequestContext {
       );
       Boolean versionGone = isGone(versionSunset);
       Boolean pathGone = isGone(pathSunset);
-      if (
-        (versionGone || pathGone) && !SUNSET_EXEMPT_PATHS.contains(canonical)
-      ) {
+      if ((versionGone || pathGone) && !isSunsetExempt()) {
         error(410, 'GONE', goneMessage(versionGone, pathGone));
         return;
       }
@@ -774,7 +804,7 @@ public with sharing class ApiRequestContext {
     );
 
     RateDecision decision = rateLimiter()
-      .check(tierKeyOf(family, canonical), tierLimitOf(family, canonical));
+      .check(tierKeyOf(family, isAi()), tierLimitOf(family, isAi()));
     header('X-RateLimit-Limit', String.valueOf(decision.limitPerMinute));
     header(
       'X-RateLimit-Remaining',
@@ -938,21 +968,87 @@ public with sharing class ApiRequestContext {
     return ApiFamily.UNKNOWN;
   }
 
+  // The path decisions. Each one picks the new logic (canonical paths) or the legacy logic from
+  // the one flag set in begin(). Delete the legacy branch of each with the switch.
+  private Boolean isUnshaped() {
+    return modern
+      ? UNSHAPED_PATHS.contains(canonical)
+      : legacyPathIn(LEGACY_UNSHAPED_PATHS, rawUri);
+  }
+
+  private Boolean isSunsetExempt() {
+    return modern
+      ? SUNSET_EXEMPT_PATHS.contains(canonical)
+      : legacyPathIn(LEGACY_SUNSET_EXEMPT_PATHS, rawUri);
+  }
+
+  private Boolean isAi() {
+    return modern
+      ? isAiPath(canonical)
+      : String.isNotBlank(rawUri) &&
+        rawUri.toLowerCase().contains('/papi/v1/ai/');
+  }
+
+  private String logPath() {
+    return modern ? canonical : rawUri;
+  }
+
   private static Boolean isAiPath(String canonicalUri) {
     return canonicalUri != null && canonicalUri.startsWith('/papi/ai/');
   }
 
-  private static String tierKeyOf(ApiFamily family, String uri) {
+  private static String tierKeyOf(ApiFamily family, Boolean ai) {
     if (family == ApiFamily.SAPI) {
       return 'sapi';
     }
-    return isAiPath(uri) ? 'papi-ai' : 'papi';
+    return ai ? 'papi-ai' : 'papi';
   }
 
-  private static Integer tierLimitOf(ApiFamily family, String uri) {
+  private static Integer tierLimitOf(ApiFamily family, Boolean ai) {
     if (family == ApiFamily.SAPI) {
       return sapiLimitPerMinute();
     }
-    return isAiPath(uri) ? aiLimitPerMinute() : papiLimitPerMinute();
+    return ai ? aiLimitPerMinute() : papiLimitPerMinute();
+  }
+
+  // REMOVE WITH THE SWITCH. True when the path ends with one of the given paths, ignoring case
+  // and a trailing slash. As main 1c7a577d had it.
+  private static Boolean legacyPathIn(Set<String> paths, String uri) {
+    if (String.isBlank(uri)) {
+      return false;
+    }
+    String path = uri.toLowerCase().removeEnd('/');
+    for (String candidate : paths) {
+      if (path.endsWith(candidate)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // REMOVE WITH THE SWITCH. The endpoint segment as main 1c7a577d had it: root, version,
+  // resource, then the segment.
+  private String legacyEndpointSegment() {
+    String uri = req?.requestURI;
+    if (String.isBlank(uri)) {
+      return null;
+    }
+    List<String> parts = new List<String>();
+    for (String part : uri.split('/')) {
+      if (String.isNotBlank(part)) {
+        parts.add(part);
+      }
+    }
+    Integer root = -1;
+    for (Integer i = 0; i < parts.size(); i++) {
+      if (parts[i] == 'sapi' || parts[i] == 'papi') {
+        root = i;
+        break;
+      }
+    }
+    if (root == -1 || parts.size() <= root + 3) {
+      return null;
+    }
+    return parts[parts.size() - 1];
   }
 }
