@@ -54,7 +54,7 @@ const STEPS = [
       "docs/api/**",
       "scripts/generate-api-docs.js"
     ],
-    commands: [{ ci: "npm run docs:verify" }]
+    commands: [{ ci: "npm run docs:verify", special: "api-docs" }]
   },
   {
     name: "Internal references",
@@ -261,6 +261,26 @@ function runCommand(command) {
         output: result.output
       };
     }
+    return done(result);
+  }
+
+  if (command.special === "api-docs") {
+    // The generator writes LF, and on Windows git status then shows the pages as changed
+    // with no real difference (git diff shows nothing). Put back only pages whose whole
+    // difference is line endings.
+    const result = exec(text);
+    (git(["status", "--porcelain", "--", "docs/api/oas"]) || "")
+      .split("\n")
+      .filter((l) => l.startsWith(" M "))
+      .map((l) => l.slice(3).trim())
+      .forEach((file) => {
+        const only = spawnSync(
+          "git",
+          ["diff", "--ignore-cr-at-eol", "--quiet", "--", file],
+          { cwd: ROOT }
+        );
+        if (only.status === 0) git(["checkout", "--", file]);
+      });
     return done(result);
   }
 
