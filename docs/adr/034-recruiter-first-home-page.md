@@ -100,7 +100,7 @@ This changes items 1, 3, 6 and 8, and the career line from the 2026-10-26 amendm
 - **Analytics.** The career line sends `career_role_opened` {`position`} when a stop opens and `career_timeline_toggled` {`expanded`} from Expand all and Collapse all. `career_timeline_filtered` and `career_timeline_show_all` stay in the event list for past data and are no longer sent. `case_study_opened` stays too and nothing sends it.
 - **Detail.** [Technical Guide 2.12](../guides/04-Technical-Guide.md#212-home-page).
 
-## Amendment (2026-10-30, Round 19): the build section moves to the Docs page
+## Amendment (2026-10-30, later): the build section moves to the Docs page
 
 This changes items 1 and 7 and the hero's button order. The other items stand.
 
