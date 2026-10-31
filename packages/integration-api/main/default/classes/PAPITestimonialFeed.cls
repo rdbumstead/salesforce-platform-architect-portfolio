@@ -1,5 +1,5 @@
 /**
- * @description       : PAPI curated testimonial feed (/papi/v1/testimonials/feed) with "Vibe
+ * @description       : PAPI curated testimonial feed (/papi/testimonials/feed) with "Vibe
  *                      Control": mode=professional (default) returns approved testimonials
  *                      from a Manager, Client or Peer with the Professional vibe; mode=casual
  *                      returns every approved testimonial. Unapproved records never appear.
@@ -10,6 +10,7 @@
  * @Created           : 10/20/2026
  * @Test Class        : [PAPITestimonialFeedTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). PAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/papi/v1/testimonials/feed')
 global with sharing class PAPITestimonialFeed implements QueryDefinitions.Provider {
   public static final String MODE_PROFESSIONAL = 'professional';

@@ -31,3 +31,7 @@ Source: `ApiRequestContext.applyRequestRules`, which every SAPI and PAPI REST cl
 The platform echoes a caller-supplied `X-Request-Id` on every response, including responses it generates before Apex runs, such as a 401. Apex therefore sets `X-Request-Id` only when it generated the value: on `/papi/` when the caller sent none, and on either API when the supplied value is not a UUID (the 400 response then carries a generated UUID in `correlationId`). A valid caller value is never set again by Apex, which would duplicate it (`id;id`). `correlationId` in error bodies always equals the id the caller sees.
 
 Source: `ApiRequestContext.applyRequestRules`. The echo was observed on My Domain responses (a 401 from production and a 401 from a scratch org) and, once, on the site domain in an integration scratch org (guest requests, including an Apex 503). With no `X-Request-Id`, the platform returns its own 32-character hex id on responses it generates before Apex runs. Whether an authenticated PAPI response to a request without an id carries one id or two (the platform's and the UUID Apex generates) is unverified until the live smoke.
+
+## Amendment (2026-10-31)
+
+The URLs still carried a `/v1/` segment from before the header was read, so the decision above was only half carried out. [ADR-040](040-versionless-api-urls.md) removes the segment. The API is called at versionless URLs, the old `/v1/` URLs stay as aliases until a date I set, and the `X-API-Version` header is the only version switch.

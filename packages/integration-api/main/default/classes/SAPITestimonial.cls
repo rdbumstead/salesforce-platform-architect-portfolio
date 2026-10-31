@@ -7,6 +7,7 @@
  * @Created           : 12/05/2025
  * @Test Class        : [SAPITestimonialTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). SAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/sapi/v1/testimonials/*')
 global with sharing class SAPITestimonial implements QueryDefinitions.Provider {
   private static final String LIST_QUERY = 'SAPITestimonial_List';

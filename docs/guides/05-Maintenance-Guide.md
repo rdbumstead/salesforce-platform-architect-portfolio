@@ -19,6 +19,7 @@
   - [3.8 Owner Emails and Testimonial Approvals](#38-owner-emails-and-testimonial-approvals)
   - [3.9 The Postman Collection and the Run in Postman Link](#39-the-postman-collection-and-the-run-in-postman-link)
   - [3.10 Setting the API v1 Dates and Retiring v1](#310-setting-the-api-v1-dates-and-retiring-v1)
+  - [3.11 Retiring the Old /v1/ URLs](#311-retiring-the-old-v1-urls)
 - [4. Disaster Recovery](#4-disaster-recovery)
   - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
   - [4.2 Scenario: Security Misconfiguration (Guest User)](#42-scenario-security-misconfiguration-guest-user)
@@ -102,13 +103,13 @@ The portfolio APIs authenticate with OAuth 2.0 Client Credentials issued by the 
 1. Setup → **External Client App Manager** → **Portfolio API** → **Settings** → **OAuth Settings** → **Consumer Key and Secret** → **Rotate** (or **Regenerate**). Copy the new secret once.
 2. Setup → **Named Credentials** → **External Credentials** → **Portfolio_API_Auth** → principal **Portfolio_API_Principal** → **Edit** → paste the new secret → **Save**.
 3. Setup → **Named Credentials** → **External Credentials** → **Portfolio_API_Token_Auth** → principal **Portfolio_API_Token_Principal** → **Edit** → set the `Client_Secret` parameter to the new secret (and `Client_Id`, if the consumer key changed) → **Save**.
-4. Verify the outbound credential: call `GET /papi/v1/health` (from the site's API Lab, or with a Bearer token) and check `dependencies.credential` is `UP`. `PAPIHealth.checkCredential` makes one GET through `Portfolio_API` to `/sapi/v1/health` and reports `UP` only on HTTP 200; on failure `details.credential` holds the HTTP status or exception type. It needs the caller to have principal access to `Portfolio_API_Auth-Portfolio_API_Principal` (granted to the integration user by `Integration_Access`).
+4. Verify the outbound credential: call `GET /papi/health` (from the site's API Lab, or with a Bearer token) and check `dependencies.credential` is `UP`. `PAPIHealth.checkCredential` makes one GET through `Portfolio_API` to `/sapi/health` and reports `UP` only on HTTP 200; on failure `details.credential` holds the HTTP status or exception type. It needs the caller to have principal access to `Portfolio_API_Auth-Portfolio_API_Principal` (granted to the integration user by `Integration_Access`).
 5. Verify token vending: run `scripts/api-smoke.sh` with your own email; the token request must return 200.
 6. Record the rotation date in `Portfolio_Config__mdt.Ryan_Bumstead.Last_Secret_Rotation__c`.
 
 **Revocation (kill switch)**
 
-- Setup → **External Client App Manager** → **Portfolio API** → **Deactivate**. Every outstanding Bearer token, including evaluator tokens issued by `POST /papi/v1/auth/token` ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)), stops working immediately. Reactivate after rotating.
+- Setup → **External Client App Manager** → **Portfolio API** → **Deactivate**. Every outstanding Bearer token, including evaluator tokens issued by `POST /papi/auth/token` ([ADR-028](../adr/028-evaluator-access-via-token-vending.md)), stops working immediately. Reactivate after rotating.
 
 ## 2. Environment Hygiene (The "Clean Sweep")
 
@@ -234,9 +235,33 @@ The API Lab and the API reference offer the Process API (PAPI) collection as a d
 API v1 is deprecated and has two dates, both `Portfolio_Setting__mdt` records ([ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)). Both ship empty, so until I set them v1 carries no `Deprecation` or `Sunset` header and nothing answers 410.
 
 1. **The records.** `Api_V1_Deprecation_Date` and `Api_V1_Sunset_Date`, in `packages/portfolio-site/main/default/customMetadata/`. Each holds a date in **Text Value** written `yyyy-MM-dd` and read as 00:00 UTC. Leave **Number Value** empty.
-2. **What they do.** With the deprecation date set, every v1 response carries a `Deprecation` header. With the sunset date set, every v1 response carries a `Sunset` header, and from 00:00 UTC on that day every v1 call, with or without an `X-API-Version` header, gets 410 with `errorCode` `GONE`, except `POST /papi/v1/auth/token`, `/sapi/v1/health` and `/papi/v1/health`. They keep their deprecation headers and are answered normally, so a client can still get a token and check that the API is up. A value that is not a `yyyy-MM-dd` date reads as empty, and so does an empty one. v2 is never affected. The `Link` header to the v2 reference is sent on v1 either way.
+2. **What they do.** With the deprecation date set, every v1 response carries a `Deprecation` header. With the sunset date set, every v1 response carries a `Sunset` header, and from 00:00 UTC on that day every v1 call, with or without an `X-API-Version` header, gets 410 with `errorCode` `GONE`, except `POST /papi/auth/token`, `/sapi/health` and `/papi/health`. They keep their deprecation headers and are answered normally, so a client can still get a token and check that the API is up. A value that is not a `yyyy-MM-dd` date reads as empty, and so does an empty one. v2 is never affected. The `Link` header to the v2 reference is sent on v1 either way.
 3. **How I set them.** I edit the Text Value in the record's file and deploy the changed record. It is a deploy of one metadata record and needs no code change. After the deploy I call a v1 path and read `Deprecation` and `Sunset` in the response headers, and I call a v2 path and read none. I plan to set the sunset to the deploy date plus 30 days.
 4. **After the sunset.** Once v1 has answered 410 for as long as I want, I clean up in one change: delete `salesforce-sapi.yaml` and `portfolio-papi.yaml`, remove the `V1_SPECS` list and its uses in `scripts/sync-specs.js`, run `npm run specs:sync` and delete the v1 static resources it no longer writes (`SAPI_Spec`, `PAPI_Spec`, `SAPI_OpenAPI` and `PAPI_OpenAPI`, each with its meta file), remove the "v1 (deprecated)" option from the API Lab and API reference pickers, remove the v1 branch of `OpenApiDocument` and the v1 sunset code in `ApiRequestContext`, and regenerate `docs/api`. Then I delete the two date records, or leave them empty.
+
+### 3.11 Retiring the Old /v1/ URLs
+
+The API is called at versionless URLs, and the old `/v1/` URLs are aliases that reach the same code ([ADR-040](../adr/040-versionless-api-urls.md)). They have their own two dates, separate from the v1 version dates in section 3.10. Both are `Portfolio_Setting__mdt` records and both ship empty, so until I set them an old URL answers as it always did, with a `Link` header that points at the versionless URL and nothing else.
+
+1. **The records.** `Api_V1_Path_Deprecation_Date` and `Api_V1_Path_Sunset_Date`, in `packages/portfolio-site/main/default/customMetadata/`. Each holds a date in **Text Value** written `yyyy-MM-dd` and read as 00:00 UTC. Leave **Number Value** empty.
+2. **Before I set a date.** I read the request log for `legacyPath=true` lines (the log line ends with it when a caller used an old URL), so I know who still calls them. Our own callers already use the versionless URLs.
+3. **Deprecating.** I set `Api_V1_Path_Deprecation_Date`, deploy the one record, call an old URL and read `Deprecation` and `Link` in the response headers. A versionless URL carries neither.
+4. **Retiring.** I set `Api_V1_Path_Sunset_Date` to the day I want, deploy the record and check the same call. From 00:00 UTC on that day an old URL answers 410 `GONE` with the versionless URL in the message, and every version header is accepted, v2 included. `POST /papi/v1/auth/token`, `/papi/v1/health` and `/sapi/v1/health` keep answering, with their dates and `Link`, so a client can still get a token and learn the new URL. A versionless URL is never affected. A date that is not `yyyy-MM-dd` reads as empty.
+5. **If a call is both v1 and on an old URL** the response carries the earlier of the two `Deprecation` dates and the earlier of the two `Sunset` dates, and the 410 comes from whichever sunset has passed. The message says which.
+6. **After the sunset.** Once the old URLs have answered 410 for as long as I want, I remove them in one change: the `/v1/` `urlMapping` of each handler class (the routers then own every URL, and the exceptions need their routes in `PAPIRouter` and `SAPIRouter` already, which they have), the `LEGACY_SEGMENT` handling and the two path settings in `ApiRequestContext`, the two path date records, and the v1 specs along with the rest of section 3.10 step 4. Then I redeploy and run every test.
+
+#### Switching the versionless URLs off and on
+
+`Api_Versionless_Urls` is a `Portfolio_Setting__mdt` record that ships `On` ([ADR-040](../adr/040-versionless-api-urls.md)). It is the first rollback for a fault in a router or in one of our callers, and it needs no deploy.
+
+1. **Turn it off.** Setup, Custom Metadata Types, Portfolio Setting, Manage Records, `Api_Versionless_Urls`, Edit. Set **Text Value** to `Off` and save. Only `Off` turns it off. Blank, a typo or a missing record read as `On`.
+2. **Check it took effect.** Call `GET /services/apexrest/papi/health` and expect 404 with the message "Versionless URLs are switched off. Use /services/apexrest/papi/v1/health." Call `/services/apexrest/papi/v1/health` and expect 200 with no `canonical` Link. Open the API Lab and read the curl examples: they show `/v1/` URLs. The Lab reads the value through a cacheable call, so a page that was already open can need a reload.
+3. **What changes while Off.** The routers answer 404, our callers use the `/v1/` URLs, the old URLs send no `canonical` Link, and the path dates (section 3.11 above) do not apply, so no old URL answers 410. The version rules of section 3.10 are unchanged.
+4. **The smoke script fails while Off.** `scripts/api-smoke.sh` calls versionless URLs, so it fails on its routes until the switch is `On` again. That is expected.
+5. **Turn it back on.** Set **Text Value** to `On`, save, and repeat the check: `/services/apexrest/papi/health` answers 200.
+6. **What else Off does.** `ApiRequestContext` also returns to the request handling main had before the versionless URLs (the `/v1/` path lists, the old AI tier check, the old endpoint segment and the old log line). The token and both health checks stay out of the 410 as before.
+7. **When Off is not enough.** The switch does not cover the new classes and permission set entries merely existing. For a fault there I revert the code change.
+8. **Cleanup.** The switch and the old logic are temporary. After the v1 sunset on 2026-11-29, once the versionless URLs have run cleanly, I remove the switch, the old logic in `ApiRequestContext` (marked REMOVE WITH THE SWITCH) and their tests in one change.
 
 ## 4. Disaster Recovery
 
@@ -261,7 +286,7 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 
 ### 4.4 Scenario: Token Vending Abuse
 
-- **Symptom:** spike in `API_Access_Request__c` records, `429`/`503` responses from `/papi/v1/auth/token`, or Developer Edition API request usage trending toward the 15,000/day limit (Setup → System Overview).
+- **Symptom:** spike in `API_Access_Request__c` records, `429`/`503` responses from `/papi/auth/token`, or Developer Edition API request usage trending toward the 15,000/day limit (Setup → System Overview).
 - **Immediate mitigation:**
   1. Deactivate the **Portfolio API** External Client App (see §1.2). All issued tokens die.
   2. Lower `Token_Daily_Cap__c` on the `Ryan_Bumstead` `Portfolio_Config__mdt` record (when blank, the `Token_Daily_Cap_Default` setting applies, 50 as shipped) or set it to 0 to pause vending: `TokenExchangeService.dailyCap` reads it and a cap of 0 answers every token request with 503.
@@ -283,8 +308,8 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 
 The design was a scheduled job that read a Gemini usage counter from a Platform Cache partition (`local.AIMetrics`) and emailed me above a threshold. **It is not built:** the org has no Platform Cache partition, and no class keeps such a counter. What exists today:
 
-- The Gemini API key's own limits for Gemini 2.5 Flash, as recorded on 2026-10-20 (AI Studio): 5 requests per minute and 20 requests per day. Read the current figures before relying on them. Past them, `/papi/v1/ai/generate` falls back to the local template for cover letters and answers 503 `ALL_PROVIDERS_UNAVAILABLE` otherwise.
-- The `papi-ai` rate tier, 10 requests per minute (`RateWindowLimiter`). The site cover letter has its own bucket, `papi-ai:site-cover-letter`, shared by every site visitor. `/papi/v1/ai/generate` keys by session, and every evaluator token is the same session, so evaluators share one bucket too.
+- The Gemini API key's own limits for Gemini 2.5 Flash, as recorded on 2026-10-20 (AI Studio): 5 requests per minute and 20 requests per day. Read the current figures before relying on them. Past them, `/papi/ai/generate` falls back to the local template for cover letters and answers 503 `ALL_PROVIDERS_UNAVAILABLE` otherwise.
+- The `papi-ai` rate tier, 10 requests per minute (`RateWindowLimiter`). The site cover letter has its own bucket, `papi-ai:site-cover-letter`, shared by every site visitor. `/papi/ai/generate` keys by session, and every evaluator token is the same session, so evaluators share one bucket too.
 - The footer's "AI requests today" line (`FooterController.getSystemSnapshot`), the sum of today's `papi-ai` counts. It counts requests, not Gemini calls.
 - The audit object `API_Access_Request__c` for evaluator token requests.
 - Setup → System Overview for the org's daily API request usage (15,000 per day in Developer Edition).

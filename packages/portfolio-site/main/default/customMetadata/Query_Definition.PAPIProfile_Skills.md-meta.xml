@@ -40,6 +40,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/profile. Skills, strongest first: 100 for full, 50 for summary.</value>
+    >GET /papi/profile. Skills, strongest first: 100 for full, 50 for summary.</value>
     </values>
 </CustomMetadata>

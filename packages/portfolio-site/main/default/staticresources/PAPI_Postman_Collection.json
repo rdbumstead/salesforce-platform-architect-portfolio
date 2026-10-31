@@ -14,7 +14,7 @@
       "listen": "prerequest",
       "script": {
         "exec": [
-          "const TOKEN_URL = \"https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token\";",
+          "const TOKEN_URL = \"https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token\";",
           "const isTokenRequest = pm.request.url.toString().indexOf(\"/auth/token\") !== -1;",
           "if (!isTokenRequest && !pm.collectionVariables.get(\"accessToken\")) {",
           "  const email = pm.collectionVariables.get(\"evaluatorEmail\");",
@@ -121,7 +121,7 @@
               "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
             },
             "description": {
-              "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.\n",
+              "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
               "type": "text/plain"
             },
             "header": [
@@ -161,12 +161,11 @@
                 "services",
                 "apexrest",
                 "papi",
-                "v1",
                 "auth",
                 "token"
               ],
               "protocol": "https",
-              "raw": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token"
+              "raw": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token"
             }
           },
           "response": [
@@ -206,7 +205,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -246,12 +245,11 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "auth",
                     "token"
                   ],
                   "protocol": "https",
-                  "raw": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token"
+                  "raw": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token"
                 }
               },
               "status": "OK"
@@ -286,7 +284,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -326,12 +324,11 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "auth",
                     "token"
                   ],
                   "protocol": "https",
-                  "raw": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token"
+                  "raw": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token"
                 }
               },
               "status": "Bad Request"
@@ -372,7 +369,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -412,12 +409,11 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "auth",
                     "token"
                   ],
                   "protocol": "https",
-                  "raw": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token"
+                  "raw": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token"
                 }
               },
               "status": "Too Many Requests"
@@ -458,7 +454,7 @@
                   "raw": "{\n  \"email\": \"{{evaluatorEmail}}\",\n  \"purpose\": \"Evaluate the Portfolio API from Postman\"\n}"
                 },
                 "description": {
-                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.\n",
+                  "content": "Vends a short-lived OAuth 2.0 Bearer token so external reviewers can call the SAPI and PAPI\nwithout holding the External Client App consumer secret (ADR-028). `PAPIAuthToken.requestToken`\nhands the attempt to `TokenExchangeService.requestToken`, which validates it, applies the limits,\nthen runs the client-credentials exchange server-side through the `Portfolio_API_Token` Named\nCredential (`TokenExchangeService.exchangeToken`). Tokens run as the read-only integration user\nand end with its session, after 30 minutes without use. While that session is valid, every\nexchange returns the same token, so all evaluators share one token and one rate limit per tier\n(SAPI 120, PAPI 15, `/ai/*` 10 per minute). The response has no `expires_in`: the token\nendpoint reports no expiry, and the session's end depends on use.\n\n- **400 BAD_REQUEST**: the body is not a JSON object of strings; `email` is blank, longer than 254\n  characters or not an address; `purpose` is blank or longer than 280 characters; or a header rule\n  from `ApiRequestContext` fails.\n- **429 RATE_LIMIT_EXCEEDED** with `Retry-After`: the PAPI tier limit (15 per minute per caller\n  key), or 15 requests per minute per email and source IP\n  (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,\n  `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.\n- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to\n  the next midnight in the running user's time zone; the cap counts audit rows with outcome\n  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the\n  credential is missing or not granted (\"Token issuance is not configured.\"); or the token endpoint\n  fails (\"Token issuance is temporarily unavailable.\").\n- Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.\n\nThis is the only path served on the Experience Cloud site domain, not on My Domain:\n`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -498,12 +494,11 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "auth",
                     "token"
                   ],
                   "protocol": "https",
-                  "raw": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token"
+                  "raw": "https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token"
                 }
               },
               "status": "Service Unavailable"
@@ -562,12 +557,11 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "profile",
                     "full"
                   ],
                   "query": [],
-                  "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/full"
+                  "raw": "{{baseUrl}}/services/apexrest/papi/profile/full"
                 }
               },
               "response": [
@@ -637,12 +631,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "profile",
                         "full"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/full"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/profile/full"
                     }
                   },
                   "status": "OK"
@@ -701,12 +694,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "profile",
                         "full"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/full"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/profile/full"
                     }
                   },
                   "status": "Bad Request"
@@ -765,12 +757,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "profile",
                         "full"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/full"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/profile/full"
                     }
                   },
                   "status": "Unauthorized"
@@ -829,12 +820,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "profile",
                         "full"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/full"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/profile/full"
                     }
                   },
                   "status": "Internal Server Error"
@@ -899,12 +889,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "profile",
                         "full"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/full"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/profile/full"
                     }
                   },
                   "status": "Service Unavailable"
@@ -949,12 +938,11 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "profile",
                     "summary"
                   ],
                   "query": [],
-                  "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/summary"
+                  "raw": "{{baseUrl}}/services/apexrest/papi/profile/summary"
                 }
               },
               "response": [
@@ -1024,12 +1012,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "profile",
                         "summary"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/summary"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/profile/summary"
                     }
                   },
                   "status": "OK"
@@ -1088,12 +1075,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "profile",
                         "summary"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/summary"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/profile/summary"
                     }
                   },
                   "status": "Bad Request"
@@ -1152,12 +1138,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "profile",
                         "summary"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/summary"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/profile/summary"
                     }
                   },
                   "status": "Unauthorized"
@@ -1216,12 +1201,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "profile",
                         "summary"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/summary"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/profile/summary"
                     }
                   },
                   "status": "Internal Server Error"
@@ -1286,12 +1270,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "profile",
                         "summary"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/profile/summary"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/profile/summary"
                     }
                   },
                   "status": "Service Unavailable"
@@ -1336,12 +1319,11 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "projects",
                     "featured"
                   ],
                   "query": [],
-                  "raw": "{{baseUrl}}/services/apexrest/papi/v1/projects/featured"
+                  "raw": "{{baseUrl}}/services/apexrest/papi/projects/featured"
                 }
               },
               "response": [
@@ -1423,12 +1405,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "projects",
                         "featured"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/projects/featured"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/projects/featured"
                     }
                   },
                   "status": "OK"
@@ -1487,12 +1468,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "projects",
                         "featured"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/projects/featured"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/projects/featured"
                     }
                   },
                   "status": "Bad Request"
@@ -1551,12 +1531,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "projects",
                         "featured"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/projects/featured"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/projects/featured"
                     }
                   },
                   "status": "Unauthorized"
@@ -1615,12 +1594,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "projects",
                         "featured"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/projects/featured"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/projects/featured"
                     }
                   },
                   "status": "Internal Server Error"
@@ -1685,12 +1663,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "projects",
                         "featured"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/projects/featured"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/projects/featured"
                     }
                   },
                   "status": "Service Unavailable"
@@ -1717,7 +1694,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Generates an ATS-optimized plain text resume. \n\n**Reads**, in process in one Apex transaction: the owner, roles, highlights (by persona),\nskills, certifications and education. The same records SAPI serves, without calling it.\n\n**Transformation Logic**:\n- Formats dates as \"MMM YYYY - MMM YYYY\" or \"MMM YYYY - Present\"\n- Lists the skills linked to the printed roles, each once, grouped by category in category order and strongest first within a category\n- Prints up to 10 roles, current first\n- Prints at most 5 highlights per role, in sort order, as stored\n\n**Persona Filtering**:\n- `Admin`: System Admin highlights only\n- `Developer`: Development highlights only\n- `Architect`: Architecture/Design highlights only\n- Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.\n\n**Persona values**:\n- `Admin`, `Developer` or `Architect`. Any other value returns 400 BAD_REQUEST.\n- If persona is omitted, all highlights are returned (no filtering)\n\n**Response format**:\n- When the first media type in the `Accept` header is `text/plain`, a 200 answer is the generated text alone, with `Content-Type: text/plain; charset=UTF-8`. Parameters after a semicolon are ignored and the header name matches in any case.\n- With no `Accept` header, `*/*`, `application/json` or any other first type, the answer is the JSON object below.\n- Every other response header, the rate count and the cache directive are the same in both forms. Errors are always JSON, whatever `Accept` says.\n\nFor example, with your token in TOKEN and the instance URL in INSTANCE_URL:\n\n```bash\ncurl -H \"Authorization: Bearer $TOKEN\" -H \"Accept: text/plain\" \"$INSTANCE_URL/services/apexrest/papi/v1/resume/generate?persona=Architect\"\n```\n",
+                  "content": "Generates an ATS-optimized plain text resume. \n\n**Reads**, in process in one Apex transaction: the owner, roles, highlights (by persona),\nskills, certifications and education. The same records SAPI serves, without calling it.\n\n**Transformation Logic**:\n- Formats dates as \"MMM YYYY - MMM YYYY\" or \"MMM YYYY - Present\"\n- Lists the skills linked to the printed roles, each once, grouped by category in category order and strongest first within a category\n- Prints up to 10 roles, current first\n- Prints at most 5 highlights per role, in sort order, as stored\n\n**Persona Filtering**:\n- `Admin`: System Admin highlights only\n- `Developer`: Development highlights only\n- `Architect`: Architecture/Design highlights only\n- Skills follow the same persona: a skill prints when its persona tags include the persona, and a skill with no persona tag prints under every persona. With no persona, every linked skill prints. The site's resume page uses the same rule.\n\n**Persona values**:\n- `Admin`, `Developer` or `Architect`. Any other value returns 400 BAD_REQUEST.\n- If persona is omitted, all highlights are returned (no filtering)\n\n**Response format**:\n- When the first media type in the `Accept` header is `text/plain`, a 200 answer is the generated text alone, with `Content-Type: text/plain; charset=UTF-8`. Parameters after a semicolon are ignored and the header name matches in any case.\n- With no `Accept` header, `*/*`, `application/json` or any other first type, the answer is the JSON object below.\n- Every other response header, the rate count and the cache directive are the same in both forms. Errors are always JSON, whatever `Accept` says.\n\nFor example, with your token in TOKEN and the instance URL in INSTANCE_URL:\n\n```bash\ncurl -H \"Authorization: Bearer $TOKEN\" -H \"Accept: text/plain\" \"$INSTANCE_URL/services/apexrest/papi/resume/generate?persona=Architect\"\n```\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -1746,7 +1723,6 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "resume",
                     "generate"
                   ],
@@ -1758,7 +1734,7 @@
                       "value": "<string>"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/papi/v1/resume/generate"
+                  "raw": "{{baseUrl}}/services/apexrest/papi/resume/generate"
                 }
               },
               "response": [
@@ -1828,7 +1804,6 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "resume",
                         "generate"
                       ],
@@ -1838,7 +1813,7 @@
                           "value": "<string>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/resume/generate?persona=<string>"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/resume/generate?persona=<string>"
                     }
                   },
                   "status": "OK"
@@ -1897,7 +1872,6 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "resume",
                         "generate"
                       ],
@@ -1907,7 +1881,7 @@
                           "value": "<string>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/resume/generate?persona=<string>"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/resume/generate?persona=<string>"
                     }
                   },
                   "status": "Bad Request"
@@ -1966,7 +1940,6 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "resume",
                         "generate"
                       ],
@@ -1976,7 +1949,7 @@
                           "value": "<string>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/resume/generate?persona=<string>"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/resume/generate?persona=<string>"
                     }
                   },
                   "status": "Unauthorized"
@@ -2035,7 +2008,6 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "resume",
                         "generate"
                       ],
@@ -2045,7 +2017,7 @@
                           "value": "<string>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/resume/generate?persona=<string>"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/resume/generate?persona=<string>"
                     }
                   },
                   "status": "Internal Server Error"
@@ -2110,7 +2082,6 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "resume",
                         "generate"
                       ],
@@ -2120,7 +2091,7 @@
                           "value": "<string>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/resume/generate?persona=<string>"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/resume/generate?persona=<string>"
                     }
                   },
                   "status": "Service Unavailable"
@@ -2176,7 +2147,6 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "testimonials",
                     "feed"
                   ],
@@ -2188,7 +2158,7 @@
                       "value": "professional"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/papi/v1/testimonials/feed"
+                  "raw": "{{baseUrl}}/services/apexrest/papi/testimonials/feed"
                 }
               },
               "response": [
@@ -2258,7 +2228,6 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "testimonials",
                         "feed"
                       ],
@@ -2268,7 +2237,7 @@
                           "value": "professional"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/testimonials/feed?mode=professional"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/testimonials/feed?mode=professional"
                     }
                   },
                   "status": "OK"
@@ -2327,7 +2296,6 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "testimonials",
                         "feed"
                       ],
@@ -2337,7 +2305,7 @@
                           "value": "professional"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/testimonials/feed?mode=professional"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/testimonials/feed?mode=professional"
                     }
                   },
                   "status": "Bad Request"
@@ -2396,7 +2364,6 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "testimonials",
                         "feed"
                       ],
@@ -2406,7 +2373,7 @@
                           "value": "professional"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/testimonials/feed?mode=professional"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/testimonials/feed?mode=professional"
                     }
                   },
                   "status": "Unauthorized"
@@ -2465,7 +2432,6 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "testimonials",
                         "feed"
                       ],
@@ -2475,7 +2441,7 @@
                           "value": "professional"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/testimonials/feed?mode=professional"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/testimonials/feed?mode=professional"
                     }
                   },
                   "status": "Internal Server Error"
@@ -2540,7 +2506,6 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "testimonials",
                         "feed"
                       ],
@@ -2550,7 +2515,7 @@
                           "value": "professional"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/testimonials/feed?mode=professional"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/testimonials/feed?mode=professional"
                     }
                   },
                   "status": "Service Unavailable"
@@ -2608,12 +2573,11 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "ai",
                     "generate"
                   ],
                   "query": [],
-                  "raw": "{{baseUrl}}/services/apexrest/papi/v1/ai/generate"
+                  "raw": "{{baseUrl}}/services/apexrest/papi/ai/generate"
                 }
               },
               "response": [
@@ -2697,12 +2661,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "ai",
                         "generate"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/ai/generate"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/ai/generate"
                     }
                   },
                   "status": "OK"
@@ -2769,12 +2732,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "ai",
                         "generate"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/ai/generate"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/ai/generate"
                     }
                   },
                   "status": "Bad Request"
@@ -2841,12 +2803,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "ai",
                         "generate"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/ai/generate"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/ai/generate"
                     }
                   },
                   "status": "Unauthorized"
@@ -2919,12 +2880,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "ai",
                         "generate"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/ai/generate"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/ai/generate"
                     }
                   },
                   "status": "Too Many Requests"
@@ -2991,12 +2951,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "ai",
                         "generate"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/ai/generate"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/ai/generate"
                     }
                   },
                   "status": "Internal Server Error"
@@ -3057,12 +3016,11 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "ai",
                         "generate"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/ai/generate"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/ai/generate"
                     }
                   },
                   "status": "Service Unavailable"
@@ -3089,7 +3047,7 @@
               },
               "request": {
                 "description": {
-                  "content": "Deep health check (`PAPIHealth.getHealth`). Reads SAPI health in-process (`SAPIHealth.buildPayload`),\nexercises the `Portfolio_API` Named Credential with one GET to `/sapi/v1/health` (`credential` is UP\nonly on HTTP 200), and reports presence of the `Jira_API`, `GitHub_API` and `Gemini_API` Named\nCredentials without calling them. `status` is DOWN when SAPI is down, DEGRADED when the credential is\ndown or any Named Credential is not CONFIGURED, otherwise UP. Always returns 200.\n",
+                  "content": "Deep health check (`PAPIHealth.getHealth`). Reads SAPI health in-process (`SAPIHealth.buildPayload`),\nexercises the `Portfolio_API` Named Credential with one GET to `/sapi/health` (`credential` is UP\nonly on HTTP 200), and reports presence of the `Jira_API`, `GitHub_API` and `Gemini_API` Named\nCredentials without calling them. `status` is DOWN when SAPI is down, DEGRADED when the credential is\ndown or any Named Credential is not CONFIGURED, otherwise UP. Always returns 200.\n",
                   "type": "text/plain"
                 },
                 "header": [
@@ -3112,11 +3070,10 @@
                     "services",
                     "apexrest",
                     "papi",
-                    "v1",
                     "health"
                   ],
                   "query": [],
-                  "raw": "{{baseUrl}}/services/apexrest/papi/v1/health"
+                  "raw": "{{baseUrl}}/services/apexrest/papi/health"
                 }
               },
               "response": [
@@ -3174,11 +3131,10 @@
                         "services",
                         "apexrest",
                         "papi",
-                        "v1",
                         "health"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/papi/v1/health"
+                      "raw": "{{baseUrl}}/services/apexrest/papi/health"
                     }
                   },
                   "status": "OK"
@@ -3238,11 +3194,10 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "health"
                   ],
                   "query": [],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/health"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/health"
                 }
               },
               "response": [
@@ -3304,11 +3259,10 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "health"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/health"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/health"
                     }
                   },
                   "status": "OK"
@@ -3362,7 +3316,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "contacts"
                   ],
                   "query": [
@@ -3385,7 +3338,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/contacts"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/contacts"
                 }
               },
               "response": [
@@ -3459,7 +3412,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "contacts"
                       ],
                       "query": [
@@ -3476,7 +3428,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/contacts?contactName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/contacts?contactName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -3533,7 +3485,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "contacts"
                       ],
                       "query": [
@@ -3550,7 +3501,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/contacts?contactName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/contacts?contactName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -3607,7 +3558,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "contacts"
                       ],
                       "query": [
@@ -3624,7 +3574,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/contacts?contactName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/contacts?contactName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -3681,7 +3631,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "contacts"
                       ],
                       "query": [
@@ -3698,7 +3647,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/contacts?contactName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/contacts?contactName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -3761,7 +3710,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "contacts"
                       ],
                       "query": [
@@ -3778,7 +3726,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/contacts?contactName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/contacts?contactName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -3835,7 +3783,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "contacts"
                       ],
                       "query": [
@@ -3852,7 +3799,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/contacts?contactName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/contacts?contactName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -3895,7 +3842,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "experience"
                   ],
                   "query": [
@@ -3930,7 +3876,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/experience"
                 }
               },
               "response": [
@@ -4004,7 +3950,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience"
                       ],
                       "query": [
@@ -4029,7 +3974,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -4086,7 +4031,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience"
                       ],
                       "query": [
@@ -4111,7 +4055,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -4168,7 +4112,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience"
                       ],
                       "query": [
@@ -4193,7 +4136,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -4250,7 +4193,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience"
                       ],
                       "query": [
@@ -4275,7 +4217,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -4338,7 +4280,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience"
                       ],
                       "query": [
@@ -4363,7 +4304,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -4420,7 +4361,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience"
                       ],
                       "query": [
@@ -4445,7 +4385,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience?contactName=<string>&employerName=<string>&currentlyEmployed=<boolean>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -4488,7 +4428,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "experience-highlights"
                   ],
                   "query": [
@@ -4517,7 +4456,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights"
                 }
               },
               "response": [
@@ -4591,7 +4530,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-highlights"
                       ],
                       "query": [
@@ -4612,7 +4550,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -4669,7 +4607,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-highlights"
                       ],
                       "query": [
@@ -4690,7 +4627,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -4747,7 +4684,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-highlights"
                       ],
                       "query": [
@@ -4768,7 +4704,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -4825,7 +4761,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-highlights"
                       ],
                       "query": [
@@ -4846,7 +4781,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -4909,7 +4844,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-highlights"
                       ],
                       "query": [
@@ -4930,7 +4864,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -4987,7 +4921,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-highlights"
                       ],
                       "query": [
@@ -5008,7 +4941,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-highlights?experienceKey=<string>&persona=Admin&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -5062,7 +4995,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "projects"
                   ],
                   "query": [
@@ -5103,7 +5035,7 @@
                       "value": "<boolean>"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/projects"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/projects"
                 }
               },
               "response": [
@@ -5177,7 +5109,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "projects"
                       ],
                       "query": [
@@ -5206,7 +5137,7 @@
                           "value": "<boolean>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
                     }
                   },
                   "status": "OK"
@@ -5263,7 +5194,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "projects"
                       ],
                       "query": [
@@ -5292,7 +5222,7 @@
                           "value": "<boolean>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
                     }
                   },
                   "status": "Bad Request"
@@ -5349,7 +5279,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "projects"
                       ],
                       "query": [
@@ -5378,7 +5307,7 @@
                           "value": "<boolean>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
                     }
                   },
                   "status": "Unauthorized"
@@ -5435,7 +5364,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "projects"
                       ],
                       "query": [
@@ -5464,7 +5392,7 @@
                           "value": "<boolean>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
                     }
                   },
                   "status": "Forbidden"
@@ -5527,7 +5455,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "projects"
                       ],
                       "query": [
@@ -5556,7 +5483,7 @@
                           "value": "<boolean>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
                     }
                   },
                   "status": "Too Many Requests"
@@ -5613,7 +5540,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "projects"
                       ],
                       "query": [
@@ -5642,7 +5568,7 @@
                           "value": "<boolean>"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/projects?status=Active Development&limit=50&offset=0&contactName=<string>&projectName=<string>&isFeatured=<boolean>"
                     }
                   },
                   "status": "Internal Server Error"
@@ -5685,7 +5611,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "project-assets"
                   ],
                   "query": [
@@ -5708,7 +5633,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/project-assets"
                 }
               },
               "response": [
@@ -5782,7 +5707,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-assets"
                       ],
                       "query": [
@@ -5799,7 +5723,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -5856,7 +5780,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-assets"
                       ],
                       "query": [
@@ -5873,7 +5796,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -5930,7 +5853,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-assets"
                       ],
                       "query": [
@@ -5947,7 +5869,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -6004,7 +5926,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-assets"
                       ],
                       "query": [
@@ -6021,7 +5942,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -6084,7 +6005,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-assets"
                       ],
                       "query": [
@@ -6101,7 +6021,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -6158,7 +6078,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-assets"
                       ],
                       "query": [
@@ -6175,7 +6094,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-assets?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-assets?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -6218,7 +6137,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "testimonials"
                   ],
                   "query": [
@@ -6235,7 +6153,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/testimonials"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/testimonials"
                 }
               },
               "response": [
@@ -6309,7 +6227,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "testimonials"
                       ],
                       "query": [
@@ -6322,7 +6239,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/testimonials?limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/testimonials?limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -6379,7 +6296,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "testimonials"
                       ],
                       "query": [
@@ -6392,7 +6308,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/testimonials?limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/testimonials?limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -6449,7 +6365,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "testimonials"
                       ],
                       "query": [
@@ -6462,7 +6377,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/testimonials?limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/testimonials?limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -6519,7 +6434,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "testimonials"
                       ],
                       "query": [
@@ -6532,7 +6446,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/testimonials?limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/testimonials?limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -6595,7 +6509,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "testimonials"
                       ],
                       "query": [
@@ -6608,7 +6521,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/testimonials?limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/testimonials?limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -6665,7 +6578,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "testimonials"
                       ],
                       "query": [
@@ -6678,7 +6590,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/testimonials?limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/testimonials?limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -6721,7 +6633,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "accounts"
                   ],
                   "query": [
@@ -6744,7 +6655,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/accounts"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/accounts"
                 }
               },
               "response": [
@@ -6818,7 +6729,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "accounts"
                       ],
                       "query": [
@@ -6835,7 +6745,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/accounts?accountName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/accounts?accountName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -6892,7 +6802,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "accounts"
                       ],
                       "query": [
@@ -6909,7 +6818,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/accounts?accountName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/accounts?accountName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -6966,7 +6875,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "accounts"
                       ],
                       "query": [
@@ -6983,7 +6891,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/accounts?accountName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/accounts?accountName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -7040,7 +6948,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "accounts"
                       ],
                       "query": [
@@ -7057,7 +6964,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/accounts?accountName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/accounts?accountName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -7120,7 +7027,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "accounts"
                       ],
                       "query": [
@@ -7137,7 +7043,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/accounts?accountName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/accounts?accountName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -7194,7 +7100,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "accounts"
                       ],
                       "query": [
@@ -7211,7 +7116,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/accounts?accountName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/accounts?accountName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -7254,7 +7159,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "skills"
                   ],
                   "query": [
@@ -7277,7 +7181,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/skills"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/skills"
                 }
               },
               "response": [
@@ -7351,7 +7255,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "skills"
                       ],
                       "query": [
@@ -7368,7 +7271,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/skills?category=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/skills?category=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -7425,7 +7328,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "skills"
                       ],
                       "query": [
@@ -7442,7 +7344,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/skills?category=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/skills?category=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -7499,7 +7401,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "skills"
                       ],
                       "query": [
@@ -7516,7 +7417,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/skills?category=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/skills?category=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -7573,7 +7474,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "skills"
                       ],
                       "query": [
@@ -7590,7 +7490,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/skills?category=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/skills?category=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -7653,7 +7553,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "skills"
                       ],
                       "query": [
@@ -7670,7 +7569,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/skills?category=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/skills?category=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -7727,7 +7626,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "skills"
                       ],
                       "query": [
@@ -7744,7 +7642,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/skills?category=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/skills?category=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -7787,7 +7685,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "certifications"
                   ],
                   "query": [
@@ -7822,7 +7719,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certifications"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/certifications"
                 }
               },
               "response": [
@@ -7896,7 +7793,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certifications"
                       ],
                       "query": [
@@ -7921,7 +7817,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -7978,7 +7874,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certifications"
                       ],
                       "query": [
@@ -8003,7 +7898,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -8060,7 +7955,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certifications"
                       ],
                       "query": [
@@ -8085,7 +7979,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -8142,7 +8036,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certifications"
                       ],
                       "query": [
@@ -8167,7 +8060,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -8230,7 +8123,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certifications"
                       ],
                       "query": [
@@ -8255,7 +8147,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -8312,7 +8204,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certifications"
                       ],
                       "query": [
@@ -8337,7 +8228,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certifications?contactName=<string>&issuerName=<string>&certificationName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -8380,7 +8271,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "education"
                   ],
                   "query": [
@@ -8409,7 +8299,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/education"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/education"
                 }
               },
               "response": [
@@ -8483,7 +8373,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "education"
                       ],
                       "query": [
@@ -8504,7 +8393,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -8561,7 +8450,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "education"
                       ],
                       "query": [
@@ -8582,7 +8470,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -8639,7 +8527,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "education"
                       ],
                       "query": [
@@ -8660,7 +8547,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -8717,7 +8604,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "education"
                       ],
                       "query": [
@@ -8738,7 +8624,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -8801,7 +8687,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "education"
                       ],
                       "query": [
@@ -8822,7 +8707,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -8879,7 +8764,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "education"
                       ],
                       "query": [
@@ -8900,7 +8784,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/education?contactName=<string>&issuerName=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -8954,7 +8838,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "project-skills"
                   ],
                   "query": [
@@ -8977,7 +8860,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/project-skills"
                 }
               },
               "response": [
@@ -9051,7 +8934,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-skills"
                       ],
                       "query": [
@@ -9068,7 +8950,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -9125,7 +9007,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-skills"
                       ],
                       "query": [
@@ -9142,7 +9023,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -9199,7 +9080,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-skills"
                       ],
                       "query": [
@@ -9216,7 +9096,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -9273,7 +9153,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-skills"
                       ],
                       "query": [
@@ -9290,7 +9169,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -9353,7 +9232,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-skills"
                       ],
                       "query": [
@@ -9370,7 +9248,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -9427,7 +9305,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "project-skills"
                       ],
                       "query": [
@@ -9444,7 +9321,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/project-skills?projectKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/project-skills?projectKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -9487,7 +9364,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "experience-skills"
                   ],
                   "query": [
@@ -9510,7 +9386,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/experience-skills"
                 }
               },
               "response": [
@@ -9584,7 +9460,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-skills"
                       ],
                       "query": [
@@ -9601,7 +9476,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -9658,7 +9533,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-skills"
                       ],
                       "query": [
@@ -9675,7 +9549,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -9732,7 +9606,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-skills"
                       ],
                       "query": [
@@ -9749,7 +9622,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -9806,7 +9679,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-skills"
                       ],
                       "query": [
@@ -9823,7 +9695,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -9886,7 +9758,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-skills"
                       ],
                       "query": [
@@ -9903,7 +9774,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -9960,7 +9831,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "experience-skills"
                       ],
                       "query": [
@@ -9977,7 +9847,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/experience-skills?experienceKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/experience-skills?experienceKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -10020,7 +9890,6 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "certification-skills"
                   ],
                   "query": [
@@ -10043,7 +9912,7 @@
                       "value": "0"
                     }
                   ],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/certification-skills"
                 }
               },
               "response": [
@@ -10117,7 +9986,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certification-skills"
                       ],
                       "query": [
@@ -10134,7 +10002,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "OK"
@@ -10191,7 +10059,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certification-skills"
                       ],
                       "query": [
@@ -10208,7 +10075,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Bad Request"
@@ -10265,7 +10132,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certification-skills"
                       ],
                       "query": [
@@ -10282,7 +10148,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Unauthorized"
@@ -10339,7 +10205,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certification-skills"
                       ],
                       "query": [
@@ -10356,7 +10221,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Forbidden"
@@ -10419,7 +10284,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certification-skills"
                       ],
                       "query": [
@@ -10436,7 +10300,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Too Many Requests"
@@ -10493,7 +10357,6 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "certification-skills"
                       ],
                       "query": [
@@ -10510,7 +10373,7 @@
                           "value": "0"
                         }
                       ],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/certification-skills?certificationKey=<string>&limit=50&offset=0"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/certification-skills?certificationKey=<string>&limit=50&offset=0"
                     }
                   },
                   "status": "Internal Server Error"
@@ -10564,11 +10427,10 @@
                     "services",
                     "apexrest",
                     "sapi",
-                    "v1",
                     "portfolio-config"
                   ],
                   "query": [],
-                  "raw": "{{baseUrl}}/services/apexrest/sapi/v1/portfolio-config"
+                  "raw": "{{baseUrl}}/services/apexrest/sapi/portfolio-config"
                 }
               },
               "response": [
@@ -10630,11 +10492,10 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "portfolio-config"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/portfolio-config"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/portfolio-config"
                     }
                   },
                   "status": "OK"
@@ -10691,11 +10552,10 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "portfolio-config"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/portfolio-config"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/portfolio-config"
                     }
                   },
                   "status": "Unauthorized"
@@ -10752,11 +10612,10 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "portfolio-config"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/portfolio-config"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/portfolio-config"
                     }
                   },
                   "status": "Forbidden"
@@ -10819,11 +10678,10 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "portfolio-config"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/portfolio-config"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/portfolio-config"
                     }
                   },
                   "status": "Too Many Requests"
@@ -10880,11 +10738,10 @@
                         "services",
                         "apexrest",
                         "sapi",
-                        "v1",
                         "portfolio-config"
                       ],
                       "query": [],
-                      "raw": "{{baseUrl}}/services/apexrest/sapi/v1/portfolio-config"
+                      "raw": "{{baseUrl}}/services/apexrest/sapi/portfolio-config"
                     }
                   },
                   "status": "Internal Server Error"

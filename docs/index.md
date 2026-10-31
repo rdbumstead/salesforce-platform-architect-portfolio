@@ -65,6 +65,7 @@ _Target Audience: Architects, Developers_
 - [ADR-037: Native Form Controls Site Wide](adr/037-native-form-controls-site-wide.md)
 - [ADR-038: Stable Public Keys in the API](adr/038-stable-public-keys-in-the-api.md)
 - [ADR-039: API v2 and the v1 Sunset](adr/039-api-v2-and-the-v1-sunset.md)
+- [ADR-040: Versionless API URLs](adr/040-versionless-api-urls.md)
 
 **AI, Data & FinOps**
 

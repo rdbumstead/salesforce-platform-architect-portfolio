@@ -38,6 +38,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/profile. The skill names of the experiences read.</value>
+    >GET /papi/profile. The skill names of the experiences read.</value>
     </values>
 </CustomMetadata>

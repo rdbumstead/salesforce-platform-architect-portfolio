@@ -100,7 +100,7 @@ jest.mock(
         summary: `${pageLabel} summary.`,
         tour: `${pageLabel} tour stop.`,
         tourMinutes: 2,
-        code: letter === "C" ? "GET /sapi/v1/health  200" : undefined,
+        code: letter === "C" ? "GET /sapi/health  200" : undefined,
         inProgress: coming.includes(letter),
         subLinks:
           letter === "C"

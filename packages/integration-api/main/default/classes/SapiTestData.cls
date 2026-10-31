@@ -339,15 +339,12 @@ public class SapiTestData {
   }
 
   /**
-   * @description Sets up a GET on /services/apexrest/sapi/v1/{resource}/ with valid tracing headers.
+   * @description Sets up a GET on /services/apexrest/sapi/{resource}/ with valid tracing headers.
    * @param resource Path segment, e.g. "accounts".
    * @param params Query parameters, or null.
    */
   public static void get(String resource, Map<String, String> params) {
-    RestTestUtil.initGet(
-      '/services/apexrest/sapi/v1/' + resource + '/',
-      params
-    );
+    RestTestUtil.initGet('/services/apexrest/sapi/' + resource + '/', params);
   }
 
   /**

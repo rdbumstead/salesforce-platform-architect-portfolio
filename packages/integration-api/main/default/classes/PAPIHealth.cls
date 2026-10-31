@@ -1,7 +1,7 @@
 /**
- * @description       : PAPI health check (/papi/v1/health). Reports per-dependency states:
+ * @description       : PAPI health check (/papi/health). Reports per-dependency states:
  *                      SAPI (in-process), the Portfolio_API credential (one GET
- *                      through callout:Portfolio_API to /sapi/v1/health, the only check that
+ *                      through callout:Portfolio_API to /sapi/health, the only check that
  *                      exercises the credential), and presence of the Jira, GitHub and Gemini
  *                      Named Credentials (no callouts). Performs no DML.
  * @author            : Ryan Bumstead
@@ -11,6 +11,7 @@
  * @Created           : 12/05/2025
  * @Test Class        : [PAPIHealthTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). PAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/papi/v1/health')
 global with sharing class PAPIHealth {
   public static final String STATE_UP = 'UP';
@@ -20,8 +21,6 @@ global with sharing class PAPIHealth {
   public static final String STATE_MISSING = 'MISSING';
   public static final String STATE_UNKNOWN = 'UNKNOWN';
 
-  @TestVisible
-  private static final String CREDENTIAL_ENDPOINT = 'callout:Portfolio_API/services/apexrest/sapi/v1/health';
   // Code default. The Health_Credential_Timeout_Ms setting gives the value in force.
   @TestVisible
   private static final Integer CREDENTIAL_TIMEOUT_MS = 10000;
@@ -77,7 +76,7 @@ global with sharing class PAPIHealth {
   }
 
   /**
-   * @description GET /sapi/v1/health through callout:Portfolio_API. UP only on HTTP 200;
+   * @description GET /sapi/health through callout:Portfolio_API. UP only on HTTP 200;
    *              any other status or a callout failure is DOWN (Maintenance Guide 1.2,
    *              "dependencies.credential: UP").
    */
@@ -93,7 +92,7 @@ global with sharing class PAPIHealth {
 
   private static String checkCredential(Map<String, Object> details) {
     HttpRequest req = new HttpRequest();
-    req.setEndpoint(CREDENTIAL_ENDPOINT);
+    req.setEndpoint('callout:Portfolio_API' + ApiRoutes.sapi('health'));
     req.setMethod('GET');
     req.setTimeout(credentialTimeoutMs());
     req.setHeader('X-Request-Id', UUID.randomUUID().toString());

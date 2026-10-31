@@ -44,6 +44,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /sapi/v1/certifications, filtered by contactName, issuerName and certificationName.</value>
+    >GET /sapi/certifications, filtered by contactName, issuerName and certificationName.</value>
     </values>
 </CustomMetadata>

@@ -40,6 +40,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/profile. Education, newest first.</value>
+    >GET /papi/profile. Education, newest first.</value>
     </values>
 </CustomMetadata>

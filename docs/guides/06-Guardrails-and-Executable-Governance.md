@@ -87,7 +87,7 @@ To keep the design at $0.00 a month, the architecture avoids common "cost traps"
 
 **Our Solution:** No quota counter is stored and no Platform Cache is used (the org has no partition). The bounds are:
 
-- The `papi-ai` rate tier of `RateWindowLimiter`: 10 requests a minute on `POST /papi/v1/ai/generate`, and a separate 10 a minute for the site's cover letter page, shared by every visitor (`papi-ai:site-cover-letter`).
+- The `papi-ai` rate tier of `RateWindowLimiter`: 10 requests a minute on `POST /papi/ai/generate`, and a separate 10 a minute for the site's cover letter page, shared by every visitor (`papi-ai:site-cover-letter`).
 - When Google refuses or fails, the cover letter falls back to the Local Template, so the visitor still gets a letter (`ContentGenerationController.dispatch`).
 - The footer shows "AI requests today", the sum of today's `papi-ai` counts in `API_Rate_Window__c`. It counts requests, not Gemini calls, and a Local fallback counts too, so it is never labelled as a Gemini quota (my decision, 2026-10-21).
 

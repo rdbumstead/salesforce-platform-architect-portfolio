@@ -14,6 +14,9 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ApiTester, {
+  API_PATH,
+  API_PATH_V1,
+  TOKEN_ENDPOINT_PATH_V1,
   buildCurlExamples,
   isPostmanRunUrl,
   reduceError,
@@ -29,6 +32,7 @@ import ApiTester, {
 } from "c/apiTester";
 import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
 import getPostmanRunUrl from "@salesforce/apex/ApiLabController.getPostmanRunUrl";
+import getVersionlessUrls from "@salesforce/apex/ApiLabController.getVersionlessUrls";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
 import { trackEvent } from "c/analyticsService";
 import { showMe } from "c/tourShowMe";
@@ -56,6 +60,14 @@ jest.mock(
 );
 jest.mock(
   "@salesforce/apex/ApiLabController.getPostmanRunUrl",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+jest.mock(
+  "@salesforce/apex/ApiLabController.getVersionlessUrls",
   () => {
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
@@ -203,9 +215,9 @@ describe("c-api-tester outside the page", () => {
     expect(blocks[0].textContent).toContain("you@example.com");
     expect(blocks[1].textContent).toContain(PLACEHOLDER_TOKEN);
     expect(blocks[1].textContent).toContain(
-      `${PLACEHOLDER_INSTANCE_URL}/services/apexrest/papi/v1/health`
+      `${PLACEHOLDER_INSTANCE_URL}/services/apexrest/papi/health`
     );
-    expect(blocks[2].textContent).toContain("/papi/v1/profile/summary");
+    expect(blocks[2].textContent).toContain("/papi/profile/summary");
     blocks.forEach((block) => {
       expect(block.getAttribute("tabindex")).toBe("0");
       expect(block.getAttribute("aria-label")).toBeTruthy();
@@ -235,7 +247,7 @@ describe("c-api-tester outside the page", () => {
       (block) => block.textContent
     );
     expect(health).toContain(`Bearer ${FAKE_TOKEN}`);
-    expect(health).toContain(`${FAKE_INSTANCE}/services/apexrest/papi/v1`);
+    expect(health).toContain(`${FAKE_INSTANCE}/services/apexrest/papi`);
     expect(data).toContain(`Bearer ${FAKE_TOKEN}`);
     expect(health).toContain('-H "X-API-Version: v2"');
     expect(data).toContain('-H "X-API-Version: v2"');
@@ -402,6 +414,69 @@ describe("buildCurlExamples", () => {
     expect(token.text).toContain(
       `https://example.my.site.com${TOKEN_ENDPOINT_PATH}`
     );
+  });
+});
+
+describe("versionless URLs (ADR-040)", () => {
+  it("points the token request and the API path at the versionless URLs", () => {
+    expect(TOKEN_ENDPOINT_PATH).toBe(
+      "/portfoliovforcesite/services/apexrest/papi/auth/token"
+    );
+    expect(API_PATH).toBe("/services/apexrest/papi");
+  });
+
+  it("writes no curl example with a /v1/ URL, for either version", () => {
+    ["v1", "v2"].forEach((version) => {
+      buildCurlExamples(
+        "https://example.my.site.com",
+        undefined,
+        version
+      ).forEach((example) => {
+        expect(example.text).not.toContain("/v1/");
+        expect(example.text).toContain("/services/apexrest/papi/");
+      });
+    });
+  });
+});
+
+describe("the versionless URL switch (ADR-040)", () => {
+  it("writes the old /v1/ URLs in every curl example while the switch is Off", () => {
+    const [token, health, data] = buildCurlExamples(
+      "https://example.my.site.com",
+      undefined,
+      "v2",
+      false
+    );
+    expect(token.text).toContain(
+      `https://example.my.site.com${TOKEN_ENDPOINT_PATH_V1}`
+    );
+    expect(health.text).toContain(`${API_PATH_V1}/health`);
+    expect(data.text).toContain(`${API_PATH_V1}/profile/summary`);
+  });
+
+  it("writes the versionless URLs by default and when the switch is On", () => {
+    [undefined, true].forEach((flag) => {
+      buildCurlExamples("https://x.example", undefined, "v2", flag).forEach(
+        (example) => expect(example.text).not.toContain("/v1/")
+      );
+    });
+  });
+
+  it("shows the /v1/ curl text once the read says Off, and the versionless text before and after On", async () => {
+    const element = create();
+    await flush();
+    const texts = () =>
+      $$(element, "pre.curl-block").map((block) => block.textContent);
+
+    texts().forEach((text) => expect(text).not.toContain("/v1/"));
+
+    getVersionlessUrls.emit(false);
+    await flush();
+    texts().forEach((text) => expect(text).toContain("/papi/v1/"));
+
+    getVersionlessUrls.emit(true);
+    await flush();
+    texts().forEach((text) => expect(text).not.toContain("/v1/"));
   });
 });
 

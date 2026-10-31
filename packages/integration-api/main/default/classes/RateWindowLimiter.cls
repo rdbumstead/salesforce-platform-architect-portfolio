@@ -6,7 +6,7 @@
  *                      calls when the response is written. No DML happens before a resource's
  *                      callouts, so callouts after ApiRequestContext.begin() stay legal.
  *                      Runs without sharing on purpose: window rows are counter state shared by
- *                      every caller, including the site guest on /papi/v1/auth/token, and sharing
+ *                      every caller, including the site guest on /papi/auth/token, and sharing
  *                      would hide rows owned by other users and split one caller's count.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead

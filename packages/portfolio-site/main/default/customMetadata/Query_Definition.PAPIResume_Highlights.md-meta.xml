@@ -40,6 +40,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /papi/v1/resume/generate. The highlights of the printed roles, in sort order, with their persona tags.</value>
+    >GET /papi/resume/generate. The highlights of the printed roles, in sort order, with their persona tags.</value>
     </values>
 </CustomMetadata>

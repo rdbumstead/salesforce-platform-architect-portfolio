@@ -7,6 +7,7 @@
  * @Created           : 10/20/2026
  * @Test Class        : [SAPIProjectSkillTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). SAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/sapi/v1/project-skills/*')
 global with sharing class SAPIProjectSkill implements QueryDefinitions.Provider {
   private static final String LIST_QUERY = 'SAPIProjectSkill_List';

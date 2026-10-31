@@ -22,7 +22,7 @@ public with sharing class RequestUtil {
    * @description Builds the request log line: path, status, correlation id and elapsed time.
    *              The path loses any query string, so no parameter value is ever logged. No
    *              body, header value or token is accepted.
-   * @param path Request path, for example /sapi/v1/skills.
+   * @param path Request path, for example /sapi/skills.
    * @param status HTTP status of the response.
    * @param correlationId The request's correlation id.
    * @param elapsedMs Milliseconds from the start of the request to the response.
@@ -34,6 +34,27 @@ public with sharing class RequestUtil {
     String correlationId,
     Long elapsedMs
   ) {
+    return requestLine(path, status, correlationId, elapsedMs, false);
+  }
+
+  /**
+   * @description The request log line, ending with legacyPath=true when the caller used the
+   *              old /v1/ URL spelling, so the log shows who still does (ADR-040). The path
+   *              is the canonical versionless one either way.
+   * @param path Request path, for example /sapi/skills.
+   * @param status HTTP status of the response.
+   * @param correlationId The request's correlation id.
+   * @param elapsedMs Milliseconds from the start of the request to the response.
+   * @param legacyPath True when the request used an old /v1/ URL.
+   * @return String The line.
+   */
+  public static String requestLine(
+    String path,
+    Integer status,
+    String correlationId,
+    Long elapsedMs,
+    Boolean legacyPath
+  ) {
     String cleanPath = String.isBlank(path)
       ? 'unknown'
       : path.substringBefore('?').trim();
@@ -44,7 +65,8 @@ public with sharing class RequestUtil {
       ' correlationId=' +
       (String.isBlank(correlationId) ? 'none' : correlationId) +
       ' elapsedMs=' +
-      elapsedMs;
+      elapsedMs +
+      (legacyPath == true ? ' legacyPath=true' : '');
   }
 
   /**
@@ -62,7 +84,32 @@ public with sharing class RequestUtil {
     String correlationId,
     Long elapsedMs
   ) {
-    String line = requestLine(path, status, correlationId, elapsedMs);
+    return logRequest(path, status, correlationId, elapsedMs, false);
+  }
+
+  /**
+   * @description Writes the request log line, marking an old /v1/ URL.
+   * @param path Request path.
+   * @param status HTTP status of the response.
+   * @param correlationId The request's correlation id.
+   * @param elapsedMs Milliseconds from the start of the request to the response.
+   * @param legacyPath True when the request used an old /v1/ URL.
+   * @return String The line written.
+   */
+  public static String logRequest(
+    String path,
+    Integer status,
+    String correlationId,
+    Long elapsedMs,
+    Boolean legacyPath
+  ) {
+    String line = requestLine(
+      path,
+      status,
+      correlationId,
+      elapsedMs,
+      legacyPath
+    );
     PortfolioLog.info(line);
     return line;
   }

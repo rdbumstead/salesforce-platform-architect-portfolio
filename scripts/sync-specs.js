@@ -82,11 +82,12 @@ const CATALOG_RESOURCE = "API_Lab_Catalog.json";
 
 /**
  * Paths the Lab leaves out on purpose, even if the spec ever gives them a GET:
- * /papi/v1/auth/token vends a credential, and the Lab already has its own token form
- * that goes through the same checks. /papi/v1/ai/generate spends AI provider quota on
+ * /papi/auth/token vends a credential, and the Lab already has its own token form
+ * that goes through the same checks. /papi/ai/generate spends AI provider quota on
  * every call, so the site offers it only through the cover letter tool and its limit.
+ * Paths are versionless. The version 1 specs spell them with /v1/, and apiPrefix drops that.
  */
-const EXCLUDED_PATHS = ["/papi/v1/auth/token", "/papi/v1/ai/generate"];
+const EXCLUDED_PATHS = ["/papi/auth/token", "/papi/ai/generate"];
 
 const MAX_HINT_LENGTH = 160;
 
@@ -185,7 +186,11 @@ function paramOf(doc, ref) {
   return entry;
 }
 
-/** "/services/apexrest/sapi/v1" from "https://{domain}/services/apexrest/sapi/v1". */
+/**
+ * "/sapi" from "https://{domain}/services/apexrest/sapi" and from the version 1 specs'
+ * "https://{domain}/services/apexrest/sapi/v1". The old /v1/ spelling is an alias of the
+ * versionless URL (ADR-040), so both versions' paths meet on the versionless one.
+ */
 function apiPrefix(doc, spec) {
   const url = (doc.servers && doc.servers[0] && doc.servers[0].url) || "";
   const match = /\/services\/apexrest(\/.*)$/.exec(url);
@@ -194,7 +199,7 @@ function apiPrefix(doc, spec) {
       `${spec.file}: servers[0].url has no /services/apexrest path`
     );
   }
-  return match[1].replace(/\/$/, "");
+  return match[1].replace(/\/$/, "").replace(/\/v1$/, "");
 }
 
 function catalogEntries(doc, spec) {

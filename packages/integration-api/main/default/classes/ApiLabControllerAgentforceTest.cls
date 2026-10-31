@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for the Agentforce step of ApiLabController.generateCoverLetter:
- *                      the site guest's letter posted to POST /papi/v1/ai/generate with
+ *                      the site guest's letter posted to POST /papi/ai/generate with
  *                      provider Agentforce through Portfolio_API, and every way that call can
  *                      fall back to Gemini in process. An HTTP mock answers both the API and
  *                      Gemini and records every request.
@@ -12,7 +12,7 @@
  **/
 @IsTest
 private class ApiLabControllerAgentforceTest {
-  private static final String API_PREFIX = 'callout:Portfolio_API/services/apexrest/papi/v1/ai/generate';
+  private static final String API_PREFIX = 'callout:Portfolio_API/services/apexrest/papi/ai/generate';
   private static final String GEMINI_PREFIX = 'callout:Gemini_API/';
   private static final String AGENTFORCE_LETTER = 'Dear Acme team, an Agentforce letter.';
   private static final String GEMINI_ANSWER = 'Dear Hiring Manager, a Gemini letter.';
@@ -146,6 +146,32 @@ private class ApiLabControllerAgentforceTest {
   }
 
   // --- Agentforce serves through the API ---
+
+  @IsTest
+  static void shouldPostToTheOldPathWhileTheVersionlessSwitchIsOff() {
+    PortfolioSettings.overrides.put(
+      ApiRoutes.SETTING,
+      new Portfolio_Setting__mdt(
+        DeveloperName = ApiRoutes.SETTING,
+        Text_Value__c = 'Off'
+      )
+    );
+    RoutingMock mock = mockApi(200, '{}');
+
+    letterAsGuest(null);
+
+    Boolean seen = false;
+    for (HttpRequest req : mock.requests) {
+      if (
+        req.getEndpoint() ==
+        'callout:Portfolio_API/services/apexrest/papi/v1/ai/generate'
+      ) {
+        seen = true;
+      }
+    }
+    Assert.isTrue(seen, 'The letter was posted to the /v1/ path');
+    Assert.areEqual(0, mock.callsTo(API_PREFIX), 'Not to the versionless one');
+  }
 
   @IsTest
   static void aLetterFromTheApiIsServedAsAgentforceWithNoGeminiCall() {

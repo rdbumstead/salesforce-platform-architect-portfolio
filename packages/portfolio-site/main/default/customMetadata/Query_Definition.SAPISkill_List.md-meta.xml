@@ -42,6 +42,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /sapi/v1/skills, filtered by category.</value>
+    >GET /sapi/skills, filtered by category.</value>
     </values>
 </CustomMetadata>

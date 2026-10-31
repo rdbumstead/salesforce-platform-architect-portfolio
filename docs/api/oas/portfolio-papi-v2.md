@@ -1,4 +1,4 @@
-<h1 id="portfolio-process-api-papi-">Portfolio Process API (PAPI) v2.0.0</h1>
+<h1 id="portfolio-process-api-papi-">Portfolio Process API (PAPI) v2.1.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -16,7 +16,7 @@ reads them in process, not through SAPI over HTTP (section 3).
 
 ### 2. Versioning Strategy
 - **Pattern**: Header-based versioning takes precedence.
-- **Header**: `X-API-Version: v2`. A missing header resolves to `v1`, which is deprecated; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). The URL keeps its `v1` segment.
+- **Header**: `X-API-Version: v2`. A missing header resolves to `v1`, which is deprecated; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). The URL has no version segment. The old URLs with `/v1/` (for example `/papi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel="canonical"` once their retirement dates are set (ADR-040). Use the URLs in this document.
 - **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a short message and the link to the version 2 reference, `https://ryanbumstead.com/api-lab/reference?version=v2`.
 - **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID, and a present but non-UUID value returns `400 BAD_REQUEST`. On My Domain the platform injects its own 32-character hex id when the caller sends none, and PAPI treats that value as missing. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes whatever `X-Request-Id` the request carries, its own included, and Apex sets the header only when it generated the value and the request carried none, so the header appears once (ADR-026). When the platform injected its id, the header carries that id and an error body's `correlationId` carries the generated UUID. Send your own UUID to get one predictable id.
 - **URL**: Version segments removed from base path to align with SAPI ADR.
@@ -25,7 +25,7 @@ reads them in process, not through SAPI over HTTP (section 3).
 - **SAPI Limit**: 120 requests/minute.
 - **PAPI work per request**: PAPI never calls SAPI over HTTP. It reads the same records in process, in the same Apex transaction, through `QueryDefinitions` (ADR-033). One `/profile/full` request runs nine reads (owner, roles, highlights, skills, role skills, projects, certifications, education, testimonials) and builds one response.
 - **PAPI Limit**: **15 requests/minute** (Standard Tier) against SAPI's 120. One PAPI request runs about eight data reads in one transaction, the same records about eight SAPI requests would return. Eight data reads are not eight HTTP requests, but the lower limit keeps one caller's PAPI load in step with what the same data costs through SAPI (ADR-025).
-- **Why not HTTP** (ADR-025): making the reads HTTP requests to SAPI was rejected. The site's API Lab reaches PAPI through the `Portfolio_API` Named Credential, a callout into this same org, and a request that arrived as a same org callout may not call out again (ADR-015), so the fan out would fail on the site's own path. Each SAPI request would also be an inbound REST request counted against the org's daily API request allocation (15,000 on this Developer Edition), the callouts would run one after another inside the 120 second callout time a transaction allows, and they would all run as the one shared evaluator session, spending the SAPI limit every evaluator shares. So PAPI and SAPI stay distinct logical layers: PAPI reads the same records in process, through the query engine (`QueryDefinitions`) and request framework (`ApiRequestContext`) SAPI also uses, with its own query definitions and its own transformer (`PAPITransformer`). The deliberate exception is `/health`, which calls SAPI's `/sapi/v1/health` through `Portfolio_API` to prove the credential works.
+- **Why not HTTP** (ADR-025): making the reads HTTP requests to SAPI was rejected. The site's API Lab reaches PAPI through the `Portfolio_API` Named Credential, a callout into this same org, and a request that arrived as a same org callout may not call out again (ADR-015), so the fan out would fail on the site's own path. Each SAPI request would also be an inbound REST request counted against the org's daily API request allocation (15,000 on this Developer Edition), the callouts would run one after another inside the 120 second callout time a transaction allows, and they would all run as the one shared evaluator session, spending the SAPI limit every evaluator shares. So PAPI and SAPI stay distinct logical layers: PAPI reads the same records in process, through the query engine (`QueryDefinitions`) and request framework (`ApiRequestContext`) SAPI also uses, with its own query definitions and its own transformer (`PAPITransformer`). The deliberate exception is `/health`, which calls SAPI's `/sapi/health` through `Portfolio_API` to prove the credential works.
 - **Enforcement**: `RateWindowLimiter` (ADR-025), one `API_Rate_Window__c` row per caller key per fixed UTC calendar minute. The caller key is `{tier}:{SHA-256 hex of the session id}`, or `{tier}:{user id}` when the session id is null. Tiers: `papi` 15, `papi-ai` (`/ai/*`) 10. Every token from `POST /auth/token` is the same session, so all evaluators share one key per tier and one limit (SAPI 120, PAPI 15, `/ai/*` 10 per minute, ADR-028). `POST /auth/token` is also limited to 15 requests per minute per email and source IP.
 
 ### 4. Caching Strategy (Aggregation Logic)
@@ -49,7 +49,7 @@ Each record in a response carries a stable public `key`, for example `prj_8f3k2m
 
 Base URLs:
 
-* <a href="https://{domain}/services/apexrest/papi/v1">https://{domain}/services/apexrest/papi/v1</a>
+* <a href="https://{domain}/services/apexrest/papi">https://{domain}/services/apexrest/papi</a>
 
     * **domain** - The org's My Domain host. Default: ryan-bumstead-dev-ed.develop.my.salesforce.com
 
@@ -85,7 +85,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/papi/v1/auth/token',
+fetch('https://{domain}/services/apexrest/papi/auth/token',
 {
   method: 'SERVERS',
 
@@ -130,7 +130,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/papi/v1/profile/full',
+fetch('https://{domain}/services/apexrest/papi/profile/full',
 {
   method: 'GET',
 
@@ -388,7 +388,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/papi/v1/profile/summary',
+fetch('https://{domain}/services/apexrest/papi/profile/summary',
 {
   method: 'GET',
 
@@ -599,7 +599,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/papi/v1/projects/featured',
+fetch('https://{domain}/services/apexrest/papi/projects/featured',
 {
   method: 'GET',
 
@@ -808,7 +808,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/papi/v1/resume/generate',
+fetch('https://{domain}/services/apexrest/papi/resume/generate',
 {
   method: 'GET',
 
@@ -855,7 +855,7 @@ skills, certifications and education. The same records SAPI serves, without call
 For example, with your token in TOKEN and the instance URL in INSTANCE_URL:
 
 ```bash
-curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/services/apexrest/papi/v1/resume/generate?persona=Architect"
+curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/services/apexrest/papi/resume/generate?persona=Architect"
 ```
 
 <h3 id="generateresume-parameters">Parameters</h3>
@@ -1002,7 +1002,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/papi/v1/testimonials/feed',
+fetch('https://{domain}/services/apexrest/papi/testimonials/feed',
 {
   method: 'GET',
 
@@ -1211,7 +1211,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/papi/v1/ai/generate',
+fetch('https://{domain}/services/apexrest/papi/ai/generate',
 {
   method: 'POST',
   body: inputBody,
@@ -1505,7 +1505,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/papi/v1/health',
+fetch('https://{domain}/services/apexrest/papi/health',
 {
   method: 'GET',
 
@@ -1524,7 +1524,7 @@ fetch('https://{domain}/services/apexrest/papi/v1/health',
 *PAPI Health Check*
 
 Deep health check (`PAPIHealth.getHealth`). Reads SAPI health in-process (`SAPIHealth.buildPayload`),
-exercises the `Portfolio_API` Named Credential with one GET to `/sapi/v1/health` (`credential` is UP
+exercises the `Portfolio_API` Named Credential with one GET to `/sapi/health` (`credential` is UP
 only on HTTP 200), and reports presence of the `Jira_API`, `GitHub_API` and `Gemini_API` Named
 Credentials without calling them. `status` is DOWN when SAPI is down, DEGRADED when the credential is
 down or any Named Credential is not CONFIGURED, otherwise UP. Always returns 200.
@@ -1592,7 +1592,7 @@ const headers = {
   'X-API-Version':'v2'
 };
 
-fetch('https://{domain}/services/apexrest/papi/v1/auth/token',
+fetch('https://{domain}/services/apexrest/papi/auth/token',
 {
   method: 'POST',
   body: inputBody,
@@ -1635,7 +1635,7 @@ endpoint reports no expiry, and the session's end depends on use.
 - Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.
 
 This is the only path served on the Experience Cloud site domain, not on My Domain:
-`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token`.
+`POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token`.
 
 > Body parameter
 
@@ -1803,7 +1803,7 @@ This operation does not require authentication
 |timestamp|string(date-time)|false|none|none|
 |dependencies|object|false|none|none|
 |» sapi|string|false|none|none|
-|» credential|string|false|none|UP only when a GET through the Portfolio_API Named Credential to /sapi/v1/health returns HTTP 200.|
+|» credential|string|false|none|UP only when a GET through the Portfolio_API Named Credential to /sapi/health returns HTTP 200.|
 |» jira|string|false|none|Presence of the Jira_API Named Credential; UNKNOWN when NamedCredential cannot be read.|
 |» github|string|false|none|Presence of the GitHub_API Named Credential.|
 |» gemini|string|false|none|Presence of the Gemini_API Named Credential.|
@@ -2423,7 +2423,7 @@ Educational background
 |---|---|---|---|---|
 |access_token|string|true|none|OAuth 2.0 Bearer token bound to the read-only integration user. It is the integration user's current session, shared by every evaluator, and it ends after 30 minutes without use (the integration profile's idle timeout). The response carries no expires_in, because the token endpoint reports no expiry and a fixed number would be a guess.|
 |token_type|string|true|none|none|
-|instance_url|string(uri)|true|none|The My Domain root, as returned by the token endpoint. Append `/services/apexrest/sapi/v1/...` or `/services/apexrest/papi/v1/...` and send the token as a Bearer credential.|
+|instance_url|string(uri)|true|none|The My Domain root, as returned by the token endpoint. Append `/services/apexrest/sapi/...` or `/services/apexrest/papi/...` and send the token as a Bearer credential.|
 |docs|string(uri)|false|none|Link to the rendered API documentation.|
 
 #### Enumerated Values

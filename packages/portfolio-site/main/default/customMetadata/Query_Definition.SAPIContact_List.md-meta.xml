@@ -42,6 +42,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /sapi/v1/contacts. Only the portfolio owner, filtered by contactName. No email or phone.</value>
+    >GET /sapi/contacts. Only the portfolio owner, filtered by contactName. No email or phone.</value>
     </values>
 </CustomMetadata>

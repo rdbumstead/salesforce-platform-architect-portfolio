@@ -295,7 +295,9 @@ private class ApiRequestContextTest {
 
     Assert.areEqual(1, sink.entries.size(), 'Exactly one line per request');
     String line = (String) sink.entries[0].get('message');
-    Assert.isTrue(line.contains('path=' + SAPI_URI), line);
+    // The line carries the canonical versionless path and says the old spelling was used.
+    Assert.isTrue(line.contains('path=/sapi/skills '), line);
+    Assert.isTrue(line.contains('legacyPath=true'), line);
     Assert.isTrue(line.contains('status=200'), line);
     Assert.isTrue(line.contains('correlationId=' + VALID_ID), line);
     Assert.isTrue(line.contains('elapsedMs='), line);

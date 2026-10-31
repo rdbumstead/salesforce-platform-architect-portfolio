@@ -10,6 +10,7 @@
  * @Created           : 12/05/2025
  * @Test Class        : [PAPIProfileTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). PAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/papi/v1/profile/*')
 global with sharing class PAPIProfile implements QueryDefinitions.Provider {
   private static final String OWNER_QUERY = 'PAPIProfile_Owner';

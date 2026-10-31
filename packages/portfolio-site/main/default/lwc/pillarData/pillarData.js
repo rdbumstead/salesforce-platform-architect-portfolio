@@ -59,7 +59,7 @@ const SOURCE = [
     tourMinutes: 1,
     tags: ["Apex REST", "OAuth 2.0", "OpenAPI"],
     inProgress: false,
-    code: "GET /sapi/v1/health  200",
+    code: "GET /sapi/health  200",
     subLinks: [
       { key: "api-reference", label: "API reference", url: "api-lab/reference" }
     ]

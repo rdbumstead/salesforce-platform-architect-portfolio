@@ -1,5 +1,5 @@
 /**
- * @description       : SAPI health check (/sapi/v1/health). Reports runtime availability, the
+ * @description       : SAPI health check (/sapi/health). Reports runtime availability, the
  *                      current transaction's governor-limit snapshot and the org time. The
  *                      payload builder is public so PAPIHealth can read SAPI health in-process
  *                      without calling this handler.
@@ -10,6 +10,7 @@
  * @Created           : 10/20/2026
  * @Test Class        : [SAPIHealthTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). SAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/sapi/v1/health')
 global with sharing class SAPIHealth {
   public static final String STATUS_UP = 'UP';

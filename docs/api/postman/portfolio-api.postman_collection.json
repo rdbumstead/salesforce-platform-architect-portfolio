@@ -52,9 +52,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/health",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/health",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "health"],
+              "path": ["services", "apexrest", "sapi", "health"],
               "query": []
             },
             "description": "Health Check"
@@ -79,9 +79,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/contacts",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/contacts",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "contacts"],
+              "path": ["services", "apexrest", "sapi", "contacts"],
               "query": [
                 {
                   "key": "contactName",
@@ -125,9 +125,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/experience",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/experience",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "experience"],
+              "path": ["services", "apexrest", "sapi", "experience"],
               "query": [
                 {
                   "key": "contactName",
@@ -183,15 +183,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/experience-highlights",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/experience-highlights",
               "host": ["{{instanceUrl}}"],
-              "path": [
-                "services",
-                "apexrest",
-                "sapi",
-                "v1",
-                "experience-highlights"
-              ],
+              "path": ["services", "apexrest", "sapi", "experience-highlights"],
               "query": [
                 {
                   "key": "experienceKey",
@@ -241,9 +235,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/projects",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/projects",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "projects"],
+              "path": ["services", "apexrest", "sapi", "projects"],
               "query": [
                 {
                   "key": "status",
@@ -305,9 +299,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/project-assets",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/project-assets",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "project-assets"],
+              "path": ["services", "apexrest", "sapi", "project-assets"],
               "query": [
                 {
                   "key": "projectKey",
@@ -351,9 +345,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/testimonials",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/testimonials",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "testimonials"],
+              "path": ["services", "apexrest", "sapi", "testimonials"],
               "query": [
                 {
                   "key": "limit",
@@ -391,15 +385,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/portfolio-config",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/portfolio-config",
               "host": ["{{instanceUrl}}"],
-              "path": [
-                "services",
-                "apexrest",
-                "sapi",
-                "v1",
-                "portfolio-config"
-              ],
+              "path": ["services", "apexrest", "sapi", "portfolio-config"],
               "query": []
             },
             "description": "Get Portfolio Configuration"
@@ -424,9 +412,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/accounts",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/accounts",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "accounts"],
+              "path": ["services", "apexrest", "sapi", "accounts"],
               "query": [
                 {
                   "key": "accountName",
@@ -470,9 +458,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/skills",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/skills",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "skills"],
+              "path": ["services", "apexrest", "sapi", "skills"],
               "query": [
                 {
                   "key": "category",
@@ -516,9 +504,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/certifications",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/certifications",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "certifications"],
+              "path": ["services", "apexrest", "sapi", "certifications"],
               "query": [
                 {
                   "key": "contactName",
@@ -574,9 +562,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/education",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/education",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "education"],
+              "path": ["services", "apexrest", "sapi", "education"],
               "query": [
                 {
                   "key": "contactName",
@@ -626,9 +614,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/project-skills",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/project-skills",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "sapi", "v1", "project-skills"],
+              "path": ["services", "apexrest", "sapi", "project-skills"],
               "query": [
                 {
                   "key": "projectKey",
@@ -672,15 +660,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/experience-skills",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/experience-skills",
               "host": ["{{instanceUrl}}"],
-              "path": [
-                "services",
-                "apexrest",
-                "sapi",
-                "v1",
-                "experience-skills"
-              ],
+              "path": ["services", "apexrest", "sapi", "experience-skills"],
               "query": [
                 {
                   "key": "experienceKey",
@@ -724,15 +706,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/sapi/v1/certification-skills",
+              "raw": "{{instanceUrl}}/services/apexrest/sapi/certification-skills",
               "host": ["{{instanceUrl}}"],
-              "path": [
-                "services",
-                "apexrest",
-                "sapi",
-                "v1",
-                "certification-skills"
-              ],
+              "path": ["services", "apexrest", "sapi", "certification-skills"],
               "query": [
                 {
                   "key": "certificationKey",
@@ -782,9 +758,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/papi/v1/health",
+              "raw": "{{instanceUrl}}/services/apexrest/papi/health",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "papi", "v1", "health"],
+              "path": ["services", "apexrest", "papi", "health"],
               "query": []
             },
             "description": "PAPI Health Check"
@@ -813,9 +789,9 @@
               }
             ],
             "url": {
-              "raw": "{{siteUrl}}/services/apexrest/papi/v1/auth/token",
+              "raw": "{{siteUrl}}/services/apexrest/papi/auth/token",
               "host": ["{{siteUrl}}"],
-              "path": ["services", "apexrest", "papi", "v1", "auth", "token"],
+              "path": ["services", "apexrest", "papi", "auth", "token"],
               "query": []
             },
             "description": "Request an evaluator access token",
@@ -868,9 +844,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/papi/v1/profile/full",
+              "raw": "{{instanceUrl}}/services/apexrest/papi/profile/full",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "papi", "v1", "profile", "full"],
+              "path": ["services", "apexrest", "papi", "profile", "full"],
               "query": []
             },
             "description": "Get Complete Portfolio State"
@@ -895,16 +871,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/papi/v1/profile/summary",
+              "raw": "{{instanceUrl}}/services/apexrest/papi/profile/summary",
               "host": ["{{instanceUrl}}"],
-              "path": [
-                "services",
-                "apexrest",
-                "papi",
-                "v1",
-                "profile",
-                "summary"
-              ],
+              "path": ["services", "apexrest", "papi", "profile", "summary"],
               "query": []
             },
             "description": "Get Employment Profile Only"
@@ -929,16 +898,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/papi/v1/resume/generate",
+              "raw": "{{instanceUrl}}/services/apexrest/papi/resume/generate",
               "host": ["{{instanceUrl}}"],
-              "path": [
-                "services",
-                "apexrest",
-                "papi",
-                "v1",
-                "resume",
-                "generate"
-              ],
+              "path": ["services", "apexrest", "papi", "resume", "generate"],
               "query": [
                 {
                   "key": "persona",
@@ -970,16 +932,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/papi/v1/projects/featured",
+              "raw": "{{instanceUrl}}/services/apexrest/papi/projects/featured",
               "host": ["{{instanceUrl}}"],
-              "path": [
-                "services",
-                "apexrest",
-                "papi",
-                "v1",
-                "projects",
-                "featured"
-              ],
+              "path": ["services", "apexrest", "papi", "projects", "featured"],
               "query": []
             },
             "description": "Get Featured Projects (Enriched)"
@@ -1004,16 +959,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/papi/v1/testimonials/feed",
+              "raw": "{{instanceUrl}}/services/apexrest/papi/testimonials/feed",
               "host": ["{{instanceUrl}}"],
-              "path": [
-                "services",
-                "apexrest",
-                "papi",
-                "v1",
-                "testimonials",
-                "feed"
-              ],
+              "path": ["services", "apexrest", "papi", "testimonials", "feed"],
               "query": [
                 {
                   "key": "mode",
@@ -1049,9 +997,9 @@
               }
             ],
             "url": {
-              "raw": "{{instanceUrl}}/services/apexrest/papi/v1/ai/generate",
+              "raw": "{{instanceUrl}}/services/apexrest/papi/ai/generate",
               "host": ["{{instanceUrl}}"],
-              "path": ["services", "apexrest", "papi", "v1", "ai", "generate"],
+              "path": ["services", "apexrest", "papi", "ai", "generate"],
               "query": []
             },
             "description": "Generate AI Content",

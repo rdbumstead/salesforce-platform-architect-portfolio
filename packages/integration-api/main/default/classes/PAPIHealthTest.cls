@@ -83,7 +83,7 @@ private class PAPIHealthTest {
     callHealth(mock);
 
     Assert.areEqual(
-      'callout:Portfolio_API/services/apexrest/sapi/v1/health',
+      'callout:Portfolio_API/services/apexrest/sapi/health',
       mock.received.getEndpoint(),
       'Goes through the Portfolio_API Named Credential to SAPI health'
     );

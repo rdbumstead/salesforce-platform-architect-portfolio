@@ -65,7 +65,7 @@ public with sharing class ApiLabOptionsController implements QueryDefinitions.Pr
   };
 
   /**
-   * The statuses the /sapi/v1/projects list returns, the same set its query filters on, so a
+   * The statuses the /sapi/projects list returns, the same set its query filters on, so a
    * project name offered there is one that list can return.
    */
   @TestVisible

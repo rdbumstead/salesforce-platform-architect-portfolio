@@ -21,7 +21,7 @@
  * @Test Class        : [FooterControllerTest]
  **/
 public with sharing class FooterController {
-  /** Key__c prefix RateWindowLimiter writes for /papi/v1/ai/ and the site AI path. */
+  /** Key__c prefix RateWindowLimiter writes for /papi/ai/ and the site AI path. */
   @TestVisible
   private static final String AI_TIER_KEY_PREFIX = 'papi-ai:';
 

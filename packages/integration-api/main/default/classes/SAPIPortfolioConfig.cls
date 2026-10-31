@@ -9,6 +9,7 @@
  * @Created           : 10/20/2026
  * @Test Class        : [SAPIPortfolioConfigTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). SAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/sapi/v1/portfolio-config/*')
 global with sharing class SAPIPortfolioConfig {
   /**

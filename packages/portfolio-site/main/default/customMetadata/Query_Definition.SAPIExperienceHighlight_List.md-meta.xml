@@ -42,6 +42,6 @@
         <field>Description__c</field>
         <value
       xsi:type="xsd:string"
-    >GET /sapi/v1/experience-highlights, filtered by experienceId and persona.</value>
+    >GET /sapi/experience-highlights, filtered by experienceId and persona.</value>
     </values>
 </CustomMetadata>

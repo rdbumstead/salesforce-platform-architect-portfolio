@@ -124,7 +124,7 @@ function result(body, headers = {}, statusCode = 200) {
     body: JSON.stringify(body),
     namedCredential: "Portfolio_API",
     requestId: "r-1",
-    path: "/sapi/v1/skills"
+    path: "/sapi/skills"
   };
 }
 
@@ -150,7 +150,7 @@ describe("c-api-tester v2 controls", () => {
     invoke.mockResolvedValue(result({ generatedText: "x" }));
     const element = create();
     await flush();
-    await choosePath(element, "/papi/v1/resume/generate");
+    await choosePath(element, "/papi/resume/generate");
 
     const pills = $$(element, 'fieldset[data-param="persona"] button');
     expect(pills.map((button) => button.textContent.trim())).toEqual([
@@ -177,12 +177,12 @@ describe("c-api-tester v2 controls", () => {
     $(element, "button.execute-button").click();
     await flush();
     expect(invoke).toHaveBeenCalledWith({
-      path: "/papi/v1/resume/generate",
+      path: "/papi/resume/generate",
       params: { persona: "Architect" },
       apiVersion: "v2"
     });
     expect(trackEvent).toHaveBeenLastCalledWith("api_test_executed", {
-      path: "/papi/v1/resume/generate",
+      path: "/papi/resume/generate",
       status: 200,
       param_count: 1
     });
@@ -191,7 +191,7 @@ describe("c-api-tester v2 controls", () => {
   it("clears a pill when it is pressed again or removed", async () => {
     const element = create();
     await flush();
-    await choosePath(element, "/papi/v1/testimonials/feed");
+    await choosePath(element, "/papi/testimonials/feed");
 
     pill(element, "mode", "casual").click();
     await flush();
@@ -214,7 +214,7 @@ describe("c-api-tester v2 controls", () => {
   it("shows a boolean as true and false pills, and a five value enum as a picklist", async () => {
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/projects");
+    await choosePath(element, "/sapi/projects");
 
     const featured = $$(element, 'fieldset[data-param="isFeatured"] button');
     expect(featured.map((button) => button.textContent.trim())).toEqual([
@@ -236,7 +236,7 @@ describe("c-api-tester v2 controls", () => {
   it("bounds limit and offset from the spec and hints at id filters", async () => {
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/project-skills");
+    await choosePath(element, "/sapi/project-skills");
 
     const limit = $(element, 'input[data-name="limit"]');
     expect(limit.type).toBe("number");
@@ -257,7 +257,7 @@ describe("c-api-tester v2 controls", () => {
     invoke.mockResolvedValue(result([]));
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/skills");
+    await choosePath(element, "/sapi/skills");
 
     setField(element, 'input[data-name="limit"]', "5");
     setField(element, "input.query-input", "limit=abc");
@@ -267,12 +267,12 @@ describe("c-api-tester v2 controls", () => {
     $(element, "button.execute-button").click();
     await flush();
     expect(invoke).toHaveBeenLastCalledWith({
-      path: "/sapi/v1/skills",
+      path: "/sapi/skills",
       params: { limit: "abc" },
       apiVersion: "v2"
     });
 
-    await choosePath(element, "/sapi/v1/accounts");
+    await choosePath(element, "/sapi/accounts");
     expect($(element, ".chosen-pills")).toBeNull();
     expect($(element, "input.query-input").value).toBe("limit=abc");
   });
@@ -290,7 +290,7 @@ describe("c-api-tester v2 controls", () => {
     invoke.mockResolvedValue(result(SKILLS, { "X-Has-More": "true" }));
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/skills");
+    await choosePath(element, "/sapi/skills");
     setField(element, 'input[data-name="limit"]', "2");
     setField(element, "input.query-input", "offset=4");
     await flush();
@@ -301,7 +301,7 @@ describe("c-api-tester v2 controls", () => {
     await flush();
 
     expect(invoke).toHaveBeenLastCalledWith({
-      path: "/sapi/v1/skills",
+      path: "/sapi/skills",
       params: { limit: "2", offset: "6" },
       apiVersion: "v2"
     });
@@ -312,7 +312,7 @@ describe("c-api-tester v2 controls", () => {
     invoke.mockResolvedValue(result(SKILLS, { "X-Has-More": "true" }));
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/skills");
+    await choosePath(element, "/sapi/skills");
 
     $(element, "button.execute-button").click();
     await flush();
@@ -320,7 +320,7 @@ describe("c-api-tester v2 controls", () => {
     await flush();
 
     expect(invoke).toHaveBeenLastCalledWith({
-      path: "/sapi/v1/skills",
+      path: "/sapi/skills",
       params: { offset: "50" },
       apiVersion: "v2"
     });
@@ -330,7 +330,7 @@ describe("c-api-tester v2 controls", () => {
     invoke.mockResolvedValue(result(SKILLS, { "X-Has-More": "false" }));
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/skills");
+    await choosePath(element, "/sapi/skills");
     $(element, "button.execute-button").click();
     await flush();
 
@@ -358,7 +358,7 @@ describe("c-api-tester v2 controls", () => {
     invoke.mockResolvedValue(result(SKILLS));
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/skills");
+    await choosePath(element, "/sapi/skills");
     $(element, "button.execute-button").click();
     await flush();
 
@@ -468,7 +468,7 @@ describe("c-api-tester version picker", () => {
     invoke.mockResolvedValue(result([]));
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/skills");
+    await choosePath(element, "/sapi/skills");
     chooseVersion(element, "v1");
     await flush();
     setField(element, "input.query-input", "projectId=abc");
@@ -508,7 +508,7 @@ describe("c-api-tester version picker", () => {
     $(element, "button.execute-button").click();
     await flush();
     expect(invoke).toHaveBeenLastCalledWith({
-      path: "/sapi/v1/health",
+      path: "/sapi/health",
       params: {},
       apiVersion: "v2"
     });
@@ -518,7 +518,7 @@ describe("c-api-tester version picker", () => {
     $(element, "button.execute-button").click();
     await flush();
     expect(invoke).toHaveBeenLastCalledWith({
-      path: "/sapi/v1/health",
+      path: "/sapi/health",
       params: {},
       apiVersion: "v1"
     });
@@ -583,7 +583,7 @@ describe("c-api-tester version picker", () => {
     );
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/skills");
+    await choosePath(element, "/sapi/skills");
 
     $(element, "button.execute-button").click();
     await flush();
@@ -605,14 +605,14 @@ describe("c-api-tester version picker", () => {
     invoke.mockResolvedValue(result([]));
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/project-skills");
+    await choosePath(element, "/sapi/project-skills");
 
     setField(element, 'input[data-name="projectKey"]', "prj_8f3k2m9qtz");
     await flush();
     $(element, "button.execute-button").click();
     await flush();
     expect(invoke).toHaveBeenLastCalledWith({
-      path: "/sapi/v1/project-skills",
+      path: "/sapi/project-skills",
       params: { projectKey: "prj_8f3k2m9qtz" },
       apiVersion: "v2"
     });
@@ -623,7 +623,7 @@ describe("c-api-tester version picker", () => {
     invoke.mockResolvedValue(result([]));
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/project-skills");
+    await choosePath(element, "/sapi/project-skills");
 
     expect($(element, 'input[data-name="projectKey"]')).not.toBeNull();
     expect($(element, 'input[data-name="projectId"]')).toBeNull();
@@ -640,7 +640,7 @@ describe("c-api-tester version picker", () => {
     $(element, "button.execute-button").click();
     await flush();
     expect(invoke).toHaveBeenLastCalledWith({
-      path: "/sapi/v1/project-skills",
+      path: "/sapi/project-skills",
       params: { projectId: "prj_8f3k2m9qtz" },
       apiVersion: "v1"
     });
