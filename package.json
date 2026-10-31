@@ -5,7 +5,7 @@
   "description": "Salesforce Platform Architect Portfolio",
   "scripts": {
     "prepare": "husky || true",
-    "precommit": "lint-staged --config config/.lintstagedrc.json",
+    "precommit": "lint-staged --config config/.lintstagedrc.json --concurrent false",
     "setup:plugins": "sf plugins install @salesforce/plugin-code-analyzer sfdx-git-delta",
     "pre-launch-check": "node scripts/pre-launch-check.js",
     "lint": "eslint \"**/{aura,lwc}/**/*.js\" --config config/eslint.config.mjs",
