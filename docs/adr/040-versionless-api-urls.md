@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted and built (2026-10-31). Amends [ADR-026](026-header-based-api-versioning-strategy.md) and [ADR-039](039-api-v2-and-the-v1-sunset.md). In the integration scratch org `RunLocalTests` passed **TESTS_PASSED** of **TESTS_RAN** with **COVERAGE**% org wide coverage. Both new settings ship blank, so no `/v1/` URL is deprecated or retired in production until I set them after the deploy.
+Accepted and built (2026-10-31). Amends [ADR-026](026-header-based-api-versioning-strategy.md) and [ADR-039](039-api-v2-and-the-v1-sunset.md). In the integration scratch org `RunLocalTests` passed **TESTS_PASSED** of **TESTS_RAN** with **COVERAGE**% org wide coverage. Both new date settings ship blank, so no `/v1/` URL is deprecated or retired in production until I set them after the deploy.
 
 ## Context
 
@@ -35,6 +35,17 @@ Two `Portfolio_Setting__mdt` records, `Api_V1_Path_Deprecation_Date` and `Api_V1
 ## Our own callers
 
 The API Lab (`apiTester`: the token path, `API_PATH` and the curl text), `ApiLabController` (`AI_GENERATE_PATH`, and its allowlist, which now reads a path in either spelling as the versionless one and refuses a path with a query), the `PAPIHealth` credential check, the Agentforce cover letter call, `scripts/api-smoke.sh`, the v2 specs and the Postman collection call versionless URLs. The Lab's catalog, the Postman collection and the generated reference docs come from the specs by `scripts/sync-specs.js`, whose catalog now joins the v1 and v2 specs on the versionless path.
+
+## The switch and the two rollback levels
+
+A `Portfolio_Setting__mdt` record, `Api_Versionless_Urls`, holds `On` or `Off` in **Text Value** and ships `On`. I added it so a rollback does not need a deploy with deletions.
+
+- **How it reads.** `ApiRoutes.isVersionless()` is false only when the value is `Off` (any letter case, spaces ignored). A blank value, a typo and a missing record all read as `On`. I chose that default so a bad value can never turn the feature off by accident. Turning it off has to be deliberate, and the cost of a typo is that nothing changes.
+- **Off, the routers.** `PAPIRouter` and `SAPIRouter` answer every known route 404 `NOT_FOUND` in the usual envelope, with the message "Versionless URLs are switched off. Use /services/apexrest/papi/v1/projects." (the `/v1/` URL for the same path). A guest asking for a route it may not reach still gets the plain 404 with no hint, and an unknown route still gets the plain "No route matches" 404. The 405 for a wrong verb does not apply while Off.
+- **Off, the old URLs.** They are the only URLs, so none of them is an alias. They stop sending the `canonical` Link and the log line stops saying `legacyPath=true`. The path deprecation and sunset dates do not apply, so an old URL never answers 410 while Off, whatever date is set. The ADR-039 version headers and the version sunset are unchanged in both states.
+- **Callers.** Every URL of our own API that Apex builds comes from one class, `ApiRoutes`: the API Lab proxy (`ApiLabController`), the Agentforce cover letter call, and the `PAPIHealth` credential check to SAPI. The API Lab page reads the switch with one cacheable Apex read, `ApiLabController.getVersionlessUrls`, and writes its token path and curl examples to match. Until the read returns it shows the versionless form. The live smoke script stays versionless, so it fails on its routes while the switch is Off, which is expected.
+- **Rollback level 1, no deploy.** For a fault in a router or in a caller, I edit the record in Setup and set Text Value to `Off`. Every caller returns to the `/v1/` URLs at once, and the old classes were never changed, so they serve as they did before. This is the first thing to try.
+- **Rollback level 2, revert the code.** For a fault in the shared path handling in `ApiRequestContext` (`canonicalPath`, the exemptions, the headers), the switch does not help, because the old classes also run through that code. Then I revert the code change itself.
 
 ## Specs
 

@@ -250,6 +250,17 @@ The API is called at versionless URLs, and the old `/v1/` URLs are aliases that 
 5. **If a call is both v1 and on an old URL** the response carries the earlier of the two `Deprecation` dates and the earlier of the two `Sunset` dates, and the 410 comes from whichever sunset has passed. The message says which.
 6. **After the sunset.** Once the old URLs have answered 410 for as long as I want, I remove them in one change: the `/v1/` `urlMapping` of each handler class (the routers then own every URL, and the exceptions need their routes in `PAPIRouter` and `SAPIRouter` already, which they have), the `LEGACY_SEGMENT` handling and the two path settings in `ApiRequestContext`, the two path date records, and the v1 specs along with the rest of section 3.10 step 4. Then I redeploy and run every test.
 
+#### Switching the versionless URLs off and on
+
+`Api_Versionless_Urls` is a `Portfolio_Setting__mdt` record that ships `On` ([ADR-040](../adr/040-versionless-api-urls.md)). It is the first rollback for a fault in a router or in one of our callers, and it needs no deploy.
+
+1. **Turn it off.** Setup, Custom Metadata Types, Portfolio Setting, Manage Records, `Api_Versionless_Urls`, Edit. Set **Text Value** to `Off` and save. Only `Off` turns it off. Blank, a typo or a missing record read as `On`.
+2. **Check it took effect.** Call `GET /services/apexrest/papi/health` and expect 404 with the message "Versionless URLs are switched off. Use /services/apexrest/papi/v1/health." Call `/services/apexrest/papi/v1/health` and expect 200 with no `canonical` Link. Open the API Lab and read the curl examples: they show `/v1/` URLs. The Lab reads the value through a cacheable call, so a page that was already open can need a reload.
+3. **What changes while Off.** The routers answer 404, our callers use the `/v1/` URLs, the old URLs send no `canonical` Link, and the path dates (section 3.11 above) do not apply, so no old URL answers 410. The version rules of section 3.10 are unchanged.
+4. **The smoke script fails while Off.** `scripts/api-smoke.sh` calls versionless URLs, so it fails on its routes until the switch is `On` again. That is expected.
+5. **Turn it back on.** Set **Text Value** to `On`, save, and repeat the check: `/services/apexrest/papi/health` answers 200.
+6. **When Off is not enough.** The switch does not help with a fault in the shared path handling in `ApiRequestContext`, because the old classes run through it too. Then I revert the code change.
+
 ## 4. Disaster Recovery
 
 ### 4.1 Scenario: Deployment Failure
