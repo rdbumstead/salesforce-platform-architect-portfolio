@@ -1,5 +1,5 @@
 /**
- * @description       : POST /papi/v1/auth/token. Vends a short-lived evaluator access token
+ * @description       : POST /papi/auth/token. Vends a short-lived evaluator access token
  *                      (ADR-028). The only REST class the site guest user may execute. All
  *                      validation, limiting, cap and audit logic lives in TokenExchangeService.
  * @author            : Ryan Bumstead
@@ -9,6 +9,7 @@
  * @Created           : 10/20/2026
  * @Test Class        : [PAPIAuthTokenTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). PAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/papi/v1/auth/token')
 global with sharing class PAPIAuthToken {
   /**

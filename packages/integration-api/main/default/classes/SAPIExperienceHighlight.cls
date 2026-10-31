@@ -9,6 +9,7 @@
  * @Created           : 10/20/2026
  * @Test Class        : [SAPIExperienceHighlightTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). SAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/sapi/v1/experience-highlights/*')
 global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Provider {
   private static final String LIST_QUERY = 'SAPIExperienceHighlight_List';

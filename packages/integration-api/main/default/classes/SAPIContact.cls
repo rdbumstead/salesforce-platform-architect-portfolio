@@ -7,6 +7,7 @@
  * @Created           : 10/20/2026
  * @Test Class        : [SAPIContactTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). SAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/sapi/v1/contacts/*')
 global with sharing class SAPIContact implements QueryDefinitions.Provider {
   private static final String LIST_QUERY = 'SAPIContact_List';

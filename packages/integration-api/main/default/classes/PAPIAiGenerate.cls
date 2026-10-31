@@ -1,5 +1,5 @@
 /**
- * @description       : PAPI AI generation endpoint (POST /papi/v1/ai/generate). Validates the
+ * @description       : PAPI AI generation endpoint (POST /papi/ai/generate). Validates the
  *                      request against the spec enums and bounds, then calls
  *                      ContentGenerationController.dispatch: Agentforce only when its switch is
  *                      on, then Gemini, then the local template for cover letters. A
@@ -23,6 +23,7 @@
  * @Created           : 10/20/2026
  * @Test Class        : [PAPIAiGenerateTest]
  **/
+// The old /v1/ spelling is kept as an alias until the path sunset (ADR-040). PAPIRouter serves the versionless URL.
 @RestResource(urlMapping='/papi/v1/ai/generate')
 global with sharing class PAPIAiGenerate {
   public static final String TYPE_COVER_LETTER = 'CoverLetter';
