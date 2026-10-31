@@ -12,5 +12,8 @@
   "packages/integration-api/specs/**/*.yaml": ["npm run docs:api"],
   "{docs/**/*.md,scripts/render-mermaid-alt.json}": [
     "node scripts/check-mermaid-alt.js"
+  ],
+  "{packages/**,docs/**/*.md,README.md,STATUS.md}": [
+    "node scripts/check-internal-refs.js"
   ]
 }

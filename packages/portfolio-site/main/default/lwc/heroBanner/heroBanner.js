@@ -12,7 +12,7 @@
  *                      reads only the owner Contact. The title line shows only when it is set,
  *                      and nothing extra shows when the read fails. The value sentence falls
  *                      back to the constant below.
- *                      "See the case studies" shows only once
+ *                      "See the case studies" is a secondary button after the tour. It shows only once
  *                      ProjectCardController.getHomeCaseStudies returns at least one card that
  *                      c-case-study-grid would show (a title and a usable link, isShownCase),
  *                      the same read and cache the grid uses, so it never points at a section
@@ -25,8 +25,8 @@
  *                      The profile links are GitHub, LinkedIn and Trailhead from the owner
  *                      Contact's stored URLs (each only when set and safe, in a new tab), then
  *                      Resume and API docs.
- *                      "Take the 10 minute tour" (the minutes from c/pillarData) is a secondary
- *                      button next to the case studies button. It starts the tour (c/tourBar startTour) and goes
+ *                      "Take the 10 minute tour" (the minutes from c/pillarData) is the one
+ *                      primary button, first in the row. It starts the tour (c/tourBar startTour) and goes
  *                      straight to its first stop as a plain link. If the tour cannot start
  *                      (storage is blocked) the link still opens that page.
  *                      One "why you are here" line sits under the headline: the value sentence

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (2026-10-26), amended on 2026-10-26, 2026-10-27 and twice on 2026-10-30 (see the amendment sections, the last of which rebuilds the home page order, the hero, the work timeline and the credentials). Checked against the merged home page: the view's component order, `ProjectCardController.getHomeCaseStudies`, the `Project__c` and `Contact` fields, the proof strip list, the credentials strip, the header and footer, and the head markup. The case study text, the title line and the value sentence are records I load with scripts after the deploy, so until then the cards and the value sentence stay hidden by design.
+Accepted (2026-10-26), amended on 2026-10-26, 2026-10-27 and three times on 2026-10-30 (see the amendment sections, the last of which moves "How this site is built" to the Docs page and makes the tour the primary hero button). Checked against the merged home page: the view's component order, `ProjectCardController.getHomeCaseStudies`, the `Project__c` and `Contact` fields, the proof strip list, the credentials strip, the header and footer, and the head markup. The case study text, the title line and the value sentence are records I load with scripts after the deploy, so until then the cards and the value sentence stay hidden by design.
 
 ## Context
 
@@ -98,4 +98,16 @@ This changes items 1, 3, 6 and 8, and the career line from the 2026-10-26 amendm
 - **Item 8, the counts move to the hero.** The build section no longer shows the live test counts or the links to the architecture and the guest access section. A proof panel in the hero shows the counts in one line and holds the two buttons, "Architecture and decisions" and "How a request reaches the data". The hero's line under the headline is the value sentence, with a written fallback when the record is blank, and the certification chip counts the active certifications from the timeline read, so it stays right when a certification is added or retired.
 - **Data.** `getTimeline` adds `work[].isPartTime`, `work[].highlights` and `certifications[].badgeFile`, and renames or removes nothing, so `getResume` and the resume page do not move. The three new fields are read in the same query definitions the timeline already used ([ADR-033](033-queries-in-custom-metadata.md)). The values reach production through data scripts I run, so until they are loaded the credentials show plain tiles and the long highlights are cut to one line.
 - **Analytics.** The career line sends `career_role_opened` {`position`} when a stop opens and `career_timeline_toggled` {`expanded`} from Expand all and Collapse all. `career_timeline_filtered` and `career_timeline_show_all` stay in the event list for past data and are no longer sent. `case_study_opened` stays too and nothing sends it.
+- **Detail.** [Technical Guide 2.12](../guides/04-Technical-Guide.md#212-home-page).
+
+## Amendment (2026-10-30, later): the build section moves to the Docs page
+
+This changes items 1 and 7 and the hero's button order. The other items stand.
+
+- **Item 1, the order.** The home page now reads: the hero, the case studies, the work timeline, the credentials band, the testimonials, then the contact call. "How this site is built" leaves it, because on the home page it repeated the hero's proof panel and its two architecture buttons.
+- **Item 7, where the platform work sits.** "How this site is built" (`c-site-build-section`) is on the Docs view, in the same column as `c-docs-viewer` and above it. A visitor who clicks "Architecture and decisions" in the hero sees the five pillar cards first and the diagrams right below them. The cards, their live numbers and the Open buttons are unchanged. The Apex test count reads "1,350 Apex tests", with a comma, the same as the hero. The heading is an `h2`, because the docs viewer holds the page's one `h1`.
+- **The link in the section's intro** opens "how a visitor's request reaches the data" in place on the Docs page. It sets the address and fires `popstate`, which the docs viewer already listens for, so nothing reloads and the viewer is not changed. On any other page it is a plain link.
+- **The hero's buttons.** The 10 minute tour is the one primary button and comes first. "See the case studies" is secondary. The proof panel's two buttons stay secondary.
+- **One heading style.** The case studies, work timeline, credentials band, testimonials and build section share one heading and heading row style (`c/sectionHeading`), imported by CSS, so the headings cannot drift apart. The work heading had no style of its own and rendered as small plain text.
+- **The work timeline.** Highlights and earlier roles wrap instead of ending in an ellipsis. Inside one employer, roles that read the same years put the full time role first. The first 2026-10-30 amendment said each highlight is held to one line, and that no longer holds.
 - **Detail.** [Technical Guide 2.12](../guides/04-Technical-Guide.md#212-home-page).

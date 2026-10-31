@@ -11,7 +11,9 @@
  * @Created           : 10/26/2026
  **/
 import { createElement } from "@lwc/engine-dom";
-import SiteBuildSection from "c/siteBuildSection";
+import { readFileSync } from "fs";
+import { join } from "path";
+import SiteBuildSection, { groupLeadingNumber } from "c/siteBuildSection";
 import getPillarCards from "@salesforce/apex/ProjectCardController.getPillarCards";
 import { setComingLetters, reset } from "c/pillarData";
 
@@ -112,6 +114,7 @@ describe("c-site-build-section", () => {
     }
     jest.clearAllMocks();
     reset();
+    window.history.replaceState(null, "", "/");
   });
 
   it("shows the heading, the intro and one card per live pillar in order", () => {
@@ -219,10 +222,10 @@ describe("c-site-build-section", () => {
     );
     const delivery = card(element, "delivery");
     expect(text(delivery.querySelector('[data-id="pillar-stat"]'))).toBe(
-      "1000 Apex tests passing at the last successful deploy"
+      "1,000 Apex tests passing at the last successful deploy"
     );
     expect(text(delivery.querySelector(".metric-number"))).toBe(
-      "1000 Apex tests"
+      "1,000 Apex tests"
     );
     const bare = card(element, "api-lab");
     expect(bare.querySelector('[data-id="pillar-stat"]')).toBeNull();
@@ -259,7 +262,129 @@ describe("c-site-build-section", () => {
     );
     expect(
       text(card(element, "delivery").querySelector(".metric-number"))
-    ).toBe("1000 Apex tests");
+    ).toBe("1,000 Apex tests");
+  });
+
+  describe("the pillar letter in the card title", () => {
+    it("is a direct child of the title, the place the stylesheet rule targets", () => {
+      const element = render();
+      const letters = element.shadowRoot.querySelectorAll(
+        ".card-title > .letter"
+      );
+      expect(letters).toHaveLength(5);
+      expect(Array.from(letters).map(text)).toEqual(["A", "B", "C", "D", "E"]);
+      expect(
+        element.shadowRoot.querySelectorAll(".card-body > .letter")
+      ).toHaveLength(0);
+    });
+
+    it("has a rule in the stylesheet that matches that markup", () => {
+      const css = readFileSync(
+        join(__dirname, "..", "siteBuildSection.css"),
+        "utf8"
+      );
+      expect(css).toMatch(/\.card-title > \.letter\s*\{[^}]*margin-inline-end/);
+      expect(css).not.toContain(".card-body > .letter");
+    });
+
+    it("is hidden from assistive technology, so the heading reads as the page name alone", () => {
+      const element = render();
+      element.shadowRoot.querySelectorAll(".card-title").forEach((title) => {
+        const letter = title.querySelector(".letter");
+        expect(letter.getAttribute("aria-hidden")).toBe("true");
+        // The accessible name is the title's text without anything aria-hidden.
+        const name = Array.from(
+          title.querySelectorAll(":scope > :not([aria-hidden])")
+        )
+          .map(text)
+          .join(" ");
+        expect(name).toBe(text(title.querySelector(".card-name")));
+      });
+      expect(
+        text(element.shadowRoot.querySelectorAll(".card-title .card-name")[0])
+      ).toBe("Business Architecture");
+    });
+  });
+
+  describe("the heading level", () => {
+    it("adds an h2 and no h1, because the docs viewer holds the page's one h1", () => {
+      const element = render();
+      expect(element.shadowRoot.querySelectorAll("h1")).toHaveLength(0);
+      expect(element.shadowRoot.querySelectorAll("h2")).toHaveLength(1);
+      expect(
+        element.shadowRoot
+          .querySelector("h2")
+          .classList.contains("section-heading")
+      ).toBe(true);
+    });
+  });
+
+  describe("the Apex test count", () => {
+    it("groups a leading number of 1000 or more with a comma", async () => {
+      const element = render();
+      getPillarCards.emit([{ ...CASE_E, headlineMetric: "1350 Apex tests" }]);
+      await flush();
+      expect(
+        text(card(element, "delivery").querySelector(".metric-number"))
+      ).toBe("1,350 Apex tests");
+    });
+
+    it("leaves small numbers, grouped numbers and other text alone", () => {
+      expect(groupLeadingNumber("646 Apex tests")).toBe("646 Apex tests");
+      expect(groupLeadingNumber("1,350 Apex tests")).toBe("1,350 Apex tests");
+      expect(groupLeadingNumber("$0")).toBe("$0");
+      expect(groupLeadingNumber("12000")).toBe("12,000");
+      expect(groupLeadingNumber("Over 1350 tests")).toBe("Over 1350 tests");
+    });
+  });
+
+  describe("the link to how a request reaches the data", () => {
+    function click(link, init = {}) {
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        ...init
+      });
+      link.dispatchEvent(event);
+      return event;
+    }
+
+    it("opens the section in place on the docs page, with no page load", () => {
+      window.history.replaceState(null, "", "/portfolio/docs");
+      const popped = jest.fn();
+      window.addEventListener("popstate", popped);
+      const element = render();
+      const event = click(byId(element, "guest-access-link"));
+      window.removeEventListener("popstate", popped);
+      expect(event.defaultPrevented).toBe(true);
+      expect(window.location.pathname).toBe("/portfolio/docs");
+      expect(window.location.search).toBe("?doc=sas");
+      expect(window.location.hash).toBe("#3-2-how-a-guest-reaches-apex");
+      expect(popped).toHaveBeenCalledTimes(1);
+    });
+
+    it("is a normal link on any other page", () => {
+      window.history.replaceState(null, "", "/portfolio/");
+      const popped = jest.fn();
+      window.addEventListener("popstate", popped);
+      const element = render();
+      const event = click(byId(element, "guest-access-link"));
+      window.removeEventListener("popstate", popped);
+      expect(event.defaultPrevented).toBe(false);
+      expect(popped).not.toHaveBeenCalled();
+      expect(window.location.pathname).toBe("/portfolio/");
+    });
+
+    it("leaves a modified click to the browser even on the docs page", () => {
+      window.history.replaceState(null, "", "/portfolio/docs");
+      const element = render();
+      const event = click(byId(element, "guest-access-link"), {
+        ctrlKey: true
+      });
+      expect(event.defaultPrevented).toBe(false);
+      expect(window.location.search).toBe("");
+    });
   });
 
   it("has no case study disclosure, counts row, docs or architecture links, or tour", async () => {

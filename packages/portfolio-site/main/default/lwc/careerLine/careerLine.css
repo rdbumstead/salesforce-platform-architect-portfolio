@@ -1,6 +1,7 @@
+@import "c/sectionHeading";
 /*
  * The work timeline under the home hero, on the --pf- site tokens only. One slim track of
- * stops, five to a row at 768 px and up, one column with the line on the left below that.
+ * stops, five to a row at 900 px and up, one column with the line on the left below that.
  * Every element that sets a background also sets its text colour. A panel reveals with a
  * height change and a fade, and not at all under reduced motion.
  */
@@ -90,7 +91,7 @@
   outline-offset: 2px;
 }
 
-/* The track: five columns at 768 px and up. Columns may shrink, so nothing scrolls sideways. */
+/* The track: five columns at 900 px and up. Columns may shrink, so nothing scrolls sideways. */
 .track {
   list-style: none;
   margin: 0;
@@ -235,13 +236,12 @@
   margin-top: var(--pf-space-1);
 }
 
-/* Each bullet holds to one line. */
+/* A bullet wraps, and the marker hangs so wrapped lines sit under the text, not the dot. */
 .highlight {
   position: relative;
   padding-left: 12px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
   color: var(--pf-body);
 }
 
@@ -254,10 +254,9 @@
 .earlier-line {
   padding: var(--pf-space-1) 0;
   border-top: 1px solid var(--pf-border);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .panel-link,
@@ -294,8 +293,8 @@
   }
 }
 
-/* Phone: one column, the line on the left, each panel under its stop. */
-@media screen and (max-width: 767.98px) {
+/* Tablet and phone: one column, the line on the left, each panel under its stop. */
+@media screen and (max-width: 899.98px) {
   .track {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
@@ -315,7 +314,10 @@
     top: 4px;
     left: -6px;
   }
+}
 
+/* Phone: the resume button spans the column. */
+@media screen and (max-width: 767.98px) {
   .career-foot .btn {
     width: 100%;
   }

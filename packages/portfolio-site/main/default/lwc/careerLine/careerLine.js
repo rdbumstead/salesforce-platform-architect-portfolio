@@ -2,8 +2,8 @@
  * @description       : The work timeline under the home hero, from ResumeController.getTimeline.
  *                      Work only. Roles are grouped by employer name and each employer is one
  *                      stop on a single slim track, in the server's order of first appearance
- *                      (current first, then newest). Five stops share a row at 768 px and up
- *                      with no sideways scroll. Below 768 px the track stacks in one column with
+ *                      (current first, then newest). Five stops share a row at 900 px and up
+ *                      with no sideways scroll. Below 900 px the track stacks in one column with
  *                      the line on the left.
  *                      A stop shows its employer, its span ("2026 to now", "2021 to 2026"), the
  *                      title of its newest role that is not part time (the newest role when all
@@ -16,9 +16,9 @@
  *                      the panel that opens under that stop inside its own column, and focus
  *                      stays on the button. Any number of stops can be open at once. In a
  *                      panel each role shows its title, its years with " · part time" when the
- *                      read says so, and its highlights (up to 3), each held to one line. The
- *                      Earlier roles panel lists each role on one line (title, employer, years),
- *                      with no bullets, then a "See the full resume" link.
+ *                      read says so, and its highlights (up to 3), each wrapping in full. The
+ *                      Earlier roles panel lists each role as a line of text that may wrap
+ *                      (title, employer, years), with no bullets, then a "See the full resume" link.
  *                      "Expand all" beside the intro line opens every panel together and reads
  *                      "Collapse all" once every stop is open. A panel reveals in 180 ms with a
  *                      height change and a fade, and not at all when the system asks for reduced
@@ -170,18 +170,40 @@ function roleWhen(role) {
   return isCurrentRole(role) ? HELD_NOW : dateText(role.endDate) || null;
 }
 
-// Newest first inside an employer: held now first, then the latest end, then the latest start,
-// then the server's order.
+// The year a role was last held as a visitor reads it: "now" sorts after any year.
+function endYearOf(role) {
+  return isCurrentRole(role) ? "now" : yearOf(role.endDate);
+}
+
+// Newest first inside an employer, in the terms a visitor sees: held now first, then the latest
+// end year, then the latest start year. Roles with the same years read the same, so the full
+// time role goes ahead of the part time one. Exact dates break any tie left, then the server's
+// order.
 function byNewestRole(a, b) {
+  const endA = endYearOf(a.role);
+  const endB = endYearOf(b.role);
+  if (endA !== endB) {
+    return endA > endB ? -1 : 1;
+  }
+  const startA = yearOf(a.role.startDate);
+  const startB = yearOf(b.role.startDate);
+  if (startA !== startB) {
+    return startA > startB ? -1 : 1;
+  }
+  const partA = a.role.isPartTime === true;
+  const partB = b.role.isPartTime === true;
+  if (partA !== partB) {
+    return partA ? 1 : -1;
+  }
   const whenA = roleWhen(a.role) || "";
   const whenB = roleWhen(b.role) || "";
   if (whenA !== whenB) {
     return whenA > whenB ? -1 : 1;
   }
-  const startA = dateText(a.role.startDate);
-  const startB = dateText(b.role.startDate);
-  if (startA !== startB) {
-    return startA > startB ? -1 : 1;
+  const fullStartA = dateText(a.role.startDate);
+  const fullStartB = dateText(b.role.startDate);
+  if (fullStartA !== fullStartB) {
+    return fullStartA > fullStartB ? -1 : 1;
   }
   return a.index - b.index;
 }

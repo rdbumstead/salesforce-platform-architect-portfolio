@@ -310,11 +310,81 @@ describe("c-career-line", () => {
     const years = Array.from(
       stop.querySelectorAll('[data-id="role-years"]')
     ).map(text);
-    expect(years).toEqual(["2017 to 2021 · part time", "2017 to 2021"]);
+    expect(years).toEqual(["2017 to 2021", "2017 to 2021 · part time"]);
     const titles = Array.from(
       stop.querySelectorAll('[data-id="role-title"]')
     ).map(text);
     expect(titles).toContain("Evening Instructor");
+  });
+
+  describe("roles that read the same years at one employer", () => {
+    function pair(fullStart, fullEnd, partStart, partEnd) {
+      return [
+        {
+          key: "t1",
+          title: "Evening Instructor",
+          employer: "Lakeside College",
+          startDate: partStart,
+          endDate: partEnd,
+          isCurrent: false,
+          isPartTime: true,
+          highlights: []
+        },
+        {
+          key: "t2",
+          title: "Application Specialist",
+          employer: "Lakeside College",
+          startDate: fullStart,
+          endDate: fullEnd,
+          isCurrent: false,
+          isPartTime: false,
+          highlights: []
+        }
+      ];
+    }
+
+    async function dropdownTitles(work) {
+      const element = await mount({ work, salesforceStartYear: 2017 });
+      const stop = stopFor(element, "Lakeside College");
+      return Array.from(stop.querySelectorAll('[data-id="role-title"]')).map(
+        text
+      );
+    }
+
+    it("lists the full time role first when the dates are exactly the same", async () => {
+      const work = pair("2017-07-01", "2021-06-18", "2017-07-01", "2021-06-18");
+      expect(await dropdownTitles(work)).toEqual([
+        "Application Specialist",
+        "Evening Instructor"
+      ]);
+    });
+
+    it("lists the full time role first when the start days differ inside one year", async () => {
+      const work = pair("2017-07-03", "2021-06-18", "2017-12-01", "2021-06-18");
+      expect(await dropdownTitles(work)).toEqual([
+        "Application Specialist",
+        "Evening Instructor"
+      ]);
+    });
+
+    it("lists the full time role first when both are held now from the same year", async () => {
+      const work = pair("2020-02-01", null, "2020-09-01", null).map((role) => ({
+        ...role,
+        isCurrent: true
+      }));
+      expect(await dropdownTitles(work)).toEqual([
+        "Application Specialist",
+        "Evening Instructor"
+      ]);
+    });
+
+    it("still puts the newer years first when the years differ", async () => {
+      const work = pair("2016-01-01", "2018-12-01", "2019-01-01", "2020-06-01");
+      expect(await dropdownTitles(work)).toEqual([
+        "Evening Instructor",
+        "Application Specialist"
+      ]);
+    });
   });
 
   it("lists at most three highlights per role, each as its own bullet", async () => {
@@ -322,14 +392,14 @@ describe("c-career-line", () => {
     const stop = stopFor(element, "Lakeside College");
     const bullets = Array.from(stop.querySelectorAll('[data-id="highlight"]'));
     expect(bullets.map(text)).toEqual([
-      "Taught evening classes",
       "One",
       "Two",
-      "Three"
+      "Three",
+      "Taught evening classes"
     ]);
   });
 
-  it("lists each earlier role on one line with no bullets, then the resume link", async () => {
+  it("lists each earlier role as one line of text with no bullets, then the resume link", async () => {
     const element = await mount();
     const stop = stopFor(element, "Earlier roles");
     const lines = Array.from(

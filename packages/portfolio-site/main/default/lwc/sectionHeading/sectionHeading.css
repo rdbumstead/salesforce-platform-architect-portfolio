@@ -1,0 +1,54 @@
+/*
+ * The one look for a section heading and its heading row, shared by CSS import
+ * (@import "c/sectionHeading"). The classes apply inside each component that imports this
+ * file, because of the shadow DOM. A heading is 32px, and 26px under 768px. The compact
+ * modifier is 24px at every width, for the two column headings in the credentials band.
+ * The end modifier on a live data marker pushes it to the end of the row, and under the
+ * heading from the start of the line on a phone.
+ */
+.heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pf-space-2) var(--pf-space-4);
+}
+
+.section-heading {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pf-text);
+  scroll-margin-top: 88px;
+}
+
+.section-heading:focus {
+  outline: none;
+}
+
+.section-heading:focus-visible {
+  outline: 2px solid var(--pf-focus);
+  outline-offset: 4px;
+}
+
+@media (max-width: 767.98px) {
+  .section-heading {
+    font-size: 26px;
+  }
+}
+
+.section-heading.section-heading-compact {
+  font-size: 24px;
+}
+
+.heading-badge-end {
+  display: inline-flex;
+  margin-inline-start: auto;
+}
+
+@media (max-width: 600px) {
+  .heading-badge-end {
+    margin-inline-start: 0;
+  }
+}

@@ -49,11 +49,6 @@
                       "type": "component"
                     },
                     {
-                      "definition": "c:siteBuildSection",
-                      "id": "3cde9d1b-4357-426d-ad38-3fa1dede96a4",
-                      "type": "component"
-                    },
-                    {
                       "attributes": {
                         "heading": "Get in touch",
                         "linkLabel": "Contact Ryan",

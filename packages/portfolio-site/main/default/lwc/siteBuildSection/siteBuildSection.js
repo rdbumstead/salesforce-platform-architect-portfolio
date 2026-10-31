@@ -1,18 +1,23 @@
 /**
- * @description       : "How this site is built", above the contact call on the home page, for
- *                      a technical reviewer. One card per live pillar from c/pillarData, in the
+ * @description       : "How this site is built", above the docs viewer on the architecture docs
+ *                      page, for a technical reviewer. One card per live pillar from c/pillarData, in the
  *                      case study card style: the pillar's stat as the big number with its label
  *                      when it has one, then the letter and page name, the summary and one
  *                      secondary "Open" button to the pillar page. A pillar with no stat shows
  *                      its card without a number. The section intro carries a plain link to the
- *                      spec's section on how a visitor's request reaches the data. Pillars that
+ *                      spec's section on how a visitor's request reaches the data. On the docs
+ *                      page that link opens the section in place: it sets the address and tells
+ *                      c/docsViewer through the popstate event it already listens for, so the
+ *                      page does not reload. Anywhere else it is a normal link. Pillars that
  *                      are coming are named once in a plain line. The section has no primary
  *                      button. The build counts and the two architecture links are in the hero,
  *                      not here, and the case study text lives on the pillar pages.
  *                      The tour is not here: it starts from the hero and the header menu and
  *                      runs in c-tour-bar.
  *                      The stat comes from ProjectCardController.getPillarCards, merged in by
- *                      letter, and shows only when both the number and its label are set. A failed
+ *                      letter, and shows only when both the number and its label are set. A
+ *                      leading whole number of 1000 or more gets thousands separators, as the
+ *                      hero's counts do ("1,350 Apex tests"). A failed
  *                      or empty read leaves the cards as the static data draws them. The width
  *                      follows --portfolio-content-width, with 1024px as the fallback.
  * @author            : Ryan Bumstead
@@ -33,6 +38,19 @@ import { LIVE_PILLARS, COMING_PILLARS } from "c/pillarData";
  */
 function textOrNull(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+/**
+ * Puts thousands separators on a whole number at the start of a stat, so "1350 Apex tests"
+ * reads "1,350 Apex tests". Numbers under 1000 and text that does not start with a whole
+ * number are left as they are.
+ * @param {string} value the stat number text
+ * @returns {string} the text with its leading number grouped
+ */
+export function groupLeadingNumber(value) {
+  return value.replace(/^\d{4,}(?=\s|$)/, (digits) =>
+    Number(digits).toLocaleString("en-US")
+  );
 }
 
 /**
@@ -68,7 +86,7 @@ function toStat(row) {
   const hasStat = Boolean(number && label);
   return {
     hasStat,
-    statNumber: hasStat ? number : null,
+    statNumber: hasStat ? groupLeadingNumber(number) : null,
     statLabel: hasStat ? ` ${label}` : null
   };
 }
@@ -103,6 +121,39 @@ export default class SiteBuildSection extends LightningElement {
   /** The architecture spec's section on how the site guest reaches Apex and data. */
   get guestAccessHref() {
     return `${toHref("docs")}?doc=sas#3-2-how-a-guest-reaches-apex`;
+  }
+
+  /**
+   * On the docs page the link opens its section in place. The address changes and c/docsViewer,
+   * which listens for popstate, reads the new document and heading from it. Modified clicks and
+   * any other page keep the browser's own link behaviour.
+   * @param {MouseEvent} event the click
+   */
+  handleGuestAccessClick(event) {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      !this.onDocsPage()
+    ) {
+      return;
+    }
+    event.preventDefault();
+    try {
+      window.history.pushState(window.history.state, "", this.guestAccessHref);
+    } catch {
+      // The address could not change, so let the browser follow the link.
+      window.location.assign(this.guestAccessHref);
+      return;
+    }
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+
+  onDocsPage() {
+    const path = window.location.pathname.replace(/\/+$/, "");
+    return path === toHref("docs");
   }
 
   get hasComing() {

@@ -48,7 +48,7 @@ The primary problem this portfolio solves is that Recruiters and Hiring Managers
 
 ### 3.1 The "5-Minute Tour" User Journey
 
-How a recruiter or architect experiences this portfolio. The tour has one stop per pillar, one minute each, so its length is worked out from the number of stops (`c-site-build-section`, `MINUTES_PER_STEP`, over the pillars in `c/pillarData`). On the way, each showcase component has a View source button. It opens a dialog with the component's JavaScript, HTML and main Apex class, highlighted by the shared Prism module, with a link to each file on GitHub. The files are listed in the Source File custom metadata, so they can change without a deploy. A scheduled job reads them from GitHub at most once a day per file into an admin only cache. Visitors read only the cache, never GitHub ([ADR-004 amendment](../adr/004-static-resource-code-rendering.md)):
+How a recruiter or architect experiences this portfolio. The tour has one stop per pillar, and each pillar in `c/pillarData` sets its own minutes (`tourMinutes`), so its length is their sum (`TOUR_MINUTES`), which the hero's tour button shows. On the way, each showcase component has a View source button. It opens a dialog with the component's JavaScript, HTML and main Apex class, highlighted by the shared Prism module, with a link to each file on GitHub. The files are listed in the Source File custom metadata, so they can change without a deploy. A scheduled job reads them from GitHub at most once a day per file into an admin only cache. Visitors read only the cache, never GitHub ([ADR-004 amendment](../adr/004-static-resource-code-rendering.md)):
 
 ```mermaid
 sequenceDiagram

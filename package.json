@@ -28,7 +28,7 @@
     "docs:api": "node scripts/generate-api-docs.js",
     "docs:counts": "node scripts/check-doc-counts.js",
     "docs:mermaid-alt": "node scripts/check-mermaid-alt.js",
-    "refs:check": "node scripts/check-internal-refs.js",
+    "refs:check": "node scripts/check-internal-refs.js packages docs README.md STATUS.md",
     "specs:sync": "node scripts/sync-specs.js",
     "specs:check": "node scripts/sync-specs.js --check",
     "docs:verify": "npm run docs:api && git diff --exit-code docs/api/oas/ && echo \"SUCCESS: API Documentation is synchronized.\""
