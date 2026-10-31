@@ -148,6 +148,32 @@ private class ApiLabControllerAgentforceTest {
   // --- Agentforce serves through the API ---
 
   @IsTest
+  static void shouldPostToTheOldPathWhileTheVersionlessSwitchIsOff() {
+    PortfolioSettings.overrides.put(
+      ApiRoutes.SETTING,
+      new Portfolio_Setting__mdt(
+        DeveloperName = ApiRoutes.SETTING,
+        Text_Value__c = 'Off'
+      )
+    );
+    RoutingMock mock = mockApi(200, '{}');
+
+    letterAsGuest(null);
+
+    Boolean seen = false;
+    for (HttpRequest req : mock.requests) {
+      if (
+        req.getEndpoint() ==
+        'callout:Portfolio_API/services/apexrest/papi/v1/ai/generate'
+      ) {
+        seen = true;
+      }
+    }
+    Assert.isTrue(seen, 'The letter was posted to the /v1/ path');
+    Assert.areEqual(0, mock.callsTo(API_PREFIX), 'Not to the versionless one');
+  }
+
+  @IsTest
   static void aLetterFromTheApiIsServedAsAgentforceWithNoGeminiCall() {
     RoutingMock mock = mockApi(200, API_200_BODY);
 

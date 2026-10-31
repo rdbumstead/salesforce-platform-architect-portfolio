@@ -53,6 +53,94 @@ private class PAPIRouterTest {
     return RestContext.response.headers.get(name);
   }
 
+  private static void switchOff() {
+    PortfolioSettings.overrides.put(
+      ApiRoutes.SETTING,
+      new Portfolio_Setting__mdt(
+        DeveloperName = ApiRoutes.SETTING,
+        Text_Value__c = 'Off'
+      )
+    );
+  }
+
+  @IsTest
+  static void shouldAnswer404WithTheOldUrlForEveryRouteWhileSwitchedOff() {
+    switchOff();
+    for (
+      String path : new List<String>{
+        'health',
+        'profile/full',
+        'projects',
+        'projects/featured',
+        'resume/generate',
+        'testimonials/feed'
+      }
+    ) {
+      route('GET', path, null);
+      Assert.areEqual(404, RestContext.response.statusCode, path);
+      Map<String, Object> error = bodyMap();
+      Assert.areEqual('NOT_FOUND', error.get('errorCode'), path);
+      Assert.areEqual(
+        'Versionless URLs are switched off. Use /services/apexrest/papi/v1/' +
+          path +
+          '.',
+        error.get('message'),
+        path
+      );
+      Assert.areEqual(
+        new Set<String>{
+          'httpStatus',
+          'errorCode',
+          'message',
+          'correlationId',
+          'retryable'
+        },
+        error.keySet(),
+        'The usual envelope'
+      );
+    }
+    for (String path : new List<String>{ 'auth/token', 'ai/generate' }) {
+      route('POST', path, null);
+      Assert.areEqual(404, RestContext.response.statusCode, path);
+      Assert.isTrue(
+        ((String) bodyMap().get('message')).endsWith('/papi/v1/' + path + '.'),
+        path
+      );
+    }
+    route('POST', 'projects', null);
+    Assert.areEqual(404, RestContext.response.statusCode, 'No 405 while Off');
+  }
+
+  @IsTest
+  static void shouldKeepTheGuestsPlain404WhileSwitchedOff() {
+    switchOff();
+    PAPIRouter.guestOverride = true;
+
+    route('GET', 'projects', null);
+    Assert.areEqual(404, RestContext.response.statusCode, 'Hidden route');
+    Assert.isTrue(
+      ((String) bodyMap().get('message')).startsWith('No route matches'),
+      'No hint for a guest on a hidden route: ' + bodyMap().get('message')
+    );
+
+    route('POST', 'auth/token', null);
+    Assert.areEqual(404, RestContext.response.statusCode, 'Token route');
+    Assert.isTrue(
+      ((String) bodyMap().get('message')).endsWith('/papi/v1/auth/token.'),
+      'The guest is told where the token route is'
+    );
+  }
+
+  @IsTest
+  static void shouldStillAnswerAnUnknownRouteWithThePlain404WhileSwitchedOff() {
+    switchOff();
+    route('GET', 'nothing', null);
+    Assert.areEqual(404, RestContext.response.statusCode);
+    Assert.isTrue(
+      ((String) bodyMap().get('message')).startsWith('No route matches')
+    );
+  }
+
   @IsTest
   static void shouldReachHealthThroughTheVersionlessUrl() {
     Test.setMock(HttpCalloutMock.class, new CredentialMock());

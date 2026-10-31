@@ -196,7 +196,9 @@ public with sharing class ApiRequestContext {
     );
     String uri = RestContext.request?.requestURI;
     ctx.canonical = canonicalPath(uri);
-    ctx.legacyPath = isLegacyPath(uri);
+    // While the Api_Versionless_Urls switch is Off the /v1/ URLs are the only URLs, so none of
+    // them is an alias: no canonical Link, no path dates and no path 410 (ADR-040).
+    ctx.legacyPath = isLegacyPath(uri) && ApiRoutes.isVersionless();
     ctx.shapesRecords = !UNSHAPED_PATHS.contains(ctx.canonical);
     ctx.applyRequestRules();
     return ctx;

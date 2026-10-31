@@ -66,6 +66,28 @@ public with sharing class ApiRouting {
   }
 
   /**
+   * @description Answers a known route with 404 while the Api_Versionless_Urls switch is Off,
+   *              in the standard error envelope, with a message that names the /v1/ URL for
+   *              the same path. It runs the normal header and rate limit rules first.
+   */
+  public static void switchedOff() {
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    if (ctx.isRejected()) {
+      return;
+    }
+    ctx.error(
+      404,
+      'NOT_FOUND',
+      'Versionless URLs are switched off. Use ' +
+        ApiRoutes.forCanonical(
+          ApiRequestContext.canonicalPath(RestContext.request?.requestURI),
+          false
+        ) +
+        '.'
+    );
+  }
+
+  /**
    * @description Answers a verb the route does not have as the platform answers it for a
    *              class without that verb: 405, an Allow header, and the platform's own body.
    *              Like the platform it runs no header or rate limit rules.

@@ -346,6 +346,55 @@ private class ApiPathAliasTest {
     Assert.areEqual(DEC_1_SUNSET, header('Sunset'), 'Only the URL date');
   }
 
+  // --- While the Api_Versionless_Urls switch is Off ---
+
+  private static void switchOff() {
+    PortfolioSettings.overrides.put(
+      ApiRoutes.SETTING,
+      new Portfolio_Setting__mdt(
+        DeveloperName = ApiRoutes.SETTING,
+        Text_Value__c = 'Off'
+      )
+    );
+  }
+
+  @IsTest
+  static void shouldTreatNoUrlAsAnAliasWhileSwitchedOff() {
+    switchOff();
+    setting(ApiRequestContext.V1_PATH_DEPRECATION_SETTING, '2026-01-01');
+    setting(ApiRequestContext.V1_PATH_SUNSET_SETTING, '2026-01-02');
+    ApiRequestContext.nowOverride = Datetime.newInstanceGmt(2027, 1, 1);
+
+    send(SAPI_OLD, 'v2', null);
+    ApiRequestContext ctx = ApiRequestContext.begin();
+
+    Assert.isFalse(ctx.isRejected(), 'Never 410 while Off, whatever the date');
+    Assert.isNull(header('Link'), 'No canonical Link');
+    Assert.isNull(header('Deprecation'), 'No path Deprecation');
+    Assert.isNull(header('Sunset'), 'No path Sunset');
+  }
+
+  @IsTest
+  static void shouldKeepTheVersionRulesUnchangedWhileSwitchedOff() {
+    switchOff();
+    setting(ApiRequestContext.V1_DEPRECATION_SETTING, '2026-11-01');
+    setting(ApiRequestContext.V1_SUNSET_SETTING, '2026-11-01');
+    setting(ApiRequestContext.V1_PATH_SUNSET_SETTING, '2026-11-01');
+    ApiRequestContext.nowOverride = Datetime.newInstanceGmt(2026, 10, 30);
+
+    send(SAPI_OLD, 'v1', null);
+    ApiRequestContext.begin();
+    Assert.areEqual(NOV_1_SUNSET, header('Sunset'), 'The version Sunset');
+    Assert.areEqual(SUCCESSOR, header('Link'), 'The version link only');
+
+    ApiRequestContext.nowOverride = Datetime.newInstanceGmt(2027, 1, 1);
+    send(SAPI_OLD, 'v1', null);
+    Assert.isTrue(ApiRequestContext.begin().isRejected(), 'v1 is gone');
+    Assert.areEqual(VERSION_GONE, bodyMap().get('message'), 'ADR-039 text');
+    send(SAPI_OLD, 'v2', null);
+    Assert.isFalse(ApiRequestContext.begin().isRejected(), 'v2 is served');
+  }
+
   // --- The path sunset 410 ---
 
   @IsTest

@@ -1,5 +1,6 @@
 /**
- * @description       : The versionless SAPI entry (/sapi/*, ADR-040). Maps the first route
+ * @description       : The versionless SAPI entry (/sapi/*, ADR-040). While the
+ *                      Api_Versionless_Urls switch is Off it answers 404 with the /v1/ URL. Maps the first route
  *                      segment to the existing handler and calls its static method, so
  *                      /sapi/skills and the old /sapi/v1/skills reach the same code. The most
  *                      specific urlMapping wins, so every existing /sapi/v1/ class still owns
@@ -25,6 +26,8 @@ global with sharing class SAPIRouter {
     String route = routeOf(RestContext.request?.requestURI);
     if (route == null) {
       ApiRouting.notFound();
+    } else if (!ApiRoutes.isVersionless()) {
+      ApiRouting.switchedOff();
     } else if (route == ROUTE_HEALTH) {
       SAPIHealth.getHealth();
     } else if (route == 'accounts') {

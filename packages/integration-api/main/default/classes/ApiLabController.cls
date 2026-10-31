@@ -97,7 +97,6 @@ public with sharing class ApiLabController {
   // The cover letter page and PortfolioGroundingService.MAX_JOB_TEXT_CHARS hold the same limit.
   public static final Integer MAX_DESCRIPTION_LENGTH = 12000;
 
-  private static final String APEX_REST_PATH = '/services/apexrest';
   private static final Pattern PARAM_NAME = Pattern.compile(
     '^[A-Za-z][A-Za-z0-9_]{0,39}$'
   );
@@ -211,6 +210,21 @@ public with sharing class ApiLabController {
       return PortfolioSettings.getText(POSTMAN_RUN_URL_SETTING, '');
     } catch (Exception e) {
       return '';
+    }
+  }
+
+  /**
+   * @description Whether the Lab shows the versionless URLs: false only while the
+   *              Api_Versionless_Urls setting is Off. It never throws to the page: a failed
+   *              read gives true.
+   * @return Boolean False when the switch is Off.
+   */
+  @AuraEnabled(cacheable=true)
+  public static Boolean getVersionlessUrls() {
+    try {
+      return ApiRoutes.isVersionless();
+    } catch (Exception e) {
+      return true;
     }
   }
 
@@ -330,7 +344,7 @@ public with sharing class ApiLabController {
 
     HttpRequest req = new HttpRequest();
     req.setEndpoint(
-      'callout:' + NAMED_CREDENTIAL + APEX_REST_PATH + normalised + query
+      'callout:' + NAMED_CREDENTIAL + ApiRoutes.forCanonical(normalised) + query
     );
     req.setMethod('GET');
     req.setTimeout(20000);
@@ -560,7 +574,7 @@ public with sharing class ApiLabController {
     }
     HttpRequest req = new HttpRequest();
     req.setEndpoint(
-      'callout:' + NAMED_CREDENTIAL + APEX_REST_PATH + AI_GENERATE_PATH
+      'callout:' + NAMED_CREDENTIAL + ApiRoutes.forCanonical(AI_GENERATE_PATH)
     );
     req.setMethod('POST');
     req.setTimeout(agentforceTimeoutMs());

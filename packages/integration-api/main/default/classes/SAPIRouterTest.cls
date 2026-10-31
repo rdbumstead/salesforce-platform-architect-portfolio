@@ -130,6 +130,54 @@ private class SAPIRouterTest {
   }
 
   @IsTest
+  static void shouldAnswer404WithTheOldUrlForEveryResourceWhileSwitchedOff() {
+    PortfolioSettings.overrides.put(
+      ApiRoutes.SETTING,
+      new Portfolio_Setting__mdt(
+        DeveloperName = ApiRoutes.SETTING,
+        Text_Value__c = 'Off'
+      )
+    );
+    for (
+      String path : new List<String>{
+        'health',
+        'accounts',
+        'certification-skills',
+        'certifications',
+        'contacts',
+        'education',
+        'experience-highlights',
+        'experience-skills',
+        'experience',
+        'portfolio-config',
+        'project-assets',
+        'project-skills',
+        'projects',
+        'projects/prj_abc',
+        'skills',
+        'testimonials'
+      }
+    ) {
+      viaRouter(path);
+      Assert.areEqual(404, RestContext.response.statusCode, path);
+      Map<String, Object> error = bodyMap();
+      Assert.areEqual('NOT_FOUND', error.get('errorCode'), path);
+      Assert.areEqual(
+        'Versionless URLs are switched off. Use /services/apexrest/sapi/v1/' +
+          path +
+          '.',
+        error.get('message'),
+        path
+      );
+    }
+    viaRouter('nothing');
+    Assert.isTrue(
+      ((String) bodyMap().get('message')).startsWith('No route matches'),
+      'An unknown route is the plain 404'
+    );
+  }
+
+  @IsTest
   static void shouldAnswerHealth() {
     Test.startTest();
     viaRouter('health');

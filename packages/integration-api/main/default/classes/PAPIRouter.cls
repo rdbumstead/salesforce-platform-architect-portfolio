@@ -1,5 +1,6 @@
 /**
- * @description       : The versionless PAPI entry (/papi/*, ADR-040). Maps the first route
+ * @description       : The versionless PAPI entry (/papi/*, ADR-040). While the
+ *                      Api_Versionless_Urls switch is Off it answers 404 with the /v1/ URL. Maps the first route
  *                      segment to the existing handler for the verb and calls its static
  *                      method, so /papi/projects and the old /papi/v1/projects reach the same
  *                      code. The most specific urlMapping wins, so every existing /papi/v1/
@@ -42,6 +43,8 @@ global with sharing class PAPIRouter {
     String route = routeOf(RestContext.request?.requestURI);
     if (route == null || isHidden(route)) {
       ApiRouting.notFound();
+    } else if (!ApiRoutes.isVersionless()) {
+      ApiRouting.switchedOff();
     } else if (route == ROUTE_HEALTH) {
       PAPIHealth.getHealth();
     } else if (route == ROUTE_PROFILE) {
@@ -65,6 +68,8 @@ global with sharing class PAPIRouter {
     String route = routeOf(RestContext.request?.requestURI);
     if (route == null || isHidden(route)) {
       ApiRouting.notFound();
+    } else if (!ApiRoutes.isVersionless()) {
+      ApiRouting.switchedOff();
     } else if (route == ROUTE_AUTH_TOKEN) {
       PAPIAuthToken.requestToken();
     } else if (route == ROUTE_AI_GENERATE) {

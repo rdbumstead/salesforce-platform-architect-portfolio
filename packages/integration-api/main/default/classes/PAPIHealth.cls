@@ -21,8 +21,6 @@ global with sharing class PAPIHealth {
   public static final String STATE_MISSING = 'MISSING';
   public static final String STATE_UNKNOWN = 'UNKNOWN';
 
-  @TestVisible
-  private static final String CREDENTIAL_ENDPOINT = 'callout:Portfolio_API/services/apexrest/sapi/health';
   // Code default. The Health_Credential_Timeout_Ms setting gives the value in force.
   @TestVisible
   private static final Integer CREDENTIAL_TIMEOUT_MS = 10000;
@@ -94,7 +92,7 @@ global with sharing class PAPIHealth {
 
   private static String checkCredential(Map<String, Object> details) {
     HttpRequest req = new HttpRequest();
-    req.setEndpoint(CREDENTIAL_ENDPOINT);
+    req.setEndpoint('callout:Portfolio_API' + ApiRoutes.sapi('health'));
     req.setMethod('GET');
     req.setTimeout(credentialTimeoutMs());
     req.setHeader('X-Request-Id', UUID.randomUUID().toString());
