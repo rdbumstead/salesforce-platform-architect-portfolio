@@ -8,7 +8,10 @@ const path = require("path");
 const yaml = require("js-yaml");
 const { STEPS, selectSteps } = require("./ci-local.js");
 
-const WORKFLOW = path.join(__dirname, "..", ".github", "workflows", "pr.yml");
+// CI_LOCAL_WORKFLOW points the test at another copy of the workflow, to show it fails on a new command.
+const WORKFLOW =
+  process.env.CI_LOCAL_WORKFLOW ||
+  path.join(__dirname, "..", ".github", "workflows", "pr.yml");
 
 /** A command line without its leading environment settings, or "" when there is nothing to run. */
 function normalize(line) {
