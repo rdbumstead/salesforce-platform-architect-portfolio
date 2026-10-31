@@ -1,0 +1,16 @@
+#!/bin/sh
+# ----------------------
+# PRE-PUSH HOOK
+# ----------------------
+# Runs the checks the quality-check job in pr.yml runs, for the files this push changes
+# against origin/main. See scripts/ci-local.js. Run "npm run ci:local -- --all" for every step.
+
+echo "[INFO] Running CI checks for the changed files (scripts/ci-local.js)..."
+if ! node scripts/ci-local.js --changed; then
+  echo "[ERROR] CI checks failed. Fix them before pushing."
+  echo "        Emergency only: the --no-verify flag on the push skips this hook. The owner decides."
+  exit 1
+fi
+
+echo "[SUCCESS] CI checks passed."
+exit 0
