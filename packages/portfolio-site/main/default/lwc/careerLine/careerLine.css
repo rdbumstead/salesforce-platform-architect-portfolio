@@ -235,13 +235,12 @@
   margin-top: var(--pf-space-1);
 }
 
-/* Each bullet holds to one line. */
+/* A bullet wraps, and the marker hangs so wrapped lines sit under the text, not the dot. */
 .highlight {
   position: relative;
   padding-left: 12px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
   color: var(--pf-body);
 }
 
@@ -254,10 +253,9 @@
 .earlier-line {
   padding: var(--pf-space-1) 0;
   border-top: 1px solid var(--pf-border);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .panel-link,
