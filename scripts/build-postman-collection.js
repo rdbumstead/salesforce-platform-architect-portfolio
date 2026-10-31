@@ -10,11 +10,10 @@
  *   node scripts/build-postman-collection.js           writes the collection
  *   node scripts/build-postman-collection.js --check   writes nothing, exits 1 when it differs
  *
- * The conversion is openapi-to-postmanv2, which is not a project dependency. Install it outside
- * package.json and point the script at it, the way the smoke workflow installs Playwright:
- *
- *   npm install --prefix "$TMP/o2p" --no-save --no-audit --no-fund openapi-to-postmanv2@6.4.0
- *   OPENAPI_TO_POSTMAN_DIR="$TMP/o2p/node_modules/openapi-to-postmanv2" node scripts/build-postman-collection.js
+ * The conversion is openapi-to-postmanv2, an exact dev dependency in package.json, which is the
+ * one place its version is written. npm install or npm ci puts it in node_modules. The script
+ * stops when the installed version is not the pinned one, because another version can give
+ * other bytes for the same spec.
  *
  * The converter's output changes on every run (random ids and faked UUID examples), so a post
  * step makes it the same bytes for the same spec: every id is a hash of its place in the
@@ -28,8 +27,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { createRequire } = require("module");
-const yaml = loadYaml();
+const yaml = require("js-yaml");
 
 const ROOT = path.resolve(__dirname, "..");
 const RESOURCE_DIR = path.join(
@@ -43,8 +41,10 @@ const SAPI_SPEC_FILE = path.join(SPEC_DIR, "salesforce-sapi-v2.yaml");
 const API_VERSION = "v2";
 const OUTPUT_FILE = path.join(RESOURCE_DIR, "PAPI_Postman_Collection.json");
 
-/** The converter version the output was proven deterministic on. */
-const CONVERTER_VERSION = "6.4.0";
+const CONVERTER_PACKAGE = "openapi-to-postmanv2";
+/** The converter version the output was proven deterministic on, as package.json pins it. */
+const CONVERTER_VERSION = require(path.join(ROOT, "package.json"))
+  .devDependencies[CONVERTER_PACKAGE];
 
 const CONVERTER_OPTIONS = {
   folderStrategy: "Tags",
@@ -604,26 +604,27 @@ function loadConverter() {
       return FIXED_NOW;
     }
   };
-  const dir = process.env.OPENAPI_TO_POSTMAN_DIR;
-  return require(dir ? path.resolve(dir) : "openapi-to-postmanv2");
+  const problem = converterVersionProblem(
+    require(`${CONVERTER_PACKAGE}/package.json`).version,
+    CONVERTER_VERSION
+  );
+  if (problem) {
+    throw new Error(problem);
+  }
+  return require(CONVERTER_PACKAGE);
 }
 
 /**
- * js-yaml from the repository's packages, or else from beside the converter, which depends on
- * it. The Postman Sync workflow installs only the converter, outside the repository.
+ * Why the installed converter cannot be used, or null when it is the pinned version.
+ * @param {string} installed the version in node_modules
+ * @param {string} pinned the version package.json pins
+ * @returns {string|null} the reason
  */
-function loadYaml() {
-  try {
-    return require("js-yaml");
-  } catch (error) {
-    const dir = process.env.OPENAPI_TO_POSTMAN_DIR;
-    if (!dir) {
-      throw error;
-    }
-    return createRequire(path.join(path.resolve(dir), "package.json"))(
-      "js-yaml"
-    );
+function converterVersionProblem(installed, pinned) {
+  if (installed === pinned) {
+    return null;
   }
+  return `${CONVERTER_PACKAGE} ${installed} is installed but package.json pins ${pinned}. Run npm install.`;
 }
 
 /** A YAML spec file as the JSON text the converter reads. */
@@ -654,7 +655,7 @@ async function main(argv) {
       : "";
     if (current !== text) {
       console.error(
-        `${relative} is not current. Run node scripts/build-postman-collection.js with openapi-to-postmanv2@${CONVERTER_VERSION}.`
+        `${relative} is not current. Run node scripts/build-postman-collection.js.`
       );
       return 1;
     }
@@ -684,6 +685,7 @@ module.exports = {
   COLLECTION_TEST_SCRIPT,
   CONVERTER_OPTIONS,
   CONVERTER_VERSION,
+  converterVersionProblem,
   FIXED_UUID,
   MISSING_EMAIL_MESSAGE,
   OUTPUT_FILE,

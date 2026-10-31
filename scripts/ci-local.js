@@ -259,10 +259,9 @@ function runCommand(command) {
   });
 
   if (command.special === "postman-check") {
-    const dir = process.env.OPENAPI_TO_POSTMAN_DIR;
-    const installed = dir
-      ? fs.existsSync(path.resolve(dir))
-      : fs.existsSync(path.join(ROOT, "node_modules", "openapi-to-postmanv2"));
+    const installed = fs.existsSync(
+      path.join(ROOT, "node_modules", "openapi-to-postmanv2")
+    );
     if (!installed) {
       return {
         status: "SKIPPED",
