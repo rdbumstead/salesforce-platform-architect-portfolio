@@ -19,7 +19,14 @@ BACKEND_PATTERN='\.\(cls\|trigger\|object\|field\|permissionset\|profile\|flow\|
 # Get list of STAGED files
 STAGED_FILES=$(git diff --cached --name-only)
 
-if echo "$STAGED_FILES" | grep -q "$BACKEND_PATTERN"; then
+# A worktree validates only against an org pinned in that worktree (sf config set target-org
+# there, which is local). Without one it skips: the integration deploy and CI validate it.
+IN_WORKTREE=false
+if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then IN_WORKTREE=true; fi
+
+if echo "$STAGED_FILES" | grep -q "$BACKEND_PATTERN" && [ "$IN_WORKTREE" = true ] && ! sf config get target-org --json | grep -Eq '"location": ?"Local"'; then
+  echo "[SKIP] [2/2] Backend changes in a worktree with no org pinned here: the integration deploy and CI validate them."
+elif echo "$STAGED_FILES" | grep -q "$BACKEND_PATTERN"; then
   echo "[INFO] [2/2] Backend Changes Detected: Validating against Salesforce..."
   echo "       (This ensures your Apex/Metadata compiles before commit)"
   

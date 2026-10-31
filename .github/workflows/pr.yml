@@ -185,6 +185,23 @@ jobs:
           sf project deploy start --target-org portfolio --manifest prod-delta/package/package.xml "${DESTRUCTIVE[@]}" --dry-run --test-level RunLocalTests --wait 60 --json > prod-validate.json
           set -e
 
+          # The CLI can lose track of a deploy that is still running, for example when Salesforce
+          # answers a status poll with QUERY_TIMEOUT. The result then has no final status but the
+          # deploy goes on, so read it again by its id before calling it a failure.
+          DEPLOY_ID=$(jq -r '(.result // .data // {}).id // empty' prod-validate.json)
+          STATUS=$(jq -r '(.result // .data // {}).status // "Unknown"' prod-validate.json)
+          for ATTEMPT in 1 2 3; do
+            case "$STATUS" in Succeeded|Failed|Canceled|SucceededPartial) break ;; esac
+            [ -z "$DEPLOY_ID" ] && break
+            jq -r '.message // empty' prod-validate.json
+            echo "Deploy $DEPLOY_ID has no final status ($STATUS). Reading it again by id, attempt $ATTEMPT of 3."
+            sleep 30
+            set +e
+            sf project deploy report --job-id "$DEPLOY_ID" --target-org portfolio --wait 60 --json > prod-validate.json
+            set -e
+            STATUS=$(jq -r '(.result // .data // {}).status // "Unknown"' prod-validate.json)
+          done
+
           STATUS=$(jq -r '(.result // .data // {}).status // "Unknown"' prod-validate.json)
           CHECK_ONLY=$(jq -r '(.result // .data // {}).checkOnly // "unknown"' prod-validate.json)
           echo "Production check only validation: status $STATUS, checkOnly $CHECK_ONLY, id $(jq -r '(.result // .data // {}).id // "none"' prod-validate.json)"
@@ -311,8 +328,15 @@ jobs:
         if: ${{ always() && env.GLASSOPS_SHADOW_START != '' }}
         run: |
           END=${GLASSOPS_SHADOW_END:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
-          sf data query --use-tooling-api --target-org portfolio --json \
-            --query "SELECT Id, Status, CreatedDate FROM DeployRequest WHERE CheckOnly = false AND CreatedDate >= $GLASSOPS_SHADOW_START AND CreatedDate <= $END" > shadow-deploys.json || true
+          # A busy org can time the query out, so try it three times before giving up.
+          for ATTEMPT in 1 2 3; do
+            sf data query --use-tooling-api --target-org portfolio --json \
+              --query "SELECT Id, Status, CreatedDate FROM DeployRequest WHERE CheckOnly = false AND CreatedDate >= $GLASSOPS_SHADOW_START AND CreatedDate <= $END" > shadow-deploys.json || true
+            COUNT=$(jq -r '.result.totalSize // empty' shadow-deploys.json)
+            [ -n "$COUNT" ] && break
+            echo "DeployRequest could not be read, attempt $ATTEMPT of 3."
+            sleep 30
+          done
           COUNT=$(jq -r '.result.totalSize // empty' shadow-deploys.json)
           if [ -z "$COUNT" ]; then
              jq -r '.message // empty' shadow-deploys.json
