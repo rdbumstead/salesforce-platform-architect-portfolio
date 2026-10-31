@@ -171,13 +171,13 @@ describe("c/analyticsService", () => {
   it("sends the event with its params through gtag", () => {
     window.gtag = jest.fn();
     const sent = trackEvent(EVENTS.API_TEST_EXECUTED, {
-      path: "/sapi/v1/skills",
+      path: "/sapi/skills",
       status: 200
     });
     expect(sent).toBe(true);
     expect(window.gtag).toHaveBeenCalledTimes(1);
     expect(window.gtag).toHaveBeenCalledWith("event", "api_test_executed", {
-      path: "/sapi/v1/skills",
+      path: "/sapi/skills",
       status: 200
     });
   });

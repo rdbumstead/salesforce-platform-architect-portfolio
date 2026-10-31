@@ -173,7 +173,7 @@ describe("c-api-tester filter options", () => {
     });
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/project-assets");
+    await choosePath(element, "/sapi/project-assets");
 
     const select = $(element, 'select[data-name="projectKey"]');
     expect(select).not.toBeNull();
@@ -196,24 +196,24 @@ describe("c-api-tester filter options", () => {
     $(element, "button.execute-button").click();
     await flush();
     expect(invoke).toHaveBeenCalledWith({
-      path: "/sapi/v1/project-assets",
+      path: "/sapi/project-assets",
       params: { projectKey: PROJECT_ID },
       apiVersion: "v2"
     });
   });
 
   describe.each([
-    ["projectId", "projectKey", "/sapi/v1/project-assets", "prj_a1b2c3d4e5"],
+    ["projectId", "projectKey", "/sapi/project-assets", "prj_a1b2c3d4e5"],
     [
       "experienceId",
       "experienceKey",
-      "/sapi/v1/experience-highlights",
+      "/sapi/experience-highlights",
       "exp_a1b2c3d4e5"
     ],
     [
       "certificationId",
       "certificationKey",
-      "/sapi/v1/certification-skills",
+      "/sapi/certification-skills",
       "crt_a1b2c3d4e5"
     ]
   ])("the %s filter", (idName, keyName, path, key) => {
@@ -283,7 +283,7 @@ describe("c-api-tester filter options", () => {
   it("puts the hint on its own line under the name", async () => {
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/project-assets");
+    await choosePath(element, "/sapi/project-assets");
 
     const label = $(element, 'select[data-name="projectKey"]').closest("label");
     expect(label.querySelector(".param-label").textContent).toBe("projectKey");
@@ -296,7 +296,7 @@ describe("c-api-tester filter options", () => {
   it("shows a name filter as a picklist sending the name, with the spec's hint", async () => {
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/education");
+    await choosePath(element, "/sapi/education");
 
     pick(element, "issuerName", "State College");
     await flush();
@@ -316,7 +316,7 @@ describe("c-api-tester filter options", () => {
   it("keeps the text box when the org has no options for a parameter", async () => {
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/contacts");
+    await choosePath(element, "/sapi/contacts");
 
     expect($(element, 'input[data-name="contactName"]').type).toBe("text");
     expect($(element, 'select[data-name="contactName"]')).toBeNull();
@@ -326,7 +326,7 @@ describe("c-api-tester filter options", () => {
     const element = create(null);
     getOptions.error({ body: { message: "nope" } });
     await flush();
-    await choosePath(element, "/sapi/v1/project-assets");
+    await choosePath(element, "/sapi/project-assets");
 
     expect($(element, 'input[data-name="projectKey"]').type).toBe("text");
     expect($(element, "p.catalog-error")).toBeNull();
@@ -335,7 +335,7 @@ describe("c-api-tester filter options", () => {
   it("leaves a spec enum as it is even when the org has options for its name", async () => {
     const element = create();
     await flush();
-    await choosePath(element, "/papi/v1/resume/generate");
+    await choosePath(element, "/papi/resume/generate");
 
     expect($(element, 'fieldset[data-param="persona"]')).not.toBeNull();
     expect($(element, 'select[data-name="persona"]')).toBeNull();
@@ -437,7 +437,7 @@ describe("c-api-tester phone sections", () => {
     mockMatchMedia(true);
     const element = create();
     await flush();
-    await choosePath(element, "/sapi/v1/education");
+    await choosePath(element, "/sapi/education");
     disclosure(element, "filters").click();
     await flush();
 

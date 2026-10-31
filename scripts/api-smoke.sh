@@ -2,12 +2,12 @@
 #
 # Evaluator smoke test for the Portfolio APIs (ADR-027, ADR-028).
 #
-# 1. Requests a short-lived token from POST /papi/v1/auth/token on the Experience Cloud
+# 1. Requests a short-lived token from POST /papi/auth/token on the Experience Cloud
 #    site domain, where Apex REST is served to the guest user.
 # 2. Calls every GET path in salesforce-sapi-v2.yaml and portfolio-papi-v2.yaml on the
 #    instance_url returned with the token, with the token as a Bearer credential.
 # 3. Prints the status and the key headers for each path.
-# 4. Calls /papi/v1/resume/generate once more with Accept: text/plain and prints the
+# 4. Calls /papi/resume/generate once more with Accept: text/plain and prints the
 #    Content-Type and the first line of the plain text answer.
 #
 # Usage:
@@ -18,7 +18,8 @@
 #   SITE_API_BASE  Apex REST base on the site domain (default below).
 #   API_VERSION    The X-API-Version to send, v2 (default, public keys only) or v1 (deprecated,
 #                  its responses carry Deprecation, Sunset and Link headers, and after the
-#                  sunset date it answers 410). The URL paths keep their /v1 segment.
+#                  sunset date it answers 410). The URLs carry no version segment, so
+#                  the header is the only version switch.
 #
 # This file holds no token, key or secret. The token lives only in this process's memory.
 # Exit status: 1 when the token request fails, 2 when any GET call is not 200, 0 otherwise.
@@ -46,30 +47,30 @@ command -v curl >/dev/null 2>&1 || {
 }
 
 SAPI_PATHS=(
-  /sapi/v1/health
-  /sapi/v1/contacts
-  /sapi/v1/accounts
-  /sapi/v1/experience
-  /sapi/v1/experience-highlights
-  /sapi/v1/projects
-  /sapi/v1/project-assets
-  /sapi/v1/testimonials
-  /sapi/v1/portfolio-config
-  /sapi/v1/skills
-  /sapi/v1/certifications
-  /sapi/v1/education
-  /sapi/v1/project-skills
-  /sapi/v1/experience-skills
-  /sapi/v1/certification-skills
+  /sapi/health
+  /sapi/contacts
+  /sapi/accounts
+  /sapi/experience
+  /sapi/experience-highlights
+  /sapi/projects
+  /sapi/project-assets
+  /sapi/testimonials
+  /sapi/portfolio-config
+  /sapi/skills
+  /sapi/certifications
+  /sapi/education
+  /sapi/project-skills
+  /sapi/experience-skills
+  /sapi/certification-skills
 )
 
 PAPI_PATHS=(
-  /papi/v1/health
-  /papi/v1/profile/full
-  /papi/v1/profile/summary
-  /papi/v1/resume/generate
-  /papi/v1/projects/featured
-  /papi/v1/testimonials/feed
+  /papi/health
+  /papi/profile/full
+  /papi/profile/summary
+  /papi/resume/generate
+  /papi/projects/featured
+  /papi/testimonials/feed
 )
 
 KEY_HEADERS="x-request-id|x-api-version|x-ratelimit-limit|x-ratelimit-remaining|retry-after|cache-control|x-total-count|x-has-more|deprecation|sunset|link"
@@ -103,7 +104,7 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 # --- 1. Token -------------------------------------------------------------------------------
 
-TOKEN_URL="$SITE_API_BASE/papi/v1/auth/token"
+TOKEN_URL="$SITE_API_BASE/papi/auth/token"
 TOKEN_REQUEST_ID="$(new_uuid)"
 BODY="{\"email\":\"$(json_escape "$EMAIL")\",\"purpose\":\"$(json_escape "$PURPOSE")\"}"
 
@@ -176,7 +177,7 @@ done
 
 # --- 3. The resume as plain text ------------------------------------------------------------
 
-PLAIN_PATH="/papi/v1/resume/generate"
+PLAIN_PATH="/papi/resume/generate"
 PLAIN_REQUEST_ID="$(new_uuid)"
 PLAIN_STATUS="$(curl -sS -o "$WORK_DIR/resume.txt" -D "$WORK_DIR/resume.headers" -w '%{http_code}' \
   "$API_BASE$PLAIN_PATH" \

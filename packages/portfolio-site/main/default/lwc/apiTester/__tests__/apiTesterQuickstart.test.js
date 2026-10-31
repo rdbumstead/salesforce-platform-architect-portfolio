@@ -14,6 +14,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ApiTester, {
+  API_PATH,
   buildCurlExamples,
   isPostmanRunUrl,
   reduceError,
@@ -203,9 +204,9 @@ describe("c-api-tester outside the page", () => {
     expect(blocks[0].textContent).toContain("you@example.com");
     expect(blocks[1].textContent).toContain(PLACEHOLDER_TOKEN);
     expect(blocks[1].textContent).toContain(
-      `${PLACEHOLDER_INSTANCE_URL}/services/apexrest/papi/v1/health`
+      `${PLACEHOLDER_INSTANCE_URL}/services/apexrest/papi/health`
     );
-    expect(blocks[2].textContent).toContain("/papi/v1/profile/summary");
+    expect(blocks[2].textContent).toContain("/papi/profile/summary");
     blocks.forEach((block) => {
       expect(block.getAttribute("tabindex")).toBe("0");
       expect(block.getAttribute("aria-label")).toBeTruthy();
@@ -235,7 +236,7 @@ describe("c-api-tester outside the page", () => {
       (block) => block.textContent
     );
     expect(health).toContain(`Bearer ${FAKE_TOKEN}`);
-    expect(health).toContain(`${FAKE_INSTANCE}/services/apexrest/papi/v1`);
+    expect(health).toContain(`${FAKE_INSTANCE}/services/apexrest/papi`);
     expect(data).toContain(`Bearer ${FAKE_TOKEN}`);
     expect(health).toContain('-H "X-API-Version: v2"');
     expect(data).toContain('-H "X-API-Version: v2"');
@@ -402,6 +403,28 @@ describe("buildCurlExamples", () => {
     expect(token.text).toContain(
       `https://example.my.site.com${TOKEN_ENDPOINT_PATH}`
     );
+  });
+});
+
+describe("versionless URLs (ADR-040)", () => {
+  it("points the token request and the API path at the versionless URLs", () => {
+    expect(TOKEN_ENDPOINT_PATH).toBe(
+      "/portfoliovforcesite/services/apexrest/papi/auth/token"
+    );
+    expect(API_PATH).toBe("/services/apexrest/papi");
+  });
+
+  it("writes no curl example with a /v1/ URL, for either version", () => {
+    ["v1", "v2"].forEach((version) => {
+      buildCurlExamples(
+        "https://example.my.site.com",
+        undefined,
+        version
+      ).forEach((example) => {
+        expect(example.text).not.toContain("/v1/");
+        expect(example.text).toContain("/services/apexrest/papi/");
+      });
+    });
   });
 });
 

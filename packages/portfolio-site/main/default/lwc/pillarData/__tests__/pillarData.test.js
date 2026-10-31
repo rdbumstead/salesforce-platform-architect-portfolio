@@ -75,7 +75,7 @@ describe("c/pillarData", () => {
   it("carries a code line only for pillar C", () => {
     const withCode = PILLARS.filter((pillar) => pillar.code);
     expect(withCode.map((pillar) => pillar.letter)).toEqual(["C"]);
-    expect(withCode[0].code).toBe("GET /sapi/v1/health  200");
+    expect(withCode[0].code).toBe("GET /sapi/health  200");
   });
 
   it("uses unique keys and letters", () => {

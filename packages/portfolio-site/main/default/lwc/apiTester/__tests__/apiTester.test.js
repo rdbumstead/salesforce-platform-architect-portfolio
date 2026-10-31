@@ -63,7 +63,7 @@ const INVOKE_RESULT = {
   body: '{"data":[{"name":"Apex"}]}',
   namedCredential: "Portfolio_API",
   requestId: "11111111-2222-4333-8444-555555555555",
-  path: "/sapi/v1/skills"
+  path: "/sapi/skills"
 };
 
 /** Picks a path in the native endpoint select, as a visitor does. */
@@ -122,7 +122,7 @@ describe("c-api-tester", () => {
     const select = query(element, "select.endpoint-picker");
     const options = Array.from(select.querySelectorAll("option"));
     expect(options.map((option) => option.value)).toEqual(CATALOG_PATHS);
-    expect(options[0].textContent.trim()).toBe("GET /sapi/v1/health");
+    expect(options[0].textContent.trim()).toBe("GET /sapi/health");
     // The native select is labelled and shows the first path as chosen.
     expect(select.id).toBeTruthy();
     expect(options[0].selected).toBe(true);
@@ -133,9 +133,9 @@ describe("c-api-tester", () => {
         (path) => path.startsWith("/sapi/") && path.endsWith("/resume")
       )
     ).toEqual([]);
-    expect(CATALOG_PATHS).toContain("/papi/v1/resume/generate");
-    expect(CATALOG_PATHS).not.toContain("/papi/v1/auth/token");
-    expect(CATALOG_PATHS).not.toContain("/papi/v1/ai/generate");
+    expect(CATALOG_PATHS).toContain("/papi/resume/generate");
+    expect(CATALOG_PATHS).not.toContain("/papi/auth/token");
+    expect(CATALOG_PATHS).not.toContain("/papi/ai/generate");
   });
 
   it("shows an alert and disables Execute when the catalog cannot load", async () => {
@@ -194,7 +194,7 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
-    chooseEndpoint(query(element, "select.endpoint-picker"), "/sapi/v1/skills");
+    chooseEndpoint(query(element, "select.endpoint-picker"), "/sapi/skills");
     setInput(element, "input.query-input", "limit=5&offset=0");
     await flushPromises();
 
@@ -202,7 +202,7 @@ describe("c-api-tester", () => {
     await flushPromises();
 
     expect(invoke).toHaveBeenCalledWith({
-      path: "/sapi/v1/skills",
+      path: "/sapi/skills",
       params: { limit: "5", offset: "0" },
       apiVersion: "v2"
     });
@@ -236,7 +236,7 @@ describe("c-api-tester", () => {
     await flushPromises();
 
     expect(invoke).toHaveBeenCalledWith({
-      path: "/sapi/v1/health",
+      path: "/sapi/health",
       params: {},
       apiVersion: "v2"
     });
@@ -288,13 +288,13 @@ describe("c-api-tester", () => {
     invoke.mockRejectedValueOnce({ body: { message: "unreachable" } });
     const element = createComponent();
     await flushPromises();
-    chooseEndpoint(query(element, "select.endpoint-picker"), "/sapi/v1/skills");
+    chooseEndpoint(query(element, "select.endpoint-picker"), "/sapi/skills");
     await flushPromises();
 
     query(element, "button.execute-button").click();
     await flushPromises();
     expect(trackEvent).toHaveBeenLastCalledWith("api_test_executed", {
-      path: "/sapi/v1/skills",
+      path: "/sapi/skills",
       status: 429,
       param_count: 0
     });
@@ -302,7 +302,7 @@ describe("c-api-tester", () => {
     query(element, "button.execute-button").click();
     await flushPromises();
     expect(trackEvent).toHaveBeenLastCalledWith("api_test_executed", {
-      path: "/sapi/v1/skills",
+      path: "/sapi/skills",
       status: "error",
       param_count: 0
     });
@@ -426,7 +426,7 @@ describe("c-api-tester", () => {
       "Test User\nArchitect\n\nEXPERIENCE\n\nEmployer Inc | Developer\n- Did great things";
     const RESUME_RESULT = {
       ...INVOKE_RESULT,
-      path: "/papi/v1/resume/generate",
+      path: "/papi/resume/generate",
       body: JSON.stringify({
         generatedText: RESUME_TEXT,
         persona: "Architect",

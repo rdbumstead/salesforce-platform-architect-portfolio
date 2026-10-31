@@ -74,8 +74,8 @@ export const ANALYTICS_SOURCE = "api_lab";
 
 /** The token endpoint on the site's own host, the only path served to a caller with no token. */
 export const TOKEN_ENDPOINT_PATH =
-  "/portfoliovforcesite/services/apexrest/papi/v1/auth/token";
-export const API_PATH = "/services/apexrest/papi/v1";
+  "/portfoliovforcesite/services/apexrest/papi/auth/token";
+export const API_PATH = "/services/apexrest/papi";
 
 /** The API versions the Lab can send, in the picker's order. v2 is the default. */
 export const API_VERSIONS = [
@@ -272,7 +272,7 @@ export const SECTIONS = [
 ];
 
 export const ID_HINT =
-  "Paste a key from an earlier response, for example from /sapi/v1/projects.";
+  "Paste a key from an earlier response, for example from /sapi/projects.";
 
 export const ID_OPTION_HINT = "Pick a name. Its key is what the call sends.";
 

@@ -69,7 +69,7 @@ const RESULT = {
   body: '{"data":[]}',
   namedCredential: "Portfolio_API",
   requestId: "11111111-2222-4333-8444-555555555555",
-  path: "/sapi/v1/health"
+  path: "/sapi/health"
 };
 
 const flush = () => new Promise((resolve) => process.nextTick(resolve));
