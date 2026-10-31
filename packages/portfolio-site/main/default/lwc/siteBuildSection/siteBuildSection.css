@@ -109,13 +109,6 @@
     margin-bottom: 8px;
   }
 
-  .card-body > .letter {
-    font-family: var(--pf-font-mono);
-    font-weight: 500;
-    color: var(--pf-accent);
-    margin-inline-end: 6px;
-  }
-
   .card-title {
     grid-row: 2;
     margin-bottom: 8px;
@@ -215,6 +208,13 @@
   line-height: 1.3;
   font-weight: 600;
   color: var(--pf-text);
+}
+
+.card-title > .letter {
+  font-family: var(--pf-font-mono);
+  font-weight: 500;
+  color: var(--pf-accent);
+  margin-inline-end: 6px;
 }
 
 .card-text {
