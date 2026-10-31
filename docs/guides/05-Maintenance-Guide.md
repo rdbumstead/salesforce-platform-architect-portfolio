@@ -259,7 +259,9 @@ The API is called at versionless URLs, and the old `/v1/` URLs are aliases that 
 3. **What changes while Off.** The routers answer 404, our callers use the `/v1/` URLs, the old URLs send no `canonical` Link, and the path dates (section 3.11 above) do not apply, so no old URL answers 410. The version rules of section 3.10 are unchanged.
 4. **The smoke script fails while Off.** `scripts/api-smoke.sh` calls versionless URLs, so it fails on its routes until the switch is `On` again. That is expected.
 5. **Turn it back on.** Set **Text Value** to `On`, save, and repeat the check: `/services/apexrest/papi/health` answers 200.
-6. **When Off is not enough.** The switch does not help with a fault in the shared path handling in `ApiRequestContext`, because the old classes run through it too. Then I revert the code change.
+6. **What else Off does.** `ApiRequestContext` also returns to the request handling main had before the versionless URLs (the `/v1/` path lists, the old AI tier check, the old endpoint segment and the old log line). The token and both health checks stay out of the 410 as before.
+7. **When Off is not enough.** The switch does not cover the new classes and permission set entries merely existing. For a fault there I revert the code change.
+8. **Cleanup.** The switch and the old logic are temporary. After the v1 sunset on 2026-11-29, once the versionless URLs have run cleanly, I remove the switch, the old logic in `ApiRequestContext` (marked REMOVE WITH THE SWITCH) and their tests in one change.
 
 ## 4. Disaster Recovery
 
