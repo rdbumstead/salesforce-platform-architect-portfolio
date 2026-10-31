@@ -10,7 +10,7 @@
  *                      Hourly_Budget__c per clock hour (AgentforceServiceBudget). Past it the
  *                      attempt is budget_exhausted and the chain moves on.
  *                      Every attempt is recorded with its outcome and elapsed time.
- *                      PAPIAiGenerate (POST /papi/v1/ai/generate) and generateCoverLetter both
+ *                      PAPIAiGenerate (POST /papi/ai/generate) and generateCoverLetter both
  *                      call it. The site page reaches it in process through
  *                      ApiLabController.generateCoverLetter. providerStatus() is the read-only provider view for the
  *                      footer. The agentforce and gemini providers each have a circuit
@@ -128,7 +128,7 @@ public with sharing class ContentGenerationController {
     public Boolean localAllowed;
     /**
      * True when only Agentforce may serve: no Gemini, no local template, and a failure throws.
-     * POST /papi/v1/ai/generate sets it for provider Agentforce.
+     * POST /papi/ai/generate sets it for provider Agentforce.
      */
     public Boolean agentforceOnly = false;
     /**

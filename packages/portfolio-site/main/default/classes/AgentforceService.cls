@@ -8,7 +8,7 @@
  *                      It runs as the context user, who needs Prompt Template User.
  *                      isAvailable() is the switch (Enabled__c) and is false for a site guest,
  *                      who reaches Agentforce only through ApiLabController's call to
- *                      POST /papi/v1/ai/generate, which runs as the integration user.
+ *                      POST /papi/ai/generate, which runs as the integration user.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com

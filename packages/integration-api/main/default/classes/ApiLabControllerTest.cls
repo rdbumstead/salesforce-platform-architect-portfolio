@@ -63,14 +63,14 @@ private class ApiLabControllerTest {
 
     Test.startTest();
     ApiLabController.InvokeResult result = ApiLabController.invoke(
-      '/sapi/v1/skills',
+      '/sapi/skills',
       new Map<String, String>{ 'limit' => '5', 'category' => 'Apex & LWC' }
     );
     Test.stopTest();
 
     HttpRequest sent = mock.requests[0];
     Assert.areEqual(
-      'callout:Portfolio_API/services/apexrest/sapi/v1/skills?category=Apex+%26+LWC&limit=5',
+      'callout:Portfolio_API/services/apexrest/sapi/skills?category=Apex+%26+LWC&limit=5',
       sent.getEndpoint(),
       'Endpoint through Portfolio_API with encoded params'
     );
@@ -92,10 +92,10 @@ private class ApiLabControllerTest {
     PortfolioApiCalloutMock mock = new PortfolioApiCalloutMock()
       .withRestResponse(200, '[]', apiHeaders());
     Test.setMock(HttpCalloutMock.class, mock);
-    ApiLabController.invokeVersioned('/sapi/v1/skills', null, chosen);
+    ApiLabController.invokeVersioned('/sapi/skills', null, chosen);
     Assert.isTrue(
-      mock.requests[0].getEndpoint().endsWith('/sapi/v1/skills'),
-      'The path keeps its v1 spelling'
+      mock.requests[0].getEndpoint().endsWith('/sapi/skills'),
+      'The path is versionless for both versions'
     );
     return mock.requests[0].getHeader('X-API-Version');
   }
@@ -123,7 +123,7 @@ private class ApiLabControllerTest {
   @IsTest
   static void shouldRejectAnUnknownVersionWhenInvokedVersioned() {
     try {
-      ApiLabController.invokeVersioned('/sapi/v1/skills', null, 'v3');
+      ApiLabController.invokeVersioned('/sapi/skills', null, 'v3');
       Assert.fail('v3 must be refused');
     } catch (AuraHandledException e) {
       Assert.areEqual(
@@ -142,7 +142,7 @@ private class ApiLabControllerTest {
     );
 
     ApiLabController.InvokeResult result = ApiLabController.invokeVersioned(
-      '/sapi/v1/skills',
+      '/sapi/skills',
       null,
       'v1'
     );
@@ -164,7 +164,7 @@ private class ApiLabControllerTest {
 
     Test.startTest();
     ApiLabController.InvokeResult result = ApiLabController.invoke(
-      '/papi/v1/projects/featured',
+      '/papi/projects/featured',
       null
     );
     Test.stopTest();
@@ -198,7 +198,7 @@ private class ApiLabControllerTest {
     Test.stopTest();
 
     Assert.areEqual(400, result.statusCode, 'Status passed through');
-    Assert.areEqual('/sapi/v1/projects', result.path, 'Path normalised');
+    Assert.areEqual('/sapi/projects', result.path, 'Path normalised');
     Assert.isTrue(result.headers.isEmpty(), 'No headers returned');
   }
 
@@ -234,12 +234,9 @@ private class ApiLabControllerTest {
       allowed.size(),
       'One allowed path per catalog entry'
     );
-    Assert.isTrue(allowed.contains('/sapi/v1/skills'), 'A SAPI GET path');
-    Assert.isTrue(
-      allowed.contains('/papi/v1/testimonials/feed'),
-      'A PAPI path'
-    );
-    Assert.isFalse(allowed.contains('/papi/v1/auth/token'), 'Excluded');
+    Assert.isTrue(allowed.contains('/sapi/skills'), 'A SAPI GET path');
+    Assert.isTrue(allowed.contains('/papi/testimonials/feed'), 'A PAPI path');
+    Assert.isFalse(allowed.contains('/papi/auth/token'), 'Excluded');
   }
 
   @IsTest
@@ -255,7 +252,7 @@ private class ApiLabControllerTest {
     }
     Test.stopTest();
 
-    Assert.isTrue(allowed.contains('/sapi/v1/health'), 'Guest reads it');
+    Assert.isTrue(allowed.contains('/sapi/health'), 'Guest reads it');
     Assert.isTrue(body.contains('"paths"'), 'Guest gets the catalog');
   }
 
@@ -268,7 +265,7 @@ private class ApiLabControllerTest {
     Test.stopTest();
 
     Assert.areEqual(
-      new Set<String>{ '/sapi/v1/new-path' },
+      new Set<String>{ '/sapi/new-path' },
       allowed,
       'Lower cased, non text entries skipped, no code change for a new path'
     );
@@ -282,7 +279,7 @@ private class ApiLabControllerTest {
 
     Test.startTest();
     try {
-      ApiLabController.invoke('/sapi/v1/skills', null);
+      ApiLabController.invoke('/sapi/skills', null);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
       Assert.isTrue(e.getMessage().contains('not available'), 'Fails closed');
@@ -314,7 +311,7 @@ private class ApiLabControllerTest {
   static void shouldRejectTokenPathWhenInvoked() {
     Test.startTest();
     try {
-      ApiLabController.invoke('/papi/v1/auth/token', null);
+      ApiLabController.invoke('/papi/auth/token', null);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
       Assert.isTrue(e.getMessage().contains('not available'), 'POST path');
@@ -339,7 +336,7 @@ private class ApiLabControllerTest {
     Test.startTest();
     try {
       ApiLabController.invoke(
-        '/sapi/v1/skills',
+        '/sapi/skills',
         new Map<String, String>{ 'a&b' => '1' }
       );
       Assert.fail('Expected AuraHandledException');
@@ -354,7 +351,7 @@ private class ApiLabControllerTest {
     Test.startTest();
     try {
       ApiLabController.invoke(
-        '/sapi/v1/skills',
+        '/sapi/skills',
         new Map<String, String>{ 'limit' => null }
       );
       Assert.fail('Expected AuraHandledException');
@@ -373,7 +370,7 @@ private class ApiLabControllerTest {
 
     Test.startTest();
     try {
-      ApiLabController.invoke('/sapi/v1/skills', params);
+      ApiLabController.invoke('/sapi/skills', params);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
       Assert.isTrue(e.getMessage().contains('Too many'), 'Count');
@@ -390,7 +387,7 @@ private class ApiLabControllerTest {
 
     Test.startTest();
     try {
-      ApiLabController.invoke('/papi/v1/health', null);
+      ApiLabController.invoke('/papi/health', null);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
       Assert.isTrue(e.getMessage().contains('could not be reached'), 'Msg');
@@ -420,7 +417,7 @@ private class ApiLabControllerTest {
 
     Test.startTest();
     System.runAs(guest) {
-      ApiLabController.invoke('/sapi/v1/skills', null);
+      ApiLabController.invoke('/sapi/skills', null);
     }
     Test.stopTest();
 
@@ -440,7 +437,7 @@ private class ApiLabControllerTest {
     );
 
     Test.startTest();
-    ApiLabController.invoke('/sapi/v1/skills', null);
+    ApiLabController.invoke('/sapi/skills', null);
     Test.stopTest();
 
     Assert.areEqual(1, requestsCounted(), 'The request was sent, so it counts');
@@ -460,7 +457,7 @@ private class ApiLabControllerTest {
       Assert.isTrue(e.getMessage().contains('not available'), 'Refused');
     }
     try {
-      ApiLabController.invoke('/papi/v1/health', null);
+      ApiLabController.invoke('/papi/health', null);
     } catch (AuraHandledException e) {
       Assert.isTrue(e.getMessage().contains('could not be reached'), 'Down');
     }
@@ -480,7 +477,7 @@ private class ApiLabControllerTest {
 
     Test.startTest();
     ApiLabController.InvokeResult result = ApiLabController.invoke(
-      '/sapi/v1/skills',
+      '/sapi/skills',
       null
     );
     Test.stopTest();

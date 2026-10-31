@@ -4,11 +4,11 @@
  *                      Credential and returns status, latency, tracing, paging and version headers and
  *                      the body. invokeVersioned() does the same for the API version the visitor
  *                      chose (v1 or v2, blank is v2) and invoke() stays as the v1 call. requestEvaluatorToken() vends a token through the same
- *                      TokenExchangeService path as POST /papi/v1/auth/token.
+ *                      TokenExchangeService path as POST /papi/auth/token.
  *                      generateCoverLetter() is the site's cover letter path, under the AI
  *                      tier limit on the papi-ai key prefix. While the Agentforce switch is on
  *                      and its breaker is closed, it first posts the letter to
- *                      POST /papi/v1/ai/generate with provider Agentforce through
+ *                      POST /papi/ai/generate with provider Agentforce through
  *                      Portfolio_API, so Agentforce runs as the integration user (a guest may
  *                      not run generative AI). A 200 is the letter. Anything else runs
  *                      ContentGenerationController.dispatch in process as the site guest from
@@ -62,7 +62,7 @@ public with sharing class ApiLabController {
   };
 
   /**
-   * Rate key of the site cover letter: the papi-ai prefix that /papi/v1/ai/ counts on, so
+   * Rate key of the site cover letter: the papi-ai prefix that /papi/ai/ counts on, so
    * the footer's AI requests today counts both. One shared bucket for every site visitor.
    */
   public static final String AI_RATE_KEY = 'papi-ai:site-cover-letter';
@@ -80,7 +80,7 @@ public with sharing class ApiLabController {
   public static final String COVER_LETTER_LOG_PATH = 'aura:ApiLabController.generateCoverLetter';
 
   /** The API path the Agentforce letter is posted to. */
-  public static final String AI_GENERATE_PATH = '/papi/v1/ai/generate';
+  public static final String AI_GENERATE_PATH = '/papi/ai/generate';
 
   /**
    * Apex allows 120 s of callouts in one transaction. The Agentforce call gets what Gemini's
@@ -218,7 +218,7 @@ public with sharing class ApiLabController {
    * @description The paths invoke() accepts: every path in the catalog, lower case. Empty
    *              when the catalog is missing or unreadable, so the Lab then refuses every
    *              path rather than guess.
-   * @return Set<String> For example /sapi/v1/skills.
+   * @return Set<String> For example /sapi/skills.
    */
   public static Set<String> allowedPaths() {
     if (allowedPaths != null) {
@@ -236,7 +236,13 @@ public with sharing class ApiLabController {
       for (Object entry : (List<Object>) root.get('paths')) {
         Object entryPath = ((Map<String, Object>) entry).get('path');
         if (entryPath instanceof String) {
-          allowedPaths.add(((String) entryPath).trim().toLowerCase());
+          // A catalog that still spells a path with /v1/ is read as the versionless path.
+          String canonical = ApiRequestContext.canonicalPath(
+            ((String) entryPath).trim()
+          );
+          if (canonical != null) {
+            allowedPaths.add(canonical);
+          }
         }
       }
     } catch (Exception e) {
@@ -269,7 +275,7 @@ public with sharing class ApiLabController {
   /**
    * @description Calls an allowlisted GET path as API v1, the version before the Lab could
    *              choose. Kept so a caller built before invokeVersioned keeps working.
-   * @param path API path, e.g. /sapi/v1/skills.
+   * @param path API path, e.g. /sapi/skills.
    * @param params Query parameters (at most 10; names alphanumeric).
    * @return InvokeResult Status, latency, headers, body and the Named Credential name.
    * @throws AuraHandledException When the path or a parameter is not allowed, or the callout fails.
@@ -281,9 +287,10 @@ public with sharing class ApiLabController {
 
   /**
    * @description Calls an allowlisted GET path through Portfolio_API with a fresh
-   *              X-Request-Id and the X-API-Version the visitor chose. The path keeps
-   *              its v1 spelling for both versions, because the version is a header.
-   * @param path API path, e.g. /sapi/v1/skills.
+   *              X-Request-Id and the X-API-Version the visitor chose. The path is
+   *              versionless for both versions, because the version is a header. An old
+   *              /v1/ spelling is accepted and called as the versionless path (ADR-040).
+   * @param path API path, e.g. /sapi/skills.
    * @param params Query parameters (at most 10; names alphanumeric).
    * @param apiVersion v1 or v2. Blank means v2.
    * @return InvokeResult Status, latency, headers (version and deprecation headers
@@ -311,8 +318,11 @@ public with sharing class ApiLabController {
     Map<String, String> params,
     String apiVersion
   ) {
-    String normalised = String.isBlank(path) ? '' : path.trim().toLowerCase();
-    if (!allowedPaths().contains(normalised)) {
+    // A path with a query is refused, as it was when it never matched the catalog.
+    String normalised = String.isBlank(path) || path.contains('?')
+      ? ''
+      : ApiRequestContext.canonicalPath(path.trim());
+    if (normalised == null || !allowedPaths().contains(normalised)) {
       throw auraError('Path is not available in the API Lab: ' + path);
     }
     String query = buildQuery(params);
@@ -451,7 +461,7 @@ public with sharing class ApiLabController {
   }
 
   /**
-   * @description Posts the letter to POST /papi/v1/ai/generate with provider Agentforce, when
+   * @description Posts the letter to POST /papi/ai/generate with provider Agentforce, when
    *              the Agentforce switch is on and its breaker is closed. The API runs as the
    *              integration user and records its own breaker result whenever it reached
    *              Agentforce. Any other HTTP answer (the rate limiter's 429, a refused session,
@@ -698,7 +708,7 @@ public with sharing class ApiLabController {
 
   /**
    * @description Requests an evaluator token through the same validation, rate limit,
-   *              daily cap, exchange and audit path as POST /papi/v1/auth/token.
+   *              daily cap, exchange and audit path as POST /papi/auth/token.
    * @param email Evaluator email.
    * @param purpose Reason for the request.
    * @return TokenResult statusCode 200 with the token body, or the error status and code.

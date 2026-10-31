@@ -1,6 +1,6 @@
 /**
  * @description       : Unit tests for the Agentforce step of ApiLabController.generateCoverLetter:
- *                      the site guest's letter posted to POST /papi/v1/ai/generate with
+ *                      the site guest's letter posted to POST /papi/ai/generate with
  *                      provider Agentforce through Portfolio_API, and every way that call can
  *                      fall back to Gemini in process. An HTTP mock answers both the API and
  *                      Gemini and records every request.
@@ -12,7 +12,7 @@
  **/
 @IsTest
 private class ApiLabControllerAgentforceTest {
-  private static final String API_PREFIX = 'callout:Portfolio_API/services/apexrest/papi/v1/ai/generate';
+  private static final String API_PREFIX = 'callout:Portfolio_API/services/apexrest/papi/ai/generate';
   private static final String GEMINI_PREFIX = 'callout:Gemini_API/';
   private static final String AGENTFORCE_LETTER = 'Dear Acme team, an Agentforce letter.';
   private static final String GEMINI_ANSWER = 'Dear Hiring Manager, a Gemini letter.';

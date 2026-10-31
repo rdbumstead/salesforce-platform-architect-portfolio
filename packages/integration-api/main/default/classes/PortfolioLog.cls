@@ -40,7 +40,7 @@ public with sharing class PortfolioLog {
    * @param message The line. Must hold no body, header value, token or personal data.
    * @return Boolean True when Nebula accepted the line, false when it went to System.debug.
    * @example
-   * PortfolioLog.info('api request path=/sapi/v1/skills status=200');
+   * PortfolioLog.info('api request path=/sapi/skills status=200');
    */
   public static Boolean info(String message) {
     String line = String.isBlank(message) ? '' : message;
