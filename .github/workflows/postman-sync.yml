@@ -35,10 +35,12 @@ jobs:
         with:
           node-version: 22
 
+      # The same install as the PR check, so the converter is the version package.json pins.
+      - name: Install dependencies
+        run: npm ci
+
       - name: Check the collection is current
-        run: |
-          npm install --prefix "$RUNNER_TEMP/o2p" --no-save --no-audit --no-fund openapi-to-postmanv2@6.4.0
-          OPENAPI_TO_POSTMAN_DIR="$RUNNER_TEMP/o2p/node_modules/openapi-to-postmanv2" node scripts/build-postman-collection.js --check
+        run: node scripts/build-postman-collection.js --check
 
       - name: Push the collection to the public Postman workspace
         env:
