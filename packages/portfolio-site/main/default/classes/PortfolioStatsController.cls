@@ -2,9 +2,9 @@
  * @description       : Serves the numbers panel on the Delivery page. getStats() returns
  *                      counts only: testimonials approved, split by vibe, the deploy runs
  *                      recorded with the newest deploy's Apex and Jest tests run, tests passed
- *                      and coverage, the evaluator tokens issued, and the totals of cover
- *                      letters written and API Lab requests sent with the first month they
- *                      were counted. Every count comes from a read of an Id and a few plain
+ *                      and coverage, the evaluator tokens issued with the day the first was
+ *                      issued, and the totals of cover letters written and API Lab requests
+ *                      sent with the first day they were counted. Every count comes from a read of an Id and a few plain
  *                      fields through QueryDefinitions, and is counted here. No row, name,
  *                      email or free text leaves this class.
  *
@@ -78,7 +78,9 @@ public with sharing class PortfolioStatsController implements QueryDefinitions.P
     stats.testimonialsApproved = approved.size();
     stats.testimonialsByVibe = byVibe(approved);
     stats.deployRuns = selector.deployRuns().size();
-    stats.tokensIssued = selector.issuedTokens().size();
+    List<API_Access_Request__c> tokens = selector.issuedTokens();
+    stats.tokensIssued = tokens.size();
+    stats.tokensSince = firstIssuedDay(tokens);
 
     List<Pipeline_Run__c> latest = selector.latestDeployTests();
     if (!latest.isEmpty()) {
@@ -90,6 +92,19 @@ public with sharing class PortfolioStatsController implements QueryDefinitions.P
     }
     addUsage(stats, selector.usageCounters());
     return stats;
+  }
+
+  // The UTC day the first token was issued, or null with none. Tokens are counted from their
+  // own records, which start earlier than the usage counters, so they carry their own day.
+  private static Date firstIssuedDay(List<API_Access_Request__c> tokens) {
+    Date first;
+    for (API_Access_Request__c token : tokens) {
+      Date day = token.CreatedDate?.dateGmt();
+      if (day != null && (first == null || day < first)) {
+        first = day;
+      }
+    }
+    return first;
   }
 
   // Totals by kind and the earliest day on any row. With no rows the totals are 0 and the
@@ -207,13 +222,16 @@ public with sharing class PortfolioStatsController implements QueryDefinitions.P
   }
 
   /**
-   * @description Issued evaluator tokens as code: the Id only, system mode.
+   * @description Issued evaluator tokens as code: the Id and the created date, system mode.
    *              Query_Definition.PortfolioStatsController_IssuedTokens ships equal to it.
    * @return QueryDefinitions.QueryDefault The default.
    */
   @TestVisible
   private static QueryDefinitions.QueryDefault tokensDefault() {
-    return new QueryDefinitions.QueryDefault('API_Access_Request__c', 'Id')
+    return new QueryDefinitions.QueryDefault(
+        'API_Access_Request__c',
+        'Id, CreatedDate'
+      )
       .filter('Outcome__c = :outcome')
       .mode(QueryDefinitions.Mode.SYSTEM_MODE)
       .binds(tokenBinds());
@@ -323,6 +341,9 @@ public with sharing class PortfolioStatsController implements QueryDefinitions.P
     public Integer latestJestPassed;
     @AuraEnabled
     public Integer tokensIssued;
+    // The UTC day the first evaluator token was issued. Null when none has been.
+    @AuraEnabled
+    public Date tokensSince;
     @AuraEnabled
     public Integer coverLettersWritten;
     @AuraEnabled
