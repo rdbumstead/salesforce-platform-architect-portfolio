@@ -15,6 +15,8 @@ import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ApiTester, {
   API_PATH,
+  API_PATH_V1,
+  TOKEN_ENDPOINT_PATH_V1,
   buildCurlExamples,
   isPostmanRunUrl,
   reduceError,
@@ -30,6 +32,7 @@ import ApiTester, {
 } from "c/apiTester";
 import getCatalog from "@salesforce/apex/ApiLabController.getCatalog";
 import getPostmanRunUrl from "@salesforce/apex/ApiLabController.getPostmanRunUrl";
+import getVersionlessUrls from "@salesforce/apex/ApiLabController.getVersionlessUrls";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
 import { trackEvent } from "c/analyticsService";
 import { showMe } from "c/tourShowMe";
@@ -57,6 +60,14 @@ jest.mock(
 );
 jest.mock(
   "@salesforce/apex/ApiLabController.getPostmanRunUrl",
+  () => {
+    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
+    return { default: createApexTestWireAdapter(jest.fn()) };
+  },
+  { virtual: true }
+);
+jest.mock(
+  "@salesforce/apex/ApiLabController.getVersionlessUrls",
   () => {
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
@@ -425,6 +436,47 @@ describe("versionless URLs (ADR-040)", () => {
         expect(example.text).toContain("/services/apexrest/papi/");
       });
     });
+  });
+});
+
+describe("the versionless URL switch (ADR-040)", () => {
+  it("writes the old /v1/ URLs in every curl example while the switch is Off", () => {
+    const [token, health, data] = buildCurlExamples(
+      "https://example.my.site.com",
+      undefined,
+      "v2",
+      false
+    );
+    expect(token.text).toContain(
+      `https://example.my.site.com${TOKEN_ENDPOINT_PATH_V1}`
+    );
+    expect(health.text).toContain(`${API_PATH_V1}/health`);
+    expect(data.text).toContain(`${API_PATH_V1}/profile/summary`);
+  });
+
+  it("writes the versionless URLs by default and when the switch is On", () => {
+    [undefined, true].forEach((flag) => {
+      buildCurlExamples("https://x.example", undefined, "v2", flag).forEach(
+        (example) => expect(example.text).not.toContain("/v1/")
+      );
+    });
+  });
+
+  it("shows the /v1/ curl text once the read says Off, and the versionless text before and after On", async () => {
+    const element = create();
+    await flush();
+    const texts = () =>
+      $$(element, "pre.curl-block").map((block) => block.textContent);
+
+    texts().forEach((text) => expect(text).not.toContain("/v1/"));
+
+    getVersionlessUrls.emit(false);
+    await flush();
+    texts().forEach((text) => expect(text).toContain("/papi/v1/"));
+
+    getVersionlessUrls.emit(true);
+    await flush();
+    texts().forEach((text) => expect(text).not.toContain("/v1/"));
   });
 });
 

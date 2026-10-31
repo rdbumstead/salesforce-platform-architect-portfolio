@@ -56,6 +56,7 @@ import getOptions from "@salesforce/apex/ApiLabOptionsController.getOptions";
 import invoke from "@salesforce/apex/ApiLabController.invokeVersioned";
 import requestEvaluatorToken from "@salesforce/apex/ApiLabController.requestEvaluatorToken";
 import getPostmanRunUrl from "@salesforce/apex/ApiLabController.getPostmanRunUrl";
+import getVersionlessUrls from "@salesforce/apex/ApiLabController.getVersionlessUrls";
 import POSTMAN_COLLECTION from "@salesforce/resourceUrl/PAPI_Postman_Collection";
 import { trackEvent, EVENTS } from "c/analyticsService";
 import { loadPrism, highlight } from "c/prismHighlighter";
@@ -76,6 +77,14 @@ export const ANALYTICS_SOURCE = "api_lab";
 export const TOKEN_ENDPOINT_PATH =
   "/portfoliovforcesite/services/apexrest/papi/auth/token";
 export const API_PATH = "/services/apexrest/papi";
+
+/**
+ * The same two paths with the old /v1/ segment, shown while the Api_Versionless_Urls setting is
+ * Off (ADR-040). The versionless form above is used until the setting has been read.
+ */
+export const TOKEN_ENDPOINT_PATH_V1 =
+  "/portfoliovforcesite/services/apexrest/papi/v1/auth/token";
+export const API_PATH_V1 = "/services/apexrest/papi/v1";
 
 /** The API versions the Lab can send, in the picker's order. v2 is the default. */
 export const API_VERSIONS = [
@@ -185,14 +194,23 @@ export function isPostmanRunUrl(value) {
  * The email in the token request is always a placeholder.
  * @param {string} origin the site's origin, such as https://example.my.site.com
  * @param {object} [token] the issued token body, with access_token and instance_url
+ * @param {string} [apiVersion] the X-API-Version the examples send
+ * @param {boolean} [versionless] false writes the old /v1/ URLs (the setting is Off)
  * @returns {Array<{key: string, title: string, copyLabel: string, text: string}>}
  */
-export function buildCurlExamples(origin, token, apiVersion = DEFAULT_VERSION) {
+export function buildCurlExamples(
+  origin,
+  token,
+  apiVersion = DEFAULT_VERSION,
+  versionless = true
+) {
+  const apiPath = versionless ? API_PATH : API_PATH_V1;
+  const tokenPath = versionless ? TOKEN_ENDPOINT_PATH : TOKEN_ENDPOINT_PATH_V1;
   const instanceUrl = (token && token.instance_url) || PLACEHOLDER_INSTANCE_URL;
   const accessToken = (token && token.access_token) || PLACEHOLDER_TOKEN;
   const call = (path) =>
     [
-      `curl "${instanceUrl}${API_PATH}${path}" \\`,
+      `curl "${instanceUrl}${apiPath}${path}" \\`,
       `  -H "Authorization: Bearer ${accessToken}" \\`,
       `  -H "X-API-Version: ${apiVersion}"`
     ].join("\n");
@@ -202,7 +220,7 @@ export function buildCurlExamples(origin, token, apiVersion = DEFAULT_VERSION) {
       title: "Get a token",
       copyLabel: "Copy the token request",
       text: [
-        `curl -X POST "${origin || ""}${TOKEN_ENDPOINT_PATH}" \\`,
+        `curl -X POST "${origin || ""}${tokenPath}" \\`,
         '  -H "Content-Type: application/json" \\',
         `  -d '{"email":"you@example.com","purpose":"Evaluate the Portfolio API"}'`
       ].join("\n")
@@ -529,6 +547,8 @@ export default class ApiTester extends LightningElement {
   collectionFileName = COLLECTION_FILE_NAME;
   /** The Run in Postman link from Portfolio_Setting.Postman_Run_Url, "" while it is not set. */
   postmanRunUrl = "";
+  // The Api_Versionless_Urls setting. On until the read returns.
+  versionlessUrls = true;
   copyStatus = "";
   curlNote = CURL_NOTE;
   statusNotes = STATUS_NOTES;
@@ -558,6 +578,12 @@ export default class ApiTester extends LightningElement {
   @wire(getPostmanRunUrl)
   wiredPostmanRunUrl({ data }) {
     this.postmanRunUrl = isPostmanRunUrl(data) ? data.trim() : "";
+  }
+
+  /** The versionless URL switch. Only an explicit false (the setting is Off) shows /v1/ URLs. */
+  @wire(getVersionlessUrls)
+  wiredVersionlessUrls({ data }) {
+    this.versionlessUrls = data !== false;
   }
 
   @wire(getCatalog)
@@ -1150,7 +1176,12 @@ export default class ApiTester extends LightningElement {
         ? window.location.origin
         : "";
     const token = this.tokenIssued ? this.tokenResult.token : undefined;
-    return buildCurlExamples(origin, token);
+    return buildCurlExamples(
+      origin,
+      token,
+      DEFAULT_VERSION,
+      this.versionlessUrls
+    );
   }
 
   handleCollectionDownload() {
