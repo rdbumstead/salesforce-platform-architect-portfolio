@@ -1,4 +1,4 @@
-<h1 id="salesforce-system-api-sapi-">Salesforce System API (SAPI) v2.0.0</h1>
+<h1 id="salesforce-system-api-sapi-">Salesforce System API (SAPI) v2.1.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -9,7 +9,7 @@ System API exposing core Salesforce objects for the Portfolio. This is **version
    - **Run-as identity**: a dedicated integration user holding a single read-only permission set (`Integration_Access`). Authorisation is bounded by that permission set, not by the token.
    - **Previous design**: `client_id`/`client_secret` headers validated in Apex against Custom Metadata (ADR-017, superseded). Retired when MuleSoft left the architecture.
 2. **On-platform consumers**: the site API Lab proxy and the PAPI health check obtain tokens through the `Portfolio_API` Named Credential (External Credential, Client Credentials principal). No secret is stored in metadata, source, or the browser.
-3. **External evaluators**: request a short-lived token from `POST /papi/v1/auth/token` (see the PAPI specification, ADR-028), then call this API with it.
+3. **External evaluators**: request a short-lived token from `POST /papi/auth/token` (see the PAPI specification, ADR-028), then call this API with it.
 
 ### Architecture & Governance
 - **Read-Only Design**: This System API is strictly read-only (GET methods only) by design to minimize attack surface and enforce unidirectional data flow.
@@ -27,13 +27,13 @@ System API exposing core Salesforce objects for the Portfolio. This is **version
 ### Design Constraints & Trade-offs
 - **Pagination**: Offset-based pagination implemented for simplicity (<200 records). 
   - *Enterprise Note*: For volumes >2,000, this would be refactored to **Keyset/Cursor Pagination** (`WHERE Id > lastSeenId`).
-- **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning, and the URL keeps its `v1` segment. Send `X-API-Version: v2` for this contract. A missing header resolves to `v1`, and any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
+- **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning. The URL has no version segment. The old URLs with `/v1/` (for example `/sapi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel="canonical"` once their retirement dates are set (ADR-040). Use the URLs in this document. Send `X-API-Version: v2` for this contract. A missing header resolves to `v1`, and any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
 - **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a short message and the link to the version 2 reference, `https://ryanbumstead.com/api-lab/reference?version=v2`.
 - **Removed from version 1**: `accomplishments` on `/experience` is not returned in version 2. Read `/experience-highlights` instead.
 
 Base URLs:
 
-* <a href="https://{domain}/services/apexrest/sapi/v1">https://{domain}/services/apexrest/sapi/v1</a>
+* <a href="https://{domain}/services/apexrest/sapi">https://{domain}/services/apexrest/sapi</a>
 
     * **domain** - The org's My Domain host. Default: ryan-bumstead-dev-ed.develop.my.salesforce.com
 
@@ -46,7 +46,7 @@ License: <a href="https://opensource.org/licenses/MIT">MIT</a>
 
 - oAuth2 authentication. OAuth 2.0 Client Credentials flow issued by the Portfolio API External Client App (ADR-027).
 Tokens run as the read-only integration user. External evaluators obtain a short-lived token
-from `POST /papi/v1/auth/token` (ADR-028) instead of holding the consumer secret. Every
+from `POST /papi/auth/token` (ADR-028) instead of holding the consumer secret. Every
 evaluator receives the same session, so all evaluators share one rate limit.
 
     - Flow: clientCredentials
@@ -74,7 +74,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/health',
+fetch('https://{domain}/services/apexrest/sapi/health',
 {
   method: 'GET',
 
@@ -170,7 +170,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/contacts',
+fetch('https://{domain}/services/apexrest/sapi/contacts',
 {
   method: 'GET',
 
@@ -298,7 +298,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/experience',
+fetch('https://{domain}/services/apexrest/sapi/experience',
 {
   method: 'GET',
 
@@ -436,7 +436,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/experience-highlights',
+fetch('https://{domain}/services/apexrest/sapi/experience-highlights',
 {
   method: 'GET',
 
@@ -578,7 +578,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/projects',
+fetch('https://{domain}/services/apexrest/sapi/projects',
 {
   method: 'GET',
 
@@ -743,7 +743,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/project-assets',
+fetch('https://{domain}/services/apexrest/sapi/project-assets',
 {
   method: 'GET',
 
@@ -882,7 +882,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/testimonials',
+fetch('https://{domain}/services/apexrest/sapi/testimonials',
 {
   method: 'GET',
 
@@ -1023,7 +1023,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/accounts',
+fetch('https://{domain}/services/apexrest/sapi/accounts',
 {
   method: 'GET',
 
@@ -1145,7 +1145,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/skills',
+fetch('https://{domain}/services/apexrest/sapi/skills',
 {
   method: 'GET',
 
@@ -1277,7 +1277,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/certifications',
+fetch('https://{domain}/services/apexrest/sapi/certifications',
 {
   method: 'GET',
 
@@ -1407,7 +1407,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/education',
+fetch('https://{domain}/services/apexrest/sapi/education',
 {
   method: 'GET',
 
@@ -1544,7 +1544,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/project-skills',
+fetch('https://{domain}/services/apexrest/sapi/project-skills',
 {
   method: 'GET',
 
@@ -1672,7 +1672,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/experience-skills',
+fetch('https://{domain}/services/apexrest/sapi/experience-skills',
 {
   method: 'GET',
 
@@ -1800,7 +1800,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/certification-skills',
+fetch('https://{domain}/services/apexrest/sapi/certification-skills',
 {
   method: 'GET',
 
@@ -1932,7 +1932,7 @@ const headers = {
   'Authorization':'Bearer {access-token}'
 };
 
-fetch('https://{domain}/services/apexrest/sapi/v1/portfolio-config',
+fetch('https://{domain}/services/apexrest/sapi/portfolio-config',
 {
   method: 'GET',
 
@@ -2066,6 +2066,7 @@ Standard Error Response Schema.
 |errorCode|INTERNAL_SERVER_ERROR|
 |errorCode|SALESFORCE_UNAVAILABLE|
 |errorCode|GATEWAY_TIMEOUT|
+|errorCode|GONE|
 
 <h2 id="tocS_Persona">Persona</h2>
 <!-- backwards compatibility -->

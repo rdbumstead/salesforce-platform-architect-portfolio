@@ -49,7 +49,7 @@ const FAKE_TOKEN = "FAKE-TOKEN-FOR-TESTS-ONLY";
 const SPEC = {
   servers: [
     {
-      url: "https://{domain}/services/apexrest/papi/v1",
+      url: "https://{domain}/services/apexrest/papi",
       variables: { domain: { default: "example.my.salesforce.com" } }
     }
   ],
@@ -58,7 +58,7 @@ const SPEC = {
     "/auth/token": {
       servers: [
         {
-          url: "https://example.my.site.com/portfoliovforcesite/services/apexrest/papi/v1"
+          url: "https://example.my.site.com/portfoliovforcesite/services/apexrest/papi"
         }
       ],
       post: {}
@@ -135,7 +135,7 @@ function converted(seed) {
 const SAPI_SPEC = {
   servers: [
     {
-      url: "https://{domain}/services/apexrest/sapi/v1",
+      url: "https://{domain}/services/apexrest/sapi",
       variables: { domain: { default: "example.my.salesforce.com" } }
     }
   ],
@@ -187,7 +187,7 @@ function folder(collection, name) {
 }
 
 const TOKEN_URL =
-  "https://example.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token";
+  "https://example.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token";
 
 test("two converter runs with different random ids give the same bytes", () => {
   const first = serialize(build("a"));
@@ -297,7 +297,7 @@ test("PAPI requests go to baseUrl plus the PAPI path, inherit auth, and send a f
   const health = folder(build("a"), PAPI_FOLDER).item[0].item[0].request;
   assert.strictEqual(
     health.url.raw,
-    "{{baseUrl}}/services/apexrest/papi/v1/health"
+    "{{baseUrl}}/services/apexrest/papi/health"
   );
   assert.strictEqual(health.auth, undefined);
   assert.strictEqual(health.url.variable, undefined);
@@ -333,7 +333,7 @@ test("SAPI requests go to baseUrl plus the SAPI path, inherit auth, and always s
   const skills = sapi.item[0].item[0].request;
   assert.strictEqual(
     skills.url.raw,
-    "{{baseUrl}}/services/apexrest/sapi/v1/skills"
+    "{{baseUrl}}/services/apexrest/sapi/skills"
   );
   assert.strictEqual(skills.auth, undefined);
   const header = (key) => skills.header.find((entry) => entry.key === key);
