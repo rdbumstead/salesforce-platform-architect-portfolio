@@ -344,6 +344,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
       role.endDate = experience.End_Date__c;
       role.isCurrent = experience.Is_Current_Role__c;
       role.isRemote = experience.Is_Remote__c;
+      role.isPartTime = experience.Is_Part_Time__c == true;
       role.highlights = toHighlights(
         highlightsByRole.get(experience.Id) ??
           new List<Experience_Highlight__c>(),
@@ -549,7 +550,7 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
   private static QueryDefinitions.QueryDefault rolesDefault() {
     return new QueryDefinitions.QueryDefault(
         'Experience__c',
-        'Id, Name, Employer__r.Name, Start_Date__c, End_Date__c, Is_Current_Role__c, Is_Remote__c'
+        'Id, Name, Employer__r.Name, Start_Date__c, End_Date__c, Is_Current_Role__c, Is_Remote__c, Is_Part_Time__c'
       )
       .orderBy(
         'Is_Current_Role__c DESC, Start_Date__c DESC NULLS LAST, Sort_Order__c ASC'
@@ -766,6 +767,8 @@ public with sharing class ResumeController implements QueryDefinitions.Provider 
     public Boolean isCurrent;
     @AuraEnabled
     public Boolean isRemote;
+    @AuraEnabled
+    public Boolean isPartTime;
     @AuraEnabled
     public List<String> highlights;
   }
