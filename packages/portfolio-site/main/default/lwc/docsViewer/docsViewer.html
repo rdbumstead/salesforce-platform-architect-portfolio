@@ -13,6 +13,9 @@
       <p class="docs-lead">
         How this site is designed and why. Start with the Executive Overview.
       </p>
+      <div class="docs-build">
+        <c-site-build-section></c-site-build-section>
+      </div>
       <template lwc:if={hasDocs}>
         <template for:each={groups} for:item="group">
           <section key={group.key} class="doc-group" data-group={group.key}>

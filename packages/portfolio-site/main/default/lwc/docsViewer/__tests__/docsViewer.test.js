@@ -260,6 +260,22 @@ describe("c-docs-viewer list", () => {
     );
   });
 
+  it("reads the title and lead, then the build section, then the document groups, with one h1", async () => {
+    const el = await create({});
+    const root = shadow(el);
+    const order = [
+      ...root.querySelectorAll(
+        "h1, .docs-lead, c-site-build-section, .doc-group"
+      )
+    ].map((node) => node.tagName.toLowerCase() + "." + (node.className || ""));
+    expect(order[0]).toBe("h1.docs-title");
+    expect(order[1]).toBe("p.docs-lead");
+    expect(order[2]).toBe("c-site-build-section.");
+    expect(order[3]).toBe("section.doc-group");
+    expect(root.querySelectorAll("h1").length).toBe(1);
+    expect(root.querySelectorAll("c-site-build-section").length).toBe(1);
+  });
+
   it("groups the list into Start here, Specifications and Decisions, with decisions closed", async () => {
     const docs = [
       { key: "executive-overview", title: "Executive Overview", path: "a" },
@@ -327,6 +343,7 @@ describe("c-docs-viewer document", () => {
       "Systems Architecture Specification (SAS)"
     );
     expect(root.querySelectorAll("h1").length).toBe(1);
+    expect(root.querySelector("c-site-build-section")).toBeNull();
     expect(root.querySelector(".back-link").getAttribute("href")).toBe(
       "/portfolio/docs"
     );
@@ -450,6 +467,8 @@ describe("c-docs-viewer document", () => {
     expect(shadow(el).querySelector("h1").textContent).toBe(
       "Document not found"
     );
+    expect(shadow(el).querySelectorAll("h1").length).toBe(1);
+    expect(shadow(el).querySelector("c-site-build-section")).toBeNull();
     expect(shadow(el).querySelector(".back-link")).not.toBeNull();
   });
 

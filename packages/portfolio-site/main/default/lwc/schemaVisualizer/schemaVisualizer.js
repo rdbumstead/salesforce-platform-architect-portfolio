@@ -262,6 +262,38 @@ export default class SchemaVisualizer extends LightningElement {
       : "Data model, live";
   }
 
+  // A phone opened from a section's marker lists the section's objects and their direct
+  // neighbours. The dialog around it already carries the heading, so it is not drawn twice.
+  get isPhoneSectionList() {
+    return this.isSmall && this.hasHighlight;
+  }
+
+  get showTitle() {
+    return !this.isPhoneSectionList;
+  }
+
+  // The API names of the highlighted objects and every object one link away from them, in
+  // either direction. Platform self lookups such as CreatedBy do not count as links.
+  get listedNames() {
+    const listed = new Set(
+      this.nodes
+        .filter((node) => this.isHighlighted(node.apiName))
+        .map((node) => node.apiName)
+    );
+    this.edges.forEach((edge) => {
+      if (isPlatformSelfLookup(edge)) {
+        return;
+      }
+      if (this.isHighlighted(edge.fromObject)) {
+        listed.add(edge.toObject);
+      }
+      if (this.isHighlighted(edge.toObject)) {
+        listed.add(edge.fromObject);
+      }
+    });
+    return listed;
+  }
+
   get emptyMessage() {
     return this.isSectionView
       ? "No objects to show for this section."
@@ -496,6 +528,15 @@ export default class SchemaVisualizer extends LightningElement {
         this.isHighlighted(node.apiName)
       ).length;
       const subject = read === 1 ? "The one object" : `The ${read} objects`;
+      if (this.isPhoneSectionList) {
+        const linked = this.listedNames.size - read;
+        const verb = read === 1 ? "is" : "are";
+        const also =
+          linked > 0
+            ? `, with the ${linked === 1 ? "one object" : `${linked} objects`} it links to directly`
+            : "";
+        return `${subject} this section reads ${verb} listed first${also}, described live in ${this.graph.cpuMs} ms of server CPU.`;
+      }
       return `${subject} this section reads, highlighted among the ${count} in the data model, described live in ${this.graph.cpuMs} ms of server CPU.`;
     }
     if (this.hasObjects) {
@@ -625,7 +666,10 @@ export default class SchemaVisualizer extends LightningElement {
           ...this.nodes.filter((node) => !this.isHighlighted(node.apiName))
         ]
       : this.nodes;
-    return ordered.map((node) => {
+    const shown = this.isPhoneSectionList
+      ? ordered.filter((node) => this.listedNames.has(node.apiName))
+      : ordered;
+    return shown.map((node) => {
       const relationships = edgesByObject.get(node.apiName) || [];
       const readBySection = this.isHighlighted(node.apiName)
         ? ", read by this section"

@@ -161,6 +161,7 @@ private class SiteQueryDefinitionsTest {
         End_Date__c,
         Is_Current_Role__c,
         Is_Remote__c,
+        Is_Part_Time__c,
         (
           SELECT
             Experience__c,

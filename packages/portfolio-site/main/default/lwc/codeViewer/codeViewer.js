@@ -3,6 +3,11 @@
  *                      which loads the Prism_JS static resource once per page. A
  *                      language with no grammar is highlighted with clike. If Prism fails to
  *                      load, the code shows as escaped plain text.
+ *                      With flat set, a phone (under 768 px) gets the code with no card
+ *                      around it, no padding, a 12 px font and wrapped lines, so the code uses
+ *                      the width of the place that holds it. The viewer has no line number
+ *                      gutter, so a wrapped line has nothing to number twice. Anywhere wider,
+ *                      and without flat, the card is unchanged.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -15,6 +20,8 @@ import { loadPrism, highlight } from "c/prismHighlighter";
 export default class CodeViewer extends LightningElement {
   @api title = "Source Code";
   @api language = "apex";
+  /** A host that already frames the code, such as the View source dialog, sets this. */
+  @api flat = false;
 
   @api
   get code() {
@@ -34,7 +41,17 @@ export default class CodeViewer extends LightningElement {
   copyMessage = "";
 
   connectedCallback() {
+    this.narrow =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(max-width: 767px)").matches;
     this.loadPrism();
+  }
+
+  narrow = false;
+
+  /** True on a phone for a host that framed the code itself. */
+  get isFlat() {
+    return Boolean(this.flat) && this.narrow;
   }
 
   loadPrism() {

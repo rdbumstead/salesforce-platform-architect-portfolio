@@ -178,7 +178,7 @@ The delivery is organized into four parallel tracks:
 **Phase 3: UI Framework (Completed)**
 
 - **Theme Layout:** `c-portfolio-theme-layout`, with the header, its "How it's built" menu, the Back to top arrow and the theme toggle.
-- **Home page:** `c-hero-banner`, then the case studies (`c-case-study-grid`), then the work timeline, the credentials band and the contact call. The "How this site is built" section (`c-site-build-section`, the pillar cards) sits on the Docs page above the document list.
+- **Home page:** `c-hero-banner`, then the case studies (`c-case-study-grid`), then the work timeline, the credentials band and the contact call. The "How this site is built" section (`c-site-build-section`, the pillar cards) sits on the Docs page, under the page title and above the document list.
 - **Navigation:** the header and the tour read one pillar list, `c/pillarData`.
 
 **Phase 4: Integrations (Completed)**

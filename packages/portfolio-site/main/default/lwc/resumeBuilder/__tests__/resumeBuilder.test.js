@@ -1245,6 +1245,53 @@ describe("grouping by employer and issuer", () => {
     expect(group.spanText).toBe("Jan 2017 - Jun 2021");
   });
 
+  it("puts a part time role under the full time role that started months earlier, on the page, in the PDF and in the ATS text", () => {
+    // The two real date shapes: the part time role starts five months after the full time one.
+    const partTime = role(
+      "e1",
+      "Non-Credit Instructor",
+      "MCC",
+      "2017-12-01",
+      "2021-06-18",
+      { isPartTime: true }
+    );
+    const fullTime = role(
+      "e2",
+      "CAET Services Specialist II",
+      "MCC",
+      "2017-07-03",
+      "2021-06-18",
+      { isPartTime: false }
+    );
+    // The server sends the later start first, which is what put the part time role on top.
+    const model = build([partTime, fullTime]);
+    const titles = ["CAET Services Specialist II", "Non-Credit Instructor"];
+
+    expect(model.employers[0].roles.map((entry) => entry.title)).toEqual(
+      titles
+    );
+
+    const doc = fakeDoc();
+    writePdf(doc, model, { family: "Inter" });
+    const drawn = doc.drawn.map((piece) => piece.text).join(" ");
+    expect(drawn.indexOf(titles[0])).toBeGreaterThan(-1);
+    expect(drawn.indexOf(titles[0])).toBeLessThan(drawn.indexOf(titles[1]));
+
+    const text = toAtsText(buildLines(model));
+    expect(text.indexOf(titles[0])).toBeLessThan(text.indexOf(titles[1]));
+  });
+
+  it("orders unrelated employers by end year first, and a missing flag counts as full time", () => {
+    const model = build([
+      role("f1", "Older", "A", "2010-01-01", "2012-01-01"),
+      role("f2", "Newer", "B", "2013-01-01", "2015-01-01", {
+        isPartTime: undefined
+      })
+    ]);
+    expect(model.employers.map((group) => group.employer)).toEqual(["B", "A"]);
+    expect(model.roles[0].isPartTime).toBe(false);
+  });
+
   it("writes Present on the employer span when any role is current", () => {
     const model = build([
       role("c1", "Consultant", "TELUS", "2026-01-01", null, {
