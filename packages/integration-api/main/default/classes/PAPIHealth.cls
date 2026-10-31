@@ -15,6 +15,15 @@
 @RestResource(urlMapping='/papi/v1/health')
 global with sharing class PAPIHealth {
   public static final String STATE_UP = 'UP';
+  /**
+   * The header the API Lab sends on its calls through the Portfolio_API credential. A health
+   * check answering such a call skips its own credential callout, because Salesforce refuses
+   * an org calling itself inside a request that came from itself (a callout loop), and the
+   * call it is answering already came through the credential. Sending it from anywhere else
+   * only skips that one check.
+   */
+  public static final String CALLER_HEADER = 'X-Portfolio-Caller';
+  public static final String CALLER_API_LAB = 'api-lab';
   public static final String STATE_DOWN = 'DOWN';
   public static final String STATE_DEGRADED = 'DEGRADED';
   public static final String STATE_CONFIGURED = 'CONFIGURED';
@@ -50,7 +59,7 @@ global with sharing class PAPIHealth {
       Map<String, Object> details = new Map<String, Object>();
       Map<String, Object> dependencies = new Map<String, Object>();
       dependencies.put('sapi', checkSapi(details));
-      dependencies.put('credential', checkCredential(details));
+      dependencies.put('credential', checkCredential(ctx, details));
       dependencies.putAll(checkNamedCredentials());
 
       Map<String, Object> healthStatus = new Map<String, Object>{
@@ -100,7 +109,14 @@ global with sharing class PAPIHealth {
     );
   }
 
-  private static String checkCredential(Map<String, Object> details) {
+  private static String checkCredential(
+    ApiRequestContext ctx,
+    Map<String, Object> details
+  ) {
+    if (CALLER_API_LAB.equalsIgnoreCase(ctx.headerValue(CALLER_HEADER))) {
+      details.put('credential', ApiMessages.HEALTH_IN_USE);
+      return STATE_UP;
+    }
     HttpRequest req = new HttpRequest();
     req.setEndpoint('callout:Portfolio_API' + ApiRoutes.sapi('health'));
     req.setMethod('GET');

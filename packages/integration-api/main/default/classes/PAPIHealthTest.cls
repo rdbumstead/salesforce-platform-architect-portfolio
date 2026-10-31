@@ -52,6 +52,29 @@ private class PAPIHealthTest {
   }
 
   @IsTest
+  static void credentialInUseWithoutACalloutWhenTheApiLabAsks() {
+    CredentialMock mock = new CredentialMock(200, false);
+    Test.setMock(HttpCalloutMock.class, mock);
+    RestTestUtil.initGet(URI);
+    RestContext.request.headers.put('x-portfolio-caller', 'API-LAB');
+    Test.startTest();
+    PAPIHealth.getHealth();
+    Test.stopTest();
+    Map<String, Object> body = RestTestUtil.getBodyAsMap();
+
+    Assert.isNull(
+      mock.received,
+      'No credential callout from inside the Lab call'
+    );
+    Assert.areEqual('UP', dependenciesOf(body).get('credential'), 'Credential');
+    Assert.areEqual(
+      ApiMessages.HEALTH_IN_USE,
+      ((Map<String, Object>) body.get('details')).get('credential'),
+      'Detail says the request came through it'
+    );
+  }
+
+  @IsTest
   static void credentialUpWhenSapiHealthAnswers200() {
     CredentialMock mock = new CredentialMock(200, false);
 

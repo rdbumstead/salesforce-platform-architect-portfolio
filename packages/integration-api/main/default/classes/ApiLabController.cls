@@ -351,6 +351,7 @@ public with sharing class ApiLabController {
     req.setHeader('X-Request-Id', requestId);
     req.setHeader('X-API-Version', apiVersion);
     req.setHeader('Accept', 'application/json');
+    req.setHeader(PAPIHealth.CALLER_HEADER, PAPIHealth.CALLER_API_LAB);
 
     Long started = System.currentTimeMillis();
     HttpResponse res;

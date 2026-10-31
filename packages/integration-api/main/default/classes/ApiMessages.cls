@@ -302,6 +302,7 @@ public with sharing class ApiMessages {
 
   public static final String HEALTH_NOT_REACHED = 'could not connect';
   public static final String HEALTH_NOT_SET_UP = 'not set up';
+  public static final String HEALTH_IN_USE = 'in use, this request came through it';
 
   /**
    * @description The health detail for a dependency that answered.
