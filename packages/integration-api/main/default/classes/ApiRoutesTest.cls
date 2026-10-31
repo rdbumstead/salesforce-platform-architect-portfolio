@@ -108,26 +108,34 @@ private class ApiRoutesTest {
     );
   }
 
-  @IsTest
-  static void shouldCallTheLabPathInEachState() {
-    for (String state : new List<String>{ 'On', 'Off' }) {
-      setSwitch(state);
-      PortfolioApiCalloutMock mock = new PortfolioApiCalloutMock()
-        .withRestResponse(200, '[]', new Map<String, String>());
-      Test.setMock(HttpCalloutMock.class, mock);
-      ApiLabController.invoke('/sapi/skills', null);
-      Assert.areEqual(
-        'callout:Portfolio_API/services/apexrest/sapi/' +
-          (state == 'Off' ? 'v1/' : '') +
-          'skills',
-        mock.requests[mock.requests.size() - 1].getEndpoint(),
-        'Lab call, ' + state
-      );
-    }
+  // A callout cannot follow DML in one transaction, so each state is its own test.
+  private static void assertLabPath(String state) {
+    setSwitch(state);
+    PortfolioApiCalloutMock mock = new PortfolioApiCalloutMock()
+      .withRestResponse(200, '[]', new Map<String, String>());
+    Test.setMock(HttpCalloutMock.class, mock);
+    ApiLabController.invoke('/sapi/skills', null);
+    Assert.areEqual(
+      'callout:Portfolio_API/services/apexrest/sapi/' +
+        (state == 'Off' ? 'v1/' : '') +
+        'skills',
+      mock.requests[0].getEndpoint(),
+      'Lab call, ' + state
+    );
   }
 
   @IsTest
-  static void shouldCallTheLabWithAnOldSpellingInEachState() {
+  static void shouldCallTheLabPathWhenOn() {
+    assertLabPath('On');
+  }
+
+  @IsTest
+  static void shouldCallTheOldLabPathWhenOff() {
+    assertLabPath('Off');
+  }
+
+  @IsTest
+  static void shouldCallTheLabWithAnOldSpellingWhenOff() {
     setSwitch('Off');
     PortfolioApiCalloutMock mock = new PortfolioApiCalloutMock()
       .withRestResponse(200, '[]', new Map<String, String>());
@@ -139,22 +147,29 @@ private class ApiRoutesTest {
     );
   }
 
+  private static void assertCredentialPath(String state) {
+    setSwitch(state);
+    CredentialMock mock = new CredentialMock();
+    Test.setMock(HttpCalloutMock.class, mock);
+    RestTestUtil.initGet('/services/apexrest/papi/health');
+    PAPIHealth.getHealth();
+    Assert.areEqual(
+      'callout:Portfolio_API/services/apexrest/sapi/' +
+        (state == 'Off' ? 'v1/' : '') +
+        'health',
+      mock.received.getEndpoint(),
+      'PAPIHealth credential check, ' + state
+    );
+  }
+
   @IsTest
-  static void shouldCallTheCredentialCheckInEachState() {
-    for (String state : new List<String>{ 'On', 'Off' }) {
-      setSwitch(state);
-      CredentialMock mock = new CredentialMock();
-      Test.setMock(HttpCalloutMock.class, mock);
-      RestTestUtil.initGet('/services/apexrest/papi/health');
-      PAPIHealth.getHealth();
-      Assert.areEqual(
-        'callout:Portfolio_API/services/apexrest/sapi/' +
-          (state == 'Off' ? 'v1/' : '') +
-          'health',
-        mock.received.getEndpoint(),
-        'PAPIHealth credential check, ' + state
-      );
-    }
+  static void shouldCallTheCredentialCheckWhenOn() {
+    assertCredentialPath('On');
+  }
+
+  @IsTest
+  static void shouldCallTheOldCredentialCheckWhenOff() {
+    assertCredentialPath('Off');
   }
 
   @IsTest

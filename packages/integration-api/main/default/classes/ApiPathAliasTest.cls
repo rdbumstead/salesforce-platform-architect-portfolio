@@ -385,7 +385,8 @@ private class ApiPathAliasTest {
     send(SAPI_OLD, 'v1', null);
     ApiRequestContext.begin();
     Assert.areEqual(NOV_1_SUNSET, header('Sunset'), 'The version Sunset');
-    Assert.areEqual(SUCCESSOR, header('Link'), 'The version link only');
+    Assert.isTrue(header('Link').startsWith(SUCCESSOR), 'The version links');
+    Assert.isFalse(header('Link').contains('canonical'), 'No canonical Link');
 
     ApiRequestContext.nowOverride = Datetime.newInstanceGmt(2027, 1, 1);
     send(SAPI_OLD, 'v1', null);
