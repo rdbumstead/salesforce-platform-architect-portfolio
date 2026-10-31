@@ -17,6 +17,24 @@
   color: var(--viewer-text);
 }
 
+/* A phone in the View source dialog: no card, no padding, a smaller font and wrapped lines.
+   The viewer has no line numbers, so a wrapped line keeps no second number. */
+.viewer-flat .code-container {
+  padding: var(--pf-space-2, 0.5rem);
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.viewer-flat .code-container pre,
+.viewer-flat .code-container code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: inherit;
+}
+
 .copy-message {
   color: var(--viewer-text);
 }

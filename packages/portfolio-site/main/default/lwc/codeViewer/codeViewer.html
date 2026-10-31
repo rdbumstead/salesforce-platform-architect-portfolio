@@ -1,6 +1,6 @@
 <template>
-  <lightning-card title={title} icon-name="utility:code">
-    <div class="viewer-body slds-p-around_medium slds-is-relative">
+  <template lwc:if={isFlat}>
+    <div class="viewer-body viewer-flat slds-is-relative">
       <template lwc:if={isLoading}>
         <lightning-spinner
           alternative-text="Loading syntax highlighting"
@@ -14,9 +14,9 @@
         aria-label={regionLabel}
       >
         <pre class={languageClass}><code
-            class="code-block"
-            lwc:dom="manual"
-          ></code></pre>
+              class="code-block"
+              lwc:dom="manual"
+            ></code></pre>
       </div>
       <div class="slds-m-top_small">
         <button type="button" class="nc-button copy-code" onclick={handleCopy}>
@@ -27,5 +27,40 @@
         </p>
       </div>
     </div>
-  </lightning-card>
+  </template>
+  <template lwc:else>
+    <lightning-card title={title} icon-name="utility:code">
+      <div class="viewer-body slds-p-around_medium slds-is-relative">
+        <template lwc:if={isLoading}>
+          <lightning-spinner
+            alternative-text="Loading syntax highlighting"
+            size="small"
+          ></lightning-spinner>
+        </template>
+        <div
+          class="code-container"
+          tabindex="0"
+          role="region"
+          aria-label={regionLabel}
+        >
+          <pre class={languageClass}><code
+                class="code-block"
+                lwc:dom="manual"
+              ></code></pre>
+        </div>
+        <div class="slds-m-top_small">
+          <button
+            type="button"
+            class="nc-button copy-code"
+            onclick={handleCopy}
+          >
+            Copy to clipboard
+          </button>
+          <p aria-live="polite" class="copy-message slds-m-top_x-small">
+            {copyMessage}
+          </p>
+        </div>
+      </div>
+    </lightning-card>
+  </template>
 </template>

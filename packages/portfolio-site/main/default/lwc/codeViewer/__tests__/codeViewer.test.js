@@ -177,3 +177,39 @@ describe("c-code-viewer", () => {
     delete navigator.clipboard;
   });
 });
+
+describe("c-code-viewer flat on a phone", () => {
+  const original = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = original;
+    while (document.body.firstChild) {
+      document.body.removeChild(document.body.firstChild);
+    }
+  });
+
+  function mountFlat(phone, flat) {
+    window.matchMedia = jest.fn(() => ({ matches: phone }));
+    const element = createElement("c-code-viewer", { is: CodeViewer });
+    element.code = "a very long line";
+    element.flat = flat;
+    document.body.appendChild(element);
+    return element;
+  }
+
+  it("draws no card and keeps its one code region on a phone", async () => {
+    const element = mountFlat(true, true);
+    await Promise.resolve();
+    const root = element.shadowRoot;
+    expect(root.querySelector("lightning-card")).toBeNull();
+    expect(root.querySelector(".viewer-flat")).not.toBeNull();
+    expect(root.querySelectorAll(".code-container")).toHaveLength(1);
+    expect(root.querySelector(".copy-code")).not.toBeNull();
+  });
+
+  it("keeps the card on a wider screen and without flat", async () => {
+    [mountFlat(false, true), mountFlat(true, false)].forEach((element) => {
+      expect(element.shadowRoot.querySelector("lightning-card")).not.toBeNull();
+      expect(element.shadowRoot.querySelector(".viewer-flat")).toBeNull();
+    });
+  });
+});
