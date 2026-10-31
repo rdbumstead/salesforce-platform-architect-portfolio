@@ -115,3 +115,9 @@ This changes items 1 and 7 and the hero's button order. The other items stand.
 ## Amendment (2026-10-31): the Docs page reads title, cards, then documents
 
 - **Item 7, the order on /docs.** The page title and lead come first, then the five pillar cards, then the document list. `c-docs-viewer` places `c-site-build-section` itself in its list view, after its `h1` and lead, so the Docs view holds only the viewer. I chose this over a separate page intro component because the viewer's title is already the page's one `h1` and opening a document moves focus to a document title that is also an `h1`. A second `h1` would have meant demoting every document heading. The outline is `h1` "Architecture docs", `h2` "How this site is built", `h3` for each card, then the `h2` document group titles. An open document and "Document not found" show their own `h1` and no cards. The in place guest access link still sets the address and fires `popstate`.
+
+## Amendment (2026-10-31, later): the tour moves into the proof panel
+
+- **The hero's buttons.** "See the case studies" is gone. The case studies follow the hero directly and the line under the headline already says to start with them, so the button repeated the page. The tour button moves into the proof panel, on its own row after the counts and above the two architecture buttons, and stays the hero's one primary button. Every hero button now sits in the panel. This replaces the 2026-10-30 later amendment's line on the hero's buttons.
+- **The panel's width.** The panel is as wide as the line under the headline, the same 58 characters at 17 px with its border and padding inside, so the hero reads as one column instead of a short paragraph over a full width box.
+- **Section ids stay.** The case studies grid still carries the id `case-studies` and still reveals its heading for an address ending in `#case-studies`.

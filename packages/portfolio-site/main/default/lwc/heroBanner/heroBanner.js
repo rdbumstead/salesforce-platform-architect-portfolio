@@ -1,8 +1,8 @@
 /**
  * @description       : Home page hero, written for a recruiter's first look: the photo, the
  *                      name as the page's h1, the meta line (employer title and location), the
- *                      title line, one value sentence, a short proof strip, "See the case
- *                      studies", and the profile links, where Resume sits.
+ *                      title line, one value sentence, a short proof strip, a proof panel that
+ *                      holds the tour, and the profile links, where Resume sits.
  *                      Name, meta line, location, proof strip and photo are static so they paint
  *                      without waiting on Apex. The proof strip's "On Salesforce since 2017"
  *                      then takes its year from ResumeController.getTimeline (the
@@ -12,34 +12,27 @@
  *                      reads only the owner Contact. The title line shows only when it is set,
  *                      and nothing extra shows when the read fails. The value sentence falls
  *                      back to the constant below.
- *                      "See the case studies" is a secondary button after the tour. It shows only once
- *                      ProjectCardController.getHomeCaseStudies returns at least one card that
- *                      c-case-study-grid would show (a title and a usable link, isShownCase),
- *                      the same read and cache the grid uses, so it never points at a section
- *                      that is not there. Its row keeps the button's height from the first
- *                      paint, so nothing below moves when it appears. The button scrolls to
- *                      c-case-study-grid's heading and moves focus there, smoothly unless the
- *                      system "reduce motion" setting is on
- *                      (c/motionPreference). If the section cannot be found the link falls back
- *                      to the home page address ending in #case-studies.
  *                      The profile links are GitHub, LinkedIn and Trailhead from the owner
  *                      Contact's stored URLs (each only when set and safe, in a new tab), then
  *                      Resume and API docs.
- *                      "Take the 10 minute tour" (the minutes from c/pillarData) is the one
- *                      primary button, first in the row. It starts the tour (c/tourBar startTour) and goes
- *                      straight to its first stop as a plain link. If the tour cannot start
- *                      (storage is blocked) the link still opens that page.
  *                      One "why you are here" line sits under the headline: the value sentence
  *                      from the header read, so the owner tunes it in the record, or the
  *                      WHY_FALLBACK constant when it is blank or missing. The proof strip's
  *                      certification count is the number of certifications in the same
  *                      getTimeline read, which leaves retired ones out, and shows the
  *                      c/pillarData constant until that read returns, or when it fails or
- *                      counts none. Under the buttons a proof panel says the site runs on
- *                      Salesforce, shows one monospace line of live test counts from
- *                      ProjectCardController.getBuildCounts (each part left out when its count
- *                      is missing, the whole line left out with no Apex count), and holds two
- *                      secondary buttons to the architecture spec and the guest access section.
+ *                      counts none. Under the proof strip a proof panel, as wide as the value
+ *                      sentence, says the site runs on Salesforce, shows one monospace line of
+ *                      live test counts from ProjectCardController.getBuildCounts (each part
+ *                      left out when its count is missing, the whole line left out with no Apex
+ *                      count), then holds the hero's buttons. "Take the 10 minute tour" (the
+ *                      minutes from c/pillarData) is the one primary button, on its own row. It
+ *                      starts the tour (c/tourBar startTour) and goes straight to its first stop
+ *                      as a plain link. If the tour cannot start (storage is blocked) the link
+ *                      still opens that page. Under it sit two secondary buttons to the
+ *                      architecture spec and the guest access section.
+ *                      The case studies follow the hero directly, and the value sentence points
+ *                      at them, so the hero has no button of its own to scroll there.
  *                      The pillars and their case studies live in c-site-build-section.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
@@ -50,7 +43,6 @@
 import { LightningElement, wire } from "lwc";
 import basePath from "@salesforce/community/basePath";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
-import getHomeCaseStudies from "@salesforce/apex/ProjectCardController.getHomeCaseStudies";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import getBuildCounts from "@salesforce/apex/ProjectCardController.getBuildCounts";
 import HEADSHOT from "@salesforce/resourceUrl/Portfolio_Headshot";
@@ -60,17 +52,12 @@ import {
   salesforceSince,
   TOUR_MINUTES
 } from "c/pillarData";
-import { isShownCase } from "c/caseStudyGrid";
 import { toExternalUrl } from "c/externalUrl";
-import { isReduced, onMotionChange } from "c/motionPreference";
 import { startTour, firstStopHref } from "c/tourBar";
 
 /** The why line shown when the owner Contact's value sentence is blank or not yet read. */
 export const WHY_FALLBACK =
   "If you're hiring a Salesforce architect for education or nonprofit work, start with the three case studies below. Each shows the problem, the call I made and how it turned out.";
-
-/** The id c-case-study-grid gives its host element, and the address the button falls back to. */
-export const CASE_STUDIES_ANCHOR = "case-studies";
 
 /**
  * Trimmed text, or null when the value is not a non blank string.
@@ -101,41 +88,11 @@ function toHref(url) {
   return `${basePath || ""}/${url}`;
 }
 
-/**
- * Finds an element by id in the document and in every open shadow root under it, because the
- * case study section sits in another component's tree.
- * @param {string} id the element id
- * @returns {Element|null} the element
- */
-export function findById(id) {
-  if (typeof document === "undefined") {
-    return null;
-  }
-  const selector = `[id="${id}"]`;
-  const roots = [document];
-  while (roots.length) {
-    const root = roots.shift();
-    const found = root.querySelector(selector);
-    if (found) {
-      return found;
-    }
-    root.querySelectorAll("*").forEach((element) => {
-      if (element.shadowRoot) {
-        roots.push(element.shadowRoot);
-      }
-    });
-  }
-  return null;
-}
-
 export default class HeroBanner extends LightningElement {
   headshotUrl = HEADSHOT;
   name = "Ryan Bumstead";
   title = "Senior Solution Consultant at TELUS Digital";
   location = "Greater Toledo, Ohio";
-  // A full path, not a bare fragment: the template would rewrite a bare "#..." link as a
-  // reference inside this component.
-  caseStudiesHref = `${basePath || ""}/#${CASE_STUDIES_ANCHOR}`;
   tourHref = firstStopHref();
   tourLabel = `Take the ${TOUR_MINUTES} minute tour`;
   proofIntro =
@@ -147,36 +104,10 @@ export default class HeroBanner extends LightningElement {
   certCount;
   // Undefined until the timeline read returns, so the strip paints the fallback year at once.
   startYear;
-  // False until the case study read returns a card, so the button never shows with no target.
-  hasCaseStudies = false;
-  motionReduced = isReduced();
-  stopMotionListener;
-
-  connectedCallback() {
-    this.motionReduced = isReduced();
-    this.stopMotionListener = onMotionChange((reduced) => {
-      this.motionReduced = reduced;
-    });
-  }
-
-  disconnectedCallback() {
-    if (typeof this.stopMotionListener === "function") {
-      this.stopMotionListener();
-    }
-    this.stopMotionListener = undefined;
-  }
-
   @wire(getHeader)
   wiredHeader({ data }) {
     // An error or an empty header renders nothing extra: never a placeholder sentence.
     this.header = data || undefined;
-  }
-
-  // The same cacheable read as c-case-study-grid with the same (empty) parameters, so the two
-  // share one cached result. A card counts only by the rule the grid shows cards by.
-  @wire(getHomeCaseStudies)
-  wiredCaseStudies({ data }) {
-    this.hasCaseStudies = Array.isArray(data) && data.some(isShownCase);
   }
 
   // The same cacheable read as c-career-line. Only the start year is used here. An error keeps
@@ -296,15 +227,6 @@ export default class HeroBanner extends LightningElement {
       target: link.external ? "_blank" : undefined,
       rel: link.external ? "noopener noreferrer" : undefined
     }));
-  }
-
-  handleCaseStudiesClick(event) {
-    const section = findById(CASE_STUDIES_ANCHOR);
-    if (section && typeof section.revealHeading === "function") {
-      event.preventDefault();
-      section.revealHeading(this.motionReduced);
-    }
-    // Otherwise the link's own #case-studies address is followed.
   }
 
   // Starts the tour. The link's own address, the first stop, is then followed.
