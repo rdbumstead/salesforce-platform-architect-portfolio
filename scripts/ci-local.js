@@ -215,12 +215,33 @@ function findChrome() {
 const NETWORK_ERROR =
   /ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EAI_AGAIN|ENETUNREACH|fetch failed|getaddrinfo|network|socket hang up/i;
 
+// A git hook runs with GIT_DIR and friends set to this repo. A test that builds its own
+// temporary repo then talks to this one instead, so every check runs without them, as
+// it does in a clean CI checkout.
+const GIT_HOOK_VARS = [
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_INDEX_FILE",
+  "GIT_PREFIX",
+  "GIT_COMMON_DIR",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+  "GIT_QUARANTINE_PATH"
+];
+
+/** The environment a check runs in: this one, less the variables a git hook sets. */
+function checkEnv(base = process.env, extra = {}) {
+  const env = { ...base, ...extra };
+  GIT_HOOK_VARS.forEach((name) => delete env[name]);
+  return env;
+}
+
 function exec(command, env) {
   const result = spawnSync(command, {
     cwd: ROOT,
     shell: true,
     encoding: "utf8",
-    env: { ...process.env, ...env },
+    env: checkEnv(process.env, env),
     maxBuffer: 64 * 1024 * 1024
   });
   return {
@@ -403,4 +424,4 @@ if (require.main === module) {
   process.exit(main(process.argv.slice(2)));
 }
 
-module.exports = { STEPS, globToRegExp, matches, selectSteps };
+module.exports = { STEPS, globToRegExp, matches, selectSteps, checkEnv };

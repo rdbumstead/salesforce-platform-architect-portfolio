@@ -6,7 +6,7 @@ const assert = require("node:assert");
 const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
-const { STEPS, selectSteps } = require("./ci-local.js");
+const { STEPS, selectSteps, checkEnv } = require("./ci-local.js");
 
 // CI_LOCAL_WORKFLOW points the test at another copy of the workflow, to show it fails on a new command.
 const WORKFLOW =
@@ -102,4 +102,21 @@ test("a spec change selects the API docs and Postman steps", () => {
   );
   assert.ok(names.includes("API docs are current"));
   assert.ok(names.includes("Postman collection"));
+});
+
+test("checks run without the variables a git hook sets", () => {
+  const env = checkEnv(
+    {
+      PATH: "/bin",
+      GIT_DIR: "/repo/.git",
+      GIT_INDEX_FILE: "/repo/.git/index",
+      GIT_WORK_TREE: "/repo"
+    },
+    { EXTRA: "1" }
+  );
+  assert.strictEqual(env.PATH, "/bin");
+  assert.strictEqual(env.EXTRA, "1");
+  assert.strictEqual(env.GIT_DIR, undefined);
+  assert.strictEqual(env.GIT_INDEX_FILE, undefined);
+  assert.strictEqual(env.GIT_WORK_TREE, undefined);
 });
