@@ -21,6 +21,7 @@ global with sharing class OpenApiDocument {
   public static final String DEFAULT_SPEC = 'papi';
   public static final String DEFAULT_VERSION = 'v2';
   public static final String CACHE_CONTROL = 'public, max-age=3600';
+  public static final String PAGES_BASE = 'https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/';
 
   /** Query value to static resource name. */
   public static final Map<String, String> RESOURCE_BY_SPEC = new Map<String, String>{
@@ -78,13 +79,22 @@ global with sharing class OpenApiDocument {
         response,
         503,
         'SERVICE_UNAVAILABLE',
-        'The OpenAPI document is not available.'
+        ApiMessages.openApiMissing(pagesUrl(spec, version))
       );
       return;
     }
     response.statusCode = 200;
     response.addHeader('Cache-Control', CACHE_CONTROL);
     response.responseBody = body;
+  }
+
+  // The same description on GitHub Pages, for example
+  // https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/portfolio-papi-v2.
+  @TestVisible
+  private static String pagesUrl(String spec, String version) {
+    return PAGES_BASE +
+      ('papi'.equals(spec) ? 'portfolio-papi' : 'salesforce-sapi') +
+      ('v2'.equals(version) ? '-v2' : '');
   }
 
   private static Blob resourceBody(String name) {
@@ -107,6 +117,12 @@ global with sharing class OpenApiDocument {
   ) {
     response.statusCode = status;
     response.addHeader('Cache-Control', 'no-store');
+    if (status == 503) {
+      response.addHeader(
+        'Retry-After',
+        String.valueOf(ApiRequestContext.DEFAULT_RETRY_AFTER_SECONDS)
+      );
+    }
     response.responseBody = Blob.valueOf(
       JSON.serialize(
         new Map<String, Object>{
@@ -114,7 +130,8 @@ global with sharing class OpenApiDocument {
           'errorCode' => errorCode,
           'message' => message,
           'correlationId' => UUID.randomUUID().toString(),
-          'retryable' => status == 503
+          'retryable' => status == 503,
+          'help' => ApiMessages.helpUrl(errorCode, 'papi')
         }
       )
     );

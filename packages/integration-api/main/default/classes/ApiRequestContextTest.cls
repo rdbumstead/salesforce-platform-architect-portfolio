@@ -84,7 +84,8 @@ private class ApiRequestContextTest {
         'errorCode',
         'message',
         'correlationId',
-        'retryable'
+        'retryable',
+        'help'
       },
       body.keySet(),
       'Error payload must match the Error schema'
@@ -121,7 +122,7 @@ private class ApiRequestContextTest {
     );
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
-      'X-Request-Id header is required.',
+      ApiMessages.REQUEST_ID_MISSING,
       RestTestUtil.getBodyAsMap().get('message'),
       'Message should name the missing header'
     );
@@ -143,7 +144,7 @@ private class ApiRequestContextTest {
     );
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
-      'X-Request-Id must be a UUID.',
+      ApiMessages.REQUEST_ID_INVALID,
       RestTestUtil.getBodyAsMap().get('message'),
       'Message should explain the UUID rule'
     );
@@ -257,9 +258,9 @@ private class ApiRequestContextTest {
 
     Assert.isTrue(ctx.isRejected(), 'SAPI rules are unchanged');
     Assert.areEqual(
-      'X-Request-Id must be a UUID.',
+      ApiMessages.REQUEST_ID_INVALID,
       RestTestUtil.getBodyAsMap().get('message'),
-      'SAPI message unchanged'
+      'SAPI message'
     );
   }
 
@@ -400,7 +401,7 @@ private class ApiRequestContextTest {
     );
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
-      'Unsupported X-API-Version',
+      ApiMessages.VERSION_UNSUPPORTED,
       RestTestUtil.getBodyAsMap().get('message'),
       'Version message'
     );
@@ -489,7 +490,7 @@ private class ApiRequestContextTest {
     Assert.isTrue(ctx.isRejected(), 'Invalid limit rejects the request');
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
-      'Limit must be an integer between 1 and 200.',
+      ApiMessages.limitInvalid(200),
       RestTestUtil.getBodyAsMap().get('message'),
       'First error wins'
     );
@@ -508,7 +509,7 @@ private class ApiRequestContextTest {
     Assert.isNull(offsetValue, 'Invalid offset returns null');
     assertErrorShape(400, 'BAD_REQUEST', false);
     Assert.areEqual(
-      'Offset cannot be negative.',
+      ApiMessages.offsetInvalid(ApiRequestContext.MAX_OFFSET),
       RestTestUtil.getBodyAsMap().get('message'),
       'Negative offset message'
     );
@@ -833,7 +834,7 @@ private class ApiRequestContextTest {
     Assert.areEqual(100, atMax, 'The max page size comes from the setting');
     Assert.isNull(overMaxValue, 'A limit over the set max is refused');
     Assert.areEqual(
-      'Limit must be an integer between 1 and 100.',
+      ApiMessages.limitInvalid(100),
       RestTestUtil.getBodyAsMap().get('message'),
       'The message names the max in force'
     );

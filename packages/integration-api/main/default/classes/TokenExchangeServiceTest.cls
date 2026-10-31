@@ -359,7 +359,13 @@ private class TokenExchangeServiceTest {
     Test.stopTest();
 
     Assert.areEqual(503, result.statusCode, 'Not configured');
-    Assert.areEqual('Token issuance is not configured.', result.message, 'Msg');
+    Assert.isTrue(
+      result.message.startsWith(
+        ApiMessages.tokenNotConfigured('').removeEnd(' .')
+      ),
+      'Msg: ' + result.message
+    );
+    Assert.isFalse(result.retryable, 'Retrying cannot fix a setup problem');
     Assert.areEqual(1, mock.requests.size(), 'One callout');
     assertOneRow('Credential_Missing');
   }
@@ -398,7 +404,12 @@ private class TokenExchangeServiceTest {
 
     Assert.areEqual(503, result.statusCode, 'Not configured');
     Assert.areEqual('SERVICE_UNAVAILABLE', result.errorCode, 'Code');
-    Assert.areEqual('Token issuance is not configured.', result.message, 'Msg');
+    Assert.isTrue(
+      result.message.startsWith(
+        ApiMessages.tokenNotConfigured('').removeEnd(' .')
+      ),
+      'Msg: ' + result.message
+    );
     assertOneRow('Credential_Missing');
   }
 

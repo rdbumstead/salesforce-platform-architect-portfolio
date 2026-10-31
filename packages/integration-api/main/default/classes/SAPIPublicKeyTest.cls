@@ -379,10 +379,11 @@ private class SAPIPublicKeyTest {
     Test.stopTest();
 
     SapiTestData.assertError(400, 'BAD_REQUEST');
-    Assert.isTrue(
-      String.valueOf(RestTestUtil.getBodyAsMap().get('message'))
-        .contains('public key'),
-      'The message names both forms: ' + SapiTestData.bodyText()
+    Assert.areEqual(
+      ApiMessages.idInvalid('experienceId', '/sapi/experience'),
+      RestTestUtil.getBodyAsMap().get('message'),
+      'The message names the list that holds the keys: ' +
+      SapiTestData.bodyText()
     );
   }
 

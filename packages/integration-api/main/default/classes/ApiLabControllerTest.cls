@@ -127,7 +127,7 @@ private class ApiLabControllerTest {
       Assert.fail('v3 must be refused');
     } catch (AuraHandledException e) {
       Assert.areEqual(
-        'Version is not available in the API Lab',
+        ApiMessages.LAB_VERSION_NOT_ALLOWED,
         e.getMessage(),
         'Message'
       );
@@ -212,7 +212,11 @@ private class ApiLabControllerTest {
       ApiLabController.invoke('/services/data/v64.0/sobjects/User', null);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
-      Assert.isTrue(e.getMessage().contains('not available'), 'Message');
+      Assert.areEqual(
+        ApiMessages.LAB_PATH_NOT_ALLOWED,
+        e.getMessage(),
+        'Message'
+      );
     }
     Test.stopTest();
 
@@ -282,7 +286,11 @@ private class ApiLabControllerTest {
       ApiLabController.invoke('/sapi/skills', null);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
-      Assert.isTrue(e.getMessage().contains('not available'), 'Fails closed');
+      Assert.areEqual(
+        ApiMessages.LAB_PATH_NOT_ALLOWED,
+        e.getMessage(),
+        'Fails closed'
+      );
     }
     Test.stopTest();
 
@@ -299,7 +307,11 @@ private class ApiLabControllerTest {
       ApiLabController.getCatalog();
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
-      Assert.isTrue(e.getMessage().contains('catalog'), 'Says what is missing');
+      Assert.areEqual(
+        ApiMessages.LAB_CATALOG_MISSING,
+        e.getMessage(),
+        'Says what is missing'
+      );
     }
     Set<String> allowed = ApiLabController.allowedPaths();
     Test.stopTest();
@@ -314,7 +326,11 @@ private class ApiLabControllerTest {
       ApiLabController.invoke('/papi/auth/token', null);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
-      Assert.isTrue(e.getMessage().contains('not available'), 'POST path');
+      Assert.areEqual(
+        ApiMessages.LAB_PATH_NOT_ALLOWED,
+        e.getMessage(),
+        'POST path'
+      );
     }
     Test.stopTest();
   }
@@ -326,7 +342,11 @@ private class ApiLabControllerTest {
       ApiLabController.invoke(null, null);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
-      Assert.isTrue(e.getMessage().contains('not available'), 'Blank');
+      Assert.areEqual(
+        ApiMessages.LAB_PATH_NOT_ALLOWED,
+        e.getMessage(),
+        'Blank'
+      );
     }
     Test.stopTest();
   }
@@ -373,7 +393,11 @@ private class ApiLabControllerTest {
       ApiLabController.invoke('/sapi/skills', params);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
-      Assert.isTrue(e.getMessage().contains('Too many'), 'Count');
+      Assert.areEqual(
+        ApiMessages.labTooManyParams(10),
+        e.getMessage(),
+        'Count'
+      );
     }
     Test.stopTest();
   }
@@ -390,7 +414,7 @@ private class ApiLabControllerTest {
       ApiLabController.invoke('/papi/health', null);
       Assert.fail('Expected AuraHandledException');
     } catch (AuraHandledException e) {
-      Assert.isTrue(e.getMessage().contains('could not be reached'), 'Msg');
+      Assert.areEqual(ApiMessages.LAB_API_UNREACHABLE, e.getMessage(), 'Msg');
     }
     Test.stopTest();
   }
@@ -454,12 +478,16 @@ private class ApiLabControllerTest {
     try {
       ApiLabController.invoke('/services/data/v64.0/sobjects/User', null);
     } catch (AuraHandledException e) {
-      Assert.isTrue(e.getMessage().contains('not available'), 'Refused');
+      Assert.areEqual(
+        ApiMessages.LAB_PATH_NOT_ALLOWED,
+        e.getMessage(),
+        'Refused'
+      );
     }
     try {
       ApiLabController.invoke('/papi/health', null);
     } catch (AuraHandledException e) {
-      Assert.isTrue(e.getMessage().contains('could not be reached'), 'Down');
+      Assert.areEqual(ApiMessages.LAB_API_UNREACHABLE, e.getMessage(), 'Down');
     }
     Test.stopTest();
 

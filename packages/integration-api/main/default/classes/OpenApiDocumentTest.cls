@@ -128,6 +128,21 @@ private class OpenApiDocumentTest {
     Test.stopTest();
 
     Assert.areEqual(503, response.statusCode, 'Unavailable');
+    Assert.areEqual(
+      ApiMessages.openApiMissing(OpenApiDocument.pagesUrl('papi', 'v2')),
+      bodyOf(response).get('message'),
+      'Names the same description on GitHub'
+    );
+    Assert.areEqual(
+      'https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/portfolio-papi-v2',
+      OpenApiDocument.pagesUrl('papi', 'v2'),
+      'PAPI v2 page'
+    );
+    Assert.areEqual(
+      'https://rdbumstead.github.io/salesforce-platform-architect-portfolio/api/oas/salesforce-sapi',
+      OpenApiDocument.pagesUrl('sapi', 'v1'),
+      'SAPI v1 page'
+    );
   }
 
   @IsTest
@@ -159,6 +174,16 @@ private class OpenApiDocumentTest {
 
     Assert.areEqual(503, response.statusCode, 'Unavailable');
     Assert.areEqual(true, bodyOf(response).get('retryable'), 'Retryable');
+    Assert.areEqual(
+      String.valueOf(ApiRequestContext.DEFAULT_RETRY_AFTER_SECONDS),
+      response.headers.get('Retry-After'),
+      'A retryable 503 carries Retry-After'
+    );
+    Assert.areEqual(
+      ApiMessages.helpUrl('SERVICE_UNAVAILABLE', 'papi'),
+      bodyOf(response).get('help'),
+      'Help link'
+    );
   }
 
   @IsTest

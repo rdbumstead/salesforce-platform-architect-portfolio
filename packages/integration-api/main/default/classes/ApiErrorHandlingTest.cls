@@ -245,53 +245,145 @@ private class ApiErrorHandlingTest {
     );
   }
 
-  @IsTest
-  static void shouldCountSecondsInWords() {
-    Assert.areEqual('1 second', ApiMessages.seconds(1));
-    Assert.areEqual('2 seconds', ApiMessages.seconds(2));
-    Assert.areEqual('0 seconds', ApiMessages.seconds(0));
+  private class BusyLimiter implements ApiRateLimiter {
+    public ApiRequestContext.RateDecision check(
+      String tierKey,
+      Integer limitPerMinute
+    ) {
+      ApiRequestContext.RateDecision busy = new ApiRequestContext.RateDecision(
+        false,
+        limitPerMinute,
+        0,
+        1
+      );
+      busy.busy = true;
+      return busy;
+    }
+
+    public ApiRequestContext.RateDecision checkKey(
+      String callerKey,
+      Integer limitPerMinute
+    ) {
+      return check(callerKey, limitPerMinute);
+    }
+  }
+
+  private class UsedUpLimiter implements ApiRateLimiter {
+    public ApiRequestContext.RateDecision check(
+      String tierKey,
+      Integer limitPerMinute
+    ) {
+      return new ApiRequestContext.RateDecision(false, limitPerMinute, 0, 30);
+    }
+
+    public ApiRequestContext.RateDecision checkKey(
+      String callerKey,
+      Integer limitPerMinute
+    ) {
+      return check(callerKey, limitPerMinute);
+    }
   }
 
   @IsTest
-  static void shouldWordTheTokenAndMethodMessages() {
-    String url = 'https://example.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token';
+  static void shouldSayTheApiIsBusyWhenTheCounterRowIsLocked() {
+    ApiRequestContext.limiterOverride = new BusyLimiter();
+    RestTestUtil.initGet(SAPI_URI);
 
-    String needs = ApiMessages.needsToken('/papi/projects', url);
-    Assert.isTrue(needs.contains('POST ' + url), 'Token URL');
-    Assert.isTrue(needs.contains('/papi/projects'), 'Route');
-    Assert.isTrue(needs.endsWith('.'), 'Closing period');
+    ApiRequestContext.begin();
 
-    Assert.isTrue(ApiMessages.tokensNotHere(url).contains(url), 'Token URL');
-
+    Assert.areEqual(429, RestContext.response.statusCode, 'Status');
     Assert.areEqual(
-      '/papi/projects takes GET or HEAD, not POST.',
-      ApiMessages.methodNotAllowed(
-        '/papi/projects',
-        'GET,HEAD',
-        'POST',
-        PAPIRouter.ROUTE_PROJECTS
+      ApiMessages.LOCK_BUSY,
+      RestTestUtil.getBodyAsMap().get('message'),
+      'Not a used up limit'
+    );
+  }
+
+  @IsTest
+  static void shouldNameTheTierAndTheLimitWhenTheSharedLimitIsUsedUp() {
+    ApiRequestContext.limiterOverride = new UsedUpLimiter();
+
+    RestTestUtil.initGet(SAPI_URI);
+    ApiRequestContext.begin();
+    Assert.areEqual(
+      ApiMessages.tierLimit('SAPI', ApiRequestContext.sapiLimitPerMinute(), 30),
+      RestTestUtil.getBodyAsMap().get('message'),
+      'SAPI'
+    );
+    Assert.areEqual('30', RestContext.response.headers.get('Retry-After'));
+
+    RestTestUtil.initGet('/services/apexrest/papi/v1/health');
+    ApiRequestContext.begin();
+    Assert.areEqual(
+      ApiMessages.tierLimit('PAPI', ApiRequestContext.papiLimitPerMinute(), 30),
+      RestTestUtil.getBodyAsMap().get('message'),
+      'PAPI'
+    );
+
+    RestTestUtil.initGet('/services/apexrest/papi/v1/ai/generate');
+    ApiRequestContext.begin();
+    Assert.areEqual(
+      ApiMessages.tierLimit('AI', ApiRequestContext.aiLimitPerMinute(), 30),
+      RestTestUtil.getBodyAsMap().get('message'),
+      'AI'
+    );
+  }
+
+  @IsTest
+  static void shouldPointTheHelpLinkAtTheSpecOfTheApiCalled() {
+    RestTestUtil.initGet(SAPI_URI);
+    ApiRequestContext.begin().error(400, 'BAD_REQUEST', 'x');
+    Assert.areEqual(
+      ApiMessages.helpUrl('BAD_REQUEST', 'sapi'),
+      RestTestUtil.getBodyAsMap().get('help'),
+      'SAPI'
+    );
+
+    RestTestUtil.initGet(PAPI_RESUME_URI);
+    ApiRequestContext.begin().error(400, 'BAD_REQUEST', 'x');
+    Assert.areEqual(
+      ApiMessages.helpUrl('BAD_REQUEST', 'papi'),
+      RestTestUtil.getBodyAsMap().get('help'),
+      'PAPI'
+    );
+  }
+
+  @IsTest
+  static void shouldPickTheRetryAfterForEachAiFailure() {
+    Assert.areEqual(
+      ApiMessages.AI_RETRY_AFTER_SECONDS,
+      PAPIAiGenerate.retryAfterSeconds(ApiMessages.AI_ALL_UNAVAILABLE),
+      'All providers'
+    );
+    Integer toTheHour = PAPIAiGenerate.retryAfterSeconds(
+      ApiMessages.AI_AGENTFORCE_BUDGET
+    );
+    Assert.isTrue(toTheHour >= 1 && toTheHour <= 3600, 'Rest of the hour');
+    Assert.areEqual(
+      ApiRequestContext.DEFAULT_RETRY_AFTER_SECONDS,
+      PAPIAiGenerate.retryAfterSeconds(ApiMessages.AI_AGENTFORCE_DOWN),
+      'Agentforce down'
+    );
+  }
+
+  @IsTest
+  static void shouldTellASetupProblemFromAConnectionProblemInHealth() {
+    Assert.areEqual(
+      ApiMessages.HEALTH_NOT_SET_UP,
+      PAPIHealth.credentialProblem(
+        new CalloutException('Unable to find named credential Portfolio_API')
       ),
-      'Plain route'
+      'Missing credential'
     );
-    Assert.isTrue(
-      ApiMessages.methodNotAllowed(
-          '/papi/auth/token',
-          'POST',
-          'GET',
-          PAPIRouter.ROUTE_AUTH_TOKEN
-        )
-        .contains(ApiMessages.TOKEN_BODY_SAMPLE),
-      'The token route shows its body'
+    Assert.areEqual(
+      ApiMessages.HEALTH_NOT_REACHED,
+      PAPIHealth.credentialProblem(new CalloutException('Read timed out')),
+      'Timeout'
     );
-    Assert.isTrue(
-      ApiMessages.methodNotAllowed(
-          '/papi/ai/generate',
-          'POST',
-          'GET',
-          PAPIRouter.ROUTE_AI_GENERATE
-        )
-        .contains('API reference'),
-      'The AI route points at the reference'
+    Assert.areEqual(
+      ApiMessages.HEALTH_NOT_REACHED,
+      PAPIHealth.credentialProblem(new CalloutException()),
+      'No text'
     );
   }
 }

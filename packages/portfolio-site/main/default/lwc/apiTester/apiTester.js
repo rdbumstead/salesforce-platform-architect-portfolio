@@ -106,7 +106,9 @@ export const MAX_PURPOSE = 280;
 // address the API would refuse, and never refuses one it accepts.
 export const EMAIL_PATTERN =
   /^[A-Za-z0-9._%+-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/;
-export const EMAIL_ERROR = "Enter an email address like name@example.com.";
+// The same sentence the token route sends for a bad email, so the Lab and the API agree.
+export const EMAIL_ERROR =
+  "Enter a working email address like name@example.com. It is only used to count tokens.";
 export const PURPOSE_ERROR =
   "Add a purpose of up to 280 characters, a few words on what you are evaluating.";
 
@@ -120,7 +122,7 @@ export const CURL_NOTE =
 export const STATUS_NOTES = [
   {
     code: "401",
-    text: "The token has ended. Request a new one."
+    text: "INVALID_SESSION_ID means the token has ended after 30 minutes without use. Request a new one above."
   },
   {
     code: "429",
@@ -128,9 +130,17 @@ export const STATUS_NOTES = [
   },
   {
     code: "503",
-    text: "Today's token limit is reached. Try again tomorrow."
+    text: "The token service is busy or today's tokens are used up. The message above says which."
   }
 ];
+
+/** The line under the endpoint row when the list of API routes does not load. */
+export const CATALOG_ERROR =
+  "The list of API routes did not load. Reload the page. The API reference lists the same routes.";
+
+/** The line shown when the filter lists do not load. The text box under Advanced still works. */
+export const OPTIONS_ERROR =
+  "The filter lists did not load. You can still type filters under Advanced.";
 
 /** What a failed call says when the platform gave no message a visitor can use. */
 export const UNREACHABLE_MESSAGE =
@@ -525,6 +535,7 @@ function formatBody(body) {
 export default class ApiTester extends LightningElement {
   catalog;
   catalogError = "";
+  optionsError = "";
   selectedPath;
   apiVersion = DEFAULT_VERSION;
   paramValues = {};
@@ -574,8 +585,10 @@ export default class ApiTester extends LightningElement {
   wiredOptions({ data, error }) {
     if (data) {
       this.options = data;
+      this.optionsError = "";
     } else if (error) {
       this.options = {};
+      this.optionsError = OPTIONS_ERROR;
     }
   }
 
@@ -596,13 +609,13 @@ export default class ApiTester extends LightningElement {
     if (data) {
       const catalog = parseCatalog(data);
       this.catalog = catalog;
-      this.catalogError = catalog ? "" : "The API catalog could not be read.";
+      this.catalogError = catalog ? "" : CATALOG_ERROR;
       if (catalog && !this.selectedPath && catalog.paths.length) {
         this.selectedPath = catalog.paths[0].path;
       }
     } else if (error) {
       this.catalog = undefined;
-      this.catalogError = `The API catalog could not be loaded: ${reduceError(error)}`;
+      this.catalogError = CATALOG_ERROR;
     }
   }
 

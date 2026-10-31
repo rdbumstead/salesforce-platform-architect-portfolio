@@ -34,7 +34,11 @@ global with sharing class SAPICertificationSkill implements QueryDefinitions.Pro
       }
       // v2 names the filter certificationKey and takes a key only. v1 keeps certificationId.
       if (ctx.isV2() && String.isNotBlank(ctx.stringParam('certificationId'))) {
-        ctx.error(400, 'BAD_REQUEST', 'Use certificationKey in v2.');
+        ctx.error(
+          400,
+          'BAD_REQUEST',
+          ApiMessages.keyRenamed('certificationKey', 'certificationId')
+        );
         return;
       }
       String certificationId = ctx.stringParam(
@@ -52,8 +56,11 @@ global with sharing class SAPICertificationSkill implements QueryDefinitions.Pro
             400,
             'BAD_REQUEST',
             ctx.isV2()
-              ? 'certificationKey must be a public key.'
-              : 'certificationId must be a Salesforce Id or a public key.'
+              ? ApiMessages.keyInvalid(
+                  'certificationKey',
+                  '/sapi/certifications'
+                )
+              : ApiMessages.idInvalid('certificationId', '/sapi/certifications')
           );
           return;
         }

@@ -60,8 +60,10 @@ public with sharing class ApiRouting {
     ctx.error(
       404,
       'NOT_FOUND',
-      'No route matches ' +
-      ApiRequestContext.canonicalPath(RestContext.request?.requestURI)
+      ApiMessages.routeNotFound(
+        RestContext.request?.httpMethod,
+        ApiRequestContext.canonicalPath(RestContext.request?.requestURI)
+      )
     );
   }
 

@@ -54,7 +54,7 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
       if (endpoint == 'generate') {
         generateResume(ctx, persona);
       } else {
-        ctx.error(400, 'BAD_REQUEST', 'Invalid endpoint. Use /resume/generate');
+        ctx.error(400, 'BAD_REQUEST', ApiMessages.RESUME_ENDPOINT_INVALID);
       }
     } catch (Exception e) {
       ctx.serverError(e);
@@ -70,11 +70,7 @@ global with sharing class PAPIResume implements QueryDefinitions.Provider {
       ? null
       : PERSONAS.get(rawPersona.trim().toLowerCase());
     if (String.isNotBlank(rawPersona) && persona == null) {
-      ctx.error(
-        400,
-        'BAD_REQUEST',
-        'Invalid persona. Valid values: Admin, Developer, Architect'
-      );
+      ctx.error(400, 'BAD_REQUEST', ApiMessages.PERSONA_INVALID);
       return;
     }
 

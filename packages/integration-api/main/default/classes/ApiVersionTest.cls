@@ -251,7 +251,7 @@ private class ApiVersionTest {
     SAPIProjectAsset.getProjectAssets();
     Assert.areEqual(400, RestContext.response.statusCode, 'An Id is refused');
     Assert.areEqual(
-      'projectKey must be a public key.',
+      ApiMessages.keyInvalid('projectKey', '/sapi/projects'),
       ((Map<String, Object>) body()).get('message'),
       'v2 message'
     );
@@ -265,7 +265,7 @@ private class ApiVersionTest {
     SAPIProjectAsset.getProjectAssets();
     Assert.areEqual(400, RestContext.response.statusCode, 'Old name refused');
     Assert.areEqual(
-      'Use projectKey in v2.',
+      ApiMessages.keyRenamed('projectKey', 'projectId'),
       ((Map<String, Object>) body()).get('message'),
       'Names the new parameter'
     );
@@ -330,7 +330,7 @@ private class ApiVersionTest {
     SAPICertificationSkill.getCertificationSkills();
     Assert.areEqual(400, RestContext.response.statusCode, 'cert old name');
     Assert.areEqual(
-      'Use certificationKey in v2.',
+      ApiMessages.keyRenamed('certificationKey', 'certificationId'),
       ((Map<String, Object>) body()).get('message'),
       'cert message'
     );
@@ -552,7 +552,8 @@ private class ApiVersionTest {
         'errorCode',
         'message',
         'correlationId',
-        'retryable'
+        'retryable',
+        'help'
       },
       error.keySet(),
       'The existing error envelope'
@@ -560,10 +561,12 @@ private class ApiVersionTest {
     Assert.areEqual('GONE', error.get('errorCode'), 'Code');
     Assert.areEqual(false, error.get('retryable'), 'Not retryable');
     Assert.isTrue(
-      ((String) error.get('message')).contains('v2') &&
-      ((String) error.get('message'))
-        .contains('https://ryanbumstead.com/api-lab/reference?version=v2'),
-      'The message names v2 and the link'
+      ((String) error.get('message')).contains('X-API-Version: v2'),
+      'The message names the header to send'
+    );
+    Assert.isTrue(
+      ((String) error.get('help')).contains('version=v2#error-gone'),
+      'The link to the v2 reference is in help'
     );
     Assert.areEqual(SUNSET_VALUE, header('Sunset'), 'Sunset on the 410');
   }

@@ -93,7 +93,8 @@ private class PAPIRouterTest {
           'errorCode',
           'message',
           'correlationId',
-          'retryable'
+          'retryable',
+          'help'
         },
         error.keySet(),
         'The usual envelope'
@@ -141,8 +142,9 @@ private class PAPIRouterTest {
     switchOff();
     route('GET', 'nothing', null);
     Assert.areEqual(404, RestContext.response.statusCode);
-    Assert.isTrue(
-      ((String) bodyMap().get('message')).startsWith('No route matches')
+    Assert.areEqual(
+      ApiMessages.routeNotFound('GET', '/papi/nothing'),
+      bodyMap().get('message')
     );
   }
 
@@ -207,7 +209,7 @@ private class PAPIRouterTest {
 
     Assert.areEqual(400, RestContext.response.statusCode, 'Bare resume');
     Assert.isTrue(
-      ((String) bodyMap().get('message')).contains('Use /resume/generate'),
+      ApiMessages.RESUME_ENDPOINT_INVALID == bodyMap().get('message'),
       'The handler, not the router, answered'
     );
   }
@@ -238,7 +240,7 @@ private class PAPIRouterTest {
 
     Assert.areEqual(400, RestContext.response.statusCode, 'AI: no body');
     Assert.isTrue(
-      ((String) bodyMap().get('message')).contains('Request body is required'),
+      ApiMessages.AI_BODY_MISSING == bodyMap().get('message'),
       'PAPIAiGenerate answered'
     );
   }
@@ -266,7 +268,8 @@ private class PAPIRouterTest {
           'errorCode',
           'message',
           'correlationId',
-          'retryable'
+          'retryable',
+          'help'
         },
         error.keySet(),
         'The existing error envelope for ' + path
@@ -291,7 +294,8 @@ private class PAPIRouterTest {
         'errorCode',
         'message',
         'correlationId',
-        'retryable'
+        'retryable',
+        'help'
       },
       error.keySet(),
       'The usual envelope'

@@ -34,7 +34,11 @@ global with sharing class SAPIExperienceSkill implements QueryDefinitions.Provid
       }
       // v2 names the filter experienceKey and takes a key only. v1 keeps experienceId.
       if (ctx.isV2() && String.isNotBlank(ctx.stringParam('experienceId'))) {
-        ctx.error(400, 'BAD_REQUEST', 'Use experienceKey in v2.');
+        ctx.error(
+          400,
+          'BAD_REQUEST',
+          ApiMessages.keyRenamed('experienceKey', 'experienceId')
+        );
         return;
       }
       String experienceId = ctx.stringParam(
@@ -52,8 +56,8 @@ global with sharing class SAPIExperienceSkill implements QueryDefinitions.Provid
             400,
             'BAD_REQUEST',
             ctx.isV2()
-              ? 'experienceKey must be a public key.'
-              : 'experienceId must be a Salesforce Id or a public key.'
+              ? ApiMessages.keyInvalid('experienceKey', '/sapi/experience')
+              : ApiMessages.idInvalid('experienceId', '/sapi/experience')
           );
           return;
         }

@@ -80,7 +80,7 @@ global with sharing class PAPIHealth {
       Object status = SAPIHealth.buildPayload().get('status');
       return STATE_UP.equals(status) ? STATE_UP : STATE_DOWN;
     } catch (Exception e) {
-      details.put('sapi', e.getTypeName());
+      details.put('sapi', ApiMessages.HEALTH_NOT_REACHED);
       return STATE_DOWN;
     }
   }
@@ -110,12 +110,25 @@ global with sharing class PAPIHealth {
     req.setHeader('Accept', 'application/json');
     try {
       HttpResponse res = new Http().send(req);
-      details.put('credential', 'HTTP ' + res.getStatusCode());
+      details.put(
+        'credential',
+        ApiMessages.healthAnswered(res.getStatusCode())
+      );
       return res.getStatusCode() == 200 ? STATE_UP : STATE_DOWN;
     } catch (Exception e) {
-      details.put('credential', e.getTypeName());
+      details.put('credential', credentialProblem(e));
       return STATE_DOWN;
     }
+  }
+
+  // A callout that fails because the credential is absent or not granted reads as not set
+  // up. Any other failure reads as not reached. No exception type or text is sent.
+  @TestVisible
+  private static String credentialProblem(Exception e) {
+    String text = e.getMessage();
+    return text != null && text.toLowerCase().contains('credential')
+      ? ApiMessages.HEALTH_NOT_SET_UP
+      : ApiMessages.HEALTH_NOT_REACHED;
   }
 
   /**

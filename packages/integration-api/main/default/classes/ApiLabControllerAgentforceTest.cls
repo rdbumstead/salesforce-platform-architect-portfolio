@@ -287,7 +287,9 @@ private class ApiLabControllerAgentforceTest {
   static void a503FromTheApiFallsToGeminiAndLeavesTheBreakerToTheApi() {
     RoutingMock mock = mockApi(
       503,
-      '{"errorCode":"ALL_PROVIDERS_UNAVAILABLE","message":"Agentforce currently unavailable"}'
+      '{"errorCode":"ALL_PROVIDERS_UNAVAILABLE","message":"' +
+        ApiMessages.AI_AGENTFORCE_DOWN +
+        '"}'
     );
 
     ApiLabController.CoverLetterResult result = letterAsGuest(null);

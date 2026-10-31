@@ -244,7 +244,7 @@ private class PAPIProfileTest {
     Map<String, Object> body = RestTestUtil.getBodyAsMap();
     Assert.areEqual(200, res.statusCode, 'A section failure is not a 500');
     Assert.areEqual(
-      'partial: certifications unavailable',
+      ApiMessages.partial(new List<String>{ 'certifications' }),
       body.get('integrityNote'),
       'The note names the failed sub-query'
     );
@@ -296,7 +296,20 @@ private class PAPIProfileTest {
     Map<String, Object> body = RestTestUtil.getBodyAsMap();
     Assert.areEqual(200, res.statusCode, 'Best effort aggregation');
     Assert.areEqual(
-      'partial: contacts, experience, experience-skills, skills, projects, project-skills, project-assets, certifications, education, testimonials unavailable',
+      ApiMessages.partial(
+        new List<String>{
+          'contacts',
+          'experience',
+          'experience-skills',
+          'skills',
+          'projects',
+          'project-skills',
+          'project-assets',
+          'certifications',
+          'education',
+          'testimonials'
+        }
+      ),
       body.get('integrityNote'),
       'Every failed section is named in read order'
     );
@@ -341,7 +354,7 @@ private class PAPIProfileTest {
     Test.stopTest();
 
     Assert.areEqual(
-      'partial: education unavailable',
+      ApiMessages.partial(new List<String>{ 'education' }),
       RestTestUtil.getBodyAsMap().get('integrityNote'),
       'The note names the failed section'
     );

@@ -570,11 +570,7 @@ public with sharing class ApiRequestContext {
     Integer maxSize = maxPageSize();
     Integer value = parseInteger('limit', defaultPageSize());
     if (value == null || value < 1 || value > maxSize) {
-      error(
-        400,
-        'BAD_REQUEST',
-        'Limit must be an integer between 1 and ' + maxSize + '.'
-      );
+      error(400, 'BAD_REQUEST', ApiMessages.limitInvalid(maxSize));
       return null;
     }
     pageLimit = value;
@@ -590,20 +586,8 @@ public with sharing class ApiRequestContext {
       return null;
     }
     Integer value = parseInteger('offset', DEFAULT_OFFSET);
-    if (value == null) {
-      error(400, 'BAD_REQUEST', 'Offset must be a non-negative integer.');
-      return null;
-    }
-    if (value < 0) {
-      error(400, 'BAD_REQUEST', 'Offset cannot be negative.');
-      return null;
-    }
-    if (value > MAX_OFFSET) {
-      error(
-        400,
-        'BAD_REQUEST',
-        'Offset cannot be more than ' + MAX_OFFSET + '.'
-      );
+    if (value == null || value < 0 || value > MAX_OFFSET) {
+      error(400, 'BAD_REQUEST', ApiMessages.offsetInvalid(MAX_OFFSET));
       return null;
     }
     return value;
@@ -696,7 +680,7 @@ public with sharing class ApiRequestContext {
    * @description Writes the standard Error payload and marks the request rejected. The
    *              error is retryable when it is a 429 or a 5xx.
    * @param status HTTP status code.
-   * @param errorCode Code from the SAPI Error enum.
+   * @param errorCode Code from the Error schema's errorCode enum.
    * @param message Human-readable message.
    */
   public void error(Integer status, String errorCode, String message) {
@@ -704,8 +688,9 @@ public with sharing class ApiRequestContext {
   }
 
   /**
-   * @description Writes the standard Error payload and marks the request rejected. A 503 that
-   *              is retryable and has no Retry-After yet gets one of 60 seconds.
+   * @description Writes the standard Error payload, with a help link to the code's entry on
+   *              the API reference, and marks the request rejected. A 503 that is retryable
+   *              and has no Retry-After yet gets one of 60 seconds.
    * @param status HTTP status code.
    * @param errorCode Code from the SAPI Error enum.
    * @param message Human-readable message.
@@ -735,7 +720,11 @@ public with sharing class ApiRequestContext {
           'errorCode' => errorCode,
           'message' => message,
           'correlationId' => correlationId,
-          'retryable' => retryable
+          'retryable' => retryable,
+          'help' => ApiMessages.helpUrl(
+            errorCode,
+            familyOf(req?.requestURI) == ApiFamily.SAPI ? 'sapi' : 'papi'
+          )
         }
       )
     );
@@ -847,7 +836,7 @@ public with sharing class ApiRequestContext {
     // The body differs by version, so a shared cache must key on the header.
     appendHeader('Vary', HEADER_API_VERSION);
     if (!versionKnown) {
-      error(400, 'BAD_REQUEST', 'Unsupported X-API-Version');
+      error(400, 'BAD_REQUEST', ApiMessages.VERSION_UNSUPPORTED);
       return;
     }
     Boolean versionApplies = !isV2();
@@ -868,7 +857,14 @@ public with sharing class ApiRequestContext {
       Boolean versionGone = isGone(versionSunset);
       Boolean pathGone = isGone(pathSunset);
       if ((versionGone || pathGone) && !isSunsetExempt()) {
-        error(410, 'GONE', goneMessage(versionGone, pathGone));
+        error(
+          410,
+          'GONE',
+          goneMessage(
+            versionGone ? versionSunset : null,
+            pathGone ? pathSunset : null
+          )
+        );
         return;
       }
     }
@@ -893,40 +889,44 @@ public with sharing class ApiRequestContext {
       error(
         429,
         'RATE_LIMIT_EXCEEDED',
-        'Rate limit exceeded. Retry after ' +
-          ApiMessages.seconds(decision.retryAfterSeconds) +
-          '.'
+        decision.busy
+          ? ApiMessages.LOCK_BUSY
+          : ApiMessages.tierLimit(
+              tierLabelOf(family, isAi()),
+              decision.limitPerMinute,
+              decision.retryAfterSeconds
+            )
       );
       return;
     }
 
     if (idMissing && family != ApiFamily.PAPI) {
-      error(400, 'BAD_REQUEST', 'X-Request-Id header is required.');
+      error(400, 'BAD_REQUEST', ApiMessages.REQUEST_ID_MISSING);
       return;
     }
     if (!idMissing && !idValid) {
-      error(400, 'BAD_REQUEST', 'X-Request-Id must be a UUID.');
+      error(400, 'BAD_REQUEST', ApiMessages.REQUEST_ID_INVALID);
       return;
     }
   }
 
-  // The version message is the ADR-039 text, unchanged. The path message names the versionless
-  // URL without its query, so no parameter value is echoed back.
-  private String goneMessage(Boolean versionGone, Boolean pathGone) {
-    String message = '';
-    if (versionGone) {
-      message =
-        'API v1 has been retired. Send X-API-Version: v2. See ' +
-        V2_REFERENCE_URL;
+  // Each message names its retirement date. The path message names the versionless URL
+  // without its query, so no parameter value is echoed back. A date is null when that
+  // retirement does not apply to this request.
+  private String goneMessage(Date versionSunset, Date pathSunset) {
+    List<String> parts = new List<String>();
+    if (versionSunset != null) {
+      parts.add(ApiMessages.versionGone(versionSunset));
     }
-    if (pathGone) {
-      message +=
-        (versionGone ? ' ' : '') +
-        'URLs with /v1/ have been retired. Use ' +
-        withPlatformPrefix(versionlessUri(req?.requestURI)) +
-        ' instead.';
+    if (pathSunset != null) {
+      parts.add(
+        ApiMessages.pathGone(
+          pathSunset,
+          withPlatformPrefix(versionlessUri(req?.requestURI))
+        )
+      );
     }
-    return message;
+    return String.join(parts, ' ');
   }
 
   private String headerValue(String name) {
@@ -1033,6 +1033,13 @@ public with sharing class ApiRequestContext {
       'Api_Ai_Rate_Per_Minute',
       PAPI_AI_LIMIT_PER_MINUTE
     );
+  }
+
+  private static String tierLabelOf(ApiFamily family, Boolean ai) {
+    if (family == ApiFamily.SAPI) {
+      return 'SAPI';
+    }
+    return ai ? 'AI' : 'PAPI';
   }
 
   private static ApiFamily familyOf(String uri) {

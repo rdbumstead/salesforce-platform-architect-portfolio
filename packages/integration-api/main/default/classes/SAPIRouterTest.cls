@@ -171,8 +171,9 @@ private class SAPIRouterTest {
       );
     }
     viaRouter('nothing');
-    Assert.isTrue(
-      ((String) bodyMap().get('message')).startsWith('No route matches'),
+    Assert.areEqual(
+      ApiMessages.routeNotFound('GET', '/sapi/nothing'),
+      bodyMap().get('message'),
       'An unknown route is the plain 404'
     );
   }
@@ -198,8 +199,9 @@ private class SAPIRouterTest {
     Test.stopTest();
 
     Assert.areEqual(404, RestContext.response.statusCode, 'No such project');
-    Assert.isTrue(
-      ((String) bodyMap().get('message')).startsWith('Project not found'),
+    Assert.areEqual(
+      ApiMessages.projectNotFound('prj_doesnotexist', false),
+      bodyMap().get('message'),
       'SAPIProject, not the router, answered: ' + body()
     );
   }
@@ -224,7 +226,8 @@ private class SAPIRouterTest {
           'errorCode',
           'message',
           'correlationId',
-          'retryable'
+          'retryable',
+          'help'
         },
         error.keySet(),
         'The existing error envelope for ' + path

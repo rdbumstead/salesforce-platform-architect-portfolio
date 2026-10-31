@@ -47,11 +47,7 @@ global with sharing class PAPITestimonialFeed implements QueryDefinitions.Provid
 
       String mode = resolveMode(ctx.stringParam('mode'));
       if (mode == null) {
-        ctx.error(
-          400,
-          'BAD_REQUEST',
-          'Invalid mode. Valid values: professional, casual'
-        );
+        ctx.error(400, 'BAD_REQUEST', ApiMessages.MODE_INVALID);
         return;
       }
 

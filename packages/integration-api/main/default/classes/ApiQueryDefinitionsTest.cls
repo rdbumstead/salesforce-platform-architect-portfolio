@@ -418,7 +418,7 @@ private class ApiQueryDefinitionsTest {
       'No experience'
     );
     Assert.areEqual(
-      'partial: experience unavailable',
+      ApiMessages.partial(new List<String>{ 'experience' }),
       body.get('integrityNote'),
       'The experience section is named as before'
     );

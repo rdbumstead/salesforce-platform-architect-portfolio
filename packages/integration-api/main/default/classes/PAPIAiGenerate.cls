@@ -120,20 +120,22 @@ global with sharing class PAPIAiGenerate {
     } catch (InvalidRequestException e) {
       ctx.error(400, 'BAD_REQUEST', e.getMessage());
     } catch (ContentGenerationController.ContentGenerationException e) {
-      ctx.error(503, 'ALL_PROVIDERS_UNAVAILABLE', unavailableMessage(e));
+      String message = unavailableMessage(e);
+      ctx.header('Retry-After', String.valueOf(retryAfterSeconds(message)));
+      ctx.error(503, 'ALL_PROVIDERS_UNAVAILABLE', message);
     } catch (Exception e) {
       ctx.serverError(e);
     }
   }
 
   /** The 503 message when Agentforce only was asked and its hourly budget is used. */
-  public static final String MESSAGE_AGENTFORCE_BUDGET = 'Agentforce hourly budget used';
+  public static final String MESSAGE_AGENTFORCE_BUDGET = ApiMessages.AI_AGENTFORCE_BUDGET;
 
   private static String unavailableMessage(
     ContentGenerationController.ContentGenerationException e
   ) {
     if (!agentforceOnlyRequested) {
-      return 'All AI providers currently unavailable';
+      return ApiMessages.AI_ALL_UNAVAILABLE;
     }
     for (ContentGenerationController.Attempt attempt : e.attempts) {
       if (
@@ -142,7 +144,21 @@ global with sharing class PAPIAiGenerate {
         return MESSAGE_AGENTFORCE_BUDGET;
       }
     }
-    return 'Agentforce currently unavailable';
+    return ApiMessages.AI_AGENTFORCE_DOWN;
+  }
+
+  // Seconds to wait: five minutes when every provider failed, the rest of the hour when
+  // Agentforce's hourly budget is used up, and the default 60 for an Agentforce failure.
+  @TestVisible
+  private static Integer retryAfterSeconds(String message) {
+    if (message == ApiMessages.AI_ALL_UNAVAILABLE) {
+      return ApiMessages.AI_RETRY_AFTER_SECONDS;
+    }
+    if (message == ApiMessages.AI_AGENTFORCE_BUDGET) {
+      Datetime now = Datetime.now();
+      return 3600 - (now.minuteGmt() * 60 + now.secondGmt());
+    }
+    return ApiRequestContext.DEFAULT_RETRY_AFTER_SECONDS;
   }
 
   private static List<Map<String, Object>> attemptsBody(
@@ -197,16 +213,16 @@ global with sharing class PAPIAiGenerate {
 
   private static Map<String, Object> toObject(Blob body) {
     if (body == null || String.isBlank(body.toString())) {
-      throw new InvalidRequestException('Request body is required.');
+      throw new InvalidRequestException(ApiMessages.AI_BODY_MISSING);
     }
     Object parsed;
     try {
       parsed = JSON.deserializeUntyped(body.toString());
     } catch (JSONException e) {
-      throw new InvalidRequestException('Request body must be valid JSON.');
+      throw new InvalidRequestException(ApiMessages.AI_BODY_NOT_JSON);
     }
     if (!(parsed instanceof Map<String, Object>)) {
-      throw new InvalidRequestException('Request body must be a JSON object.');
+      throw new InvalidRequestException(ApiMessages.AI_BODY_NOT_OBJECT);
     }
     return (Map<String, Object>) parsed;
   }
@@ -221,16 +237,13 @@ global with sharing class PAPIAiGenerate {
     if (value == null && defaultValue != null) {
       return defaultValue;
     }
-    String valid = String.join(new List<String>(allowed), ', ');
+    List<String> valid = new List<String>(allowed);
+    valid.sort();
     if (value == null) {
-      throw new InvalidRequestException(
-        field + ' is required. Valid values: ' + valid
-      );
+      throw new InvalidRequestException(ApiMessages.fieldMissing(field, valid));
     }
     if (!(value instanceof String) || !allowed.contains((String) value)) {
-      throw new InvalidRequestException(
-        'Invalid ' + field + '. Valid values: ' + valid
-      );
+      throw new InvalidRequestException(ApiMessages.fieldInvalid(field, valid));
     }
     return (String) value;
   }

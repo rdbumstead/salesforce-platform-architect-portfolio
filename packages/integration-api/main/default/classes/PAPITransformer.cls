@@ -298,15 +298,12 @@ public with sharing class PAPITransformer {
 
     /**
      * @description Value for the integrityNote body field.
-     * @return String "complete", or "partial: <sections> unavailable".
+     * @return String "complete", or the sentence that names the sections that failed.
      */
     public String integrityNote() {
       return isComplete()
         ? INTEGRITY_COMPLETE
-        : INTEGRITY_PARTIAL +
-          ': ' +
-          String.join(failedSections, ', ') +
-          ' unavailable';
+        : ApiMessages.partial(failedSections);
     }
 
     /**

@@ -64,6 +64,10 @@
           {catalogError}
         </p>
 
+        <p lwc:if={optionsError} class="options-notice" role="status">
+          {optionsError}
+        </p>
+
         <div class="param-section slds-m-top_medium">
           <template lwc:if={isPhone}>
             <h3 class="disclosure-heading">

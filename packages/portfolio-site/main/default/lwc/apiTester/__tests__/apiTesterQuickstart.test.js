@@ -229,9 +229,13 @@ describe("c-api-tester outside the page", () => {
     );
     expect($$(element, ".status-notes li").map((li) => li.textContent)).toEqual(
       [
-        expect.stringContaining("401"),
+        expect.stringContaining(
+          "401 INVALID_SESSION_ID means the token has ended"
+        ),
         expect.stringContaining("429"),
-        expect.stringContaining("503")
+        expect.stringContaining(
+          "503 The token service is busy or today's tokens"
+        )
       ]
     );
   });

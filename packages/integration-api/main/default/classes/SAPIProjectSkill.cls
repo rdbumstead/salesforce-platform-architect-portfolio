@@ -34,7 +34,11 @@ global with sharing class SAPIProjectSkill implements QueryDefinitions.Provider 
       }
       // v2 names the filter projectKey and takes a key only. v1 keeps projectId.
       if (ctx.isV2() && String.isNotBlank(ctx.stringParam('projectId'))) {
-        ctx.error(400, 'BAD_REQUEST', 'Use projectKey in v2.');
+        ctx.error(
+          400,
+          'BAD_REQUEST',
+          ApiMessages.keyRenamed('projectKey', 'projectId')
+        );
         return;
       }
       String projectId = ctx.stringParam(
@@ -52,8 +56,8 @@ global with sharing class SAPIProjectSkill implements QueryDefinitions.Provider 
             400,
             'BAD_REQUEST',
             ctx.isV2()
-              ? 'projectKey must be a public key.'
-              : 'projectId must be a Salesforce Id or a public key.'
+              ? ApiMessages.keyInvalid('projectKey', '/sapi/projects')
+              : ApiMessages.idInvalid('projectId', '/sapi/projects')
           );
           return;
         }
