@@ -263,13 +263,15 @@ export default class SchemaVisualizer extends LightningElement {
   }
 
   // A phone opened from a section's marker lists the section's objects and their direct
-  // neighbours. The dialog around it already carries the heading, so it is not drawn twice.
+  // neighbours.
   get isPhoneSectionList() {
     return this.isSmall && this.hasHighlight;
   }
 
+  // Only a section marker's dialog sets a highlight, and that dialog already carries the
+  // heading, so it is not drawn twice on any screen.
   get showTitle() {
-    return !this.isPhoneSectionList;
+    return !this.hasHighlight;
   }
 
   // The API names of the highlighted objects and every object one link away from them, in

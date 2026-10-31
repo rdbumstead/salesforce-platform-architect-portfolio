@@ -5,13 +5,12 @@
  *                      (Client_Line__c) and a "Read the case study" button. The first card's
  *                      button is the section's one primary button and the others are secondary.
  *                      No status pill is shown. A card shows only with a title and a link, and a
- *                      link is an http or https address or a path on this site (isShownCase,
- *                      which the hero's "See the case studies" button uses too). Following a
- *                      link sends case_study_link_followed with the card's title.
+ *                      link is an http or https address or a path on this site (isShownCase).
+ *                      Following a link sends case_study_link_followed with the card's title.
  *                      Renders nothing at all before the read returns, when no card can show or
  *                      when it fails, so there is never an empty heading.
  *                      While it shows cards its host element carries the id "case-studies", so
- *                      the hero button can reach it. revealHeading scrolls to the heading and
+ *                      a link can reach it. revealHeading scrolls to the heading and
  *                      moves focus to it, and an address ending in #case-studies does the same,
  *                      on load or later. Scrolling is smooth unless the system "reduce motion"
  *                      setting is on (c/motionPreference). The width follows

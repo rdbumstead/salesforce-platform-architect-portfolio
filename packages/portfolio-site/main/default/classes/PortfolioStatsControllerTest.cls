@@ -272,6 +272,8 @@ private class PortfolioStatsControllerTest {
     Assert.areEqual(0, stats.coverLettersWritten, 'Letters');
     Assert.areEqual(0, stats.apiLabRequests, 'Requests');
     Assert.isNull(stats.countingSince, 'No month');
+    Assert.areEqual(0, stats.tokensIssued, 'Tokens');
+    Assert.isNull(stats.tokensSince, 'No token month');
   }
 
   @isTest
@@ -307,7 +309,7 @@ private class PortfolioStatsControllerTest {
 
   @isTest
   static void countsIssuedTokensOnly() {
-    insert new List<API_Access_Request__c>{
+    List<API_Access_Request__c> requests = new List<API_Access_Request__c>{
       new API_Access_Request__c(
         Outcome__c = PortfolioStatsController.OUTCOME_ISSUED
       ),
@@ -317,6 +319,20 @@ private class PortfolioStatsControllerTest {
       new API_Access_Request__c(Outcome__c = 'Rate_Limited'),
       new API_Access_Request__c(Outcome__c = 'Cap_Reached')
     };
+    insert requests;
+    Test.setCreatedDate(
+      requests[0].Id,
+      Datetime.newInstanceGmt(2026, 11, 2, 9, 0, 0)
+    );
+    Test.setCreatedDate(
+      requests[1].Id,
+      Datetime.newInstanceGmt(2026, 10, 21, 12, 51, 0)
+    );
+    // A refused request older than both does not move the day.
+    Test.setCreatedDate(
+      requests[2].Id,
+      Datetime.newInstanceGmt(2026, 9, 1, 0, 0, 0)
+    );
 
     User reader = adminReader();
 
@@ -325,6 +341,11 @@ private class PortfolioStatsControllerTest {
     Test.stopTest();
 
     Assert.areEqual(2, stats.tokensIssued, 'Only issued tokens count');
+    Assert.areEqual(
+      Date.newInstance(2026, 10, 21),
+      stats.tokensSince,
+      'The day the first issued token was created'
+    );
   }
 
   @isTest
@@ -397,6 +418,7 @@ private class PortfolioStatsControllerTest {
         'latestJestRun',
         'latestJestPassed',
         'tokensIssued',
+        'tokensSince',
         'coverLettersWritten',
         'apiLabRequests',
         'countingSince'

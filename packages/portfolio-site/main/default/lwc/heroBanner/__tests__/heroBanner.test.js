@@ -2,9 +2,9 @@
  * @description       : Unit tests for heroBanner LWC: the static hero (photo, name, meta line,
  *                      proof strip), the title line and the value sentence from the
  *                      ResumeController header wire, the start year from the timeline wire, the
- *                      two buttons, the profile links, the case studies button's scroll and
- *                      focus, the tour link that starts the tour at its first stop, and that the
- *                      pillars, Start here and the tour list are not in the hero.
+ *                      proof panel and its buttons, the profile links, the tour link that starts
+ *                      the tour at its first stop, and that the pillars, Start here, the tour
+ *                      list and a case studies button are not in the hero.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -13,7 +13,6 @@
 import { createElement } from "@lwc/engine-dom";
 import HeroBanner from "c/heroBanner";
 import getHeader from "@salesforce/apex/ResumeController.getHeader";
-import getHomeCaseStudies from "@salesforce/apex/ProjectCardController.getHomeCaseStudies";
 import getTimeline from "@salesforce/apex/ResumeController.getTimeline";
 import getBuildCounts from "@salesforce/apex/ProjectCardController.getBuildCounts";
 import { trackEvent } from "c/analyticsService";
@@ -26,15 +25,6 @@ jest.mock(
 
 jest.mock(
   "@salesforce/apex/ResumeController.getHeader",
-  () => {
-    const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
-    return { default: createApexTestWireAdapter(jest.fn()) };
-  },
-  { virtual: true }
-);
-
-jest.mock(
-  "@salesforce/apex/ProjectCardController.getHomeCaseStudies",
   () => {
     const { createApexTestWireAdapter } = require("@salesforce/sfdx-lwc-jest");
     return { default: createApexTestWireAdapter(jest.fn()) };
@@ -70,12 +60,6 @@ jest.mock(
   { virtual: true }
 );
 
-const CASE = {
-  key: "case-1",
-  title: "Employer Hub",
-  liveUrl: "/business-architecture"
-};
-
 const HEADER = {
   name: "Ryan Bumstead",
   title: "Salesforce Platform Architect",
@@ -100,14 +84,6 @@ function flush() {
   return Promise.resolve();
 }
 
-// The hero with one case study back from the read, so "See the case studies" shows.
-async function renderWithCases() {
-  const element = render();
-  getHomeCaseStudies.emit([CASE]);
-  await flush();
-  return element;
-}
-
 function text(node) {
   return node.textContent.replace(/\s+/g, " ").trim();
 }
@@ -117,21 +93,10 @@ function byId(element, id) {
 }
 
 describe("c-hero-banner", () => {
-  const originalMatchMedia = window.matchMedia;
-
-  function systemReduces(matches) {
-    window.matchMedia = jest.fn(() => ({
-      matches,
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn()
-    }));
-  }
-
   afterEach(() => {
     while (document.body.firstChild) {
       document.body.removeChild(document.body.firstChild);
     }
-    window.matchMedia = originalMatchMedia;
     jest.clearAllMocks();
   });
 
@@ -293,19 +258,21 @@ describe("c-hero-banner", () => {
   });
 
   describe("buttons and profile links", () => {
-    it("offers the tour as the primary button first and See the case studies as the secondary, and leaves the resume to the profile links", async () => {
-      const element = await renderWithCases();
-      const actions = element.shadowRoot.querySelectorAll(".hero-actions a");
-      expect(Array.from(actions).map((a) => text(a))).toEqual([
-        "Take the 10 minute tour →",
-        "See the case studies ↓"
+    it("holds every button in the proof panel, the tour first, with no case studies button, and leaves the resume to the profile links", () => {
+      const element = render();
+      const panel = byId(element, "proof-panel");
+      const buttons = panel.querySelectorAll(".btn");
+      expect(Array.from(buttons).map((a) => a.dataset.id)).toEqual([
+        "tour-link",
+        "docs-link",
+        "guest-access-link"
       ]);
-      expect(actions[0].getAttribute("href")).toBe(
-        "/portfolio/business-architecture"
+      expect(element.shadowRoot.querySelectorAll(".btn")).toHaveLength(3);
+      expect(element.shadowRoot.querySelector(".hero-actions")).toBeNull();
+      expect(byId(element, "case-studies-button")).toBeNull();
+      expect(text(element.shadowRoot.querySelector(".hero"))).not.toContain(
+        "See the case studies"
       );
-      expect(actions[0].classList.contains("btn-primary")).toBe(true);
-      expect(actions[1].getAttribute("href")).toBe("/portfolio/#case-studies");
-      expect(actions[1].classList.contains("btn-secondary")).toBe(true);
       expect(byId(element, "resume-button")).toBeNull();
     });
 
@@ -413,122 +380,6 @@ describe("c-hero-banner", () => {
     });
   });
 
-  describe("case studies button shows only with a case study", () => {
-    function caseButton(element) {
-      return byId(element, "case-studies-button");
-    }
-
-    function actionKeys(element) {
-      return Array.from(
-        element.shadowRoot.querySelectorAll(".hero-actions a")
-      ).map((a) => a.dataset.id);
-    }
-
-    it("reads getHomeCaseStudies, which takes no parameters, so it shares the grid's cache", () => {
-      render();
-      expect(getHomeCaseStudies.getLastConfig()).toEqual({});
-    });
-
-    it("keeps an empty button row before the read returns, so its height is held", () => {
-      const element = render();
-      expect(caseButton(element)).toBeNull();
-      expect(element.shadowRoot.querySelector(".hero-actions")).not.toBeNull();
-      expect(actionKeys(element)).toEqual(["tour-link"]);
-    });
-
-    it("shows no button when there are no case studies", async () => {
-      const element = render();
-      getHomeCaseStudies.emit([]);
-      await flush();
-      expect(caseButton(element)).toBeNull();
-      expect(actionKeys(element)).toEqual(["tour-link"]);
-    });
-
-    it("shows no button when the read fails or no card has a title", async () => {
-      const element = render();
-      getHomeCaseStudies.error();
-      await flush();
-      expect(caseButton(element)).toBeNull();
-      getHomeCaseStudies.emit([{ key: "a", title: "   " }, null]);
-      await flush();
-      expect(caseButton(element)).toBeNull();
-    });
-
-    it("shows no button when no card has a link the grid would show", async () => {
-      const element = render();
-      getHomeCaseStudies.emit([
-        { key: "a", title: "No link" },
-        // eslint-disable-next-line no-script-url
-        { key: "b", title: "Unsafe", liveUrl: "javascript:alert(1)" }
-      ]);
-      await flush();
-      expect(caseButton(element)).toBeNull();
-    });
-
-    it("shows See the case studies once one card comes back", async () => {
-      const element = render();
-      getHomeCaseStudies.emit([CASE]);
-      await flush();
-      expect(caseButton(element)).not.toBeNull();
-      expect(actionKeys(element)).toEqual(["tour-link", "case-studies-button"]);
-      getHomeCaseStudies.emit([]);
-      await flush();
-      expect(caseButton(element)).toBeNull();
-    });
-  });
-
-  describe("case studies button", () => {
-    function addSection(parent) {
-      const section = document.createElement("div");
-      section.id = "case-studies";
-      section.revealHeading = jest.fn(() => true);
-      parent.appendChild(section);
-      return section;
-    }
-
-    function click(element) {
-      const event = new MouseEvent("click", {
-        bubbles: true,
-        cancelable: true
-      });
-      byId(element, "case-studies-button").dispatchEvent(event);
-      return event;
-    }
-
-    it("asks the case study section to reveal its heading, smoothly by default", async () => {
-      systemReduces(false);
-      const section = addSection(document.body);
-      const element = await renderWithCases();
-      const event = click(element);
-      expect(section.revealHeading).toHaveBeenCalledWith(false);
-      expect(event.defaultPrevented).toBe(true);
-    });
-
-    it("asks for no smooth scroll when the system reduces motion", async () => {
-      systemReduces(true);
-      const section = addSection(document.body);
-      const element = await renderWithCases();
-      click(element);
-      expect(section.revealHeading).toHaveBeenCalledWith(true);
-    });
-
-    it("finds the section inside another component's shadow root", async () => {
-      systemReduces(false);
-      const host = document.createElement("div");
-      document.body.appendChild(host);
-      const section = addSection(host.attachShadow({ mode: "open" }));
-      const element = await renderWithCases();
-      click(element);
-      expect(section.revealHeading).toHaveBeenCalledTimes(1);
-    });
-
-    it("follows the home page #case-studies address when no section is on the page", async () => {
-      const element = await renderWithCases();
-      const event = click(element);
-      expect(event.defaultPrevented).toBe(false);
-    });
-  });
-
   describe("tour link", () => {
     function click(element) {
       const event = new MouseEvent("click", {
@@ -543,7 +394,7 @@ describe("c-hero-banner", () => {
       window.sessionStorage.clear();
     });
 
-    it("is the primary button, first in the button row, to the first stop, with the tour minutes", () => {
+    it("is the primary button, in the proof panel before the architecture buttons, to the first stop, with the tour minutes", () => {
       const element = render();
       const link = byId(element, "tour-link");
       expect(link.tagName).toBe("A");
@@ -554,8 +405,7 @@ describe("c-hero-banner", () => {
       expect(link.classList.contains("btn-primary")).toBe(true);
       expect(link.classList.contains("btn-secondary")).toBe(false);
       expect(link.querySelector('[aria-hidden="true"]').textContent).toBe("→");
-      const actions = element.shadowRoot.querySelector(".hero-actions");
-      expect(actions.contains(link)).toBe(true);
+      expect(byId(element, "proof-panel").contains(link)).toBe(true);
     });
 
     it("starts the tour and lets the link go to the first stop, sending no tour_opened", () => {
@@ -699,8 +549,8 @@ describe("c-hero-banner", () => {
       expect(guest.classList.contains("btn-secondary")).toBe(true);
     });
 
-    it("has one primary button only", async () => {
-      const element = await renderWithCases();
+    it("has one primary button only", () => {
+      const element = render();
       expect(element.shadowRoot.querySelectorAll(".btn-primary")).toHaveLength(
         1
       );

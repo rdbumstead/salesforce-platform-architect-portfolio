@@ -3,8 +3,9 @@
  *                      PortfolioStatsController.getStats once through the wire service and
  *                      shows each count as text: production deploys recorded, the newest
  *                      deploy's Apex and Jest tests each with one plain line on what they
- *                      prove, evaluator tokens issued, cover letters written and API Lab
- *                      requests sent since the month counting began, a closed "What the tests
+ *                      prove, evaluator tokens issued since the month the first was issued,
+ *                      cover letters written and API Lab requests sent since the month
+ *                      counting began, a closed "What the tests
  *                      cover" disclosure, and a table of approved testimonials by vibe once
  *                      one is approved. The server returns counts only, so nothing here can
  *                      show a record.
@@ -51,6 +52,7 @@ const PLACEHOLDER_STATS = Object.freeze({
   latestJestRun: 0,
   latestJestPassed: 0,
   tokensIssued: 0,
+  tokensSince: "2026-01-01",
   coverLettersWritten: 0,
   apiLabRequests: 0,
   countingSince: "2026-01-01"
@@ -263,6 +265,9 @@ export default class ByTheNumbers extends LightningElement {
   tilesFor(stats) {
     const since = formatMonth(stats.countingSince);
     const sinceText = since ? `since ${since}` : "";
+    // Tokens are counted from their own records, so they carry their own month.
+    const tokensMonth = formatMonth(stats.tokensSince);
+    const tokensSinceText = tokensMonth ? `since ${tokensMonth}` : "";
     return [
       this.tile("deploys", stats.deployRuns, "Production deploys recorded"),
       this.testTile(
@@ -295,7 +300,8 @@ export default class ByTheNumbers extends LightningElement {
       this.tile(
         "tokens",
         stats.tokensIssued,
-        "API Lab evaluator tokens issued"
+        "API Lab evaluator tokens issued",
+        tokensSinceText
       ),
       this.tile(
         "requests",

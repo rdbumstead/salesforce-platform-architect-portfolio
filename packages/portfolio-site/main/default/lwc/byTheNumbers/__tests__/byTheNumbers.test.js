@@ -44,6 +44,7 @@ function stats(overrides = {}) {
     latestJestRun: 748,
     latestJestPassed: 747,
     tokensIssued: 4,
+    tokensSince: "2026-10-21",
     coverLettersWritten: 1234,
     apiLabRequests: 56,
     countingSince: "2026-10-28",
@@ -188,6 +189,29 @@ describe("c-by-the-numbers", () => {
     expect(text(element, "[data-stat='requests'] .detail")).toBe(
       "since October 2026"
     );
+  });
+
+  it("dates the token count from the first token, not from the usage counters", async () => {
+    const element = mount();
+    getStats.emit(stats({ tokensSince: "2026-09-30" }));
+    await flush();
+    expect(text(element, "[data-stat='tokens'] .detail")).toBe(
+      "since September 2026"
+    );
+    expect(text(element, "[data-stat='letters'] .detail")).toBe(
+      "since October 2026"
+    );
+  });
+
+  it("shows no token month before any token is issued", async () => {
+    const element = mount();
+    getStats.emit(stats({ tokensIssued: 0, tokensSince: null }));
+    await flush();
+    expect(text(element, "[data-stat='tokens'] .value")).toBe("0");
+    const detail = element.shadowRoot.querySelector(
+      "[data-stat='tokens'] .detail"
+    );
+    expect(detail ? detail.textContent.trim() : "").toBe("");
   });
 
   it("shows 0 and no month when nothing is counted", async () => {

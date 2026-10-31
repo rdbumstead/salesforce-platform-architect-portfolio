@@ -25,29 +25,18 @@
             <li key={point.key} class="proof-item">{point.text}</li>
           </template>
         </ul>
-        <div class="hero-actions">
-          <a
-            class="btn btn-primary"
-            href={tourHref}
-            data-id="tour-link"
-            onclick={handleTourClick}
-            >{tourLabel} <span aria-hidden="true">→</span></a
-          >
-          <template lwc:if={hasCaseStudies}>
-            <a
-              class="btn btn-secondary"
-              href={caseStudiesHref}
-              data-id="case-studies-button"
-              onclick={handleCaseStudiesClick}
-              >See the case studies <span aria-hidden="true">↓</span></a
-            >
-          </template>
-        </div>
         <div class="proof-panel" data-id="proof-panel">
           <p class="proof-intro" data-id="proof-intro">{proofIntro}</p>
           <template lwc:if={statsText}>
             <p class="proof-stats" data-id="proof-stats">{statsText}</p>
           </template>
+          <a
+            class="btn btn-primary tour-link"
+            href={tourHref}
+            data-id="tour-link"
+            onclick={handleTourClick}
+            >{tourLabel} <span aria-hidden="true">→</span></a
+          >
           <div class="proof-actions">
             <a class="btn btn-secondary" href={docsHref} data-id="docs-link"
               >Architecture and decisions <span aria-hidden="true">→</span></a
