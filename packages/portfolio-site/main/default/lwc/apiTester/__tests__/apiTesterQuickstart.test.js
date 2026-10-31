@@ -24,6 +24,8 @@ import ApiTester, {
   COPY_DONE,
   COPY_FAILED,
   EMAIL_ERROR,
+  EMAIL_PATTERN,
+  PURPOSE_ERROR,
   PLACEHOLDER_TOKEN,
   PLACEHOLDER_INSTANCE_URL,
   STATUS_MESSAGES,
@@ -227,9 +229,13 @@ describe("c-api-tester outside the page", () => {
     );
     expect($$(element, ".status-notes li").map((li) => li.textContent)).toEqual(
       [
-        expect.stringContaining("401"),
+        expect.stringContaining(
+          "401 INVALID_SESSION_ID means the token has ended"
+        ),
         expect.stringContaining("429"),
-        expect.stringContaining("503")
+        expect.stringContaining(
+          "503 The token service is busy or today's tokens"
+        )
       ]
     );
   });
@@ -361,21 +367,63 @@ describe("c-api-tester token form", () => {
     );
   });
 
-  it("still sends an empty form, so the server's own message answers it as before", async () => {
-    requestEvaluatorToken.mockResolvedValue({
-      statusCode: 400,
-      errorCode: "BAD_REQUEST",
-      message: "email is required.",
-      token: null
-    });
+  it("stops an empty form and names both fields, so the server is not asked", async () => {
     const element = create();
     await flush();
     $(element, "button.token-button").click();
     await flush();
-    expect(requestEvaluatorToken).toHaveBeenCalledWith({
-      email: "",
-      purpose: ""
-    });
+    await flush();
+
+    expect(requestEvaluatorToken).not.toHaveBeenCalled();
+    expect($(element, ".token-email-error").textContent.trim()).toBe(
+      EMAIL_ERROR
+    );
+    expect($(element, ".token-purpose-error").textContent.trim()).toBe(
+      PURPOSE_ERROR
+    );
+    expect(element.shadowRoot.activeElement).toBe(
+      $(element, "input.token-email")
+    );
+  });
+
+  it("stops a request with no purpose, focuses the purpose and clears the message once it is filled", async () => {
+    const element = create();
+    await flush();
+
+    type(element, "input.token-email", "eval@example.com");
+    type(element, "input.token-purpose", "   ");
+    $(element, "button.token-button").click();
+    await flush();
+    await flush();
+
+    expect(requestEvaluatorToken).not.toHaveBeenCalled();
+    expect($(element, ".token-email-error")).toBeNull();
+    const field = $(element, "input.token-purpose");
+    const error = $(element, ".token-purpose-error");
+    expect(error.textContent.trim()).toBe(PURPOSE_ERROR);
+    expect(field.getAttribute("aria-invalid")).toBe("true");
+    expect(field.getAttribute("aria-describedby")).toContain(error.id);
+    expect(element.shadowRoot.activeElement).toBe(field);
+
+    type(element, "input.token-purpose", "Review the API");
+    await flush();
+    expect($(element, ".token-purpose-error")).toBeNull();
+    expect(field.getAttribute("aria-invalid")).toBeNull();
+  });
+
+  it("reads an email by the server's rule, refusing what the server refuses", () => {
+    ["name@example.com", "a+b@sub.example.org", "x_y.z@a-b.example.io"].forEach(
+      (address) => expect(EMAIL_PATTERN.test(address)).toBe(true)
+    );
+    [
+      "o'brien@example.com",
+      "a@b.c",
+      "a@b.1",
+      "a@-b.com",
+      "a@b-.com",
+      "a@@b.com",
+      "a b@c.com"
+    ].forEach((address) => expect(EMAIL_PATTERN.test(address)).toBe(false));
   });
 });
 

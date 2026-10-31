@@ -52,14 +52,10 @@ global with sharing class PAPIProfile implements QueryDefinitions.Provider {
       } else if (endpoint == 'summary') {
         getProfileSummary(ctx);
       } else {
-        ctx.error(
-          400,
-          'BAD_REQUEST',
-          'Invalid endpoint. Use /profile/full or /profile/summary'
-        );
+        ctx.error(400, 'BAD_REQUEST', ApiMessages.PROFILE_ENDPOINT_INVALID);
       }
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

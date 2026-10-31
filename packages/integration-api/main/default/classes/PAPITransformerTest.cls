@@ -180,7 +180,7 @@ private class PAPITransformerTest {
     Assert.isFalse(agg.isComplete(), 'Two sections failed');
     Assert.areEqual('partial', agg.integrity(), 'Header value');
     Assert.areEqual(
-      'partial: certifications, education unavailable',
+      ApiMessages.partial(new List<String>{ 'certifications', 'education' }),
       agg.integrityNote(),
       'Failed sections are listed once, in order'
     );

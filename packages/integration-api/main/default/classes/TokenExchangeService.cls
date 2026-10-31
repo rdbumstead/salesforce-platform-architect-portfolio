@@ -127,6 +127,8 @@ public with sharing class TokenExchangeService {
     public String errorCode;
     public String message;
     public Integer retryAfterSeconds;
+    // True only when the same request can succeed later with no change by the caller.
+    public Boolean retryable = false;
     public ApiRequestContext.RateDecision rateDecision;
     public TokenGrant grant;
     public Outcome outcome;
@@ -172,21 +174,26 @@ public with sharing class TokenExchangeService {
     );
     String raw = req?.requestBody == null ? null : req.requestBody.toString();
     if (String.isBlank(raw)) {
-      attempt.parseError = 'Request body must be a JSON object with email and purpose.';
+      attempt.parseError = ApiMessages.TOKEN_BODY_WRONG_SHAPE;
       return attempt;
     }
     try {
       Map<String, Object> body = (Map<String, Object>) JSON.deserializeUntyped(
         raw
       );
+      if (body == null) {
+        // The text null is valid JSON and reads as no object at all.
+        attempt.parseError = ApiMessages.TOKEN_BODY_WRONG_SHAPE;
+        return attempt;
+      }
       attempt.email = stringValue(body.get('email'));
       attempt.purpose = stringValue(body.get('purpose'));
     } catch (JSONException e) {
-      attempt.parseError = 'Request body must be valid JSON.';
+      attempt.parseError = ApiMessages.TOKEN_BODY_NOT_JSON;
     } catch (TypeException e) {
-      attempt.parseError = 'Request body must be a JSON object with string email and purpose.';
+      attempt.parseError = ApiMessages.TOKEN_BODY_WRONG_SHAPE;
     } catch (BodyException e) {
-      attempt.parseError = 'Request body must be a JSON object with string email and purpose.';
+      attempt.parseError = ApiMessages.TOKEN_BODY_WRONG_SHAPE;
     }
     return attempt;
   }
@@ -206,7 +213,7 @@ public with sharing class TokenExchangeService {
       result = checkDailyCap();
     }
     if (result == null) {
-      result = exchange();
+      result = exchange(attempt);
     }
     recordAttempt(attempt, result.outcome);
     return result;
@@ -371,9 +378,7 @@ public with sharing class TokenExchangeService {
       return reject(
         400,
         'BAD_REQUEST',
-        'email must be a valid address of at most ' +
-          EMAIL_MAX_LENGTH +
-          ' characters.',
+        ApiMessages.TOKEN_EMAIL_INVALID,
         Outcome.INVALID_REQUEST
       );
     }
@@ -384,9 +389,7 @@ public with sharing class TokenExchangeService {
       return reject(
         400,
         'BAD_REQUEST',
-        'purpose is required and must be at most ' +
-          PURPOSE_MAX_LENGTH +
-          ' characters.',
+        ApiMessages.tokenPurposeInvalid(PURPOSE_MAX_LENGTH),
         Outcome.INVALID_REQUEST
       );
     }
@@ -402,31 +405,38 @@ public with sharing class TokenExchangeService {
     Result result = reject(
       429,
       'RATE_LIMIT_EXCEEDED',
-      'Rate limit exceeded. Retry after ' +
-        decision.retryAfterSeconds +
-        ' seconds.',
+      decision.busy
+        ? ApiMessages.LOCK_BUSY
+        : ApiMessages.tokenLimit(decision.retryAfterSeconds),
       Outcome.RATE_LIMITED
     );
     result.retryAfterSeconds = decision.retryAfterSeconds;
+    result.retryable = true;
     result.rateDecision = decision;
     return result;
   }
 
   private static Result checkDailyCap() {
-    if (new AuditStore().issuedToday() < dailyCap()) {
+    Integer cap = dailyCap();
+    if (new AuditStore().issuedToday() < cap) {
       return null;
     }
+    Integer waitSeconds = secondsUntilTomorrow();
     Result result = reject(
       503,
       'SERVICE_UNAVAILABLE',
-      'Daily token issuance cap reached. Try again tomorrow.',
+      ApiMessages.tokenCapReached(
+        cap,
+        Math.max(1, (waitSeconds + 3599) / 3600)
+      ),
       Outcome.CAP_REACHED
     );
-    result.retryAfterSeconds = secondsUntilTomorrow();
+    result.retryAfterSeconds = waitSeconds;
+    result.retryable = true;
     return result;
   }
 
-  private static Result exchange() {
+  private static Result exchange(Attempt attempt) {
     try {
       Result result = new Result();
       result.statusCode = 200;
@@ -437,16 +447,18 @@ public with sharing class TokenExchangeService {
       return reject(
         503,
         'SERVICE_UNAVAILABLE',
-        'Token issuance is not configured.',
+        ApiMessages.tokenNotConfigured(attempt.correlationId),
         Outcome.CREDENTIAL_MISSING
       );
     } catch (TokenExchangeException e) {
-      return reject(
+      Result result = reject(
         503,
         'SERVICE_UNAVAILABLE',
-        'Token issuance is temporarily unavailable.',
+        ApiMessages.TOKEN_UNAVAILABLE,
         Outcome.FAILED
       );
+      result.retryable = true;
+      return result;
     }
   }
 

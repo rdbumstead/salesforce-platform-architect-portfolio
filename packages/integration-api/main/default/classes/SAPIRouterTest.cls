@@ -171,8 +171,9 @@ private class SAPIRouterTest {
       );
     }
     viaRouter('nothing');
-    Assert.isTrue(
-      ((String) bodyMap().get('message')).startsWith('No route matches'),
+    Assert.areEqual(
+      ApiMessages.routeNotFound('GET', '/sapi/nothing'),
+      bodyMap().get('message'),
       'An unknown route is the plain 404'
     );
   }
@@ -198,8 +199,9 @@ private class SAPIRouterTest {
     Test.stopTest();
 
     Assert.areEqual(404, RestContext.response.statusCode, 'No such project');
-    Assert.isTrue(
-      ((String) bodyMap().get('message')).startsWith('Project not found'),
+    Assert.areEqual(
+      ApiMessages.projectNotFound('prj_doesnotexist', false),
+      bodyMap().get('message'),
       'SAPIProject, not the router, answered: ' + body()
     );
   }
@@ -224,13 +226,146 @@ private class SAPIRouterTest {
           'errorCode',
           'message',
           'correlationId',
-          'retryable'
+          'retryable',
+          'help'
         },
         error.keySet(),
         'The existing error envelope for ' + path
       );
       Assert.areEqual('NOT_FOUND', error.get('errorCode'), path);
       Assert.areEqual(404, error.get('httpStatus'), path);
+    }
+  }
+
+  @IsTest
+  static void shouldAnswerTheGuest401OnEverySapiRoute() {
+    ApiSite.siteBaseOverride = 'https://example.my.site.com';
+    SAPIRouter.guestOverride = true;
+    List<String> paths = new List<String>{
+      'health',
+      'accounts',
+      'certification-skills',
+      'certifications',
+      'contacts',
+      'education',
+      'experience-highlights',
+      'experience-skills',
+      'experience',
+      'portfolio-config',
+      'project-assets',
+      'project-skills',
+      'projects',
+      'projects/prj_abc',
+      'skills',
+      'testimonials'
+    };
+    for (String path : paths) {
+      viaRouter(path);
+      Assert.areEqual(401, RestContext.response.statusCode, path);
+      Map<String, Object> error = bodyMap();
+      Assert.areEqual('UNAUTHORIZED', error.get('errorCode'), path);
+      Assert.areEqual(false, error.get('retryable'), path);
+      Assert.areEqual(
+        ApiMessages.needsToken(
+          '/sapi/' + path,
+          'https://example.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token'
+        ),
+        error.get('message'),
+        path
+      );
+      Assert.areEqual(
+        'Bearer',
+        RestContext.response.headers.get('WWW-Authenticate'),
+        path
+      );
+      Assert.isFalse(
+        body().contains('"data"') || body().contains('Skill'),
+        'The guest reaches no data on ' + path
+      );
+    }
+    viaRouter('nothing');
+    Assert.areEqual(404, RestContext.response.statusCode, 'Unknown stays 404');
+  }
+
+  @IsTest
+  static void shouldAnswerAGuestWithNoHeadersAt401NotAMissingHeader() {
+    ApiSite.siteBaseOverride = 'https://example.my.site.com';
+    SAPIRouter.guestOverride = true;
+    RestTestUtil.initGetRaw(BASE + 'skills', new Map<String, String>(), null);
+
+    SAPIRouter.doGet();
+
+    Assert.areEqual(401, RestContext.response.statusCode, body());
+    Assert.areEqual(
+      'Bearer',
+      RestContext.response.headers.get('WWW-Authenticate')
+    );
+    Assert.isNotNull(
+      RestContext.response.headers.get('X-Request-Id'),
+      'An id is made and echoed'
+    );
+    Assert.areEqual(
+      RestContext.response.headers.get('X-Request-Id'),
+      bodyMap().get('correlationId'),
+      'The body carries the same id'
+    );
+    Assert.isNull(
+      RestContext.response.headers.get('X-RateLimit-Limit'),
+      'A refusal spends none of the shared quota'
+    );
+
+    RestTestUtil.initGetRaw(BASE + 'nothing', new Map<String, String>(), null);
+    SAPIRouter.doGet();
+    Assert.areEqual(
+      404,
+      RestContext.response.statusCode,
+      'An unknown route is a 404 for a guest, not a missing header'
+    );
+  }
+
+  @IsTest
+  static void shouldKeepAnIdTheGuestSent() {
+    SAPIRouter.guestOverride = true;
+    String sent = UUID.randomUUID().toString();
+    RestTestUtil.initGetRaw(
+      BASE + 'skills',
+      new Map<String, String>{ 'X-Request-Id' => sent },
+      null
+    );
+
+    SAPIRouter.doGet();
+
+    Assert.areEqual(sent, bodyMap().get('correlationId'), 'Sent id kept');
+  }
+
+  @IsTest
+  static void shouldGrantTheRoutersToTheGuestPermissionSet() {
+    List<PermissionSet> sets = [
+      SELECT Id
+      FROM PermissionSet
+      WHERE Name = 'Portfolio_Guest'
+    ];
+    if (sets.isEmpty()) {
+      // The permission set ships in another package and may not be in the org under test.
+      return;
+    }
+    Set<String> granted = new Set<String>();
+    for (SetupEntityAccess access : [
+      SELECT SetupEntityId
+      FROM SetupEntityAccess
+      WHERE ParentId = :sets[0].Id AND SetupEntityType = 'ApexClass'
+    ]) {
+      granted.add(access.SetupEntityId);
+    }
+    for (ApexClass cls : [
+      SELECT Id, Name
+      FROM ApexClass
+      WHERE Name IN ('SAPIRouter', 'PAPIRouter', 'PAPIAuthToken')
+    ]) {
+      Assert.isTrue(
+        granted.contains(cls.Id),
+        'Portfolio_Guest grants ' + cls.Name
+      );
     }
   }
 }

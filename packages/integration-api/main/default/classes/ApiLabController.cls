@@ -192,7 +192,7 @@ public with sharing class ApiLabController {
   public static String getCatalog() {
     String body = catalog();
     if (body == null) {
-      throw auraError('The API Lab catalog is not available.');
+      throw auraError(ApiMessages.LAB_CATALOG_MISSING);
     }
     return body;
   }
@@ -322,7 +322,7 @@ public with sharing class ApiLabController {
       ? API_VERSION_2
       : apiVersion.trim();
     if (chosen != API_VERSION && chosen != API_VERSION_2) {
-      throw auraError('Version is not available in the API Lab');
+      throw auraError(ApiMessages.LAB_VERSION_NOT_ALLOWED);
     }
     return call(path, params, chosen);
   }
@@ -337,7 +337,7 @@ public with sharing class ApiLabController {
       ? ''
       : ApiRequestContext.canonicalPath(path.trim());
     if (normalised == null || !allowedPaths().contains(normalised)) {
-      throw auraError('Path is not available in the API Lab: ' + path);
+      throw auraError(ApiMessages.LAB_PATH_NOT_ALLOWED);
     }
     String query = buildQuery(params);
     String requestId = UUID.randomUUID().toString();
@@ -357,7 +357,11 @@ public with sharing class ApiLabController {
     try {
       res = new Http().send(req);
     } catch (CalloutException e) {
-      throw auraError('The API could not be reached: ' + e.getMessage());
+      // The detail is logged. The visitor reads a plain sentence.
+      PortfolioLog.info(
+        'api lab call failed path=' + normalised + ' type=' + e.getTypeName()
+      );
+      throw auraError(ApiMessages.LAB_API_UNREACHABLE);
     }
 
     InvokeResult result = new InvokeResult();
@@ -897,7 +901,7 @@ public with sharing class ApiLabController {
       return '';
     }
     if (params.size() > MAX_PARAMS) {
-      throw auraError('Too many query parameters.');
+      throw auraError(ApiMessages.labTooManyParams(MAX_PARAMS));
     }
     List<String> names = new List<String>(params.keySet());
     names.sort();
@@ -905,10 +909,12 @@ public with sharing class ApiLabController {
     for (String name : names) {
       String value = params.get(name);
       if (name == null || !PARAM_NAME.matcher(name).matches()) {
-        throw auraError('Invalid query parameter name: ' + name);
+        throw auraError(ApiMessages.labParamName(name));
       }
       if (value == null || value.length() > MAX_PARAM_VALUE_LENGTH) {
-        throw auraError('Invalid value for query parameter ' + name);
+        throw auraError(
+          ApiMessages.labParamValue(name, MAX_PARAM_VALUE_LENGTH)
+        );
       }
       pairs.add(name + '=' + EncodingUtil.urlEncode(value, 'UTF-8'));
     }

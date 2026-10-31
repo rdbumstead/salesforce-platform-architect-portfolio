@@ -40,16 +40,44 @@ private class ApiRoutingTest {
   }
 
   @IsTest
-  static void shouldWriteThePlatformsOwn405() {
+  static void shouldWrite405InTheErrorEnvelope() {
     RestTestUtil.initGet('/services/apexrest/papi/projects');
 
-    ApiRouting.methodNotAllowed('DELETE', 'GET,HEAD');
+    ApiRouting.methodNotAllowed('DELETE', 'GET,HEAD', 'projects');
 
     Assert.areEqual(405, RestContext.response.statusCode, 'Status');
     Assert.areEqual('GET,HEAD', RestContext.response.headers.get('Allow'));
-    Assert.isTrue(
-      RestContext.response.responseBody.toString().contains('DELETE'),
-      'Names the verb'
+    Map<String, Object> error = RestTestUtil.getBodyAsMap();
+    Assert.areEqual('METHOD_NOT_ALLOWED', error.get('errorCode'), 'Code');
+    Assert.isTrue(((String) error.get('message')).contains('DELETE'), 'Verb');
+  }
+
+  @IsTest
+  static void shouldWrite401WithAChallenge() {
+    ApiSite.siteBaseOverride = 'https://example.my.site.com';
+    RestTestUtil.initGet('/services/apexrest/sapi/skills');
+
+    ApiRouting.unauthorized();
+
+    Assert.areEqual(401, RestContext.response.statusCode, 'Status');
+    Assert.areEqual(
+      'Bearer',
+      RestContext.response.headers.get('WWW-Authenticate')
     );
+    Assert.areEqual(
+      'UNAUTHORIZED',
+      RestTestUtil.getBodyAsMap().get('errorCode')
+    );
+  }
+
+  @IsTest
+  static void shouldWrite403() {
+    ApiSite.siteBaseOverride = 'https://example.my.site.com';
+    RestTestUtil.initGet('/services/apexrest/papi/auth/token');
+
+    ApiRouting.forbidden();
+
+    Assert.areEqual(403, RestContext.response.statusCode, 'Status');
+    Assert.areEqual('FORBIDDEN', RestTestUtil.getBodyAsMap().get('errorCode'));
   }
 }

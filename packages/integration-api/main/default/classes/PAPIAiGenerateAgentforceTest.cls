@@ -158,7 +158,7 @@ private class PAPIAiGenerateAgentforceTest {
       'Error code'
     );
     Assert.areEqual(
-      'Agentforce currently unavailable',
+      ApiMessages.AI_AGENTFORCE_DOWN,
       body.get('message'),
       'Names Agentforce'
     );
@@ -213,7 +213,10 @@ private class PAPIAiGenerateAgentforceTest {
     Map<String, Object> body = RestTestUtil.getBodyAsMap();
     Assert.areEqual(400, res.statusCode, res.responseBody.toString());
     Assert.isTrue(
-      ((String) body.get('message')).contains('Invalid provider'),
+      ((String) body.get('message'))
+        .contains(
+          ApiMessages.fieldInvalid('provider', new List<String>{ 'Agentforce' })
+        ),
       (String) body.get('message')
     );
     Assert.areEqual(0, agentforce.calls, 'Nothing generated');

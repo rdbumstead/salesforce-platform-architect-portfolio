@@ -96,6 +96,12 @@ private class PAPIAiGenerateTest {
     return RestTestUtil.getResponse();
   }
 
+  private static List<String> sorted(Set<String> values) {
+    List<String> result = new List<String>(values);
+    result.sort();
+    return result;
+  }
+
   private static void assertBadRequest(RestResponse res, String fragment) {
     Assert.areEqual(400, res.statusCode, res.responseBody.toString());
     Map<String, Object> body = RestTestUtil.getBodyAsMap();
@@ -112,28 +118,40 @@ private class PAPIAiGenerateTest {
   static void invalidTypeIsRejected() {
     Map<String, Object> body = coverLetter();
     body.put('type', 'Poem');
-    assertBadRequest(post(body), 'Invalid type');
+    assertBadRequest(
+      post(body),
+      ApiMessages.fieldInvalid('type', sorted(PAPIAiGenerate.VALID_TYPES))
+    );
   }
 
   @IsTest
   static void missingTypeIsRejected() {
     Map<String, Object> body = coverLetter();
     body.remove('type');
-    assertBadRequest(post(body), 'type is required');
+    assertBadRequest(
+      post(body),
+      ApiMessages.fieldMissing('type', sorted(PAPIAiGenerate.VALID_TYPES))
+    );
   }
 
   @IsTest
   static void nonStringTypeIsRejected() {
     Map<String, Object> body = coverLetter();
     body.put('type', 7);
-    assertBadRequest(post(body), 'Invalid type');
+    assertBadRequest(
+      post(body),
+      ApiMessages.fieldInvalid('type', sorted(PAPIAiGenerate.VALID_TYPES))
+    );
   }
 
   @IsTest
   static void invalidToneIsRejected() {
     Map<String, Object> body = coverLetter();
     body.put('tone', 'Angry');
-    assertBadRequest(post(body), 'Invalid tone');
+    assertBadRequest(
+      post(body),
+      ApiMessages.fieldInvalid('tone', sorted(PAPIAiGenerate.VALID_TONES))
+    );
   }
 
   @IsTest
@@ -173,17 +191,17 @@ private class PAPIAiGenerateTest {
 
   @IsTest
   static void emptyBodyIsRejected() {
-    assertBadRequest(postRaw(null), 'Request body is required');
+    assertBadRequest(postRaw(null), ApiMessages.AI_BODY_MISSING);
   }
 
   @IsTest
   static void malformedJsonIsRejected() {
-    assertBadRequest(postRaw('{"type":'), 'valid JSON');
+    assertBadRequest(postRaw('{"type":'), ApiMessages.AI_BODY_NOT_JSON);
   }
 
   @IsTest
   static void jsonArrayIsRejected() {
-    assertBadRequest(postRaw('[1,2]'), 'JSON object');
+    assertBadRequest(postRaw('[1,2]'), ApiMessages.AI_BODY_NOT_OBJECT);
   }
 
   // --- Dispatch ---
@@ -404,6 +422,7 @@ private class PAPIAiGenerateTest {
     RestResponse res = post(coverLetter());
 
     Assert.areEqual(500, res.statusCode, 'Unexpected failures are a 500');
+    RestTestUtil.assertServerError();
   }
 
   @IsTest

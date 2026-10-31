@@ -114,7 +114,7 @@ private class PAPIHealthTest {
       'SAPI is up, so the service is degraded, not down'
     );
     Assert.areEqual(
-      'HTTP 401',
+      ApiMessages.healthAnswered(401),
       ((Map<String, Object>) body.get('details')).get('credential'),
       'Detail carries the status code'
     );
@@ -130,9 +130,9 @@ private class PAPIHealthTest {
       'An unreachable credential is DOWN'
     );
     Assert.areEqual(
-      'System.CalloutException',
+      ApiMessages.HEALTH_NOT_REACHED,
       ((Map<String, Object>) body.get('details')).get('credential'),
-      'Detail carries the exception type, not its message'
+      'Detail says it could not connect, with no exception type or text'
     );
   }
 

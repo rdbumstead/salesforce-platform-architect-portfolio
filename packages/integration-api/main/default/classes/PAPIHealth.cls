@@ -43,23 +43,33 @@ global with sharing class PAPIHealth {
       return;
     }
 
-    Map<String, Object> details = new Map<String, Object>();
-    Map<String, Object> dependencies = new Map<String, Object>();
-    dependencies.put('sapi', checkSapi(details));
-    dependencies.put('credential', checkCredential(details));
-    dependencies.putAll(checkNamedCredentials());
+    try {
+      if (Test.isRunningTest() && throwException) {
+        throw new CalloutException('Forced Exception');
+      }
+      Map<String, Object> details = new Map<String, Object>();
+      Map<String, Object> dependencies = new Map<String, Object>();
+      dependencies.put('sapi', checkSapi(details));
+      dependencies.put('credential', checkCredential(details));
+      dependencies.putAll(checkNamedCredentials());
 
-    Map<String, Object> healthStatus = new Map<String, Object>{
-      'status' => overallStatus(dependencies),
-      'checkType' => 'DEEP',
-      'timestamp' => Datetime.now().formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\''),
-      'dependencies' => dependencies,
-      'details' => details
-    };
+      Map<String, Object> healthStatus = new Map<String, Object>{
+        'status' => overallStatus(dependencies),
+        'checkType' => 'DEEP',
+        'timestamp' => Datetime.now().formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\''),
+        'dependencies' => dependencies,
+        'details' => details
+      };
 
-    ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
-    ctx.ok(healthStatus);
+      ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
+      ctx.ok(healthStatus);
+    } catch (Exception e) {
+      ctx.serverError(e);
+    }
   }
+
+  @TestVisible
+  private static Boolean throwException = false;
 
   /**
    * @description SAPI health read in-process through SAPIHealth.buildPayload (never its handler).
@@ -70,7 +80,7 @@ global with sharing class PAPIHealth {
       Object status = SAPIHealth.buildPayload().get('status');
       return STATE_UP.equals(status) ? STATE_UP : STATE_DOWN;
     } catch (Exception e) {
-      details.put('sapi', e.getTypeName());
+      details.put('sapi', ApiMessages.HEALTH_NOT_REACHED);
       return STATE_DOWN;
     }
   }
@@ -100,12 +110,25 @@ global with sharing class PAPIHealth {
     req.setHeader('Accept', 'application/json');
     try {
       HttpResponse res = new Http().send(req);
-      details.put('credential', 'HTTP ' + res.getStatusCode());
+      details.put(
+        'credential',
+        ApiMessages.healthAnswered(res.getStatusCode())
+      );
       return res.getStatusCode() == 200 ? STATE_UP : STATE_DOWN;
     } catch (Exception e) {
-      details.put('credential', e.getTypeName());
+      details.put('credential', credentialProblem(e));
       return STATE_DOWN;
     }
+  }
+
+  // A callout that fails because the credential is absent or not granted reads as not set
+  // up. Any other failure reads as not reached. No exception type or text is sent.
+  @TestVisible
+  private static String credentialProblem(Exception e) {
+    String text = e.getMessage();
+    return text != null && text.toLowerCase().contains('credential')
+      ? ApiMessages.HEALTH_NOT_SET_UP
+      : ApiMessages.HEALTH_NOT_REACHED;
   }
 
   /**

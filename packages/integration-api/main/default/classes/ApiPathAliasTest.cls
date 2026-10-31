@@ -21,7 +21,9 @@ private class ApiPathAliasTest {
   private static final String NOV_1_SUNSET = 'Sun, 01 Nov 2026 00:00:00 GMT';
   // 2026-12-01 00:00 UTC, a Tuesday.
   private static final String DEC_1_SUNSET = 'Tue, 01 Dec 2026 00:00:00 GMT';
-  private static final String VERSION_GONE = 'API v1 has been retired. Send X-API-Version: v2. See https://ryanbumstead.com/api-lab/reference?version=v2';
+  private static final String VERSION_GONE = ApiMessages.versionGone(
+    Date.newInstance(2026, 11, 1)
+  );
 
   private class CountingLimiter implements ApiRateLimiter {
     Integer checks = 0;
@@ -391,7 +393,7 @@ private class ApiPathAliasTest {
     ApiRequestContext.nowOverride = Datetime.newInstanceGmt(2027, 1, 1);
     send(SAPI_OLD, 'v1', null);
     Assert.isTrue(ApiRequestContext.begin().isRejected(), 'v1 is gone');
-    Assert.areEqual(VERSION_GONE, bodyMap().get('message'), 'ADR-039 text');
+    Assert.areEqual(VERSION_GONE, bodyMap().get('message'), 'The version text');
     send(SAPI_OLD, 'v2', null);
     Assert.isFalse(ApiRequestContext.begin().isRejected(), 'v2 is served');
   }
@@ -423,7 +425,8 @@ private class ApiPathAliasTest {
         'errorCode',
         'message',
         'correlationId',
-        'retryable'
+        'retryable',
+        'help'
       },
       error.keySet(),
       'The existing error envelope'
@@ -434,7 +437,7 @@ private class ApiPathAliasTest {
     Assert.isTrue(message.contains(SAPI_NEW), 'Names the versionless URL');
     Assert.isFalse(message.contains('secret'), 'Echoes no query value');
     Assert.isFalse(
-      message.contains('API v1 has been retired'),
+      message.contains('API v1 was retired'),
       'Not the version text'
     );
     Assert.areEqual(NOV_1_SUNSET, header('Sunset'), 'Sunset on the 410');
@@ -509,7 +512,7 @@ private class ApiPathAliasTest {
     Assert.areEqual(
       VERSION_GONE,
       bodyMap().get('message'),
-      'ADR-039 text exactly'
+      'The version text exactly'
     );
     send(SAPI_OLD, 'v2', null);
     Assert.isFalse(
@@ -529,7 +532,7 @@ private class ApiPathAliasTest {
 
     Assert.isTrue(ctx.isRejected(), 'Gone');
     String message = (String) bodyMap().get('message');
-    Assert.isTrue(message.startsWith(VERSION_GONE), 'The ADR-039 text first');
+    Assert.isTrue(message.startsWith(VERSION_GONE), 'The version text first');
     Assert.isTrue(message.contains(SAPI_NEW), 'Then the versionless URL');
   }
 

@@ -179,5 +179,6 @@ private class PAPITestimonialFeedTest {
       RestTestUtil.getResponse().statusCode,
       'Unexpected failures are a 500'
     );
+    RestTestUtil.assertServerError();
   }
 }

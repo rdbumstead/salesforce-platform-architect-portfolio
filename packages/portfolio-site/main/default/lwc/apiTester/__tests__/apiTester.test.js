@@ -10,6 +10,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ApiTester, {
+  CATALOG_ERROR,
   DISPLAYED_HEADERS,
   VERSION_HEADERS,
   parseQuery,
@@ -143,8 +144,11 @@ describe("c-api-tester", () => {
     getCatalog.error({ message: "No access" });
     await flushPromises();
 
-    expect(query(element, ".catalog-error").textContent).toContain(
-      "could not be loaded"
+    expect(query(element, ".catalog-error").textContent.trim()).toBe(
+      CATALOG_ERROR
+    );
+    expect(query(element, ".catalog-error").textContent).not.toContain(
+      "No access"
     );
     expect(query(element, "button.execute-button").disabled).toBe(true);
   });
@@ -383,6 +387,8 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
+    setInput(element, "input.token-email", "eval@example.com");
+    setInput(element, "input.token-purpose", "Review the API");
     query(element, "button.token-button").click();
     await flushPromises();
 
@@ -403,6 +409,8 @@ describe("c-api-tester", () => {
     const element = createComponent();
     await flushPromises();
 
+    setInput(element, "input.token-email", "eval@example.com");
+    setInput(element, "input.token-purpose", "Review the API");
     query(element, "button.token-button").click();
     await flushPromises();
 

@@ -60,7 +60,11 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
         );
 
         if (projects.isEmpty()) {
-          ctx.error(404, 'NOT_FOUND', 'Project not found: ' + projectId);
+          ctx.error(
+            404,
+            'NOT_FOUND',
+            ApiMessages.projectNotFound(projectId, ctx.isV2())
+          );
           return;
         }
       } else {
@@ -84,7 +88,7 @@ global with sharing class SAPIProject implements QueryDefinitions.Provider {
       ctx.cache(ApiRequestContext.CachePolicy.PUBLIC_300);
       ctx.ok(transformProjects(projects));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

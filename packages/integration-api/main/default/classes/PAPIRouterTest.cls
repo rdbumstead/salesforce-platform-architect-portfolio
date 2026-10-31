@@ -2,8 +2,8 @@
  * @description       : Tests PAPIRouter (ADR-040): every route reached through its versionless
  *                      URL lands on the same handler as the old /v1/ URL, POST token and AI
  *                      generate included, an unknown route is 404 in the error envelope, a verb
- *                      a route lacks is 405 as the platform words it, and the guest and the
- *                      integration user keep the access the old classes gave them.
+ *                      a route lacks is 405 in the same envelope, the guest is answered 401 and the
+ *                      integration user 403 where the old classes gave them no access.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -93,7 +93,8 @@ private class PAPIRouterTest {
           'errorCode',
           'message',
           'correlationId',
-          'retryable'
+          'retryable',
+          'help'
         },
         error.keySet(),
         'The usual envelope'
@@ -112,15 +113,20 @@ private class PAPIRouterTest {
   }
 
   @IsTest
-  static void shouldKeepTheGuestsPlain404WhileSwitchedOff() {
+  static void shouldTellTheGuestToGetATokenWithTheOldUrlWhileSwitchedOff() {
     switchOff();
+    ApiSite.siteBaseOverride = 'https://example.my.site.com';
     PAPIRouter.guestOverride = true;
 
     route('GET', 'projects', null);
-    Assert.areEqual(404, RestContext.response.statusCode, 'Hidden route');
-    Assert.isTrue(
-      ((String) bodyMap().get('message')).startsWith('No route matches'),
-      'No hint for a guest on a hidden route: ' + bodyMap().get('message')
+    Assert.areEqual(401, RestContext.response.statusCode, 'Hidden route');
+    Assert.areEqual(
+      ApiMessages.needsToken(
+        '/papi/projects',
+        'https://example.my.site.com/portfoliovforcesite/services/apexrest/papi/v1/auth/token'
+      ),
+      bodyMap().get('message'),
+      'The guest is sent to the token URL in the form the switch selects'
     );
 
     route('POST', 'auth/token', null);
@@ -136,8 +142,9 @@ private class PAPIRouterTest {
     switchOff();
     route('GET', 'nothing', null);
     Assert.areEqual(404, RestContext.response.statusCode);
-    Assert.isTrue(
-      ((String) bodyMap().get('message')).startsWith('No route matches')
+    Assert.areEqual(
+      ApiMessages.routeNotFound('GET', '/papi/nothing'),
+      bodyMap().get('message')
     );
   }
 
@@ -202,7 +209,7 @@ private class PAPIRouterTest {
 
     Assert.areEqual(400, RestContext.response.statusCode, 'Bare resume');
     Assert.isTrue(
-      ((String) bodyMap().get('message')).contains('Use /resume/generate'),
+      ApiMessages.RESUME_ENDPOINT_INVALID == bodyMap().get('message'),
       'The handler, not the router, answered'
     );
   }
@@ -233,7 +240,7 @@ private class PAPIRouterTest {
 
     Assert.areEqual(400, RestContext.response.statusCode, 'AI: no body');
     Assert.isTrue(
-      ((String) bodyMap().get('message')).contains('Request body is required'),
+      ApiMessages.AI_BODY_MISSING == bodyMap().get('message'),
       'PAPIAiGenerate answered'
     );
   }
@@ -261,7 +268,8 @@ private class PAPIRouterTest {
           'errorCode',
           'message',
           'correlationId',
-          'retryable'
+          'retryable',
+          'help'
         },
         error.keySet(),
         'The existing error envelope for ' + path
@@ -275,40 +283,98 @@ private class PAPIRouterTest {
   }
 
   @IsTest
-  static void shouldAnswer405WithThePlatformsWordsForAVerbARouteLacks() {
+  static void shouldAnswer405InTheErrorEnvelopeForAVerbARouteLacks() {
     route('POST', 'projects', null);
     Assert.areEqual(405, RestContext.response.statusCode, 'POST projects');
     Assert.areEqual('GET,HEAD', header('Allow'), 'Allow');
-    List<Object> body = (List<Object>) JSON.deserializeUntyped(
-      RestContext.response.responseBody.toString()
-    );
-    Map<String, Object> first = (Map<String, Object>) body[0];
-    Assert.areEqual('METHOD_NOT_ALLOWED', first.get('errorCode'), 'Code');
+    Map<String, Object> error = bodyMap();
     Assert.areEqual(
-      'HTTP Method \'POST\' not allowed. Allowed are GET,HEAD',
-      first.get('message'),
-      'The platform\'s message'
+      new Set<String>{
+        'httpStatus',
+        'errorCode',
+        'message',
+        'correlationId',
+        'retryable',
+        'help'
+      },
+      error.keySet(),
+      'The usual envelope'
     );
+    Assert.areEqual('METHOD_NOT_ALLOWED', error.get('errorCode'), 'Code');
+    Assert.areEqual(405, error.get('httpStatus'), 'httpStatus');
+    Assert.areEqual(false, error.get('retryable'), 'retryable');
+    Assert.areEqual(
+      ApiMessages.methodNotAllowed(
+        '/papi/projects',
+        'GET,HEAD',
+        'POST',
+        PAPIRouter.ROUTE_PROJECTS
+      ),
+      error.get('message'),
+      'Message'
+    );
+    Assert.areEqual('v1', header('X-API-Version'), 'The usual headers');
+    Assert.isNotNull(header('X-RateLimit-Limit'), 'The usual headers');
 
     for (String path : new List<String>{ 'auth/token', 'ai/generate' }) {
       route('GET', path, null);
       Assert.areEqual(405, RestContext.response.statusCode, 'GET ' + path);
       Assert.areEqual('POST', header('Allow'), 'Allow for ' + path);
     }
+    Assert.isTrue(
+      ((String) bodyMap().get('message')).contains('API reference'),
+      'The AI route points at the reference'
+    );
+    route('GET', 'auth/token', null);
+    Assert.isTrue(
+      ((String) bodyMap().get('message'))
+        .contains(ApiMessages.TOKEN_BODY_SAMPLE),
+      'The token route shows its body'
+    );
     route('POST', 'health', null);
     Assert.areEqual(405, RestContext.response.statusCode, 'POST health');
   }
 
   @IsTest
-  static void shouldKeepTheGuestToTheTokenRoute() {
+  static void shouldAnswerTheGuest401OnEveryRouteButTheTokenRoute() {
+    ApiSite.siteBaseOverride = 'https://example.my.site.com';
     PAPIRouter.guestOverride = true;
+    String tokenUrl = 'https://example.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token';
 
-    route('GET', 'projects', null);
-    Assert.areEqual(404, RestContext.response.statusCode, 'Guest: projects');
-    route('GET', 'health', null);
-    Assert.areEqual(404, RestContext.response.statusCode, 'Guest: health');
+    for (
+      String path : new List<String>{
+        'health',
+        'profile/full',
+        'profile/summary',
+        'projects',
+        'projects/featured',
+        'resume/generate',
+        'testimonials/feed'
+      }
+    ) {
+      route('GET', path, null);
+      Assert.areEqual(401, RestContext.response.statusCode, 'Guest: ' + path);
+      Map<String, Object> error = bodyMap();
+      Assert.areEqual('UNAUTHORIZED', error.get('errorCode'), path);
+      Assert.areEqual(false, error.get('retryable'), path);
+      Assert.areEqual(
+        ApiMessages.needsToken('/papi/' + path, tokenUrl),
+        error.get('message'),
+        path
+      );
+      Assert.areEqual('Bearer', header('WWW-Authenticate'), path);
+      Assert.isFalse(
+        ((String) error.get('message')).contains('ryanbumstead.com'),
+        'The token URL is the site, not the redirecting domain'
+      );
+    }
     route('POST', 'ai/generate', null);
-    Assert.areEqual(404, RestContext.response.statusCode, 'Guest: AI');
+    Assert.areEqual(401, RestContext.response.statusCode, 'Guest: AI');
+    Assert.areEqual('Bearer', header('WWW-Authenticate'), 'AI');
+
+    route('GET', 'nothing', null);
+    Assert.areEqual(404, RestContext.response.statusCode, 'Unknown stays 404');
+    Assert.isNull(header('WWW-Authenticate'), 'No challenge on a 404');
 
     route('POST', 'auth/token', null);
     Assert.areEqual(400, RestContext.response.statusCode, 'Guest: token');
@@ -322,12 +388,35 @@ private class PAPIRouterTest {
   }
 
   @IsTest
-  static void shouldKeepTheIntegrationUserOffTheTokenRoute() {
+  static void shouldAnswerAGuestWithNoHeadersAt401() {
+    PAPIRouter.guestOverride = true;
+    RestTestUtil.initGetRaw(BASE + 'projects', new Map<String, String>(), null);
+
+    PAPIRouter.doGet();
+
+    Assert.areEqual(401, RestContext.response.statusCode, 'No headers needed');
+    Assert.areEqual('Bearer', header('WWW-Authenticate'), 'Challenge');
+    Assert.isNull(header('X-RateLimit-Limit'), 'No shared quota spent');
+  }
+
+  @IsTest
+  static void shouldAnswerTheIntegrationUser403OnTheTokenRoute() {
+    ApiSite.siteBaseOverride = 'https://example.my.site.com';
     PAPIRouter.guestOverride = false;
     PAPIRouter.integrationUserOverride = true;
 
     route('POST', 'auth/token', null);
-    Assert.areEqual(404, RestContext.response.statusCode, 'No token route');
+    Assert.areEqual(403, RestContext.response.statusCode, 'No token route');
+    Map<String, Object> error = bodyMap();
+    Assert.areEqual('FORBIDDEN', error.get('errorCode'), 'Code');
+    Assert.areEqual(false, error.get('retryable'), 'retryable');
+    Assert.areEqual(
+      ApiMessages.tokensNotHere(
+        'https://example.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token'
+      ),
+      error.get('message'),
+      'Message'
+    );
     route('GET', 'projects', null);
     Assert.areEqual(200, RestContext.response.statusCode, 'Projects served');
     route('POST', 'ai/generate', null);

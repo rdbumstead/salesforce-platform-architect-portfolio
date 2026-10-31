@@ -1,4 +1,4 @@
-<h1 id="portfolio-process-api-papi-">Portfolio Process API (PAPI) v2.1.0</h1>
+<h1 id="portfolio-process-api-papi-">Portfolio Process API (PAPI) v2.2.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -16,8 +16,8 @@ reads them in process, not through SAPI over HTTP (section 3).
 
 ### 2. Versioning Strategy
 - **Pattern**: Header-based versioning takes precedence.
-- **Header**: `X-API-Version: v2`. A missing header resolves to `v1`, which is deprecated; any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). The URL has no version segment. The old URLs with `/v1/` (for example `/papi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel="canonical"` once their retirement dates are set (ADR-040). Use the URLs in this document.
-- **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a short message and the link to the version 2 reference, `https://ryanbumstead.com/api-lab/reference?version=v2`.
+- **Header**: `X-API-Version: v2`. A missing header resolves to `v1`, which is deprecated; any other value returns `400 BAD_REQUEST` that says to send v1 or v2 (ADR-026). The URL has no version segment. The old URLs with `/v1/` (for example `/papi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel="canonical"` once their retirement dates are set (ADR-040). Use the URLs in this document.
+- **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a message that gives the retirement date and says to send `X-API-Version: v2`, and the `help` field links to the entry in the Errors section.
 - **Correlation**: a missing `X-Request-Id` is replaced by a generated UUID, and a present but non-UUID value returns `400 BAD_REQUEST`. On My Domain the platform injects its own 32-character hex id when the caller sends none, and PAPI treats that value as missing. Both headers are on every response (`ApiRequestContext.applyRequestRules`): the platform echoes whatever `X-Request-Id` the request carries, its own included, and Apex sets the header only when it generated the value and the request carried none, so the header appears once (ADR-026). When the platform injected its id, the header carries that id and an error body's `correlationId` carries the generated UUID. Send your own UUID to get one predictable id.
 - **URL**: Version segments removed from base path to align with SAPI ADR.
 
@@ -46,6 +46,65 @@ Each record in a response carries a stable public `key`, for example `prj_8f3k2m
 | Certification | `earnedDate` | `dateEarned` | JS Convention |
 | Project | `dateCompleted` | `completionDate` | JS Convention |
 | Project | `heroImageUrl` | `heroImageUrl` | Passthrough |
+
+## Errors
+
+Every error this API sends itself is one JSON object with `httpStatus`, `errorCode`, `message`, `correlationId`, `retryable` and `help`. The `message` says what happened, what you need and how to get it. The `help` field links to the entry for the `errorCode` on this page. Program against `errorCode`, because the wording of a message can improve. `retryable` is true only when the same request can succeed later with no change, and every retryable 503 and 429 carries `Retry-After`. The `correlationId` is the `X-Request-Id` of the call, or the id the API made when you sent none. Quote it when you ask for help.
+
+<a id="error-bad-request"></a>
+
+### BAD_REQUEST (400)
+The request was refused before any data was read. The message names the header, parameter or field to change and often shows a working example. It is not retryable, so send a corrected request. Example: `offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.`
+
+<a id="error-unauthorized"></a>
+
+### UNAUTHORIZED (401)
+The caller reached the site address with no token. The answer carries `WWW-Authenticate: Bearer` and names the site's token URL: send `POST` to it with a JSON body holding your `email` and a `purpose`, then call the route on the `instance_url` from that answer with `Authorization: Bearer <access_token>`. A token that has ended is different. The platform answers it before our code runs, with a JSON array and the code `INVALID_SESSION_ID` (see Responses from the platform below).
+
+<a id="error-forbidden"></a>
+
+### FORBIDDEN (403)
+A token holder asked the instance address for a token. Tokens are issued on the site address only, and the message gives the exact URL. Not retryable. A user with no access to the class behind a route is refused by the platform instead (see Responses from the platform below).
+
+<a id="error-not-found"></a>
+
+### NOT_FOUND (404)
+The route does not exist, or the Api_Versionless_Urls switch is off and only the `/v1/` URLs answer. The message names the method and path, or the `/v1/` URL to use. Not retryable.
+
+<a id="error-method-not-allowed"></a>
+
+### METHOD_NOT_ALLOWED (405)
+The route does not take that HTTP method. The `Allow` header lists the ones it takes, and the message adds the body to send for the two POST routes.
+
+<a id="error-gone"></a>
+
+### GONE (410)
+API v1, or the old `/v1/` URL spelling, was retired on the date in the message. Send `X-API-Version: v2`, or call the same URL without `/v1/`. Nothing else about the request changes. The token and health routes are exempt and keep answering. Not retryable.
+
+<a id="error-rate-limit-exceeded"></a>
+
+### RATE_LIMIT_EXCEEDED (429)
+One of three limits. The shared limit for the tier is used up, and the message names the tier and the limit. One email asked for too many tokens in the last minute. Or the counter row stayed locked for a moment, and the message says the API is busy. All three carry `Retry-After`, and all three are retryable after that many seconds with no change to the request.
+
+<a id="error-internal-server-error"></a>
+
+### INTERNAL_SERVER_ERROR (500)
+Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is ever sent. Retryable: try again in a minute, and if it keeps happening send the id through the contact page.
+
+<a id="error-service-unavailable"></a>
+
+### SERVICE_UNAVAILABLE (503)
+The token route could not issue a token, or the OpenAPI document is missing from the site. When the day's tokens are all issued the message says how many hours until new ones. When the token credential is missing the message says it is a setup problem on our side and gives the correlation id, and the answer is not retryable and has no `Retry-After`. When the token service did not answer, wait a minute. Every retryable 503 carries `Retry-After`.
+
+<a id="error-all-providers-unavailable"></a>
+
+### ALL_PROVIDERS_UNAVAILABLE (503)
+`POST /ai/generate` got no text from any AI provider. With `provider` left out, wait five minutes (`Retry-After: 300`). With `provider` set to `Agentforce` and its hourly budget spent, `Retry-After` is the seconds to the end of the hour, and the message says to leave `provider` out to let another provider answer. Retryable.
+
+<a id="error-platform"></a>
+
+### Responses from the platform
+Two refusals come from the platform before any of our code runs, so they cannot carry our fields or wording. Each is a JSON array holding objects with `errorCode` and `message`. A token that has ended or was never valid is `401` with `[{"message":"Session expired or invalid","errorCode":"INVALID_SESSION_ID"}]`. A user with no access to the class behind a route is `403` with `[{"errorCode":"FORBIDDEN","message":"You do not have access to the Apex class named: ..."}]`. An ended token is the usual cause of the first: tokens end after 30 minutes without use, and `POST /papi/auth/token` gives a new one.
 
 Base URLs:
 
@@ -161,7 +220,7 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 
 #### Enumerated Values
 
@@ -289,59 +348,257 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
 }
 ```
 
-> 400 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
 
 ```json
 {
   "httpStatus": 400,
   "errorCode": "BAD_REQUEST",
-  "message": "Invalid persona value.",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
 }
 ```
 
-> 401 Response
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "mode must be professional or casual.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send a JSON object with two text fields, email and purpose, for example {\"email\":\"you@example.com\",\"purpose\":\"Evaluating the API\"}.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Enter a working email address like name@example.com. It is only used to count tokens.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "type must be one of BioSummary, CoverLetter, SkillDescription.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
 
 ```json
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Missing or invalid Bearer token",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /papi/projects on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-unauthorized"
 }
 ```
 
-> 500 Response
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.
+
+```json
+{
+  "httpStatus": 403,
+  "errorCode": "FORBIDDEN",
+  "message": "This address does not issue tokens. Send POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token without an Authorization header to get one.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-forbidden"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: PAPIProjects"
+  }
+]
+```
+
+> The route does not exist.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /papi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/papi/v1/projects.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+> The route does not take this HTTP method. The Allow header lists the methods it does take.
+
+```json
+{
+  "httpStatus": 405,
+  "errorCode": "METHOD_NOT_ALLOWED",
+  "message": "/papi/projects takes GET or HEAD, not POST.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-method-not-allowed"
+}
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/papi/projects instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 15 requests a minute on PAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many token requests for this email in the last minute. Wait 42 seconds and try again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Failed to aggregate profile data. Partial SAPI failure.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": true,
-  "details": {
-    "failedSapiCalls": [
-      {
-        "endpoint": "/experience-skills",
-        "error": "Connection timeout"
-      }
-    ]
-  }
-}
-```
-
-> 503 Response
-
-```json
-{
-  "httpStatus": 503,
-  "errorCode": "SERVICE_UNAVAILABLE",
-  "message": "Downstream SAPI is currently unavailable",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -350,10 +607,46 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|The complete portfolio payload|[FullPortfolioPayload](#schemafullportfoliopayload)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
-|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.|Inline|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|The route does not take this HTTP method. The Allow header lists the methods it does take.|[Error](#schemaerror)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+<h3 id="getfullportfolio-responseschema">Response Schema</h3>
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
 
 ### Response Headers
 
@@ -364,9 +657,15 @@ The "Hydration" endpoint. Returns the entire portfolio state in a single call.
 |200|X-Data-Integrity|string||Indicates if the payload is complete or has partial missing data.|
 |400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
+|403|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|404|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -421,7 +720,7 @@ strictest-policy-wins.
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 
 #### Enumerated Values
 
@@ -500,59 +799,257 @@ strictest-policy-wins.
 }
 ```
 
-> 400 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
 
 ```json
 {
   "httpStatus": 400,
   "errorCode": "BAD_REQUEST",
-  "message": "Invalid persona value.",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
 }
 ```
 
-> 401 Response
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "mode must be professional or casual.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send a JSON object with two text fields, email and purpose, for example {\"email\":\"you@example.com\",\"purpose\":\"Evaluating the API\"}.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Enter a working email address like name@example.com. It is only used to count tokens.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "type must be one of BioSummary, CoverLetter, SkillDescription.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
 
 ```json
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Missing or invalid Bearer token",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /papi/projects on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-unauthorized"
 }
 ```
 
-> 500 Response
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.
+
+```json
+{
+  "httpStatus": 403,
+  "errorCode": "FORBIDDEN",
+  "message": "This address does not issue tokens. Send POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token without an Authorization header to get one.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-forbidden"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: PAPIProjects"
+  }
+]
+```
+
+> The route does not exist.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /papi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/papi/v1/projects.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+> The route does not take this HTTP method. The Allow header lists the methods it does take.
+
+```json
+{
+  "httpStatus": 405,
+  "errorCode": "METHOD_NOT_ALLOWED",
+  "message": "/papi/projects takes GET or HEAD, not POST.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-method-not-allowed"
+}
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/papi/projects instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 15 requests a minute on PAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many token requests for this email in the last minute. Wait 42 seconds and try again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Failed to aggregate profile data. Partial SAPI failure.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": true,
-  "details": {
-    "failedSapiCalls": [
-      {
-        "endpoint": "/experience-skills",
-        "error": "Connection timeout"
-      }
-    ]
-  }
-}
-```
-
-> 503 Response
-
-```json
-{
-  "httpStatus": 503,
-  "errorCode": "SERVICE_UNAVAILABLE",
-  "message": "Downstream SAPI is currently unavailable",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -561,10 +1058,46 @@ strictest-policy-wins.
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|A unified profile object|[ProfileSummary](#schemaprofilesummary)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
-|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.|Inline|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|The route does not take this HTTP method. The Allow header lists the methods it does take.|[Error](#schemaerror)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+<h3 id="getprofilesummary-responseschema">Response Schema</h3>
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
 
 ### Response Headers
 
@@ -575,9 +1108,15 @@ strictest-policy-wins.
 |200|Cache-Control|string||none|
 |400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
+|403|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|404|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -629,7 +1168,7 @@ and their assets, each in one query for every project at once.
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 
 #### Enumerated Values
 
@@ -670,59 +1209,257 @@ and their assets, each in one query for every project at once.
 ]
 ```
 
-> 400 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
 
 ```json
 {
   "httpStatus": 400,
   "errorCode": "BAD_REQUEST",
-  "message": "Invalid persona value.",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
 }
 ```
 
-> 401 Response
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "mode must be professional or casual.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send a JSON object with two text fields, email and purpose, for example {\"email\":\"you@example.com\",\"purpose\":\"Evaluating the API\"}.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Enter a working email address like name@example.com. It is only used to count tokens.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "type must be one of BioSummary, CoverLetter, SkillDescription.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
 
 ```json
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Missing or invalid Bearer token",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /papi/projects on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-unauthorized"
 }
 ```
 
-> 500 Response
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.
+
+```json
+{
+  "httpStatus": 403,
+  "errorCode": "FORBIDDEN",
+  "message": "This address does not issue tokens. Send POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token without an Authorization header to get one.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-forbidden"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: PAPIProjects"
+  }
+]
+```
+
+> The route does not exist.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /papi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/papi/v1/projects.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+> The route does not take this HTTP method. The Allow header lists the methods it does take.
+
+```json
+{
+  "httpStatus": 405,
+  "errorCode": "METHOD_NOT_ALLOWED",
+  "message": "/papi/projects takes GET or HEAD, not POST.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-method-not-allowed"
+}
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/papi/projects instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 15 requests a minute on PAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many token requests for this email in the last minute. Wait 42 seconds and try again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Failed to aggregate profile data. Partial SAPI failure.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": true,
-  "details": {
-    "failedSapiCalls": [
-      {
-        "endpoint": "/experience-skills",
-        "error": "Connection timeout"
-      }
-    ]
-  }
-}
-```
-
-> 503 Response
-
-```json
-{
-  "httpStatus": 503,
-  "errorCode": "SERVICE_UNAVAILABLE",
-  "message": "Downstream SAPI is currently unavailable",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -731,10 +1468,14 @@ and their assets, each in one query for every project at once.
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|A list of enriched project records|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
-|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.|Inline|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|The route does not take this HTTP method. The Allow header lists the methods it does take.|[Error](#schemaerror)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="getfeaturedprojects-responseschema">Response Schema</h3>
 
@@ -769,6 +1510,36 @@ Status Code **200**
 |type|Document|
 |type|Link|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -776,13 +1547,19 @@ Status Code **200**
 |200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |200|X-Total-Count|integer||none|
 |200|X-Data-Integrity|string||none|
-|200|X-Integrity-Note|string||Present only when partial; names the failed sub-queries, e.g. "partial: project-skills unavailable".|
+|200|X-Integrity-Note|string||Present only when partial; names the failed sub-queries in a sentence, for example "Some sections could not be read this time: project-skills. Everything else is complete. Try again in a minute for the full result."|
 |200|Cache-Control|string||none|
 |400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
+|403|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|404|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -863,7 +1640,7 @@ curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/se
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |persona|query|string|false|Target audience for the resume. Omit for all highlights and all skills. With a persona, skills tagged for it and every untagged skill are kept.|
 
 #### Detailed descriptions
@@ -899,59 +1676,257 @@ curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/se
 "Ryan Bumstead Salesforce Platform Architect\nEXPERIENCE\nSalesforce | Senior Technical Architect Jan 2023 - Present - Designed multi-cloud solutions... - Led DevOps transformation..."
 ```
 
-> 400 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
 
 ```json
 {
   "httpStatus": 400,
   "errorCode": "BAD_REQUEST",
-  "message": "Invalid persona value.",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
 }
 ```
 
-> 401 Response
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "mode must be professional or casual.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send a JSON object with two text fields, email and purpose, for example {\"email\":\"you@example.com\",\"purpose\":\"Evaluating the API\"}.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Enter a working email address like name@example.com. It is only used to count tokens.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "type must be one of BioSummary, CoverLetter, SkillDescription.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
 
 ```json
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Missing or invalid Bearer token",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /papi/projects on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-unauthorized"
 }
 ```
 
-> 500 Response
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.
+
+```json
+{
+  "httpStatus": 403,
+  "errorCode": "FORBIDDEN",
+  "message": "This address does not issue tokens. Send POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token without an Authorization header to get one.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-forbidden"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: PAPIProjects"
+  }
+]
+```
+
+> The route does not exist.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /papi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/papi/v1/projects.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+> The route does not take this HTTP method. The Allow header lists the methods it does take.
+
+```json
+{
+  "httpStatus": 405,
+  "errorCode": "METHOD_NOT_ALLOWED",
+  "message": "/papi/projects takes GET or HEAD, not POST.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-method-not-allowed"
+}
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/papi/projects instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 15 requests a minute on PAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many token requests for this email in the last minute. Wait 42 seconds and try again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Failed to aggregate profile data. Partial SAPI failure.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": true,
-  "details": {
-    "failedSapiCalls": [
-      {
-        "endpoint": "/experience-skills",
-        "error": "Connection timeout"
-      }
-    ]
-  }
-}
-```
-
-> 503 Response
-
-```json
-{
-  "httpStatus": 503,
-  "errorCode": "SERVICE_UNAVAILABLE",
-  "message": "Downstream SAPI is currently unavailable",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -960,10 +1935,46 @@ curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/se
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|The formatted resume text, as a JSON object by default, or as plain text when the first media type in `Accept` is `text/plain`|string|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
-|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.|Inline|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|The route does not take this HTTP method. The Allow header lists the methods it does take.|[Error](#schemaerror)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+<h3 id="generateresume-responseschema">Response Schema</h3>
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
 
 ### Response Headers
 
@@ -974,9 +1985,15 @@ curl -H "Authorization: Bearer $TOKEN" -H "Accept: text/plain" "$INSTANCE_URL/se
 |200|Cache-Control|string||none|
 |400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
+|403|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|404|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1038,7 +2055,7 @@ any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest firs
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |mode|query|string|false|Filter testimonials by vibe|
 
 #### Enumerated Values
@@ -1068,59 +2085,257 @@ any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest firs
 ]
 ```
 
-> 400 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
 
 ```json
 {
   "httpStatus": 400,
   "errorCode": "BAD_REQUEST",
-  "message": "Invalid persona value.",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
 }
 ```
 
-> 401 Response
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "mode must be professional or casual.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send a JSON object with two text fields, email and purpose, for example {\"email\":\"you@example.com\",\"purpose\":\"Evaluating the API\"}.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Enter a working email address like name@example.com. It is only used to count tokens.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "type must be one of BioSummary, CoverLetter, SkillDescription.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
 
 ```json
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Missing or invalid Bearer token",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /papi/projects on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-unauthorized"
 }
 ```
 
-> 500 Response
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.
+
+```json
+{
+  "httpStatus": 403,
+  "errorCode": "FORBIDDEN",
+  "message": "This address does not issue tokens. Send POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token without an Authorization header to get one.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-forbidden"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: PAPIProjects"
+  }
+]
+```
+
+> The route does not exist.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /papi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/papi/v1/projects.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+> The route does not take this HTTP method. The Allow header lists the methods it does take.
+
+```json
+{
+  "httpStatus": 405,
+  "errorCode": "METHOD_NOT_ALLOWED",
+  "message": "/papi/projects takes GET or HEAD, not POST.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-method-not-allowed"
+}
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/papi/projects instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 15 requests a minute on PAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many token requests for this email in the last minute. Wait 42 seconds and try again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Failed to aggregate profile data. Partial SAPI failure.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": true,
-  "details": {
-    "failedSapiCalls": [
-      {
-        "endpoint": "/experience-skills",
-        "error": "Connection timeout"
-      }
-    ]
-  }
-}
-```
-
-> 503 Response
-
-```json
-{
-  "httpStatus": 503,
-  "errorCode": "SERVICE_UNAVAILABLE",
-  "message": "Downstream SAPI is currently unavailable",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -1129,10 +2344,14 @@ any other value returns 400 BAD_REQUEST. Ordered by sort order, then newest firs
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|A filtered list of testimonials|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
-|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.|Inline|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|The route does not take this HTTP method. The Allow header lists the methods it does take.|[Error](#schemaerror)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
 
 <h3 id="gettestimonialfeed-responseschema">Response Schema</h3>
 
@@ -1161,6 +2380,36 @@ Status Code **200**
 |vibe|Professional|
 |vibe|Casual|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -1170,9 +2419,15 @@ Status Code **200**
 |200|Cache-Control|string||none|
 |400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
+|403|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|404|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|Retry-After|integer||Seconds until service may be available|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1252,8 +2507,8 @@ with a Bearer token.
 
 **Asking for Agentforce only**: send `provider` set to `Agentforce`. Only Agentforce is
 tried, with no Gemini and no template. A failure is 503 `ALL_PROVIDERS_UNAVAILABLE` with
-the message "Agentforce currently unavailable", or "Agentforce hourly budget used" when
-the budget is spent. A CoverLetter asked of Agentforce uses the site's cover letter prompt
+a message that says Agentforce did not answer, or that its hourly budget is used. Both say to leave
+`provider` out to let another provider answer. A CoverLetter asked of Agentforce uses the site's cover letter prompt
 and comes back whole unless `maxLength` is sent.
 
 **Rate limit**: 10 requests per minute (ai tier). Upstream, the Gemini API key allowed Gemini 2.5 Flash
@@ -1291,7 +2546,7 @@ CoverLetter requires `context.companyName` and `context.role`. Content longer th
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |body|body|object|true|none|
 |» type|body|string|true|The type of content to generate|
 |» context|body|object|true|Contextual data for generation|
@@ -1354,71 +2609,257 @@ failure is 503 `ALL_PROVIDERS_UNAVAILABLE`.
 }
 ```
 
-> 400 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
 
 ```json
 {
   "httpStatus": 400,
   "errorCode": "BAD_REQUEST",
-  "message": "Invalid persona value.",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
 }
 ```
 
-> 401 Response
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "mode must be professional or casual.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send a JSON object with two text fields, email and purpose, for example {\"email\":\"you@example.com\",\"purpose\":\"Evaluating the API\"}.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Enter a working email address like name@example.com. It is only used to count tokens.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "type must be one of BioSummary, CoverLetter, SkillDescription.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
 
 ```json
 {
   "httpStatus": 401,
   "errorCode": "UNAUTHORIZED",
-  "message": "Missing or invalid Bearer token",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /papi/projects on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-unauthorized"
 }
 ```
 
-> 429 Response
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.
+
+```json
+{
+  "httpStatus": 403,
+  "errorCode": "FORBIDDEN",
+  "message": "This address does not issue tokens. Send POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token without an Authorization header to get one.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-forbidden"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: PAPIProjects"
+  }
+]
+```
+
+> The route does not exist.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /papi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/papi/v1/projects.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+> The route does not take this HTTP method. The Allow header lists the methods it does take.
+
+```json
+{
+  "httpStatus": 405,
+  "errorCode": "METHOD_NOT_ALLOWED",
+  "message": "/papi/projects takes GET or HEAD, not POST.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-method-not-allowed"
+}
+```
+
+> API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+```json
+{
+  "httpStatus": 410,
+  "errorCode": "GONE",
+  "message": "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/papi/projects instead. Nothing else about the request changes.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-gone"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
 
 ```json
 {
   "httpStatus": 429,
   "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "Rate limit exceeded. Retry after 60 seconds.",
+  "message": "This API allows 15 requests a minute on PAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
 }
 ```
 
-> 500 Response
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many token requests for this email in the last minute. Wait 42 seconds and try again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
 
 ```json
 {
   "httpStatus": 500,
   "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "Failed to aggregate profile data. Partial SAPI failure.",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
   "retryable": true,
-  "details": {
-    "failedSapiCalls": [
-      {
-        "endpoint": "/experience-skills",
-        "error": "Connection timeout"
-      }
-    ]
-  }
-}
-```
-
-> 503 Response
-
-```json
-{
-  "httpStatus": 503,
-  "errorCode": "ALL_PROVIDERS_UNAVAILABLE",
-  "message": "All AI providers currently unavailable",
-  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-internal-server-error"
 }
 ```
 
@@ -1427,11 +2868,15 @@ failure is 503 `ALL_PROVIDERS_UNAVAILABLE`.
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Successfully generated content|Inline|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes)|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|Rate limit exceeded (ai tier, 10 requests per minute)|[Error](#schemaerror)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal PAPI error or SAPI communication failure|[Error](#schemaerror)|
-|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|All AI providers unavailable|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.|Inline|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|The route does not take this HTTP method. The Allow header lists the methods it does take.|[Error](#schemaerror)|
+|410|[Gone](https://tools.ietf.org/html/rfc7231#section-6.5.9)|API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|No AI provider returned text. Retry-After is 300 seconds when every provider failed, the seconds to the end of the hour when the Agentforce budget is spent, and 60 otherwise.|[Error](#schemaerror)|
 
 <h3 id="generateaicontent-responseschema">Response Schema</h3>
 
@@ -1469,6 +2914,36 @@ Status Code **200**
 |outcome|budget_exhausted|
 |outcome|failed|
 
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
 ### Response Headers
 
 |Status|Header|Type|Format|Description|
@@ -1479,9 +2954,17 @@ Status Code **200**
 |200|Cache-Control|string||none|
 |400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
+|403|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|404|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|Allow|string||The methods the route takes.|
+|410|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|429|Retry-After|integer||none|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
 |500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|503|Retry-After|integer||Seconds to wait before the same request can succeed.|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1552,11 +3035,280 @@ down or any Named Credential is not CONFIGURED, otherwise UP. Always returns 200
 }
 ```
 
+> The request was refused before any data was read. The message names the header, parameter or field to change.
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "mode must be professional or casual.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send a JSON object with two text fields, email and purpose, for example {\"email\":\"you@example.com\",\"purpose\":\"Evaluating the API\"}.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Enter a working email address like name@example.com. It is only used to count tokens.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "type must be one of BioSummary, CoverLetter, SkillDescription.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+> No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.
+
+```json
+{
+  "httpStatus": 401,
+  "errorCode": "UNAUTHORIZED",
+  "message": "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /papi/projects on the instance_url from that answer, with the header Authorization: Bearer <access_token>.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-unauthorized"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+```
+
+> The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.
+
+```json
+{
+  "httpStatus": 403,
+  "errorCode": "FORBIDDEN",
+  "message": "This address does not issue tokens. Send POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token without an Authorization header to get one.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-forbidden"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: PAPIProjects"
+  }
+]
+```
+
+> The route does not exist.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /papi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/papi/v1/projects.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+> The route does not take this HTTP method. The Allow header lists the methods it does take.
+
+```json
+{
+  "httpStatus": 405,
+  "errorCode": "METHOD_NOT_ALLOWED",
+  "message": "/papi/projects takes GET or HEAD, not POST.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-method-not-allowed"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "This API allows 15 requests a minute on PAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many token requests for this email in the last minute. Wait 42 seconds and try again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-internal-server-error"
+}
+```
+
 <h3 id="gethealth-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Service is healthy|[HealthStatus](#schemahealthstatus)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object.|Inline|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.|Inline|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|The route does not take this HTTP method. The Allow header lists the methods it does take.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+
+<h3 id="gethealth-responseschema">Response Schema</h3>
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
 
 ### Response Headers
 
@@ -1564,6 +3316,16 @@ down or any Named Credential is not CONFIGURED, otherwise UP. Always returns 200
 |---|---|---|---|---|
 |200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |200|Cache-Control|string||none|
+|400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|401|WWW-Authenticate|string||Bearer, when the caller sent no token at all.|
+|403|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|404|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|Allow|string||The methods the route takes.|
+|429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 
 <aside class="warning">
 To perform this operation, you must be authenticated by means of one of the following methods:
@@ -1627,11 +3389,11 @@ endpoint reports no expiry, and the session's end depends on use.
   key), or 15 requests per minute per email and source IP
   (key `papi-token:{SHA-256 hex of lowercase(email)|sourceIp}`). On the email and IP limit,
   `X-RateLimit-Limit` and `X-RateLimit-Remaining` describe that limit.
-- **503 SERVICE_UNAVAILABLE** (retryable): the daily cap is reached (`Retry-After` is the seconds to
-  the next midnight in the running user's time zone; the cap counts audit rows with outcome
-  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50); the
-  credential is missing or not granted ("Token issuance is not configured."); or the token endpoint
-  fails ("Token issuance is temporarily unavailable.").
+- **503 SERVICE_UNAVAILABLE**: the daily cap is reached (retryable, and `Retry-After` is the seconds to
+  the next midnight in the running user's time zone. The cap counts audit rows with outcome
+  `Issued` created today, from `Portfolio_Config__mdt.Token_Daily_Cap__c`, default 50). The
+  credential is missing or not granted (not retryable, with no `Retry-After`, because waiting cannot
+  fix a setup problem). Or the token endpoint fails (retryable, `Retry-After: 60`).
 - Every attempt writes one `API_Access_Request__c` row. Every response is `no-store, no-cache`.
 
 This is the only path served on the Experience Cloud site domain, not on My Domain:
@@ -1651,7 +3413,7 @@ This is the only path served on the Experience Cloud site domain, not on My Doma
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |X-Request-Id|header|string(uuid)|false|Correlation ID. When missing, or when it is the platform's own 32-character hex id, a generated UUID is used as the correlation id. A present but non-UUID value returns 400 BAD_REQUEST (ADR-026).|
-|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026).|
+|X-API-Version|header|string|false|API Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026).|
 |body|body|[TokenRequest](#schematokenrequest)|true|none|
 
 #### Enumerated Values
@@ -1674,39 +3436,246 @@ This is the only path served on the Experience Cloud site domain, not on My Doma
 }
 ```
 
-> 400 Response
+> The request was refused before any data was read. The message names the header, parameter or field to change.
 
 ```json
 {
   "httpStatus": 400,
   "errorCode": "BAD_REQUEST",
-  "message": "Invalid persona value.",
+  "message": "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": false
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
 }
 ```
 
-> 429 Response
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "limit must be a whole number from 1 to 200. Leave it out to get the default page size.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "persona must be Admin, Developer or Architect.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "mode must be professional or casual.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Send a JSON object with two text fields, email and purpose, for example {\"email\":\"you@example.com\",\"purpose\":\"Evaluating the API\"}.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "Enter a working email address like name@example.com. It is only used to count tokens.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+```json
+{
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "type must be one of BioSummary, CoverLetter, SkillDescription.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
+}
+```
+
+> The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.
+
+```json
+{
+  "httpStatus": 403,
+  "errorCode": "FORBIDDEN",
+  "message": "This address does not issue tokens. Send POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token without an Authorization header to get one.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-forbidden"
+}
+```
+
+```json
+[
+  {
+    "errorCode": "FORBIDDEN",
+    "message": "You do not have access to the Apex class named: PAPIProjects"
+  }
+]
+```
+
+> The route does not exist.
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "There is no GET /papi/nothing in this API. The routes are listed in the API reference.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+```json
+{
+  "httpStatus": 404,
+  "errorCode": "NOT_FOUND",
+  "message": "Versionless URLs are switched off. Use /services/apexrest/papi/v1/projects.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-not-found"
+}
+```
+
+> The route does not take this HTTP method. The Allow header lists the methods it does take.
+
+```json
+{
+  "httpStatus": 405,
+  "errorCode": "METHOD_NOT_ALLOWED",
+  "message": "/papi/projects takes GET or HEAD, not POST.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-method-not-allowed"
+}
+```
+
+> The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.
 
 ```json
 {
   "httpStatus": 429,
   "errorCode": "RATE_LIMIT_EXCEEDED",
-  "message": "Rate limit exceeded. Retry after 42 seconds.",
+  "message": "This API allows 15 requests a minute on PAPI routes, shared by every evaluator. Wait 42 seconds and send the request again.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
 }
 ```
 
-> 503 Response
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "The API is busy for a moment. Wait 1 second and send the request again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+```json
+{
+  "httpStatus": 429,
+  "errorCode": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many token requests for this email in the last minute. Wait 42 seconds and try again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-rate-limit-exceeded"
+}
+```
+
+> Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.
+
+```json
+{
+  "httpStatus": 500,
+  "errorCode": "INTERNAL_SERVER_ERROR",
+  "message": "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-internal-server-error"
+}
+```
+
+> POST /auth/token could not issue a token. Retry-After is set when waiting can help. A missing credential is not retryable.
 
 ```json
 {
   "httpStatus": 503,
   "errorCode": "SERVICE_UNAVAILABLE",
-  "message": "Downstream SAPI is currently unavailable",
+  "message": "Today's 50 evaluator tokens are used up. New tokens are available again in about 5 hours. The API Lab on the site still works meanwhile.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-service-unavailable"
+}
+```
+
+```json
+{
+  "httpStatus": 503,
+  "errorCode": "SERVICE_UNAVAILABLE",
+  "message": "Tokens cannot be issued right now because of a setup problem on our side. The API Lab on the site still works, and this has been logged as 123e4567-e89b-12d3-a456-426614174000.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-service-unavailable"
+}
+```
+
+```json
+{
+  "httpStatus": 503,
+  "errorCode": "SERVICE_UNAVAILABLE",
+  "message": "The token service did not answer. Wait a minute and try again.",
+  "correlationId": "123e4567-e89b-12d3-a456-426614174000",
+  "retryable": true,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-service-unavailable"
 }
 ```
 
@@ -1715,9 +3684,30 @@ This is the only path served on the Experience Cloud site domain, not on My Doma
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
 |200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Token issued|[TokenResponse](#schematokenresponse)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[Error](#schemaerror)|
-|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|Rate limit exceeded (ADR-025, ADR-028)|[Error](#schemaerror)|
-|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|PAPI or downstream SAPI is unavailable|[Error](#schemaerror)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|The request was refused before any data was read. The message names the header, parameter or field to change.|[Error](#schemaerror)|
+|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|The caller may not use this route. The platform refuses a user with no access to the class that serves it and answers a JSON array. On PAPI, a token holder who asks the instance address for a token gets our error object.|Inline|
+|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|The route does not exist.|[Error](#schemaerror)|
+|405|[Method Not Allowed](https://tools.ietf.org/html/rfc7231#section-6.5.5)|The route does not take this HTTP method. The Allow header lists the methods it does take.|[Error](#schemaerror)|
+|429|[Too Many Requests](https://tools.ietf.org/html/rfc6585#section-4)|The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait.|[Error](#schemaerror)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent.|[Error](#schemaerror)|
+|503|[Service Unavailable](https://tools.ietf.org/html/rfc7231#section-6.6.4)|POST /auth/token could not issue a token. Retry-After is set when waiting can help. A missing credential is not retryable.|[Error](#schemaerror)|
+
+<h3 id="requestevaluatortoken-responseschema">Response Schema</h3>
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
 
 ### Response Headers
 
@@ -1726,10 +3716,15 @@ This is the only path served on the Experience Cloud site domain, not on My Doma
 |200|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |200|Cache-Control|string||none|
 |400|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|403|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|404|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
+|405|Allow|string||The methods the route takes.|
 |429|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|429|Retry-After|integer||Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait.|
+|429|Retry-After|integer||Seconds to wait before the same request can succeed.|
+|500|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
 |503|X-Request-Id|string|uuid|Correlation ID for distributed tracing. A valid caller-supplied value is echoed by the platform; Apex sets the header only when it generated the value.|
-|503|Retry-After|integer||Seconds until service may be available|
+|503|Retry-After|integer||Seconds to wait before the same request can succeed.|
 
 <aside class="success">
 This operation does not require authentication
@@ -1746,26 +3741,69 @@ This operation does not require authentication
 
 ```json
 {
-  "httpStatus": 500,
-  "errorCode": "INTERNAL_SERVER_ERROR",
-  "message": "An unexpected error occurred",
+  "httpStatus": 400,
+  "errorCode": "BAD_REQUEST",
+  "message": "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.",
   "correlationId": "123e4567-e89b-12d3-a456-426614174000",
-  "retryable": true,
-  "details": {}
+  "retryable": false,
+  "help": "https://ryanbumstead.com/api-lab/reference?spec=papi&version=v2#error-bad-request"
 }
 
 ```
+
+The error object this API sends. The platform sends a JSON array instead for two refusals, see PlatformErrorList.
 
 ### Properties
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |httpStatus|integer|true|none|none|
+|errorCode|string|true|none|Machine readable code. Program against this, not against the message.|
+|message|string|true|none|What happened, what you need and how to get it, in plain sentences.|
+|correlationId|string(uuid)|true|none|Matches X-Request-Id, or the id the API made when none was sent.|
+|retryable|boolean|true|none|True only when the same request can succeed later with no change by the caller.|
+|help|string(uri)|false|none|Link to this error code's entry in the Errors section of the API reference.|
+
+#### Enumerated Values
+
+|Property|Value|
+|---|---|
+|errorCode|BAD_REQUEST|
+|errorCode|UNAUTHORIZED|
+|errorCode|FORBIDDEN|
+|errorCode|NOT_FOUND|
+|errorCode|METHOD_NOT_ALLOWED|
+|errorCode|GONE|
+|errorCode|RATE_LIMIT_EXCEEDED|
+|errorCode|INTERNAL_SERVER_ERROR|
+|errorCode|SERVICE_UNAVAILABLE|
+|errorCode|ALL_PROVIDERS_UNAVAILABLE|
+
+<h2 id="tocS_PlatformErrorList">PlatformErrorList</h2>
+<!-- backwards compatibility -->
+<a id="schemaplatformerrorlist"></a>
+<a id="schema_PlatformErrorList"></a>
+<a id="tocSplatformerrorlist"></a>
+<a id="tocsplatformerrorlist"></a>
+
+```json
+[
+  {
+    "errorCode": "INVALID_SESSION_ID",
+    "message": "Session expired or invalid"
+  }
+]
+
+```
+
+What the platform sends for a refusal that happens before our code runs: an ended token (401) or no access to the class (403). Not our error object.
+
+### Properties
+
+|Name|Type|Required|Restrictions|Description|
+|---|---|---|---|---|
 |errorCode|string|true|none|none|
 |message|string|true|none|none|
-|correlationId|string(uuid)|true|none|none|
-|retryable|boolean|true|none|Indicates if the client should retry the request|
-|details|object|false|none|Additional error context (optional)|
 
 <h2 id="tocS_HealthStatus">HealthStatus</h2>
 <!-- backwards compatibility -->
@@ -1807,7 +3845,7 @@ This operation does not require authentication
 |» jira|string|false|none|Presence of the Jira_API Named Credential; UNKNOWN when NamedCredential cannot be read.|
 |» github|string|false|none|Presence of the GitHub_API Named Credential.|
 |» gemini|string|false|none|Presence of the Gemini_API Named Credential.|
-|details|object|false|none|Diagnostic per dependency, e.g. credential: "HTTP 401" or an exception type name.|
+|details|object|false|none|Diagnostic per dependency in plain words, for example credential: "answered HTTP 401", "could not connect" or "not set up". No exception type or text is sent.|
 |» **additionalProperties**|string|false|none|none|
 
 #### Enumerated Values
@@ -1968,7 +4006,7 @@ The master payload for initial app load
 |certifications|[[EnrichedCertification](#schemaenrichedcertification)]|true|none|[Certification with associated skills]|
 |education|[[SimpleEducation](#schemasimpleeducation)]|true|none|[Educational background]|
 |testimonials|[[EnrichedTestimonial](#schemaenrichedtestimonial)]|true|none|none|
-|integrityNote|string|false|none|"complete", or "partial: <sections> unavailable" naming each upstream section that could not be read (e.g. "partial: certifications unavailable").|
+|integrityNote|string|false|none|"complete", or a sentence that names each section that could not be read, for example "Some sections could not be read this time: certifications. Everything else is complete. Try again in a minute for the full result."|
 
 <h2 id="tocS_ProfileSummary">ProfileSummary</h2>
 <!-- backwards compatibility -->
@@ -2054,7 +4092,7 @@ The master payload for initial app load
 |experience|[[EnrichedExperience](#schemaenrichedexperience)]|true|none|[Work Experience enriched with related Skills and Highlights]|
 |certifications|[[EnrichedCertification](#schemaenrichedcertification)]|true|none|[Certification with associated skills]|
 |education|[[SimpleEducation](#schemasimpleeducation)]|true|none|[Educational background]|
-|integrityNote|string|false|none|"complete", or "partial: <sections> unavailable" naming each upstream section that could not be read (e.g. "partial: certifications unavailable").|
+|integrityNote|string|false|none|"complete", or a sentence that names each section that could not be read, for example "Some sections could not be read this time: certifications. Everything else is complete. Try again in a minute for the full result."|
 
 <h2 id="tocS_EnrichedExperience">EnrichedExperience</h2>
 <!-- backwards compatibility -->

@@ -82,7 +82,14 @@ public without sharing class RateWindowLimiter implements ApiRateLimiter {
       } catch (QueryException e) {
         // The row stayed locked by concurrent requests past the platform's lock wait.
         // Refuse rather than count blind; the caller retries in a second.
-        return new ApiRequestContext.RateDecision(false, limitPerMinute, 0, 1);
+        ApiRequestContext.RateDecision busy = new ApiRequestContext.RateDecision(
+          false,
+          limitPerMinute,
+          0,
+          1
+        );
+        busy.busy = true;
+        return busy;
       }
       pendingByWindowKey.put(windowKey, pending);
     }

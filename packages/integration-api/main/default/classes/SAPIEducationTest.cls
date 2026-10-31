@@ -115,5 +115,6 @@ private class SAPIEducationTest {
     Test.stopTest();
 
     SapiTestData.assertError(500, 'INTERNAL_SERVER_ERROR');
+    RestTestUtil.assertServerError();
   }
 }

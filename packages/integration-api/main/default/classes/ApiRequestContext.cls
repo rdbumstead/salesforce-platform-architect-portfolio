@@ -55,6 +55,11 @@ public with sharing class ApiRequestContext {
   public static final Integer DEFAULT_LIMIT = 50;
   public static final Integer MAX_LIMIT = 200;
   public static final Integer DEFAULT_OFFSET = 0;
+  // The platform allows no SOQL OFFSET above 2000, so a larger value is refused with a 400
+  // instead of reaching the query and coming back as a 500.
+  public static final Integer MAX_OFFSET = 2000;
+  // Seconds a caller is told to wait after a 503 that can recover.
+  public static final Integer DEFAULT_RETRY_AFTER_SECONDS = 60;
   public static final Integer SAPI_LIMIT_PER_MINUTE = 120;
   public static final Integer PAPI_LIMIT_PER_MINUTE = 15;
   public static final Integer PAPI_AI_LIMIT_PER_MINUTE = 10;
@@ -182,6 +187,9 @@ public with sharing class ApiRequestContext {
     public final Integer limitPerMinute;
     public final Integer remaining;
     public final Integer retryAfterSeconds;
+    // True when the decision is a refusal because the counter row stayed locked, not because
+    // the caller used up the limit.
+    public Boolean busy = false;
 
     /**
      * @description Creates a decision.
@@ -229,7 +237,45 @@ public with sharing class ApiRequestContext {
     ctx.modern = ApiRoutes.isVersionless();
     ctx.legacyPath = isLegacyPath(uri) && ctx.modern;
     ctx.shapesRecords = !ctx.isUnshaped();
-    ctx.applyRequestRules();
+    try {
+      ctx.applyRequestRules();
+    } catch (Exception e) {
+      // A failure while the rules run (the rate window row, for one) must not reach the
+      // platform, which would answer with the exception type and stack lines.
+      ctx.serverError(e);
+    }
+    return ctx;
+  }
+
+  /**
+   * @description Builds a context for a refusal that must not depend on the caller having
+   *              done anything right: the 401 and 403 the routers give before the request
+   *              rules run. It sets Content-Type, takes the correlation id the caller sent
+   *              when it is a UUID (else makes one and sets X-Request-Id), and applies no
+   *              version rule, no X-Request-Id rule and no rate limit, so an anonymous caller
+   *              with no headers is told what to do and not that a header is missing.
+   * @return ApiRequestContext The context. Not rejected until error() is called.
+   */
+  public static ApiRequestContext beginRefusal() {
+    ApiRequestContext ctx = new ApiRequestContext(
+      RestContext.request,
+      RestContext.response
+    );
+    String uri = RestContext.request?.requestURI;
+    ctx.canonical = canonicalPath(uri);
+    ctx.rawUri = uri;
+    ctx.modern = ApiRoutes.isVersionless();
+    ctx.header('Content-Type', 'application/json');
+    String supplied = ctx.headerValue(HEADER_REQUEST_ID);
+    if (
+      String.isNotBlank(supplied) &&
+      UUID_PATTERN.matcher(supplied.trim()).matches()
+    ) {
+      ctx.correlationId = supplied.trim();
+    } else {
+      ctx.correlationId = UUID.randomUUID().toString();
+      ctx.header(HEADER_REQUEST_ID, ctx.correlationId);
+    }
     return ctx;
   }
 
@@ -556,11 +602,7 @@ public with sharing class ApiRequestContext {
     Integer maxSize = maxPageSize();
     Integer value = parseInteger('limit', defaultPageSize());
     if (value == null || value < 1 || value > maxSize) {
-      error(
-        400,
-        'BAD_REQUEST',
-        'Limit must be an integer between 1 and ' + maxSize + '.'
-      );
+      error(400, 'BAD_REQUEST', ApiMessages.limitInvalid(maxSize));
       return null;
     }
     pageLimit = value;
@@ -576,12 +618,8 @@ public with sharing class ApiRequestContext {
       return null;
     }
     Integer value = parseInteger('offset', DEFAULT_OFFSET);
-    if (value == null) {
-      error(400, 'BAD_REQUEST', 'Offset must be a non-negative integer.');
-      return null;
-    }
-    if (value < 0) {
-      error(400, 'BAD_REQUEST', 'Offset cannot be negative.');
+    if (value == null || value < 0 || value > MAX_OFFSET) {
+      error(400, 'BAD_REQUEST', ApiMessages.offsetInvalid(MAX_OFFSET));
       return null;
     }
     return value;
@@ -660,7 +698,7 @@ public with sharing class ApiRequestContext {
    * @param body Object to serialise.
    */
   public void ok(Object body) {
-    commitRateCounts();
+    commitCountsSafely();
     res.statusCode = 200;
     res.responseBody = Blob.valueOf(
       JSON.serialize(
@@ -671,15 +709,42 @@ public with sharing class ApiRequestContext {
   }
 
   /**
-   * @description Writes the standard Error payload and marks the request rejected.
+   * @description Writes the standard Error payload and marks the request rejected. The
+   *              error is retryable when it is a 429 or a 5xx.
    * @param status HTTP status code.
-   * @param errorCode Code from the SAPI Error enum.
+   * @param errorCode Code from the Error schema's errorCode enum.
    * @param message Human-readable message.
    */
   public void error(Integer status, String errorCode, String message) {
-    commitRateCounts();
+    error(status, errorCode, message, status >= 500 || status == 429);
+  }
+
+  /**
+   * @description Writes the standard Error payload, with a help link to the code's entry on
+   *              the API reference, and marks the request rejected. A 503 that is retryable
+   *              and has no Retry-After yet gets one of 60 seconds.
+   * @param status HTTP status code.
+   * @param errorCode Code from the SAPI Error enum.
+   * @param message Human-readable message.
+   * @param retryable True only when the same request can succeed later with no change.
+   */
+  public void error(
+    Integer status,
+    String errorCode,
+    String message,
+    Boolean retryable
+  ) {
+    commitCountsSafely();
     rejected = true;
     res.statusCode = status;
+    if (
+      status == 503 &&
+      retryable &&
+      res.headers != null &&
+      !res.headers.containsKey('Retry-After')
+    ) {
+      header('Retry-After', String.valueOf(DEFAULT_RETRY_AFTER_SECONDS));
+    }
     res.responseBody = Blob.valueOf(
       JSON.serialize(
         new Map<String, Object>{
@@ -687,12 +752,46 @@ public with sharing class ApiRequestContext {
           'errorCode' => errorCode,
           'message' => message,
           'correlationId' => correlationId,
-          'retryable' => (status >= 500 ||
-          status == 429)
+          'retryable' => retryable,
+          'help' => ApiMessages.helpUrl(
+            errorCode,
+            familyOf(req?.requestURI) == ApiFamily.SAPI ? 'sapi' : 'papi'
+          )
         }
       )
     );
     logRequest();
+  }
+
+  /**
+   * @description Answers an exception nobody planned for with 500. The caller gets a fixed
+   *              message and the correlation id, never the exception's text. The exception
+   *              type and message are logged under that id.
+   * @param e The exception.
+   */
+  public void serverError(Exception e) {
+    if (correlationId == null) {
+      correlationId = UUID.randomUUID().toString();
+    }
+    PortfolioLog.info(
+      'api error correlationId=' +
+        correlationId +
+        ' type=' +
+        e.getTypeName() +
+        ' message=' +
+        String.valueOf(e.getMessage()).left(200)
+    );
+    error(500, 'INTERNAL_SERVER_ERROR', ApiMessages.serverError(correlationId));
+  }
+
+  // The rate counts are bookkeeping. A failure to save them must not turn an answer into an
+  // escaped exception.
+  private static void commitCountsSafely() {
+    try {
+      commitRateCounts();
+    } catch (Exception e) {
+      PortfolioLog.info('api rate count not saved type=' + e.getTypeName());
+    }
   }
 
   /**
@@ -769,7 +868,7 @@ public with sharing class ApiRequestContext {
     // The body differs by version, so a shared cache must key on the header.
     appendHeader('Vary', HEADER_API_VERSION);
     if (!versionKnown) {
-      error(400, 'BAD_REQUEST', 'Unsupported X-API-Version');
+      error(400, 'BAD_REQUEST', ApiMessages.VERSION_UNSUPPORTED);
       return;
     }
     Boolean versionApplies = !isV2();
@@ -790,7 +889,14 @@ public with sharing class ApiRequestContext {
       Boolean versionGone = isGone(versionSunset);
       Boolean pathGone = isGone(pathSunset);
       if ((versionGone || pathGone) && !isSunsetExempt()) {
-        error(410, 'GONE', goneMessage(versionGone, pathGone));
+        error(
+          410,
+          'GONE',
+          goneMessage(
+            versionGone ? versionSunset : null,
+            pathGone ? pathSunset : null
+          )
+        );
         return;
       }
     }
@@ -815,40 +921,44 @@ public with sharing class ApiRequestContext {
       error(
         429,
         'RATE_LIMIT_EXCEEDED',
-        'Rate limit exceeded. Retry after ' +
-          decision.retryAfterSeconds +
-          ' seconds.'
+        decision.busy
+          ? ApiMessages.LOCK_BUSY
+          : ApiMessages.tierLimit(
+              tierLabelOf(family, isAi()),
+              decision.limitPerMinute,
+              decision.retryAfterSeconds
+            )
       );
       return;
     }
 
     if (idMissing && family != ApiFamily.PAPI) {
-      error(400, 'BAD_REQUEST', 'X-Request-Id header is required.');
+      error(400, 'BAD_REQUEST', ApiMessages.REQUEST_ID_MISSING);
       return;
     }
     if (!idMissing && !idValid) {
-      error(400, 'BAD_REQUEST', 'X-Request-Id must be a UUID.');
+      error(400, 'BAD_REQUEST', ApiMessages.REQUEST_ID_INVALID);
       return;
     }
   }
 
-  // The version message is the ADR-039 text, unchanged. The path message names the versionless
-  // URL without its query, so no parameter value is echoed back.
-  private String goneMessage(Boolean versionGone, Boolean pathGone) {
-    String message = '';
-    if (versionGone) {
-      message =
-        'API v1 has been retired. Send X-API-Version: v2. See ' +
-        V2_REFERENCE_URL;
+  // Each message names its retirement date. The path message names the versionless URL
+  // without its query, so no parameter value is echoed back. A date is null when that
+  // retirement does not apply to this request.
+  private String goneMessage(Date versionSunset, Date pathSunset) {
+    List<String> parts = new List<String>();
+    if (versionSunset != null) {
+      parts.add(ApiMessages.versionGone(versionSunset));
     }
-    if (pathGone) {
-      message +=
-        (versionGone ? ' ' : '') +
-        'URLs with /v1/ have been retired. Use ' +
-        withPlatformPrefix(versionlessUri(req?.requestURI)) +
-        ' instead.';
+    if (pathSunset != null) {
+      parts.add(
+        ApiMessages.pathGone(
+          pathSunset,
+          withPlatformPrefix(versionlessUri(req?.requestURI))
+        )
+      );
     }
-    return message;
+    return String.join(parts, ' ');
   }
 
   private String headerValue(String name) {
@@ -955,6 +1065,13 @@ public with sharing class ApiRequestContext {
       'Api_Ai_Rate_Per_Minute',
       PAPI_AI_LIMIT_PER_MINUTE
     );
+  }
+
+  private static String tierLabelOf(ApiFamily family, Boolean ai) {
+    if (family == ApiFamily.SAPI) {
+      return 'SAPI';
+    }
+    return ai ? 'AI' : 'PAPI';
   }
 
   private static ApiFamily familyOf(String uri) {

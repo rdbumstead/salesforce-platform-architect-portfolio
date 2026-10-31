@@ -15,6 +15,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { createElement } from "@lwc/engine-dom";
 import ApiTester, {
+  OPTIONS_ERROR,
   controlKind,
   ID_OPTION_HINT,
   KIND_ID,
@@ -330,6 +331,16 @@ describe("c-api-tester filter options", () => {
 
     expect($(element, 'input[data-name="projectKey"]').type).toBe("text");
     expect($(element, "p.catalog-error")).toBeNull();
+    expect($(element, "p.options-notice").textContent.trim()).toBe(
+      OPTIONS_ERROR
+    );
+  });
+
+  it("shows no filter notice when the options load", async () => {
+    const element = create();
+    await flush();
+
+    expect($(element, "p.options-notice")).toBeNull();
   });
 
   it("leaves a spec enum as it is even when the org has options for its name", async () => {

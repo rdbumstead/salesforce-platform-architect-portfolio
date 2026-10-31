@@ -47,11 +47,7 @@ global with sharing class PAPITestimonialFeed implements QueryDefinitions.Provid
 
       String mode = resolveMode(ctx.stringParam('mode'));
       if (mode == null) {
-        ctx.error(
-          400,
-          'BAD_REQUEST',
-          'Invalid mode. Valid values: professional, casual'
-        );
+        ctx.error(400, 'BAD_REQUEST', ApiMessages.MODE_INVALID);
         return;
       }
 
@@ -64,7 +60,7 @@ global with sharing class PAPITestimonialFeed implements QueryDefinitions.Provid
       ctx.cache(ApiRequestContext.CachePolicy.PRIVATE_60);
       ctx.ok(feed);
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

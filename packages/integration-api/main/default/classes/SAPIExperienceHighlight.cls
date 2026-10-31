@@ -45,7 +45,11 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
       }
       // v2 names the filter experienceKey and takes a key only. v1 keeps experienceId.
       if (ctx.isV2() && String.isNotBlank(ctx.stringParam('experienceId'))) {
-        ctx.error(400, 'BAD_REQUEST', 'Use experienceKey in v2.');
+        ctx.error(
+          400,
+          'BAD_REQUEST',
+          ApiMessages.keyRenamed('experienceKey', 'experienceId')
+        );
         return;
       }
       String experienceId = ctx.stringParam(
@@ -63,8 +67,8 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
             400,
             'BAD_REQUEST',
             ctx.isV2()
-              ? 'experienceKey must be a public key.'
-              : 'experienceId must be a Salesforce Id or a public key.'
+              ? ApiMessages.keyInvalid('experienceKey', '/sapi/experience')
+              : ApiMessages.idInvalid('experienceId', '/sapi/experience')
           );
           return;
         }
@@ -72,11 +76,7 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
       String persona = ctx.stringParam('persona');
       List<String> personas = parsePersonas(persona);
       if (personas == null) {
-        ctx.error(
-          400,
-          'BAD_REQUEST',
-          'persona must be one or more of Admin, Developer, Architect.'
-        );
+        ctx.error(400, 'BAD_REQUEST', ApiMessages.PERSONA_LIST_INVALID);
         return;
       }
 
@@ -98,7 +98,7 @@ global with sharing class SAPIExperienceHighlight implements QueryDefinitions.Pr
       ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
       ctx.ok(SAPITransformer.toExperienceHighlights(records));
     } catch (Exception e) {
-      ctx.error(500, 'INTERNAL_SERVER_ERROR', e.getMessage());
+      ctx.serverError(e);
     }
   }
 

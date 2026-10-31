@@ -135,7 +135,9 @@ private class SAPIProjectTest {
 
     String responseJson = res.responseBody.toString();
     System.assert(
-      responseJson.contains('Offset cannot be negative'),
+      responseJson.contains(
+        ApiMessages.offsetInvalid(ApiRequestContext.MAX_OFFSET)
+      ),
       'Response should contain offset error message'
     );
   }
@@ -155,6 +157,7 @@ private class SAPIProjectTest {
       res.statusCode,
       'Should return 500 on internal error'
     );
+    RestTestUtil.assertServerError();
   }
 
   @IsTest

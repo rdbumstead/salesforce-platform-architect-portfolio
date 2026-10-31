@@ -167,6 +167,7 @@ private class PAPIResumeTest {
       res.responseBody.toString().contains('INTERNAL_SERVER_ERROR'),
       'Should return correct error code'
     );
+    RestTestUtil.assertServerError();
   }
 
   @IsTest
@@ -207,7 +208,7 @@ private class PAPIResumeTest {
     String text = (String) body.get('generatedText');
     Assert.areEqual(200, res.statusCode, 'A section failure is not a 500');
     Assert.areEqual(
-      'partial: skills unavailable',
+      ApiMessages.partial(new List<String>{ 'skills' }),
       body.get('integrityNote'),
       'The note names the failed section'
     );
@@ -240,7 +241,15 @@ private class PAPIResumeTest {
     Map<String, Object> body = RestTestUtil.getBodyAsMap();
     Assert.areEqual(200, RestTestUtil.getResponse().statusCode, 'Best effort');
     Assert.areEqual(
-      'partial: contacts, experience, skills, certifications, education unavailable',
+      ApiMessages.partial(
+        new List<String>{
+          'contacts',
+          'experience',
+          'skills',
+          'certifications',
+          'education'
+        }
+      ),
       body.get('integrityNote'),
       'Every failed section is named in read order'
     );
@@ -257,7 +266,7 @@ private class PAPIResumeTest {
     Test.stopTest();
 
     Assert.areEqual(
-      'partial: contacts unavailable',
+      ApiMessages.partial(new List<String>{ 'contacts' }),
       RestTestUtil.getBodyAsMap().get('integrityNote'),
       'No owner contact is reported as a partial resume'
     );
@@ -675,6 +684,7 @@ private class PAPIResumeTest {
     Test.stopTest();
 
     assertJsonError(500, 'INTERNAL_SERVER_ERROR');
+    RestTestUtil.assertServerError();
   }
 
   @IsTest

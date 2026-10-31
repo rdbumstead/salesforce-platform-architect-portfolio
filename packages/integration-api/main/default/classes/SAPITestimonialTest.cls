@@ -102,6 +102,7 @@ private class SAPITestimonialTest {
       res.statusCode,
       'Should return 500 on internal error'
     );
+    RestTestUtil.assertServerError();
   }
 
   @IsTest

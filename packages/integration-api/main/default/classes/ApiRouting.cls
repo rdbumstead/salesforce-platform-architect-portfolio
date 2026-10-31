@@ -3,9 +3,9 @@
  *                      URI into the route segments after sapi or papi, the same for a
  *                      versionless URL and its old /v1/ alias, and writes the two answers
  *                      a router can give itself: the 404 for a route it does not know,
- *                      in the standard error envelope, and the 405 for a verb a route does
- *                      not have, worded as the platform words it for a class without that
- *                      verb. Holds no data access.
+ *                      in the standard error envelope, the 401 for a caller with no token,
+ *                      the 403 for a token holder asking for a token, and the 405 for a verb
+ *                      a route does not have, all in the same envelope. Holds no data access.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -53,15 +53,29 @@ public with sharing class ApiRouting {
    *              rules as any other, so it carries the same headers.
    */
   public static void notFound() {
-    ApiRequestContext ctx = ApiRequestContext.begin();
+    notFound(false);
+  }
+
+  /**
+   * @description The same 404 for a caller who may be anonymous. An anonymous caller has not
+   *              got a token and the X-Request-Id rule would answer them first, so the 404 is
+   *              written without the request rules.
+   * @param anonymous True for the site guest.
+   */
+  public static void notFound(Boolean anonymous) {
+    ApiRequestContext ctx = anonymous
+      ? ApiRequestContext.beginRefusal()
+      : ApiRequestContext.begin();
     if (ctx.isRejected()) {
       return;
     }
     ctx.error(
       404,
       'NOT_FOUND',
-      'No route matches ' +
-      ApiRequestContext.canonicalPath(RestContext.request?.requestURI)
+      ApiMessages.routeNotFound(
+        RestContext.request?.httpMethod,
+        ApiRequestContext.canonicalPath(RestContext.request?.requestURI)
+      )
     );
   }
 
@@ -88,28 +102,60 @@ public with sharing class ApiRouting {
   }
 
   /**
-   * @description Answers a verb the route does not have as the platform answers it for a
-   *              class without that verb: 405, an Allow header, and the platform's own body.
-   *              Like the platform it runs no header or rate limit rules.
-   * @param verb The verb that was sent.
-   * @param allowed The verbs the route has, in the platform's order, for example GET,HEAD.
+   * @description Answers a caller with no token on a route that needs one: 401
+   *              UNAUTHORIZED with WWW-Authenticate: Bearer and a message that says where to
+   *              get a token. It runs no header, version or rate limit rule, so a caller
+   *              with no headers at all is told how to get a token.
    */
-  public static void methodNotAllowed(String verb, String allowed) {
-    RestResponse res = RestContext.response;
-    res.statusCode = 405;
-    res.addHeader('Content-Type', 'application/json');
-    res.addHeader('Allow', allowed);
-    res.responseBody = Blob.valueOf(
-      JSON.serialize(
-        new List<Object>{
-          new Map<String, Object>{
-            'errorCode' => 'METHOD_NOT_ALLOWED',
-            'message' => 'HTTP Method \'' +
-            verb +
-            '\' not allowed. Allowed are ' +
-            allowed
-          }
-        }
+  public static void unauthorized() {
+    ApiRequestContext ctx = ApiRequestContext.beginRefusal();
+    ctx.header('WWW-Authenticate', 'Bearer');
+    ctx.error(
+      401,
+      'UNAUTHORIZED',
+      ApiMessages.needsToken(
+        ApiRequestContext.canonicalPath(RestContext.request?.requestURI),
+        ApiSite.tokenUrl()
+      )
+    );
+  }
+
+  /**
+   * @description Answers a token holder who asks for a token on the instance address: 403
+   *              FORBIDDEN and a message that gives the site's token URL. Like the 401 it
+   *              runs no header, version or rate limit rule.
+   */
+  public static void forbidden() {
+    ApiRequestContext ctx = ApiRequestContext.beginRefusal();
+    ctx.error(403, 'FORBIDDEN', ApiMessages.tokensNotHere(ApiSite.tokenUrl()));
+  }
+
+  /**
+   * @description Answers a verb the route does not have: 405 METHOD_NOT_ALLOWED in the standard
+   *              error envelope with the usual headers and an Allow header. It runs the
+   *              normal header and rate limit rules first.
+   * @param verb The verb that was sent.
+   * @param allowed The verbs the route has, for example GET,HEAD.
+   * @param route The route name after the API root, for example auth/token.
+   */
+  public static void methodNotAllowed(
+    String verb,
+    String allowed,
+    String route
+  ) {
+    ApiRequestContext ctx = ApiRequestContext.begin();
+    if (ctx.isRejected()) {
+      return;
+    }
+    ctx.header('Allow', allowed);
+    ctx.error(
+      405,
+      'METHOD_NOT_ALLOWED',
+      ApiMessages.methodNotAllowed(
+        ApiRequestContext.canonicalPath(RestContext.request?.requestURI),
+        allowed,
+        verb,
+        route
       )
     );
   }

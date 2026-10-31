@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Salesforce System API (SAPI)
-  version: 2.1.0
+  version: 2.2.0
   description: |
     System API exposing core Salesforce objects for the Portfolio. This is **version 2**, selected with `X-API-Version: v2`. It returns public keys only. Version 1 is documented in `salesforce-sapi.yaml` and is deprecated (see Versioning below).
 
@@ -28,9 +28,58 @@ info:
     ### Design Constraints & Trade-offs
     - **Pagination**: Offset-based pagination implemented for simplicity (<200 records). 
       - *Enterprise Note*: For volumes >2,000, this would be refactored to **Keyset/Cursor Pagination** (`WHERE Id > lastSeenId`).
-    - **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning. The URL has no version segment. The old URLs with `/v1/` (for example `/sapi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel="canonical"` once their retirement dates are set (ADR-040). Use the URLs in this document. Send `X-API-Version: v2` for this contract. A missing header resolves to `v1`, and any other value returns `400 BAD_REQUEST` with message `Unsupported X-API-Version` (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
-    - **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a short message and the link to the version 2 reference, `https://ryanbumstead.com/api-lab/reference?version=v2`.
+    - **Versioning**: Header version (`X-API-Version`) takes precedence over URL versioning. The URL has no version segment. The old URLs with `/v1/` (for example `/sapi/v1/projects`) are aliases of the same calls and answer the same way, with `Deprecation`, `Sunset` and a `Link` header with `rel="canonical"` once their retirement dates are set (ADR-040). Use the URLs in this document. Send `X-API-Version: v2` for this contract. A missing header resolves to `v1`, and any other value returns `400 BAD_REQUEST` that says to send v1 or v2 (ADR-026). Both `X-Request-Id` and `X-API-Version` are echoed on every response.
+    - **Version 1 sunset**: every version 1 response carries `Deprecation` and `Link` headers, and `Sunset` once the sunset date is set, 30 days after version 2 reaches production. After the sunset date version 1 answers `410 Gone` with a message that gives the retirement date and says to send `X-API-Version: v2`, and the `help` field links to the entry in the Errors section.
     - **Removed from version 1**: `accomplishments` on `/experience` is not returned in version 2. Read `/experience-highlights` instead.
+
+    ## Errors
+
+    Every error this API sends itself is one JSON object with `httpStatus`, `errorCode`, `message`, `correlationId`, `retryable` and `help`. The `message` says what happened, what you need and how to get it. The `help` field links to the entry for the `errorCode` on this page. Program against `errorCode`, because the wording of a message can improve. `retryable` is true only when the same request can succeed later with no change, and every retryable 503 and 429 carries `Retry-After`. The `correlationId` is the `X-Request-Id` of the call, or the id the API made when you sent none. Quote it when you ask for help.
+
+    <a id="error-bad-request"></a>
+
+    ### BAD_REQUEST (400)
+    The request was refused before any data was read. The message names the header, parameter or field to change and often shows a working example. It is not retryable, so send a corrected request. Example: `offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are.`
+
+    <a id="error-unauthorized"></a>
+
+    ### UNAUTHORIZED (401)
+    The caller reached the site address with no token. The answer carries `WWW-Authenticate: Bearer` and names the site's token URL: send `POST` to it with a JSON body holding your `email` and a `purpose`, then call the route on the `instance_url` from that answer with `Authorization: Bearer <access_token>`. A token that has ended is different. The platform answers it before our code runs, with a JSON array and the code `INVALID_SESSION_ID` (see Responses from the platform below).
+
+    <a id="error-forbidden"></a>
+
+    ### FORBIDDEN (403)
+    The caller may not run the class behind the route. The platform refuses it and answers a JSON array (see Responses from the platform below). Not retryable.
+
+    <a id="error-not-found"></a>
+
+    ### NOT_FOUND (404)
+    The route does not exist, a project key in the path matches no project, or the Api_Versionless_Urls switch is off and only the `/v1/` URLs answer. The message names the method and path, the key, or the `/v1/` URL to use. Not retryable.
+
+    <a id="error-method-not-allowed"></a>
+
+    ### METHOD_NOT_ALLOWED (405)
+    SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array with an `Allow` header (see Responses from the platform below).
+
+    <a id="error-gone"></a>
+
+    ### GONE (410)
+    API v1, or the old `/v1/` URL spelling, was retired on the date in the message. Send `X-API-Version: v2`, or call the same URL without `/v1/`. Nothing else about the request changes. The token and health routes are exempt and keep answering. Not retryable.
+
+    <a id="error-rate-limit-exceeded"></a>
+
+    ### RATE_LIMIT_EXCEEDED (429)
+    One of three limits. The shared limit for the tier is used up, and the message names the tier and the limit. One email asked for too many tokens in the last minute. Or the counter row stayed locked for a moment, and the message says the API is busy. All three carry `Retry-After`, and all three are retryable after that many seconds with no change to the request.
+
+    <a id="error-internal-server-error"></a>
+
+    ### INTERNAL_SERVER_ERROR (500)
+    Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is ever sent. Retryable: try again in a minute, and if it keeps happening send the id through the contact page.
+
+    <a id="error-platform"></a>
+
+    ### Responses from the platform
+    Two refusals come from the platform before any of our code runs, so they cannot carry our fields or wording. Each is a JSON array holding objects with `errorCode` and `message`. A token that has ended or was never valid is `401` with `[{"message":"Session expired or invalid","errorCode":"INVALID_SESSION_ID"}]`. A user with no access to the class behind a route is `403` with `[{"errorCode":"FORBIDDEN","message":"You do not have access to the Apex class named: ..."}]`. A POST to a SAPI route is `405` with `[{"errorCode":"METHOD_NOT_ALLOWED","message":"HTTP Method 'POST' not allowed. Allowed are GET,HEAD"}]`. An ended token is the usual cause of the first: tokens end after 30 minutes without use, and `POST /papi/auth/token` gives a new one.
   contact:
     name: Ryan Bumstead
     email: ryan@ryanbumstead.com
@@ -121,7 +170,7 @@ components:
       name: X-API-Version
       in: header
       required: false
-      description: "API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST with message 'Unsupported X-API-Version' (ADR-026)."
+      description: "API Contract Version. Send v2 for this contract. Missing resolves to v1, which is deprecated; any other value returns 400 BAD_REQUEST that says to send v1 or v2 (ADR-026)."
       schema:
         type: string
         enum: [v1, v2]
@@ -151,11 +200,12 @@ components:
       name: offset
       in: query
       required: false
-      description: "Pagination offset."
+      description: "Pagination offset, from 0 to 2000. A larger value returns 400 BAD_REQUEST, because the platform allows no larger SOQL offset. The X-Total-Count header says how many records there are."
       schema:
         type: integer
         default: 0
         minimum: 0
+        maximum: 2000
 
     contactNameParam:
       name: contactName
@@ -264,7 +314,7 @@ components:
 
   responses:
     BadRequest:
-      description: Invalid request parameters or schema validation failure.
+      description: "The request was refused before any data was read. The message names the header, parameter or field to change."
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
@@ -272,29 +322,130 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+          examples:
+            unsupportedVersion:
+              summary: "X-API-Version is not v1 or v2"
+              value:
+                httpStatus: 400
+                errorCode: "BAD_REQUEST"
+                message: "X-API-Version must be v1 or v2. Send X-API-Version: v2 for the current version."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+            badRequestId:
+              summary: "X-Request-Id is not a UUID"
+              value:
+                httpStatus: 400
+                errorCode: "BAD_REQUEST"
+                message: "X-Request-Id must be a UUID like 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. On /papi routes you can leave it out and one is made for you."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+            badOffset:
+              summary: "offset is out of range"
+              value:
+                httpStatus: 400
+                errorCode: "BAD_REQUEST"
+                message: "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+            badLimit:
+              summary: "limit is out of range"
+              value:
+                httpStatus: 400
+                errorCode: "BAD_REQUEST"
+                message: "limit must be a whole number from 1 to 200. Leave it out to get the default page size."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+            renamedFilter:
+              summary: "A v2 call used the v1 filter name"
+              value:
+                httpStatus: 400
+                errorCode: "BAD_REQUEST"
+                message: "In v2 this filter is called projectKey, and it takes a public key. Rename projectId to projectKey."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+            idInV2:
+              summary: "A Salesforce Id was sent to a v2 filter"
+              value:
+                httpStatus: 400
+                errorCode: "BAD_REQUEST"
+                message: "projectKey must be a public key, the key field of a record from GET /sapi/projects. A Salesforce Id does not work in v2."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+            badPersonaList:
+              summary: "persona holds an unknown value"
+              value:
+                httpStatus: 400
+                errorCode: "BAD_REQUEST"
+                message: "persona must be Admin, Developer or Architect. To ask for more than one, separate them with commas."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+            missingRequestId:
+              summary: "X-Request-Id is missing on a SAPI route"
+              value:
+                httpStatus: 400
+                errorCode: "BAD_REQUEST"
+                message: "Send an X-Request-Id header holding a UUID, for example X-Request-Id: 3f1c9b2e-8d4a-4c1e-9b7f-2a6d5e4c3b1a. It lets a request be traced in the logs."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
 
     Unauthorized:
-      description: Missing, expired, or invalid Bearer token (rejected by the platform before Apex executes).
+      description: "No token, or a token that has ended. A caller on the site address with no token gets our error object with a Bearer challenge. A bad or ended token on the instance address is refused by the platform, which answers a JSON array and not our error object."
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
+        WWW-Authenticate:
+          description: Bearer, when the caller sent no token at all.
+          schema:
+            type: string
+            example: Bearer
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            oneOf:
+              - $ref: "#/components/schemas/Error"
+              - $ref: "#/components/schemas/PlatformErrorList"
+          examples:
+            noToken:
+              summary: "A caller on the site address with no token (our envelope)"
+              value:
+                httpStatus: 401
+                errorCode: "UNAUTHORIZED"
+                message: "This route needs an evaluator token. Get one with POST https://ryan-bumstead-dev-ed.develop.my.site.com/portfoliovforcesite/services/apexrest/papi/auth/token and a JSON body with your email and a purpose. Then call /sapi/skills on the instance_url from that answer, with the header Authorization: Bearer <access_token>."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-unauthorized"
+            endedToken:
+              summary: "A token that ended or was never valid (the platform answers before our code runs)"
+              value:
+                - errorCode: "INVALID_SESSION_ID"
+                  message: "Session expired or invalid"
 
     Forbidden:
-      description: The integration user lacks object, field, or Apex class permission for this resource.
+      description: "The caller may not run the class that serves this route. The platform refuses the call before our code runs and answers a JSON array and not our error object."
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: "#/components/schemas/PlatformErrorList"
+          examples:
+            classAccess:
+              summary: "The caller may not run the class that serves the route (the platform answers)"
+              value:
+                - errorCode: "FORBIDDEN"
+                  message: "You do not have access to the Apex class named: SAPISkill"
 
     NotFound:
-      description: The requested resource ID was not found.
+      description: "The route does not exist, or the key in the path matches no record."
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
@@ -302,23 +453,118 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+          examples:
+            routeNotFound:
+              summary: "There is no such route"
+              value:
+                httpStatus: 404
+                errorCode: "NOT_FOUND"
+                message: "There is no GET /sapi/nothing in this API. The routes are listed in the API reference."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+            switchedOff:
+              summary: "The versionless URLs are switched off (the old /v1/ spelling is the only one)"
+              value:
+                httpStatus: 404
+                errorCode: "NOT_FOUND"
+                message: "Versionless URLs are switched off. Use /services/apexrest/sapi/v1/skills."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+            noSuchProject:
+              summary: "No project has the key"
+              value:
+                httpStatus: 404
+                errorCode: "NOT_FOUND"
+                message: "No project has the key prj_nothere. GET /sapi/projects lists every project with its key. This path takes a key, not a Salesforce Id."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-not-found"
+
+    MethodNotAllowed:
+      description: "SAPI takes GET only. The platform refuses any other method before our code runs and answers a JSON array and not our error object, with an Allow header."
+      headers:
+        Allow:
+          description: The methods the route takes.
+          schema:
+            type: string
+            example: "GET,HEAD"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlatformErrorList"
+          examples:
+            wrongMethod:
+              summary: "POST to a SAPI route"
+              value:
+                - errorCode: "METHOD_NOT_ALLOWED"
+                  message: "HTTP Method 'POST' not allowed. Allowed are GET,HEAD"
+
+    Gone:
+      description: "API v1, or the old /v1/ URL, was retired. Send X-API-Version: v2, or call the versionless URL."
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestIdResponse"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            versionRetired:
+              summary: "API v1 was retired"
+              value:
+                httpStatus: 410
+                errorCode: "GONE"
+                message: "API v1 was retired on 2026-11-29. Send the header X-API-Version: v2 and call the same URL again."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
+            urlRetired:
+              summary: "The /v1/ URL spelling was retired"
+              value:
+                httpStatus: 410
+                errorCode: "GONE"
+                message: "URLs with /v1/ were retired on 2026-11-29. Call /services/apexrest/sapi/skills instead. Nothing else about the request changes."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: false
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-gone"
 
     TooManyRequests:
-      description: API rate limit exceeded.
+      description: "The rate limit was used up (ADR-025, ADR-028). Retry-After says how many seconds to wait."
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
         Retry-After:
-          description: Seconds left in the current calendar minute, or 1 when the counter row stayed locked past the platform wait (`RateWindowLimiter.checkKey`).
+          description: Seconds to wait before the same request can succeed.
           schema:
             type: integer
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+          examples:
+            tierLimit:
+              summary: "The shared limit for the tier is used up"
+              value:
+                httpStatus: 429
+                errorCode: "RATE_LIMIT_EXCEEDED"
+                message: "This API allows 120 requests a minute on SAPI routes, shared by every evaluator. Wait 42 seconds and send the request again."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: true
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
+            busy:
+              summary: "The counter row stayed locked"
+              value:
+                httpStatus: 429
+                errorCode: "RATE_LIMIT_EXCEEDED"
+                message: "The API is busy for a moment. Wait 1 second and send the request again."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: true
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-rate-limit-exceeded"
 
     ServerError:
-      description: Internal platform error (unhandled Apex exception).
+      description: "Something failed that the API did not plan for. The message holds the correlation id, and the detail is in the log under that id. No exception text is sent."
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestIdResponse"
@@ -326,51 +572,76 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
-          example:
-            httpStatus: 500
-            errorCode: "INTERNAL_SERVER_ERROR"
-            message: "Upstream Salesforce processing failed."
-            correlationId: "123e4567-e89b-12d3-a456-426614174000"
-            retryable: true
+          examples:
+            unexpected:
+              summary: "An unplanned failure"
+              value:
+                httpStatus: 500
+                errorCode: "INTERNAL_SERVER_ERROR"
+                message: "Something went wrong on our side, and it has been logged as 123e4567-e89b-12d3-a456-426614174000. Try again in a minute. If it keeps happening, send that id through ryanbumstead.com/contact."
+                correlationId: "123e4567-e89b-12d3-a456-426614174000"
+                retryable: true
+                help: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-internal-server-error"
 
   schemas:
     Error:
       type: object
-      description: Standard Error Response Schema.
-      required: [errorCode, message, correlationId, httpStatus]
+      description: "The error object this API sends. The platform sends a JSON array instead for two refusals, see PlatformErrorList."
+      required:
+        - httpStatus
+        - errorCode
+        - message
+        - correlationId
+        - retryable
       properties:
         httpStatus:
           type: integer
-          readOnly: true
           example: 400
-          description: "Standard HTTP Status Code."
         errorCode:
           type: string
-          description: "Machine-readable error code constant."
+          description: "Machine readable code. Program against this, not against the message."
           enum:
             - BAD_REQUEST
             - UNAUTHORIZED
             - FORBIDDEN
             - NOT_FOUND
+            - METHOD_NOT_ALLOWED
+            - GONE
             - RATE_LIMIT_EXCEEDED
             - INTERNAL_SERVER_ERROR
-            - SALESFORCE_UNAVAILABLE
-            - GATEWAY_TIMEOUT
-            - GONE
           example: "BAD_REQUEST"
         message:
           type: string
-          example: "Offset cannot be negative."
-          description: "Human-readable error message."
-        retryable:
-          type: boolean
-          example: false
-          description: "Indicates if the client should retry the request."
+          description: "What happened, what you need and how to get it, in plain sentences."
+          example: "offset must be a whole number from 0 to 2000. The X-Total-Count header says how many records there are."
         correlationId:
           type: string
           format: uuid
+          description: "Matches X-Request-Id, or the id the API made when none was sent."
           example: "123e4567-e89b-12d3-a456-426614174000"
-          description: "Unique ID tracking the request. Matches X-Request-Id."
+        retryable:
+          type: boolean
+          description: "True only when the same request can succeed later with no change by the caller."
+          example: false
+        help:
+          type: string
+          format: uri
+          description: "Link to this error code's entry in the Errors section of the API reference."
+          example: "https://ryanbumstead.com/api-lab/reference?spec=sapi&version=v2#error-bad-request"
+
+    PlatformErrorList:
+      type: array
+      description: "What the platform sends for a refusal that happens before our code runs: an ended token (401) or no access to the class (403). Not our error object."
+      items:
+        type: object
+        required: [errorCode, message]
+        properties:
+          errorCode:
+            type: string
+            example: "INVALID_SESSION_ID"
+          message:
+            type: string
+            example: "Session expired or invalid"
 
     Persona:
       type: string
@@ -1113,6 +1384,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /contacts:
     get:
@@ -1147,6 +1425,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1185,6 +1466,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1222,6 +1506,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1232,6 +1519,10 @@ paths:
       description: |
         Retrieves portfolio projects.
         Example Usage: `/projects?isFeatured=true`
+
+        Add a project key to the path, as in `/projects/prj_8f3k2m9qtz`, to read one project. A key that
+        matches no project returns 404 NOT_FOUND, and the message says that this path takes a key and not
+        a Salesforce Id.
       operationId: getProjects
       parameters:
         - $ref: "#/components/parameters/apiVersionParam"
@@ -1263,6 +1554,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1299,6 +1593,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1334,6 +1631,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1361,8 +1661,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PortfolioConfig"
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1399,6 +1703,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1435,6 +1742,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1473,6 +1783,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1510,6 +1823,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1546,6 +1862,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1582,6 +1901,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1618,5 +1940,8 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405": { $ref: "#/components/responses/MethodNotAllowed" }
+        "410": { $ref: "#/components/responses/Gone" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "500": { $ref: "#/components/responses/ServerError" }

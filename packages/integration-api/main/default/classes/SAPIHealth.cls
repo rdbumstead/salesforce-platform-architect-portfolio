@@ -26,9 +26,19 @@ global with sharing class SAPIHealth {
     if (ctx.isRejected()) {
       return;
     }
-    ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
-    ctx.ok(buildPayload());
+    try {
+      if (Test.isRunningTest() && throwException) {
+        throw new CalloutException('Forced Exception');
+      }
+      ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
+      ctx.ok(buildPayload());
+    } catch (Exception e) {
+      ctx.serverError(e);
+    }
   }
+
+  @TestVisible
+  private static Boolean throwException = false;
 
   /**
    * @description Builds the SAPI HealthStatus payload. Runs no SOQL, DML or callouts.

@@ -278,8 +278,12 @@ export const REDOC_OPTIONS = {
   }
 };
 
-/** A Redoc section id the menu and deep links use, such as tag/Skills or operation/getSkills. */
-const SECTION_HASH = /^(tag|operation|section|schema)\//;
+/**
+ * A section id the menu and deep links use, such as tag/Skills or operation/getSkills, or an
+ * error entry anchor such as error-bad-request. The error anchors are in the Errors section of
+ * each spec, and the help field of an API error links to one (ApiMessages.helpUrl).
+ */
+const SECTION_HASH = /^((tag|operation|section|schema)\/|error-[a-z-]+$)/;
 
 /**
  * A visible ring on every control Redoc draws (Expand all, Collapse all, Copy, the expand
@@ -459,6 +463,28 @@ export function disposePreviousRedoc(element) {
     // An unexpected shape is left alone. Only the hash after a spec switch is affected.
   }
   return false;
+}
+
+/**
+ * The element to scroll to and focus for a found id. An error entry is marked by an empty
+ * anchor in a paragraph just above its heading, so the heading after it takes the focus and a
+ * screen reader reads the entry's name. Any other element is returned as it is.
+ * @param {Element} element the element found by id
+ * @returns {Element} the element to scroll to
+ */
+export function errorEntry(element) {
+  if (
+    element.tagName === "A" &&
+    !element.textContent &&
+    /^error-/.test(element.id)
+  ) {
+    const holder = element.parentElement;
+    const next = holder && holder.nextElementSibling;
+    if (next && /^H[1-6]$/.test(next.tagName)) {
+      return next;
+    }
+  }
+  return element;
 }
 
 /** An id as the inside of a double quoted CSS attribute value. */
@@ -698,7 +724,7 @@ export default class ApiReference extends LightningElement {
     }
     const exact = target.querySelector(`[id="${cssString(id)}"]`);
     if (exact) {
-      return exact;
+      return errorEntry(exact);
     }
     if (id.startsWith("operation/")) {
       return target.querySelector(`[id$="/${cssString(id)}"]`);

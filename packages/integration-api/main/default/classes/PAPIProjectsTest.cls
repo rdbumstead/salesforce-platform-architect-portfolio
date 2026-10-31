@@ -105,6 +105,7 @@ private class PAPIProjectsTest {
       res.responseBody.toString().contains('INTERNAL_SERVER_ERROR'),
       'Should return correct error code'
     );
+    RestTestUtil.assertServerError();
   }
 
   @IsTest
@@ -175,7 +176,7 @@ private class PAPIProjectsTest {
       'Skills could not be read'
     );
     Assert.areEqual(
-      'partial: project-skills unavailable',
+      ApiMessages.partial(new List<String>{ 'project-skills' }),
       res.headers.get('X-Integrity-Note'),
       'The note names the failed sub-query'
     );
@@ -202,7 +203,7 @@ private class PAPIProjectsTest {
 
     Assert.areEqual(200, res.statusCode, 'A sub-query failure is not a 500');
     Assert.areEqual(
-      'partial: project-assets unavailable',
+      ApiMessages.partial(new List<String>{ 'project-assets' }),
       res.headers.get('X-Integrity-Note'),
       'The note names the failed sub-query'
     );

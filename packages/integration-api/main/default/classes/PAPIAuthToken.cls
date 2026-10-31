@@ -21,40 +21,53 @@ global with sharing class PAPIAuthToken {
   global static void requestToken() {
     ApiRequestContext ctx = ApiRequestContext.begin();
     ctx.cache(ApiRequestContext.CachePolicy.NO_STORE);
-    TokenExchangeService.Attempt attempt = TokenExchangeService.attemptFromRest(
-      RestContext.request,
-      ctx.correlationId()
-    );
     if (ctx.isRejected()) {
+      // The rules refused the call before the body was read. The attempt is still recorded.
       TokenExchangeService.recordRejected(
-        attempt,
+        TokenExchangeService.attemptFromRest(
+          RestContext.request,
+          ctx.correlationId()
+        ),
         RestContext.response.statusCode
       );
       return;
     }
+    try {
+      TokenExchangeService.Attempt attempt = TokenExchangeService.attemptFromRest(
+        RestContext.request,
+        ctx.correlationId()
+      );
 
-    // The token callout runs inside requestToken, before ok()/error() write the
-    // rate-limit count, so no DML comes before the callout.
-    TokenExchangeService.Result result = TokenExchangeService.requestToken(
-      attempt
-    );
-    if (result.isIssued()) {
-      ctx.ok(result.toTokenBody());
-      return;
-    }
-    if (result.retryAfterSeconds != null) {
-      ctx.header('Retry-After', String.valueOf(result.retryAfterSeconds));
-    }
-    if (result.rateDecision != null) {
-      ctx.header(
-        'X-RateLimit-Limit',
-        String.valueOf(result.rateDecision.limitPerMinute)
+      // The token callout runs inside requestToken, before ok()/error() write the
+      // rate-limit count, so no DML comes before the callout.
+      TokenExchangeService.Result result = TokenExchangeService.requestToken(
+        attempt
       );
-      ctx.header(
-        'X-RateLimit-Remaining',
-        String.valueOf(Math.max(0, result.rateDecision.remaining))
+      if (result.isIssued()) {
+        ctx.ok(result.toTokenBody());
+        return;
+      }
+      if (result.retryAfterSeconds != null) {
+        ctx.header('Retry-After', String.valueOf(result.retryAfterSeconds));
+      }
+      if (result.rateDecision != null) {
+        ctx.header(
+          'X-RateLimit-Limit',
+          String.valueOf(result.rateDecision.limitPerMinute)
+        );
+        ctx.header(
+          'X-RateLimit-Remaining',
+          String.valueOf(Math.max(0, result.rateDecision.remaining))
+        );
+      }
+      ctx.error(
+        result.statusCode,
+        result.errorCode,
+        result.message,
+        result.retryable
       );
+    } catch (Exception e) {
+      ctx.serverError(e);
     }
-    ctx.error(result.statusCode, result.errorCode, result.message);
   }
 }
