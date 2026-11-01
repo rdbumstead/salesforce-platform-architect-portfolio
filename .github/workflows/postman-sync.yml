@@ -33,7 +33,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: "26"
 
       # The same install as the PR check, so the converter is the version package.json pins.
       - name: Install dependencies
