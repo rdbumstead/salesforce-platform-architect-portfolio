@@ -25,7 +25,6 @@ jobs:
           username: ${{ secrets.SFDX_INTEGRATION_USERNAME }}
           alias: "portfolio"
           node_version: "26"
-          cli_version: "2.141.6"
 
       - name: Execute Heartbeat Query
         run: |
