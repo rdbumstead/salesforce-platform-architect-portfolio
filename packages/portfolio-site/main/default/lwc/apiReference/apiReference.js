@@ -62,7 +62,7 @@ export function isPostmanRunUrl(value) {
     const url = new URL(value.trim());
     return (
       url.protocol === "https:" &&
-      /(^|.)(getpostman|postman).com$/.test(url.hostname)
+      /(^|\.)(getpostman|postman)\.com$/.test(url.hostname)
     );
   } catch {
     return false;
