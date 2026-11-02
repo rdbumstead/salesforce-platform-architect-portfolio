@@ -11,6 +11,7 @@
 import { createElement } from "@lwc/engine-dom";
 import ApiReference, {
   COLLECTION_FILE_NAME,
+  isPostmanRunUrl,
   reduceError
 } from "c/apiReference";
 import getPostmanRunUrl from "@salesforce/apex/ApiLabController.getPostmanRunUrl";
@@ -124,6 +125,29 @@ describe("c-api-reference Postman row", () => {
     const text = $(element, ".error-text").textContent;
     expect(text).toBe("The interactive reference could not be shown.");
     expect(text).not.toMatch(/unknown error|failed to get error/i);
+  });
+
+  it("keeps Run in Postman hidden for a host that only looks like postman.com", async () => {
+    const element = create();
+    getPostmanRunUrl.emit("https://evilpostman.com/run-collection/example");
+    await flush();
+    expect($(element, "a.postman-run")).toBeNull();
+  });
+});
+
+describe("isPostmanRunUrl", () => {
+  it("accepts https links on postman.com, getpostman.com and their subdomains", () => {
+    expect(isPostmanRunUrl("https://postman.com/x")).toBe(true);
+    expect(isPostmanRunUrl("https://www.getpostman.com/x")).toBe(true);
+    expect(isPostmanRunUrl(RUN_URL)).toBe(true);
+  });
+
+  it("rejects look alike hosts and plain http", () => {
+    expect(isPostmanRunUrl("https://evilpostman.com/x")).toBe(false);
+    expect(isPostmanRunUrl("https://xgetpostman.com/x")).toBe(false);
+    expect(isPostmanRunUrl("https://postmanxcom/x")).toBe(false);
+    expect(isPostmanRunUrl("https://postman.com.example.com/x")).toBe(false);
+    expect(isPostmanRunUrl("http://www.postman.com/x")).toBe(false);
   });
 });
 

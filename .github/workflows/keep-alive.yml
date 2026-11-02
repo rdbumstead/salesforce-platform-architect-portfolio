@@ -5,6 +5,10 @@ on:
     - cron: "0 8 * * *"
   workflow_dispatch:
 
+# The GitHub token only reads the repository. The heartbeat uses the Salesforce secrets.
+permissions:
+  contents: read
+
 jobs:
   heartbeat:
     name: Salesforce Org Heartbeat

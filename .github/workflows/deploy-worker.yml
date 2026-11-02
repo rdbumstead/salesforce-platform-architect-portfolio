@@ -9,6 +9,10 @@ on:
       - "config/wrangler.toml"
   workflow_dispatch:
 
+# The GitHub token only reads the repository. The deploy uses the Cloudflare token.
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
