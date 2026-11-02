@@ -18,6 +18,10 @@ concurrency:
   group: pr-${{ github.event.pull_request.number }}-${{ github.event.action == 'labeled' && 'label' || 'run' }}
   cancel-in-progress: true
 
+# The GitHub token only reads the repository. Validation uses the Salesforce secrets.
+permissions:
+  contents: read
+
 jobs:
   quality-check:
     if: github.event.action != 'labeled'

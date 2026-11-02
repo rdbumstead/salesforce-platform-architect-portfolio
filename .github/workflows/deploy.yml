@@ -30,6 +30,10 @@ on:
         type: choice
         options: [pre, post]
 
+# The GitHub token only reads the repository. Deploys use the Salesforce and smoke secrets.
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
