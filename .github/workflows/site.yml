@@ -213,7 +213,7 @@ jobs:
       # CF_Authorization cookie, which is masked, and web/build/lhci-access.cjs sets it for the
       # preview's own host only. No other host receives the token or the cookie.
       - name: Lighthouse, three mobile runs per main page
-        if: steps.deploy.outcome == 'success'
+        if: always() && steps.deploy.outcome == 'success'
         continue-on-error: true
         env:
           TARGET_URL: ${{ steps.deploy.outputs.deployment-url }}
