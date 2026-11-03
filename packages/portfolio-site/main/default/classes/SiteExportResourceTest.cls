@@ -46,7 +46,9 @@ private class SiteExportResourceTest {
     return [
       SELECT Id
       FROM User
-      WHERE Username LIKE :SiteExportTestSupport.BUILD_USERNAME_PREFIX + '%'
+      WHERE
+        Username LIKE :SiteExportTestSupport.BUILD_USERNAME_PREFIX + '%'
+        AND Alias = 'sitebld'
       LIMIT 1
     ];
   }
@@ -229,9 +231,13 @@ private class SiteExportResourceTest {
 
   @isTest
   static void shouldRefuseAUserWithoutThePermission() {
+    // A user made here, so the result does not depend on who runs the tests.
+    User withoutPermission = SiteExportTestSupport.createUserWithoutBuildPermission();
     RestResponse res;
     Test.startTest();
-    res = SiteExportTestSupport.get('ResumeController.getHeader', null);
+    System.runAs(withoutPermission) {
+      res = SiteExportTestSupport.get('ResumeController.getHeader', null);
+    }
     Test.stopTest();
     Assert.areEqual(
       403,

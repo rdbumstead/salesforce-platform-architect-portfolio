@@ -29,6 +29,22 @@ public with sharing class SiteExportTestSupport {
    * @return the new user
    */
   public static User createBuildUser() {
+    return createUser(
+      new List<String>{ 'Portfolio_Guest', 'Portfolio_Site_Build' },
+      'sitebld'
+    );
+  }
+
+  /**
+   * @description Creates a user like the build user without the build permission set, so a
+   *              test can prove the export refuses it whoever runs the tests.
+   * @return the new user
+   */
+  public static User createUserWithoutBuildPermission() {
+    return createUser(new List<String>{ 'Portfolio_Guest' }, 'nobuild');
+  }
+
+  private static User createUser(List<String> permissionSets, String alias) {
     User build;
     System.runAs(new User(Id = UserInfo.getUserId())) {
       Profile integrationProfile = [
@@ -43,7 +59,7 @@ public with sharing class SiteExportTestSupport {
           '@example.com.portfolio',
         Email = 'site-build-test@example.com',
         LastName = 'Site Build',
-        Alias = 'sitebld',
+        Alias = alias,
         ProfileId = integrationProfile.Id,
         TimeZoneSidKey = 'America/Edmonton',
         LocaleSidKey = 'en_US',
@@ -55,7 +71,7 @@ public with sharing class SiteExportTestSupport {
       for (PermissionSet permissionSet : [
         SELECT Id
         FROM PermissionSet
-        WHERE Name IN ('Portfolio_Guest', 'Portfolio_Site_Build')
+        WHERE Name IN :permissionSets
       ]) {
         assignments.add(
           new PermissionSetAssignment(
