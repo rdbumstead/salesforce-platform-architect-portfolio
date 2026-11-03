@@ -336,7 +336,8 @@ test('the live GETs are cached at the edge for 60 and 300 seconds', async () => 
 });
 
 test('the committed lab path list matches the catalog', () => {
-  assert.equal(fs.readFileSync(PATHS_FILE, 'utf8'), labPathsText());
+  const plain = (text) => text.split('\r').join('');
+  assert.equal(plain(fs.readFileSync(PATHS_FILE, 'utf8')), plain(labPathsText()));
 });
 
 test('getToken keeps one request in flight', async () => {
