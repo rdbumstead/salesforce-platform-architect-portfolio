@@ -9,7 +9,8 @@ const {
   checkTour,
   liveStops,
   tagOf,
-  bundleOf
+  bundleOf,
+  checkStatic
 } = require("./check-smoke-routes.js");
 const { ROUTES, TOUR, isUnderBase } = require("./live-smoke.js");
 
@@ -194,4 +195,15 @@ test("a part inside a component the page does not place fails", () => {
   assert.deepStrictEqual(problems, [
     "/: the smoke looks inside c-gone-card, which the page does not place"
   ]);
+});
+
+test("the smoke checks exactly the pages the static site builds", async () => {
+  const root = path.join(__dirname, "..");
+  assert.deepStrictEqual(await checkStatic(root, ROUTES), []);
+});
+
+test("a smoke route the static site does not build is reported", async () => {
+  const root = path.join(__dirname, "..");
+  const problems = await checkStatic(root, [...ROUTES, { path: "/gone" }]);
+  assert.ok(problems.some((line) => line.startsWith("/gone:")));
 });

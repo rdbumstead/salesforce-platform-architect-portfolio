@@ -11,6 +11,8 @@
 //   - the site has a page route the smoke does not check, or
 //   - a page places a component that has no bundle in the repository (a deleted component
 //     still named in a view or a template).
+// It also checks the list against the static site's pages (web/build/routes.mjs), which are
+// built from the same route files, so the same smoke runs against a Pages preview unchanged.
 // It also checks the smoke's tour walk (TOUR in scripts/live-smoke.js) against the live pillars
 // in c/pillarData, read from its source: the same stops in the same order, each a page the site
 // has, and the start page too.
@@ -219,20 +221,71 @@ function checkTour(root, tour) {
   return problems;
 }
 
-module.exports = { check, checkTour, liveStops, sitePages, tagOf, bundleOf };
+/**
+ * The smoke's routes against the static site's pages: every smoke route must be a static
+ * page and every static page must be in the smoke.
+ * @param {string} root repository root
+ * @param {object[]} routes ROUTES from scripts/live-smoke.js
+ * @returns {Promise<string[]>} one line per problem
+ */
+async function checkStatic(root, routes) {
+  const file = path.join(root, "web", "build", "routes.mjs");
+  if (!fs.existsSync(file)) {
+    return [];
+  }
+  const { readRoutes } = await import(require("url").pathToFileURL(file).href);
+  const pages = new Set(
+    readRoutes()
+      .routes.filter((route) => route.path)
+      .map((route) => route.path)
+  );
+  const smoke = new Set(routes.map((route) => route.path));
+  const problems = [];
+  smoke.forEach((route) => {
+    if (!pages.has(route)) {
+      problems.push(
+        `${route}: the smoke checks a route the static site does not build`
+      );
+    }
+  });
+  pages.forEach((page) => {
+    if (!smoke.has(page)) {
+      problems.push(
+        `${page}: the static site builds a page the smoke does not check`
+      );
+    }
+  });
+  return problems;
+}
+
+module.exports = {
+  check,
+  checkStatic,
+  checkTour,
+  liveStops,
+  sitePages,
+  tagOf,
+  bundleOf
+};
 
 if (require.main === module) {
   const root = path.resolve(process.argv[2] || path.join(__dirname, ".."));
   const { ROUTES, TOUR } = require(path.join(root, "scripts", "live-smoke.js"));
-  const problems = [...check(root, ROUTES), ...checkTour(root, TOUR)];
-  if (problems.length) {
+  checkStatic(root, ROUTES).then((staticProblems) => {
+    const problems = [
+      ...check(root, ROUTES),
+      ...checkTour(root, TOUR),
+      ...staticProblems
+    ];
+    if (problems.length) {
+      console.log(
+        `Smoke routes: ${problems.length} problem(s). Update ROUTES in scripts/live-smoke.js:`
+      );
+      problems.forEach((line) => console.log(`- ${line}`));
+      process.exit(1);
+    }
     console.log(
-      `Smoke routes: ${problems.length} problem(s). Update ROUTES in scripts/live-smoke.js:`
+      `Smoke routes match the site and the static site: ${ROUTES.length} routes and the ${TOUR.stops.length} tour stops checked.`
     );
-    problems.forEach((line) => console.log(`- ${line}`));
-    process.exit(1);
-  }
-  console.log(
-    `Smoke routes match the site: ${ROUTES.length} routes and the ${TOUR.stops.length} tour stops checked.`
-  );
+  });
 }
