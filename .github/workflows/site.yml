@@ -65,6 +65,7 @@ jobs:
     env:
       HAS_BUILD_USER: ${{ secrets.SFDX_SITE_BUILD_USERNAME != '' }}
       HAS_PAGES_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN != '' || secrets.CLOUDFLARE_API_TOKEN != '' }}
+      HAS_EDGE_SECRETS: ${{ secrets.SITE_EDGE_CLIENT_SECRET != '' }}
       BRANCH: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'main' }}
     steps:
       - name: Checkout
@@ -106,14 +107,31 @@ jobs:
         working-directory: web
         env:
           SF_TARGET_ORG: site-build
+          SITE_PREVIEW: ${{ github.event_name == 'pull_request' }}
+          TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
         run: node build/build.mjs --export
 
       - name: Build from fixtures
         if: env.HAS_BUILD_USER != 'true'
         working-directory: web
+        env:
+          SITE_PREVIEW: ${{ github.event_name == 'pull_request' }}
+          TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
         run: |
           echo "::notice::No SFDX_SITE_BUILD_USERNAME secret, so this is a fixture build with sample data."
           node build/build.mjs --fixtures
+
+      # Saves the API Lab's responses for recorded mode, as the edge user. Never on a pull
+      # request, so preview runs never hold the edge secrets.
+      - name: Record API Lab responses
+        if: github.event_name != 'pull_request' && env.HAS_EDGE_SECRETS == 'true'
+        working-directory: web
+        env:
+          SF_INSTANCE_URL: ${{ secrets.SITE_EDGE_INSTANCE_URL }}
+          SF_CLIENT_ID: ${{ secrets.SITE_EDGE_CLIENT_ID }}
+          SF_CLIENT_SECRET: ${{ secrets.SITE_EDGE_CLIENT_SECRET }}
+          IP_HASH_SALT: ${{ secrets.SITE_EDGE_IP_HASH_SALT }}
+        run: node build/recorded.mjs
 
       - name: Leak scan
         working-directory: web
