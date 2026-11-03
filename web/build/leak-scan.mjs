@@ -29,7 +29,14 @@ const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const DYNAMIC_KEY_PARENTS = new Set(['options', 'properties', 'variables', 'ApiLabOptionsController.getOptions']);
 
 /** Reserved example domains (RFC 2606), used in sample code and placeholders. */
-const EXAMPLE_DOMAIN = /@([a-z0-9-]+.)*(example.(com|net|org)|[a-z0-9-]+.example)$/i;
+const EXAMPLE_SECOND_LEVEL = new Set(['example.com', 'example.net', 'example.org']);
+
+/** True for an address at a reserved example domain or any name under one. */
+export function isExampleAddress(email) {
+  const labels = String(email).toLowerCase().split('@').pop().split('.');
+  if (labels[labels.length - 1] === 'example') return true;
+  return EXAMPLE_SECOND_LEVEL.has(labels.slice(-2).join('.'));
+}
 
 function* files(dir, test) {
   if (!fs.existsSync(dir)) return;
@@ -120,7 +127,7 @@ export function scan(distDir, options = {}) {
       });
       for (const match of data.matchAll(EMAIL)) {
         const email = match[0].toLowerCase();
-        if (!allowedEmails.has(email) && !EXAMPLE_DOMAIN.test(email)) problems.push(`${relative} contains an email address`);
+        if (!allowedEmails.has(email) && !isExampleAddress(email)) problems.push(`${relative} contains an email address`);
       }
       const lower = data.toLowerCase();
       denylist.forEach((term) => {

@@ -67,11 +67,12 @@ export function readHeadMarkup(resourceUrls, siteDir = SITE_DIR) {
     if (/rel="preload"/.test(tag)) continue;
     keep.push(resourcePath(tag, resourceUrls).replace(SALESFORCE_SITE, SITE_ORIGIN));
   }
-  const jsonLd = (markup.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/) || [])[0];
+  // The head markup is this repo's own file, never visitor input. Tag names match in any case.
+  const jsonLd = (markup.match(/<script\s+type="application\/ld\+json"\s*>[\s\S]*?<\/script\s*>/i) || [])[0];
   if (jsonLd) keep.push(jsonLd);
-  const inline = [...markup.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  const hidden = [...markup.matchAll(/<x-oasis-script hidden="true"[^>]*>([\s\S]*?)<\/x-oasis-script>/g)].map((m) => m[1]);
-  const loader = (markup.match(/<x-oasis-script async src="([^"]+)"/) || [])[1] || null;
+  const inline = [...markup.matchAll(/<script\s*>([\s\S]*?)<\/script\s*>/gi)].map((m) => m[1]);
+  const hidden = [...markup.matchAll(/<x-oasis-script\s+hidden="true"[^>]*>([\s\S]*?)<\/x-oasis-script\s*>/gi)].map((m) => m[1]);
+  const loader = (markup.match(/<x-oasis-script\s+async\s+src="([^"]+)"/i) || [])[1] || null;
   return { tags: keep, analytics: [...hidden, ...inline].join('\n'), analyticsLoader: loader };
 }
 

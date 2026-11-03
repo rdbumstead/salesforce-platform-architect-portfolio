@@ -19,6 +19,17 @@ function tagOf(name) {
 }
 
 /**
+ * A component name from a view file, checked before it goes into generated code. Component
+ * folder names are identifiers, so anything else is refused rather than escaped.
+ */
+export function componentSpecifier(name) {
+  if (!/^[a-z][A-Za-z0-9]*$/.test(String(name))) {
+    throw new Error(`Not a component name: ${JSON.stringify(name)}`);
+  }
+  return JSON.stringify(`c/${name}`);
+}
+
+/**
  * The source of one route's entry module. The layout and the route's first component are in
  * the entry, so the top of the page paints as soon as they run. Every later component and
  * the footer load as their own chunks after that and are added together, so the first
@@ -30,7 +41,7 @@ export function entrySource(route) {
     `import Layout from 'c/portfolioThemeLayout';`
   ];
   const firstName = (route.components.find((component) => component.name) || {}).name;
-  if (firstName) lines.push(`import First from 'c/${firstName}';`);
+  if (firstName) lines.push(`import First from ${componentSpecifier(firstName)};`);
   let firstPlaced = false;
   const entries = route.components.map((component) => {
     if (component.html !== undefined) return `{ html: ${JSON.stringify(component.html)} }`;
@@ -40,7 +51,7 @@ export function entrySource(route) {
       firstPlaced = true;
       return `{ tag: ${tag}, ctor: First, props: ${props} }`;
     }
-    return `{ tag: ${tag}, load: () => import('c/${component.name}'), props: ${props} }`;
+    return `{ tag: ${tag}, load: () => import(${componentSpecifier(component.name)}), props: ${props} }`;
   });
   const footer = route.layout === 'portfolio' ? `() => import('c/footer')` : 'null';
   lines.push(`mount({ Layout, loadFooter: ${footer}, components: [${entries.join(', ')}] });`);

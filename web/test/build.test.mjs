@@ -5,7 +5,7 @@ import { splitList, templateReads, graphqlQueries, planRoute, UNEXPORTED_QUERIES
 import { readHeadMarkup, scriptJson, siteStylesheet } from '../build/pages.mjs';
 import { resourceIndex, resourcesNamedIn } from '../build/resources.mjs';
 import { fixtureReads, FIXTURE_TEXT_LIMIT } from '../build/build.mjs';
-import { entrySource } from '../build/bundle.mjs';
+import { entrySource, componentSpecifier } from '../build/bundle.mjs';
 
 const PUBLIC_ROUTES = [
   '/',
@@ -123,9 +123,15 @@ test('an entry holds the first component and loads the rest and the footer after
     layout: 'portfolio',
     components: [{ name: 'pageIntro', props: { heading: 'H' } }, { html: '<p>r</p>' }, { name: 'resumeBuilder' }]
   });
-  assert.ok(source.includes("import First from 'c/pageIntro'"));
+  assert.ok(source.includes('import First from "c/pageIntro"'));
   assert.ok(source.includes('tag: "c-page-intro", ctor: First, props: {"heading":"H"}'));
-  assert.ok(source.includes("load: () => import('c/resumeBuilder')"));
+  assert.ok(source.includes('load: () => import("c/resumeBuilder")'));
   assert.ok(source.includes("loadFooter: () => import('c/footer')"));
   assert.ok(!source.includes('import Footer'));
+});
+
+test('a component name that is not an identifier never reaches generated code', () => {
+  assert.equal(componentSpecifier('pageIntro'), '"c/pageIntro"');
+  assert.throws(() => componentSpecifier("x'); alert(1); ('"));
+  assert.throws(() => componentSpecifier('../secret'));
 });

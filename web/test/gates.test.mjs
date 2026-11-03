@@ -3,8 +3,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { scan } from '../build/leak-scan.mjs';
+import { scan, isExampleAddress } from '../build/leak-scan.mjs';
 import { apexAllowlist, compare } from '../build/check-export-coverage.mjs';
+
+test('only reserved example domains count as example addresses', () => {
+  assert.ok(isExampleAddress('you@example.com'));
+  assert.ok(isExampleAddress('jobs@acme.example'));
+  assert.ok(isExampleAddress('a@mail.example.org'));
+  assert.ok(!isExampleAddress('someone@examplexcom.net'), 'a dot is a dot, not any character');
+  assert.ok(!isExampleAddress('me@real-domain.com'));
+  assert.ok(!isExampleAddress('x@example.com.attacker.net'));
+});
 
 function site(reads, extraHtml = '') {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'leak-'));
