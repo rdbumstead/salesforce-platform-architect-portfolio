@@ -1,7 +1,7 @@
 /**
  * @description       : Serves the Delivery page governance checklist.
  *                      getPipelineStatus() returns the latest Pipeline_Run__c per workflow, the
- *                      newest CreatedDate of each integration cache, and three checklist items
+ *                      newest CreatedDate of each integration cache, and four checklist items
  *                      worked out from that evidence. An item passes only on evidence: no run
  *                      means NO_SIGNAL, a Failure means FAIL, and old evidence means STALE.
  * @author            : Ryan Bumstead
@@ -17,6 +17,7 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
   private static final String JIRA_QUERY = 'GovernanceController_JiraCache';
   public static final String ITEM_DEPLOY = 'deploy';
   public static final String ITEM_HEARTBEAT = 'heartbeat';
+  public static final String ITEM_SITE = 'site';
   public static final String ITEM_CACHES = 'caches';
   public static final String STATE_PASS = 'PASS';
   public static final String STATE_FAIL = 'FAIL';
@@ -29,14 +30,15 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
 
   private static final List<String> WORKFLOWS = new List<String>{
     GovernanceEventHandler.WORKFLOW_DEPLOY,
-    GovernanceEventHandler.WORKFLOW_HEARTBEAT
+    GovernanceEventHandler.WORKFLOW_HEARTBEAT,
+    GovernanceEventHandler.WORKFLOW_SITE
   };
 
   @TestVisible
   private static Datetime nowOverride;
 
   /**
-   * @description The latest run per workflow, the cache times and the three checklist items.
+   * @description The latest run per workflow, the cache times and the four checklist items.
    *              Cacheable, so the component refreshes it with refreshApex when the page is
    *              opened or shown again. No timer and no callout.
    * @return PipelineStatus The evidence and the checklist built from it.
@@ -61,6 +63,10 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
         runByWorkflow.get(GovernanceEventHandler.WORKFLOW_HEARTBEAT),
         now
       ),
+      siteItem(
+        runByWorkflow.get(GovernanceEventHandler.WORKFLOW_SITE),
+        selector.hasEverReportedSiteBuild()
+      ),
       cacheItem(result.githubCacheAt, result.jiraCacheAt, now)
     };
     return result;
@@ -72,6 +78,20 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
       ITEM_DEPLOY,
       'Production deploy green'
     );
+    item.run = run;
+    item.state = run == null ? STATE_NO_SIGNAL : runState(run);
+    return item;
+  }
+
+  // The static site build item. Like the deploy, a build has no age limit: the last build stays
+  // the evidence. everReported is true when any site build row exists, at any age and with any
+  // status. The page hides the row only while it is false, so a failed build is never hidden.
+  private static ChecklistItem siteItem(RunInfo run, Boolean everReported) {
+    ChecklistItem item = new ChecklistItem(
+      ITEM_SITE,
+      'Static site build green'
+    );
+    item.everReported = everReported;
     item.run = run;
     item.state = run == null ? STATE_NO_SIGNAL : runState(run);
     return item;
@@ -168,6 +188,17 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
       return latest;
     }
 
+    private Boolean hasEverReportedSiteBuild() {
+      return ![
+          SELECT Id
+          FROM Pipeline_Run__c
+          WHERE Workflow__c = :GovernanceEventHandler.WORKFLOW_SITE
+          WITH SYSTEM_MODE
+          LIMIT 1
+        ]
+        .isEmpty();
+    }
+
     private Datetime newestGithubCache() {
       List<Github_Cache__c> rows = (List<Github_Cache__c>) QueryDefinitions.run(
         GITHUB_QUERY,
@@ -188,7 +219,7 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
   }
 
   /**
-   * @description The runs read as code: the deploy and heartbeat runs, newest first, in
+   * @description The runs read as code: the deploy, heartbeat and site build runs, newest first, in
    *              system mode. Query_Definition.GovernanceController_PipelineRuns ships equal
    *              to it.
    * @return QueryDefinitions.QueryDefault The default.
@@ -279,6 +310,9 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
     public String state;
     @AuraEnabled
     public RunInfo run;
+    /** Set on the site item only: true once any site build row exists. Left out for the others. */
+    @AuraEnabled
+    public Boolean everReported;
     @AuraEnabled
     public Boolean passed {
       get {

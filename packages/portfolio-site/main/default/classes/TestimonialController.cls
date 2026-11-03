@@ -65,9 +65,9 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
   @TestVisible
   private static final Integer MAX_OWN_WORDS_LENGTH = MAX_CONTEXT_LENGTH;
   @TestVisible
-  private static final String RATE_LIMITED_MESSAGE = 'Too many submissions. Try again in a minute.';
+  public static final String RATE_LIMITED_MESSAGE = 'Too many submissions. Try again in a minute.';
   @TestVisible
-  private static final String SAVE_FAILED_MESSAGE = 'Your testimonial could not be saved. Try again later.';
+  public static final String SAVE_FAILED_MESSAGE = 'Your testimonial could not be saved. Try again later.';
   @TestVisible
   private static Boolean forceSaveFailure = false;
   @TestVisible
@@ -424,7 +424,11 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
     }
     if (decision.rateLimited) {
       ApiRequestContext.commitRateCounts();
-      throw auraError(RATE_LIMITED_MESSAGE);
+      throw auraError(
+        decision.hashRateLimited
+          ? SubmissionGuard.HASH_RATE_MESSAGE
+          : RATE_LIMITED_MESSAGE
+      );
     }
 
     try {
@@ -603,9 +607,7 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
     return null;
   }
 
-  private static AuraHandledException auraError(String message) {
-    AuraHandledException error = new AuraHandledException(message);
-    error.setMessage(message);
-    return error;
+  private static Exception auraError(String message) {
+    return SiteEdgeContext.refusal(message);
   }
 }

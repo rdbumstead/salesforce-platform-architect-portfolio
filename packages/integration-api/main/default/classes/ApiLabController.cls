@@ -80,6 +80,16 @@ public with sharing class ApiLabController {
   public static final String COVER_LETTER_LOG_PATH = 'aura:ApiLabController.generateCoverLetter';
 
   /** The API path the Agentforce letter is posted to. */
+  /** The answers the site actions layer reads to choose a status code. */
+  public static final String COVER_LETTER_RATE_MESSAGE = 'Too many cover letters were requested in the last minute. Try again in a minute.';
+  public static final String NO_PROVIDER_MESSAGE = 'No AI provider is available right now. Try again later.';
+
+  /**
+   * True only while the site actions layer replays a recorded call (X-Site-Recording).
+   * The call is then made as usual but writes no usage counter row.
+   */
+  public static Boolean suppressUsageCount = false;
+
   public static final String AI_GENERATE_PATH = '/papi/ai/generate';
 
   /**
@@ -380,7 +390,9 @@ public with sharing class ApiLabController {
       }
     }
     // Last of all: the response is in hand and the callout is done. Never throws.
-    UsageCounterWriter.record(UsageCounterWriter.KIND_API_LAB_REQUEST);
+    if (!suppressUsageCount) {
+      UsageCounterWriter.record(UsageCounterWriter.KIND_API_LAB_REQUEST);
+    }
     return result;
   }
 
@@ -429,9 +441,7 @@ public with sharing class ApiLabController {
       .checkKey(AI_RATE_KEY, ApiRequestContext.aiLimitPerMinute());
     if (!decision.allowed) {
       logCoverLetter(429, requestId, started);
-      throw auraError(
-        'Too many cover letters were requested in the last minute. Try again in a minute.'
-      );
+      throw auraError(COVER_LETTER_RATE_MESSAGE);
     }
 
     AgentforceOutcome agentforce = tryAgentforce(company, title, description);
@@ -446,9 +456,7 @@ public with sharing class ApiLabController {
         recordAgentforceBreaker(agentforce);
         ApiRequestContext.commitRateCounts();
         logCoverLetter(503, requestId, started);
-        throw auraError(
-          'No AI provider is available right now. Try again later.'
-        );
+        throw auraError(NO_PROVIDER_MESSAGE);
       }
       result = toCoverLetterResult(generated);
       addAgentforceAttempt(result, agentforce);
@@ -770,11 +778,17 @@ public with sharing class ApiLabController {
    *              Aura limit effectively per email. The site guest never asks for a session:
    *              it has none, and for a guest getCurrentSession() throws "Guest users must
    *              never have a session ID created", which no catch stops, so the API Lab
-   *              token form failed for every visitor. A guest's key is IP_UNAVAILABLE.
+   *              token form failed for every visitor. A guest's key is IP_UNAVAILABLE. A call
+   *              from the site edge user uses the visitor's IP hash it sends (SiteEdgeContext).
    * @return String The source IP or IP_UNAVAILABLE.
    */
   @TestVisible
   private static String auraSourceIp() {
+    // The site edge user has one session for every visitor, so its session IP says nothing.
+    String edgeHash = SiteEdgeContext.trustedIpHash();
+    if (edgeHash != null) {
+      return edgeHash;
+    }
     if (UserInfo.getUserType() == 'Guest') {
       return TokenExchangeService.IP_UNAVAILABLE;
     }
@@ -922,9 +936,7 @@ public with sharing class ApiLabController {
     return '?' + String.join(pairs, '&');
   }
 
-  private static AuraHandledException auraError(String message) {
-    AuraHandledException e = new AuraHandledException(message);
-    e.setMessage(message);
-    return e;
+  private static Exception auraError(String message) {
+    return SiteEdgeContext.refusal(message);
   }
 }

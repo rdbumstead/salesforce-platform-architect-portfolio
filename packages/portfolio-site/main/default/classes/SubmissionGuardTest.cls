@@ -366,4 +366,86 @@ private class SubmissionGuardTest {
       'The third testimonial in a minute is limited'
     );
   }
+
+  private static void asEdgeWithHash(String hash, Callable work) {
+    User edge = SiteActionsTestSupport.createEdgeUser();
+    System.runAs(edge) {
+      RestRequest req = new RestRequest();
+      req.addHeader(SiteEdgeContext.HASH_HEADER, hash);
+      RestContext.request = req;
+      work.call('run', null);
+    }
+  }
+
+  /** Runs three checks for one form from one visitor, then a fourth, and a fourth for another. */
+  private class HashLimitProbe implements Callable {
+    private final String formKey;
+    public SubmissionGuard.Decision fourth;
+    public SubmissionGuard.Decision otherVisitor;
+
+    HashLimitProbe(String formKey) {
+      this.formKey = formKey;
+    }
+
+    public Object call(String action, Map<String, Object> args) {
+      for (Integer i = 0; i < 3; i++) {
+        Assert.isTrue(
+          SubmissionGuard.check(request(formKey, 'a@example.com', 'Hi')).accept,
+          'Within the limit ' + i
+        );
+      }
+      fourth = SubmissionGuard.check(request(formKey, 'a@example.com', 'Hi'));
+      return null;
+    }
+  }
+
+  @isTest
+  static void contactHashLimitHasItsOwnMessageAndReason() {
+    HashLimitProbe probe = new HashLimitProbe(SubmissionGuard.FORM_CONTACT);
+    asEdgeWithHash(SiteActionsTestSupport.HASH_A, probe);
+
+    Assert.isTrue(probe.fourth.rateLimited, 'The fourth is limited');
+    Assert.isTrue(probe.fourth.hashRateLimited, 'By the per visitor limit');
+    Assert.areEqual(SubmissionGuard.REASON_HASH_RATE, probe.fourth.reason);
+    Assert.areEqual(
+      'Too many tries. Wait a minute and send again.',
+      SubmissionGuard.HASH_RATE_MESSAGE,
+      'The text the visitor reads'
+    );
+    Assert.areNotEqual(
+      SubmissionGuard.HASH_RATE_MESSAGE,
+      ContactFormController.RATE_LIMITED_MESSAGE,
+      'The daily cap keeps its own text'
+    );
+  }
+
+  @isTest
+  static void testimonialHashLimitHasItsOwnMessageAndReason() {
+    HashLimitProbe probe = new HashLimitProbe(SubmissionGuard.FORM_TESTIMONIAL);
+    asEdgeWithHash(SiteActionsTestSupport.HASH_B, probe);
+
+    Assert.isTrue(probe.fourth.rateLimited, 'The fourth is limited');
+    Assert.isTrue(probe.fourth.hashRateLimited, 'By the per visitor limit');
+    Assert.areEqual(SubmissionGuard.REASON_HASH_RATE, probe.fourth.reason);
+  }
+
+  @isTest
+  static void theDailyCapIsNotAHashLimit() {
+    List<Lead> today = new List<Lead>();
+    for (Integer i = 0; i < SubmissionGuard.CONTACT_DAILY_CAP; i++) {
+      today.add(
+        new Lead(
+          LastName = 'Cap ' + i,
+          Company = 'Cap',
+          LeadSource = SubmissionGuard.LEAD_SOURCE
+        )
+      );
+    }
+    insert today;
+    SubmissionGuard.Decision decision = SubmissionGuard.check(
+      request(SubmissionGuard.FORM_CONTACT, 'ada@example.com', 'Hello')
+    );
+    Assert.isTrue(decision.rateLimited, 'Capped');
+    Assert.isFalse(decision.hashRateLimited, 'Not the per visitor limit');
+  }
 }

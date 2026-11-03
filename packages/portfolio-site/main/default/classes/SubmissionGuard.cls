@@ -5,6 +5,10 @@
  *                      or when the email, its domain or the text matches an active
  *                      Submission_Block__c row. A silent drop shows the visitor the normal thanks
  *                      and stores and sends nothing. It also applies each form's own rate limit.
+ *                      A call through the static site's edge layer carries the visitor's IP hash
+ *                      (SiteEdgeContext). An active IP Hash block that matches drops it, and each
+ *                      form has its own per hash rate limit. A call with no trusted hash is
+ *                      checked exactly as before.
  *                      Runs without sharing on purpose: Submission_Block__c is admin only, and the
  *                      site guest must have it read and its hit counts written without any access
  *                      of its own. Nothing read here is returned to the caller beyond the
@@ -29,6 +33,9 @@ public without sharing class SubmissionGuard {
   public static final String REASON_TOO_FAST = 'too-fast';
   public static final String REASON_BLOCKED = 'blocked';
   public static final String REASON_RATE = 'rate-limited';
+  public static final String REASON_HASH_RATE = 'hash-rate-limited';
+  /** What a visitor reads when the per visitor limit refuses. The daily cap keeps its own text. */
+  public static final String HASH_RATE_MESSAGE = 'Too many tries. Wait a minute and send again.';
 
   // Code defaults. The Contact_Min_Elapsed_Ms, Contact_Daily_Cap and
   // Testimonial_Rate_Per_Minute settings give the values in force.
@@ -39,6 +46,11 @@ public without sharing class SubmissionGuard {
   @TestVisible
   private static final String TESTIMONIAL_RATE_KEY = 'testimonial-submit';
   public static final Integer TESTIMONIAL_RATE_PER_MINUTE = 5;
+  // Submissions one visitor (one IP hash) may send to one form in a minute. A person sends one,
+  // so 3 leaves room for a retry after a typo and stops a script at once.
+  @TestVisible
+  private static final String HASH_RATE_SETTING = 'Form_Rate_Per_Hash_Per_Minute';
+  public static final Integer HASH_RATE_PER_MINUTE = 3;
   private static final Integer MAX_KEYWORDS = 500;
 
   /**
@@ -59,6 +71,8 @@ public without sharing class SubmissionGuard {
     public Boolean accept = false;
     public Boolean silentDrop = false;
     public Boolean rateLimited = false;
+    /** True when the refusal is the per visitor (IP hash) limit, so the form can say so. */
+    public Boolean hashRateLimited = false;
     public String reason;
   }
 
@@ -74,6 +88,7 @@ public without sharing class SubmissionGuard {
       throw new IllegalArgumentException('A form key is required.');
     }
     Decision decision = new Decision();
+    String ipHash = SiteEdgeContext.trustedIpHash();
     if (String.isNotBlank(req.honeypot)) {
       return drop(decision, REASON_HONEYPOT);
     }
@@ -84,12 +99,18 @@ public without sharing class SubmissionGuard {
     if (req.elapsedMs == null || req.elapsedMs < minElapsedMs) {
       return drop(decision, REASON_TOO_FAST);
     }
-    List<Submission_Block__c> hits = matchingBlocks(req);
+    List<Submission_Block__c> hits = matchingBlocks(req, ipHash);
     if (!hits.isEmpty()) {
       recordHits(hits);
       return drop(decision, REASON_BLOCKED);
     }
-    if (isOverRate(req.formKey)) {
+    if (ipHash != null && isOverHashRate(req.formKey, ipHash)) {
+      decision.rateLimited = true;
+      decision.hashRateLimited = true;
+      decision.reason = REASON_HASH_RATE;
+      return decision;
+    }
+    if (isOverRate(req.formKey, ipHash)) {
       decision.rateLimited = true;
       decision.reason = REASON_RATE;
       return decision;
@@ -134,7 +155,10 @@ public without sharing class SubmissionGuard {
     return decision;
   }
 
-  private static List<Submission_Block__c> matchingBlocks(Request req) {
+  private static List<Submission_Block__c> matchingBlocks(
+    Request req,
+    String ipHash
+  ) {
     String email = String.isBlank(req.email)
       ? null
       : req.email.trim().toLowerCase();
@@ -148,6 +172,8 @@ public without sharing class SubmissionGuard {
         AND Value__c = :email)
         OR (Type__c = :TYPE_DOMAIN
         AND Value__c IN :domains)
+        OR (Type__c = :TYPE_IP_HASH
+        AND Value__c = :ipHash)
         OR Type__c = :TYPE_KEYWORD)
       ORDER BY Type__c
       LIMIT :MAX_KEYWORDS
@@ -156,7 +182,12 @@ public without sharing class SubmissionGuard {
       .toLowerCase();
     List<Submission_Block__c> hits = new List<Submission_Block__c>();
     for (Submission_Block__c block : candidates) {
-      if (block.Type__c != TYPE_KEYWORD) {
+      if (block.Type__c == TYPE_IP_HASH) {
+        // A null hash would match a block with no value, so it matches nothing.
+        if (ipHash != null && block.Value__c == ipHash) {
+          hits.add(block);
+        }
+      } else if (block.Type__c != TYPE_KEYWORD) {
         hits.add(block);
       } else if (
         String.isNotBlank(block.Value__c) && text.contains(block.Value__c)
@@ -198,7 +229,7 @@ public without sharing class SubmissionGuard {
     Database.update(updates, false, AccessLevel.SYSTEM_MODE);
   }
 
-  private static Boolean isOverRate(String formKey) {
+  private static Boolean isOverRate(String formKey, String ipHash) {
     if (formKey == FORM_CONTACT) {
       Datetime since = Datetime.now().addHours(-24);
       Integer today = [
@@ -209,7 +240,9 @@ public without sharing class SubmissionGuard {
       return today >=
         PortfolioSettings.getInteger('Contact_Daily_Cap', CONTACT_DAILY_CAP);
     }
-    if (formKey == FORM_TESTIMONIAL) {
+    if (formKey == FORM_TESTIMONIAL && ipHash == null) {
+      // With a trusted hash the per hash limit stands in for this one site wide key,
+      // which would put every edge visitor in one bucket.
       ApiRequestContext.RateDecision rate = ApiRequestContext.rateLimiter()
         .checkKey(
           TESTIMONIAL_RATE_KEY,
@@ -221,5 +254,15 @@ public without sharing class SubmissionGuard {
       return !rate.allowed;
     }
     return false;
+  }
+
+  // One key per form and visitor, so the contact form never spends the testimonial form's share.
+  private static Boolean isOverHashRate(String formKey, String ipHash) {
+    ApiRequestContext.RateDecision rate = ApiRequestContext.rateLimiter()
+      .checkKey(
+        formKey + '-hash:' + ipHash,
+        PortfolioSettings.getInteger(HASH_RATE_SETTING, HASH_RATE_PER_MINUTE)
+      );
+    return !rate.allowed;
   }
 }
