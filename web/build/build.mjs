@@ -19,6 +19,8 @@ import { copyResources, resourceIndex, resourcesNamedIn } from './resources.mjs'
 import { writePages } from './pages.mjs';
 import { readKey } from '../src/shims/site-data.js';
 import { WEB_DIR } from './site-plugin.mjs';
+import { writeLabPaths } from './lab-paths.mjs';
+import { copyRecorded } from './recorded.mjs';
 
 export const DIST_DIR = path.join(WEB_DIR, 'dist');
 export const FIXTURE_DIR = path.join(WEB_DIR, 'fixtures');
@@ -110,11 +112,27 @@ async function loadData(args, routes, reachable) {
   return { ...data, plans };
 }
 
-function writeHostFiles(redirectLines) {
+/** The rule that keeps a preview build out of search results. Production never gets it. */
+export const NOINDEX_RULE = '# Preview build: keep every path out of search results.\n/*\n  X-Robots-Tag: noindex\n';
+
+/** True for a build that is not the production build: --preview, or SITE_PREVIEW=true. */
+export function isPreviewBuild(args = new Set(), env = process.env) {
+  return args.has('--preview') || String(env.SITE_PREVIEW || '').toLowerCase() === 'true';
+}
+
+export function headersFor(text, preview) {
+  return preview ? `${text.trimEnd()}\n\n${NOINDEX_RULE}` : text;
+}
+
+function writeHostFiles(redirectLines, preview) {
   ['_headers', '_redirects'].forEach((name) => {
     const source = path.join(PUBLIC_DIR, name);
     if (fs.existsSync(source)) fs.copyFileSync(source, path.join(DIST_DIR, name));
   });
+  const headers = path.join(DIST_DIR, '_headers');
+  if (preview && fs.existsSync(headers)) {
+    fs.writeFileSync(headers, headersFor(fs.readFileSync(headers, 'utf8'), true));
+  }
   const redirects = path.join(DIST_DIR, '_redirects');
   const existing = fs.existsSync(redirects) ? fs.readFileSync(redirects, 'utf8') : '';
   fs.writeFileSync(redirects, `${existing.trimEnd()}\n\n# Platform resource paths that records still use.\n${redirectLines.join('\n')}\n`);
@@ -155,7 +173,9 @@ export async function build(args = new Set()) {
   }
 
   writePages({ routes, scripts: bundled.scripts, readKeys, reads, manifest, resourceUrls, distDir: DIST_DIR });
-  writeHostFiles(copied.lines);
+  writeLabPaths();
+  copyRecorded(DIST_DIR);
+  writeHostFiles(copied.lines, isPreviewBuild(args));
 
   const report = {
     builtAt: manifest.builtAt,

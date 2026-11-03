@@ -158,7 +158,9 @@ export function writePages(input) {
   const build = {
     builtAt: manifest.builtAt,
     commit: manifest.commit || null,
-    fixture: Boolean(manifest.fixture)
+    fixture: Boolean(manifest.fixture),
+    // Public by design: the Turnstile widget needs it in the browser.
+    turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || null
   };
   routes.forEach((route) => {
     const { inline, lazy } = pageData(readKeys.get(route.key) || [], reads, distDir, written);

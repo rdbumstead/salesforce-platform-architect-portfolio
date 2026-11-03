@@ -1,0 +1,18 @@
+{
+  "content": "SAMPLE LETTER. This is a saved example, not a letter written for you. The live site writes a new one from your company, job title and job description.\n\nDear Hiring Team at Example Company,\n\nI am writing about the Salesforce Architect role. I build and document Salesforce systems end to end, and this portfolio is one of them: every case study, skill and timeline entry on it is a record in my own Salesforce org, read through an allowlisted API and shown on this site.\n\nIn my recent work I led the design of integration and data models that other developers could pick up without me in the room. I write the decision down as I make it, I test the parts that break, and I keep the pipeline honest with deploys that fail loudly when something is wrong. That habit is what I would bring to your team.\n\nI would welcome a conversation about where an architect who documents as carefully as they build could help Example Company.\n\nKind regards,\nRyan Bumstead",
+  "provider": "Recorded sample",
+  "model": null,
+  "fallbackOccurred": false,
+  "latencyMs": 0,
+  "generationMs": 0,
+  "attempts": [
+    {
+      "provider": "Recorded sample",
+      "outcome": "Served",
+      "ms": 0,
+      "detail": "A saved example. Nothing was generated for this request."
+    }
+  ],
+  "promptShown": "Not shown. This is a saved sample, so no prompt was sent.",
+  "requestId": "recorded-sample"
+}
