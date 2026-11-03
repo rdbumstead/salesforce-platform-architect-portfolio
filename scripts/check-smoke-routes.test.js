@@ -207,3 +207,44 @@ test("a smoke route the static site does not build is reported", async () => {
   const problems = await checkStatic(root, [...ROUTES, { path: "/gone" }]);
   assert.ok(problems.some((line) => line.startsWith("/gone:")));
 });
+
+test("the Access service token goes only to the preview's own host", () => {
+  const saved = { ...process.env };
+  process.env.SITE_BASE = "https://pr-7.ryanbumstead.pages.dev";
+  process.env.CF_ACCESS_CLIENT_ID = "id";
+  process.env.CF_ACCESS_CLIENT_SECRET = "secret";
+  delete require.cache[require.resolve("./live-smoke.js")];
+  const { accessHeadersFor } = require("./live-smoke.js");
+  try {
+    assert.deepStrictEqual(
+      accessHeadersFor("https://pr-7.ryanbumstead.pages.dev/assets/a.js"),
+      { "CF-Access-Client-Id": "id", "CF-Access-Client-Secret": "secret" }
+    );
+    assert.strictEqual(
+      accessHeadersFor("https://www.googletagmanager.com/gtag/js"),
+      null
+    );
+    assert.strictEqual(
+      accessHeadersFor("https://challenges.cloudflare.com/turnstile/v0/api.js"),
+      null
+    );
+  } finally {
+    process.env = saved;
+    delete require.cache[require.resolve("./live-smoke.js")];
+  }
+});
+
+test("no Access headers for a base outside pages.dev", () => {
+  const saved = { ...process.env };
+  process.env.SITE_BASE = "https://ryanbumstead.com";
+  process.env.CF_ACCESS_CLIENT_ID = "id";
+  process.env.CF_ACCESS_CLIENT_SECRET = "secret";
+  delete require.cache[require.resolve("./live-smoke.js")];
+  const { accessHeadersFor } = require("./live-smoke.js");
+  try {
+    assert.strictEqual(accessHeadersFor("https://ryanbumstead.com/"), null);
+  } finally {
+    process.env = saved;
+    delete require.cache[require.resolve("./live-smoke.js")];
+  }
+});
