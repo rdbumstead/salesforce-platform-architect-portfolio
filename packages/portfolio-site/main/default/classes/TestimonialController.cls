@@ -24,6 +24,9 @@
  **/
 public with sharing class TestimonialController implements QueryDefinitions.Provider {
   private static final String APPROVED_QUERY = 'TestimonialController_Approved';
+  /** The LWR site that hosts the testimonial form. Its guest record default owner reviews. */
+  @TestVisible
+  private static final String FORM_SITE_NAME = 'Portfolio1';
 
   /**
    * @description The wall's read as code: approved rows only, in user mode, curated order
@@ -431,6 +434,7 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
       );
     }
 
+    assignSiteOwner(testimonial);
     try {
       if (forceSaveFailure) {
         throw new DmlException('Forced save failure for tests.');
@@ -443,6 +447,43 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
     ApiRequestContext.commitRateCounts();
     requestApproval(testimonial.Id);
     return testimonial.Id;
+  }
+
+  /**
+   * @description Gives a testimonial sent through the static site's edge the same owner a
+   *              guest's testimonial gets on the Salesforce site: that site's guest record
+   *              default owner. The approval is submitted as the owner and assigned to the
+   *              owner, so without this the edge account would own the record and the review
+   *              would wait on a service account. A guest insert is left to the platform,
+   *              which assigns the default owner itself. With no default owner set, the
+   *              record keeps the running user as its owner.
+   * @param testimonial The testimonial about to be saved.
+   */
+  private static void assignSiteOwner(Testimonial__c testimonial) {
+    if (!SiteEdgeContext.isEdgeCaller()) {
+      return;
+    }
+    Id owner = siteDefaultOwner();
+    if (owner != null) {
+      testimonial.OwnerId = owner;
+    }
+  }
+
+  /**
+   * @description The guest record default owner of the site that hosts the testimonial
+   *              form. Read in system mode, because the edge user has no access to Site.
+   * @return Id The owner, or null when none is set.
+   */
+  @TestVisible
+  private static Id siteDefaultOwner() {
+    List<Site> sites = [
+      SELECT GuestRecordDefaultOwnerId
+      FROM Site
+      WHERE Name = :FORM_SITE_NAME AND GuestRecordDefaultOwnerId != NULL
+      WITH SYSTEM_MODE
+      LIMIT 1
+    ];
+    return sites.isEmpty() ? null : sites[0].GuestRecordDefaultOwnerId;
   }
 
   /**

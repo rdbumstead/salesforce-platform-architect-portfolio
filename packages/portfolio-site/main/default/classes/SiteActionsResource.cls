@@ -271,12 +271,32 @@ global with sharing class SiteActionsResource {
     String path = text(body, 'path');
     String apiVersion = text(body, 'apiVersion');
     ApiLabController.suppressUsageCount =
-      req.headers.get(RECORDING_HEADER) == '1';
+      headerValue(req, RECORDING_HEADER) == '1';
     try {
       return ApiLabController.invokeVersioned(path, params, apiVersion);
     } finally {
       ApiLabController.suppressUsageCount = false;
     }
+  }
+
+  /**
+   * @description A request header by name in any letter case. HTTP header names are not
+   *              case sensitive, and a client may send them in lower case, so an exact map
+   *              lookup would miss them. SiteEdgeContext reads the IP hash the same way.
+   * @param req The REST request.
+   * @param name The header name.
+   * @return String The value, or null when the header is absent.
+   */
+  private static String headerValue(RestRequest req, String name) {
+    if (req == null || req.headers == null) {
+      return null;
+    }
+    for (String key : req.headers.keySet()) {
+      if (key != null && key.equalsIgnoreCase(name)) {
+        return req.headers.get(key);
+      }
+    }
+    return null;
   }
 
   private static Object runLabToken(Map<String, Object> body) {

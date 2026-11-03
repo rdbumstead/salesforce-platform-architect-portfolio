@@ -380,6 +380,36 @@ private class SiteActionsResourceTest {
   }
 
   @isTest
+  static void testimonialFromTheEdgeIsOwnedByTheSiteDefaultOwner() {
+    User edge = edgeUser();
+    Id siteOwner = TestimonialController.siteDefaultOwner();
+    RestResponse res;
+    System.runAs(edge) {
+      res = post('testimonial', OWN_BODY, SiteActionsTestSupport.HASH_A);
+    }
+    Assert.areEqual(200, res.statusCode, 'Saved, body ' + text(res));
+    Testimonial__c saved = [
+      SELECT OwnerId
+      FROM Testimonial__c
+      WHERE Author_Name__c = 'Ada'
+    ];
+    if (siteOwner == null) {
+      Assert.areEqual(
+        edge.Id,
+        saved.OwnerId,
+        'With no default owner on the site, the running user keeps it'
+      );
+    } else {
+      Assert.areEqual(
+        siteOwner,
+        saved.OwnerId,
+        'The reviewer is the site default owner, not the edge account'
+      );
+      Assert.areNotEqual(edge.Id, saved.OwnerId, 'Never the edge account');
+    }
+  }
+
+  @isTest
   static void testimonialFragmentsSavesAnUnapprovedRow() {
     List<TestimonialController.Fragment> fragments = TestimonialController.getFragments();
     Assert.isFalse(fragments.isEmpty(), 'Fragments are deployed');
@@ -486,6 +516,37 @@ private class SiteActionsResourceTest {
       res = post('cover-letter', '{"jobTitle":"Architect"}', null);
     }
     assertError(res, 400, 'BAD_REQUEST', 'Company name is required.');
+  }
+
+  @isTest
+  static void labInvokeReadsTheRecordingHeaderInAnyCase() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new PortfolioApiCalloutMock().withRestResponse(200, '[{"id":"a"}]', null)
+    );
+    String body = '{"path":"/sapi/skills","params":{},"apiVersion":"v2"}';
+    RestResponse recorded;
+    Test.startTest();
+    System.runAs(edgeUser()) {
+      recorded = SiteActionsTestSupport.call(
+        'POST',
+        'lab-invoke',
+        body,
+        null,
+        new Map<String, String>{ 'x-site-recording' => '1' }
+      );
+    }
+    Test.stopTest();
+    Assert.areEqual(
+      200,
+      recorded.statusCode,
+      'Recorded call, body ' + text(recorded)
+    );
+    Assert.areEqual(
+      0,
+      [SELECT COUNT() FROM Usage_Counter__c],
+      'A lower case recording header still writes no usage counter row'
+    );
   }
 
   @isTest
