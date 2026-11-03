@@ -1,0 +1,13 @@
+# Copy to .dev.vars for `wrangler pages dev dist`. The real file is ignored by git.
+# With none of this set every switch reads recorded and the functions answer 503.
+# To exercise the live path locally, point these at a fake Salesforce and add
+# PRODUCTION_HOSTS=127.0.0.1 so the local host counts as production.
+SF_INSTANCE_URL=http://127.0.0.1:9911
+SF_CLIENT_ID=fake-id
+SF_CLIENT_SECRET=fake-secret
+IP_HASH_SALT=any-long-random-text
+TURNSTILE_SECRET=fake-turnstile-secret
+# Tests only: replaces https://challenges.cloudflare.com/turnstile/v0/siteverify
+TURNSTILE_VERIFY_URL=http://127.0.0.1:9911/turnstile
+# Optional switches, each live or recorded: FEATURE_CONTACT, FEATURE_TESTIMONIAL,
+# FEATURE_COVER_LETTER, FEATURE_API_LAB, FEATURE_LIVE_READS
