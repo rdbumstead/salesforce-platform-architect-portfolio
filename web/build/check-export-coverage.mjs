@@ -72,11 +72,17 @@ export async function checkCoverage() {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  checkCoverage().then((problems) => {
-    if (problems.length) {
-      console.error(`Export coverage: FAIL\n${problems.map((problem) => `- ${problem}`).join('\n')}`);
+  checkCoverage()
+    .then((problems) => {
+      if (problems.length) {
+        console.error("Export coverage: FAIL");
+        problems.forEach((problem) => console.error(`- ${problem}`));
+        process.exit(1);
+      }
+      console.log("Export coverage: every Apex call and GraphQL query on a public page is covered, and nothing extra is served.");
+    })
+    .catch((error) => {
+      console.error(`Export coverage: the pages did not compile. ${error.message}`);
       process.exit(1);
-    }
-    console.log('Export coverage: every Apex call and GraphQL query on a public page is covered, and nothing extra is served.');
-  });
+    });
 }
