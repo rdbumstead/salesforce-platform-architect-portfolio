@@ -67,7 +67,7 @@ private class GovernanceControllerTest {
     Test.startTest();
     GovernanceController.PipelineStatus status = GovernanceController.getPipelineStatus();
     Test.stopTest();
-    Assert.areEqual(3, status.items.size(), 'Three checklist items');
+    Assert.areEqual(4, status.items.size(), 'Four checklist items');
     return itemsByKey(status);
   }
 
@@ -102,6 +102,30 @@ private class GovernanceControllerTest {
       'Evidence link'
     );
     Assert.areEqual(NOW.addDays(-9), deploy.run.completedAt, 'Evidence time');
+  }
+
+  @isTest
+  static void shouldPassSiteWhenLatestSiteBuildSucceeded() {
+    insert run('site', 'Success', '7', NOW.addDays(-20));
+
+    GovernanceController.ChecklistItem site = load()
+      .get(GovernanceController.ITEM_SITE);
+
+    Assert.areEqual('Static site build green', site.label, 'Label');
+    Assert.areEqual(GovernanceController.STATE_PASS, site.state, 'Pass');
+    Assert.areEqual('sha7', site.run.commitSha, 'Evidence sha');
+  }
+
+  @isTest
+  static void shouldFailSiteWhenLatestSiteBuildFailed() {
+    insert run('site', 'Success', '7', NOW.addDays(-2));
+    insert run('site', 'Failure', '8', NOW.addDays(-1));
+
+    GovernanceController.ChecklistItem site = load()
+      .get(GovernanceController.ITEM_SITE);
+
+    Assert.areEqual(GovernanceController.STATE_FAIL, site.state, 'Fail');
+    Assert.areEqual('8', site.run.runId, 'The failed build is the evidence');
   }
 
   @isTest
