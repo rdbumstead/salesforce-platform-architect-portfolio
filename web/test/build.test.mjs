@@ -135,3 +135,12 @@ test('a component name that is not an identifier never reaches generated code', 
   assert.throws(() => componentSpecifier("x'); alert(1); ('"));
   assert.throws(() => componentSpecifier('../secret'));
 });
+
+test('values placed in generated code cannot close a script element and round trip exactly', async () => {
+  const { codeString } = await import('../build/code-string.mjs');
+  const value = { html: '<p><a href="/x">y</a></p></script>', line: 'a' + String.fromCharCode(0x2028) + 'b' };
+  const text = codeString(value);
+  assert.ok(!text.includes('<') && !text.includes('>'));
+  assert.ok(!text.includes(String.fromCharCode(0x2028)));
+  assert.deepEqual(JSON.parse(text), value);
+});

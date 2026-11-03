@@ -9,6 +9,7 @@ import lwc from '@lwc/rollup-plugin';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 import { sitePlugin, LWC_DIR, SHIM_DIR, WEB_DIR } from './site-plugin.mjs';
+import { codeString } from './code-string.mjs';
 
 function slash(file) {
   return file.split(path.sep).join('/');
@@ -26,7 +27,7 @@ export function componentSpecifier(name) {
   if (!/^[a-z][A-Za-z0-9]*$/.test(String(name))) {
     throw new Error(`Not a component name: ${JSON.stringify(name)}`);
   }
-  return JSON.stringify(`c/${name}`);
+  return codeString(`c/${name}`);
 }
 
 /**
@@ -37,16 +38,16 @@ export function componentSpecifier(name) {
  */
 export function entrySource(route) {
   const lines = [
-    `import { mount } from ${JSON.stringify(slash(path.join(SHIM_DIR, 'mount.js')))};`,
+    `import { mount } from ${codeString(slash(path.join(SHIM_DIR, 'mount.js')))};`,
     `import Layout from 'c/portfolioThemeLayout';`
   ];
   const firstName = (route.components.find((component) => component.name) || {}).name;
   if (firstName) lines.push(`import First from ${componentSpecifier(firstName)};`);
   let firstPlaced = false;
   const entries = route.components.map((component) => {
-    if (component.html !== undefined) return `{ html: ${JSON.stringify(component.html)} }`;
-    const tag = JSON.stringify(tagOf(component.name));
-    const props = JSON.stringify(component.props || {});
+    if (component.html !== undefined) return `{ html: ${codeString(component.html)} }`;
+    const tag = codeString(tagOf(component.name));
+    const props = codeString(component.props || {});
     if (!firstPlaced && component.name === firstName) {
       firstPlaced = true;
       return `{ tag: ${tag}, ctor: First, props: ${props} }`;
