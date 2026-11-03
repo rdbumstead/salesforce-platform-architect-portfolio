@@ -7,6 +7,7 @@
  * the page paints without waiting for them and nothing already on screen moves twice.
  */
 import { createElement } from "lwc";
+import { unlessLeaving } from "./leaving.js";
 
 function placed(entry) {
   if (entry.html !== undefined) {
@@ -70,5 +71,6 @@ export function mount({ Layout, loadFooter, components }) {
         element.setAttribute("slot", "footer");
         layout.appendChild(element);
       }
-    });
+    })
+    .catch(unlessLeaving);
 }

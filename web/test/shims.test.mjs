@@ -78,3 +78,13 @@ test('the page reference names the route the page was built for', () => {
   setSiteData({ reads: {}, lazy: {}, build: { routeName: 'Docs__c' } });
   assert.equal(currentPageReference().attributes.name, 'Docs__c');
 });
+
+test('a failed section load is dropped when the page is being left and thrown otherwise', async () => {
+  const { unlessLeaving, setLeaving } = await import('../src/shims/leaving.js');
+  const failure = new TypeError('Importing a module script failed.');
+  setLeaving(false);
+  assert.throws(() => unlessLeaving(failure), /Importing a module script failed/);
+  setLeaving(true);
+  assert.equal(unlessLeaving(failure), null);
+  setLeaving(false);
+});
