@@ -124,7 +124,7 @@ test('an entry holds the first component and loads the rest and the footer after
     components: [{ name: 'pageIntro', props: { heading: 'H' } }, { html: '<p>r</p>' }, { name: 'resumeBuilder' }]
   });
   assert.ok(source.includes('import First from "c/pageIntro"'));
-  assert.ok(source.includes('tag: "c-page-intro", ctor: First, props: {"heading":"H"}'));
+  assert.ok(source.includes('tag: "c-page-intro", ctor: First, props: JSON.parse('));
   assert.ok(source.includes('load: () => import("c/resumeBuilder")'));
   assert.ok(source.includes("loadFooter: () => import('c/footer')"));
   assert.ok(!source.includes('import Footer'));
@@ -138,9 +138,17 @@ test('a component name that is not an identifier never reaches generated code', 
 
 test('values placed in generated code cannot close a script element and round trip exactly', async () => {
   const { codeString } = await import('../build/code-string.mjs');
-  const value = { html: '<p><a href="/x">y</a></p></script>', line: 'a' + String.fromCharCode(0x2028) + 'b' };
-  const text = codeString(value);
-  assert.ok(!text.includes('<') && !text.includes('>'));
-  assert.ok(!text.includes(String.fromCharCode(0x2028)));
-  assert.deepEqual(JSON.parse(text), value);
+  const backslash = String.fromCharCode(92);
+  const values = [
+    { html: '<p><a href="/x">y</a></p></script>', line: 'a' + String.fromCharCode(0x2028) + 'b' },
+    'a ' + backslash + ' backslash and a "quote"',
+    'c/pageIntro'
+  ];
+  for (const value of values) {
+    const text = codeString(value);
+    assert.ok(!text.includes('<') && !text.includes('>'));
+    assert.ok(!text.includes(String.fromCharCode(0x2028)));
+    // The generated source evaluates back to exactly the value it was made from.
+    assert.deepEqual(new Function(`return ${text}`)(), value);
+  }
 });
