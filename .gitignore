@@ -143,6 +143,12 @@ build/
 .cache/
 .wrangler/
 
+# Static site (web/). Its build scripts live in web/build, which the build/ rule above
+# would hide. The export, the build's working files and the output are never committed.
+!web/build/
+web/.data/
+web/.build/
+
 # Deployment Artifacts
 .deploy/
 deploy/deploy-packages/

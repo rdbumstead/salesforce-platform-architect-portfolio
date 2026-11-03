@@ -24,6 +24,7 @@
 import { LightningElement, api, wire } from "lwc";
 import getSources from "@salesforce/apex/DataSourceController.getSources";
 import getObjectSources from "@salesforce/apex/DataSourceController.getObjectSources";
+import { builtAt, buildWording } from "c/siteHost";
 
 /** Every visible string of the marker. Change the wording here and nowhere else. */
 export const WORDING = Object.freeze({
@@ -210,8 +211,10 @@ export default class DataSource extends LightningElement {
     return this.summary !== "";
   }
 
+  /** The marker's words: live on the Salesforce site, build time on the static site. */
   get wording() {
-    return WORDING;
+    const at = builtAt();
+    return at ? { ...WORDING, ...buildWording(at) } : WORDING;
   }
 
   get modelPath() {
@@ -232,9 +235,8 @@ export default class DataSource extends LightningElement {
   }
 
   get buttonLabel() {
-    return this.hasSummary
-      ? `${WORDING.markerLabel}, ${this.summary}`
-      : WORDING.markerLabel;
+    const label = this.wording.markerLabel;
+    return this.hasSummary ? `${label}, ${this.summary}` : label;
   }
 
   get panelClass() {

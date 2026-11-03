@@ -365,19 +365,40 @@ export default class TourBar extends LightningElement {
     this.dispatchEvent(new CustomEvent("tourleave"));
   }
 
-  /** Watches the bar's size, so the page padding follows it when the text wraps. */
+  /**
+   * Watches the bar's size, so the page padding follows it when the text wraps. The report
+   * waits for the next frame: changing the padding inside the observer's own callback can
+   * resize the bar again in the same frame, which WebKit reports as a ResizeObserver loop.
+   */
   observeSize() {
     if (this._resizeObserver || typeof window.ResizeObserver !== "function") {
       return;
     }
     try {
       this._resizeObserver = new window.ResizeObserver(() =>
-        this.reportSpace()
+        this.scheduleSpaceReport()
       );
       this._resizeObserver.observe(this.template.host);
     } catch {
       this._resizeObserver = null;
     }
+  }
+
+  /** Reports the bar's space once, on the next frame, however many resizes arrive first. */
+  scheduleSpaceReport() {
+    if (this._spaceFrame) {
+      return;
+    }
+    const schedule =
+      typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame.bind(window)
+        : (callback) => setTimeout(callback, 0);
+    this._spaceFrame = schedule(() => {
+      this._spaceFrame = null;
+      if (this._connected) {
+        this.reportSpace();
+      }
+    });
   }
 
   focusEnding() {

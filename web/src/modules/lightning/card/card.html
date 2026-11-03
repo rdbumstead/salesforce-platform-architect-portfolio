@@ -1,0 +1,12 @@
+<template>
+  <article class="card">
+    <header class="card-header">
+      <h2 class="card-title">
+        <slot name="title">{title}</slot>
+      </h2>
+      <div class="card-actions"><slot name="actions"></slot></div>
+    </header>
+    <div class="card-body"><slot></slot></div>
+    <footer class="card-footer"><slot name="footer"></slot></footer>
+  </article>
+</template>

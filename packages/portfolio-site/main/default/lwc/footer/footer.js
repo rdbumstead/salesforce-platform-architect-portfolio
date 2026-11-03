@@ -56,6 +56,12 @@ import basePath from "@salesforce/community/basePath";
 import getLinks from "@salesforce/apex/FooterController.getLinks";
 import getSystemSnapshot from "@salesforce/apex/FooterController.getSystemSnapshot";
 import { EVENTS, trackEvent } from "c/analyticsService";
+import { IS_STATIC } from "c/siteHost";
+
+/** What the copyright line says the site is built on, true on each host. */
+export const BUILT_ON = IS_STATIC
+  ? "Built from my Salesforce org."
+  : "Built on Salesforce LWR.";
 
 const REPO_URL =
   "https://github.com/rdbumstead/salesforce-platform-architect-portfolio";
@@ -312,6 +318,10 @@ export default class Footer extends LightningElement {
       this.snapshot = undefined;
       this.snapshotFailed = true;
     }
+  }
+
+  get builtOn() {
+    return BUILT_ON;
   }
 
   get currentYear() {

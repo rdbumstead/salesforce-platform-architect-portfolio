@@ -15,6 +15,12 @@ name: Live Smoke Test
 
 on:
   workflow_call:
+    inputs:
+      site_base:
+        description: Site root to check. The static site workflow passes its Pages address. Defaults to production.
+        required: false
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
       site_base:

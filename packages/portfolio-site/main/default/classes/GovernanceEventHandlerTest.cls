@@ -292,6 +292,28 @@ private class GovernanceEventHandlerTest {
   }
 
   @isTest
+  static void shouldStoreSiteBuildWhenSiteEventDelivered() {
+    Test.startTest();
+    publishAndDeliver(
+      new List<Governance_Event__e>{ event('site', 'Success', '410') }
+    );
+    Test.stopTest();
+
+    List<Pipeline_Run__c> stored = runs();
+    Assert.areEqual(
+      1,
+      stored.size(),
+      'The static site build is a known workflow'
+    );
+    Assert.areEqual(
+      'site:410',
+      stored[0].Run_Key__c,
+      'Site row keyed by workflow and run'
+    );
+    Assert.areEqual('Success', stored[0].Status__c, 'Site build status kept');
+  }
+
+  @isTest
   static void shouldSkipEventWhenStatusUnknown() {
     Test.startTest();
     publishAndDeliver(

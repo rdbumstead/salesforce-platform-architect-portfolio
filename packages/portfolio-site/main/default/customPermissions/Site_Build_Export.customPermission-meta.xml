@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Lets the static site build read the site export (/site/export). Held only by the site build user, never by the site guest.</description>
+    <label>Site Build Export</label>
+</CustomPermission>

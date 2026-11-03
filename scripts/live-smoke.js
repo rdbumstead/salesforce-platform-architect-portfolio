@@ -21,6 +21,8 @@
 //   SITE_BASE   the site root, for example https://example.my.site.com/portfolio (required)
 //   BROWSERS    comma list of Playwright engines, default "chromium,webkit"
 //   SMOKE_JSON  optional file path that also receives the JSON body
+//   CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET  optional Cloudflare Access service token for a
+//               preview behind Access, sent only to the base's own pages.dev host
 //
 // Output: one summary line, then the JSON body on the next line. Exit 0 when every row
 // passes, 1 when any row fails or the run cannot start.
@@ -177,6 +179,48 @@ function isBlocked(url) {
   }
 }
 
+/**
+ * The Cloudflare Access service token headers for a protected Pages preview, or null. They go
+ * only to the preview's own host (the base's host, under pages.dev) and never to a third
+ * party, so the token cannot leak to an analytics or widget host.
+ * @param {string} url the request address
+ * @returns {object|null} the headers to add
+ */
+function accessHeadersFor(url) {
+  const id = process.env.CF_ACCESS_CLIENT_ID;
+  const secret = process.env.CF_ACCESS_CLIENT_SECRET;
+  if (!id || !secret || !BASE) {
+    return null;
+  }
+  try {
+    const host = new URL(url).hostname;
+    const base = new URL(BASE).hostname;
+    return host === base && host.endsWith(".pages.dev")
+      ? { "CF-Access-Client-Id": id, "CF-Access-Client-Secret": secret }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Blocks the analytics hosts and adds the Access headers where they belong, for every page
+ * the context opens.
+ * @param {object} context a Playwright browser context
+ */
+async function prepare(context) {
+  await context.route("**/*", (route) => {
+    const request = route.request();
+    if (isBlocked(request.url())) {
+      return route.abort();
+    }
+    const extra = accessHeadersFor(request.url());
+    return extra
+      ? route.continue({ headers: { ...request.headers(), ...extra } })
+      : route.continue();
+  });
+}
+
 function isKnown(routePath, text, locationUrl) {
   return KNOWN_ERRORS.some(
     (known) =>
@@ -237,9 +281,7 @@ async function checkOnce(browser, route, viewport) {
   const errors = [];
   const knownSeen = [];
 
-  await page.route("**/*", (request) =>
-    isBlocked(request.request().url()) ? request.abort() : request.continue()
-  );
+  await prepare(context);
   page.on("console", (message) => {
     if (message.type() !== "error") {
       return;
@@ -337,6 +379,7 @@ function isUnderBase(url, base) {
 async function homeProblem(browser) {
   const context = await browser.newContext();
   try {
+    await prepare(context);
     const page = await context.newPage();
     const response = await page.goto(BASE + "/", {
       waitUntil: "domcontentloaded",
@@ -404,9 +447,7 @@ async function tourOnce(browser, viewport) {
   });
   const page = await context.newPage();
   const errors = [];
-  await page.route("**/*", (request) =>
-    isBlocked(request.request().url()) ? request.abort() : request.continue()
-  );
+  await prepare(context);
   page.on("console", (message) => {
     if (message.type() !== "error") {
       return;
@@ -648,7 +689,7 @@ async function main() {
 
 // The route list is shared with scripts/check-smoke-routes.js, which checks it against the
 // site's views without a browser. Requiring this file runs nothing.
-module.exports = { ROUTES, TOUR, isUnderBase };
+module.exports = { ROUTES, TOUR, isUnderBase, accessHeadersFor };
 
 if (require.main === module) {
   main().catch((error) => {

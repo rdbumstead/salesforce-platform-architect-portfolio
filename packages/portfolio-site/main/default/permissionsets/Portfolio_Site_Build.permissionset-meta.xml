@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <classAccesses>
+        <apexClass>SiteExportResource</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>Site_Build_Export</name>
+    </customPermissions>
+    <description
+  >Site build user. Reads the site export and nothing else. Grants no object or field access: the user also holds Portfolio_Guest, so it reads exactly what the site guest reads.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>Portfolio Site Build</label>
+</PermissionSet>
