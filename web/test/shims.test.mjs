@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readKey, setSiteData, lookup } from '../src/shims/site-data.js';
-import { apexMethod, refreshApex, NOT_IN_BUILD } from '../src/shims/apex.js';
+import { apexMethod, refreshApex, setRequestHandler, NOT_IN_BUILD } from '../src/shims/apex.js';
 import { gql, graphqlParams, normalizeQuery, graphql } from '../src/shims/graphql.js';
 import { keyOf } from '../build/export.mjs';
 import { currentPageReference } from '../src/shims/navigation.js';
@@ -49,6 +49,28 @@ test('a read missing from the build comes back as an error, never as data', asyn
 test('a request time call rejects until the site functions exist', async () => {
   await assert.rejects(apexMethod('C.submit', 'request')({ a: 1 }), (error) => error.body.message === NOT_IN_BUILD);
   assert.equal(await refreshApex(), undefined);
+});
+
+test('refreshApex on a live wire reads the live value again and provides it', async () => {
+  const call = 'GovernanceController.getPipelineStatus';
+  setSiteData({ reads: { [call]: { state: 'build' } }, lazy: {}, build: {} });
+  const answers = [{ state: 'green' }, { state: 'red' }];
+  setRequestHandler(() => Promise.resolve(answers.shift()));
+  try {
+    const emitted = await wire(apexMethod(call, 'build'), {});
+    assert.deepEqual(
+      emitted.map((value) => value.data.state),
+      ['build', 'green'],
+      'the build data paints first, then the live reading'
+    );
+    await refreshApex(emitted[emitted.length - 1]);
+    assert.equal(emitted[emitted.length - 1].data.state, 'red', 'a refresh shows the newer live state');
+    setRequestHandler(() => Promise.reject(new Error('down')));
+    await refreshApex(emitted[emitted.length - 1]);
+    assert.equal(emitted[emitted.length - 1].data.state, 'red', 'a failed refresh keeps what is shown');
+  } finally {
+    setRequestHandler(null);
+  }
 });
 
 test('the gql tag and the export file a query under the same key', () => {
