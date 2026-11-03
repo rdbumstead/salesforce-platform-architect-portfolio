@@ -174,8 +174,40 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
           "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium webkit
+          set +e
           NODE_PATH="$RUNNER_TEMP/pw/node_modules" SMOKE_JSON=smoke.json node scripts/live-smoke.js > smoke.out
-          head -1 smoke.out >> "$GITHUB_STEP_SUMMARY"
+          CODE=$?
+          set -e
+          {
+            echo "## Live smoke against the preview"
+            echo ""
+            echo "**Result**: $(head -n 1 smoke.out)"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          # One line per failing row, the same as the Live Smoke Test workflow writes.
+          if [ -s smoke.json ]; then
+            node -e '
+              const rows = (JSON.parse(require("fs").readFileSync("smoke.json", "utf8")).rows || []).filter((r) => !r.pass);
+              for (const r of rows) {
+                const parts = [`- ${r.browser} ${r.route || ""} ${r.viewport || ""}: status ${r.status || "none"}`];
+                if (r.error) parts.push(r.error);
+                for (const [tag, state] of Object.entries(r.components || {})) {
+                  if (state !== "visible" && state !== "empty") parts.push(`${tag} ${state}`);
+                }
+                for (const e of r.errors || []) parts.push(`console: ${e}`);
+                console.log(parts.join(", "));
+              }
+            ' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit $CODE
+
+      - name: Upload smoke result
+        if: always() && steps.deploy.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-smoke
+          path: smoke.json
+          if-no-files-found: ignore
 
       # Report only. Behind Access, one request trades the service token for the
       # CF_Authorization cookie, which is masked, and web/build/lhci-access.cjs sets it for the
