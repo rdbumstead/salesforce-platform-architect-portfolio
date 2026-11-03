@@ -29,6 +29,7 @@
 - [6. Front-End Architecture (Experience Cloud)](#6-front-end-architecture-experience-cloud)
   - [6.1 Technology Stack](#61-technology-stack)
   - [6.2 Lightning Web Components (LWC)](#62-lightning-web-components-lwc)
+  - [6.3 Headless Static Front End (cutover pending)](#63-headless-static-front-end-cutover-pending)
 - [7. Architectural Decision Records (ADRs)](#7-architectural-decision-records-adrs)
 - [8. Contingency & Rollback Plans](#8-contingency--rollback-plans)
   - [8.1 Deployment Failure](#81-deployment-failure)
@@ -193,9 +194,9 @@ Why specific technologies were chosen over alternatives.
 All architectural artifacts adhere to the C4 Model (Context, Containers, Components, Code) standard to ensure clarity across abstraction levels.
 
 - **Level 1 (Context):** Defines system boundaries and interactions (Recruiters, GitHub, Jira, the Gemini API).
-- **Level 2 (Container):** Illustrates high-level technical building blocks (LWR, Apex Runtime, Data Layer, AI Agent).
+- **Level 2 (Container):** Illustrates high-level technical building blocks (LWR, Apex Runtime, Data Layer, AI Agent). Once the static front end is the front door it adds three containers: the Cloudflare Pages static files, the Pages Functions, and the site build in GitHub Actions (section 6.3, [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)).
 - **Level 3 (Component):** Details LWC composition and event-driven interactions.
-- **Level 4 (Deployment):** Infrastructure view (See Appendix H).
+- **Level 4 (Deployment):** Infrastructure view (See Appendix H). The headless flow has its own diagram in section 6.3.
 
 ### 1.5 Quality Gates (Technical Acceptance)
 
@@ -212,6 +213,7 @@ Refer to **[Guardrails & Executable Governance: Quality Gates & DevOps Disciplin
 - **Availability:** Organization persistence maintained via external CI/CD "Keep-Alive" heartbeat (GitHub Actions).
 - **Maintainability:** Codebase governed by automated quality gates (Prettier/PMD) ensuring architectural standards.
 - **Performance:** LCP target 2.5 s, pursued through Static Resource caching and a minimal DOM footprint. The gate is the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, measured 2026-10-22) on the six main routes ([Technical Guide §2.11](./04-Technical-Guide.md#211-mobile-performance)). The production baseline (2026-10-29) is wider, 7.57 to 10.62 s. In the lab profile the first site component renders at about 5 s, after about 850 KB of framework scripts and styles, so the 2.5 s target is not reachable by site changes alone. I keep it as the target and say so.
+  - **Static front end, local numbers.** The static build ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)) was measured **on a local server, not on Cloudflare**, with Lighthouse CI 0.15.1, mobile profile, three runs a page. With every component in one bundle the medians were home 2.50 s, business architecture 2.12 s, skills 2.71 s, API Lab 3.59 s, solution architecture 3.65 s and resume 4.74 s. After each page was changed to paint its first section before loading the rest, the runs for the same element landed near 1.75 s or near 3.85 s, and the simulated network against a loopback server decides which, so those local numbers cannot rank the options. On the same profile the live LWR site measured 6.5 to 8.3 s. The numbers that count are the ones from a real Cloudflare preview, which the site workflow writes to its job summary and which I have not recorded here [unverified]. Real visitor LCP is not measured on either host.
   - **Latency:** measured with the Lighthouse mobile profile, which simulates a slow 4G network.
   - **AI Generation Timeout:** 60 seconds for the Gemini callout, read from the `Gemini` record of `AI_Provider_Config__mdt` (`Timeout_Ms__c`, my decision 2026-10-21). A reasoning model can take most of that time to answer a full cover letter prompt, and the earlier 2 second hard stop was dropped for that reason. Gemini 2.5 Flash answered one in about 11 seconds in a scratch org.
   - **Total CPU Budget:** < 5000ms per request (Allocating 50% of the 10,000ms Synchronous Limit to ensure headroom for platform overhead).
@@ -227,7 +229,7 @@ The architecture is designed to operate within the specific limits of the Salesf
 - **API Limits:** 15,000 API requests/24hr requires caching strategies for high-traffic external integrations.
 - **Guest User:** the guest gets no object permission on standard objects, so the portfolio data lives in a custom schema, and the few standard records a page needs are read by Apex in system mode (section 4.6).
 - **No Shield:** Lack of Event Monitoring requires custom telemetry implementation for analytics.
-- **Middleware Constraints:** Heroku and paid AWS resources are unavailable. The AWS Free Tier proxy and storage patterns are a Phase 8 design and are not built. The only service outside Salesforce that runs today is the Cloudflare redirect and the `portfolio-cache-warmer` Worker ([Technical Guide §2.13](./04-Technical-Guide.md#213-cloudflare-cache-warmer-worker)).
+- **Middleware Constraints:** Heroku and paid AWS resources are unavailable. The AWS Free Tier proxy and storage patterns are a Phase 8 design and are not built. The services outside Salesforce that run today are the Cloudflare redirect, the `portfolio-cache-warmer` Worker ([Technical Guide §2.13](./04-Technical-Guide.md#213-cloudflare-cache-warmer-worker)) and, deployed but not yet the front door, the Cloudflare Pages static site and its Functions (section 6.3).
 
 ## 3. Risk & Security Architecture
 
@@ -338,6 +340,17 @@ The following matrix records the object permissions in the two permission sets i
 | **`Portfolio_Config__mdt`**            | CRED / Full    | No custom metadata grant. Apex reads it and returns selected fields only (`FooterController.getLinks` returns the GitHub and LinkedIn URLs)                                                                                                                                                                                                                               | Read in Apex           |
 | **`Portfolio_Setting__mdt`**           | CRED / Full    | No custom metadata grant. `PortfolioSettings` reads the records with `getAll()` and returns one value at a time to its callers                                                                                                                                                                                                                                            |
 | **`API_Access_Request__c`**            | CRED / Full    | **No Access.** `TokenExchangeService.AuditStore` writes one row per token request in system mode                                                                                                                                                                                                                                                                          | No Access              |
+
+#### 4.6.1 The build user and the edge user
+
+The static front end ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)) adds two identities that are not the guest and not the administrator. Both sit on the Portfolio API Integration profile (Salesforce Platform licence).
+
+| Identity                                                           | Used by                                                                          | Permission sets                                                                                                                                                                                                         | What it can do                                                                                                                                                                                                                                                                                                       |
+| :----------------------------------------------------------------- | :------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build user `site-build@ryanbumstead.com`                           | The `site.yml` workflow, signed in with the CI JWT app                           | `Portfolio_Guest` (what the guest can read), `Portfolio_Site_Build` (the `Site_Build_Export` custom permission and the `SiteExportResource` class, no object or field access), `Governance_Publisher` (the build event) | Calls `GET /services/apexrest/site/export` and runs one of the 26 allowlisted read only methods per call. It sees what the guest sees, which `SiteExportResourceTest` and `SiteExportTestimonialParityTest` prove. It is not the CI administrator, who can also read unapproved testimonials.                        |
+| Edge user `site-edge@ryanbumstead.com` [unverified, not yet built] | The Pages Functions, with a client credentials token from an External Client App | `Portfolio_Site_Edge` (the `Site_Edge_Actions` custom permission and the `SiteActionsResource` class)                                                                                                                   | Calls `/services/apexrest/site/actions/<action>` for seven actions. `Site_Edge_Actions` is also what makes Salesforce trust the `X-Client-Ip-Hash` header, so no other caller can supply a hash. Object access and external credential principal access are listed in the Maintenance Guide once built [unverified]. |
+
+Neither identity is the integration user of the API (`Integration_Access`), and neither holds a secret in source. The build user signs in with the existing JWT key, and the edge user's consumer secret lives only in the Cloudflare project's secrets.
 
 > [!NOTE]
 > **Why system mode for these reads.** The guest sees only rows shared to it, so a `with sharing` read of a highlight, my Contact or a cache row returns nothing. Granting the guest those objects would expose every field it can read through GraphQL. Instead each controller stays `with sharing`, and a private `without sharing` inner class runs one query with a fixed field list and hands back a fixed shape. The guest reaches that data only through the controller's return type. The rule is written into each selector's doc header (for example `ResumeController.cls` line 260 and `PortfolioGroundingService.cls` line 293).
@@ -475,6 +488,9 @@ sequenceDiagram
 
 Cloudflare Workers provides a fourth path for content generation. The Worker acts as an AI proxy and edge cache that reduces total cost, decreases latency, and shields Salesforce from external API rate limits. Integration uses the same IAIGenerationService interface with a new CloudflareService provider class.
 
+> [!NOTE]
+> **An edge layer exists now, and it is a different one.** [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md) added Cloudflare Pages Functions that carry the static site's forms, cover letter, API Lab and live readings to Salesforce. That layer does not call Gemini and does not cache letters. The AI proxy described in this section is still future scope ([ADR-016 amendment](../adr/016-cloudflare-worker-as-edge-ai-proxy.md#amendment-2026-11-02-an-edge-layer-now-exists-and-it-is-not-this-one)).
+
 ### 5.5 Pillar E: Agile Delivery & DevOps (Roadmap)
 
 - **Objective:** Demonstrate ALM, CI/CD Maturity, and External System Integration.
@@ -505,7 +521,7 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 ### 6.1 Technology Stack
 
 - **Framework:** LWR.
-- **Domain Strategy:** `ryanbumstead.com` is a Cloudflare 301 redirect to https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio/ that keeps the path and the query string, so `ryanbumstead.com/skills` lands on `/portfolio/skills`. A Developer Edition org cannot have a Salesforce custom domain, so the redirect is the domain.
+- **Domain Strategy:** `ryanbumstead.com` is a Cloudflare 301 redirect to https://ryan-bumstead-dev-ed.develop.my.site.com/portfolio/ that keeps the path and the query string, so `ryanbumstead.com/skills` lands on `/portfolio/skills`. A Developer Edition org cannot have a Salesforce custom domain, so the redirect is the domain. **After cutover** ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md), [runbook](./cutover-runbook.md)) `ryanbumstead.com` and `www.ryanbumstead.com` become custom domains of the Cloudflare Pages project `ryanbumstead`, `www` redirects to the apex, and the 301 rule is turned off. The Experience Cloud site stays up for two weeks as the rollback target. The API site that vends evaluator tokens is not affected. Until cutover the static site answers only at its `*.pages.dev` address.
 - **Navigation Strategy:** a header with Home, Resume, Skills, a "How it's built" menu (the pillars, Docs and the API reference), Testimonials and Contact, a Back to top arrow in the header, and the 10 minute tour, an opt in journey across the five pillar pages that starts from the hero link and from the first row of the "How it's built" menu and runs in a bar under the header (`c-tour-bar`, [Technical Guide §2.20](./04-Technical-Guide.md#220-the-10-minute-tour-c-tour-bar)). The footer links to Contact, Docs and the profiles.
 
 ### 6.2 Lightning Web Components (LWC)
@@ -542,6 +558,59 @@ The front-end uses a lightweight, high-performance delivery model through Lightn
 > [!TIP]
 > **Technical Implementation:** For detailed performance strategies (lazy-loading), mobile fallbacks, and accessibility patterns for these components, please refer to the **[Technical Guide: Frontend Component Logic](./04-Technical-Guide.md#2-frontend-lwr-component-logic)**.
 
+### 6.3 Headless Static Front End (cutover pending)
+
+The same components also compile into a static site ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)). The org stays the source of truth. A GitHub Actions build reads the org through an allowlisted export, compiles the components with LWC OSS, and deploys the pages to Cloudflare Pages. A section that needs a request at view time goes through a Pages Function to a second Apex REST endpoint, and from there to the same controllers the Salesforce site uses.
+
+> _What This Diagram Shows: the headless flow. The build reads the org as the build user and publishes static pages. The browser loads those pages and, for the forms and labs, calls a Pages Function that calls the org as the edge user._
+
+```mermaid
+flowchart LR
+    classDef org fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#0D47A1;
+    classDef ci fill:#F3E5F5,stroke:#8E24AA,stroke-width:2px,color:#4A148C;
+    classDef edge fill:#FFF3E0,stroke:#FB8C00,stroke-width:2px,color:#E65100;
+    classDef client fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#1B5E20;
+
+    subgraph ORG["Salesforce org"]
+        Records["Portfolio records"]
+        Export["SiteExportResource<br/>26 read only calls"]
+        Actions["SiteActionsResource<br/>7 actions"]
+        Controllers["Site controllers"]
+        Records --> Controllers
+        Export --> Controllers
+        Actions --> Controllers
+    end
+
+    subgraph BUILD["GitHub Actions: site.yml"]
+        Build["LWC OSS build<br/>and leak scan"]
+    end
+
+    subgraph CF["Cloudflare"]
+        Pages["Pages: static files"]
+        Funcs["Pages Functions<br/>kill switches, Turnstile"]
+    end
+
+    Browser["Visitor browser"]
+
+    Build -->|"1. build user reads the export"| Export
+    Build -->|"2. deploy the pages"| Pages
+    Browser -->|"3. load a page"| Pages
+    Browser -->|"4. form, lab or live reading"| Funcs
+    Funcs -->|"5. edge user token and IP hash"| Actions
+    Actions -->|"6. result"| Funcs
+    Funcs -->|"7. answer"| Browser
+
+    class Records,Export,Actions,Controllers org;
+    class Build ci;
+    class Pages,Funcs edge;
+    class Browser client;
+```
+
+- **Build time.** `site.yml` signs in as the build user, makes 82 reads for 15 pages (12 routes plus the 404, 429 and 503 pages), compiles one bundle per route, runs the leak scan and deploys. A pull request deploys a preview under `pr-<number>` and runs the live smoke test against it. Without the build user secret the build uses sample fixtures and says so.
+- **Request time.** Seven actions, each behind a feature switch that is `live` or `recorded`: `contact`, `testimonial`, `cover-letter`, `lab-invoke`, `lab-token`, `glass-box` and `pipeline-status`. A preview deploy is always `recorded`. [Technical Guide §2.25](./04-Technical-Guide.md#225-the-static-build-and-the-shims) describes the build and the shims.
+- **What each host shows.** Only a section that calls Salesforce at view time says "Live from Salesforce". A section read at build time says when it was built.
+- **Not covered here.** The Functions, the edge user, the rate limits and the Turnstile keys are built in a separate change and are described in the Maintenance Guide once they are in production [unverified].
+
 ## 7. Architectural Decision Records (ADRs)
 
 Full architectural decisions are documented in the `docs/adr/` directory.
@@ -549,48 +618,49 @@ Full architectural decisions are documented in the `docs/adr/` directory.
 <details>
 <summary>Click to view full list of Architectural Decision Records (ADRs)</summary>
 
-| ID                                                                                     | Title                                                           | Status                   |
-| :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :----------------------- |
-| [ADR-001](../adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura                                 | Accepted                 |
-| [ADR-002](../adr/002-custom-objects-vs-standard-objects.md)                            | Custom Objects vs. Standard Objects                             | Accepted                 |
-| [ADR-003](../adr/003-apex-rest-vs-external-service.md)                                 | Apex REST vs. External Service                                  | Accepted                 |
-| [ADR-004](../adr/004-static-resource-code-rendering.md)                                | Static Resource Code Rendering                                  | Accepted                 |
-| [ADR-005](../adr/005-gamified-testimonial-ui.md)                                       | Gamified Testimonial UI                                         | Accepted                 |
-| [ADR-006](../adr/006-jwt-bearer-flow-for-ci-cd.md)                                     | JWT Bearer Flow for CI/CD                                       | Accepted                 |
-| [ADR-007](../adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching                                  | Accepted                 |
-| [ADR-008](../adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Agile Accelerator                          | Accepted                 |
-| [ADR-009](../adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model                                      | Accepted                 |
-| [ADR-010](../adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Visualization Engine (Vis.js vs. the AntV Graph Library)        | Superseded by d3-force   |
-| [ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Context Grounding Strategy (Direct CRM vs. Data 360)            | Deferred (2026-10-22)    |
-| [ADR-012](../adr/012-guest-user-security-restriction-rules.md)                         | Guest User Security (Restriction Rules)                         | Accepted                 |
-| [ADR-013](../adr/013-structured-logging-framework-nebula-logger.md)                    | Structured Logging Framework (Nebula Logger)                    | Accepted                 |
-| [ADR-014](../adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading (Performance)                        | Accepted                 |
-| [ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI                              | Accepted                 |
-| [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as Edge AI Proxy                              | Deferred to V2.0         |
-| [ADR-017](../adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | System API Security & Dual-Sided Auth Pattern                   | Superseded (ADR-027)     |
-| [ADR-018](../adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | FinOps Constraint – AWS Lambda Function URLs vs. API Gateway    | Deferred (2026-10-23)    |
-| [ADR-019](../adr/019-executable-governance-platform-events-for-documentation-logic.md) | Executable Governance – Platform Events for Documentation Logic | Accepted                 |
-| [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Amended 2026-10-30       |
-| [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Amended 2026-10-30       |
-| [ADR-022](../adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Engineering – Resilience Simulation Toggle           | Accepted                 |
-| [ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF) for MVP                      | Accepted (Transitionary) |
-| [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern – Contract-First Parity                        | Amended 2026-10-23       |
-| [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling (Capacity Planning)                     | Accepted (Amended)       |
-| [ADR-026](../adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning Strategy                            | Accepted (Amended)       |
-| [ADR-027](../adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication (ECA + Named Credential)     | Accepted                 |
-| [ADR-028](../adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending                              | Accepted                 |
-| [ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema Visualizer Scope, Discovery and Caching                  | Accepted (2026-10-22)    |
-| [ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)                            | Decision Matrix as Custom Metadata                              | Accepted (2026-10-22)    |
-| [ADR-031](../adr/031-native-contact-form.md)                                           | Native Contact Form                                             | Accepted (2026-10-23)    |
-| [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)                       | Operational Settings in Custom Metadata                         | Accepted (2026-10-23)    |
-| [ADR-033](../adr/033-queries-in-custom-metadata.md)                                    | Queries in Custom Metadata                                      | Accepted (2026-10-24)    |
-| [ADR-034](../adr/034-recruiter-first-home-page.md)                                     | A Recruiter First Home Page                                     | Accepted (2026-10-26)    |
-| [ADR-035](../adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams Rendered in CI                                         | Accepted (2026-10-26)    |
-| [ADR-036](../adr/036-portfolio-guide-agent.md)                                         | The Portfolio Guide Agent                                       | Accepted (2026-10-27)    |
-| [ADR-037](../adr/037-native-form-controls-site-wide.md)                                | Native Form Controls Site Wide                                  | Amended 2026-10-30       |
-| [ADR-038](../adr/038-stable-public-keys-in-the-api.md)                                 | Stable Public Keys in the API                                   | Accepted (2026-10-28)    |
-| [ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 Sunset                                        | Accepted (2026-10-29)    |
-| [ADR-040](../adr/040-versionless-api-urls.md)                                          | Versionless API URLs                                            | Accepted (2026-10-31)    |
+| ID                                                                                     | Title                                                           | Status                    |
+| :------------------------------------------------------------------------------------- | :-------------------------------------------------------------- | :------------------------ |
+| [ADR-001](../adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura                                 | Accepted                  |
+| [ADR-002](../adr/002-custom-objects-vs-standard-objects.md)                            | Custom Objects vs. Standard Objects                             | Accepted                  |
+| [ADR-003](../adr/003-apex-rest-vs-external-service.md)                                 | Apex REST vs. External Service                                  | Accepted                  |
+| [ADR-004](../adr/004-static-resource-code-rendering.md)                                | Static Resource Code Rendering                                  | Accepted                  |
+| [ADR-005](../adr/005-gamified-testimonial-ui.md)                                       | Gamified Testimonial UI                                         | Accepted                  |
+| [ADR-006](../adr/006-jwt-bearer-flow-for-ci-cd.md)                                     | JWT Bearer Flow for CI/CD                                       | Accepted                  |
+| [ADR-007](../adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching                                  | Accepted                  |
+| [ADR-008](../adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Agile Accelerator                          | Accepted                  |
+| [ADR-009](../adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model                                      | Accepted                  |
+| [ADR-010](../adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Visualization Engine (Vis.js vs. the AntV Graph Library)        | Superseded by d3-force    |
+| [ADR-011](../adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Context Grounding Strategy (Direct CRM vs. Data 360)            | Deferred (2026-10-22)     |
+| [ADR-012](../adr/012-guest-user-security-restriction-rules.md)                         | Guest User Security (Restriction Rules)                         | Accepted                  |
+| [ADR-013](../adr/013-structured-logging-framework-nebula-logger.md)                    | Structured Logging Framework (Nebula Logger)                    | Accepted                  |
+| [ADR-014](../adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading (Performance)                        | Accepted                  |
+| [ADR-015](../adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI                              | Accepted                  |
+| [ADR-016](../adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as Edge AI Proxy                              | Deferred to V2.0          |
+| [ADR-017](../adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | System API Security & Dual-Sided Auth Pattern                   | Superseded (ADR-027)      |
+| [ADR-018](../adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | FinOps Constraint – AWS Lambda Function URLs vs. API Gateway    | Deferred (2026-10-23)     |
+| [ADR-019](../adr/019-executable-governance-platform-events-for-documentation-logic.md) | Executable Governance – Platform Events for Documentation Logic | Accepted                  |
+| [ADR-020](../adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile Performance – Static SVG Fallback Strategy               | Amended 2026-10-30        |
+| [ADR-021](../adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL (Door 1) vs. Apex REST for UI                    | Amended 2026-10-30        |
+| [ADR-022](../adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Engineering – Resilience Simulation Toggle           | Accepted                  |
+| [ADR-023](../adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF) for MVP                      | Accepted (Transitionary)  |
+| [ADR-024](../adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern – Contract-First Parity                        | Amended 2026-10-23        |
+| [ADR-025](../adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling (Capacity Planning)                     | Accepted (Amended)        |
+| [ADR-026](../adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning Strategy                            | Accepted (Amended)        |
+| [ADR-027](../adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication (ECA + Named Credential)     | Accepted                  |
+| [ADR-028](../adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending                              | Accepted                  |
+| [ADR-029](../adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema Visualizer Scope, Discovery and Caching                  | Accepted (2026-10-22)     |
+| [ADR-030](../adr/030-decision-matrix-as-custom-metadata.md)                            | Decision Matrix as Custom Metadata                              | Accepted (2026-10-22)     |
+| [ADR-031](../adr/031-native-contact-form.md)                                           | Native Contact Form                                             | Accepted (2026-10-23)     |
+| [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)                       | Operational Settings in Custom Metadata                         | Accepted (2026-10-23)     |
+| [ADR-033](../adr/033-queries-in-custom-metadata.md)                                    | Queries in Custom Metadata                                      | Accepted (2026-10-24)     |
+| [ADR-034](../adr/034-recruiter-first-home-page.md)                                     | A Recruiter First Home Page                                     | Accepted (2026-10-26)     |
+| [ADR-035](../adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams Rendered in CI                                         | Accepted (2026-10-26)     |
+| [ADR-036](../adr/036-portfolio-guide-agent.md)                                         | The Portfolio Guide Agent                                       | Accepted (2026-10-27)     |
+| [ADR-037](../adr/037-native-form-controls-site-wide.md)                                | Native Form Controls Site Wide                                  | Amended 2026-10-30        |
+| [ADR-038](../adr/038-stable-public-keys-in-the-api.md)                                 | Stable Public Keys in the API                                   | Accepted (2026-10-28)     |
+| [ADR-039](../adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 Sunset                                        | Accepted (2026-10-29)     |
+| [ADR-040](../adr/040-versionless-api-urls.md)                                          | Versionless API URLs                                            | Accepted (2026-10-31)     |
+| [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)                 | Headless Static Front End on Cloudflare Pages                   | Accepted, cutover pending |
 
 </details>
 
@@ -1192,6 +1262,8 @@ C4 Level 4: Infrastructure & Network Flow.
 Browser → Akamai CDN → LWR Runtime → Apex Controller → DB.
 
 Apex → Named Credential → External APIs (Jira/GitHub).
+
+**Static front end (cutover pending, [ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)).** Browser → Cloudflare Pages (static files) for the pages. Browser → Cloudflare Pages Function → My Domain `/services/apexrest/site/actions/*` → Apex Controller → DB for the forms, labs and live readings. GitHub Actions (`site.yml`) → My Domain `/services/apexrest/site/export` → Cloudflare Pages for the build. Section 6.3 draws the flow.
 
 ### Appendix I: Org & Package Structure
 
