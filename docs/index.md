@@ -19,6 +19,7 @@ _Target Audience: Stakeholders, Recruiters, Ops Team_
 | [**04. Technical Guide**](guides/04-Technical-Guide.md)                              | Implementation details for LWC, Apex, and CI/CD.                      |
 | [**05. Maintenance Guide**](guides/05-Maintenance-Guide.md)                          | Operations, rotation policies, and disaster recovery.                 |
 | [**06. Guardrails & Governance**](guides/06-Guardrails-and-Executable-Governance.md) | Automated quality gates and compliance rules.                         |
+| [**Cutover Runbook**](guides/cutover-runbook.md)                                     | Moving the domain to the static site, and rolling back.               |
 
 ---
 
