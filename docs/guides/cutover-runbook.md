@@ -27,7 +27,7 @@ Create the user and the app by hand:
 5. Put the same four values in the GitHub secrets `SITE_EDGE_CLIENT_ID`, `SITE_EDGE_CLIENT_SECRET`, `SITE_EDGE_INSTANCE_URL` and `SITE_EDGE_IP_HASH_SALT`, which the API Lab recording step reads.
 6. **Check the edge user.** `pipeline-status` returns 200 with the edge token. A user without `Site_Edge_Actions` gets 403 from the same call. A cover letter POST with a test hash returns provider Agentforce. I do not go on until all three pass.
 
-I read the Setup labels in steps 2 and 3 against the screen `[unverified: dashboard labels]`.
+Steps 2 and 3 copy the existing Portfolio API app. Its metadata, read from production on 2026-11-03, has the client credentials flow on with a named run as user, permitted users set to admin approved users are pre authorized (`AdminApprovedPreAuthorized`), access granted through a permission set, and the scope `Api`. The field names on the Setup screens are `[unverified: read them on the screen]`, because Salesforce Help does not render without a sign in.
 
 ### 0.2 The Cloudflare secrets and variables
 
@@ -62,11 +62,17 @@ Behind it, `SubmissionGuard` rate limits each form by the hashed visitor address
 
 Cloudflare Access is free for up to 50 users. Cloudflare's Pages documentation says Access protects preview deployments and names the per deployment addresses among them (https://developers.cloudflare.com/pages/configuration/preview-deployments/, read 2026-11-03). It does not cover the `*.pages.dev` production alias or custom domains.
 
-1. Workers and Pages, the `ryanbumstead` project, Settings, General, Preview access, Restrict previews. Allow my own email in Zero Trust. The dashboard says beside the button: "This protects preview deployment URLs only. Production pages.dev and custom domains are managed separately in Zero Trust." (dashboard, read 2026-11-03)
-2. Zero Trust, Access, Service Auth, create a service token for CI. Add a Service Auth rule for that token to the preview application only, never to a production hostname.
-3. GitHub, Settings, Environments, `site-preview` (the first run creates it): add `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` there, not as repository secrets, so pull requests from forks never get them.
+Zero Trust is not set up on this account yet: its pages open on "Welcome to Cloudflare Zero Trust" with a Get started button (dashboard, read 2026-11-03). Get started is where a plan choice or a payment method may be asked for. I stop there if it asks for payment, and leave previews public with Cloudflare's noindex.
 
-Whether the policy also covers the per deployment addresses of old production builds is `[unverified]`, because the documentation example is a preview address. The deployment clean up in section 6 still applies.
+The order matters. The moment previews are restricted, a pull request's preview smoke cannot get in until the token is in GitHub, so the token and the secrets come first.
+
+1. Zero Trust, Access controls, Service credentials (dashboard, read 2026-11-03): create a service token for CI.
+2. GitHub, Settings, Environments, `site-preview` (the first run creates it): add `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` there, not as repository secrets, so pull requests from forks never get them.
+3. Workers and Pages, the `ryanbumstead` project, Settings, General, Preview access, Restrict previews. Allow my own email. The dashboard says beside the button: "This protects preview deployment URLs only. Production pages.dev and custom domains are managed separately in Zero Trust." (dashboard, read 2026-11-03)
+4. In the Access application this creates, add a Service Auth policy for the CI token. It goes on the preview application only, never on a production hostname.
+5. Open the application and check its public hostname reads `*.ryanbumstead.pages.dev`.
+
+What the policy covers. Cloudflare's known issues page says the application it creates for previews uses the wildcard hostname `*.<project>.pages.dev` (https://developers.cloudflare.com/pages/platform/known-issues/, read 2026-11-03). Every deployment address, old production builds included, has the form `<hash>.ryanbumstead.pages.dev`, so the wildcard covers them. Only the bare `ryanbumstead.pages.dev` and custom domains stay outside it. Step 5 confirms the hostname on the screen. The deployment clean up in section 6 still applies, because an old build behind Access still holds every record it was built with.
 
 ## 1. Before cutover
 
@@ -91,7 +97,7 @@ Dashboard route:
 
 1. Cloudflare dashboard, Workers and Pages, `portfolio-cache-warmer`, Settings.
 2. Trigger events, Cron triggers. The row reads "Runs: Every 5 minutes" with the next run time beside it (dashboard, read 2026-11-03).
-3. Remove that cron trigger. The Cloudflare Workers cron triggers documentation says to select the three dot icon next to it and choose Delete (https://developers.cloudflare.com/workers/configuration/cron-triggers/, read 2026-11-03). `[unverified: where the delete control sits on this row, check it on the screen]`
+3. Remove that cron trigger with the Delete button on its row (dashboard, read 2026-11-03). The Cloudflare Workers cron triggers documentation still describes a three dot menu, but this Worker's row has a plain Delete button.
 4. Confirm in the Worker's logs that no scheduled run happens for ten minutes.
 
 Alternative that I make myself, in the repository: change `crons = ["*/5 * * * *"]` to `crons = []` in `config/wrangler.toml` and let `deploy-worker.yml` deploy it on the merge. This is a protected file, so only I edit it. I prefer the dashboard route now and delete the Worker for good in step 3.
