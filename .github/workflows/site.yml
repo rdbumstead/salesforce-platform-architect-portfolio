@@ -16,7 +16,9 @@ name: Static Site (Cloudflare Pages)
 #
 # On main the deploy goes to the Pages production branch. Before cutover that is only the
 # *.pages.dev address. A pull request deploys a preview under pr-<number>, runs the live
-# smoke against it, and writes the preview address and Lighthouse medians to the job summary.
+# smoke against it in this job, and writes the preview address and Lighthouse medians to the
+# job summary. A preview behind Cloudflare Access is reached with a service token kept as an
+# environment secret of site-preview.
 
 on:
   workflow_call:
@@ -53,7 +55,7 @@ jobs:
   build:
     name: Build and deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     environment:
       name: ${{ github.event_name == 'pull_request' && 'site-preview' || 'site-production' }}
       url: ${{ steps.deploy.outputs.deployment-url }}
@@ -159,6 +161,47 @@ jobs:
             if [ -n "$URL" ]; then echo "- Deployed to: $URL (branch \`$BRANCH\`)"; else echo "- Not deployed: no Pages token, or the deploy did not run."; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # The smoke and Lighthouse run in this job, so the Access service token stays an
+      # environment secret of this job (site-preview), which pull requests from forks never get.
+      # The smoke sends the token only to the preview's own host.
+      - name: Smoke the deployed site
+        if: steps.deploy.outcome == 'success'
+        env:
+          SITE_BASE: ${{ steps.deploy.outputs.deployment-url }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          PLAYWRIGHT_VERSION: "1.64.0"
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pw" --no-save --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium webkit
+          NODE_PATH="$RUNNER_TEMP/pw/node_modules" SMOKE_JSON=smoke.json node scripts/live-smoke.js > smoke.out
+          head -1 smoke.out >> "$GITHUB_STEP_SUMMARY"
+
+      # Report only. Behind Access, one request trades the service token for the
+      # CF_Authorization cookie, which is masked, and web/build/lhci-access.cjs sets it for the
+      # preview's own host only. No other host receives the token or the cookie.
+      - name: Lighthouse, three mobile runs per main page
+        if: steps.deploy.outcome == 'success'
+        continue-on-error: true
+        env:
+          TARGET_URL: ${{ steps.deploy.outputs.deployment-url }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          if [ -n "$CF_ACCESS_CLIENT_ID" ] && [ -n "$CF_ACCESS_CLIENT_SECRET" ]; then
+            COOKIE="$(node web/build/access-cookie.mjs "$TARGET_URL/")"
+            if [ -n "$COOKIE" ]; then echo "::add-mask::$COOKIE"; export CF_ACCESS_COOKIE="$COOKIE"; fi
+          fi
+          npm install --prefix "$RUNNER_TEMP/lh" --no-save --no-audit --no-fund @lhci/cli@0.15.1 puppeteer@25.16.0
+          CHROME_PATH="$(command -v google-chrome)" NODE_PATH="$RUNNER_TEMP/lh/node_modules" "$RUNNER_TEMP/lh/node_modules/.bin/lhci" collect --config=./config/lighthouserc.cjs --puppeteerScript=./web/build/lhci-access.cjs --settings.disableStorageReset=true
+          {
+            echo "## Lighthouse, mobile, median of 3 runs"
+            echo ""
+            echo "Report only. LCP target 2.5 s."
+            echo ""
+            node web/build/lighthouse-summary.mjs .lighthouseci
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Publish Governance Event
         if: success() && github.event_name != 'pull_request' && env.HAS_BUILD_USER == 'true' && steps.deploy.outcome == 'success'
         continue-on-error: true
@@ -172,46 +215,3 @@ jobs:
         run: |
           VALUES="Workflow__c=site Status__c=Failure Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           sf data create record --sobject Governance_Event__e --values "$VALUES" --target-org site-build
-
-  smoke:
-    name: Smoke the deployed site
-    needs: build
-    if: needs.build.outputs.deployed == 'true'
-    uses: ./.github/workflows/smoke.yml
-    with:
-      site_base: ${{ needs.build.outputs.url }}
-    secrets: inherit
-
-  lighthouse:
-    name: Lighthouse (report only)
-    needs: build
-    if: needs.build.outputs.deployed == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    continue-on-error: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "26"
-
-      - name: Collect three mobile runs per main page
-        env:
-          TARGET_URL: ${{ needs.build.outputs.url }}
-        run: |
-          npm install --prefix "$RUNNER_TEMP/lh" --no-save --no-audit --no-fund @lhci/cli@0.15.1
-          CHROME_PATH="$(command -v google-chrome)" "$RUNNER_TEMP/lh/node_modules/.bin/lhci" collect --config=./config/lighthouserc.cjs
-
-      - name: Medians to the summary
-        if: always()
-        run: |
-          {
-            echo "## Lighthouse, mobile, median of 3 runs"
-            echo ""
-            echo "Report only. LCP target 2.5 s."
-            echo ""
-            node web/build/lighthouse-summary.mjs .lighthouseci
-          } >> "$GITHUB_STEP_SUMMARY"
