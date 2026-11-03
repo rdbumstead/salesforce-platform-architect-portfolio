@@ -12,7 +12,13 @@ const {
   bundleOf,
   checkStatic
 } = require("./check-smoke-routes.js");
-const { ROUTES, TOUR, isUnderBase } = require("./live-smoke.js");
+const {
+  ROUTES,
+  TOUR,
+  isUnderBase,
+  parseFeatures,
+  routesFor
+} = require("./live-smoke.js");
 
 const SITE =
   "packages/portfolio-site/main/default/digitalExperiences/site/Portfolio1";
@@ -247,4 +253,58 @@ test("no Access headers for a base outside pages.dev", () => {
     process.env = saved;
     delete require.cache[require.resolve("./live-smoke.js")];
   }
+});
+
+const LIVE = {
+  contact: "live",
+  testimonial: "live",
+  coverLetter: "live",
+  apiLab: "live",
+  liveReads: "live"
+};
+
+test("a missing or foreign /api/features leaves the route list as written", () => {
+  assert.strictEqual(parseFeatures(404, "<html>"), null);
+  assert.strictEqual(parseFeatures(200, "<html>not json</html>"), null);
+  assert.strictEqual(parseFeatures(200, '{"other":1}'), null);
+  assert.strictEqual(routesFor(ROUTES, null), ROUTES);
+});
+
+test("switches that read live keep the forms the smoke expects", () => {
+  const features = parseFeatures(200, JSON.stringify(LIVE));
+  assert.strictEqual(features.contact, "live");
+  assert.deepStrictEqual(routesFor(ROUTES, features), ROUTES);
+});
+
+test("recorded switches swap the form for the recorded note and keep the rest", () => {
+  const features = parseFeatures(
+    200,
+    JSON.stringify({ ...LIVE, contact: "recorded", testimonial: "recorded" })
+  );
+  const routes = routesFor(ROUTES, features);
+  const find = (list, route) => list.find((item) => item.path === route);
+  assert.deepStrictEqual(find(routes, "/contact").components, [
+    'section.recorded-note[data-recorded="contact"]'
+  ]);
+  const testimonials = find(routes, "/testimonials").components;
+  assert.strictEqual(
+    testimonials[0],
+    'section.recorded-note[data-recorded="testimonial"]'
+  );
+  assert.deepStrictEqual(
+    testimonials[1],
+    find(ROUTES, "/testimonials").components[1]
+  );
+  assert.deepStrictEqual(find(routes, "/docs"), find(ROUTES, "/docs"));
+  assert.strictEqual(find(ROUTES, "/contact").components[0], "c-contact-form");
+});
+
+test("only the recorded switch swaps its own page", () => {
+  const routes = routesFor(ROUTES, { ...LIVE, contact: "recorded" });
+  const find = (list, route) => list.find((item) => item.path === route);
+  assert.deepStrictEqual(
+    find(routes, "/testimonials"),
+    find(ROUTES, "/testimonials")
+  );
+  assert.notDeepStrictEqual(find(routes, "/contact"), find(ROUTES, "/contact"));
 });
