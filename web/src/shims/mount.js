@@ -5,9 +5,16 @@
  * The components the entry already holds go on the page at once. The rest, and the
  * footer, arrive as their own chunks and are added together in their order, so the top of
  * the page paints without waiting for them and nothing already on screen moves twice.
+ *
+ * Once everything is placed, a form whose switch reads recorded gives way to a note with
+ * the owner's profile links.
  */
 import { createElement } from "lwc";
 import { unlessLeaving } from "./leaving.js";
+import { headerLinks } from "c/profileLinks";
+import { installApi } from "./api-install.js";
+import { lookup } from "./site-data.js";
+import { swapRecordedForms } from "./recorded-forms.js";
 
 function placed(entry) {
   if (entry.html !== undefined) {
@@ -41,9 +48,24 @@ function resolve(entry) {
     : Promise.resolve(entry);
 }
 
+const FORM_TAGS = ["c-contact-form", "c-testimonial-submit"];
+
+function recordedForms(api, layout) {
+  return api.features().then((features) => {
+    const present = FORM_TAGS.some((tag) => layout.querySelector(tag));
+    const allLive =
+      features.contact === "live" && features.testimonial === "live";
+    if (!present || allLive) return undefined;
+    return lookup("ResumeController.getHeader", {}).then(({ found, value }) => {
+      swapRecordedForms(layout, features, found ? headerLinks(value) : []);
+    });
+  });
+}
+
 export function mount({ Layout, loadFooter, components }) {
   const root = document.getElementById("site-root");
   if (!root) return Promise.resolve();
+  const api = installApi();
   const layout = createElement("c-portfolio-theme-layout", { is: Layout });
   const firstLazy = components.findIndex((entry) => entry.load);
   const now = firstLazy === -1 ? components : components.slice(0, firstLazy);
@@ -71,6 +93,7 @@ export function mount({ Layout, loadFooter, components }) {
         element.setAttribute("slot", "footer");
         layout.appendChild(element);
       }
+      return recordedForms(api, layout);
     })
     .catch(unlessLeaving);
 }

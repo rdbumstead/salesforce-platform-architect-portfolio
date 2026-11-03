@@ -59,6 +59,17 @@ function buildAdapter(call) {
             ? { data: value, error: undefined }
             : { data: undefined, error: apexError(NOT_IN_BUILD, 404) }
         );
+        // The build data paints first. A call that also has a live reading then swaps it
+        // in when it arrives, and keeps the build data if the live reading fails or is off.
+        if (LIVE_CALLS.has(call) && requestHandler) {
+          requestHandler(call, config).then(
+            (live) => {
+              if (!this.connected || this.config !== config) return;
+              this.dataCallback({ data: live, error: undefined });
+            },
+            () => undefined
+          );
+        }
       });
     }
   };
@@ -66,7 +77,10 @@ function buildAdapter(call) {
 
 let requestHandler = null;
 
-/** PR 2 registers the /api client here. Until then request time calls reject. */
+/** Wired calls that have a live reading after the build time one. */
+export const LIVE_CALLS = new Set(["GovernanceController.getPipelineStatus"]);
+
+/** The /api client registers here. With none, request time calls reject. */
 export function setRequestHandler(handler) {
   requestHandler = handler;
 }
