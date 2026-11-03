@@ -1,0 +1,3 @@
+# Old links that kept the Salesforce site path prefix.
+/portfolio /  301
+/portfolio/* /:splat 301

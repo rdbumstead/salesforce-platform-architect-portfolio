@@ -11,3 +11,6 @@
 coverage/
 **/AnypointStudio/**
 docs/api/oas/*.md
+# Static site: generated sample data and the web lockfile.
+web/fixtures/
+web/package-lock.json

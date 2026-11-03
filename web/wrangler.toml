@@ -1,0 +1,5 @@
+# Cloudflare Pages project for the static site. The workflow deploys web/dist with
+# `wrangler pages deploy`, and Pages Functions are added under web/functions.
+name = "ryanbumstead"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-10-01"

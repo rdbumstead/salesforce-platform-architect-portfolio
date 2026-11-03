@@ -32,7 +32,11 @@
     "refs:check": "node scripts/check-internal-refs.js packages docs README.md STATUS.md",
     "specs:sync": "node scripts/sync-specs.js",
     "specs:check": "node scripts/sync-specs.js --check",
-    "docs:verify": "npm run docs:api && git diff --exit-code docs/api/oas/ && echo \"SUCCESS: API Documentation is synchronized.\""
+    "docs:verify": "npm run docs:api && git diff --exit-code docs/api/oas/ && echo \"SUCCESS: API Documentation is synchronized.\"",
+    "web:install": "npm ci --prefix web",
+    "web:build": "npm run build --prefix web",
+    "web:dev": "npm run dev --prefix web",
+    "web:test": "npm test --prefix web && node web/build/check-export-coverage.mjs"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
