@@ -18,21 +18,32 @@ function tagOf(name) {
   return `c-${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
 }
 
-/** The source of one route's entry module. */
+/**
+ * The source of one route's entry module. The layout and the route's first component are in
+ * the entry, so the top of the page paints as soon as they run. Every later component and
+ * the footer load as their own chunks after that and are added together, so the first
+ * paint never waits for the heaviest component on the page.
+ */
 export function entrySource(route) {
   const lines = [
     `import { mount } from ${JSON.stringify(slash(path.join(SHIM_DIR, 'mount.js')))};`,
-    `import Layout from 'c/portfolioThemeLayout';`,
-    `import Footer from 'c/footer';`
+    `import Layout from 'c/portfolioThemeLayout';`
   ];
-  const names = [...new Set(route.components.filter((c) => c.name).map((c) => c.name))];
-  names.forEach((name, index) => lines.push(`import C${index} from 'c/${name}';`));
+  const firstName = (route.components.find((component) => component.name) || {}).name;
+  if (firstName) lines.push(`import First from 'c/${firstName}';`);
+  let firstPlaced = false;
   const entries = route.components.map((component) => {
     if (component.html !== undefined) return `{ html: ${JSON.stringify(component.html)} }`;
-    const index = names.indexOf(component.name);
-    return `{ tag: ${JSON.stringify(tagOf(component.name))}, ctor: C${index}, props: ${JSON.stringify(component.props || {})} }`;
+    const tag = JSON.stringify(tagOf(component.name));
+    const props = JSON.stringify(component.props || {});
+    if (!firstPlaced && component.name === firstName) {
+      firstPlaced = true;
+      return `{ tag: ${tag}, ctor: First, props: ${props} }`;
+    }
+    return `{ tag: ${tag}, load: () => import('c/${component.name}'), props: ${props} }`;
   });
-  lines.push(`mount({ Layout, Footer: ${route.layout === 'portfolio' ? 'Footer' : 'null'}, components: [${entries.join(', ')}] });`);
+  const footer = route.layout === 'portfolio' ? `() => import('c/footer')` : 'null';
+  lines.push(`mount({ Layout, loadFooter: ${footer}, components: [${entries.join(', ')}] });`);
   return `${lines.join('\n')}\n`;
 }
 

@@ -117,9 +117,15 @@ test('fixtures cut long text and keep JSON text whole', () => {
   assert.equal(cut.a.catalog, json);
 });
 
-test('an entry mounts the layout, the components and the footer', () => {
-  const source = entrySource({ key: 'x', layout: 'portfolio', components: [{ name: 'pageIntro', props: { heading: 'H' } }, { html: '<p>r</p>' }] });
-  assert.match(source, /import C0 from 'c\/pageIntro'/);
-  assert.match(source, /tag: "c-page-intro", ctor: C0, props: \{"heading":"H"\}/);
-  assert.match(source, /Footer: Footer/);
+test('an entry holds the first component and loads the rest and the footer after it', () => {
+  const source = entrySource({
+    key: 'x',
+    layout: 'portfolio',
+    components: [{ name: 'pageIntro', props: { heading: 'H' } }, { html: '<p>r</p>' }, { name: 'resumeBuilder' }]
+  });
+  assert.ok(source.includes("import First from 'c/pageIntro'"));
+  assert.ok(source.includes('tag: "c-page-intro", ctor: First, props: {"heading":"H"}'));
+  assert.ok(source.includes("load: () => import('c/resumeBuilder')"));
+  assert.ok(source.includes("loadFooter: () => import('c/footer')"));
+  assert.ok(!source.includes('import Footer'));
 });
