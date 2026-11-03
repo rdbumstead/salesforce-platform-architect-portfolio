@@ -192,12 +192,15 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 
 Page sizes, rate tiers, the token rate and cap default, circuit breaker limits, form guard limits, source refresh limits, governance freshness windows, AI length bounds, the health check timeout, the roadmap and timeline display counts, the cover letter word range, the Gemini output token limit and temperature, and the home page testimonial minimum are `Portfolio_Setting__mdt` records ([Technical Guide §1.6](./04-Technical-Guide.md#16-operational-settings-portfolio_setting__mdt), [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)).
 
-1. To change a limit, edit the record's **Number Value** in Setup > Custom Metadata Types > Portfolio Setting > Manage Records. It takes effect on the next request, with no deploy.
+1. To change a limit, edit the record's **Number Value** in Setup > Custom Metadata Types > Portfolio Setting > Manage Records. It takes effect on the next request, with no deploy. That is true of every limit the org applies at request time. A setting that shapes content the static site reads at build time, such as a display count or the cover letter word range shown on the page, reaches the static site only at its next build (as of 2026-11-02, the site workflow runs after every production deploy and every six hours, or run it by hand).
 2. Keep it inside the record's **Min Value** to **Max Value**. A value outside that range is ignored and the code default applies, and so does a cleared value or a deleted record. Its **Description** says what it controls and what is safe. A fraction is dropped (2.75 reads as 2).
 3. Commit the same value to the record's file under `packages/portfolio-site/main/default/customMetadata/`. A full mode deploy writes every record in source, and a delta that touches the file writes it too, so a value changed only in Setup can be put back to the shipped one.
 4. `Token_Daily_Cap_Default` applies only while `Portfolio_Config__mdt.Token_Daily_Cap__c` is blank. To pause or lower token vending, set the config cap (§4.4).
 
 ### 3.6 Changing a Query Definition
+
+> [!NOTE]
+> **Per host, as of 2026-11-02.** A change reaches the Salesforce site on its next request. It reaches the static site at its next build (section 3.12).
 
 The portfolio's content reads (the SAPI lists, the Process API, the API Lab options and nine site classes) are `Query_Definition__mdt` records, one per read, each checked against the query its class holds in code ([Technical Guide §1.7](./04-Technical-Guide.md#17-query-definitions-query_definition__mdt), [ADR-033](../adr/033-queries-in-custom-metadata.md)).
 
@@ -207,6 +210,9 @@ The portfolio's content reads (the SAPI lists, the Process API, the API Lab opti
 4. Commit the change. A full mode deploy writes every record in source, so a change made only in Setup can be put back.
 
 ### 3.7 Site Content the Owner Edits
+
+> [!NOTE]
+> **Per host, as of 2026-11-02.** Everything below shows on the Salesforce site as soon as the page loads. On the static site it shows after the next build, which the site workflow runs after every production deploy and every six hours, and by hand (section 3.12). After a content edit I run the workflow and read the built time the section shows.
 
 - **The title line and the value sentence.** Edit **Hero Line** (the title line under the name) and **Value Sentence** (one sentence on the value delivered) on my Contact. Each shows on the home page only while it is set.
 - **The proof strip.** "On Salesforce since 2017" and the active certification count are one list, `PROOF_POINTS` in `c/pillarData`. Check both every quarter, and change the count and its test in the same commit.
@@ -218,7 +224,7 @@ The portfolio's content reads (the SAPI lists, the Process API, the API Lab opti
 ### 3.8 Owner Emails and Testimonial Approvals
 
 - **A new contact message.** The Lead owner gets one email with the visitor's name, company, email, full message and a link to the Lead. While the Lead has no internal user as its owner, for example while the assignment rule leaves it with the Automated Process user, the email goes to the `Portfolio_Admin` users instead. A Lead rule entry that assigns "Portfolio Website" leads to me, with no template, is optional. With it the in app reply reminders reach me as well.
-- **A new testimonial.** It is submitted to the Testimonial Approval process for you, and the request email shows the quote, the author, title, relationship and vibe. Reply with APPROVE, APPROVED or YES on the first line to publish it, or REJECT, REJECTED or NO to keep it off the site, or open the request in Salesforce. Approval sets **Approved** and the testimonial shows on the site. A rejected one stays saved and hidden.
+- **A new testimonial.** It is submitted to the Testimonial Approval process for you, and the request email shows the quote, the author, title, relationship and vibe. Reply with APPROVE, APPROVED or YES on the first line to publish it, or REJECT, REJECTED or NO to keep it off the site, or open the request in Salesforce. Approval sets **Approved** and the testimonial shows on the Salesforce site (on the static site, at its next build). A rejected one stays saved and hidden.
 - **A testimonial saved before the hand off.** It was never submitted, so submit it for approval from the record, or tick **Approved** by hand.
 - **Who gets the emails.** Both go to a user, never to an address in source. The approval goes to the testimonial's owner, the site's default owner for guest records.
 
@@ -325,6 +331,7 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 - **Symptom:** unwanted Leads with `LeadSource` "Portfolio Website", or auto-responses to addresses nobody typed in.
 - **Mitigation:** on the Lead, run "Block sender" (email or domain), from desktop or the mobile app. The sender's next message is thanked and dropped. Add a Keyword row to `Submission_Block__c` for a phrase. Deactivate a row (`Active__c`) to undo a block.
 - **Already in place:** the honeypot, the 3 second minimum, one auto-response per address in 24 hours, and at most 20 messages in 24 hours ([Technical Guide §2.16](./04-Technical-Guide.md#216-contact-form-and-submission-guard)).
+- **On the static site:** the form is also guarded by Turnstile and a per hash rate limit, and the `FEATURE_CONTACT` switch (section 3.12) turns the form off without a deploy. A block row of type IP Hash works only once the site actions change is merged [unverified].
 - **Lost messages:** check the `Contact_Form_Failure__c` tab. A row there is a message that failed to save, with the reason.
 
 ## 5. Observability & Monitoring
