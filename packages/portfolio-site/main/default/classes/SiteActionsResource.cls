@@ -377,6 +377,7 @@ global with sharing class SiteActionsResource {
     if (method == 'GET') {
       respond(res, 503, error('UNAVAILABLE', message));
     } else if (
+      message == SubmissionGuard.HASH_RATE_MESSAGE ||
       message == ContactFormController.RATE_LIMITED_MESSAGE ||
       message == TestimonialController.RATE_LIMITED_MESSAGE ||
       message == ApiLabController.COVER_LETTER_RATE_MESSAGE

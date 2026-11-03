@@ -117,6 +117,39 @@ private class GovernanceControllerTest {
   }
 
   @isTest
+  static void shouldFlagTheSiteRowOnlyOnceASiteBuildHasReported() {
+    GovernanceController.ChecklistItem none = load()
+      .get(GovernanceController.ITEM_SITE);
+    Assert.areEqual(false, none.everReported, 'No site build row yet');
+    Assert.areEqual(
+      GovernanceController.STATE_NO_SIGNAL,
+      none.state,
+      'No signal with no row'
+    );
+  }
+
+  @isTest
+  static void shouldFlagTheSiteRowForASingleOldFailedBuild() {
+    insert run('site', 'Failure', '9', NOW.addDays(-400));
+    GovernanceController.ChecklistItem failed = load()
+      .get(GovernanceController.ITEM_SITE);
+    Assert.areEqual(
+      true,
+      failed.everReported,
+      'One failed build, however old, counts as reported'
+    );
+    Assert.areEqual(GovernanceController.STATE_FAIL, failed.state, 'Red');
+  }
+
+  @isTest
+  static void shouldLeaveEverReportedOffTheOtherItems() {
+    Map<String, GovernanceController.ChecklistItem> items = load();
+    Assert.isNull(items.get(GovernanceController.ITEM_DEPLOY).everReported);
+    Assert.isNull(items.get(GovernanceController.ITEM_HEARTBEAT).everReported);
+    Assert.isNull(items.get(GovernanceController.ITEM_CACHES).everReported);
+  }
+
+  @isTest
   static void shouldFailSiteWhenLatestSiteBuildFailed() {
     insert run('site', 'Success', '7', NOW.addDays(-2));
     insert run('site', 'Failure', '8', NOW.addDays(-1));

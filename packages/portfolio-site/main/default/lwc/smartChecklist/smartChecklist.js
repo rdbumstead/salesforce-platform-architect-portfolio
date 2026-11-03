@@ -39,10 +39,15 @@ const ITEM_LABELS = {
   deploy: "Production deploy green",
   // The server still marks a heartbeat older than 26 hours as out of date.
   heartbeat: "Daily health check passed",
-  caches: "Jira and GitHub data refreshed in the last 30 minutes"
+  caches: "Jira and GitHub data refreshed in the last 30 minutes",
+  site: "Static site build green"
 };
 
 const ITEM_ORDER = ["deploy", "heartbeat", "caches"];
+// The static site build row stays out only while no site build has ever reported
+// (everReported is false). Once one has, it always shows, red for a failure, so a hidden row
+// can never hide a broken build.
+const SITE_KEY = "site";
 
 /**
  * Formats an Apex Datetime (ISO 8601) as "YYYY-MM-DD HH:MM UTC", so the time does not
@@ -241,7 +246,12 @@ export default class SmartChecklist extends LightningElement {
     ((this.status && this.status.items) || []).forEach((item) => {
       byKey[item.key] = item;
     });
-    return ITEM_ORDER.map((key) => this.toView(key, byKey[key]));
+    const views = ITEM_ORDER.map((key) => this.toView(key, byKey[key]));
+    const site = byKey[SITE_KEY];
+    if (site && site.everReported === true) {
+      views.push(this.toView(SITE_KEY, site));
+    }
+    return views;
   }
 
   toView(key, item) {

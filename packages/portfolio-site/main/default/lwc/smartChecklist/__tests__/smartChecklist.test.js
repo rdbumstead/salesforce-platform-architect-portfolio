@@ -64,8 +64,15 @@ function run(workflow, status, overrides = {}) {
   };
 }
 
-function item(key, state, itemRun = null) {
-  return { key, label: key, state, passed: state === "PASS", run: itemRun };
+function item(key, state, itemRun = null, everReported = undefined) {
+  return {
+    key,
+    label: key,
+    state,
+    passed: state === "PASS",
+    run: itemRun,
+    everReported
+  };
 }
 
 function pipelineStatus(items, caches = {}) {
@@ -176,6 +183,67 @@ describe("c-smart-checklist", () => {
       );
     });
     expect(element.shadowRoot.querySelector("a.run-link")).toBeNull();
+  });
+
+  it("hides the static site build row while no site build has ever reported", async () => {
+    const element = createComponent();
+    getPipelineStatus.emit(
+      pipelineStatus([
+        item("deploy", "NO_SIGNAL"),
+        item("heartbeat", "NO_SIGNAL"),
+        item("site", "NO_SIGNAL", null, false),
+        item("caches", "NO_SIGNAL")
+      ])
+    );
+    await flushPromises();
+
+    expect(rows(element)).toHaveLength(3);
+    expect(row(element, "site")).toBeNull();
+    expect(element.shadowRoot.textContent).not.toContain("Static site build");
+  });
+
+  it("shows the static site build row once a build passed", async () => {
+    const element = createComponent();
+    getPipelineStatus.emit(
+      pipelineStatus([
+        item("deploy", "NO_SIGNAL"),
+        item("heartbeat", "NO_SIGNAL"),
+        item("site", "PASS", run("site", "Success"), true),
+        item("caches", "NO_SIGNAL")
+      ])
+    );
+    await flushPromises();
+
+    expect(rows(element)).toHaveLength(4);
+    expect(
+      row(element, "site").querySelector(".label").textContent.trim()
+    ).toBe("Static site build green");
+    expect(stateText(element, "site")).toBe("Passed");
+    expect(row(element, "site").querySelector(".state").dataset.ticked).toBe(
+      "true"
+    );
+    ["deploy", "heartbeat", "caches"].forEach((key) => {
+      expect(stateText(element, key)).toBe("No signal yet");
+    });
+  });
+
+  it("shows the static site build row when the latest build failed", async () => {
+    const element = createComponent();
+    getPipelineStatus.emit(
+      pipelineStatus([
+        item("deploy", "NO_SIGNAL"),
+        item("heartbeat", "NO_SIGNAL"),
+        item("site", "FAIL", run("site", "Failure"), true),
+        item("caches", "NO_SIGNAL")
+      ])
+    );
+    await flushPromises();
+
+    expect(rows(element)).toHaveLength(4);
+    expect(stateText(element, "site")).toBe("Failed");
+    expect(row(element, "site").querySelector(".state").dataset.ticked).toBe(
+      "false"
+    );
   });
 
   it("labels the three items, plain sentences for the heartbeat and the caches", async () => {

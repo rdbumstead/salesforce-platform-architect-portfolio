@@ -33,6 +33,9 @@ public without sharing class SubmissionGuard {
   public static final String REASON_TOO_FAST = 'too-fast';
   public static final String REASON_BLOCKED = 'blocked';
   public static final String REASON_RATE = 'rate-limited';
+  public static final String REASON_HASH_RATE = 'hash-rate-limited';
+  /** What a visitor reads when the per visitor limit refuses. The daily cap keeps its own text. */
+  public static final String HASH_RATE_MESSAGE = 'Too many tries. Wait a minute and send again.';
 
   // Code defaults. The Contact_Min_Elapsed_Ms, Contact_Daily_Cap and
   // Testimonial_Rate_Per_Minute settings give the values in force.
@@ -68,6 +71,8 @@ public without sharing class SubmissionGuard {
     public Boolean accept = false;
     public Boolean silentDrop = false;
     public Boolean rateLimited = false;
+    /** True when the refusal is the per visitor (IP hash) limit, so the form can say so. */
+    public Boolean hashRateLimited = false;
     public String reason;
   }
 
@@ -98,6 +103,12 @@ public without sharing class SubmissionGuard {
     if (!hits.isEmpty()) {
       recordHits(hits);
       return drop(decision, REASON_BLOCKED);
+    }
+    if (ipHash != null && isOverHashRate(req.formKey, ipHash)) {
+      decision.rateLimited = true;
+      decision.hashRateLimited = true;
+      decision.reason = REASON_HASH_RATE;
+      return decision;
     }
     if (isOverRate(req.formKey, ipHash)) {
       decision.rateLimited = true;
@@ -219,9 +230,6 @@ public without sharing class SubmissionGuard {
   }
 
   private static Boolean isOverRate(String formKey, String ipHash) {
-    if (ipHash != null && isOverHashRate(formKey, ipHash)) {
-      return true;
-    }
     if (formKey == FORM_CONTACT) {
       Datetime since = Datetime.now().addHours(-24);
       Integer today = [
@@ -233,7 +241,7 @@ public without sharing class SubmissionGuard {
         PortfolioSettings.getInteger('Contact_Daily_Cap', CONTACT_DAILY_CAP);
     }
     if (formKey == FORM_TESTIMONIAL && ipHash == null) {
-      // With a trusted hash the per hash limit above stands in for this one site wide key,
+      // With a trusted hash the per hash limit stands in for this one site wide key,
       // which would put every edge visitor in one bucket.
       ApiRequestContext.RateDecision rate = ApiRequestContext.rateLimiter()
         .checkKey(

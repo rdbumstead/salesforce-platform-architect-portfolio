@@ -63,7 +63,10 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
         runByWorkflow.get(GovernanceEventHandler.WORKFLOW_HEARTBEAT),
         now
       ),
-      siteItem(runByWorkflow.get(GovernanceEventHandler.WORKFLOW_SITE)),
+      siteItem(
+        runByWorkflow.get(GovernanceEventHandler.WORKFLOW_SITE),
+        selector.hasEverReportedSiteBuild()
+      ),
       cacheItem(result.githubCacheAt, result.jiraCacheAt, now)
     };
     return result;
@@ -81,12 +84,14 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
   }
 
   // The static site build item. Like the deploy, a build has no age limit: the last build stays
-  // the evidence.
-  private static ChecklistItem siteItem(RunInfo run) {
+  // the evidence. everReported is true when any site build row exists, at any age and with any
+  // status. The page hides the row only while it is false, so a failed build is never hidden.
+  private static ChecklistItem siteItem(RunInfo run, Boolean everReported) {
     ChecklistItem item = new ChecklistItem(
       ITEM_SITE,
       'Static site build green'
     );
+    item.everReported = everReported;
     item.run = run;
     item.state = run == null ? STATE_NO_SIGNAL : runState(run);
     return item;
@@ -181,6 +186,17 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
         }
       }
       return latest;
+    }
+
+    private Boolean hasEverReportedSiteBuild() {
+      return ![
+          SELECT Id
+          FROM Pipeline_Run__c
+          WHERE Workflow__c = :GovernanceEventHandler.WORKFLOW_SITE
+          WITH SYSTEM_MODE
+          LIMIT 1
+        ]
+        .isEmpty();
     }
 
     private Datetime newestGithubCache() {
@@ -294,6 +310,9 @@ public with sharing class GovernanceController implements QueryDefinitions.Provi
     public String state;
     @AuraEnabled
     public RunInfo run;
+    /** Set on the site item only: true once any site build row exists. Left out for the others. */
+    @AuraEnabled
+    public Boolean everReported;
     @AuraEnabled
     public Boolean passed {
       get {

@@ -424,7 +424,11 @@ public with sharing class TestimonialController implements QueryDefinitions.Prov
     }
     if (decision.rateLimited) {
       ApiRequestContext.commitRateCounts();
-      throw auraError(RATE_LIMITED_MESSAGE);
+      throw auraError(
+        decision.hashRateLimited
+          ? SubmissionGuard.HASH_RATE_MESSAGE
+          : RATE_LIMITED_MESSAGE
+      );
     }
 
     try {

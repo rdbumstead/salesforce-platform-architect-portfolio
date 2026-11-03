@@ -104,7 +104,11 @@ public with sharing class ContactFormController {
       return new Result();
     }
     if (decision.rateLimited) {
-      throw auraError(RATE_LIMITED_MESSAGE);
+      throw auraError(
+        decision.hashRateLimited
+          ? SubmissionGuard.HASH_RATE_MESSAGE
+          : RATE_LIMITED_MESSAGE
+      );
     }
 
     Contact_Form_Submission__e submission = new Contact_Form_Submission__e(

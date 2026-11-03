@@ -301,7 +301,7 @@ private class SiteActionsResourceTest {
       sameVisitor[3],
       429,
       'RATE_LIMITED',
-      ContactFormController.RATE_LIMITED_MESSAGE
+      SubmissionGuard.HASH_RATE_MESSAGE
     );
     Assert.areEqual(
       '60',
@@ -420,7 +420,7 @@ private class SiteActionsResourceTest {
       answers[3],
       429,
       'RATE_LIMITED',
-      TestimonialController.RATE_LIMITED_MESSAGE
+      SubmissionGuard.HASH_RATE_MESSAGE
     );
     Assert.areEqual(200, other.statusCode, 'Another visitor is not limited');
   }
