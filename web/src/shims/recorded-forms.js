@@ -9,13 +9,13 @@ export const FORMS = [
     tag: "c-contact-form",
     feature: "contact",
     heading: "Get in touch",
-    text: "The contact form is switched off on this copy of the site. Reach Ryan on one of these instead."
+    text: "The contact form is paused right now. You can reach me on one of these instead."
   },
   {
     tag: "c-testimonial-submit",
     feature: "testimonial",
     heading: "Leave a testimonial",
-    text: "The testimonial form is switched off on this copy of the site. Send your words to Ryan on one of these and he will add them."
+    text: "The testimonial form is paused right now. Send me your words on one of these and I will add them."
   }
 ];
 
