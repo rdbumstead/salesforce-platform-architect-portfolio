@@ -120,9 +120,25 @@ jobs:
           SITE_ALLOWED_EMAILS: portfolio-api@ryanbumstead.com
         run: node build/leak-scan.mjs dist
 
+      # The project is made once by hand (see the runbook). Until it exists, or while the token
+      # cannot see it, the deploy is skipped with a notice instead of failing every run.
+      - name: Check the Pages project
+        id: project
+        if: env.HAS_PAGES_TOKEN == 'true'
+        working-directory: web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if npx wrangler pages project list 2>/dev/null | grep -qw "$PAGES_PROJECT"; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The Pages project $PAGES_PROJECT does not exist or the token cannot see it, so the deploy is skipped."
+          fi
+
       - name: Deploy to Cloudflare Pages
         id: deploy
-        if: env.HAS_PAGES_TOKEN == 'true'
+        if: env.HAS_PAGES_TOKEN == 'true' && steps.project.outputs.ready == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
