@@ -20,6 +20,7 @@
   - [3.9 The Postman Collection and the Run in Postman Link](#39-the-postman-collection-and-the-run-in-postman-link)
   - [3.10 Setting the API v1 Dates and Retiring v1](#310-setting-the-api-v1-dates-and-retiring-v1)
   - [3.11 Retiring the Old /v1/ URLs](#311-retiring-the-old-v1-urls)
+  - [3.12 The Static Site: Workflow, Secrets and Kill Switches](#312-the-static-site-workflow-secrets-and-kill-switches)
 - [4. Disaster Recovery](#4-disaster-recovery)
   - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
   - [4.2 Scenario: Security Misconfiguration (Guest User)](#42-scenario-security-misconfiguration-guest-user)
@@ -162,6 +163,7 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
   - _Quality Gate:_ every Apex test passes and org wide coverage is 90% or more (`scripts/coverage-gate.js --min 90`).
   - _Security Gate:_ no Critical or High violation from Salesforce Code Analyzer (`npm run scan`), plus `npm run scan:secrets`, the Jest tests and `npm run docs:verify`.
   - _Internal references:_ the `quality-check` job runs the gate's own tests and then `scripts/check-internal-refs.js` over `packages/`, the docs, README and STATUS, and fails the PR on any hit. The generated API pages in `docs/api/oas` are skipped, and a real false positive goes in `scripts/internal-refs-allowlist.json` with its reason.
+- **Static Site (site.yml):** builds the static front end in `web/` from the org's allowlisted export, deploys it to the Cloudflare Pages project `ryanbumstead` and is described in section 3.12. It runs when Deploy to Production calls it after its deploy, smoke and docs cache jobs, on a push to `main` that changes only `web/**` or the workflow, on every pull request that touches `web/**`, the site's components, static resources, digital experience files or the docs, every six hours, and by hand.
 - **Docs Internal References:** a pull request to `main` that changes only the docs, README or STATUS does not start PR Validation, so this workflow runs the same gate and its tests on its own, with no scratch org.
   - _Site guest access:_ after the full deploy to the scratch org and before the tests, the job assigns `Portfolio_Guest` to the scratch site's guest user, as production's guest already holds it. Guest test classes then never race each other to assign it.
   - _Production check only:_ in scratch mode, after the scratch tests, the job builds the PR's delta against `origin/<base>` and validates it against production as a dry run with `RunLocalTests`. A component or a test that fails only in production stops the PR before the merge. It deploys nothing, and a PR with no metadata change skips it. In fallback mode the fallback step already runs this check.
@@ -262,6 +264,29 @@ The API is called at versionless URLs, and the old `/v1/` URLs are aliases that 
 6. **What else Off does.** `ApiRequestContext` also returns to the request handling main had before the versionless URLs (the `/v1/` path lists, the old AI tier check, the old endpoint segment and the old log line). The token and both health checks stay out of the 410 as before.
 7. **When Off is not enough.** The switch does not cover the new classes and permission set entries merely existing. For a fault there I revert the code change.
 8. **Cleanup.** The switch and the old logic are temporary. After the v1 sunset on 2026-11-29, once the versionless URLs have run cleanly, I remove the switch, the old logic in `ApiRequestContext` (marked REMOVE WITH THE SWITCH) and their tests in one change.
+
+### 3.12 The Static Site: Workflow, Secrets and Kill Switches
+
+The static front end ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)) is built and deployed by `site.yml`. Until cutover it is reachable only at the `*.pages.dev` address ([cutover runbook](./cutover-runbook.md)).
+
+**The workflow.**
+
+- **Triggers.** See section 3.2. A pull request deploys a preview under `pr-<number>`, runs the live smoke test against it, and writes the preview address and Lighthouse medians (report only) to the job summary. A run on `main` deploys to the Pages production branch.
+- **GitHub secrets it reads.** `SFDX_JWT_KEY` and `SFDX_CLIENT_ID` (the existing JWT app), `SFDX_SITE_BUILD_USERNAME` (the build user, `site-build@ryanbumstead.com`), `CLOUDFLARE_PAGES_TOKEN` (else `CLOUDFLARE_API_TOKEN`) and `SITE_DENYLIST` (comma separated terms the leak scan refuses). With no build user secret the build uses the sample fixtures and says so. With no Pages token the deploy is skipped and says so. The leak scan fails a real data build when `SITE_DENYLIST` is missing.
+- **After the build.** It publishes a `Governance_Event__e` for the workflow `site` on success or failure, and the Delivery checklist's "Static site build green" row reads it [unverified until the site actions change is merged].
+- **A failed build.** The Pages project keeps serving the last good deployment. Read the job summary, fix the cause and run the workflow by hand.
+
+**The Cloudflare project.** The Pages project `ryanbumstead` holds the Functions' secrets and variables. Their names are `SF_INSTANCE_URL`, `SF_CLIENT_ID`, `SF_CLIENT_SECRET`, `IP_HASH_SALT`, `TURNSTILE_SECRET` and `TURNSTILE_SITE_KEY`, plus the five feature variables below. Any further name, and the rate limit, are in the cutover runbook as placeholders until the functions are merged [unverified].
+
+**Flipping a kill switch.** Each feature has a variable that is `live` or `recorded`: `FEATURE_CONTACT`, `FEATURE_TESTIMONIAL`, `FEATURE_COVER_LETTER`, `FEATURE_API_LAB` and `FEATURE_LIVE_READS`. Production defaults to `live`. A preview deploy is always `recorded`, whatever its variables say.
+
+1. **Change it.** Cloudflare dashboard, Workers and Pages, `ryanbumstead`, Settings, Variables and Secrets, Production. Set the variable to `recorded` (or back to `live`) and save.
+2. **Make it take effect.** A change to a Pages variable applies to the next deployment, not to the running one [unverified, check the current Cloudflare Pages documentation]. Run `site.yml` by hand, or retry the latest production deployment in the dashboard.
+3. **Check it.** Open `/api/features` on the site and read the five values. Then load the page: a `recorded` form shows the contact call with my profile links, the cover letter shows a labelled sample, the API Lab shows build time responses or says none are in this build, and the live readings show the build snapshot only.
+4. **When to flip.** `FEATURE_CONTACT` and `FEATURE_TESTIMONIAL` when the forms are abused or Salesforce is down. `FEATURE_COVER_LETTER` when Agentforce and Gemini are both out and I do not want the template to stand in. `FEATURE_API_LAB` and `FEATURE_LIVE_READS` when the org's daily API request quota (shown in the footer) runs low. A switch changes nothing in Salesforce.
+5. **If the Salesforce answer is no.** The open licensing question in ADR-041 may end with every feature on `recorded`. Set all five and run the workflow. The pages stay up from the last build.
+
+**Cleaning up old deployments.** See the cutover runbook, step 6. Pages keeps every deployment reachable by its own address, so old builds need deleting on a schedule.
 
 ## 4. Disaster Recovery
 
