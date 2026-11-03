@@ -48,7 +48,7 @@ The static pages and most functions do not touch the org when a visitor loads a 
 
 ## Rollback
 
-Nothing in Salesforce changes at cutover, so the rollback takes minutes. I turn the Cloudflare redirect rule for `ryanbumstead.com` back on and remove the custom domain from the Pages project. The Salesforce site never stopped deploying, so it answers as before. For two weeks after cutover I keep the Salesforce site up and the redirect rule ready. After that I decide whether to take the Salesforce site offline. The API site that vends evaluator tokens stays either way. The steps are in the [cutover runbook](../guides/cutover-runbook.md#4-rollback-for-two-weeks).
+Nothing in Salesforce changes at cutover, so the rollback takes minutes. I turn the Cloudflare Page Rule that forwards `ryanbumstead.com` to the Salesforce site back on and remove the custom domain from the Pages project. The Salesforce site never stopped deploying, so it answers as before. For two weeks after cutover I keep the Salesforce site up and the Page Rule ready, turned off but not deleted. After that I decide whether to take the Salesforce site offline. The API site that vends evaluator tokens stays either way. The steps are in the [cutover runbook](../guides/cutover-runbook.md#4-rollback-for-two-weeks).
 
 ## Related
 

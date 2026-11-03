@@ -31,7 +31,7 @@ I read the Setup labels in steps 2 and 3 against the screen `[unverified: dashbo
 
 ### 0.2 The Cloudflare secrets and variables
 
-Set these on the Pages project `ryanbumstead`, Production environment: Cloudflare dashboard, Workers and Pages, `ryanbumstead`, Settings, Variables and Secrets.
+Set these on the Pages project `ryanbumstead`, Production environment: Cloudflare dashboard, Workers and Pages, `ryanbumstead`, Settings, with Production chosen, then Variables and secrets, Add (dashboard, read 2026-11-03).
 
 | Name                                                                                                      | Kind     | Value                                                                                                                                                                     |
 | :-------------------------------------------------------------------------------------------------------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -62,7 +62,7 @@ Behind it, `SubmissionGuard` rate limits each form by the hashed visitor address
 
 Cloudflare Access is free for up to 50 users. Cloudflare's Pages documentation says Access protects preview deployments and names the per deployment addresses among them (https://developers.cloudflare.com/pages/configuration/preview-deployments/, read 2026-11-03). It does not cover the `*.pages.dev` production alias or custom domains.
 
-1. Workers and Pages, the `ryanbumstead` project, Settings, turn on the access policy for preview deployments. Allow my own email.
+1. Workers and Pages, the `ryanbumstead` project, Settings, General, Preview access, Restrict previews. Allow my own email in Zero Trust. The dashboard says beside the button: "This protects preview deployment URLs only. Production pages.dev and custom domains are managed separately in Zero Trust." (dashboard, read 2026-11-03)
 2. Zero Trust, Access, Service Auth, create a service token for CI. Add a Service Auth rule for that token to the preview application only, never to a production hostname.
 3. GitHub, Settings, Environments, `site-preview` (the first run creates it): add `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` there, not as repository secrets, so pull requests from forks never get them.
 
@@ -89,9 +89,9 @@ The warmer pings `https://ryanbumstead.com/` every five minutes. Today that reac
 
 Dashboard route:
 
-1. Cloudflare dashboard, Workers and Pages, `portfolio-cache-warmer`.
-2. Triggers.
-3. Select the three dot icon next to the `*/5 * * * *` Cron Trigger and choose Delete (Cloudflare Workers cron triggers documentation, https://developers.cloudflare.com/workers/configuration/cron-triggers/, read 2026-11-03). `[unverified: the labels on this Worker's own page, check them in the dashboard]`
+1. Cloudflare dashboard, Workers and Pages, `portfolio-cache-warmer`, Settings.
+2. Trigger events, Cron triggers. The row reads "Runs: Every 5 minutes" with the next run time beside it (dashboard, read 2026-11-03).
+3. Remove that cron trigger. The Cloudflare Workers cron triggers documentation says to select the three dot icon next to it and choose Delete (https://developers.cloudflare.com/workers/configuration/cron-triggers/, read 2026-11-03). `[unverified: where the delete control sits on this row, check it on the screen]`
 4. Confirm in the Worker's logs that no scheduled run happens for ten minutes.
 
 Alternative that I make myself, in the repository: change `crons = ["*/5 * * * *"]` to `crons = []` in `config/wrangler.toml` and let `deploy-worker.yml` deploy it on the merge. This is a protected file, so only I edit it. I prefer the dashboard route now and delete the Worker for good in step 3.
@@ -99,8 +99,8 @@ Alternative that I make myself, in the repository: change `crons = ["*/5 * * * *
 ## 2. Cutover
 
 1. In the Pages project `ryanbumstead`, Custom domains, add `ryanbumstead.com` and `www.ryanbumstead.com`. Let Cloudflare create the DNS records when it offers.
-2. Make `www` redirect to the apex. The Pages documentation says `_redirects` cannot do domain level redirects and points to Bulk Redirects and Redirect Rules (https://developers.cloudflare.com/pages/configuration/redirects/, read 2026-11-03). So I make a redirect rule on the `ryanbumstead.com` zone from `www.ryanbumstead.com` to the apex, path kept `[unverified: the rule type and its dashboard labels, check them in the dashboard]`.
-3. Turn off the existing 301 redirect rule for `ryanbumstead.com` that sends visitors to the Experience Cloud site. Note its settings first so rollback can recreate it, or disable it and keep it.
+2. Make `www` redirect to the apex. The Pages documentation says `_redirects` cannot do domain level redirects and points to Bulk Redirects and Redirect Rules (https://developers.cloudflare.com/pages/configuration/redirects/, read 2026-11-03). So I make a Single Redirect on the `ryanbumstead.com` zone: Rules, Overview, the template "Redirect from WWW to root" (Redirect Rules), Create from template. The zone has used 0 of its 10 Redirect Rules (dashboard, read 2026-11-03).
+3. Turn off the redirect that sends visitors to the Experience Cloud site. It is a Page Rule, not a Redirect Rule: `ryanbumstead.com` zone, Rules, Page Rules, position 1, URL `*ryanbumstead.com/*`, Forwarding URL with status 301 to the Salesforce site, path kept with `$2` (dashboard, read 2026-11-03). Its pattern also matches `www`, so `www` keeps forwarding to Salesforce until this rule is off. Turn its Enabled toggle off and keep the rule, so rollback is one toggle.
 4. Add the WAF rate limiting rule from 0.3, then flip the five switches to `live` in the order of 0.4, checking `/api/features` after each run of `site.yml`.
 5. Check the home page, `/skills` and `/docs`, and two deep links such as `/api-lab` and `/resume`, at `https://ryanbumstead.com`. Each loads the static page. A request to `www` ends on the apex.
 6. Check `/api/features` on the apex shows five `live` values, then test each switch both ways: set it to `recorded`, run `site.yml`, check the page, set it back to `live` and check again.
@@ -116,7 +116,7 @@ Alternative that I make myself, in the repository: change `crons = ["*/5 * * * *
 
 Nothing in Salesforce changed, so this takes minutes.
 
-1. Turn the 301 redirect rule for `ryanbumstead.com` back on.
+1. Turn the Page Rule `*ryanbumstead.com/*` (Rules, Page Rules) back on.
 2. Remove `ryanbumstead.com` and `www.ryanbumstead.com` as custom domains from the Pages project.
 3. Check the home page and one deep link land on the Experience Cloud site with the path kept.
 4. Restore the warmer only if the Salesforce site needs waking: put the cron back and redeploy.
@@ -135,7 +135,7 @@ Cloudflare Pages keeps a separate address for every deployment and every pull re
 - **Never the live one.** Keep the current production deployment and the one before it.
 - **Preview builds** send `noindex` so search engines do not list them. Cloudflare sends `X-Robots-Tag: noindex` on every preview deployment by its own default (Pages preview deployments documentation, https://developers.cloudflare.com/pages/configuration/preview-deployments/, read 2026-11-03), and the preview build also adds the header for `/*` itself (`NOINDEX_RULE` in `web/build/build.mjs`). It does not stop someone with the link from opening a preview, which is why they are deleted.
 
-Dashboard path: Cloudflare dashboard, Workers and Pages, `ryanbumstead`, Deployments. Filter by environment, sort by date, and delete from the menu on each older row. The dashboard may refuse to delete the current production deployment, which is correct.
+Dashboard path: Cloudflare dashboard, Workers and Pages, `ryanbumstead`, Deployments. The "All deployments" list shows each one's environment, source, address and age. Open Details on an older row, then Manage deployment, Delete deployment (dashboard, read 2026-11-03). The dashboard may refuse to delete the current production deployment, which is correct.
 
 Wrangler commands, checked with `npx wrangler pages deployment --help` on wrangler 4.156.2 (run from `web/` after `npm ci --prefix web`), 2026-11-03:
 
