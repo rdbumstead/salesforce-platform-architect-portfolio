@@ -54,6 +54,15 @@ import {
 } from "c/pillarData";
 import { toExternalUrl } from "c/externalUrl";
 import { startTour, firstStopHref } from "c/tourBar";
+import { IS_STATIC } from "c/siteHost";
+
+/** The proof panel's opening line on the Salesforce site, where every section reads live. */
+export const PROOF_LIVE =
+  "This site runs on Salesforce. Every case study, stat and timeline entry on it is a record served through my own API.";
+
+/** The same line on the static site, whose sections were read when it was built. */
+export const PROOF_STATIC =
+  "Every case study, stat and timeline entry here is a record in my Salesforce org, read through an allowlisted API when this site was built.";
 
 /** The why line shown when the owner Contact's value sentence is blank or not yet read. */
 export const WHY_FALLBACK =
@@ -95,8 +104,7 @@ export default class HeroBanner extends LightningElement {
   location = "Greater Toledo, Ohio";
   tourHref = firstStopHref();
   tourLabel = `Take the ${TOUR_MINUTES} minute tour`;
-  proofIntro =
-    "This site runs on Salesforce. Every case study, stat and timeline entry on it is a record served through my own API.";
+  proofIntro = IS_STATIC ? PROOF_STATIC : PROOF_LIVE;
   header;
   // Undefined until the build counts read returns. An error keeps the stats line off.
   counts;
