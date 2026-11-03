@@ -11,6 +11,7 @@
  * @Created           : 10/21/2026
  **/
 import basePath from "@salesforce/community/basePath";
+import { IS_STATIC } from "c/siteHost";
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -29,6 +30,8 @@ const SOURCE = [
     sasName: "Business Architecture",
     url: "business-architecture",
     summary:
+      "How an employer hub for an education provider models a business process and its data.",
+    staticSummary:
       "How an employer hub for an education provider models a business process and its data. The page is built from records in my org.",
     tour: "Open a dashboard image, then find Account in the live data model.",
     tourMinutes: 2,
@@ -42,6 +45,8 @@ const SOURCE = [
     sasName: "Solution Architecture",
     url: "nonprofit-solutions",
     summary:
+      "A solution design, decision matrix and cost comparison for an adult literacy nonprofit.",
+    staticSummary:
       "A solution design, decision matrix and cost comparison for an adult literacy nonprofit. The matrix runs in your browser.",
     tour: "Move one weight in the matrix and watch the ranking change.",
     tourMinutes: 3,
@@ -54,8 +59,9 @@ const SOURCE = [
     pageLabel: "API Lab",
     sasName: "Work Experience Verification API",
     url: "api-lab",
-    summary:
-      "Call the portfolio REST API and read the headers it returns. Each request goes to Salesforce live.",
+    summary: "Call the portfolio REST API and read the headers it returns.",
+    staticSummary:
+      "Call the portfolio REST API and read the headers it returns. Requests go through the site's own functions to Salesforce.",
     tour: "Press Execute GET and find X-Request-Id and X-RateLimit-Limit.",
     tourMinutes: 1,
     tags: ["Apex REST", "OAuth 2.0", "OpenAPI"],
@@ -71,8 +77,9 @@ const SOURCE = [
     pageLabel: "AI Lab",
     sasName: "AI & Innovation",
     url: "ai-lab",
-    summary:
-      "Generate a cover letter grounded in the portfolio data. The letter is written live in Salesforce.",
+    summary: "Generate a cover letter grounded in the portfolio data.",
+    staticSummary:
+      "Generate a cover letter grounded in the portfolio data. The request goes through the site's own functions to Salesforce.",
     tour: "Paste a job posting, press Generate, read the letter (about 40 s).",
     tourMinutes: 3,
     tags: ["Grounded generation", "Fallback chain"],
@@ -84,8 +91,9 @@ const SOURCE = [
     pageLabel: "Delivery",
     sasName: "Agile Delivery & DevOps",
     url: "delivery",
-    summary:
-      "The Jira roadmap and the commits that shipped this site, read when the site was built, with the pipeline checks read live.",
+    summary: "The Jira roadmap and the commits that shipped this site.",
+    staticSummary:
+      "The Jira roadmap and the commits that shipped this site, as of the last build.",
     tour: "Find In Progress on the Jira board, then the latest commit below.",
     tourMinutes: 1,
     tags: ["Jira", "GitHub Actions"],
@@ -103,9 +111,10 @@ const SOURCE = [
  * tour, and the header menu marks it "coming".
  */
 export const PILLARS = Object.freeze(
-  SOURCE.map((pillar) =>
+  SOURCE.map(({ staticSummary, ...pillar }) =>
     Object.freeze({
       ...pillar,
+      summary: IS_STATIC && staticSummary ? staticSummary : pillar.summary,
       href: toHref(pillar.url),
       tags: Object.freeze([...pillar.tags]),
       subLinks: Object.freeze(
