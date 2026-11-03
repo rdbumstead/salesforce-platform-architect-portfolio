@@ -57,3 +57,7 @@ Each new Lead's owner gets one email from `ContactFormLeadWriter` after the inse
 - The email is sent to a user Id with `setTargetObjectId`, which the Apex governor limits documentation says does not count toward the daily single email limit.
 - A failed send is ignored. The Lead is saved and the in app arrival notice still goes, so there is nothing to undo or retry.
 - A Lead rule entry for "Portfolio Website" leads, assigned to me with no template, is optional. With it I own the Lead, so the in app reminders reach me as well.
+
+## Amendment (2026-11-02): Turnstile on the static site
+
+On the static site ([ADR-041](041-headless-static-front-end-on-cloudflare-pages.md)) the contact form and the testimonial form are guarded by Cloudflare Turnstile, checked on the server by the Pages Function before it forwards the submission. The trade this ADR weighed for a third party script changes, because Turnstile comes from the same vendor that hosts the static site, so the host sees no new party. It is still one more script on the page, and it loads only with the form. The honeypot and the elapsed time check stay in `SubmissionGuard`, and the hashed visitor address, made at the edge with a secret salt, now feeds a block rule and a rate limit per address hash. That part is part of the site actions work and was not built when I wrote this note [unverified]. A request that arrives with no trusted hash behaves as it does today.

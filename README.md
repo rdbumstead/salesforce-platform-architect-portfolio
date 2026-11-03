@@ -1,12 +1,12 @@
 # Ryan Bumstead: Salesforce Platform Architect Portfolio
 
-**Live App:** [https://ryanbumstead.com](https://ryanbumstead.com), which redirects to the Experience Cloud site and keeps the path
+**Live App:** [https://ryanbumstead.com](https://ryanbumstead.com), which redirects to the Experience Cloud site and keeps the path. A static build of the same site is deployed to Cloudflare Pages and is not the front door yet ([ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md), cutover pending)
 
 > [!IMPORTANT]
-> **Project Status:** Live since October 2026. 6 enterprise docs and 40 ADRs. This README describes what runs in production.
+> **Project Status:** Live since October 2026. 6 enterprise docs and 41 ADRs. This README describes what runs in production.
 
 > [!TIP]
-> **Non-Salesforce Reader?** This is a public website built on the Salesforce CRM platform. It shows live data from the org, writes cover letters with an AI model, and is deployed by an automated pipeline with quality gates.
+> **Non-Salesforce Reader?** This is a public website whose content lives in a Salesforce org. Every case study, stat and timeline entry is a record in that org. The live site reads them when a page loads. A static build of the same site, which is meant to become the front door, reads them through an allowlisted API when it is built, and its forms and labs call Salesforce live. It writes cover letters with an AI model and is deployed by an automated pipeline with quality gates.
 
 **Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 
@@ -37,9 +37,9 @@ Salesforce platform architecture, including:
 **By The Numbers:**
 
 - **6 Enterprise Documents**: SAS, Charter, Technical Guide, Ops Guide, Governance, Overview.
-- **40 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
+- **41 Architectural Decisions (ADRs)**: documented rationale for performance, security, and AI.
 - **15 Core Competencies**: mapped to verifiable artifacts and validation methods.
-- **8 CI/CD Workflows**: delta deploys that also refresh the docs cache after a push that changes the docs, PR gates (including a check only validation against production), an internal reference check for pull requests that change only the docs, a read only live smoke test after each deploy and once a day, a Postman sync that pushes the public collection after each green production deploy, the daily heartbeat, the cache warmer worker deploy, and a Lighthouse audit run on demand.
+- **9 CI/CD Workflows**: delta deploys that also refresh the docs cache after a push that changes the docs, PR gates (including a check only validation against production), an internal reference check for pull requests that change only the docs, a read only live smoke test after each deploy and once a day, a Postman sync that pushes the public collection after each green production deploy, the daily heartbeat, the static site build and deploy to Cloudflare Pages, the cache warmer worker deploy, and a Lighthouse audit run on demand.
 
 **Quick Navigation:** [Evidence Matrix](#evidence-matrix) • [Architecture Diagram](#architecture) • [Full Docs](#full-architecture-documentation)
 
@@ -97,8 +97,9 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 
 **Available Now:**
 
-- [Architecture decisions documented with rationale](docs/adr/): 40 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) says whether it is built, superseded, or a design only
-- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 8 workflows (deploy, PR validation, the docs internal reference check, the live smoke test, the Postman sync, the heartbeat, the cache warmer worker deploy, plus a Lighthouse audit run on demand)
+- [Architecture decisions documented with rationale](docs/adr/): 41 ADRs covering performance, security and AI. Each one in the [index below](#architectural-decision-records) says whether it is built, superseded, or a design only
+- [CI/CD pipelines green with delta deployment strategy](https://github.com/rdbumstead/salesforce-platform-architect-portfolio/actions): 9 workflows (deploy, PR validation, the docs internal reference check, the live smoke test, the Postman sync, the heartbeat, the static site build, the cache warmer worker deploy, plus a Lighthouse audit run on demand)
+- [A static front end built from the same components](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md): the existing Lightning Web Components compile with LWC OSS, the org's data comes through an allowlisted export with parity tests against what the guest sees, and the features that need a request go through Cloudflare Pages Functions with a kill switch each. It is deployed to a `*.pages.dev` address and not yet the front door. [Cutover runbook](docs/guides/cutover-runbook.md)
 - [API contracts OpenAPI 3.0 compliant](packages/integration-api/specs/salesforce-sapi.yaml): Twin API pattern with SAPI + PAPI specifications
 - [Mobile performance targets quantified](docs/guides/03-SAS.md#21-core-nfrs): an LCP target of 2.5 s and a gate at the best the LWR shell allows, measured: mobile LCP medians of 7.5 to 9.6 s (Lighthouse 11 mobile, October 2026) on the six main routes, with the skills matrix on phones and the graph engine loaded only on demand
 - [Zero Trust security model enforced](docs/guides/03-SAS.md#46-data-security-matrix): Guest user FLS restrictions + OAuth 2.0 client-credentials auth (External Client App) + read-only endpoints
@@ -134,50 +135,51 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 ## Architectural Decision Records
 
 <details>
-<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 40 documented decisions)</summary>
+<summary><strong>Architectural Decision Records (ADR) Index</strong> (Click to expand. 41 documented decisions)</summary>
 
-| ID                                                                                       | Subject                                  | Strategic Driver                | Status                            |
-| :--------------------------------------------------------------------------------------- | :--------------------------------------- | :------------------------------ | :-------------------------------- |
-| [ADR-001](docs/adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura          | Performance (LCP target 2.5 s)  | Built                             |
-| [ADR-002](docs/adr/002-custom-objects-vs-standard-objects.md)                            | Custom Objects vs. Standard Objects      | Security / Guest Access         | Built                             |
-| [ADR-003](docs/adr/003-apex-rest-vs-external-service.md)                                 | Apex REST vs. External Service           | Budget                          | Built                             |
-| [ADR-004](docs/adr/004-static-resource-code-rendering.md)                                | Static Resource Code Rendering           | Rate Limiting                   | Built, from a GitHub cache        |
-| [ADR-005](docs/adr/005-gamified-testimonial-ui.md)                                       | Gamified Testimonial UI                  | User Engagement                 | Built                             |
-| [ADR-006](docs/adr/006-jwt-bearer-flow-for-ci-cd.md)                                     | JWT Bearer Flow for CI/CD                | DevOps Automation               | Built                             |
-| [ADR-007](docs/adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching           | Resilience                      | Built                             |
-| [ADR-008](docs/adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Accelerator         | ALM Maturity                    | Built                             |
-| [ADR-009](docs/adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model               | Persona-Based Filtering         | Built                             |
-| [ADR-010](docs/adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Graph engine (now d3-force)              | UI/UX Animation                 | Superseded by ADR-020             |
-| [ADR-011](docs/adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Direct CRM vs. Data 360                  | AI Architecture                 | Design only, not built            |
-| [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md)                         | Guest User Restriction Rules             | Zero Trust Security             | Built                             |
-| [ADR-013](docs/adr/013-structured-logging-framework-nebula-logger.md)                    | Nebula Logger Implementation             | Observability                   | Built, Nebula an optional install |
-| [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading               | Performance                     | Built                             |
-| [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI       | High Availability               | Built                             |
-| [ADR-016](docs/adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as AI Proxy            | Edge Proxy                      | Design only, not built            |
-| [ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | API Security                             | Security Governance             | Superseded by ADR-027             |
-| [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | AWS Lambda URLs vs. API Gateway          | Cost Control                    | Design only, not built            |
-| [ADR-019](docs/adr/019-executable-governance-platform-events-for-documentation-logic.md) | Platform Events for Documentation        | Executable Governance           | Built                             |
-| [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile: matrix first, graph on open      | Performance                     | Built                             |
-| [ADR-021](docs/adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL vs. Apex REST             | Frontend Orchestration          | Built, in three components        |
-| [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Simulation Toggle             | Trust / Resilience              | Built                             |
-| [ADR-023](docs/adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF)       | Tooling / MVP Speed             | Built                             |
-| [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern                         | Contract First                  | Built                             |
-| [ADR-025](docs/adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling                  | Capacity Planning               | Built                             |
-| [ADR-026](docs/adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning              | Versioning Strategy             | Built                             |
-| [ADR-027](docs/adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication       | Zero Trust / Security           | Built                             |
-| [ADR-028](docs/adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending       | Developer Experience            | Built                             |
-| [ADR-029](docs/adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema visualizer without Platform Cache | Data Architecture               | Built                             |
-| [ADR-030](docs/adr/030-decision-matrix-as-custom-metadata.md)                            | Decision matrix as Custom Metadata       | Solution Design                 | Built                             |
-| [ADR-031](docs/adr/031-native-contact-form.md)                                           | Native contact form                      | Lead Capture / Abuse Protection | Built                             |
-| [ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md)                       | Operational settings in custom metadata  | Operability                     | Built                             |
-| [ADR-033](docs/adr/033-queries-in-custom-metadata.md)                                    | Queries in custom metadata               | Operability                     | Built                             |
-| [ADR-034](docs/adr/034-recruiter-first-home-page.md)                                     | Recruiter first home page                | Audience / Information Design   | Built                             |
-| [ADR-035](docs/adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams rendered in CI                  | Docs / Delivery                 | Built                             |
-| [ADR-036](docs/adr/036-portfolio-guide-agent.md)                                         | Portfolio Guide Agent                    | AI / Agentforce                 | In source, inactive               |
-| [ADR-037](docs/adr/037-native-form-controls-site-wide.md)                                | Native form controls site wide           | Frontend / Accessibility        | Built                             |
-| [ADR-038](docs/adr/038-stable-public-keys-in-the-api.md)                                 | Stable public keys in the API            | API Design                      | Built                             |
-| [ADR-039](docs/adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 sunset                 | API Design                      | Built                             |
-| [ADR-040](docs/adr/040-versionless-api-urls.md)                                          | Versionless API URLs                     | API Design                      | Built                             |
+| ID                                                                                       | Subject                                       | Strategic Driver                | Status                            |
+| :--------------------------------------------------------------------------------------- | :-------------------------------------------- | :------------------------------ | :-------------------------------- |
+| [ADR-001](docs/adr/001-experience-cloud-lwr-vs-aura.md)                                  | Experience Cloud (LWR) vs. Aura               | Performance (LCP target 2.5 s)  | Built                             |
+| [ADR-002](docs/adr/002-custom-objects-vs-standard-objects.md)                            | Custom Objects vs. Standard Objects           | Security / Guest Access         | Built                             |
+| [ADR-003](docs/adr/003-apex-rest-vs-external-service.md)                                 | Apex REST vs. External Service                | Budget                          | Built                             |
+| [ADR-004](docs/adr/004-static-resource-code-rendering.md)                                | Static Resource Code Rendering                | Rate Limiting                   | Built, from a GitHub cache        |
+| [ADR-005](docs/adr/005-gamified-testimonial-ui.md)                                       | Gamified Testimonial UI                       | User Engagement                 | Built                             |
+| [ADR-006](docs/adr/006-jwt-bearer-flow-for-ci-cd.md)                                     | JWT Bearer Flow for CI/CD                     | DevOps Automation               | Built                             |
+| [ADR-007](docs/adr/007-github-api-server-side-caching.md)                                | GitHub API Server-Side Caching                | Resilience                      | Built                             |
+| [ADR-008](docs/adr/008-jira-integration-vs-agile-accelerator.md)                         | Jira Integration vs. Accelerator              | ALM Maturity                    | Built                             |
+| [ADR-009](docs/adr/009-granular-resume-data-model.md)                                    | Granular Resume Data Model                    | Persona-Based Filtering         | Built                             |
+| [ADR-010](docs/adr/010-visualization-engine-vis-js-vs-antv-g6.md)                        | Graph engine (now d3-force)                   | UI/UX Animation                 | Superseded by ADR-020             |
+| [ADR-011](docs/adr/011-context-grounding-strategy-direct-crm-vs-data-360.md)             | Direct CRM vs. Data 360                       | AI Architecture                 | Design only, not built            |
+| [ADR-012](docs/adr/012-guest-user-security-restriction-rules.md)                         | Guest User Restriction Rules                  | Zero Trust Security             | Built                             |
+| [ADR-013](docs/adr/013-structured-logging-framework-nebula-logger.md)                    | Nebula Logger Implementation                  | Observability                   | Built, Nebula an optional install |
+| [ADR-014](docs/adr/014-deferred-telemetry-loading-performance.md)                        | Deferred Telemetry Loading                    | Performance                     | Built                             |
+| [ADR-015](docs/adr/015-strategy-pattern-for-generative-ai.md)                            | Strategy Pattern for Generative AI            | High Availability               | Built                             |
+| [ADR-016](docs/adr/016-cloudflare-worker-as-edge-ai-proxy.md)                            | Cloudflare Worker as AI Proxy                 | Edge Proxy                      | Design only, not built            |
+| [ADR-017](docs/adr/017-system-api-security-and-dual-sided-auth-pattern.md)               | API Security                                  | Security Governance             | Superseded by ADR-027             |
+| [ADR-018](docs/adr/018-finops-constraint-aws-lambda-function-urls-vs-api-gateway.md)     | AWS Lambda URLs vs. API Gateway               | Cost Control                    | Design only, not built            |
+| [ADR-019](docs/adr/019-executable-governance-platform-events-for-documentation-logic.md) | Platform Events for Documentation             | Executable Governance           | Built                             |
+| [ADR-020](docs/adr/020-mobile-performance-static-svg-fallback-strategy.md)               | Mobile: matrix first, graph on open           | Performance                     | Built                             |
+| [ADR-021](docs/adr/021-native-graphql-door-1-vs-apex-rest-for-ui.md)                     | Native GraphQL vs. Apex REST                  | Frontend Orchestration          | Built, in three components        |
+| [ADR-022](docs/adr/022-resilience-engineering-resilience-simulation-toggle.md)           | Resilience Simulation Toggle                  | Trust / Resilience              | Built                             |
+| [ADR-023](docs/adr/023-client-side-pdf-generation-jspdf-for-mvp.md)                      | Client-Side PDF Generation (jsPDF)            | Tooling / MVP Speed             | Built                             |
+| [ADR-024](docs/adr/024-twin-api-pattern-contract-first-parity.md)                        | Twin API Pattern                              | Contract First                  | Built                             |
+| [ADR-025](docs/adr/025-papi-fan-out-throttling-capacity-planning.md)                     | PAPI Fan-Out Throttling                       | Capacity Planning               | Built                             |
+| [ADR-026](docs/adr/026-header-based-api-versioning-strategy.md)                          | Header-Based API Versioning                   | Versioning Strategy             | Built                             |
+| [ADR-027](docs/adr/027-platform-native-api-authentication.md)                            | Platform-Native API Authentication            | Zero Trust / Security           | Built                             |
+| [ADR-028](docs/adr/028-evaluator-access-via-token-vending.md)                            | Evaluator Access via Token Vending            | Developer Experience            | Built                             |
+| [ADR-029](docs/adr/029-schema-visualizer-scope-discovery-and-caching.md)                 | Schema visualizer without Platform Cache      | Data Architecture               | Built                             |
+| [ADR-030](docs/adr/030-decision-matrix-as-custom-metadata.md)                            | Decision matrix as Custom Metadata            | Solution Design                 | Built                             |
+| [ADR-031](docs/adr/031-native-contact-form.md)                                           | Native contact form                           | Lead Capture / Abuse Protection | Built                             |
+| [ADR-032](docs/adr/032-operational-settings-in-custom-metadata.md)                       | Operational settings in custom metadata       | Operability                     | Built                             |
+| [ADR-033](docs/adr/033-queries-in-custom-metadata.md)                                    | Queries in custom metadata                    | Operability                     | Built                             |
+| [ADR-034](docs/adr/034-recruiter-first-home-page.md)                                     | Recruiter first home page                     | Audience / Information Design   | Built                             |
+| [ADR-035](docs/adr/035-diagrams-rendered-in-ci.md)                                       | Diagrams rendered in CI                       | Docs / Delivery                 | Built                             |
+| [ADR-036](docs/adr/036-portfolio-guide-agent.md)                                         | Portfolio Guide Agent                         | AI / Agentforce                 | In source, inactive               |
+| [ADR-037](docs/adr/037-native-form-controls-site-wide.md)                                | Native form controls site wide                | Frontend / Accessibility        | Built                             |
+| [ADR-038](docs/adr/038-stable-public-keys-in-the-api.md)                                 | Stable public keys in the API                 | API Design                      | Built                             |
+| [ADR-039](docs/adr/039-api-v2-and-the-v1-sunset.md)                                      | API v2 and the v1 sunset                      | API Design                      | Built                             |
+| [ADR-040](docs/adr/040-versionless-api-urls.md)                                          | Versionless API URLs                          | API Design                      | Built                             |
+| [ADR-041](docs/adr/041-headless-static-front-end-on-cloudflare-pages.md)                 | Headless Static Front End on Cloudflare Pages | Front End and Performance       | Accepted, cutover pending         |
 
 </details>
 
@@ -189,7 +191,7 @@ EVALUATOR_EMAIL="<your email address>" EVALUATOR_PURPOSE="Evaluating API design"
 | Term          | Meaning                                                                                                                   | Status                          |
 | :------------ | :------------------------------------------------------------------------------------------------------------------------ | :------------------------------ |
 | **LWR**       | Lightning Web Runtime: Modern Salesforce frontend framework                                                               | Live                            |
-| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (40 records). |
+| **ADR**       | **Architectural Decision Record**. A short document explaining a significant decision. **Status:** Complete (41 records). |
 | **Glass Box** | Real-time system telemetry and observability UI pattern                                                                   | Live                            |
 | **RAG**       | Retrieval-Augmented Generation, an AI grounding technique                                                                 | Apex grounding on cover letters |
 | **SAPI**      | System API: Direct data access layer (API-led connectivity)                                                               | Live                            |
