@@ -1,0 +1,201 @@
+name: Static Site (Cloudflare Pages)
+
+# Builds the static front end in web/ from the Salesforce components and the org's data, and
+# deploys it to the Cloudflare Pages project "ryanbumstead".
+#
+# The data comes from the allowlisted export (/site/export) read as the site build user,
+# signed in with the existing JWT secrets and SFDX_SITE_BUILD_USERNAME. Until that secret
+# exists the build uses the sample fixtures in web/fixtures and says so. Until a Pages token
+# exists (CLOUDFLARE_PAGES_TOKEN, else CLOUDFLARE_API_TOKEN) the deploy is skipped and says so.
+#
+# Deploy to Production calls this after its deploy and smoke jobs, so the export runs against
+# the Apex it just deployed. A push to main that changes only web/ or this file runs it
+# directly. Component, resource and docs changes reach it through Deploy to Production, so a
+# change is never built twice or before its Apex is live. It also runs every 6 hours, on every
+# pull request that touches the site, and by hand.
+#
+# On main the deploy goes to the Pages production branch. Before cutover that is only the
+# *.pages.dev address. A pull request deploys a preview under pr-<number>, runs the live
+# smoke against it, and writes the preview address and Lighthouse medians to the job summary.
+
+on:
+  workflow_call:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/site.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "packages/portfolio-site/main/default/lwc/**"
+      - "packages/portfolio-site/main/default/staticresources/**"
+      - "packages/portfolio-site/main/default/digitalExperiences/**"
+      - "docs/**"
+      - ".github/workflows/site.yml"
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: a5ce6c8f5c4c7ffcb45465a402799984
+  PAGES_PROJECT: ryanbumstead
+
+jobs:
+  build:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ github.event_name == 'pull_request' && 'site-preview' || 'site-production' }}
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    outputs:
+      url: ${{ steps.deploy.outputs.deployment-url }}
+      deployed: ${{ steps.deploy.outcome == 'success' }}
+    env:
+      HAS_BUILD_USER: ${{ secrets.SFDX_SITE_BUILD_USERNAME != '' }}
+      HAS_PAGES_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_TOKEN != '' || secrets.CLOUDFLARE_API_TOKEN != '' }}
+      BRANCH: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'main' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Salesforce CLI as the site build user
+        if: env.HAS_BUILD_USER == 'true'
+        uses: rdbumstead/setup-salesforce-action@v2
+        with:
+          jwt_key: ${{ secrets.SFDX_JWT_KEY }}
+          client_id: ${{ secrets.SFDX_CLIENT_ID }}
+          username: ${{ secrets.SFDX_SITE_BUILD_USERNAME }}
+          alias: "site-build"
+          node_version: "26"
+
+      - name: Setup Node
+        if: env.HAS_BUILD_USER != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+
+      - name: Install web build dependencies
+        run: npm ci --prefix web --no-audit --no-fund
+
+      - name: Render Mermaid Diagrams
+        continue-on-error: true
+        run: |
+          PUPPETEER_SKIP_DOWNLOAD=1 npm install --prefix "$RUNNER_TEMP/mmd" --no-save --no-audit --no-fund @mermaid-js/mermaid-cli@12.0.0 puppeteer@25.16.0
+          MERMAID_CLI_DIR="$RUNNER_TEMP/mmd" PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome)" node scripts/render-mermaid.js
+
+      - name: Unit tests and export coverage
+        working-directory: web
+        run: |
+          npm test
+          node build/check-export-coverage.mjs
+
+      - name: Build from Salesforce
+        if: env.HAS_BUILD_USER == 'true'
+        working-directory: web
+        env:
+          SF_TARGET_ORG: site-build
+        run: node build/build.mjs --export
+
+      - name: Build from fixtures
+        if: env.HAS_BUILD_USER != 'true'
+        working-directory: web
+        run: |
+          echo "::notice::No SFDX_SITE_BUILD_USERNAME secret, so this is a fixture build with sample data."
+          node build/build.mjs --fixtures
+
+      - name: Leak scan
+        working-directory: web
+        env:
+          SITE_DENYLIST: ${{ secrets.SITE_DENYLIST }}
+          SITE_ALLOWED_EMAILS: portfolio-api@ryanbumstead.com
+        run: node build/leak-scan.mjs dist
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        if: env.HAS_PAGES_TOKEN == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: web
+          command: pages deploy dist --project-name=${{ env.PAGES_PROJECT }} --branch=${{ env.BRANCH }} --commit-hash=${{ github.sha }} --commit-dirty=true
+
+      - name: Summary
+        if: always()
+        env:
+          URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          {
+            echo "## Static site"
+            if [ -f web/.build/report.json ]; then
+              node -e "const r=require('./web/.build/report.json');console.log('- Pages: '+r.routes.length+', reads: '+r.reads+', built '+r.builtAt+(r.fixture?' (fixture build, sample data)':''))"
+            fi
+            if [ -n "$URL" ]; then echo "- Deployed to: $URL (branch \`$BRANCH\`)"; else echo "- Not deployed: no Pages token, or the deploy did not run."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish Governance Event
+        if: success() && github.event_name != 'pull_request' && env.HAS_BUILD_USER == 'true' && steps.deploy.outcome == 'success'
+        continue-on-error: true
+        run: |
+          VALUES="Workflow__c=site Status__c=Success Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          sf data create record --sobject Governance_Event__e --values "$VALUES" --target-org site-build
+
+      - name: Publish Failure Event
+        if: failure() && github.event_name != 'pull_request' && env.HAS_BUILD_USER == 'true'
+        continue-on-error: true
+        run: |
+          VALUES="Workflow__c=site Status__c=Failure Run_Id__c=${{ github.run_id }} Run_Url__c=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Commit_Sha__c=${{ github.sha }} Completed_At__c=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          sf data create record --sobject Governance_Event__e --values "$VALUES" --target-org site-build
+
+  smoke:
+    name: Smoke the deployed site
+    needs: build
+    if: needs.build.outputs.deployed == 'true'
+    uses: ./.github/workflows/smoke.yml
+    with:
+      site_base: ${{ needs.build.outputs.url }}
+    secrets: inherit
+
+  lighthouse:
+    name: Lighthouse (report only)
+    needs: build
+    if: needs.build.outputs.deployed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+
+      - name: Collect three mobile runs per main page
+        env:
+          TARGET_URL: ${{ needs.build.outputs.url }}
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lh" --no-save --no-audit --no-fund @lhci/cli@0.15.1
+          CHROME_PATH="$(command -v google-chrome)" "$RUNNER_TEMP/lh/node_modules/.bin/lhci" collect --config=./config/lighthouserc.cjs
+
+      - name: Medians to the summary
+        if: always()
+        run: |
+          {
+            echo "## Lighthouse, mobile, median of 3 runs"
+            echo ""
+            echo "Report only. LCP target 2.5 s."
+            echo ""
+            node web/build/lighthouse-summary.mjs .lighthouseci
+          } >> "$GITHUB_STEP_SUMMARY"

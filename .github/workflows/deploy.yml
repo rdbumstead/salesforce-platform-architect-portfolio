@@ -365,6 +365,15 @@ jobs:
              exit 1
           fi
 
+  # The static site reads the org after the deploy, the smoke and the docs cache refresh, so
+  # its export runs against the Apex and documents that just went live. Static Site
+  # (Cloudflare Pages) builds a fixture site until its own secrets are set.
+  site:
+    needs: [deploy, smoke, docs-cache]
+    if: always() && github.event_name == 'push' && needs.deploy.result == 'success' && needs.smoke.result != 'failure' && needs.docs-cache.result != 'failure'
+    uses: ./.github/workflows/site.yml
+    secrets: inherit
+
   # The Postman collection sync is its own workflow, postman-sync.yml. It starts when this one
   # completes, so the site footer can show its badge.
 
