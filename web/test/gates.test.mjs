@@ -55,6 +55,19 @@ test('a denylist term matches whole words only', () => {
   });
 });
 
+test('an allowed entry that starts with @ allows that exact domain only', () => {
+  const allowedEmails = '@owner.test, one@other.test';
+  const ok = site({ 'ResumeController.getHeader': { heroLine: 'a@owner.test b@owner.test one@other.test' } });
+  assert.deepEqual(scan(ok, { denylist: 'zzzz', allowedEmails }).problems, []);
+  ['two@other.test', 'a@sub.owner.test', 'a@owner.test.evil.test', 'a@notowner.test'].forEach((address) => {
+    const dir = site({ 'ResumeController.getHeader': { heroLine: `write to ${address}` } });
+    assert.ok(
+      scan(dir, { denylist: 'zzzz', allowedEmails }).problems.some((problem) => problem.includes('email address')),
+      `${address} is not allowed`
+    );
+  });
+});
+
 test('example domains are allowed, and a fixture build may skip the denylist', () => {
   const dir = site({ 'ResumeController.getHeader': { heroLine: 'write to you@example.com' } });
   const result = scan(dir, { fixture: true });

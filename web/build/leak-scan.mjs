@@ -3,7 +3,8 @@
  *   - a Salesforce session id, an OAuth token or a private key anywhere in the output
  *   - a field name that no @AuraEnabled property and no GraphQL query in the repo declares,
  *     which would mean the export sent something the components never receive today
- *   - an email address other than those in SITE_ALLOWED_EMAILS
+ *   - an email address other than those in SITE_ALLOWED_EMAILS, where an entry that starts
+ *     with @ allows every address at exactly that domain
  *   - any term in SITE_DENYLIST (comma or newline separated, held as a secret, never in the repo),
  *     matched as a whole word in any text value, so a short term such as an acronym does not
  *     catch the middle of an ordinary word or a surname
@@ -151,7 +152,9 @@ export function scan(distDir, options = {}) {
       });
       for (const match of data.matchAll(EMAIL)) {
         const email = match[0].toLowerCase();
-        if (!allowedEmails.has(email) && !isExampleAddress(email)) problems.push(`${relative} contains an email address`);
+        const domain = email.slice(email.lastIndexOf('@'));
+        const allowed = allowedEmails.has(email) || allowedEmails.has(domain) || isExampleAddress(email);
+        if (!allowed) problems.push(`${relative} contains an email address`);
       }
       const values = [...texts(value)];
       if (denylist.some((matcher) => values.some((text) => matcher.test(text)))) {
