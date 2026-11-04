@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, cutover pending (2026-11-02). The static site is built and deployed to the Cloudflare Pages project `ryanbumstead`, and until I cut over it is reachable only at the `*.pages.dev` address. `ryanbumstead.com` still redirects to the Experience Cloud site. This ADR becomes Built when the cutover runbook ([docs/guides/cutover-runbook.md](../guides/cutover-runbook.md)) is done and two weeks pass with no rollback.
+Accepted, cutover pending (2026-11-02). The static site builds in CI and deploys a preview of each pull request to the Cloudflare Pages project `ryanbumstead`. Its production `*.pages.dev` address gets its first deployment once I set up the build user, and until I cut over that address is the only place it is reachable. `ryanbumstead.com` still redirects to the Experience Cloud site. This ADR becomes Built when the cutover runbook ([docs/guides/cutover-runbook.md](../guides/cutover-runbook.md)) is done and two weeks pass with no rollback.
 
 ## Context
 
