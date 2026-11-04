@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. For the public front end, [ADR-041](041-headless-static-front-end-on-cloudflare-pages.md) supersedes it at cutover (noted 2026-11-02). Until then the Experience Cloud site is still the live front end, and the API site and the org stay on Experience Cloud.
 
 ## Context
 

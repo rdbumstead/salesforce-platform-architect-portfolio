@@ -19,6 +19,7 @@ _Target Audience: Stakeholders, Recruiters, Ops Team_
 | [**04. Technical Guide**](guides/04-Technical-Guide.md)                              | Implementation details for LWC, Apex, and CI/CD.                      |
 | [**05. Maintenance Guide**](guides/05-Maintenance-Guide.md)                          | Operations, rotation policies, and disaster recovery.                 |
 | [**06. Guardrails & Governance**](guides/06-Guardrails-and-Executable-Governance.md) | Automated quality gates and compliance rules.                         |
+| [**Cutover Runbook**](guides/cutover-runbook.md)                                     | Moving the domain to the static site, and rolling back.               |
 
 ---
 
@@ -66,6 +67,7 @@ _Target Audience: Architects, Developers_
 - [ADR-038: Stable Public Keys in the API](adr/038-stable-public-keys-in-the-api.md)
 - [ADR-039: API v2 and the v1 Sunset](adr/039-api-v2-and-the-v1-sunset.md)
 - [ADR-040: Versionless API URLs](adr/040-versionless-api-urls.md)
+- [ADR-041: Headless Static Front End on Cloudflare Pages](adr/041-headless-static-front-end-on-cloudflare-pages.md)
 
 **AI, Data & FinOps**
 

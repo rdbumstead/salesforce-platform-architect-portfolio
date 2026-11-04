@@ -11,6 +11,7 @@
  * @Created           : 10/21/2026
  **/
 import basePath from "@salesforce/community/basePath";
+import { IS_STATIC } from "c/siteHost";
 
 /**
  * Builds a site relative href from the community base path and a route URL.
@@ -30,6 +31,8 @@ const SOURCE = [
     url: "business-architecture",
     summary:
       "How an employer hub for an education provider models a business process and its data.",
+    staticSummary:
+      "How an employer hub for an education provider models a business process and its data. The page is built from records in my org.",
     tour: "Open a dashboard image, then find Account in the live data model.",
     tourMinutes: 2,
     tags: ["Employer Hub", "Data model"],
@@ -43,6 +46,8 @@ const SOURCE = [
     url: "nonprofit-solutions",
     summary:
       "A solution design, decision matrix and cost comparison for an adult literacy nonprofit.",
+    staticSummary:
+      "A solution design, decision matrix and cost comparison for an adult literacy nonprofit. The matrix runs in your browser.",
     tour: "Move one weight in the matrix and watch the ranking change.",
     tourMinutes: 3,
     tags: ["Solution design", "Decision matrix"],
@@ -83,6 +88,8 @@ const SOURCE = [
     sasName: "Agile Delivery & DevOps",
     url: "delivery",
     summary: "The Jira roadmap and the commits that shipped this site.",
+    staticSummary:
+      "The Jira roadmap and the commits that shipped this site, as of the last build.",
     tour: "Find In Progress on the Jira board, then the latest commit below.",
     tourMinutes: 1,
     tags: ["Jira", "GitHub Actions"],
@@ -100,9 +107,10 @@ const SOURCE = [
  * tour, and the header menu marks it "coming".
  */
 export const PILLARS = Object.freeze(
-  SOURCE.map((pillar) =>
+  SOURCE.map(({ staticSummary, ...pillar }) =>
     Object.freeze({
       ...pillar,
+      summary: IS_STATIC && staticSummary ? staticSummary : pillar.summary,
       href: toHref(pillar.url),
       tags: Object.freeze([...pillar.tags]),
       subLinks: Object.freeze(

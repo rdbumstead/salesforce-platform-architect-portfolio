@@ -20,6 +20,7 @@
   - [3.9 The Postman Collection and the Run in Postman Link](#39-the-postman-collection-and-the-run-in-postman-link)
   - [3.10 Setting the API v1 Dates and Retiring v1](#310-setting-the-api-v1-dates-and-retiring-v1)
   - [3.11 Retiring the Old /v1/ URLs](#311-retiring-the-old-v1-urls)
+  - [3.12 The Static Site: Workflow, Secrets and Kill Switches](#312-the-static-site-workflow-secrets-and-kill-switches)
 - [4. Disaster Recovery](#4-disaster-recovery)
   - [4.1 Scenario: Deployment Failure](#41-scenario-deployment-failure)
   - [4.2 Scenario: Security Misconfiguration (Guest User)](#42-scenario-security-misconfiguration-guest-user)
@@ -162,6 +163,7 @@ To prevent "Commit Shame" (failing pipelines after pushing), developers must exe
   - _Quality Gate:_ every Apex test passes and org wide coverage is 90% or more (`scripts/coverage-gate.js --min 90`).
   - _Security Gate:_ no Critical or High violation from Salesforce Code Analyzer (`npm run scan`), plus `npm run scan:secrets`, the Jest tests and `npm run docs:verify`.
   - _Internal references:_ the `quality-check` job runs the gate's own tests and then `scripts/check-internal-refs.js` over `packages/`, the docs, README and STATUS, and fails the PR on any hit. The generated API pages in `docs/api/oas` are skipped, and a real false positive goes in `scripts/internal-refs-allowlist.json` with its reason.
+- **Static Site (site.yml):** builds the static front end in `web/` from the org's allowlisted export, deploys it to the Cloudflare Pages project `ryanbumstead` and is described in section 3.12. It runs when Deploy to Production calls it after its deploy, smoke and docs cache jobs, on a push to `main` that changes only `web/**` or the workflow, on every pull request that touches `web/**`, the site's components, static resources, digital experience files or the docs, every six hours, and by hand.
 - **Docs Internal References:** a pull request to `main` that changes only the docs, README or STATUS does not start PR Validation, so this workflow runs the same gate and its tests on its own, with no scratch org.
   - _Site guest access:_ after the full deploy to the scratch org and before the tests, the job assigns `Portfolio_Guest` to the scratch site's guest user, as production's guest already holds it. Guest test classes then never race each other to assign it.
   - _Production check only:_ in scratch mode, after the scratch tests, the job builds the PR's delta against `origin/<base>` and validates it against production as a dry run with `RunLocalTests`. A component or a test that fails only in production stops the PR before the merge. It deploys nothing, and a PR with no metadata change skips it. In fallback mode the fallback step already runs this check.
@@ -190,12 +192,15 @@ To ensure efficiency and avoid hitting Salesforce Metadata API limits, the pipel
 
 Page sizes, rate tiers, the token rate and cap default, circuit breaker limits, form guard limits, source refresh limits, governance freshness windows, AI length bounds, the health check timeout, the roadmap and timeline display counts, the cover letter word range, the Gemini output token limit and temperature, and the home page testimonial minimum are `Portfolio_Setting__mdt` records ([Technical Guide §1.6](./04-Technical-Guide.md#16-operational-settings-portfolio_setting__mdt), [ADR-032](../adr/032-operational-settings-in-custom-metadata.md)).
 
-1. To change a limit, edit the record's **Number Value** in Setup > Custom Metadata Types > Portfolio Setting > Manage Records. It takes effect on the next request, with no deploy.
+1. To change a limit, edit the record's **Number Value** in Setup > Custom Metadata Types > Portfolio Setting > Manage Records. It takes effect on the next request, with no deploy. That is true of every limit the org applies at request time. A setting that shapes content the static site reads at build time, such as a display count or the cover letter word range shown on the page, reaches the static site only at its next build (as of 2026-11-02, the site workflow runs after every production deploy and every six hours, or run it by hand).
 2. Keep it inside the record's **Min Value** to **Max Value**. A value outside that range is ignored and the code default applies, and so does a cleared value or a deleted record. Its **Description** says what it controls and what is safe. A fraction is dropped (2.75 reads as 2).
 3. Commit the same value to the record's file under `packages/portfolio-site/main/default/customMetadata/`. A full mode deploy writes every record in source, and a delta that touches the file writes it too, so a value changed only in Setup can be put back to the shipped one.
 4. `Token_Daily_Cap_Default` applies only while `Portfolio_Config__mdt.Token_Daily_Cap__c` is blank. To pause or lower token vending, set the config cap (§4.4).
 
 ### 3.6 Changing a Query Definition
+
+> [!NOTE]
+> **Per host, as of 2026-11-02.** A change reaches the Salesforce site on its next request. It reaches the static site at its next build (section 3.12).
 
 The portfolio's content reads (the SAPI lists, the Process API, the API Lab options and nine site classes) are `Query_Definition__mdt` records, one per read, each checked against the query its class holds in code ([Technical Guide §1.7](./04-Technical-Guide.md#17-query-definitions-query_definition__mdt), [ADR-033](../adr/033-queries-in-custom-metadata.md)).
 
@@ -205,6 +210,9 @@ The portfolio's content reads (the SAPI lists, the Process API, the API Lab opti
 4. Commit the change. A full mode deploy writes every record in source, so a change made only in Setup can be put back.
 
 ### 3.7 Site Content the Owner Edits
+
+> [!NOTE]
+> **Per host, as of 2026-11-02.** Everything below shows on the Salesforce site as soon as the page loads. On the static site it shows after the next build, which the site workflow runs after every production deploy and every six hours, and by hand (section 3.12). After a content edit I run the workflow and read the built time the section shows.
 
 - **The title line and the value sentence.** Edit **Hero Line** (the title line under the name) and **Value Sentence** (one sentence on the value delivered) on my Contact. Each shows on the home page only while it is set.
 - **The proof strip.** "On Salesforce since 2017" and the active certification count are one list, `PROOF_POINTS` in `c/pillarData`. Check both every quarter, and change the count and its test in the same commit.
@@ -216,7 +224,7 @@ The portfolio's content reads (the SAPI lists, the Process API, the API Lab opti
 ### 3.8 Owner Emails and Testimonial Approvals
 
 - **A new contact message.** The Lead owner gets one email with the visitor's name, company, email, full message and a link to the Lead. While the Lead has no internal user as its owner, for example while the assignment rule leaves it with the Automated Process user, the email goes to the `Portfolio_Admin` users instead. A Lead rule entry that assigns "Portfolio Website" leads to me, with no template, is optional. With it the in app reply reminders reach me as well.
-- **A new testimonial.** It is submitted to the Testimonial Approval process for you, and the request email shows the quote, the author, title, relationship and vibe. Reply with APPROVE, APPROVED or YES on the first line to publish it, or REJECT, REJECTED or NO to keep it off the site, or open the request in Salesforce. Approval sets **Approved** and the testimonial shows on the site. A rejected one stays saved and hidden.
+- **A new testimonial.** It is submitted to the Testimonial Approval process for you, and the request email shows the quote, the author, title, relationship and vibe. Reply with APPROVE, APPROVED or YES on the first line to publish it, or REJECT, REJECTED or NO to keep it off the site, or open the request in Salesforce. Approval sets **Approved** and the testimonial shows on the Salesforce site (on the static site, at its next build). A rejected one stays saved and hidden.
 - **A testimonial saved before the hand off.** It was never submitted, so submit it for approval from the record, or tick **Approved** by hand.
 - **Who gets the emails.** Both go to a user, never to an address in source. The approval goes to the testimonial's owner, the site's default owner for guest records.
 
@@ -263,6 +271,29 @@ The API is called at versionless URLs, and the old `/v1/` URLs are aliases that 
 7. **When Off is not enough.** The switch does not cover the new classes and permission set entries merely existing. For a fault there I revert the code change.
 8. **Cleanup.** The switch and the old logic are temporary. After the v1 sunset on 2026-11-29, once the versionless URLs have run cleanly, I remove the switch, the old logic in `ApiRequestContext` (marked REMOVE WITH THE SWITCH) and their tests in one change.
 
+### 3.12 The Static Site: Workflow, Secrets and Kill Switches
+
+The static front end ([ADR-041](../adr/041-headless-static-front-end-on-cloudflare-pages.md)) is built and deployed by `site.yml`. Until cutover it is reachable only at the `*.pages.dev` address ([cutover runbook](./cutover-runbook.md)).
+
+**The workflow.**
+
+- **Triggers.** See section 3.2. A pull request deploys a preview under `pr-<number>`, runs the live smoke test against it, and writes the preview address and Lighthouse medians (report only) to the job summary. A run on `main` deploys to the Pages production branch.
+- **GitHub secrets it reads.** `SFDX_JWT_KEY` and `SFDX_CLIENT_ID` (the existing JWT app), `SFDX_SITE_BUILD_USERNAME` (the build user, `site-build@ryanbumstead.com`), `CLOUDFLARE_PAGES_TOKEN` (else `CLOUDFLARE_API_TOKEN`) and `SITE_DENYLIST` (comma separated terms the leak scan refuses). With no build user secret the build uses the sample fixtures and says so. With no Pages token the deploy is skipped and says so. The leak scan fails a real data build when `SITE_DENYLIST` is missing.
+- **After the build.** It publishes a `Governance_Event__e` for the workflow `site` on success or failure, and the Delivery checklist's "Static site build green" row reads it.
+- **A failed build.** The Pages project keeps serving the last good deployment. Read the job summary, fix the cause and run the workflow by hand.
+
+**The Cloudflare project.** The Pages project `ryanbumstead` holds the Functions' secrets and variables. Their names are `SF_INSTANCE_URL`, `SF_CLIENT_ID`, `SF_CLIENT_SECRET`, `IP_HASH_SALT`, `TURNSTILE_SECRET` and `TURNSTILE_SITE_KEY`, plus the five feature variables below and the optional `PRODUCTION_HOSTS` (a comma list that replaces the default production hosts `ryanbumstead.pages.dev`, `ryanbumstead.com` and `www.ryanbumstead.com`). `TURNSTILE_SITE_KEY` is a GitHub variable that the build reads. The API Lab recording step in `site.yml` reads the GitHub secrets `SITE_EDGE_INSTANCE_URL`, `SITE_EDGE_CLIENT_ID`, `SITE_EDGE_CLIENT_SECRET` and `SITE_EDGE_IP_HASH_SALT`, and never runs on a pull request. The rate limit is a zone rule made at cutover (cutover runbook, section 0.3).
+
+**Flipping a kill switch.** Each feature has a variable that is `live` or `recorded`: `FEATURE_CONTACT`, `FEATURE_TESTIMONIAL`, `FEATURE_COVER_LETTER`, `FEATURE_API_LAB` and `FEATURE_LIVE_READS`. Production is decided by the request host, and on a production host a switch that is not set reads as `live`. Any other host is always `recorded`, whatever its variables say.
+
+1. **Change it.** Cloudflare dashboard, Workers and Pages, `ryanbumstead`, Settings, with Production chosen, then Variables and secrets. Set the variable to `recorded` (or back to `live`) and save.
+2. **Make it take effect.** A change to a Pages variable applies to the next deployment, not to the running one (Cloudflare Pages bindings documentation, https://developers.cloudflare.com/pages/functions/bindings/, read 2026-11-03). Run `site.yml` by hand, or retry the latest production deployment in the dashboard.
+3. **Check it.** Open `/api/features` on the site and read the five values. Then load the page: a `recorded` form shows a short paused note with my profile links, the cover letter shows a labelled sample, the API Lab shows build time responses or says none are in this build, and the live readings show the build snapshot only.
+4. **When to flip.** `FEATURE_CONTACT` and `FEATURE_TESTIMONIAL` when the forms are abused or Salesforce is down. `FEATURE_COVER_LETTER` when Agentforce and Gemini are both out and I do not want the template to stand in. `FEATURE_API_LAB` and `FEATURE_LIVE_READS` when the org's daily API request quota (shown in the footer) runs low. A switch changes nothing in Salesforce.
+5. **If the Salesforce answer is no.** The open licensing question in ADR-041 may end with every feature on `recorded`. Set all five and run the workflow. The pages stay up from the last build.
+
+**Cleaning up old deployments.** See the cutover runbook, step 6. Pages keeps every deployment reachable by its own address, so old builds need deleting on a schedule.
+
 ## 4. Disaster Recovery
 
 ### 4.1 Scenario: Deployment Failure
@@ -300,6 +331,7 @@ If Apex classes fail with "You can bypass this error by allowing deployments wit
 - **Symptom:** unwanted Leads with `LeadSource` "Portfolio Website", or auto-responses to addresses nobody typed in.
 - **Mitigation:** on the Lead, run "Block sender" (email or domain), from desktop or the mobile app. The sender's next message is thanked and dropped. Add a Keyword row to `Submission_Block__c` for a phrase. Deactivate a row (`Active__c`) to undo a block.
 - **Already in place:** the honeypot, the 3 second minimum, one auto-response per address in 24 hours, and at most 20 messages in 24 hours ([Technical Guide §2.16](./04-Technical-Guide.md#216-contact-form-and-submission-guard)).
+- **On the static site:** the form is also guarded by Turnstile and a per hash rate limit, and the `FEATURE_CONTACT` switch (section 3.12) turns the form off without a deploy. A block row of type IP Hash blocks a visitor by the hash of their address, and a person blocked that way is dropped silently like any other block.
 - **Lost messages:** check the `Contact_Form_Failure__c` tab. A row there is a message that failed to save, with the reason.
 
 ## 5. Observability & Monitoring
