@@ -1,5 +1,20 @@
 # Cloudflare Pages project for the static site. The workflow deploys web/dist with
 # `wrangler pages deploy`, and Pages Functions are added under web/functions.
+#
+# Because this file sets pages_build_output_dir, Cloudflare treats it as the source of truth
+# for the project's plain variables. Each deploy replaces the dashboard's text variables with
+# the [vars] below, so the kill switches live here and nowhere else. Flip one by changing its
+# value here and merging, which runs site.yml and deploys. Secrets (SF_CLIENT_ID,
+# SF_CLIENT_SECRET, SF_INSTANCE_URL, IP_HASH_SALT, TURNSTILE_SECRET) stay in the dashboard as
+# the Secret type and never go in this file.
 name = "ryanbumstead"
 pages_build_output_dir = "./dist"
 compatibility_date = "2026-10-01"
+
+# Each switch is "live" or "recorded". A preview is always recorded whatever it says here.
+[vars]
+FEATURE_CONTACT = "recorded"
+FEATURE_TESTIMONIAL = "recorded"
+FEATURE_COVER_LETTER = "recorded"
+FEATURE_API_LAB = "recorded"
+FEATURE_LIVE_READS = "recorded"

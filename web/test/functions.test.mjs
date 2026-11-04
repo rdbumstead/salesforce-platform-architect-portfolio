@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { featureStates, isLive } from '../functions/_lib/features.js';
+import { SWITCHES, featureStates, isLive } from '../functions/_lib/features.js';
 import { callAction, getToken, ipHash, resetTokenCache } from '../functions/_lib/salesforce.js';
 import { verifyTurnstile } from '../functions/_lib/turnstile.js';
 import { onRequest as contact } from '../functions/api/contact.js';
@@ -72,6 +72,17 @@ test('production defaults to live, a preview is always recorded, a bad value rea
   assert.equal(featureStates(prod, { FEATURE_LIVE_READS: 'maybe' }).liveReads, 'recorded');
   assert.equal(isLive(new Request('https://evil.example/'), {}, 'contact'), false);
   assert.equal(isLive(new Request('http://127.0.0.1:8788/'), { PRODUCTION_HOSTS: '127.0.0.1' }, 'contact'), true);
+});
+
+test('wrangler.toml sets every switch, because a deploy drops the dashboard text variables', () => {
+  const toml = fs.readFileSync(new URL('../wrangler.toml', import.meta.url), 'utf8');
+  const vars = toml.split(/^\[vars\]\s*$/m)[1];
+  assert.ok(vars, 'wrangler.toml has a [vars] table');
+  const table = vars.split(/^\[/m)[0];
+  Object.values(SWITCHES).forEach((name) => {
+    assert.match(table, new RegExp(`^${name}\\s*=\\s*"(live|recorded)"\\s*$`, 'm'), `${name} is set to live or recorded`);
+  });
+  assert.doesNotMatch(table, /^(SF_|IP_HASH|TURNSTILE_SECRET)/m, 'secrets never go in [vars]');
 });
 
 test('the features function returns the five switches and says whether this is production', async () => {
