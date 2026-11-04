@@ -62,7 +62,7 @@ export const PROOF_LIVE =
 
 /** The same line on the static site, whose sections were read when it was built. */
 export const PROOF_STATIC =
-  "Every case study, stat and timeline entry here is a record in my Salesforce org. Each build reads them through an allowlisted API and publishes static pages, and the forms and labs call Salesforce live.";
+  "Every case study, stat and timeline entry here is a record in my Salesforce org. Each build reads them through an allowlisted API and publishes static pages.";
 
 /** The why line shown when the owner Contact's value sentence is blank or not yet read. */
 export const WHY_FALLBACK =

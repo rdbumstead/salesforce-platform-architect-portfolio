@@ -6,7 +6,7 @@
 > **Project Status:** Live since October 2026. 6 enterprise docs and 41 ADRs. This README describes what runs in production.
 
 > [!TIP]
-> **Non-Salesforce Reader?** This is a public website whose content lives in a Salesforce org. Every case study, stat and timeline entry is a record in that org. The live site reads them when a page loads. A static build of the same site, which is meant to become the front door, reads them through an allowlisted API when it is built, and its forms and labs call Salesforce live. It writes cover letters with an AI model and is deployed by an automated pipeline with quality gates.
+> **Non-Salesforce Reader?** This is a public website whose content lives in a Salesforce org. Every case study, stat and timeline entry is a record in that org. The live site reads them when a page loads. A static build of the same site, which is meant to become the front door, reads them through an allowlisted API when it is built. Its forms and labs stay paused until cutover, then call Salesforce through the site's own functions. It writes cover letters with an AI model and is deployed by an automated pipeline with quality gates.
 
 **Documentation:** [**View the Governance Hub**](https://rdbumstead.github.io/salesforce-platform-architect-portfolio/) (Rendered Specs, ADRs, & Guides)
 

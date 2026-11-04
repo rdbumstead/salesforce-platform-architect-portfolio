@@ -27,10 +27,10 @@ describe("c-pillar-data on the static site", () => {
       "A solution design, decision matrix and cost comparison for an adult literacy nonprofit. The matrix runs in your browser."
     );
     expect(pillarByLetter("C").summary).toBe(
-      "Call the portfolio REST API and read the headers it returns. Requests go through the site's own functions to Salesforce."
+      "Call the portfolio REST API and read the headers it returns."
     );
     expect(pillarByLetter("D").summary).toBe(
-      "Generate a cover letter grounded in the portfolio data. The request goes through the site's own functions to Salesforce."
+      "Generate a cover letter grounded in the portfolio data."
     );
     expect(pillarByLetter("E").summary).toBe(
       "The Jira roadmap and the commits that shipped this site, as of the last build."

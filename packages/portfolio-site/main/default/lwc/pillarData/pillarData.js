@@ -60,8 +60,6 @@ const SOURCE = [
     sasName: "Work Experience Verification API",
     url: "api-lab",
     summary: "Call the portfolio REST API and read the headers it returns.",
-    staticSummary:
-      "Call the portfolio REST API and read the headers it returns. Requests go through the site's own functions to Salesforce.",
     tour: "Press Execute GET and find X-Request-Id and X-RateLimit-Limit.",
     tourMinutes: 1,
     tags: ["Apex REST", "OAuth 2.0", "OpenAPI"],
@@ -78,8 +76,6 @@ const SOURCE = [
     sasName: "AI & Innovation",
     url: "ai-lab",
     summary: "Generate a cover letter grounded in the portfolio data.",
-    staticSummary:
-      "Generate a cover letter grounded in the portfolio data. The request goes through the site's own functions to Salesforce.",
     tour: "Paste a job posting, press Generate, read the letter (about 40 s).",
     tourMinutes: 3,
     tags: ["Grounded generation", "Fallback chain"],
