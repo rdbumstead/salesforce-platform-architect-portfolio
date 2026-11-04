@@ -169,7 +169,7 @@ public with sharing class FooterController {
       snapshot.aiRequestsToday = new AiRequestCounter().countToday();
       snapshot.integrations = integrationStates();
     } catch (Exception e) {
-      throw new AuraHandledException('System status is unavailable.');
+      throw SiteEdgeContext.refusal('System status is unavailable.');
     }
     snapshot.orgQuotas = orgQuotas();
     snapshot.storage = storedStorage();

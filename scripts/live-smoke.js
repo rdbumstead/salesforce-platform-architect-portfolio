@@ -122,6 +122,75 @@ const ROUTES = [
   }
 ];
 
+// The static site's forms give way to a note when their switch reads recorded (every preview).
+// The note carries data-recorded with the switch name. The Salesforce site has no /api/features,
+// so there the list is used exactly as written.
+const FORM_SWAPS = {
+  "/contact": { feature: "contact", form: "c-contact-form" },
+  "/testimonials": { feature: "testimonial", form: "c-testimonial-submit" }
+};
+
+/**
+ * The switches from a /api/features answer, or null when the answer is not the static site's
+ * (a missing page, an HTML page, JSON without the switches).
+ * @param {number} status the HTTP status
+ * @param {string} text the response body
+ * @returns {object|null} the switches
+ */
+function parseFeatures(status, text) {
+  if (status !== 200) {
+    return null;
+  }
+  try {
+    const body = JSON.parse(text);
+    return body && typeof body === "object" && typeof body.contact === "string"
+      ? body
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The route list for the switches read. With none, or a switch that reads live, a route is
+ * unchanged. A recorded switch swaps the form the route expects for the recorded note.
+ * @param {object[]} routes the route list
+ * @param {object|null} features the switches, or null
+ * @returns {object[]} the list to check
+ */
+function routesFor(routes, features) {
+  if (!features) {
+    return routes;
+  }
+  return routes.map((route) => {
+    const swap = FORM_SWAPS[route.path];
+    if (!swap || features[swap.feature] === "live") {
+      return route;
+    }
+    return {
+      ...route,
+      components: route.components.map((entry) =>
+        entry === swap.form
+          ? `section.recorded-note[data-recorded="${swap.feature}"]`
+          : entry
+      )
+    };
+  });
+}
+
+/** Reads /api/features once. Null when the site has none. */
+async function readFeatures() {
+  const url = `${BASE}/api/features`;
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: "application/json", ...(accessHeadersFor(url) || {}) }
+    });
+    return parseFeatures(response.status, await response.text());
+  } catch {
+    return null;
+  }
+}
+
 const LAYOUT = "c-portfolio-theme-layout";
 
 // The tour's stops in order, each a page above, starting from the hero on the home page.
@@ -608,6 +677,8 @@ async function main() {
     return;
   }
 
+  const features = await readFeatures();
+  const routes = routesFor(ROUTES, features);
   const rows = [];
   let homeChecked = false;
   for (const engine of BROWSERS) {
@@ -647,7 +718,7 @@ async function main() {
         }
       }
       const tasks = [];
-      for (const route of ROUTES) {
+      for (const route of routes) {
         for (const viewport of VIEWPORTS) {
           tasks.push(() => checkRow(browser, engine, route, viewport));
         }
@@ -689,7 +760,14 @@ async function main() {
 
 // The route list is shared with scripts/check-smoke-routes.js, which checks it against the
 // site's views without a browser. Requiring this file runs nothing.
-module.exports = { ROUTES, TOUR, isUnderBase, accessHeadersFor };
+module.exports = {
+  ROUTES,
+  TOUR,
+  isUnderBase,
+  accessHeadersFor,
+  parseFeatures,
+  routesFor
+};
 
 if (require.main === module) {
   main().catch((error) => {

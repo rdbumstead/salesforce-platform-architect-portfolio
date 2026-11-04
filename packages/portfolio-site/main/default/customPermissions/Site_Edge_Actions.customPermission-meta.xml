@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Lets the static site edge layer call the site actions (/site/actions) and makes Salesforce trust the visitor IP hash it sends. Held only by the site edge user, never by the site guest.</description>
+    <label>Site Edge Actions</label>
+</CustomPermission>

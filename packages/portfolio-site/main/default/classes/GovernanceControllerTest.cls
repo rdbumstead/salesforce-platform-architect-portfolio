@@ -67,7 +67,7 @@ private class GovernanceControllerTest {
     Test.startTest();
     GovernanceController.PipelineStatus status = GovernanceController.getPipelineStatus();
     Test.stopTest();
-    Assert.areEqual(3, status.items.size(), 'Three checklist items');
+    Assert.areEqual(4, status.items.size(), 'Four checklist items');
     return itemsByKey(status);
   }
 
@@ -102,6 +102,63 @@ private class GovernanceControllerTest {
       'Evidence link'
     );
     Assert.areEqual(NOW.addDays(-9), deploy.run.completedAt, 'Evidence time');
+  }
+
+  @isTest
+  static void shouldPassSiteWhenLatestSiteBuildSucceeded() {
+    insert run('site', 'Success', '7', NOW.addDays(-20));
+
+    GovernanceController.ChecklistItem site = load()
+      .get(GovernanceController.ITEM_SITE);
+
+    Assert.areEqual('Static site build green', site.label, 'Label');
+    Assert.areEqual(GovernanceController.STATE_PASS, site.state, 'Pass');
+    Assert.areEqual('sha7', site.run.commitSha, 'Evidence sha');
+  }
+
+  @isTest
+  static void shouldFlagTheSiteRowOnlyOnceASiteBuildHasReported() {
+    GovernanceController.ChecklistItem none = load()
+      .get(GovernanceController.ITEM_SITE);
+    Assert.areEqual(false, none.everReported, 'No site build row yet');
+    Assert.areEqual(
+      GovernanceController.STATE_NO_SIGNAL,
+      none.state,
+      'No signal with no row'
+    );
+  }
+
+  @isTest
+  static void shouldFlagTheSiteRowForASingleOldFailedBuild() {
+    insert run('site', 'Failure', '9', NOW.addDays(-400));
+    GovernanceController.ChecklistItem failed = load()
+      .get(GovernanceController.ITEM_SITE);
+    Assert.areEqual(
+      true,
+      failed.everReported,
+      'One failed build, however old, counts as reported'
+    );
+    Assert.areEqual(GovernanceController.STATE_FAIL, failed.state, 'Red');
+  }
+
+  @isTest
+  static void shouldLeaveEverReportedOffTheOtherItems() {
+    Map<String, GovernanceController.ChecklistItem> items = load();
+    Assert.isNull(items.get(GovernanceController.ITEM_DEPLOY).everReported);
+    Assert.isNull(items.get(GovernanceController.ITEM_HEARTBEAT).everReported);
+    Assert.isNull(items.get(GovernanceController.ITEM_CACHES).everReported);
+  }
+
+  @isTest
+  static void shouldFailSiteWhenLatestSiteBuildFailed() {
+    insert run('site', 'Success', '7', NOW.addDays(-2));
+    insert run('site', 'Failure', '8', NOW.addDays(-1));
+
+    GovernanceController.ChecklistItem site = load()
+      .get(GovernanceController.ITEM_SITE);
+
+    Assert.areEqual(GovernanceController.STATE_FAIL, site.state, 'Fail');
+    Assert.areEqual('8', site.run.runId, 'The failed build is the evidence');
   }
 
   @isTest

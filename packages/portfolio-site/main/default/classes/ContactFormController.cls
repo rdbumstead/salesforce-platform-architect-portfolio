@@ -28,9 +28,9 @@ public with sharing class ContactFormController {
   @TestVisible
   private static final Integer MAX_MESSAGE = 2000;
   @TestVisible
-  private static final String RATE_LIMITED_MESSAGE = 'The form has had a lot of messages today. Try again tomorrow, or reach Ryan on LinkedIn.';
+  public static final String RATE_LIMITED_MESSAGE = 'The form has had a lot of messages today. Try again tomorrow, or reach Ryan on LinkedIn.';
   @TestVisible
-  private static final String SAVE_FAILED_MESSAGE = 'Your message could not be sent. Try again later.';
+  public static final String SAVE_FAILED_MESSAGE = 'Your message could not be sent. Try again later.';
   @TestVisible
   private static Boolean forceSaveFailure = false;
   private static final Pattern EMAIL_PATTERN = Pattern.compile(
@@ -98,11 +98,17 @@ public with sharing class ContactFormController {
     request.honeypot = website;
     request.elapsedMs = elapsedMs;
     SubmissionGuard.Decision decision = SubmissionGuard.check(request);
+    // A visitor's hash rate count is written here. No pending count means nothing is written.
+    ApiRequestContext.commitRateCounts();
     if (decision.silentDrop) {
       return new Result();
     }
     if (decision.rateLimited) {
-      throw auraError(RATE_LIMITED_MESSAGE);
+      throw auraError(
+        decision.hashRateLimited
+          ? SubmissionGuard.HASH_RATE_MESSAGE
+          : RATE_LIMITED_MESSAGE
+      );
     }
 
     Contact_Form_Submission__e submission = new Contact_Form_Submission__e(
@@ -171,10 +177,8 @@ public with sharing class ContactFormController {
     return String.isNotBlank(value) && value.trim().length() > max;
   }
 
-  private static AuraHandledException auraError(String message) {
-    AuraHandledException error = new AuraHandledException(message);
-    error.setMessage(message);
-    return error;
+  private static Exception auraError(String message) {
+    return SiteEdgeContext.refusal(message);
   }
 
   /**

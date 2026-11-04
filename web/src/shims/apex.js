@@ -54,19 +54,47 @@ function buildAdapter(call) {
       const config = this.config;
       lookup(call, config).then(({ found, value }) => {
         if (!this.connected || this.config !== config) return;
-        this.dataCallback(
+        this.provide(
           found
             ? { data: value, error: undefined }
             : { data: undefined, error: apexError(NOT_IN_BUILD, 404) }
         );
+        // The build data paints first. A call that also has a live reading then swaps it
+        // in when it arrives, and keeps the build data if the live reading fails or is off.
+        this.readLive();
       });
+    }
+
+    /** Hands a value to the component and remembers which adapter gave it, for refreshApex. */
+    provide(value) {
+      PROVIDED.set(value, this);
+      this.dataCallback(value);
+    }
+
+    /** Reads the live value again. Resolves either way, keeping what is shown on a failure. */
+    readLive() {
+      if (!LIVE_CALLS.has(call) || !requestHandler) return Promise.resolve();
+      const config = this.config;
+      return requestHandler(call, config).then(
+        (live) => {
+          if (!this.connected || this.config !== config) return;
+          this.provide({ data: live, error: undefined });
+        },
+        () => undefined
+      );
     }
   };
 }
 
+/** Each value a wire provided, mapped to the adapter that provided it. */
+const PROVIDED = new WeakMap();
+
 let requestHandler = null;
 
-/** PR 2 registers the /api client here. Until then request time calls reject. */
+/** Wired calls that have a live reading after the build time one. */
+export const LIVE_CALLS = new Set(["GovernanceController.getPipelineStatus"]);
+
+/** The /api client registers here. With none, request time calls reject. */
 export function setRequestHandler(handler) {
   requestHandler = handler;
 }
@@ -89,9 +117,15 @@ export function apexMethod(call, mode) {
   return fn;
 }
 
-/** refreshApex from @salesforce/apex: the data cannot change after the build. */
-export function refreshApex() {
-  return Promise.resolve();
+/**
+ * refreshApex from @salesforce/apex. Build time data cannot change after the build, so a
+ * plain wire resolves at once. A wire with a live reading reads it again and provides the
+ * fresh value, so returning to the Delivery tab shows the current pipeline state.
+ */
+export function refreshApex(value) {
+  const adapter =
+    value && typeof value === "object" ? PROVIDED.get(value) : undefined;
+  return adapter ? adapter.readLive() : Promise.resolve();
 }
 
 export function getSObjectValue(record, field) {
