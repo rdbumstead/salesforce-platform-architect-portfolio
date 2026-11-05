@@ -14,6 +14,7 @@
 export const FEATURES_URL = "/api/features";
 export const RECORDED_COVER_LETTER = "/recorded/cover-letter.json";
 export const RECORDED_LAB = "/recorded/lab/index.json";
+export const RECORDED_GLASS_BOX = "/recorded/glass-box.json";
 
 export const RECORDED_ONLY = "recorded";
 export const ALL_RECORDED = {
@@ -135,6 +136,16 @@ export function createRequestHandler(options = {}) {
     }
     if (call === "ApiLabController.requestEvaluatorToken")
       throw apexError(MESSAGES.noToken, 503);
+    if (call === "FooterController.getSystemSnapshot") {
+      const saved = await readJson(RECORDED_GLASS_BOX).catch(() => undefined);
+      if (!saved || !saved.snapshot) throw apexError(MESSAGES.noLive, 503);
+      return {
+        ...saved.snapshot,
+        recorded: true,
+        recordedAt: saved.recordedAt,
+        ...(saved.sample === true ? { sample: true } : {})
+      };
+    }
     if (call === "GovernanceController.getPipelineStatus")
       throw apexError(MESSAGES.noLive, 503);
     throw apexError("This feature is switched off right now.", 503);

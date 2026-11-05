@@ -1,0 +1,86 @@
+{
+  "recordedAt": "2026-11-01T12:00:00.000Z",
+  "sample": true,
+  "snapshot": {
+    "cpuTimeMs": 120,
+    "cpuTimeLimitMs": 10000,
+    "heapBytes": 204800,
+    "heapLimitBytes": 6291456,
+    "soqlQueries": 6,
+    "soqlQueryLimit": 100,
+    "aiRequestsToday": 12,
+    "providers": [
+      {
+        "provider": "Agentforce",
+        "enabled": false,
+        "state": "off",
+        "sortOrder": 1
+      },
+      {
+        "provider": "Gemini",
+        "model": "sample-model",
+        "enabled": true,
+        "state": "on",
+        "sortOrder": 2
+      },
+      {
+        "provider": "Local",
+        "model": "local-template",
+        "enabled": true,
+        "state": "on",
+        "sortOrder": 3
+      }
+    ],
+    "integrations": [
+      {
+        "key": "github",
+        "label": "GitHub",
+        "open": false
+      },
+      {
+        "key": "jira",
+        "label": "Jira",
+        "open": false
+      }
+    ],
+    "orgQuotas": [
+      {
+        "name": "DailyApiRequests",
+        "label": "API requests today",
+        "used": 120,
+        "max": 15000
+      },
+      {
+        "name": "DailyAsyncApexExecutions",
+        "label": "async Apex today",
+        "used": 4,
+        "max": 250000
+      }
+    ],
+    "storage": {
+      "capturedAt": "2026-11-01T11:00:00.000Z",
+      "dataUsedMb": 1.2,
+      "dataMaxMb": 5,
+      "fileUsedMb": 4.8,
+      "fileMaxMb": 20,
+      "dataAreas": [
+        {
+          "label": "Sample area one",
+          "records": 350,
+          "kb": 700
+        },
+        {
+          "label": "Sample area two",
+          "records": 250,
+          "kb": 500
+        }
+      ],
+      "fileGroups": [
+        {
+          "label": "Sample images",
+          "kb": 4915
+        }
+      ]
+    }
+  }
+}
