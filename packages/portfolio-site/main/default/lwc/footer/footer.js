@@ -51,6 +51,9 @@
  *                      integrations" and a label under it gives the capture time. The GraphQL
  *                      item is a browser probe and cannot be recorded, so it is left out
  *                      instead of reading "unavailable" beside a full set of readings.
+ *                      AI requests today, CPU time and Memory describe one request or one day,
+ *                      so a copy saved at build time would read as current when it is not.
+ *                      They are left out of a recorded snapshot too.
  * @author            : Ryan Bumstead
  * @githubRepo        : https://github.com/rdbumstead
  * @portfolio         : https://ryanbumstead.com
@@ -425,6 +428,11 @@ export default class Footer extends LightningElement {
     return formatNumber(this.snapshot?.aiRequestsToday ?? 0);
   }
 
+  /** A day's count saved at build time would read as today's, so recorded builds leave it out. */
+  get showAiRequests() {
+    return !this.snapshotRecorded;
+  }
+
   get storage() {
     return this.snapshot?.storage || null;
   }
@@ -520,7 +528,7 @@ export default class Footer extends LightningElement {
     const kb = (bytes) => Math.round((bytes || 0) / 1024);
     const of = (used, max) =>
       `${formatNumber(used ?? 0)} of ${formatNumber(max ?? 0)}`;
-    return [
+    const rows = [
       {
         key: "cpu",
         label: `CPU time: ${of(s.cpuTimeMs, s.cpuTimeLimitMs)} ms`
@@ -534,6 +542,10 @@ export default class Footer extends LightningElement {
         label: `Database queries: ${of(s.soqlQueries, s.soqlQueryLimit)}`
       }
     ];
+    // CPU time and Memory belong to the one request that took the reading.
+    return this.snapshotRecorded
+      ? rows.filter((row) => row.key !== "cpu" && row.key !== "heap")
+      : rows;
   }
 
   handleBadgeError(event) {
