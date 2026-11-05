@@ -45,33 +45,72 @@ export function rootRelative(html) {
   return String(html || '').replace(/href="(?![a-z][a-z0-9+.-]*:|\/|#)([^"]*)"/gi, 'href="/$1"');
 }
 
-/** Walks a view's component tree and returns the placed components in order. */
+/** The width of a section column, in twelfths, when the view does not say. */
+const COLUMN_TWELFTHS = 12;
+
+/**
+ * A section component's columns and the few settings the static page honours. The columns
+ * come from the section's own config, which the view stores as a JSON string.
+ */
+export function sectionOf(attributes = {}) {
+  let columns = [];
+  try {
+    columns = (JSON.parse(attributes.sectionConfig || '{}').columns || []).map((column) => ({
+      key: String(column.columnKey),
+      size: Number(column.columnWidth) || COLUMN_TWELFTHS
+    }));
+  } catch {
+    columns = [];
+  }
+  return {
+    columns,
+    verticalAlign: attributes.sectionVerticalAlign || '',
+    minHeight: attributes.sectionMinHeight || ''
+  };
+}
+
+/**
+ * Walks a view's component tree and returns the placed components in order. Each one also
+ * carries the section it sits in (an index into `sections`) and its column key, so the
+ * static page can build the same boxes around it that the Salesforce site does.
+ */
 export function placedComponents(node) {
   const found = [];
+  const sections = [];
   const seo = {};
   const unknown = [];
   let autoRefresh = false;
-  (function walk(current, region) {
+  let hiddenRegionUsed = false;
+  (function walk(current, region, section) {
     if (!current || typeof current !== 'object') return;
+    let inner = section;
     if (current.type === 'component' && typeof current.definition === 'string') {
       const definition = current.definition;
+      const hidden = region === 'sfdcHiddenRegion';
+      const where = { section: hidden ? null : section, column: hidden || section === null ? null : region };
+      if (hidden) hiddenRegionUsed = true;
       if (definition.startsWith('c:')) {
-        found.push({ name: definition.slice(2), props: { ...(current.attributes || {}) }, region });
+        found.push({ name: definition.slice(2), props: { ...(current.attributes || {}) }, region, ...where });
       } else if (definition === 'community_builder:richTextEditor') {
-        found.push({ html: rootRelative(current.attributes && current.attributes.richTextValue), region });
+        found.push({ html: rootRelative(current.attributes && current.attributes.richTextValue), region, ...where });
       } else if (definition === 'experience_availability:autoRefresh') {
         autoRefresh = true;
       } else if (definition === 'community_builder:seoAssistant') {
         Object.assign(seo, current.attributes || {});
+      } else if (definition === 'community_layout:section') {
+        sections.push(sectionOf(current.attributes));
+        inner = sections.length - 1;
       } else if (!definition.startsWith('community_layout:')) {
         unknown.push(definition);
       }
     }
     const nextRegion = current.type === 'region' ? current.name : region;
-    (current.children || []).forEach((child) => walk(child, nextRegion));
-  })(node, null);
+    (current.children || []).forEach((child) => walk(child, nextRegion, inner));
+  })(node, null, null);
   return {
     components: found.filter((entry) => entry.region !== 'sfdcHiddenRegion'),
+    sections,
+    hiddenRegionUsed,
     seo,
     unknown,
     autoRefresh
@@ -121,7 +160,12 @@ export function readRoutes(siteDir = SITE_DIR) {
         description: placed.seo.description || '',
         headTags: placed.seo.customHeadTags || '',
         autoRefresh: placed.autoRefresh,
-        components: placed.components.map(({ name, props, html }) => (html !== undefined ? { html } : { name, props }))
+        sections: placed.sections,
+        // The empty wrapper the live site keeps after the content for its hidden region.
+        trailingSpacer: placed.hiddenRegionUsed,
+        components: placed.components.map(({ name, props, html, section, column }) =>
+          html !== undefined ? { html, section, column } : { name, props, section, column }
+        )
       });
     });
   return { routes, skipped };

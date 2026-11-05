@@ -10,6 +10,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { modeOf } from './calls.mjs';
+import { adoptedCss } from './layout.mjs';
+import { codeString } from './code-string.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const WEB_DIR = path.resolve(here, '..');
@@ -28,6 +30,9 @@ const SHIMS = {
   '@salesforce/client/formFactor': 'form-factor.js',
   'c/siteHost': 'site-host.js'
 };
+
+/** The import name for the sheet that is adopted into every component's shadow root. */
+export const ADOPTED_STYLES = 'site:adopted-styles';
 
 const LIGHTNING_COMPONENTS = new Set(['card', 'spinner', 'icon']);
 
@@ -57,6 +62,7 @@ export function sitePlugin(options = {}) {
         return this.resolve(source, path.join(WEB_DIR, 'package.json'), { skipSelf: true });
       }
       if (SHIMS[source]) return path.join(SHIM_DIR, SHIMS[source]);
+      if (source === ADOPTED_STYLES) return `${VIRTUAL}adopted-styles`;
       if (source === '@salesforce/apex') return `${VIRTUAL}apex-core`;
       if (source.startsWith('@salesforce/apex/')) return `${VIRTUAL}apex:${source.slice(17)}`;
       if (source.startsWith('@salesforce/resourceUrl/')) {
@@ -80,6 +86,7 @@ export function sitePlugin(options = {}) {
     load(id) {
       if (!id.startsWith(VIRTUAL)) return null;
       const spec = id.slice(VIRTUAL.length);
+      if (spec === 'adopted-styles') return `export default ${codeString(adoptedCss())};`;
       const apexShim = JSON.stringify(slash(path.join(SHIM_DIR, 'apex.js')));
       if (spec === 'apex-core') {
         return `export { refreshApex, getSObjectValue } from ${apexShim};`;

@@ -1,0 +1,374 @@
+/*
+ * The part of the Salesforce Design System and the experience site's own element rules that
+ * the portfolio components rely on, written out by hand with the values the live site serves.
+ *
+ * On the Salesforce site these come from the SLDS sheets and the dxp extension sheets, and
+ * they reach every component because synthetic shadow lets global rules through. The static
+ * build runs components in native shadow, where a rule on the page does not cross into a
+ * component. So this one sheet is adopted into every component's shadow root, and it is also
+ * placed ahead of the site stylesheet on the page for the light DOM.
+ *
+ * Only what the templates use is here: the border box reset, the form control and heading
+ * and list resets, link colour, and the utility classes found by searching the component
+ * templates for slds- class names. Add a rule here when a template starts using a new class.
+ *
+ * Every rule keeps the var() chain the live sheet uses where one exists, with the resolved
+ * value as the last fallback, so a page that sets none of the hooks still looks right.
+ */
+
+/* Normalize and base, from salesforce-lightning-design-system part 1. */
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+  margin: 0;
+}
+
+button {
+  overflow: visible;
+}
+
+button,
+select {
+  text-transform: none;
+}
+
+button,
+input[type="button"],
+input[type="reset"],
+input[type="submit"] {
+  cursor: pointer;
+}
+
+button[disabled],
+input[disabled] {
+  cursor: default;
+}
+
+input {
+  line-height: normal;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  padding: 0;
+}
+
+textarea {
+  overflow: auto;
+}
+
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+legend {
+  border: 0;
+  padding: 0;
+}
+
+dl,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+ol,
+p,
+ul {
+  margin: 0;
+  padding: 0;
+}
+
+dd,
+figure {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: inherit;
+  font-size: 1em;
+}
+
+ol,
+ul {
+  list-style: none;
+}
+
+/* Taking the block display off summary is what hides the browser's disclosure triangle. */
+summary {
+  display: block;
+}
+
+b,
+strong {
+  font-weight: 700;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: monospace, monospace;
+  font-size: 1em;
+}
+
+pre {
+  overflow: auto;
+}
+
+hr {
+  display: block;
+  margin: 2rem 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+  height: 1px;
+  clear: both;
+  box-sizing: content-box;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+}
+
+caption,
+td,
+th {
+  text-align: left;
+}
+
+td,
+th {
+  padding: 0;
+}
+
+img {
+  border: 0;
+  max-width: 100%;
+  height: auto;
+}
+
+audio,
+canvas,
+iframe,
+img,
+svg,
+video {
+  vertical-align: middle;
+}
+
+::placeholder {
+  color: var(--dxp-c-placeholder-text-color, var(--dxp-g-neutral-3, #747474));
+  font-weight: 400;
+  opacity: 1;
+}
+
+a,
+button {
+  cursor: pointer;
+}
+
+/*
+ * Links, from the dxp extension sheet. The :not() part gives these the same weight as on
+ * the live site, where they win over a component's own plain class rule.
+ */
+a,
+a:link:not(.slds-button, .slds-dropdown__item > a),
+a:visited:not(.slds-button, .slds-dropdown__item > a) {
+  color: var(
+    --dxp-c-link-text-color,
+    var(--dxp-s-link-text-color, var(--dxp-g-brand, #2563eb))
+  );
+  text-decoration: var(
+    --dxp-c-link-text-decoration,
+    var(--dxp-s-link-text-decoration, none)
+  );
+}
+
+a:hover:not(.slds-button, .slds-dropdown__item > a),
+a:active:not(.slds-button, .slds-dropdown__item > a) {
+  color: var(
+    --dxp-c-link-text-color-hover,
+    var(--dxp-s-link-text-color-hover, var(--dxp-g-brand-1, #1d4ed8))
+  );
+  text-decoration: var(--dxp-s-link-text-decoration-hover, underline);
+}
+
+a:focus:not(.slds-button, .slds-dropdown__item > a) {
+  color: var(
+    --dxp-c-link-text-color-focus,
+    var(--dxp-s-link-text-color-hover, var(--dxp-g-brand-1, #1d4ed8))
+  );
+  text-decoration: var(--dxp-s-link-text-decoration-focus, underline);
+}
+
+/* Spacing utilities. The dxp sheet sets these from the spacing hooks. */
+.slds-m-top_x-small {
+  margin-top: var(--dxp-g-spacing-xsmall, 0.5rem);
+}
+
+.slds-m-top_small {
+  margin-top: var(--dxp-g-spacing-small, 0.75rem);
+}
+
+.slds-m-top_medium {
+  margin-top: var(--dxp-g-spacing-medium, 1rem);
+}
+
+.slds-m-top_large {
+  margin-top: var(--dxp-g-spacing-large, 1.5rem);
+}
+
+.slds-m-bottom_small {
+  margin-bottom: var(--dxp-g-spacing-small, 0.75rem);
+}
+
+.slds-m-bottom_medium {
+  margin-bottom: var(--dxp-g-spacing-medium, 1rem);
+}
+
+.slds-p-around_medium {
+  padding: var(--dxp-g-spacing-medium, 1rem);
+}
+
+.slds-p-around_large {
+  padding: var(--dxp-g-spacing-large, 1.5rem);
+}
+
+.slds-p-around_xx-large {
+  padding: var(--dxp-g-spacing-xxlarge, 3rem);
+}
+
+/* Grid and sizing. */
+.slds-grid {
+  display: flex;
+}
+
+.slds-wrap {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.slds-gutters {
+  margin-right: -0.75rem;
+  margin-left: -0.75rem;
+}
+
+.slds-gutters .slds-col {
+  padding-right: 0.75rem;
+  padding-left: 0.75rem;
+}
+
+.slds-col {
+  flex: 1 1 auto;
+}
+
+.slds-size_1-of-1 {
+  flex: none;
+  width: 100%;
+}
+
+@media (min-width: 48em) {
+  .slds-medium-size_1-of-2 {
+    flex: none;
+    width: 50%;
+  }
+}
+
+/* Description list laid out as label and value. */
+.slds-list_horizontal {
+  display: flex;
+}
+
+.slds-list_horizontal .slds-item_label {
+  width: 30%;
+  padding-right: 0.75rem;
+}
+
+.slds-list_horizontal .slds-item_detail {
+  width: 70%;
+}
+
+/* Text utilities. The dxp sheet resolves the sizes from the branding set. */
+.slds-text-heading_small {
+  font-size: var(--dxp-s-text-heading-small-font-size, 1.125rem);
+  font-weight: var(--dxp-s-text-heading-small-font-weight, 600);
+  line-height: var(--dxp-s-text-heading-small-line-height, 1.25);
+  color: var(
+    --dxp-s-text-heading-small-color,
+    var(--dxp-g-root-contrast, #101828)
+  );
+}
+
+.slds-text-body_small {
+  font-size: var(--dxp-s-body-small-font-size, 0.75rem);
+  line-height: var(--dxp-s-body-small-line-height, 1.25);
+  color: var(
+    --dxp-s-body-small-text-color,
+    var(--dxp-g-root-contrast, #101828)
+  );
+}
+
+.slds-text-title_caps {
+  font-size: var(--dxp-c-title-caps-font-size, 0.75rem);
+  line-height: var(--dxp-c-title-caps-line-height, 1.25);
+  font-weight: var(--dxp-c-title-caps-font-weight, 400);
+  letter-spacing: var(--dxp-c-title-caps-letter-spacing, 0.0625rem);
+  text-transform: var(--dxp-c-title-caps-text-transform, uppercase);
+  color: var(
+    --dxp-c-title-caps-text-color,
+    var(--dxp-g-root-contrast, #101828)
+  );
+}
+
+.slds-text-align_right {
+  text-align: right;
+}
+
+/* Form element and state helpers. */
+.slds-form-element {
+  position: relative;
+  min-width: 0;
+  margin-bottom: var(--dxp-g-spacing-medium, 1rem);
+}
+
+.slds-is-relative {
+  position: relative;
+}
+
+.slds-assistive-text {
+  position: absolute !important;
+  margin: -1px !important;
+  border: 0 !important;
+  padding: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+}
+
+.slds-hide {
+  display: none !important;
+}

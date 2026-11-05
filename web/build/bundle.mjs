@@ -38,6 +38,8 @@ export function componentSpecifier(name) {
  */
 export function entrySource(route) {
   const lines = [
+    // First, so the style adoption is in place before the engine reads attachShadow.
+    `import ${codeString(slash(path.join(SHIM_DIR, 'shadow-styles-boot.js')))};`,
     `import { mount } from ${codeString(slash(path.join(SHIM_DIR, 'mount.js')))};`,
     `import Layout from 'c/portfolioThemeLayout';`
   ];
@@ -45,17 +47,22 @@ export function entrySource(route) {
   if (firstName) lines.push(`import First from ${componentSpecifier(firstName)};`);
   let firstPlaced = false;
   const entries = route.components.map((component) => {
-    if (component.html !== undefined) return `{ html: ${codeString(component.html)} }`;
+    const placed = component.section === undefined || component.section === null ? 'null' : String(Number(component.section));
+    const placement = `section: ${placed}, column: ${codeString(component.column || '')}`;
+    if (component.html !== undefined) return `{ html: ${codeString(component.html)}, ${placement} }`;
     const tag = codeString(tagOf(component.name));
     const props = codeString(component.props || {});
     if (!firstPlaced && component.name === firstName) {
       firstPlaced = true;
-      return `{ tag: ${tag}, ctor: First, props: ${props} }`;
+      return `{ tag: ${tag}, ctor: First, props: ${props}, ${placement} }`;
     }
-    return `{ tag: ${tag}, load: () => import(${componentSpecifier(component.name)}), props: ${props} }`;
+    return `{ tag: ${tag}, load: () => import(${componentSpecifier(component.name)}), props: ${props}, ${placement} }`;
   });
   const footer = route.layout === 'portfolio' ? `() => import('c/footer')` : 'null';
-  lines.push(`mount({ Layout, loadFooter: ${footer}, components: [${entries.join(', ')}] });`);
+  const sections = codeString((route.sections || []).map(({ columns }) => ({ columns })));
+  lines.push(
+    `mount({ Layout, loadFooter: ${footer}, sections: ${sections}, trailingSpacer: ${Boolean(route.trailingSpacer)}, components: [${entries.join(', ')}] });`
+  );
   return `${lines.join('\n')}\n`;
 }
 
