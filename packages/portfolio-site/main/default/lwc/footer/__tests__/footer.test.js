@@ -1141,6 +1141,33 @@ describe("c-footer", () => {
       );
     });
 
+    it("leaves out AI requests today, CPU time and Memory from a recorded snapshot", async () => {
+      getSystemSnapshot.mockResolvedValue(snapshot(RECORDED));
+      const element = createComponent();
+      await runIdle();
+
+      expect(q(element, '[data-id="ai-requests"]')).toBeNull();
+      const limits = all(element, '[data-id="limit"]').map((li) =>
+        li.textContent.trim()
+      );
+      expect(limits).toHaveLength(1);
+      expect(limits[0]).toMatch(/^Database queries:/);
+    });
+
+    it("keeps AI requests today, CPU time and Memory on a live snapshot", async () => {
+      getSystemSnapshot.mockResolvedValue(snapshot());
+      const element = createComponent();
+      await runIdle();
+
+      expect(q(element, '[data-id="ai-requests"]')).not.toBeNull();
+      const limits = all(element, '[data-id="limit"]').map((li) =>
+        li.textContent.trim()
+      );
+      expect(limits).toHaveLength(3);
+      expect(limits[0]).toMatch(/^CPU time:/);
+      expect(limits[1]).toMatch(/^Memory:/);
+    });
+
     it("says a sample snapshot is a sample", async () => {
       getSystemSnapshot.mockResolvedValue(
         snapshot({ ...RECORDED, sample: true })

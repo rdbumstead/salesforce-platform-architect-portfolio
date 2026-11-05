@@ -113,14 +113,16 @@
               >Quotas and limits</span
             >
             <ul class="group-list" aria-labelledby="footer-group-quotas">
-              <li class="metric">
-                <span
-                  class="target ai-requests"
-                  data-id="ai-requests"
-                  onmouseenter={handleQuotaVisibility}
-                  >AI requests today: {aiRequestsToday}</span
-                >
-              </li>
+              <template lwc:if={showAiRequests}>
+                <li class="metric">
+                  <span
+                    class="target ai-requests"
+                    data-id="ai-requests"
+                    onmouseenter={handleQuotaVisibility}
+                    >AI requests today: {aiRequestsToday}</span
+                  >
+                </li>
+              </template>
               <template for:each={quotaRows} for:item="row">
                 <li key={row.key} class="metric" data-id="quota">
                   {row.label}
