@@ -23,6 +23,18 @@ export function builtAt() {
   return null;
 }
 
+/**
+ * The origin of the Salesforce site, the host that serves the token endpoint and the API. On
+ * the Salesforce site that is the page's own origin. The static build swaps this module for
+ * one that returns the Salesforce site's origin, because its own host serves no API.
+ * @returns {string}
+ */
+export function siteOrigin() {
+  return typeof window !== "undefined" && window.location
+    ? window.location.origin
+    : "";
+}
+
 const MONTHS = [
   "Jan",
   "Feb",

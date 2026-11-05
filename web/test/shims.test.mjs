@@ -4,6 +4,7 @@ import { readKey, setSiteData, lookup } from '../src/shims/site-data.js';
 import { apexMethod, refreshApex, setRequestHandler, NOT_IN_BUILD } from '../src/shims/apex.js';
 import { gql, graphqlParams, normalizeQuery, graphql } from '../src/shims/graphql.js';
 import { keyOf, decodeEntities } from '../build/export.mjs';
+import { siteOrigin, SALESFORCE_ORIGIN } from '../src/shims/site-host.js';
 import { currentPageReference } from '../src/shims/navigation.js';
 
 test('a read key sorts parameters and drops undefined ones', () => {
@@ -116,4 +117,12 @@ test('the build decodes the HTML encoded text of a GraphQL response once', () =>
   assert.deepEqual(decodeEntities(data), { node: { Name: { value: 'AI & Innovation' }, list: ['a < b', "it's"], n: 3 } });
   assert.equal(decodeEntities('&amp;amp;'), '&amp;');
   assert.equal(decodeEntities('AI & Innovation'), 'AI & Innovation');
+});
+
+test('the static host gives the API Lab the Salesforce site origin, not its own', () => {
+  setSiteData({ reads: {}, lazy: {}, build: {} });
+  assert.equal(siteOrigin(), 'https://ryan-bumstead-dev-ed.develop.my.site.com');
+  assert.equal(siteOrigin(), SALESFORCE_ORIGIN);
+  setSiteData({ reads: {}, lazy: {}, build: { salesforceOrigin: 'https://example.test' } });
+  assert.equal(siteOrigin(), 'https://example.test');
 });

@@ -12,6 +12,18 @@ export {
 
 export const IS_STATIC = true;
 
+/**
+ * The Salesforce site that serves the token endpoint and the API. The static host serves
+ * neither, so the API Lab shows this origin in its examples. The build can set
+ * build.salesforceOrigin to name another host, for example a custom domain after cutover.
+ */
+export const SALESFORCE_ORIGIN =
+  "https://ryan-bumstead-dev-ed.develop.my.site.com";
+
+export function siteOrigin() {
+  return buildInfo().salesforceOrigin || SALESFORCE_ORIGIN;
+}
+
 export function builtAt() {
   return buildInfo().builtAt || null;
 }
