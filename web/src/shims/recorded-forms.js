@@ -1,22 +1,13 @@
 /**
  * Recorded mode for the two forms. When the contact or testimonial switch reads `recorded`,
- * the form is replaced with a plain note and the owner's public profile links, so nobody
- * fills in a form that cannot send.
+ * the real form stays on the page with every control off and a short note above the send
+ * button. The component draws all of it, so the layout is the live one. This file only turns
+ * the form off and hands it the profile links.
  */
 
 export const FORMS = [
-  {
-    tag: "c-contact-form",
-    feature: "contact",
-    heading: "Get in touch",
-    text: "The contact form is paused right now. You can reach me on one of these instead."
-  },
-  {
-    tag: "c-testimonial-submit",
-    feature: "testimonial",
-    heading: "Leave a testimonial",
-    text: "The testimonial form is paused right now. Send me your words on one of these and I will add them."
-  }
+  { tag: "c-contact-form", feature: "contact" },
+  { tag: "c-testimonial-submit", feature: "testimonial" }
 ];
 
 /** Public profile links used when the page has no profile read. */
@@ -28,45 +19,31 @@ export const FALLBACK_LINKS = [
   }
 ];
 
+/** The links a person can reach Ryan on. The portfolio and contact page links are left out. */
+const NOTE_LABELS = ["LinkedIn", "GitHub", "Trailhead"];
+
 function safeHref(url) {
   return /^https:\/\//i.test(String(url || "")) ? url : null;
 }
 
-export function recordedNote(doc, form, links) {
-  const section = doc.createElement("section");
-  section.className = "recorded-note";
-  section.setAttribute("data-recorded", form.feature);
-  section.style.cssText = "max-width:42rem;margin:2rem auto;padding:0 1rem;";
-  const heading = doc.createElement("h2");
-  heading.textContent = form.heading;
-  const text = doc.createElement("p");
-  text.textContent = form.text;
-  const list = doc.createElement("ul");
-  links.forEach((link) => {
-    const href = safeHref(link.url);
-    if (!href) return;
-    const item = doc.createElement("li");
-    const anchor = doc.createElement("a");
-    anchor.href = href;
-    anchor.rel = "noopener noreferrer";
-    anchor.textContent = link.label;
-    item.appendChild(anchor);
-    list.appendChild(item);
-  });
-  section.append(heading, text, list);
-  return section;
+export function noteLinks(links) {
+  const kept = (links || []).filter(
+    (link) => NOTE_LABELS.includes(link.label) && safeHref(link.url)
+  );
+  return kept.length ? kept : FALLBACK_LINKS;
 }
 
-/** @returns {number} how many forms were replaced */
-export function swapRecordedForms(root, features, links, doc = document) {
-  const usable = links && links.length ? links : FALLBACK_LINKS;
-  let replaced = 0;
+/** @returns {number} how many forms were paused */
+export function swapRecordedForms(root, features, links) {
+  const usable = noteLinks(links);
+  let paused = 0;
   FORMS.forEach((form) => {
     if (features[form.feature] === "live") return;
     root.querySelectorAll(form.tag).forEach((element) => {
-      element.replaceWith(recordedNote(doc, form, usable));
-      replaced += 1;
+      element.pausedLinks = usable.map((link) => ({ ...link }));
+      element.paused = true;
+      paused += 1;
     });
   });
-  return replaced;
+  return paused;
 }
