@@ -15,7 +15,7 @@ import { onRequest as glassBox } from '../functions/api/live/glass-box.js';
 import { onRequest as pipelineStatus } from '../functions/api/live/pipeline-status.js';
 import { onRequest as features } from '../functions/api/features.js';
 import { labPathsText, PATHS_FILE } from '../build/lab-paths.mjs';
-import { captureLab, copyRecorded, hasSecrets } from '../build/recorded.mjs';
+import { captureLab, captureSnapshot, copyRecorded, hasSecrets } from '../build/recorded.mjs';
 import { labKey } from '../src/shims/api-client.js';
 
 const PROD = 'https://ryanbumstead.pages.dev';
@@ -386,4 +386,44 @@ test('the recording step needs every edge secret and writes the index and the sa
   const letter = JSON.parse(fs.readFileSync(path.join(dist, 'recorded/cover-letter.json'), 'utf8'));
   assert.match(letter.content, /^SAMPLE LETTER/);
   assert.ok(Array.isArray(letter.attempts));
+});
+
+test('the footer readings are captured with a GET with the recording header and saved with the capture time', async () => {
+  const dist = fs.mkdtempSync(path.join(os.tmpdir(), 'recorded-glass-'));
+  assert.equal(await captureSnapshot(dist, {}), null);
+  assert.ok(!fs.existsSync(path.join(dist, 'recorded/glass-box.json')));
+  resetTokenCache();
+  const net = fakeNetwork({ actions: { 'glass-box': () => Response.json({ result: { aiRequestsToday: 4, orgQuotas: [] } }) } });
+  try {
+    const now = new Date('2026-11-02T10:00:00.000Z');
+    assert.deepEqual(await captureSnapshot(dist, ENV, now), { recorded: true });
+    const sent = net.seen.find((entry) => entry.url.endsWith('glass-box'));
+    assert.equal(sent.init.method, 'GET');
+    assert.equal(sent.init.headers['X-Site-Recording'], '1');
+    const saved = JSON.parse(fs.readFileSync(path.join(dist, 'recorded/glass-box.json'), 'utf8'));
+    assert.equal(saved.recordedAt, now.toISOString());
+    assert.equal(saved.snapshot.aiRequestsToday, 4);
+  } finally {
+    net.restore();
+  }
+  const failing = fakeNetwork({ actions: { 'glass-box': () => Response.json({ error: 'FORBIDDEN', message: 'no' }, { status: 403 }) } });
+  const other = fs.mkdtempSync(path.join(os.tmpdir(), 'recorded-glass-'));
+  try {
+    resetTokenCache();
+    const outcome = await captureSnapshot(other, ENV);
+    assert.equal(outcome.recorded, false);
+    assert.ok(!fs.existsSync(path.join(other, 'recorded/glass-box.json')));
+  } finally {
+    failing.restore();
+  }
+});
+
+test('the sample footer readings are copied only into a fixture build', () => {
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'recorded-fixture-'));
+  copyRecorded(fixture);
+  assert.ok(fs.existsSync(path.join(fixture, 'recorded/glass-box.json')));
+  const real = fs.mkdtempSync(path.join(os.tmpdir(), 'recorded-real-'));
+  copyRecorded(real, undefined, { fixture: false });
+  assert.ok(!fs.existsSync(path.join(real, 'recorded/glass-box.json')));
+  assert.ok(fs.existsSync(path.join(real, 'recorded/cover-letter.json')));
 });

@@ -72,10 +72,24 @@ test('recorded mode never calls a function: sample letter, recorded lab response
   assert.deepEqual(await handler('ApiLabController.invokeVersioned', params), { statusCode: 200 });
   await assert.rejects(handler('ApiLabController.invokeVersioned', { ...params, path: '/sapi/skills' }), (error) => error.body.message === MESSAGES.noRecordedCall);
   await assert.rejects(handler('ApiLabController.requestEvaluatorToken', {}), (error) => error.body.message === MESSAGES.noToken);
-  await assert.rejects(handler('FooterController.getSystemSnapshot', {}));
+  await assert.rejects(handler('FooterController.getSystemSnapshot', {}), (error) => error.body.message === MESSAGES.noLive);
   assert.ok(site.seen.every((entry) => !entry.url.startsWith('/api/') || entry.url === '/api/features'));
   const empty = createRequestHandler({ fetch: fakeSite({ features: ALL_RECORDED }).fetch });
   await assert.rejects(empty('ApiLabController.invokeVersioned', params), (error) => error.body.message === MESSAGES.noRecordedLab);
+});
+
+test('recorded footer readings return the captured snapshot marked recorded with its capture time', async () => {
+  const site = fakeSite({
+    features: ALL_RECORDED,
+    files: { '/recorded/glass-box.json': { recordedAt: '2026-11-01T12:00:00.000Z', snapshot: { aiRequestsToday: 3, orgQuotas: [] } } }
+  });
+  const handler = createRequestHandler({ fetch: site.fetch });
+  assert.deepEqual(await handler('FooterController.getSystemSnapshot', {}), { aiRequestsToday: 3, orgQuotas: [], recorded: true, recordedAt: '2026-11-01T12:00:00.000Z' });
+  assert.ok(site.seen.every((entry) => !entry.url.startsWith('/api/') || entry.url === '/api/features'));
+  const sample = createRequestHandler({ fetch: fakeSite({ features: ALL_RECORDED, files: { '/recorded/glass-box.json': { sample: true, recordedAt: 'x', snapshot: {} } } }).fetch });
+  assert.equal((await sample('FooterController.getSystemSnapshot', {})).sample, true);
+  const none = createRequestHandler({ fetch: fakeSite({ features: ALL_RECORDED }).fetch });
+  await assert.rejects(none('FooterController.getSystemSnapshot', {}), (error) => error.status === 503);
 });
 
 test('a host with no functions reads every switch as recorded', async () => {
