@@ -1111,4 +1111,62 @@ describe("c-footer", () => {
       quotaLabel({ label: "API requests today", used: 1, max: Infinity })
     ).toBeNull();
   });
+  describe("recorded readings on the static site", () => {
+    const RECORDED = {
+      recorded: true,
+      recordedAt: "2026-11-01T12:00:00.000Z",
+      orgQuotas: ORG_QUOTAS,
+      integrations: INTEGRATIONS
+    };
+
+    it("shows every group and a capture label, and hides the GraphQL item when the probe fails", async () => {
+      getSystemSnapshot.mockResolvedValue(snapshot(RECORDED));
+      const element = createComponent();
+      await runIdle();
+      graphql.emit({ errors: [{ message: "denied" }] });
+      await flushPromises();
+
+      expect(q(element, '[data-id="metrics-caption"]').textContent).toBe(
+        "Readings from Salesforce and its integrations"
+      );
+      expect(q(element, '[data-id="recorded-label"]').textContent).toBe(
+        "From Salesforce · captured 1 Nov 2026, 12:00 UTC"
+      );
+      expect(all(element, '[data-id="provider"]').length).toBe(3);
+      expect(all(element, '[data-id="integration"]').length).toBe(2);
+      expect(all(element, '[data-id="quota"]').length).toBe(2);
+      expect(q(element, '[data-id="graphql"]')).toBeNull();
+      expect(q(element, '[data-id="metrics"]').textContent).not.toMatch(
+        /unavailable/
+      );
+    });
+
+    it("says a sample snapshot is a sample", async () => {
+      getSystemSnapshot.mockResolvedValue(
+        snapshot({ ...RECORDED, sample: true })
+      );
+      const element = createComponent();
+      await runIdle();
+
+      expect(q(element, '[data-id="recorded-label"]').textContent).toBe(
+        "Sample readings for this preview build, not from Salesforce"
+      );
+    });
+
+    it("keeps the live caption and the GraphQL unavailable line for a live snapshot", async () => {
+      getSystemSnapshot.mockResolvedValue(snapshot());
+      const element = createComponent();
+      await runIdle();
+      graphql.emit({ errors: [{ message: "denied" }] });
+      await flushPromises();
+
+      expect(q(element, '[data-id="metrics-caption"]').textContent).toBe(
+        "Live readings from Salesforce and its integrations"
+      );
+      expect(q(element, '[data-id="recorded-label"]')).toBeNull();
+      expect(q(element, '[data-id="graphql"]').textContent).toBe(
+        "GraphQL: unavailable"
+      );
+    });
+  });
 });
