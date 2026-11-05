@@ -91,6 +91,24 @@ export default class ContactForm extends LightningElement {
   @api heading = "Get in touch";
   @api intro;
 
+  /**
+   * True while the switch for this form reads recorded on the static build. The form shows in
+   * full with every control off and sends nothing. Salesforce never sets it.
+   */
+  @api paused = false;
+  /** The profile links the paused note shows, each { label, url }. Only https links show. */
+  @api pausedLinks = [];
+
+  get pausedLinkItems() {
+    return (Array.isArray(this.pausedLinks) ? this.pausedLinks : []).filter(
+      (link) =>
+        link &&
+        String(link.url || "")
+          .toLowerCase()
+          .startsWith("https://")
+    );
+  }
+
   form = emptyForm();
   isSubmitting = false;
   isSent = false;
@@ -226,7 +244,7 @@ export default class ContactForm extends LightningElement {
 
   // The button is off only while a send is in flight. Anything else is answered on submit.
   get isSubmitDisabled() {
-    return this.isSubmitting;
+    return this.isSubmitting || this.paused;
   }
 
   get submitLabel() {
@@ -255,7 +273,7 @@ export default class ContactForm extends LightningElement {
 
   async handleSubmit(event) {
     event.preventDefault();
-    if (this.isSubmitDisabled) {
+    if (this.paused || this.isSubmitDisabled) {
       return;
     }
     this.serverError = "";

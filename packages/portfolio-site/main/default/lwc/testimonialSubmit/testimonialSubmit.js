@@ -26,7 +26,7 @@
  * @trailhead         : https://www.salesforce.com/trailblazer/rbumstead
  * @Created           : 01/03/2026
  **/
-import { LightningElement, wire } from "lwc";
+import { LightningElement, api, wire } from "lwc";
 import getFragments from "@salesforce/apex/TestimonialController.getFragments";
 import submitTestimonial from "@salesforce/apex/TestimonialController.submitTestimonial";
 import submitOwnTestimonial from "@salesforce/apex/TestimonialController.submitOwnTestimonial";
@@ -133,6 +133,24 @@ export function composeSentence(relationship, strengthText, outcomeText) {
 }
 
 export default class TestimonialSubmit extends LightningElement {
+  /**
+   * True while the switch for this form reads recorded on the static build. The form shows in
+   * full with every control off and sends nothing. Salesforce never sets it.
+   */
+  @api paused = false;
+  /** The profile links the paused note shows, each { label, url }. Only https links show. */
+  @api pausedLinks = [];
+
+  get pausedLinkItems() {
+    return (Array.isArray(this.pausedLinks) ? this.pausedLinks : []).filter(
+      (link) =>
+        link &&
+        String(link.url || "")
+          .toLowerCase()
+          .startsWith("https://")
+    );
+  }
+
   form = emptyForm();
   fragments = [];
   loadError = "";
@@ -393,7 +411,7 @@ export default class TestimonialSubmit extends LightningElement {
 
   // The button is off only while a send is in flight. Anything else is answered on submit.
   get isSubmitDisabled() {
-    return this.isSubmitting;
+    return this.isSubmitting || this.paused;
   }
 
   get submitLabel() {
@@ -429,6 +447,9 @@ export default class TestimonialSubmit extends LightningElement {
   // Build a sentence or write my own. The relationship and vibe stay. The other mode's
   // messages go, because those fields leave the form.
   handleModeChange(event) {
+    if (this.paused) {
+      return;
+    }
     const mode = event.currentTarget.dataset.mode;
     if (mode === this.form.mode) {
       return;
@@ -445,6 +466,9 @@ export default class TestimonialSubmit extends LightningElement {
   }
 
   handleVibeToggle() {
+    if (this.paused) {
+      return;
+    }
     // Each vibe has its own fragments, so the two phrase blanks start again.
     this.form = {
       ...this.form,
@@ -468,7 +492,7 @@ export default class TestimonialSubmit extends LightningElement {
 
   async handleSubmit(event) {
     event.preventDefault();
-    if (this.isSubmitDisabled) {
+    if (this.paused || this.isSubmitDisabled) {
       return;
     }
     this.serverError = "";
