@@ -189,12 +189,16 @@ button {
 }
 
 /*
- * Links, from the dxp extension sheet. The :not() part gives these the same weight as on
- * the live site, where they win over a component's own plain class rule.
+ * Links, from the dxp extension sheet. On the live site a component's rules carry an extra
+ * attribute selector from synthetic shadow, so these beat a plain class rule such as
+ * .link but lose to .btn:link. Native shadow has no such attribute, so the :not(i) here
+ * gives the same order: one element more than a bare a:link, and still under a class plus
+ * :link. The background and transition lines are unset on this site, and an unset hook
+ * clears a component's own value, as it does on the live site.
  */
 a,
-a:link:not(.slds-button, .slds-dropdown__item > a),
-a:visited:not(.slds-button, .slds-dropdown__item > a) {
+a:link:not(i),
+a:visited:not(i) {
   color: var(
     --dxp-c-link-text-color,
     var(--dxp-s-link-text-color, var(--dxp-g-brand, #2563eb))
@@ -203,23 +207,27 @@ a:visited:not(.slds-button, .slds-dropdown__item > a) {
     --dxp-c-link-text-decoration,
     var(--dxp-s-link-text-decoration, none)
   );
+  background-color: var(--dxp-c-link-color-background);
+  transition: var(--dxp-c-link-transition);
 }
 
-a:hover:not(.slds-button, .slds-dropdown__item > a),
-a:active:not(.slds-button, .slds-dropdown__item > a) {
+a:hover:not(i),
+a:active:not(i) {
   color: var(
     --dxp-c-link-text-color-hover,
     var(--dxp-s-link-text-color-hover, var(--dxp-g-brand-1, #1d4ed8))
   );
   text-decoration: var(--dxp-s-link-text-decoration-hover, underline);
+  background-color: var(--dxp-c-link-color-background-hover);
 }
 
-a:focus:not(.slds-button, .slds-dropdown__item > a) {
+a:focus:not(i) {
   color: var(
     --dxp-c-link-text-color-focus,
     var(--dxp-s-link-text-color-hover, var(--dxp-g-brand-1, #1d4ed8))
   );
   text-decoration: var(--dxp-s-link-text-decoration-focus, underline);
+  background-color: var(--dxp-c-link-color-background-focus);
 }
 
 /* Spacing utilities. The dxp sheet sets these from the spacing hooks. */
